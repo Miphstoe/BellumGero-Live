@@ -128,7 +128,7 @@ ENV STATUSPORT=${PORT_GROUP}455 \
     SSHPORT=2222 \
     DBUSER=swgemu \
     ADMIN_USER=admin \
-    REPOS='Core3' \
+    REPOS='BellumGero-Live' \
     REPO_PUBLIC_URL=https://github.com/Miphstoe/BellumGero-Live.git \
     REPO_PUBLIC_BRANCH='Main'
 
