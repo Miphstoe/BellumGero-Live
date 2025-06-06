@@ -129,7 +129,7 @@ ENV STATUSPORT=${PORT_GROUP}455 \
     DBUSER=swgemu \
     ADMIN_USER=admin \
     REPOS='BellumGero-Live' \
-    REPO_PUBLIC_URL=https://github.com/Miphstoe \
+    REPO_PUBLIC_URL=https://github.com/Miphstoe/ \
     REPO_PUBLIC_BRANCH='Main'
 
 ENV PATH=${HOME_DIR}/bin:/usr/local/bin:${PATH}
