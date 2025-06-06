@@ -62,7 +62,7 @@ function VillageJediManagerTownship.getNextPhaseChangeTime(includePast)
 	local nextPhaseChange = lastPhaseChange + (VillageJediManagerTownship.getVillagePhaseDuration() / 1000)
 
 	local timeTable = os.date("*t", nextPhaseChange)
-	local disregardTimeOfDay = VillageJediManagerTownship.getVillagePhaseDuration() < (24 * 60 * 60 * 1000)
+	local disregardTimeOfDay = VillageJediManagerTownship.getVillagePhaseDuration() < (72 * 60 * 60 * 1000)
 
 	if (VillageJediManagerTownship.phaseChangeTimeOfDay ~= nil) then
 		if (disregardTimeOfDay) then
