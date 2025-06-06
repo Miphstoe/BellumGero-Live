@@ -26,7 +26,7 @@ ReadWriteLock AccountManager::mutex;
 AccountManager::AccountManager(LoginServer* loginserv) : Logger("AccountManager") {
 	loginServer = loginserv;
 
-	autoRegistration = true;
+	autoRegistration = false;
 	requiredVersion = "";
 	maxOnlineCharacters = 1;
 
