@@ -36,8 +36,8 @@ PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager")
 	professionDefaultsInfo.setNoDuplicateInsertPlan();
 	hairStyleInfo.setNoDuplicateInsertPlan();
 
-	startingCash = 100;
-	startingBank = 1000;
+	startingCash = 100000;
+	startingBank = 100000;
 
 	freeGodMode = false;
 
@@ -479,7 +479,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 					if (lastCreatedCharacter.containsKey(accID)) {
 						Time lastCreatedTime = lastCreatedCharacter.get(accID);
 
-						if (lastCreatedTime.miliDifference() < 3600000) {
+						if (lastCreatedTime.miliDifference() < 0) {
 							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
 							client->sendMessage(errMsg);
 
