@@ -13,8 +13,10 @@ FsIntro = ScreenPlay:new {
 
 	stepDelay = {
 		[1] = { 3600, 3600 }, -- Old man visit, 1 hour.
-		[3] = { 3600, 3600 }, -- Sith shadow attack, 1 hour.
+		[3] = { 3600, 3600 } -- Sith shadow attack, 1 hour.
+	}
 }
+
 
 function FsIntro:getCurrentStep(pPlayer)
 	local curStep = readScreenPlayData(pPlayer, "VillageJediProgression", "FsIntroStep")
