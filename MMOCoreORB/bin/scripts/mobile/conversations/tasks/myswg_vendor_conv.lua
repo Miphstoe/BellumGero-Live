@@ -60,7 +60,7 @@ myswg_vendor_conv:addScreen(weaps1);
 armor1 = ConvoScreen:new {    
     id = "armor1",
     leftDialog = "",
-    customDialogText = "Selling Chitin Armor 25% kinetic, 15% base eff\n\nUbese armor with 15% kinetic and 15% base eff.\n\nComposite with 80%kinetic/electic and 65% base 0% stun",
+    customDialogText = "Selling Chitin Armor 25% kinetic, 15% base eff\n\nUbese armor with 45% kinetic and 30% base eff.\n\nComposite with 60% base 30% stun",
     stopConversation = "false",
     options = { 
         {"Chitin Leggings - 25k", "option16"},
@@ -113,10 +113,10 @@ arch1 = ConvoScreen:new {
     customDialogText = "I sell structures! See anything you like?",
     stopConversation = "false",
     options = { 
-        {"45 effectiveness Weapon/Item Crafting Station - 50k", "option74"},
-        {"45 effectiveness Structure Crafting Station - 50k", "option75"},
-      	{"45 effectiveness Clothing Crafting Station - 50k", "option72"},
-        {"45 effectiveness Food Crafting Station - 50k", "option73"},
+        {"25 effectiveness Weapon/Item Crafting Station - 50k", "option74"},
+        {"25 effectiveness Structure Crafting Station - 50k", "option75"},
+      	{"25 effectiveness Clothing Crafting Station - 50k", "option72"},
+        {"25 effectiveness Food Crafting Station - 50k", "option73"},
       	{"Small Generic House - 50k", "option34"},
         {"Medium Generic House - 100k", "option35"},
         {"Clothing Factory Deed - 100k", "option36"},

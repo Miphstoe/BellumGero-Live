@@ -100,15 +100,15 @@ object_tangible_wearables_armor_ubese_armor_ubese_jacket_quest = object_tangible
 
 	maxCondition = 20000,
 
-	kinetic = 20,
-	energy = 15,
-	electricity = 15,
+	kinetic = 45,
+	energy = 30,
+	electricity = 30,
 	stun = 0,
-	blast = 15,
-	heat = 0,
-	cold = 0,
-	acid = 15,
-	lightSaber = 0
+	blast = 30,
+	heat = 30,
+	cold = 30,
+	acid = 30,
+	lightSaber = 0,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_ubese_armor_ubese_jacket_quest, "object/tangible/wearables/armor/ubese/armor_ubese_jacket_quest.iff")
