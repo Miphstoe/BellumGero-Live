@@ -12,7 +12,6 @@ function myswg_vendor:start()
     local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3333, 308.0, 5524, 35, 0 )--doaba   
     local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -5550, 15.58, -6061, 35, 0 )--venri  
     local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 6643.02,330.00,-5920.87, 35, 0 )--belav  
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 548.7,26.6,-5742.5, 57, 0 )--The Hunted
 
     local pWeaponsmith3 = spawnMobile("naboo", "myswg_vendor", 1, -4872, 6.0, 4151, 35, 0 )--theed
     local pWeaponsmith4 = spawnMobile("naboo", "myswg_vendor", 1, 4807, 4.0, -4705, 35, 0 )--moena
@@ -51,20 +50,19 @@ function myswg_vendor:start()
     
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
     
-    local pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, -4964, 9.0, 3620, 35, 0 )--pcity
-    local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -5731.72, 2.01,6574.19, 35, 0 )--pcity
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -1453.02,10.00,-3211.87, 35, 0 )--pc  
-    local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 5767.33,20.00,4408.53, 35, 0 )--pc
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3184.02,10.00,-6778.87, 35, 0 )--pc  
-    local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -4337, 0.0, 54, 35, 0 )--pc
+   -- local pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, -4964, 9.0, 3620, 35, 0 )--pcity
+    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -1453.02,10.00,-3211.87, 35, 0 )--pc  
+    --local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 5767.33,20.00,4408.53, 35, 0 )--pc
+    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3184.02,10.00,-6778.87, 35, 0 )--pc  
+    --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -4337, 0.0, 54, 35, 0 )--pc
     
     --junk dealers
-    local pWeaponsmith4 = spawnMobile("endor", "junk_dealer", 1, -4679, 12.0, 4334, 35, 0 )--dwb
-    local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -3947, 124.0, -54, 35, 0 )--ns    
-    local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -615, 3.0, 2505, 35, 0 )--dant mo
-    local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, 617, 3.0, 3090, 35, 0 )--trade
-    local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -45, 18.0, -1586, 35, 0 )--science
-    local pWeaponsmith5 = spawnMobile("tatooine", "junk_dealer", 1, 6668.33,22.00,4245.53, 35, 0 )--gy 
+    --local pWeaponsmith4 = spawnMobile("endor", "junk_dealer", 1, -4679, 12.0, 4334, 35, 0 )--dwb
+    --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -3947, 124.0, -54, 35, 0 )--ns    
+    --local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -615, 3.0, 2505, 35, 0 )--dant mo
+    --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, 617, 3.0, 3090, 35, 0 )--trade
+    --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -45, 18.0, -1586, 35, 0 )--science
+    --local pWeaponsmith5 = spawnMobile("tatooine", "junk_dealer", 1, 6668.33,22.00,4245.53, 35, 0 )--gy 
                 
 --    local pLarry = spawnMobile("naboo", "merch_crazy_larry", 1, -4881, 6.0, 4150, 35, 0 )
 end
