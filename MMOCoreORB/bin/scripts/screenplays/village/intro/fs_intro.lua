@@ -12,9 +12,8 @@ FsIntro = ScreenPlay:new {
 	VILLAGE = 8,
 
 	stepDelay = {
-		[1] = { 43200, 129600 }, -- Old man visit, 12-36 hours
-		[3] = { 3600, 43200 } -- Sith shadow attack, 1 hour to 12 hours
-	}
+		[1] = { 3600, 3600 }, -- Old man visit, 1 hour.
+		[3] = { 3600, 3600 } -- Sith shadow attack, 1 hour.
 }
 
 function FsIntro:getCurrentStep(pPlayer)
