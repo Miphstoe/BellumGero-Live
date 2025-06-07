@@ -12,7 +12,7 @@ done
 if [ -d .git ]; then
         cd MMOCoreORB
 else
-        cd ~/workspace/Core3/MMOCoreORB
+        cd ~/workspace/BellumGero-Live/MMOCoreORB
 fi
 
 export CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DENABLE_BUILD_CLIENT=OFF ${CMAKE_ARGS}"

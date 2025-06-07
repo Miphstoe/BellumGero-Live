@@ -1,7 +1,6 @@
 ARG VERSION
 
-FROM debian:bookworm
-
+FROM debian:buster
 USER root
 
 # Prep and update system
@@ -14,6 +13,18 @@ RUN set -xe; \
     echo 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommends; \
     apt-get update; \
     apt-get upgrade -y;
+
+#RUN set -xe; \
+#    apt-get update && \
+#    apt-get install -y --no-install-recommends \
+#    openjdk-17-jdk \
+#    mariadb-server mariadb-client \
+#    clang cmake ninja-build wget git; \
+#    java -version;
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH=${JAVA_HOME}/bin:${PATH}
+
 
 # Install build packages, using clang latest stable as /usr/bin/clang etc.
 RUN set -xe; \
@@ -76,7 +87,6 @@ RUN set -xe; \
         libpcre3-dev \
         libreadline-dev \
         libreadline6-dev \
-        libreadline8 \
         libssl-dev \
         libtool \
         make \
@@ -112,7 +122,7 @@ RUN set -xe; \
     apt-get install lua-inspect lua-socket lua-sec lua-filesystem lua-cjson; \
     apt-get autoremove -y; \
     rm -rf /var/lib/apt/lists/* /var/log/dpkg.log* /var/log/apt/*;
-
+###libreadline8 \
 ENV RUN_USER=swgemu \
     HOME_DIR=/home/swgemu \
     SHELL=/bin/bash \
@@ -138,6 +148,7 @@ EXPOSE ${STATUSPORT}/tcp ${LOGINPORT}/udp ${PINGPORT}/udp ${ZONESERVERPORT}/udp
 
 COPY files /
 
+EXPOSE 3306
 VOLUME ${HOME_DIR}
 
 RUN set -xe; \
