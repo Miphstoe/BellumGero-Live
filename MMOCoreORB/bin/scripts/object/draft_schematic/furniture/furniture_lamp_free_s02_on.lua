@@ -47,7 +47,7 @@ object_draft_schematic_furniture_furniture_lamp_free_s02_on = object_draft_schem
 	craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 18,
 	size = 1,
-	factoryCrateSize = 10,
+	factorycratesize = 1000,
 	factoryCrateType = "object/factory/factory_crate_furniture.iff",
    
 	xpType = "crafting_structure_general",
