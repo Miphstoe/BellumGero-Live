@@ -35,6 +35,7 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
@@ -265,7 +266,7 @@ void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionT
 	}
 
 	//Limit to two missions (only one of them can be a bounty mission)
-    if (missionCount >= 4 || (hasBountyMission && mission->getTypeCRC() == MissionTypes::BOUNTY)) {
+	if (missionCount >= 2 || (hasBountyMission && mission->getTypeCRC() == MissionTypes::BOUNTY)) {
 		StringIdChatParameter stringId("mission/mission_generic", "too_many_missions");
 		player->sendSystemMessage(stringId);
 		return;
@@ -506,6 +507,26 @@ void MissionManagerImplementation::removeMission(MissionObject* mission, Creatur
 	}
 }
 
+void MissionManagerImplementation::handleMissionFail(MissionObject* mission, CreatureObject* player) {
+	if (mission == nullptr || player == nullptr) {
+		return;
+	}
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+	if (ghost != nullptr) {
+		// Space Missions
+		uint32 questCRC = mission->getQuestCRC();
+
+		if (questCRC > 0) {
+			ghost->clearJournalQuest(questCRC, false);
+		}
+	}
+
+	mission->abort();
+	removeMission(mission, player);
+}
+
 void MissionManagerImplementation::handleMissionAbort(MissionObject* mission, CreatureObject* player, bool questMessage) {
 	if (player->isIncapacitated()) {
 		player->sendSystemMessage("You cannot abort a mission while incapacitated.");
@@ -516,6 +537,9 @@ void MissionManagerImplementation::handleMissionAbort(MissionObject* mission, Cr
 		player->sendSystemMessage("You cannot abort a mission while in combat.");
 		return;
 	}
+
+	auto questType = mission->getQuestType();
+	auto questName = mission->getQuestName();
 
 	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
 
@@ -532,7 +556,7 @@ void MissionManagerImplementation::handleMissionAbort(MissionObject* mission, Cr
 			ghost->clearJournalQuest(questCRC, false);
 
 			if (questMessage) {
-				String questString = "@spacequest/" + mission->getQuestType() + "/" + mission->getQuestName() + ":title";
+				String questString = "@spacequest/" + questType + "/" + questName + ":title";
 
 				StringIdChatParameter spaceAbort("space/quest", "quest_aborted");
 				spaceAbort.setTO(questString);
@@ -545,6 +569,19 @@ void MissionManagerImplementation::handleMissionAbort(MissionObject* mission, Cr
 	}
 
 	mission->abort();
+
+	// JTL Mission Abort to clear lua quest data
+	if (!questType.isEmpty()) {
+		Lua* lua = DirectorManager::instance()->getLuaInstance();
+
+		if (lua != nullptr) {
+			Reference<LuaFunction*> abortSpaceMission = lua->createFunction(questType + "_" + questName, "failQuest", 0);
+
+			*abortSpaceMission << player;
+			*abortSpaceMission << "false";
+			abortSpaceMission->callFunction();
+		}
+	}
 
 	removeMission(mission, player);
 }
@@ -796,32 +833,18 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 
 	int diffDisplay = difficultyLevel < 5 ? 4 : difficultyLevel;
 
-	PlayerObject* targetGhost = player->getPlayerObject();
-    
-    String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
-    
-    int levelChoice = Integer::valueOf(level);
-    
-	if(levelChoice > 0){
-		diffDisplay += levelChoice;
-	}else{
-		if (player->isGrouped()) {
-			bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
-			Reference<GroupObject*> group = player->getGroup();
+	if (player->isGrouped()) {
+		bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
+		Reference<GroupObject*> group = player->getGroup();
 
-			if (group != nullptr) {
-				Locker locker(group);
-				diffDisplay += group->getGroupLevel(includeFactionPets);
-			}
-		} else {
-			diffDisplay += playerLevel;
+		if (group != nullptr) {
+			Locker locker(group);
+			diffDisplay += group->getGroupLevel(includeFactionPets);
 		}
+	} else {
+		diffDisplay += playerLevel;
 	}
 
-	//info(true) << "playerLevel: " << String::valueOf(playerLevel) << " maxDiff: " << String::valueOf(maxDiff) << " minDiff: " << String::valueOf(minDiff) << " difficultyLevel: " << String::valueOf(difficultyLevel) << " difficulty: " << String::valueOf(difficulty) << " levelChoice: " << String::valueOf(levelChoice);
-
-	String dir = targetGhost->getScreenPlayData("mission_direction_choice", "directionChoice");
-    float dirChoise = Float::valueOf(dir);
 	String building = lairTemplateObject->getMissionBuilding(difficulty);
 
 	if (building.isEmpty()) {
@@ -846,33 +869,10 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 	while (!foundPosition && maximumNumberOfTries-- > 0) {
 		foundPosition = true;
 
-		//int distance = destroyMissionBaseDistance + destroyMissionDifficultyDistanceFactor * difficultyLevel;
-		//distance += System::random(destroyMissionRandomDistance) + System::random(destroyMissionDifficultyRandomDistance * difficultyLevel);
-		//startPos = player->getWorldCoordinate((float)distance, (float)System::random(360), false);
+		int distance = destroyMissionBaseDistance + destroyMissionDifficultyDistanceFactor * difficultyLevel;
+		distance += System::random(destroyMissionRandomDistance) + System::random(destroyMissionDifficultyRandomDistance * difficultyLevel);
+		startPos = player->getWorldCoordinate((float)distance, (float)System::random(360), false);
 
-		float direction = (float)System::random(360);
-        
-        if (dirChoise > 0){
-            int dev = System::random(8);
-            int isMinus = System::random(200);
-            
-            if (isMinus > 49)
-                dev *= -1;
-            
-            direction = dirChoise + dev;
-            
-            if (direction > 360)
-                direction -= 360;
-        }
-        
-        int distance = System::random(500) + 500;
-        float angleRads = direction * (M_PI / 180.0f);
-        float newAngle = angleRads + (M_PI / 2);
-        
-        startPos.setX(player->getWorldPositionX() + (cos(newAngle) * distance));
-        startPos.setY(player->getWorldPositionY() + (sin(newAngle) * distance));
-        startPos.setZ(0.0f);
-        
 		if (zone->isWithinBoundaries(startPos)) {
 			float height = zone->getHeight(startPos.getX(), startPos.getY());
 			float waterHeight = height * 2;
@@ -881,7 +881,9 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 			if (!result || waterHeight <= height) {
 				//Check that the position is outside cities.
 				SortedVector<ManagedReference<ActiveArea* > > activeAreas;
+
 				zone->getInRangeActiveAreas(startPos.getX(), startPos.getZ(), startPos.getY(), &activeAreas, true);
+
 				for (int i = 0; i < activeAreas.size(); ++i) {
 					ActiveArea* area = activeAreas.get(i);
 
@@ -939,26 +941,12 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 	else
 		messageDifficulty = "_hard";
 
-	String groupSuffix;
-    
-        if (lairTemplateObject->getMobType() == LairTemplate::NPC){
-            missionType = "_npc";
-            groupSuffix =" camp.";
-        }
-        else{
-            missionType = "_creature";
-            groupSuffix = " lair.";
-        }
-    
-        const VectorMap<String, int>* mobiles = lairTemplateObject->getMobiles();
-        String mobileName ="mysterious";
-    
-        if (mobiles->size() > 0){
-            mobileName = mobiles->elementAt(0).getKey();
-        }
+	if (lairTemplateObject->getMobType() == LairTemplate::NPC)
+		missionType = "_npc";
+	else
+		missionType = "_creature";
 
-	//mission->setMissionTitle("mission/mission_destroy_neutral" + messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "t");
-	mission->setMissionTitle("CL" + String::valueOf(diffDisplay), " Destroy the " + mobileName.replaceAll("_", " ") + groupSuffix);
+	mission->setMissionTitle("mission/mission_destroy_neutral" + messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "t");
 	mission->setMissionDescription("mission/mission_destroy_neutral" +  messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "d");
 
 	switch (faction) {
@@ -1884,14 +1872,6 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 	bool foundLair = false;
 	int counter = availableLairList->size();
 	int playerLevel = server->getPlayerManager()->calculatePlayerLevel(player);
-	PlayerObject* targetGhost = player->getPlayerObject();
-
-	String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
-
-	int levelChoice = Integer::valueOf(level);
-
-	if (levelChoice > 0)
-		playerLevel = levelChoice;
 
 	if (player->isGrouped()) {
 		bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
