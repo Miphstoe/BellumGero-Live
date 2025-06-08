@@ -98,10 +98,10 @@ class CreatureObject extends TangibleObject {
 	protected float speedMultiplierBase;
 	@dereferenced
 	protected SpeedMultiplierModChanges speedMultiplierModChanges;
-	protected float speedMultiplierMod;
+	protected float speedMultiplierMod * 1.25;
 	protected float turnScale;
-	protected float runSpeed;
-	protected float walkSpeed;
+	protected float runSpeed * 1.25;
+	protected float walkSpeed * 1.25;
 	protected float currentSpeed;
 	protected float waterModPercent;
 	protected float runAcceleration;
