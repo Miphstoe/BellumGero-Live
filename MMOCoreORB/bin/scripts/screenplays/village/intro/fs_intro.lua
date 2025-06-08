@@ -63,9 +63,9 @@ function FsIntro:startStepDelay(pPlayer, step)
 
 		if oldManVisits ~= nil then
 			if (oldManVisits == 2) then
-				stepDelay = stepDelay + (1 * 24 * 60 * 60)
+				stepDelay = stepDelay + (2 * 60 * 60)
 			elseif (oldManVisits >= 3) then
-				stepDelay = stepDelay + (oldManVisits * 24 * 60 * 60)
+				stepDelay = stepDelay + (oldManVisits * 2 * 60 * 60)
 			end
 		end
 	end
