@@ -43,9 +43,10 @@
 
 object_building_player_player_house_tatooine_small_style_02 = object_building_player_shared_player_house_tatooine_small_style_02:new {
 	lotSize = 2,
+	storageLimit = 400,
 	publicStructure = 0,
 	baseMaintenanceRate = 16,
-	allowedZones = {"dantooine", "lok", "tatooine"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
 	skillMods = {
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},

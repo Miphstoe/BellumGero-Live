@@ -43,6 +43,7 @@
 
 object_building_player_player_house_generic_small_style_01 = object_building_player_shared_player_house_generic_small_style_01:new {
 	lotSize = 2,
+    storageLimit = 400,
 	baseMaintenanceRate = 16,
 	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
 	publicStructure = 0,
