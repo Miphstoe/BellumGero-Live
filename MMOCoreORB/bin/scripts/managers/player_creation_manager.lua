@@ -45,7 +45,7 @@ slitherhorn = "object/tangible/instrument/slitherhorn.iff"
 
 marojMelon = "object/tangible/food/foraged/foraged_fruit_s1.iff"
 
-swoop = "object/mobile/vehicle/speederbike_swoop.iff"
+swoop = "object/tangible/deed/vehicle_deed/speederbike_swoop_deed.iff"
 
 professionSpecificItems = {
 	combat_brawler = { brawlerOneHander, brawlerTwoHander, brawlerPolearm },
