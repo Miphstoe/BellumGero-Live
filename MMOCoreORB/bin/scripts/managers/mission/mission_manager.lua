@@ -88,7 +88,7 @@ destroyMissionDifficultyRandomDistance = 0
 -- Mission payout calculated as: 
 --    <BaseReward> + <DifficultyRewardFactor> * <difficultyLevel> + 
 --    rand(<RandomReward>) + rand(<DifficutlyRandomReward * <difficultyLevel>)
-destroyMissionBaseReward = 0
+destroyMissionBaseReward = 5000
 destroyMissionDifficultyRewardFactor = 375
-destroyMissionRandomReward = 0
+destroyMissionRandomReward = 5000
 destroyMissionDifficultyRandomReward = 15
