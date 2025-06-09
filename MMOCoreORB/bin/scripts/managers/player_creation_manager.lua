@@ -25,7 +25,7 @@ marksmanRifle = "object/weapon/ranged/rifle/rifle_cdef.iff"
 
 marksmanCarbine = "object/weapon/ranged/carbine/carbine_cdef.iff"
 
-brawlerOneHander = "object/weapon/melee/knife/knife_stone.iff"
+--brawlerOneHander = "object/weapon/melee/knife/knife_stone.iff"
 
 brawlerTwoHander = "object/weapon/melee/axe/axe_heavy_duty.iff"
 
@@ -48,7 +48,7 @@ marojMelon = "object/tangible/food/foraged/foraged_fruit_s1.iff"
 swoop = "object/tangible/deed/vehicle_deed/speederbike_swoop_deed.iff"
 
 professionSpecificItems = {
-	combat_brawler = { brawlerOneHander, brawlerTwoHander, brawlerPolearm },
+	combat_brawler = { brawlerTwoHander, brawlerPolearm },
 	combat_marksman = { marksmanPistol, marksmanCarbine, marksmanRifle },
 	crafting_artisan = { genericTool, mineralTool, chemicalTool },
 	jedi = { },
