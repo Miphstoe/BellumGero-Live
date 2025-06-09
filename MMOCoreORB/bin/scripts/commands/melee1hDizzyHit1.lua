@@ -44,12 +44,13 @@
 Melee1hDizzyHit1Command = {
 	name = "melee1hdizzyhit1",
 
-	damageMultiplier = 2.0,
+	damageMultiplier = 1.5,
 	speedMultiplier = 1.5,
-	healthCostMultiplier = 0.5,
-	actionCostMultiplier = 0.5,
-	mindCostMultiplier = 0.625,
-        accuracyBonus = 25,
+	accuracyBonus = 10,
+	
+	healthCostMultiplier = 0.75,
+	actionCostMultiplier = 1.5,
+	mindCostMultiplier = 0.75,
 
 	animation = "combo_2b", 
 	animType = GENERATE_INTENSITY,

@@ -44,12 +44,13 @@
 Melee1hHit1Command = {
 	name = "melee1hhit1",
 
-	damageMultiplier = 2.5,
+	damageMultiplier = 2.0,
 	speedMultiplier = 1.5,
+	accuracyBonus = 10,
+	
 	healthCostMultiplier = 0.5,
-	actionCostMultiplier = 0.5,
-	mindCostMultiplier = 0.625,
-        accuracyBonus = 25,
+	actionCostMultiplier = 1.0,
+	mindCostMultiplier = 0.5,
 
 	animation = "counter_high_center", 
 	animType = GENERATE_INTENSITY,

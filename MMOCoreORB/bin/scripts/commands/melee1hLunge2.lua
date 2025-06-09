@@ -44,12 +44,13 @@
 Melee1hLunge2Command = {
 	name = "melee1hlunge2",
 
-	damageMultiplier = 3.0,
+	damageMultiplier = 1.0,
 	speedMultiplier = 2.5,
-	healthCostMultiplier = 0.625,
+	accuracyBonus = 10,
+
+	healthCostMultiplier = 1.5,
 	actionCostMultiplier = 0.625,
-	mindCostMultiplier = 1.5,
-        accuracyBonus = 25,
+	mindCostMultiplier = 0.625,
 
 	animation = "knockdown_1hmelee_1",
 
@@ -67,7 +68,7 @@ Melee1hLunge2Command = {
 		{},
 		100,
 		0,
-		10
+		0
 	  )
 	}
 

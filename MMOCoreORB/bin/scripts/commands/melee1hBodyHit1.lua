@@ -45,11 +45,11 @@ Melee1hBodyHit1Command = {
 	name = "melee1hbodyhit1",
 
 	damageMultiplier = 1.5,
-	speedMultiplier = 1.5,
+	speedMultiplier = 1.25,
 	healthCostMultiplier = 0.5,
-	actionCostMultiplier = 0.5,
-	mindCostMultiplier = 0.625,
-        accuracyBonus = 25,
+	actionCostMultiplier = 1.0,
+	mindCostMultiplier = 0.5,
+        accuracyBonus = 10,
 
 	poolsToDamage = HEALTH_ATTRIBUTE,
 	weaponType = ONEHANDMELEEWEAPON,

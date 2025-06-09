@@ -48,8 +48,8 @@ PolearmLunge1Command = {
 	speedMultiplier = 1.5,
 	accuracyBonus = 10,
 	
-	healthCostMultiplier = 0.5,
-	actionCostMultiplier = 1.0,
+	healthCostMultiplier = 1.0,
+	actionCostMultiplier = 0.5,
 	mindCostMultiplier = 0.5,
 
 	animation = "lower_posture_polearm_2",

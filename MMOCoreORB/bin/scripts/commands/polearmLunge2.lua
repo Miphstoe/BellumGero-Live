@@ -44,12 +44,12 @@
 PolearmLunge2Command = {
 	name = "polearmlunge2",
 
-	damageMultiplier = 2.0,
+	damageMultiplier = 1.0,
 	speedMultiplier = 2.5,
 	accuracyBonus = 10,
-	
-	healthCostMultiplier = 0.625,
-	actionCostMultiplier = 1.5,
+
+	healthCostMultiplier = 1.5,
+	actionCostMultiplier = 0.625,
 	mindCostMultiplier = 0.625,
 
 	animation = "lower_posture_polearm_2",
