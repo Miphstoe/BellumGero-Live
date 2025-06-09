@@ -145,7 +145,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
-                    giveItem(pInventory, "object/weapon/ranged/carbine/carbine_dxr6.iff", -1)
+                    giveItem(pInventory, "object/weapon/ranged/carbine/carbine_dh17_snubnose.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option2" and credits < 25000) then
@@ -158,7 +158,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
-                    giveItem(pInventory, "object/weapon/ranged/rifle/rifle_t21.iff", -1)
+                    giveItem(pInventory, "object/weapon/ranged/rifle/rifle_dlt20a.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option3" and credits < 25000) then
@@ -171,7 +171,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
-                    giveItem(pInventory, "object/weapon/ranged/pistol/pistol_fwg5.iff", -1)
+                    giveItem(pInventory, "object/weapon/ranged/pistol/pistol_dl44.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option4" and credits < 25000) then
@@ -184,7 +184,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
-                    giveItem(pInventory, "object/weapon/melee/baton/baton_gaderiffi.iff", -1)
+                    giveItem(pInventory, "object/weapon/melee/sword/sword_02.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option5" and credits < 25000) then
@@ -197,7 +197,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
-                    giveItem(pInventory, "object/weapon/melee/2h_sword/2h_sword_maul.iff", -1)
+                    giveItem(pInventory, "object/weapon/melee/2h_sword/2h_sword_battleaxe.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option6" and credits < 25000) then
@@ -210,7 +210,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
-                    giveItem(pInventory, "object/weapon/melee/polearm/polearm_vibro_axe.iff", -1)
+                    giveItem(pInventory, "object/weapon/melee/polearm/lance_staff_wood_s2.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option7" and credits < 25000) then
