@@ -48,8 +48,8 @@ PolearmHit1Command = {
 	speedMultiplier = 1.5,
 	accuracyBonus = 10,
 	
-	healthCostMultiplier = 1.0,
-	actionCostMultiplier = 0.5,
+	healthCostMultiplier = 0.5,
+	actionCostMultiplier = 1.0,
 	mindCostMultiplier = 0.5,
 
 	animation = "combo_2b", 
