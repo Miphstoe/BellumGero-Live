@@ -1,5 +1,5 @@
 --Should all created players start with God Mode? 1 = yes, 0 = no
-freeGodMode = 1
+freeGodMode = 0
 --How many cash credits new characters start with after creating a character (changed during test phase, normal value is 100)
 startingCash = 100000
 --startingCash = 100000
@@ -48,7 +48,7 @@ marojMelon = "object/tangible/food/foraged/foraged_fruit_s1.iff"
 swoop = "object/tangible/deed/vehicle_deed/speederbike_swoop_deed.iff"
 
 professionSpecificItems = {
-	combat_brawler = { brawlerTwoHander, brawlerPolearm },
+	combat_brawler = { survivalKnife, brawlerTwoHander, brawlerPolearm },
 	combat_marksman = { marksmanPistol, marksmanCarbine, marksmanRifle },
 	crafting_artisan = { genericTool, mineralTool, chemicalTool },
 	jedi = { },

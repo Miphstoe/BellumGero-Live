@@ -315,7 +315,7 @@ void ChatManagerImplementation::initiateRooms() {
 	Reference<ChatRoom*> generalRoom = createRoom("General", galaxyRoom);
 	generalRoom->setCanEnter(true);
 	generalRoom->setAllowSubrooms(true);
-	generalRoom->setTitle("General");
+	generalRoom->setTitle("BellumGero General Chat");
 
 	auctionRoom = createRoom("Auction", galaxyRoom);
 	auctionRoom->setCanEnter(true);
@@ -326,8 +326,8 @@ void ChatManagerImplementation::initiateRooms() {
 		pvpBroadcastRoom->setCanEnter(true);
 		pvpBroadcastRoom->setAllowSubrooms(false);
 		pvpBroadcastRoom->setModerated(true);
-		pvpBroadcastRoom->setTitle("PvP death broadcasts");
-		pvpBroadcastRoom->setChatRoomType(ChatRoom::PVPBROADCASTS);
+		pvpBroadcastRoom->setTitle("PvP death broadcasts.");
+		pvpBroadcastRoom->setChatRoomType(ChatRoom::CUSTOM);
 	}
 }
 
