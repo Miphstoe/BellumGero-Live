@@ -77,6 +77,7 @@ void ChatManagerImplementation::stop() {
 	groupRoom = nullptr;
 	guildRoom = nullptr;
 	auctionRoom = nullptr;
+	pvpBroadcastRoom = nullptr;
 	gameRooms.removeAll();
 }
 
@@ -311,20 +312,23 @@ void ChatManagerImplementation::initiateRooms() {
 	guildRoom = createRoom("guild", systemRoom);
 	guildRoom->setPrivate();
 
-	Reference<ChatRoom*> generalRoom = createRoom("General", galaxyRoom);
-	generalRoom->setCanEnter(true);
-	generalRoom->setAllowSubrooms(true);
-	generalRoom->setTitle("public chat for this server, can create rooms here");
-
-	pvpRoom = createRoom("PvP", galaxyRoom);
-	pvpRoom->setCanEnter(true);
-	pvpRoom->setAllowSubrooms(true);
-	pvpRoom->setTitle("PvP-based chat room");
-
 	auctionRoom = createRoom("Auction", galaxyRoom);
 	auctionRoom->setCanEnter(true);
 	auctionRoom->setChatRoomType(ChatRoom::AUCTION);
-	
+
+	generalRoom = createRoom("Galaxy", galaxyRoom);
+	generalRoom->setCanEnter(true);
+	generalRoom->setAllowSubrooms(true);
+	generalRoom->setTitle("BellumGero Galaxy General Chat");
+
+	if (ConfigManager::instance()->isPvpBroadcastChannelEnabled()) {
+		pvpBroadcastRoom = createRoom("PvPBroadcasts", galaxyRoom);
+		pvpBroadcastRoom->setCanEnter(true);
+		pvpBroadcastRoom->setAllowSubrooms(false);
+		pvpBroadcastRoom->setModerated(true);
+		pvpBroadcastRoom->setTitle("PvP death broadcasts.");
+		pvpBroadcastRoom->setChatRoomType(ChatRoom::CUSTOM);
+	}
 }
 
 void ChatManagerImplementation::initiatePlanetRooms() {
