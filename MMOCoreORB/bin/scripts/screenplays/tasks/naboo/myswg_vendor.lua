@@ -184,7 +184,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
-                    giveItem(pInventory, "object/weapon/melee/sword/sword_02.iff", -1)
+                    giveItem(pInventory, "object/weapon/melee/sword/sword_01.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
                 elseif (optionLink == "option5" and credits < 25000) then
