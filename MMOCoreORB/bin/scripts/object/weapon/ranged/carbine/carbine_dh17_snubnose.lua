@@ -115,8 +115,8 @@ object_weapon_ranged_carbine_carbine_dh17_snubnose = object_weapon_ranged_carbin
 	maxRange = 64,
 	maxRangeAccuracy = -80,
 
-	minDamage = 40,
-	maxDamage = 115,
+	minDamage = 230,
+	maxDamage = 290,
 
 	attackSpeed = 3.5,
 

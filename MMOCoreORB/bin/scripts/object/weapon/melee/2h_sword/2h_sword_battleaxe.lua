@@ -73,7 +73,7 @@ object_weapon_melee_2h_sword_2h_sword_battleaxe = object_weapon_melee_2h_sword_s
 	damageType = KINETIC,
 
 	-- NONE, LIGHT, MEDIUM, HEAVY
-	armorPiercing = MEDIUM,
+	armorPiercing = LIGHT,
 
 	-- combat_rangedspecialize_bactarifle, combat_rangedspecialize_rifle, combat_rangedspecialize_pistol, combat_rangedspecialize_heavy, combat_rangedspecialize_carbine
 	-- combat_meleespecialize_unarmed, combat_meleespecialize_twohand, combat_meleespecialize_polearm, combat_meleespecialize_onehand, combat_general,
@@ -114,8 +114,8 @@ object_weapon_melee_2h_sword_2h_sword_battleaxe = object_weapon_melee_2h_sword_s
 	maxRange = 5,
 	maxRangeAccuracy = 5,
 
-	minDamage = 75,
-	maxDamage = 125,
+	minDamage = 250,
+	maxDamage = 300,
 
 	attackSpeed = 4.5,
 

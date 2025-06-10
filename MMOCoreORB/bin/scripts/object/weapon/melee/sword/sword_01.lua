@@ -115,10 +115,10 @@ object_weapon_melee_sword_sword_01 = object_weapon_melee_sword_shared_sword_01:n
 	maxRange = 4,
 	maxRangeAccuracy = 10,
 
-	minDamage = 20,
-	maxDamage = 90,
+	minDamage = 200,
+	maxDamage = 240,
 
-	attackSpeed = 3.5,
+	attackSpeed = 4,
 
 	woundsRatio = 14,
 
