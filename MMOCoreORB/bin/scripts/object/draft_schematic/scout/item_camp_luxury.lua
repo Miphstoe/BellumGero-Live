@@ -50,6 +50,7 @@ object_draft_schematic_scout_item_camp_luxury = object_draft_schematic_scout_sha
    craftingToolTab = 524288, -- (See DraftSchematicObjectTemplate.h)
    complexity = 15, 
    size = 1, 
+   factorycratesize = 1000,
    factoryCrateType = "object/factory/factory_crate_electronics.iff",
    
    xpType = "camp", 
