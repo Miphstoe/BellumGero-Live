@@ -73,7 +73,7 @@ object_weapon_melee_polearm_lance_staff_wood_s2 = object_weapon_melee_polearm_sh
 	damageType = KINETIC,
 
 	-- NONE, LIGHT, MEDIUM, HEAVY
-	armorPiercing = NONE,
+	armorPiercing = LIGHT,
 
 	-- combat_rangedspecialize_bactarifle, combat_rangedspecialize_rifle, combat_rangedspecialize_pistol, combat_rangedspecialize_heavy, combat_rangedspecialize_carbine
 	-- combat_meleespecialize_unarmed, combat_meleespecialize_twohand, combat_meleespecialize_polearm, combat_meleespecialize_onehand, combat_general,
@@ -101,34 +101,34 @@ object_weapon_melee_polearm_lance_staff_wood_s2 = object_weapon_melee_polearm_sh
 
 
 	-- The values below are the default values.  To be used for blue frog objects primarily
-	healthAttackCost = 20,
-	actionAttackCost = 38,
-	mindAttackCost = 15,
+	healthAttackCost = 42,
+	actionAttackCost = 15,
+	mindAttackCost = 10,
 	forceCost = 0,
 
 	pointBlankRange = 0,
-	pointBlankAccuracy = 10,
+	pointBlankAccuracy = 5,
 
-	idealRange = 3,
-	idealAccuracy = 10,
+	idealRange = 5,
+	idealAccuracy = 5,
 
 	maxRange = 5,
-	maxRangeAccuracy = 10,
+	maxRangeAccuracy = 5,
 
-	minDamage = 40,
-	maxDamage = 85,
+	minDamage = 240,
+	maxDamage = 300,
 
-	attackSpeed = 4.75,
+	attackSpeed = 4.5,
 
-	woundsRatio = 5,
+	woundsRatio = 17,
 
 	numberExperimentalProperties = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalProperties = {"XX", "XX", "SR", "SR", "SR", "SR", "SR", "SR", "SR", "XX", "SR", "XX", "SR", "SR", "SR"},
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "exp_durability", "expRange", "expRange", "null", "expRange", "null", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "maxrange", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 41, 86, 5.8, 7, 750, 7, 7, 3, 7, 5, 20, 38, 15},
-	experimentalMax = {0, 0, 52, 111, 4, 7, 1500, 17, 17, 3, 17, 5, 14, 27, 11},
+	experimentalMin = {0, 0, 53, 88, 5.6, 12, 750, 0, 0, 3, 0, 4, 52, 17, 10},
+	experimentalMax = {0, 0, 98, 163, 4.1, 22, 1500, 10, 10, 3, 10, 4, 26, 8, 4},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
