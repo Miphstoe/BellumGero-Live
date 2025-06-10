@@ -115,10 +115,10 @@ object_weapon_ranged_rifle_rifle_dlt20a = object_weapon_ranged_rifle_shared_rifl
 	maxRange = 64,
 	maxRangeAccuracy = -50,
 
-	minDamage = 95,
-	maxDamage = 130,
+	minDamage = 250,
+	maxDamage = 305,
 
-	attackSpeed = 6,
+	attackSpeed = 4.6,
 
 	woundsRatio = 9,
 
