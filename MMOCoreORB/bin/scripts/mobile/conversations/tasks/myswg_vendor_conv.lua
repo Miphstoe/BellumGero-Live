@@ -45,7 +45,7 @@ weaps1 = ConvoScreen:new {
         {"DL44 Pistol (265 damage, 3.4 speed) - 25k", "option3"},
         {"DH17 Snubnose Carbine (290 damage, 3.5 speed) - 25k", "option1"},
         {"DLT20a Rifle	(305 damage, 4.6 speed) - 25k", "option2"},
-        {"Vibro Knuckler (130 damage, 2.3 speed) - 25k", "option7"},
+        {"Vibro Knuckler (140 damage, 2.2 speed) - 25k", "option7"},
         {"1h Sword (240 damage, 4 speed) - 25k", "option4"},
         {"2h Battle Axe (300 damage, 4.5 speed) - 25k", "option5"},
         {"Reinforced Combat Staff (300 damage, 4.5 speed) - 25k", "option6"},
