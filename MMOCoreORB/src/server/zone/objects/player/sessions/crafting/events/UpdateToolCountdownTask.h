@@ -15,7 +15,7 @@ public:
 	UpdateToolCountdownTask(CreatureObject* pl, TangibleObject* tool, int time) : Task() {
 		craftTool = tool;
 		player = pl;
-		timeLeft = time;
+		timeLeft = 0; //Always set to 0, as this is a countdown task.
 	}
 
 	void run() {
@@ -30,7 +30,7 @@ public:
 
 			Locker clocker(craftingTool, crafter);
 
-			craftingTool->setCountdownTimer(timeLeft, true);
+			craftingTool->setCountdownTimer(timeLeft , true);
 
 		} catch (Exception& e) {
 			System::out << "Unreported exception caught in UpdateToolCountdownEvent::activate\n";
