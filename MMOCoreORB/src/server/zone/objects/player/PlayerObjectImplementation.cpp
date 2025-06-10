@@ -1761,8 +1761,8 @@ void PlayerObjectImplementation::notifyOnline() {
 
 	schedulePvpTefRemovalTask();
 
-	playerCreature->sendExecuteConsoleCommand("/chatRoom join bellum.gero.General");
-	playerCreature->sendExecuteConsoleCommand("/chatRoom join bellum.gero.PvP");
+	playerCreature->sendExecuteConsoleCommand("/chatRoom join SWG.bellum.gero.General");
+	playerCreature->sendExecuteConsoleCommand("/chatRoom join SWG.bellum.gero.PvP");
 	
 	MissionManager* missionManager = zoneServer->getMissionManager();
 
