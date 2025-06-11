@@ -458,11 +458,11 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 						UniqueReference<ResultSet*> res(ServerDatabase::instance()->executeQuery(query));
 
 						if (res != nullptr && res->next()) {
-							uint32 sec = res->getUnsignedInt(0);
+							uint32 sec = res->getUnsignedInt(1);
 
 							Time timeVal(sec);
 
-							if (timeVal.miliDifference() < 0) {
+							if (timeVal.miliDifference() < 3600000) { // 1 hour in milliseconds
 								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
 								client->sendMessage(errMsg);
 
