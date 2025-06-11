@@ -87,7 +87,7 @@ art1 = ConvoScreen:new {
     customDialogText = "I sell artisan stuff! Need anything?",
     stopConversation = "false",
     options = {
-        {"Mineral survey tool - 500", "option24"},
+        {"Mineral survey tool - 500", "option88"},
         {"Chemical survey tool - 500", "option25"},
         {"Generic Crafting Tool - 1k", "option26"},
         {"Backpack - 5k", "option27"},
@@ -229,7 +229,7 @@ newbuff1 = ConvoScreen:new {
     options = { 
 
         {"2500 Buffs 2hr - 10k", "buff1"},
-        {"Reset Buffs - 2k", "reset_buffs"},
+    --    {"Reset Buffs - 2k", "reset_buffs"},
     --    {"300% Doctor Buffs 6hr - 30k", "buff3"},
     --    {"200% Entertainer Buffs 4hr - 10k", "buff4"},
    --     {"300% Entertainer Buffs 6hr - 20k", "buff5"},
