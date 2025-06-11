@@ -458,7 +458,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 						UniqueReference<ResultSet*> res(ServerDatabase::instance()->executeQuery(query));
 
 						if (res != nullptr && res->next()) {
-							uint32 sec = res->getUnsignedInt(1);
+							uint32 sec = res->getUnsignedInt(0);
 
 							Time timeVal(sec);
 
