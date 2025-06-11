@@ -95,6 +95,8 @@ object_tangible_wearables_armor_ubese_armor_ubese_shirt = object_tangible_wearab
 	actionEncumbrance = 1,
 	mindEncumbrance = 1,
 
+	maxCondition = 15000,
+
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 

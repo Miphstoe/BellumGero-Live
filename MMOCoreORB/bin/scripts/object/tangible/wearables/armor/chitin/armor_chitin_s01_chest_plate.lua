@@ -95,6 +95,8 @@ object_tangible_wearables_armor_chitin_armor_chitin_s01_chest_plate = object_tan
 	actionEncumbrance = 38,
 	mindEncumbrance = 16,
 
+	maxCondition = 10000,
+
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 

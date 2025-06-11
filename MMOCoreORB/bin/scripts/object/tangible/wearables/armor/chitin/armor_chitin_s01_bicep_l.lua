@@ -95,6 +95,8 @@ object_tangible_wearables_armor_chitin_armor_chitin_s01_bicep_l = object_tangibl
 	actionEncumbrance = 25,
 	mindEncumbrance = 16,
 
+	maxCondition = 10000,
+
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 
