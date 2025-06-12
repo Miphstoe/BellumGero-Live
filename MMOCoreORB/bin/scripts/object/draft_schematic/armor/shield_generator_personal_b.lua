@@ -50,7 +50,7 @@ object_draft_schematic_armor_shield_generator_personal_b = object_draft_schemati
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 55,
 	size = 14,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 
 	xpType = "crafting_clothing_armor",

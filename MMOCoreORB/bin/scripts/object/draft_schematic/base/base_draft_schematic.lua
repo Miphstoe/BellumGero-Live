@@ -42,7 +42,7 @@
 
 
 object_draft_schematic_base_base_draft_schematic = object_draft_schematic_base_shared_base_draft_schematic:new {
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 }
 
 ObjectTemplates:addTemplate(object_draft_schematic_base_base_draft_schematic, "object/draft_schematic/base/base_draft_schematic.iff")

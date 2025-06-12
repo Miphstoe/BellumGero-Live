@@ -49,7 +49,7 @@ object_draft_schematic_furniture_bestine_painting_bestine_golden_flower_01 = obj
 	craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 15,
 	size = 2,
-	FactoryCratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_furniture.iff",
    
 	xpType = "crafting_structure_general",

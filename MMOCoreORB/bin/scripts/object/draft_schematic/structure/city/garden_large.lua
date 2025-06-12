@@ -50,7 +50,7 @@ object_draft_schematic_structure_city_garden_large = object_draft_schematic_stru
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 27,
 	size = 12,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
 	xpType = "crafting_structure_general",

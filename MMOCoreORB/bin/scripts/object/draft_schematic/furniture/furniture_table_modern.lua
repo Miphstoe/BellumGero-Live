@@ -50,7 +50,7 @@ object_draft_schematic_furniture_furniture_table_modern = object_draft_schematic
 	craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 29,
 	size = 2,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_furniture.iff",
    
 	xpType = "crafting_structure_general",

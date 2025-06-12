@@ -50,7 +50,7 @@ object_draft_schematic_armor_component_armor_layer_ris = object_draft_schematic_
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 35,
 	size = 3,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 
 	xpType = "crafting_clothing_armor",
