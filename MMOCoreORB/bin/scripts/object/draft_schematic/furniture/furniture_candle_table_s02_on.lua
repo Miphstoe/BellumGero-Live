@@ -50,7 +50,7 @@ object_draft_schematic_furniture_furniture_candle_table_s02_on = object_draft_sc
 	craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 20,
 	size = 1,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_furniture.iff",
    
 	xpType = "crafting_structure_general",

@@ -49,7 +49,7 @@ object_draft_schematic_scout_item_trap_melee_def_1 = object_draft_schematic_scou
 	craftingToolTab = 524288, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 2,
 	size = 1,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_electronics.iff",
 
 	xpType = "camp",
