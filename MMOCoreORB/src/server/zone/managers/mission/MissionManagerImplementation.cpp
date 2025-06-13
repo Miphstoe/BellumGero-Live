@@ -36,6 +36,7 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/managers/director/DirectorManager.h"
+#include "system/lang/UnicodeString.h"    // for UnicodeString
 
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
@@ -204,7 +205,7 @@ void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* mis
 	if (missionBag == nullptr)
 		return;
 
-	int maximumNumberOfItemsInMissionBag = 12;
+	int maximumNumberOfItemsInMissionBag = 40;
 
 
 	if (enableFactionalCraftingMissions) {
@@ -265,7 +266,7 @@ void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionT
 		}
 	}
 
-	//Limit to two missions (only one of them can be a bounty mission)
+	//Limit to six missions (only one of them can be a bounty mission)
 	if (missionCount >= 6 || (hasBountyMission && mission->getTypeCRC() == MissionTypes::BOUNTY)) {
 		StringIdChatParameter stringId("mission/mission_generic", "too_many_missions");
 		player->sendSystemMessage(stringId);
@@ -625,9 +626,9 @@ void MissionManagerImplementation::randomizeGeneralTerminalMissions(CreatureObje
 		//Clear mission type before calling mission generators.
 		mission->setTypeCRC(0);
 
-		if (i < 6) {
+		if (i < 20) {
 			randomizeGenericDestroyMission(player, mission, Factions::FACTIONNEUTRAL);
-		} else if (i < 12) {
+		} else if (i < 40) {
 			randomizeGenericDeliverMission(player, mission, Factions::FACTIONNEUTRAL);
 		}
 
@@ -771,9 +772,9 @@ void MissionManagerImplementation::randomizeFactionTerminalMissions(CreatureObje
 		//Clear mission type before calling mission generators.
 		mission->setTypeCRC(0);
 
-		if (i < 6) {
+		if (i < 20) {
 			randomizeGenericDestroyMission(player, mission, faction);
-		} else if (i < 12) {
+		} else if (i < 40) {
 			randomizeGenericDeliverMission(player, mission, faction);
 		} else {
 			if (enableFactionalCraftingMissions && numberOfCraftingMissions < 6) {
@@ -947,6 +948,19 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 		missionType = "_creature";
 
 	mission->setMissionTitle("mission/mission_destroy_neutral" + messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "t");
+    // — QOL change: prefix [Difficulty] Target to the browser title
+    {
+        // fetch the original (localized) mission title
+        UnicodeString baseTitle = mission->getSharedObjectName();  
+        // build “[D#] Target – OriginalTitle”
+        UnicodeString newTitle = UnicodeString::format(
+            "[D%d] %s – %s",
+            mission->getMissionDifficulty(),
+            mission->getMissionTargetName().toWideString(),
+            baseTitle.toWideString()
+        );
+        mission->setCustomObjectName(newTitle, true);
+    }
 	mission->setMissionDescription("mission/mission_destroy_neutral" +  messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "d");
 
 	switch (faction) {
@@ -1740,6 +1754,19 @@ void MissionManagerImplementation::generateRandomFactionalDestroyMissionDescript
 	int randomNumber = System::random(randomMax) + 1;
 
 	mission->setMissionTitle("mission/mission_destroy_" + difficultyString, "m" + String::valueOf(randomNumber) + "t");
+    // — QOL change: prefix [Difficulty] Target to the browser title
+    {
+        // fetch the original (localized) mission title
+        UnicodeString baseTitle = mission->getSharedObjectName();  
+        // build “[D#] Target – OriginalTitle”
+        UnicodeString newTitle = UnicodeString::format(
+            "[D%d] %s – %s",
+            mission->getMissionDifficulty(),
+            mission->getMissionTargetName().toWideString(),
+            baseTitle.toWideString()
+        );
+        mission->setCustomObjectName(newTitle, true);
+    }	
 	mission->setMissionDescription("mission/mission_destroy_" +  difficultyString, "m" + String::valueOf(randomNumber) + "d");
 }
 
