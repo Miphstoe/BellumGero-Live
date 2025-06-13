@@ -36,6 +36,7 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/managers/director/DirectorManager.h"
+#include "system/lang/UnicodeString.h"    // for UnicodeString
 
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
@@ -947,6 +948,19 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 		missionType = "_creature";
 
 	mission->setMissionTitle("mission/mission_destroy_neutral" + messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "t");
+    // — QOL change: prefix [Difficulty] Target to the browser title
+    {
+        // fetch the original (localized) mission title
+        UnicodeString baseTitle = mission->getSharedObjectName();  
+        // build “[D#] Target – OriginalTitle”
+        UnicodeString newTitle = UnicodeString::format(
+            "[D%d] %s – %s",
+            mission->getMissionDifficulty(),
+            mission->getMissionTargetName().toWideString(),
+            baseTitle.toWideString()
+        );
+        mission->setCustomObjectName(newTitle, true);
+    }
 	mission->setMissionDescription("mission/mission_destroy_neutral" +  messageDifficulty + missionType, "m" + String::valueOf(randTexts) + "d");
 
 	switch (faction) {
@@ -1740,6 +1754,19 @@ void MissionManagerImplementation::generateRandomFactionalDestroyMissionDescript
 	int randomNumber = System::random(randomMax) + 1;
 
 	mission->setMissionTitle("mission/mission_destroy_" + difficultyString, "m" + String::valueOf(randomNumber) + "t");
+    // — QOL change: prefix [Difficulty] Target to the browser title
+    {
+        // fetch the original (localized) mission title
+        UnicodeString baseTitle = mission->getSharedObjectName();  
+        // build “[D#] Target – OriginalTitle”
+        UnicodeString newTitle = UnicodeString::format(
+            "[D%d] %s – %s",
+            mission->getMissionDifficulty(),
+            mission->getMissionTargetName().toWideString(),
+            baseTitle.toWideString()
+        );
+        mission->setCustomObjectName(newTitle, true);
+    }	
 	mission->setMissionDescription("mission/mission_destroy_" +  difficultyString, "m" + String::valueOf(randomNumber) + "d");
 }
 
