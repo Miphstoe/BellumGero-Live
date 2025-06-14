@@ -207,7 +207,7 @@ void GroupManager::joinGroup(CreatureObject* creature) {
 	// Cross lock the player that is joining the group
 	Locker clocker(creature, group);
 
-	if (group->getGroupSize() >= 20) {
+	if (group->getGroupSize() >= 50) {
 		creature->updateGroupInviterID(0);
 
 		creature->sendSystemMessage("The group is full.");
