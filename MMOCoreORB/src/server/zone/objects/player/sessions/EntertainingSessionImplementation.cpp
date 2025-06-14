@@ -651,9 +651,9 @@ void EntertainingSessionImplementation::doFlourish(int flourishNumber, bool gran
 		baseActionDrain = 0;
 
 	//float baseActionDrain = -40 + (getQuickness() / 37.5);
-	float flourishActionDrain = baseActionDrain / 1.0;
+	float flourishActionDrain = baseActionDrain / 3.0; // 3.0 is the flourish action drain modifier
 
-	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 10.0); // Round to nearest dec for actual int cost
+	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 15.0); // Round to nearest dec for actual int cost
 
 	if (entertainer->getHAM(CreatureAttribute::ACTION) <= actionDrain) {
 		entertainer->sendSystemMessage("@performance:flourish_too_tired");
