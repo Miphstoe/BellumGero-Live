@@ -40,12 +40,17 @@
 --this exception also makes it possible to release a modified version
 --which carries forward this exception.
 --true = 1, false = 0
+-- Optional comments here (license, etc.)
+
+print("village.lua loaded!")  -- ✅ Logs on server startup
+
 VillageCommand = {
     name = "village"
 }
 
 function VillageCommand:run(creature, args)
-    print("VillageCommand:run was called!")  -- DEBUG
+    print("VillageCommand:run() executed")  -- ✅ Logs when command is run
+
     if creature == nil then
         return 0
     end
@@ -54,5 +59,4 @@ function VillageCommand:run(creature, args)
     return 0
 end
 
-print("VillageCommand file loaded!")  -- DEBUG
 AddCommand(VillageCommand)
