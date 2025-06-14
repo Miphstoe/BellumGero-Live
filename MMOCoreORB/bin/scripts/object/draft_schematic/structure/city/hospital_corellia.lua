@@ -50,7 +50,7 @@ object_draft_schematic_structure_city_hospital_corellia = object_draft_schematic
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 26,
 	size = 14,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
 	xpType = "crafting_structure_general",

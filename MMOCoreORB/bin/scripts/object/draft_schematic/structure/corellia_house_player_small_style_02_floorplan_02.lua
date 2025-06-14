@@ -50,7 +50,7 @@ object_draft_schematic_structure_corellia_house_player_small_style_02_floorplan_
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 18,
 	size = 10,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
 	xpType = "crafting_structure_general",

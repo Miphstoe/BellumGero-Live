@@ -50,7 +50,7 @@ object_draft_schematic_chemistry_medpack_enhance_constitution_a = object_draft_s
 	craftingToolTab = 64, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 22,
 	size = 1,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_chemicals.iff",
 
 	xpType = "crafting_medicine_general",

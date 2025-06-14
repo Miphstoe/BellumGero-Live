@@ -50,7 +50,7 @@ object_draft_schematic_structure_city_garage_tatooine = object_draft_schematic_s
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 24,
 	size = 1,
-	factorycratesize = 1000,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
 	xpType = "crafting_structure_general",
