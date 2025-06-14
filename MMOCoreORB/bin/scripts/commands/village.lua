@@ -40,10 +40,18 @@
 --this exception also makes it possible to release a modified version
 --which carries forward this exception.
 --true = 1, false = 0
-
 VillageCommand = {
-        name = "village",
+    name = "village"
 }
+
+function VillageCommand:run(creature, args)
+    if creature == nil then
+        return 0
+    end
+
+    creature:sendSystemMessage("Village command activated!")
+    return 0
+end
 
 AddCommand(VillageCommand)
 
