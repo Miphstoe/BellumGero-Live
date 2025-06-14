@@ -45,6 +45,7 @@ VillageCommand = {
 }
 
 function VillageCommand:run(creature, args)
+    print("VillageCommand:run was called!")  -- DEBUG
     if creature == nil then
         return 0
     end
@@ -53,5 +54,5 @@ function VillageCommand:run(creature, args)
     return 0
 end
 
+print("VillageCommand file loaded!")  -- DEBUG
 AddCommand(VillageCommand)
-
