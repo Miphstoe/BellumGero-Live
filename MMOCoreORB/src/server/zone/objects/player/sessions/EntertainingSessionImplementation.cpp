@@ -651,7 +651,7 @@ void EntertainingSessionImplementation::doFlourish(int flourishNumber, bool gran
 		baseActionDrain = 0;
 
 	//float baseActionDrain = -40 + (getQuickness() / 37.5);
-	float flourishActionDrain = baseActionDrain / 3.0; // 3.0 is the flourish action drain modifier
+	float flourishActionDrain = baseActionDrain / 5.0; // 3.0 is the flourish action drain modifier
 
 	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 15.0); // Round to nearest dec for actual int cost
 
