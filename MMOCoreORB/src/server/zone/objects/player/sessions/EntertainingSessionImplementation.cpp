@@ -263,6 +263,9 @@ void EntertainingSessionImplementation::doPerformanceAction() {
 
 	int actionDrain = entertainer->calculateCostAdjustment(CreatureAttribute::QUICKNESS, performance->getActionPointsPerLoop());
 
+    // Lower the cost by 50%
+    actionDrain = (int)(actionDrain * 0.50);
+
 	if (entertainer->getHAM(CreatureAttribute::ACTION) <= actionDrain) {
 		if (isDancing()) {
 			stopDancing();
