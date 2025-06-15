@@ -199,7 +199,8 @@ Core3 = {
 		"data_sample_01.tre",
 		"data_sample_00.tre",
 		"data_music_00.tre",
-		"bottom.tre"
+		"bottom.tre",
+		"bg_custom1.tre"
 	},
 
 	------Status Server Config------
