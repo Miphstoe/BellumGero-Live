@@ -200,29 +200,29 @@ void SkillManager::loadSkill(LuaObject* luaSkill) {
 }
 
 void SkillManager::loadXpLimits() {
-	IffStream* iffStream = TemplateManager::instance()->openIffFile("datatables/skill/xp_limits.iff");
+	//IffStream* iffStream = TemplateManager::instance()->openIffFile("datatables/skill/xp_limits.iff");
 
-	if (iffStream == nullptr) {
-		error("Could not load skills.");
-		return;
-	}
+	//if (iffStream == nullptr) {
+	//	error("Could not load skills.");
+	//	return;
+	//}
 
-	DataTableIff dtiff;
-	dtiff.readObject(iffStream);
+	//DataTableIff dtiff;
+	//dtiff.readObject(iffStream);
 
-	delete iffStream;
+	//delete iffStream;
 
-	for (int i = 0; i < dtiff.getTotalRows(); ++i) {
-		DataTableRow* row = dtiff.getRow(i);
+	//for (int i = 0; i < dtiff.getTotalRows(); ++i) {
+	//	DataTableRow* row = dtiff.getRow(i);
 
-		String type;
-		int value;
-		row->getValue(0, type);
-		row->getValue(1, value);
-		defaultXpLimits.put(type, value);
+	//	String type;
+	//	int value;
+	//	row->getValue(0, type);
+	//	row->getValue(1, value);
+	//	defaultXpLimits.put(type, value);
 
-		debug() << type << ": " << value;
-	}
+	//	debug() << type << ": " << value;
+	//}
 }
 
 void SkillManager::addAbility(PlayerObject* ghost, const String& abilityName, bool notifyClient) {
