@@ -38,9 +38,12 @@ public:
 
 		auto object = zoneServer->getObject(target);
 
-		bool galaxyWide = ConfigManager::instance()->getBool("Core3.PlayerManager.GalaxyWideGrouping", false);
+/*		bool galaxyWide = ConfigManager::instance()->getBool("Core3.PlayerManager.GalaxyWideGrouping", false);
 
-		if (galaxyWide && (object == nullptr || (!object->isPlayerCreature() && !object->isShipObject()))) {
+		if (galaxyWide && (object == nullptr || (!object->isPlayerCreature() && !object->isShipObject()))) 
+*/		
+   		// if they didn’t target a player/ship, always try lookup by typed name
+		if (object == nullptr || (!object->isPlayerCreature() && !object->isShipObject())){
 			StringTokenizer args(arguments.toString());
 			String firstName;
 
