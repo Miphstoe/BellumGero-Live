@@ -55,7 +55,7 @@ Core3 = {
 	ORBPort = 44419,
 
 	------Main Database Config------
-	DBHost = "62.146.229.237",
+	DBHost = "127.0.0.1",
 	DBPort = 3306,
 	DBName = "swgemu",
 	DBUser = "swgemu",
