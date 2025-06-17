@@ -147,7 +147,7 @@ Core3 = {
 	},
 
 	------TRE config------
-	TrePath = "~/swgdocker/resources/tre/",
+	TrePath = "~/swgdocker/resources/tre",
 	TreFiles = {
 		"bg_custom1.tre",
 		"default_patch.tre",
