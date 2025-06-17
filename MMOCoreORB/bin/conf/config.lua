@@ -147,8 +147,9 @@ Core3 = {
 	},
 
 	------TRE config------
-	TrePath = "/tre",
+	TrePath = "/home/swgemu/Desktop/SWGEmu",
 	TreFiles = {
+		"bg_custom1.tre",
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
 		"patch_14_00.tre",
@@ -200,7 +201,6 @@ Core3 = {
 		"data_sample_00.tre",
 		"data_music_00.tre",
 		"bottom.tre"
-		
 	},
 
 	------Status Server Config------
