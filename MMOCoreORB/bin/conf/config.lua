@@ -147,7 +147,7 @@ Core3 = {
 	},
 
 	------TRE config------
-	TrePath = "/shared-tre",
+	TrePath = "/tre",
 	TreFiles = {
 		"bg_custom1.tre",
 		"default_patch.tre",
