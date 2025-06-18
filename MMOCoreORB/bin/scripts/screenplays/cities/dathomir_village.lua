@@ -23,23 +23,29 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 	local villageZ = -4222
 	
 	-- Mission Terminal
+
 	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(100))
-	if pTerminal ~= nil then
-		SceneObject(pTerminal):setCustomObjectName("Mission Terminal")
-		createObserver(OBJECTRADIALUSED, "MissionTerminal", "onTerminalUsed", pTerminal)
-	end
-	
-    Shuttleport
+=======
+	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(180))
+
+	--    Shuttleport
 	local pShuttleport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX = 5240 , villageY = -4069, villageZ = 78, 0, math.rad(0))
 	if pShuttleport ~= nil then
 		SceneObject(pShuttleport):setCustomObjectName("Dathomir Village Shuttleport")
 	end
 
-	Shuttle Terminal (inside the shuttleport)
-	local pShuttleTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_travel.iff", villageX - 50, villageY + 0.2, villageZ + 50, getCellId(pShuttleport, 1), math.rad(180))
-	if pShuttleTerminal ~= nil then
-		SceneObject(pShuttleTerminal):setCustomObjectName("Shuttle Terminal")
-	end
+	
+	-- Shuttleport
+	--local pShuttle<<< ShuttleportVillageport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX - 50, villageY, villageZ + 50, 0, math.rad(0))
+	--if pShuttleport ~= nil then
+	--	SceneObject(pShuttleport):setCustomObjectName("Dathomir Village Shuttleport")
+	--end
+	
+	-- Shuttle Terminal (inside the shuttleport)
+	--local pShuttleTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_travel.iff", villageX - 50, villageY + 0.2, villageZ + 50, getCellId(pShuttleport, 1), math.rad(180))
+	--if pShuttleTerminal ~= nil then
+	--	SceneObject(pShuttleTerminal):setCustomObjectName("Shuttle Terminal")
+	--end
 	
 	-- Removed terminals (uncomment if needed later):
 	--[[
