@@ -306,7 +306,7 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		message.setDI(15);
 		player->sendSystemMessage(message);
 
-		player->addPendingTask("call_pet", callPet, 1000);
+		player->addPendingTask("call_pet", callPet, 1 * 1000); // 1 sec delay before starting call
 
 		if (petControlObserver == nullptr) {
 			petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());
