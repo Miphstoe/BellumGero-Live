@@ -23,11 +23,17 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 	local villageZ = -4222
 	
 	-- Mission Terminal
+
+	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(100))
+=======
 	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(180))
-	if pTerminal ~= nil then
-		SceneObject(pTerminal):setCustomObjectName("Mission Terminal")
-		createObserver(OBJECTRADIALUSED, "MissionTerminal", "onTerminalUsed", pTerminal)
+
+	--    Shuttleport
+	local pShuttleport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX = 5240 , villageY = -4069, villageZ = 78, 0, math.rad(0))
+	if pShuttleport ~= nil then
+		SceneObject(pShuttleport):setCustomObjectName("Dathomir Village Shuttleport")
 	end
+
 	
 	-- Shuttleport
 	--local pShuttle<<< ShuttleportVillageport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX - 50, villageY, villageZ + 50, 0, math.rad(0))
