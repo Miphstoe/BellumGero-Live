@@ -1,7 +1,7 @@
 --[[
 	Dathomir Village Screenplay
 	Created for adding mission terminal and other village amenities
---]]
+
 
 DathomirVillageScreenPlay = ScreenPlay:new {
 	numberOfActs = 1,
@@ -90,4 +90,5 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 	--if pVendor ~= nil then
 	--	CreatureObject(pVendor):setCustomObjectName("Junk Dealer")
 	--end
-end
+--end
+--]]
