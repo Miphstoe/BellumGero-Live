@@ -25,8 +25,6 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 	-- Mission Terminal
 
 	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(100))
-=======
-	local pTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_mission.iff", villageX, villageY, villageZ, 0, math.rad(180))
 
 	--    Shuttleport
 	local pShuttleport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX = 5240 , villageY = -4069, villageZ = 78, 0, math.rad(0))
