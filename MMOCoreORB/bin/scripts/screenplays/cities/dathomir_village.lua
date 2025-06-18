@@ -29,11 +29,17 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 		createObserver(OBJECTRADIALUSED, "MissionTerminal", "onTerminalUsed", pTerminal)
 	end
 	
-	-- Travel Kiosk
-	--local pTravel = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_travel.iff", villageX - 5, villageY, villageZ + 8, 0, math.rad(135))
-	--if pTravel ~= nil then
-	--	SceneObject(pTravel):setCustomObjectName("Travel Kiosk")
-	--end
+	-- Shuttleport
+	local pShuttleport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX - 50, villageY, villageZ + 50, 0, math.rad(0))
+	if pShuttleport ~= nil then
+		SceneObject(pShuttleport):setCustomObjectName("Dathomir Village Shuttleport")
+	end
+	
+	-- Shuttle Terminal (inside the shuttleport)
+	local pShuttleTerminal = spawnSceneObject(self.planet, "object/tangible/terminal/terminal_travel.iff", villageX - 50, villageY + 0.2, villageZ + 50, getCellId(pShuttleport, 1), math.rad(180))
+	if pShuttleTerminal ~= nil then
+		SceneObject(pShuttleTerminal):setCustomObjectName("Shuttle Terminal")
+	end
 	
 	-- Removed terminals (uncomment if needed later):
 	--[[
