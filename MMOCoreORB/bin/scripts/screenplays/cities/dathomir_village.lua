@@ -30,7 +30,7 @@ function DathomirVillageScreenPlay:spawnSceneObjects()
 	end
 	
 	-- Shuttleport
-	--local pShuttleport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX - 50, villageY, villageZ + 50, 0, math.rad(0))
+	--local pShuttle<<< ShuttleportVillageport = spawnSceneObject(self.planet, "object/building/general/shuttleport_corellia.iff", villageX - 50, villageY, villageZ + 50, 0, math.rad(0))
 	--if pShuttleport ~= nil then
 	--	SceneObject(pShuttleport):setCustomObjectName("Dathomir Village Shuttleport")
 	--end

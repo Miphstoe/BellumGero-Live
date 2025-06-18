@@ -263,6 +263,9 @@ void EntertainingSessionImplementation::doPerformanceAction() {
 
 	int actionDrain = entertainer->calculateCostAdjustment(CreatureAttribute::QUICKNESS, performance->getActionPointsPerLoop());
 
+    // Lower the cost by 50%
+    actionDrain = (int)(actionDrain * 0.50);
+
 	if (entertainer->getHAM(CreatureAttribute::ACTION) <= actionDrain) {
 		if (isDancing()) {
 			stopDancing();
@@ -645,15 +648,15 @@ void EntertainingSessionImplementation::doFlourish(int flourishNumber, bool gran
 
 	ManagedReference<Instrument*> instrument = entertainer->getPlayableInstrument();
 
-	float baseActionDrain = performance->getActionPointsPerLoop() - (int)(entertainer->getHAM(CreatureAttribute::QUICKNESS)/35.f);
+	float baseActionDrain = performance->getActionPointsPerLoop() - (int)(entertainer->getHAM(CreatureAttribute::QUICKNESS)/2.f);
 
 	if (baseActionDrain < 0)
 		baseActionDrain = 0;
 
 	//float baseActionDrain = -40 + (getQuickness() / 37.5);
-	float flourishActionDrain = baseActionDrain / 1.0;
+	float flourishActionDrain = baseActionDrain / 5.0; // 5.0 is the flourish action drain modifier
 
-	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 10.0); // Round to nearest dec for actual int cost
+	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 15.0); // Round to nearest dec for actual int cost
 
 	if (entertainer->getHAM(CreatureAttribute::ACTION) <= actionDrain) {
 		entertainer->sendSystemMessage("@performance:flourish_too_tired");
@@ -883,7 +886,7 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
 		int campModTemp = 125;
 
 
-		float buffStrength = getEntertainerBuffStrength(creature, performanceType) / 125.0f;
+		float buffStrength = (getEntertainerBuffStrength(creature, performanceType) / 100.0f) * 1.25f;
 
 		if(buffStrength == 0)
 			return;

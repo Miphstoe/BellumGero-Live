@@ -55,7 +55,7 @@ Core3 = {
 	ORBPort = 44419,
 
 	------Main Database Config------
-	DBHost = "127.0.0.1",
+	DBHost = "db",
 	DBPort = 3306,
 	DBName = "swgemu",
 	DBUser = "swgemu",
@@ -149,6 +149,7 @@ Core3 = {
 	------TRE config------
 	TrePath = "/home/swgemu/Desktop/SWGEmu",
 	TreFiles = {
+		"bg_custom1.tre",
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
 		"patch_14_00.tre",
