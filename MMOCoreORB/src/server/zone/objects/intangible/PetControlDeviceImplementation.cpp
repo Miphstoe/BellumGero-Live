@@ -306,7 +306,7 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		message.setDI(15);
 		player->sendSystemMessage(message);
 
-		player->addPendingTask("call_pet", callPet, 15 * 1000);
+		player->addPendingTask("call_pet", callPet, 1000);
 
 		if (petControlObserver == nullptr) {
 			petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());
