@@ -1206,7 +1206,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
     
                     -- Grant politician master access (you can customize what this does)
                 -- Grant politician skills (you'll need to find the correct skill names)
-                  CreatureObject(conversingPlayer):grantSkill("social_politician_master")
+                  CreatureObject(conversingPlayer):awardSkill("social_politician_master")
                     -- or whatever the actual politician skill names are in your server
     
                 -- Or if you want to give an item instead:
