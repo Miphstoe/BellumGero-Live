@@ -1205,7 +1205,9 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     creature:subtractCashCredits(50000)
     
                     -- Grant politician master access (you can customize what this does)
-                CreatureObject(conversingPlayer):grantPoliticianMaster()
+                -- Grant politician skills (you'll need to find the correct skill names)
+                  CreatureObject(conversingPlayer):awardSkill("social_politician_master")
+                    -- or whatever the actual politician skill names are in your server
     
                 -- Or if you want to give an item instead:
                 -- giveItem(pInventory, "object/tangible/politician_master_token.iff", -1)
