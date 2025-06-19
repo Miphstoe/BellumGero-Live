@@ -1194,7 +1194,24 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/mission/mission_bounty_droid_probot.iff", -1)
                     --createLoot(pInventory, "junk", 300, false) 
-                    
+                  -- Add this new option for Politician Master
+                
+                elseif (optionLink == "option300" and credits < 50000) then
+                    -- Bail if the player doesn't have enough cash on hand.  
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds") 
+                elseif (optionLink == "option300" and credits >= 50000) then
+                    -- Take 50,000 credits from the player's cash on hand and grant politician master
+                    creature:subtractCashCredits(50000)
+    
+                    -- Grant politician master access (you can customize what this does)
+                CreatureObject(conversingPlayer):grantPoliticianMaster()
+    
+                -- Or if you want to give an item instead:
+                -- giveItem(pInventory, "object/tangible/politician_master_token.iff", -1)
+    
+                -- Send confirmation message
+                creature:sendSystemMessage("You have been granted Politician Master access!")  
                                        
                 end
             end
