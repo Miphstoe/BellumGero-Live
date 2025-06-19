@@ -1495,20 +1495,6 @@ void CreatureObjectImplementation::addSkill(Skill* skill, bool notifyClient) {
 	// Some skills affect player movement, update speed and acceleration.
 	updateSpeedAndAccelerationMods();
 }
-void CreatureObjectImplementation::awardSkill(const String& skillName) {
-    if (!isPlayerCreature())
-        return;
-    
-    PlayerObject* playerObject = getPlayerObject();
-    if (playerObject == nullptr)
-        return;
-    
-    // Add the skill
-    playerObject->addSkill(skillName, true);
-    
-    // Send system message
-    sendSystemMessage("You have learned: " + skillName);
-}
 
 void CreatureObjectImplementation::removeSkill(Skill* skill, bool notifyClient) {
 	if (!skillList.contains(skill))
