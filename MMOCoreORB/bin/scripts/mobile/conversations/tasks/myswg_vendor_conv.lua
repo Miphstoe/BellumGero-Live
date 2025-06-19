@@ -19,8 +19,8 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Chef", "chef1"},        
         {"Medic", "doc1"},
         {"Droids", "droid1"},
-         {"Tailor", "tailor1"},
-                
+        {"Tailor", "tailor1"},
+        {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
 }
