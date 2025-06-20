@@ -148,7 +148,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 			int minutes = remainingTime / 60;
 
 			StringBuffer msg;
-			msg << "Warning: You have attempted to bypass the stat migration timer. You must wait a total of 4 minutes before committing a migration to another player. Session Terminated with time remaining: ";
+			msg << "Warning: You have attempted to bypass the stat migration timer. You must wait a total of 1 minute before committing a migration to another player. Session Terminated with time remaining: ";
 
 			if (minutes > 0)
 				msg << minutes << " minutes and ";
