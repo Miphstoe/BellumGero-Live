@@ -26,12 +26,14 @@ public:
 		if (JediManager::instance()->getJediProgressionType() != JediManager::VILLAGEJEDIPROGRESSION)
 			return GENERALERROR;
 
+		// CHANGE: No privilege check - any player can use this command
+		// CHANGE: Calls VillagePlayerSui instead of VillageGmSui
 		Lua* lua = DirectorManager::instance()->getLuaInstance();
 
-		Reference<LuaFunction*> luaVillageGmCmd = lua->createFunction("VillageSui", "showMainPage", 0);
-		*luaVillageGmCmd << creature;
+		Reference<LuaFunction*> luaVillageCmd = lua->createFunction("VillagePlayerSui", "showMainPage", 0);
+		*luaVillageCmd << creature;
 
-		luaVillageGmCmd->callFunction();
+		luaVillageCmd->callFunction();
 
 		return SUCCESS;
 	}
