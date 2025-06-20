@@ -160,7 +160,7 @@ includeFile("dungeon/corellian_corvette/ticket_takers/klaatu.lua")
 includeFile("dungeon/corellian_corvette/ticket_takers/lt_lance.lua")
 
 --VillageCommand SUI
-includeFile("village/village_sui.lua")
+includeFile("village/village_player_sui.lua")
 
 -- Village
 includeFile("village/village_community_crafting.lua")
