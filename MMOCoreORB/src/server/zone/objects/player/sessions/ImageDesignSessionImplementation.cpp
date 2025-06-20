@@ -182,7 +182,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 				idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
 
 			if (!idTimeoutEvent->isScheduled())
-				idTimeoutEvent->schedule(120000); // 2 minutes
+				idTimeoutEvent->schedule(60000); // 1 minutes
 		} else {
 			commitChanges = doPayment();
 		}
