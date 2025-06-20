@@ -514,7 +514,7 @@ int LuaAiAgent::runAway(lua_State* L) {
 
 	int range = lua_tointeger(L, -1);
 
-	range = Math::max(5, range);
+	range = 1; //Creatures will flee to 1 meter away.
 
 	Locker locker(realObject);
 
