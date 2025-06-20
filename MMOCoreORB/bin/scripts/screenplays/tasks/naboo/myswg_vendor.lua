@@ -1215,7 +1215,7 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                 -- Send confirmation message
                -- creature:sendSystemMessage("You have been granted Politician Master access!")  
                                        
-                --end
+                end
             end
         end
         -- end of the conversation logic.
