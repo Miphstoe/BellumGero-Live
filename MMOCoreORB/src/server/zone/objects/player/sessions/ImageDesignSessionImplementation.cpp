@@ -136,8 +136,11 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 	// Check time since session started to ensure timer is not bypassed client side
 	if (statMig && strongReferenceDesigner != strongReferenceTarget) {
-		uint64 timeElapsed = sessionStartTime.miliDifference() / 1000;
-		int remainingTime = (1 * 60) - timeElapsed;
+    uint64 timeElapsed = sessionStartTime.miliDifference() / 1000;
+    
+    // Override: Force 1 minute timer regardless of any TRE settings
+    int timerOverride = 60; // 1 minute in seconds
+    int remainingTime = timerOverride - timeElapsed;
 
 #ifdef DEBUG_ID
 		info(true) << "updateImageDesign - start time elapsed = " << timeElapsed << " with remining time of " << remainingTime;
