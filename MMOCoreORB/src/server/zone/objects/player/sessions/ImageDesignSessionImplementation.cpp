@@ -136,20 +136,23 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 	// Check time since session started to ensure timer is not bypassed client side
 	if (statMig && strongReferenceDesigner != strongReferenceTarget) {
+    	// NUCLEAR OPTION: Reset session start time to force 1-minute timer
+    	Time currentTime;
+    	uint64 currentTimeMS = currentTime.getTime();
+    	uint64 desiredElapsedMS = 0; // Start fresh
+    
+    	// Force session start time to make elapsed time what we want
+    	sessionStartTime.setTime(currentTimeMS - (desiredElapsedMS));
+    
     	uint64 timeElapsed = sessionStartTime.miliDifference() / 1000;
+    	int remainingTime = 60 - timeElapsed; // Force 1 minute
     
-    // Check for override, fallback to 1 minute if TRE has different value
-   		 int treTimer = (1 * 60); // This would be your current TRE value
-    	int overrideTimer = 60;   // Force 1 minute override
-    
-    // Always use the override timer
-    	int remainingTime = overrideTimer - timeElapsed;
-    
-    	#ifdef DEBUG_ID
-   		if (treTimer != overrideTimer) {
-        	info(true) << "Timer Override: TRE wanted " << treTimer << "s, using " << overrideTimer << "s instead";
-    	}
-    	#endif
+    	info(true) << "NUCLEAR TIMER OVERRIDE: Forced elapsed=" << timeElapsed 
+               	   << "s, remaining=" << remainingTime << "s";
+
+#ifdef DEBUG_ID
+		info(true) << "updateImageDesign - start time elapsed = " << timeElapsed << " with remining time of " << remainingTime;
+#endif
 
 		// Only Break the session if the ID attempts to accept prior to the enough time being elapsed
 		if (designerAccepted && remainingTime > 0) {
