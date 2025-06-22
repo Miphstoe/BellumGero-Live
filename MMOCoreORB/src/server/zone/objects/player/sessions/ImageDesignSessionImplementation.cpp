@@ -137,7 +137,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 	// Check time since session started to ensure timer is not bypassed client side
 	if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 		uint64 timeElapsed = sessionStartTime.miliDifference() / 1000;
-		int remainingTime = (1 * 60) - timeElapsed;
+		int remainingTime = (4 * 60) - timeElapsed;
 
 #ifdef DEBUG_ID
 		info(true) << "updateImageDesign - start time elapsed = " << timeElapsed << " with remining time of " << remainingTime;
@@ -148,7 +148,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 			int minutes = remainingTime / 60;
 
 			StringBuffer msg;
-			msg << "Warning: You have attempted to bypass the stat migration timer. You must wait a total of 1 minute before committing a migration to another player. Session Terminated with time remaining: ";
+			msg << "Warning: You have attempted to bypass the stat migration timer. You must wait a total of 4 minutes before committing a migration to another player. Session Terminated with time remaining: ";
 
 			if (minutes > 0)
 				msg << minutes << " minutes and ";
@@ -182,7 +182,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 				idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
 
 			if (!idTimeoutEvent->isScheduled())
-				idTimeoutEvent->schedule(60000); // 1 minutes
+				idTimeoutEvent->schedule(120000); // 2 minutes
 		} else {
 			commitChanges = doPayment();
 		}
