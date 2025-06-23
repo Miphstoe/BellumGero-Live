@@ -46,7 +46,8 @@ looted_container = {
 		{groupTemplate = "armor_all", weight = 2500000},
 
 		-- Clothing (25% chance)
-		{groupTemplate = "wearables_all", weight = 2500000},
+		{groupTemplate = "wearables_all", weight = 1250000},
+		{itemTemplate = "locked_container", weight = 1250000},
 	}
 }
 
