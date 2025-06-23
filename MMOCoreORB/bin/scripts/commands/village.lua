@@ -40,23 +40,10 @@
 --this exception also makes it possible to release a modified version
 --which carries forward this exception.
 --true = 1, false = 0
--- Optional comments here (license, etc.)
 
-print("village.lua loaded!")  -- ✅ Logs on server startup
-
+-- ADDED: New player village command definition
 VillageCommand = {
-    name = "village"
+        name = "village",
 }
-
-function VillageCommand:run(creature, args)
-    print("VillageCommand:run() executed")  -- ✅ Logs when command is run
-
-    if creature == nil then
-        return 0
-    end
-
-    creature:sendSystemMessage("Village command activated!")
-    return 0
-end
 
 AddCommand(VillageCommand)
