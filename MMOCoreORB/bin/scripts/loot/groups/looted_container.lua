@@ -21,7 +21,6 @@ looted_container = {
 		{itemTemplate = "hyperdrive_part", weight = 87719},
 		{itemTemplate = "ledger", weight = 87719},
 		{itemTemplate = "locked_briefcase", weight = 87719},
-		{itemTemplate = "locked_container", weight = 87719},
 		{itemTemplate = "loudspeaker", weight = 87719},
 		{itemTemplate = "palm_frond", weight = 87719},
 		{itemTemplate = "photographic_image", weight = 87719},
