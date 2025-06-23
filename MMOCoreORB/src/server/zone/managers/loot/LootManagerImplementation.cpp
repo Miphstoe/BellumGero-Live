@@ -277,6 +277,51 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
 	}
 }
 
+//New function to set the attachment name based on skill mods
+void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
+	if (prototype == nullptr || !prototype->isAttachment()) {
+		return;
+	}
+
+	Attachment* attachment = cast<Attachment*>(prototype);
+	
+	if (attachment == nullptr) {
+		return;
+	}
+
+	HashTable<String, int>* skillMods = attachment->getSkillMods();
+	
+	if (skillMods == nullptr || skillMods->size() == 0) {
+		return;
+	}
+
+	HashTableIterator<String, int> iterator = skillMods->iterator();
+	
+	String key = "";
+	int value = 0;
+	StringId attachmentName;
+	
+	// Determine attachment type prefix
+	String attachmentType = "CA"; // Default to Clothing Attachment
+	
+	if (attachment->isArmorAttachment()) {
+		attachmentType = "AA"; // Armor Attachment
+	}
+	
+	// Get the first skill mod for naming
+	iterator.getNextKeyAndValue(key, value);
+	attachmentName.setStringId("stat_n", key);
+	
+	// Set the object name to the skill mod name
+	prototype->setObjectName(attachmentName, false);
+	
+	// Set the custom name with format: "AA/CA - (ModVal) ModName"
+	prototype->setCustomObjectName(
+		attachmentType + " - (" + String::valueOf(value) + ") " + prototype->getDisplayedName(), 
+		false
+	);
+}
+
 void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
 	float valueMin = itemTemplate->getJunkMinValue() * junkValueModifier;
 	float valueMax = itemTemplate->getJunkMaxValue() * junkValueModifier;
@@ -424,6 +469,11 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 	// Chance to add skill modifiers to weapons and wearable objects (clothing, armor)
 	if (prototype->isWeaponObject() || prototype->isWearableObject()) {
 		setSkillMods(prototype, templateObject, level, excMod);
+	}
+
+	// Set attachment names after skill mods are applied
+	if (prototype->isAttachment()) {
+		setAttachmentName(prototype);
 	}
 
 	// Add static DoT's to weapons and check for chance to add random DoTs
