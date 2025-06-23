@@ -21,7 +21,6 @@ looted_container = {
 		{itemTemplate = "hyperdrive_part", weight = 87719},
 		{itemTemplate = "ledger", weight = 87719},
 		{itemTemplate = "locked_briefcase", weight = 87719},
-		{itemTemplate = "locked_container", weight = 87719},
 		{itemTemplate = "loudspeaker", weight = 87719},
 		{itemTemplate = "palm_frond", weight = 87719},
 		{itemTemplate = "photographic_image", weight = 87719},
@@ -36,8 +35,8 @@ looted_container = {
 		{itemTemplate = "force_power_crystal", weight = 87722},
 		{itemTemplate = "jedi_holocron_dark", weight = 43861},
 		{itemTemplate = "jedi_holocron_light", weight = 43861},
-		{itemTemplate = "attachment_clothing", weight = 43860},
-		{itemTemplate = "attachment_armor", weight = 43860},
+		{itemTemplate = "attachment_clothing", weight = 87720},
+		{itemTemplate = "attachment_armor", weight = 87719},
 
 		-- Weapons (25% chance)
 		{groupTemplate = "weapons_all", weight = 2500000},
@@ -46,7 +45,8 @@ looted_container = {
 		{groupTemplate = "armor_all", weight = 2500000},
 
 		-- Clothing (25% chance)
-		{groupTemplate = "wearables_all", weight = 2500000},
+		{groupTemplate = "wearables_all", weight = 1250000},
+		{itemTemplate = "locked_container", weight = 1250000},
 	}
 }
 
