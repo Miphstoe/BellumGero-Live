@@ -289,16 +289,16 @@ void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
 		return;
 	}
 
-	HashTable<String, int>* skillMods = attachment->getSkillMods();
+	// Fixed: Use VectorMap instead of HashTable
+	VectorMap<String, int>* skillMods = attachment->getSkillMods();
 	
 	if (skillMods == nullptr || skillMods->size() == 0) {
 		return;
 	}
-
-	HashTableIterator<String, int> iterator = skillMods->iterator();
 	
-	String key = "";
-	int value = 0;
+	// Get the first skill mod for naming
+	String key = skillMods->elementAt(0).getKey();
+	int value = skillMods->elementAt(0).getValue();
 	StringId attachmentName;
 	
 	// Determine attachment type prefix
@@ -308,8 +308,7 @@ void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
 		attachmentType = "AA"; // Armor Attachment
 	}
 	
-	// Get the first skill mod for naming
-	iterator.getNextKeyAndValue(key, value);
+	// Set the StringId for the skill mod name
 	attachmentName.setStringId("stat_n", key);
 	
 	// Set the object name to the skill mod name
@@ -321,7 +320,6 @@ void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
 		false
 	);
 }
-
 void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
 	float valueMin = itemTemplate->getJunkMinValue() * junkValueModifier;
 	float valueMax = itemTemplate->getJunkMaxValue() * junkValueModifier;
