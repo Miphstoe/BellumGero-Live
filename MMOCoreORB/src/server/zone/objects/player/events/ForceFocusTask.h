@@ -94,7 +94,7 @@ public:
 				healPerformed = true;
 			}
 
-			// Battle fatigue healing 
+			// BF healing
 			int fixedHealAmount = 10;
 			int battleFatigue = player->getShockWounds();
 
@@ -104,22 +104,14 @@ public:
 				healPerformed = true;
 			}
 
-			// Client effect throttling using custom var so animation won't spam
-			uint64 currentTime = System::getMilliseconds();
-			uint64 lastEffectTime = 0;
+			// Client effect
+			player->playEffect("clienteffect/pl_force_meditate_self.cef", "");
 
-			player->getCustomVar("focus.lastEffectTime", lastEffectTime); // Different var name
-
-			if (currentTime - lastEffectTime >= 6000) {
-				player->playEffect("clienteffect/pl_force_meditate_self.cef", "");
-				player->setCustomVar("focus.lastEffectTime", currentTime);
-			}
-
-			// Reschedule task - faster tick rate than meditate
+			// Reschedule task
 			if (ffocusTask != nullptr)
-				ffocusTask->reschedule(2000);
+				ffocusTask->reschedule(3000);
 			else
-				ffocusTask->schedule(2000);
+				ffocusTask->schedule(3000);
 
 		} catch (Exception& e) {
 			player->error("unreported exception caught in ForceFocusTask::run");
