@@ -2693,29 +2693,30 @@ void PlayerObjectImplementation::setForcePower(int fp, bool notifyClient) {
 }
 
 void PlayerObjectImplementation::doForceRegen() {
-	CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
-
-	if (creature == nullptr || creature->isIncapacitated() || creature->isDead())
-		return;
-
-	const static uint32 tick = 5;
-
-	uint32 modifier = 1;
-
-	if (creature->isMeditating()) {
-		Reference<ForceMeditateTask*> medTask = creature->getPendingTask("forcemeditate").castTo<ForceMeditateTask*>();
-
-		if (medTask != nullptr)
-			modifier = 3;
-	}
-
-	uint32 forceTick = tick * modifier;
-
-	if (forceTick > getForcePowerMax() - getForcePower()){   // If the player's Force Power is going to regen again and it's close to max,
-		setForcePower(getForcePowerMax());             // Set it to max, so it doesn't go over max.
-	} else {
-		setForcePower(getForcePower() + forceTick); // Otherwise regen normally.
-	}
+    CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+    if (creature == nullptr || creature->isIncapacitated() || creature->isDead())
+        return;
+        
+    const static uint32 tick = 5;
+    uint32 modifier = 1;
+    
+    if (creature->isMeditating()) {
+        Reference<ForceMeditateTask*> medTask = creature->getPendingTask("forcemeditate").castTo<ForceMeditateTask*>();
+        Reference<ForceFocusTask*> focusTask = creature->getPendingTask("forcefocus").castTo<ForceFocusTask*>();
+        
+        if (medTask != nullptr) {
+            modifier = 12;  // Force Meditate multiplier
+        } else if (focusTask != nullptr) {
+            modifier = 20;  // Force Focus multiplier 
+        }
+    }
+    
+    uint32 forceTick = tick * modifier;
+    if (forceTick > getForcePowerMax() - getForcePower()){
+        setForcePower(getForcePowerMax());
+    } else {
+        setForcePower(getForcePower() + forceTick);
+    }
 }
 
 void PlayerObjectImplementation::clearScreenPlayData(const String& screenPlay) {
