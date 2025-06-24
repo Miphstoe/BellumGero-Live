@@ -837,7 +837,7 @@
 #include "InspacerrCommand.h"
 #include "RequestSpaceTrainerCommand.h"
 #include "VillageCommand.h"
-
+#include "ForceFocusCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */
