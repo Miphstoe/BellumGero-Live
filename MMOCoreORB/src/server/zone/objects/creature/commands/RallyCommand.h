@@ -148,13 +148,13 @@ public:
 #ifdef COV_DEBUG
 			info("Null closeobjects vector in RallyCommand::sendRallyCombatSpam", true);
 #endif
-			zone->getInRangeObjects(leader->getWorldPositionX(), leader->getWorldPositionZ(), leader->getWorldPositionY(), 70, &closeObjects, true);
+			zone->getInRangeObjects(leader->getWorldPositionX(), leader->getWorldPositionZ(), leader->getWorldPositionY(), 10000, &closeObjects, true);
 		}
 
 		for (int i = 0; i < closeObjects.size(); ++i) {
 			SceneObject* object = cast<SceneObject*>( closeObjects.get(i));
-			if (object == nullptr || !object->isPlayerCreature() || !checkDistance(leader, object, 70) || group->hasMember(object->getObjectID()))
-				continue;
+			//if (object == nullptr || !object->isPlayerCreature() || !checkDistance(leader, object, 70) || group->hasMember(object->getObjectID()))
+			//	continue;
 
 			CreatureObject* receiver = cast<CreatureObject*>( object); //in range player who isn't in group.
 
