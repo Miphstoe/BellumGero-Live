@@ -73,6 +73,7 @@
 #include "server/zone/objects/tangible/deed/eventperk/EventPerkDeed.h"
 #include "server/zone/managers/player/QuestInfo.h"
 #include "server/zone/objects/player/events/ForceMeditateTask.h"
+#include "server/zone/objects/player/events/ForceFocusTask.h" //New include for Force Focus
 #include "server/zone/objects/player/sui/callbacks/FieldFactionChangeSuiCallback.h"
 #include "server/zone/packets/ui/DestroyClientPathMessage.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
