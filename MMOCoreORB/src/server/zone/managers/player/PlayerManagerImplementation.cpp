@@ -247,6 +247,8 @@ void PlayerManagerImplementation::loadLuaConfig() {
 
 	globalExpMultiplier = lua->getGlobalFloat("globalExpMultiplier");
 
+	jediExpMultiplier = lua->getGlobalFloat("jediExpMultiplier");
+
 	baseStoredCreaturePets = lua->getGlobalInt("baseStoredCreaturePets");
 	baseStoredFactionPets = lua->getGlobalInt("baseStoredFactionPets");
 	baseStoredDroids = lua->getGlobalInt("baseStoredDroids");
@@ -2554,6 +2556,10 @@ void PlayerManagerImplementation::setExperienceMultiplier(float globalMultiplier
 	globalExpMultiplier = globalMultiplier;
 }
 
+void PlayerManagerImplementation::setJediExperienceMultiplier(float jediMultiplier) {
+	jediExpMultiplier = jediMultiplier;
+}
+
 /*
  * Award experience to a player.
  * Ex.
@@ -2563,34 +2569,38 @@ void PlayerManagerImplementation::setExperienceMultiplier(float globalMultiplier
  */
 int PlayerManagerImplementation::awardExperience(CreatureObject* player, const String& xpType, int amount, bool sendSystemMessage, float localMultiplier, bool applyModifiers, bool spaceBonus) {
 	PlayerObject* playerObject = player->getPlayerObject();
-
 	if (playerObject == nullptr)
 		return 0;
 
 	TransactionLog trx(TrxCode::EXPERIENCE, player);
 
 	float speciesModifier = 1.f;
-
 	if (amount > 0) {
 		speciesModifier = getSpeciesXpModifier(player->getSpeciesName(), xpType);
 	}
 
 	float buffMultiplier = 1.f;
-
 	if (player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
 		buffMultiplier += player->getSkillModFromBuffs("xp_increase") / 100.f;
 
 	int xp = 0;
-
 	trx.addState("applyModifiers", applyModifiers);
 
 	if (applyModifiers) {
+		// Choose the appropriate experience multiplier
+		float experienceMultiplier = globalExpMultiplier;
+		
+		// Only boost jedi_general XP for Jedi players
+		if (isJedi(player) && xpType == "jedi_general") {
+			experienceMultiplier = jediExpMultiplier;
+		}
+
 		trx.addState("speciesModifier", speciesModifier);
 		trx.addState("buffMultiplier", buffMultiplier);
 		trx.addState("localMultiplier", localMultiplier);
 		trx.addState("globalExpMultiplier", globalExpMultiplier);
-
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalExpMultiplier));
+		trx.addState("activeExpMultiplier", experienceMultiplier);
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * experienceMultiplier));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}
@@ -2611,8 +2621,9 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 				player->sendSystemMessage(message);
 			}
 		}
+
 		if (xp > 0 && playerObject->hasCappedExperience(xpType)) {
-			StringIdChatParameter message("base_player", "prose_hit_xp_cap"); //You have achieved your current limit for %TO experience.
+			StringIdChatParameter message("base_player", "prose_hit_xp_cap");
 			message.setTO("exp_n", xpType);
 			player->sendSystemMessage(message);
 		}
@@ -7211,4 +7222,11 @@ void PlayerManagerImplementation::iteratePlayerNames(const PlayerNameIterator& i
 		iter.getNextKeyAndValue(name, oid);
 		iterator(name, oid);
 	}
+}
+
+bool PlayerManagerImplementation::isJedi(CreatureObject* player) {
+	if (player == nullptr)
+		return false;
+	
+	return player->hasSkill("force_title_jedi_rank_02");
 }
