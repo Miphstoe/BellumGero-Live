@@ -609,7 +609,7 @@ void LootManagerImplementation::addConditionDamage(TangibleObject* prototype) {
 		return;
 	}
 
-	int conditionDmg = std::round(conditionMax / 20.f);
+	int conditionDmg = std::round(conditionMax / 50.f);
 
 	if (conditionDmg > 1) {
 		prototype->setConditionDamage(System::random(conditionDmg), false);
