@@ -71,25 +71,55 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 					craftersName = tano:getCraftersName() or ""
 				end
 				
-				-- Check for resource containers by name pattern (safer approach)
+				-- More comprehensive resource container detection
 				local isResourceContainer = false
 				if name ~= nil then
-					-- Check if the item name suggests it's a resource container
 					local lowerName = string.lower(name)
-					if string.find(lowerName, "resource") or 
-					   string.find(lowerName, "ore") or 
-					   string.find(lowerName, "hide") or 
-					   string.find(lowerName, "meat") or 
-					   string.find(lowerName, "bone") or
-					   string.find(lowerName, "wood") or
-					   string.find(lowerName, "gas") or
-					   string.find(lowerName, "chemical") or
-					   string.find(lowerName, "water") or
-					   string.find(lowerName, "energy") then
-						-- Additional check - resource containers usually have quantities in brackets
-						if string.find(name, "%[%d+%]") then
+					
+					-- Check for resource container keywords
+					local resourceKeywords = {
+						"hide", "bone", "meat", "milk", "blood", "hair", "horn", "scalp",
+						"wood", "softwood", "hardwood", "conifer", "deciduous", "evergreen",
+						"ore", "metal", "iron", "copper", "aluminum", "steel", "radioactive",
+						"gas", "inert", "reactive", "chemical", "liquid", "solid",
+						"water", "moisture", "condensed", "vapor", "steam",
+						"energy", "geothermal", "solar", "tidal", "wind",
+						"gemstone", "crystal", "carbonate", "sedimentary", "igneous",
+						"fiber", "vegetable", "fruit", "grain", "tuber", "berry",
+						"seafood", "fish", "crustacean", "mollusk"
+					}
+					
+					-- Also check for common resource container patterns
+					local containerPatterns = {
+						"container", "units of", "units", "sample", "batch"
+					}
+					
+					-- Check if name contains resource keywords
+					for _, keyword in ipairs(resourceKeywords) do
+						if string.find(lowerName, keyword) then
 							isResourceContainer = true
+							break
 						end
+					end
+					
+					-- Additional checks for container patterns
+					if not isResourceContainer then
+						for _, pattern in ipairs(containerPatterns) do
+							if string.find(lowerName, pattern) then
+								isResourceContainer = true
+								break
+							end
+						end
+					end
+					
+					-- Check for quantity brackets [number] which almost always indicates resources
+					if not isResourceContainer and string.find(name, "%[%d+%]") then
+						isResourceContainer = true
+					end
+					
+					-- Check for "wooly hide" specifically since that was your example
+					if string.find(lowerName, "wooly") then
+						isResourceContainer = true
 					end
 				end
 				
