@@ -62,16 +62,30 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				-- Exclude resource containers
+				-- Get item info first
+				local name = sceno:getDisplayedName()
+				local craftersName = tano:getCraftersName()
 				local templateString = sceno:getObjectTemplate()
+				
+				-- Debug what we're checking
+				print("Checking item: " .. (name or "nil") .. ", crafter: " .. (craftersName or "nil") .. ", template: " .. (templateString or "nil"))
+				
+				-- Check exclusions
+				local isResourceContainer = false
+				local isCrafted = false
+				
 				if templateString ~= nil and string.find(templateString, "resource_container") then
-					-- Skip resource containers
-				-- Exclude player crafted items
-				elseif tano:getCraftersName() ~= nil and tano:getCraftersName() ~= "" then
-					-- Skip player crafted items
-				else
-					-- Get item info
-					local name = sceno:getDisplayedName()
+					isResourceContainer = true
+					print("Excluding resource container: " .. name)
+				end
+				
+				if craftersName ~= nil and craftersName ~= "" then
+					isCrafted = true
+					print("Excluding crafted item: " .. name .. " by " .. craftersName)
+				end
+				
+				-- Only add if not excluded and has valid name
+				if not isResourceContainer and not isCrafted and name ~= nil and name ~= "" then
 					local value = tano:getJunkValue()
 					
 					-- If item has no junk value, give it a default value of 1 credit
@@ -79,16 +93,15 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 						value = 1
 					end
 					
-					-- Only exclude items that have no name
-					if name ~= nil and name ~= "" then
-						local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-						table.insert(junkList, textTable)
-					end
+					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+					print("Added item to sell list: " .. name .. " for " .. value .. " credits")
 				end
 			end
 		end
 	end
 
+	print("Total eligible items found: " .. #junkList)
 	return junkList
 end
 
@@ -217,7 +230,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	
 	-- If item has no junk value, give it a default value of 1 credit
 	if value == nil or value <= 0 then
-		value = 250	 -- Default value for non-junk items
+		value = 250 -- Default value for non-junk items
 	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
