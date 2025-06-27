@@ -25,6 +25,9 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 		return
 	end
 
+	-- Add some debugging
+	print("JunkDealer: Found " .. #junkList .. " eligible items")
+	
 	local suiManager = LuaSuiManager()
 	-- Changed from 3 buttons to 2 buttons (removed sell all button)
 	-- Removed "@loot_dealer:btn_sell_all" parameter
@@ -66,19 +69,15 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				-- Removed all restrictions - dealer will buy ANY item
-				-- Original restrictions removed:
-				-- - tano:getJunkDealerNeeded() & dealerNum > 0 (dealer type restriction)
-				-- - tano:getCraftersName() == "" (crafted items restriction)
-				-- - not tano:isBroken() (broken items restriction)
-				-- - not tano:isSliced() (sliced items restriction)
-				-- - not tano:isNoTrade() (no-trade items restriction)
-				-- - sceno:getContainerObjectsSize() == 0 (container restriction)
-				
+				-- Keep minimal checks to ensure the item can be processed safely
 				local name = sceno:getDisplayedName()
 				local value = tano:getJunkValue()
-				local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-				table.insert(junkList, textTable)
+				
+				-- Only add items that have a valid name and value
+				if name ~= nil and name ~= "" and value ~= nil and value > 0 then
+					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				end
 			end
 		end
 	end
