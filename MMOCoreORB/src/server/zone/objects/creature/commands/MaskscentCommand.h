@@ -48,7 +48,7 @@ public:
 			StringIdChatParameter endStringId("skl_use", "sys_scentmask_stop");	// Your masked scent has worn off.
 
 			int maskScentMod = player->getSkillMod("mask_scent") / 2;
-			int duration = 12 * maskScentMod;
+			int duration = 3 * maskScentMod;
 
 			ManagedReference<Buff*> buff = new Buff(player, crc, duration, BuffType::SKILL);
 

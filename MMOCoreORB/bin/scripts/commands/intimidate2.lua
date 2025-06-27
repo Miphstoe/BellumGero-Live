@@ -65,6 +65,10 @@ Intimidate2Command = {
 	},
 
 	combatSpam = "intim",
+
+	areaAction = true,
+	areaRange = 16,
+
 	animation = "intimidate",
 	effectString = "clienteffect/combat_special_attacker_intimidate.cef",
 	range = 24,
