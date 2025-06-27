@@ -184,25 +184,26 @@ bool WearableObjectImplementation::isEquipped() {
 
 String WearableObjectImplementation::repairAttempt(int repairChance) {
 	String message = "@error_message:";
-
-	if(repairChance < 25) {
+	
+	if(repairChance < 10) {
 		message += "sys_repair_failed";
-		setMaxCondition(1, true);
+		setMaxCondition(getMaxCondition() * 0.50f, true);
 		setConditionDamage(0, true);
-	} else if(repairChance < 50) {
+	
+	} else if(repairChance < 25) {
 		message += "sys_repair_imperfect";
-		setMaxCondition(getMaxCondition() * .65f, true);
-		setConditionDamage(0, true);
-	} else if(repairChance < 75) {
 		setMaxCondition(getMaxCondition() * .80f, true);
 		setConditionDamage(0, true);
+	
+	} else if(repairChance < 50) {
+		setMaxCondition(getMaxCondition() * .90f, true);
+		setConditionDamage(0, true);
 		message += "sys_repair_slight";
+	
 	} else {
-		setMaxCondition(getMaxCondition() * .95f, true);
+		setMaxCondition(getMaxCondition() * .97f, true);
 		setConditionDamage(0, true);
 		message += "sys_repair_perfect";
 	}
-
 	return message;
 }
-

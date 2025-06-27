@@ -41,40 +41,8 @@
 --which carries forward this exception.
 --true = 1, false = 0
 
-Intimidate2Command = {
-	name = "intimidate2",
-
-	damageMultiplier = 0,
-	speedMultiplier = 1,
-	healthCostMultiplier = 0,
-	actionCostMultiplier = 0,
-	mindCostMultiplier = 0,
-	
-	accuracySkillMod = "intimidate",
-
-	stateEffects = {
-	  StateEffect( 
-		INTIMIDATE_EFFECT, 
-		{}, 
-		{}, 
-		{},
-		100, 
-		0, 
-		120 
-	  )
-	},
-
-	combatSpam = "intim",
-
-	areaAction = true,
-	areaRange = 16,
-
-	animation = "intimidate",
-	effectString = "clienteffect/combat_special_attacker_intimidate.cef",
-	range = 24,
-
-	poolsToDamage = NO_ATTRIBUTE
+AreaLootCommand = {
+        name = "arealoot",
 }
 
-AddCommand(Intimidate2Command)
-
+AddCommand(AreaLootCommand)

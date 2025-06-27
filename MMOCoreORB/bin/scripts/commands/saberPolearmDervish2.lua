@@ -50,9 +50,8 @@ SaberPolearmDervish2Command = {
 	healthCostMultiplier = 0,
 	actionCostMultiplier = 0,
 	mindCostMultiplier = 0,
-	coneAngle = 45,
-	coneAction = true,
-	coneRange = 24,
+	areaRange = 16,
+	areaAction = true,
 	forceCostMultiplier = 3.0,
 	visMod = 25,
 

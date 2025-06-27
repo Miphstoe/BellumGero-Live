@@ -838,6 +838,8 @@
 #include "RequestSpaceTrainerCommand.h"
 #include "VillageCommand.h"
 #include "ForceFocusCommand.h"
+#include "AreaLootCommand.h"
+
 
 
 #endif /* COMMANDSNEW_H_ */
