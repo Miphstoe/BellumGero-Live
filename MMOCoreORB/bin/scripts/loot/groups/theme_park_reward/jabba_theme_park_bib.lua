@@ -3,8 +3,8 @@ jabba_theme_park_bib = {
 	minimumLevel = 0,
 	maximumLevel = 0,
 	lootItems = {
-		{itemTemplate = "exotic_leotard_schematic_quest", weight = 5000000},
-		{itemTemplate = "demolitionist_belt_schematic_quest", weight = 5000000}
+		{itemTemplate = "exotic_leotard_schematic_quest", weight = 10000000},
+		--{itemTemplate = "demolitionist_belt_schematic_quest", weight = 5000000}
 	}
 }
 
