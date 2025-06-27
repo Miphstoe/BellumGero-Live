@@ -55,12 +55,6 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 		return junkList
 	end
 
-	-- Remove dealer type restrictions - comment out the dealer check
-	-- local dealerNum = self:getDealerNum(dealerType)
-	-- if dealerNum == 0 then
-	--     return junkList
-	-- end
-
 	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
 		local pItem = SceneObject(pInventory):getContainerObject(i)
 
@@ -69,12 +63,17 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				-- Keep minimal checks to ensure the item can be processed safely
+				-- Get item info
 				local name = sceno:getDisplayedName()
 				local value = tano:getJunkValue()
 				
-				-- Only add items that have a valid name and value
-				if name ~= nil and name ~= "" and value ~= nil and value > 0 then
+				-- If item has no junk value, give it a default value of 1 credit
+				if value == nil or value <= 0 then
+					value = 1
+				end
+				
+				-- Only exclude items that have no name
+				if name ~= nil and name ~= "" then
 					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
 				end
@@ -93,21 +92,16 @@ function JunkDealer:sellListSuiCallback(pPlayer, pSui, eventIndex, otherPressed,
 		return
 	end
 
-	-- Since we removed the "Sell All" button, otherPressed should never be "true"
-	-- But keeping the check for safety
-	if (otherPressed == "true") then
-		-- This shouldn't happen anymore since we removed the sell all button
-		self:sellAllItems(pPlayer, pSui, pInventory)
-	else
-		rowIndex = tonumber(rowIndex)
+	-- Force all button presses to act as individual sell (disable sell all functionality)
+	-- Always treat as individual item sale regardless of which button was pressed
+	rowIndex = tonumber(rowIndex)
 
-		if (rowIndex == -1) then
-			deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
-			return
-		end
-
-		self:sellItem(pPlayer, pSui, rowIndex, pInventory)
+	if (rowIndex == -1) then
+		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+		return
 	end
+
+	self:sellItem(pPlayer, pSui, rowIndex, pInventory)
 end
 
 function JunkDealer:sellAllItems(pPlayer, pSui, pInventory)
@@ -166,6 +160,11 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	local skipItem = item:getObjectID()
 	local name = item:getDisplayedName()
 	local value = TangibleObject(pItem):getJunkValue()
+	
+	-- If item has no junk value, give it a default value of 1 credit
+	if value == nil or value <= 0 then
+		value = 1
+	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
 
