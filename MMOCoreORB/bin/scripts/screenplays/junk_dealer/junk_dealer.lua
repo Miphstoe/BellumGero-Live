@@ -163,7 +163,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	
 	-- If item has no junk value, give it a default value of 1 credit
 	if value == nil or value <= 0 then
-		value = 1
+		value = 1000 -- Default value for junk items
 	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
