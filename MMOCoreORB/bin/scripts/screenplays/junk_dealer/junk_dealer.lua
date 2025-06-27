@@ -26,7 +26,7 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 	end
 
 	local suiManager = LuaSuiManager()
-	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 2, "@cancel", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
+	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell_all", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
 end
 
 function JunkDealer:getDealerNum(dealerType)
@@ -64,13 +64,13 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-   		 if true then
-        	local name = sceno:getDisplayedName()
-        	local value = tano:getJunkValue()
-        	local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-        	table.insert(junkList, textTable)
-   		 end
-	end
+				if tano:getJunkDealerNeeded() & dealerNum > 0 and tano:getCraftersName() == "" and not tano:isBroken() and not tano:isSliced() and not tano:isNoTrade() and sceno:getContainerObjectsSize() == 0 then
+					local name = sceno:getDisplayedName()
+					local value = tano:getJunkValue()
+					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				end
+			end
 		end
 	end
 
