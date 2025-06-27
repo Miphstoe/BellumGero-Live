@@ -3212,6 +3212,15 @@ int PlayerManagerImplementation::notifyObserverEvent(uint32 eventType, Observabl
 				if (fmeditateTask->isScheduled())
 					fmeditateTask->cancel();
 			}
+
+			// Check POSTERCHANGE on Force Focus...
+			Reference<ForceMeditateTask*> ffocusTask = creature->getPendingTask("forcefocus").castTo<ForceMeditateTask*>();
+			if (ffocusTask != nullptr) {
+    			creature->removePendingTask("forcefocus");
+
+    			if (ffocusTask->isScheduled())
+        			ffocusTask->cancel();
+			}
 		}
 
 		// Check POSTURECHANGED disrupting Logout...
