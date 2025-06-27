@@ -26,7 +26,9 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 	end
 
 	local suiManager = LuaSuiManager()
-	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell_all", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
+	-- Changed from 3 buttons to 2 buttons (removed sell all button)
+	-- Removed "@loot_dealer:btn_sell_all" parameter
+	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 2, "@cancel", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
 end
 
 function JunkDealer:getDealerNum(dealerType)
@@ -50,11 +52,11 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 		return junkList
 	end
 
-	local dealerNum = self:getDealerNum(dealerType)
-
-	if dealerNum == 0 then
-		return junkList
-	end
+	-- Remove dealer type restrictions - comment out the dealer check
+	-- local dealerNum = self:getDealerNum(dealerType)
+	-- if dealerNum == 0 then
+	--     return junkList
+	-- end
 
 	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
 		local pItem = SceneObject(pInventory):getContainerObject(i)
@@ -64,12 +66,19 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				if tano:getJunkDealerNeeded() & dealerNum > 0 and tano:getCraftersName() == "" and not tano:isBroken() and not tano:isSliced() and not tano:isNoTrade() and sceno:getContainerObjectsSize() == 0 then
-					local name = sceno:getDisplayedName()
-					local value = tano:getJunkValue()
-					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-					table.insert(junkList, textTable)
-				end
+				-- Removed all restrictions - dealer will buy ANY item
+				-- Original restrictions removed:
+				-- - tano:getJunkDealerNeeded() & dealerNum > 0 (dealer type restriction)
+				-- - tano:getCraftersName() == "" (crafted items restriction)
+				-- - not tano:isBroken() (broken items restriction)
+				-- - not tano:isSliced() (sliced items restriction)
+				-- - not tano:isNoTrade() (no-trade items restriction)
+				-- - sceno:getContainerObjectsSize() == 0 (container restriction)
+				
+				local name = sceno:getDisplayedName()
+				local value = tano:getJunkValue()
+				local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+				table.insert(junkList, textTable)
 			end
 		end
 	end
@@ -85,7 +94,10 @@ function JunkDealer:sellListSuiCallback(pPlayer, pSui, eventIndex, otherPressed,
 		return
 	end
 
+	-- Since we removed the "Sell All" button, otherPressed should never be "true"
+	-- But keeping the check for safety
 	if (otherPressed == "true") then
+		-- This shouldn't happen anymore since we removed the sell all button
 		self:sellAllItems(pPlayer, pSui, pInventory)
 	else
 		rowIndex = tonumber(rowIndex)
