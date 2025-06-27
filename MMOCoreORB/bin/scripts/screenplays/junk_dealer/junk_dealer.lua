@@ -64,33 +64,54 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			if sceno:getObjectID() ~= skipItem then
 				-- Get item info first
 				local name = sceno:getDisplayedName()
-				local craftersName = tano:getCraftersName()
-				local templateString = sceno:getObjectTemplate()
+				local craftersName = ""
 				
-				-- Debug what we're checking
-				print("Checking item: " .. (name or "nil") .. ", crafter: " .. (craftersName or "nil") .. ", template: " .. (templateString or "nil"))
+				-- Safely get crafter's name
+				if tano.getCraftersName then
+					craftersName = tano:getCraftersName() or ""
+				end
+				
+				-- Check for resource containers by name pattern (safer approach)
+				local isResourceContainer = false
+				if name ~= nil then
+					-- Check if the item name suggests it's a resource container
+					local lowerName = string.lower(name)
+					if string.find(lowerName, "resource") or 
+					   string.find(lowerName, "ore") or 
+					   string.find(lowerName, "hide") or 
+					   string.find(lowerName, "meat") or 
+					   string.find(lowerName, "bone") or
+					   string.find(lowerName, "wood") or
+					   string.find(lowerName, "gas") or
+					   string.find(lowerName, "chemical") or
+					   string.find(lowerName, "water") or
+					   string.find(lowerName, "energy") then
+						-- Additional check - resource containers usually have quantities in brackets
+						if string.find(name, "%[%d+%]") then
+							isResourceContainer = true
+						end
+					end
+				end
+				
+				print("Checking item: " .. (name or "nil") .. ", crafter: " .. craftersName .. ", isResource: " .. tostring(isResourceContainer))
 				
 				-- Check exclusions
-				local isResourceContainer = false
-				local isCrafted = false
+				local isCrafted = (craftersName ~= nil and craftersName ~= "")
 				
-				if templateString ~= nil and string.find(templateString, "resource_container") then
-					isResourceContainer = true
+				if isResourceContainer then
 					print("Excluding resource container: " .. name)
-				end
-				
-				if craftersName ~= nil and craftersName ~= "" then
-					isCrafted = true
+				elseif isCrafted then
 					print("Excluding crafted item: " .. name .. " by " .. craftersName)
-				end
-				
-				-- Only add if not excluded and has valid name
-				if not isResourceContainer and not isCrafted and name ~= nil and name ~= "" then
-					local value = tano:getJunkValue()
+				elseif name ~= nil and name ~= "" then
+					-- Item is eligible
+					local value = 1 -- Default value
 					
-					-- If item has no junk value, give it a default value of 1 credit
-					if value == nil or value <= 0 then
-						value = 1
+					-- Safely get junk value
+					if tano.getJunkValue then
+						local junkValue = tano:getJunkValue()
+						if junkValue ~= nil and junkValue > 0 then
+							value = junkValue
+						end
 					end
 					
 					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
@@ -230,7 +251,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	
 	-- If item has no junk value, give it a default value of 1 credit
 	if value == nil or value <= 0 then
-		value = 250 -- Default value for non-junk items
+		value = 1
 	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
