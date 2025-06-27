@@ -62,19 +62,28 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				-- Get item info
-				local name = sceno:getDisplayedName()
-				local value = tano:getJunkValue()
-				
-				-- If item has no junk value, give it a default value of 1 credit
-				if value == nil or value <= 0 then
-					value = 1
-				end
-				
-				-- Only exclude items that have no name
-				if name ~= nil and name ~= "" then
-					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-					table.insert(junkList, textTable)
+				-- Exclude resource containers
+				local templateString = sceno:getObjectTemplate()
+				if templateString ~= nil and string.find(templateString, "resource_container") then
+					-- Skip resource containers
+				-- Exclude player crafted items
+				elseif tano:getCraftersName() ~= nil and tano:getCraftersName() ~= "" then
+					-- Skip player crafted items
+				else
+					-- Get item info
+					local name = sceno:getDisplayedName()
+					local value = tano:getJunkValue()
+					
+					-- If item has no junk value, give it a default value of 1 credit
+					if value == nil or value <= 0 then
+						value = 1
+					end
+					
+					-- Only exclude items that have no name
+					if name ~= nil and name ~= "" then
+						local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+						table.insert(junkList, textTable)
+					end
 				end
 			end
 		end
@@ -208,7 +217,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	
 	-- If item has no junk value, give it a default value of 1 credit
 	if value == nil or value <= 0 then
-		value = 1000 -- Default value for non-junk items
+		value = 250	 -- Default value for non-junk items
 	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
