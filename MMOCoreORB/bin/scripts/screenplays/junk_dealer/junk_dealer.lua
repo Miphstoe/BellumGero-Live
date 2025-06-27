@@ -29,9 +29,9 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 	print("JunkDealer: Found " .. #junkList .. " eligible items")
 	
 	local suiManager = LuaSuiManager()
-	-- Changed from 3 buttons to 2 buttons (removed sell all button)
-	-- Removed "@loot_dealer:btn_sell_all" parameter
-	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 2, "@cancel", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
+	-- Keep original 3-button structure but disable sell all by making it the same as sell
+	-- This way the SUI structure remains intact
+	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
 end
 
 function JunkDealer:getDealerNum(dealerType)
