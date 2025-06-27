@@ -29,9 +29,8 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 	print("JunkDealer: Found " .. #junkList .. " eligible items")
 	
 	local suiManager = LuaSuiManager()
-	-- Keep original 3-button structure but disable sell all by making it the same as sell
-	-- This way the SUI structure remains intact
-	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
+	-- Restore original 3-button structure: Cancel, Sell All (junk only), Sell (individual any item)
+	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell_all", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
 end
 
 function JunkDealer:getDealerNum(dealerType)
@@ -92,16 +91,62 @@ function JunkDealer:sellListSuiCallback(pPlayer, pSui, eventIndex, otherPressed,
 		return
 	end
 
-	-- Force all button presses to act as individual sell (disable sell all functionality)
-	-- Always treat as individual item sale regardless of which button was pressed
-	rowIndex = tonumber(rowIndex)
+	if (otherPressed == "true") then
+		-- "Sell All" button pressed - only sell actual junk items
+		self:sellAllJunkOnly(pPlayer, pSui, pInventory)
+	else
+		-- "Sell" button pressed - sell individual item (any item)
+		rowIndex = tonumber(rowIndex)
 
-	if (rowIndex == -1) then
-		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+		if (rowIndex == -1) then
+			deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+			return
+		end
+
+		self:sellItem(pPlayer, pSui, rowIndex, pInventory)
+	end
+end
+
+function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
+	deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+	local listBox = LuaSuiListBox(pSui)
+	local pNpc = listBox:getUsingObject()
+
+	if pNpc == nil then
 		return
 	end
 
-	self:sellItem(pPlayer, pSui, rowIndex, pInventory)
+	local name = SceneObject(pNpc):getDisplayedName()
+	local amount = 0
+	local itemsSold = 0
+
+	-- Only sell items that have proper junk values (> 0)
+	for i = 0, listBox:getMenuSize() - 1, 1 do
+		local oid = listBox:getMenuObjectID(i)
+		local pItem = SceneObject(pInventory):getContainerObjectById(oid)
+
+		if pItem ~= nil then
+			local value = TangibleObject(pItem):getJunkValue()
+			
+			-- Only sell items with actual junk values > 0
+			if value ~= nil and value > 0 then
+				createEvent(10, "JunkDealer", "destroyItem", pItem, "")
+				amount = amount + value
+				itemsSold = itemsSold + 1
+			end
+		end
+	end
+
+	if itemsSold > 0 then
+		CreatureObject(pPlayer):addCashCredits(amount, true)
+
+		local messageString = LuaStringIdChatParameter("@loot_dealer:prose_sold_all_junk") -- You sell all of your loot to %TT for %DI credits
+		messageString:setTT(name)
+		messageString:setDI(amount)
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	else
+		CreatureObject(pPlayer):sendSystemMessage("You have no actual junk items to sell in bulk.")
+	end
 end
 
 function JunkDealer:sellAllItems(pPlayer, pSui, pInventory)
@@ -163,7 +208,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	
 	-- If item has no junk value, give it a default value of 1 credit
 	if value == nil or value <= 0 then
-		value = 1000 -- Default value for junk items
+		value = 1
 	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
