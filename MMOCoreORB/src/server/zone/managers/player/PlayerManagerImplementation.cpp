@@ -2581,11 +2581,18 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 	trx.addState("applyModifiers", applyModifiers);
 
 	if (applyModifiers) {
+		float experienceMultiplier = globalExpMultiplier;
+		
+		// Don't apply multipliers to large amounts
+		if (abs(amount) > 200000) {  // If amount is larger than 200k (positive or negative)
+			experienceMultiplier = 1.0f;  // Use no multiplier
+		}
+
 		trx.addState("speciesModifier", speciesModifier);
 		trx.addState("buffMultiplier", buffMultiplier);
 		trx.addState("localMultiplier", localMultiplier);
 		trx.addState("globalExpMultiplier", globalExpMultiplier);
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalExpMultiplier));
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * experienceMultiplier));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}
