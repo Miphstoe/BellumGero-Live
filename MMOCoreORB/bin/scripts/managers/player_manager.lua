@@ -56,7 +56,7 @@ medicalDuration = 7200 -- in seconds
 --Sets the experience multiplier while grouped
 groupExpMultiplier = 1.2
 
---Sets a global experience multiplier
+-- Sets a global experience multiplier
 globalExpMultiplier = 10
 
 --Sets a Jedi-specific experience multiplier. Does NOT equal 50x regular experience!

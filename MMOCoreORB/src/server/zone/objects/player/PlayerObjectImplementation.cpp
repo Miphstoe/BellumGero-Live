@@ -2718,6 +2718,30 @@ void PlayerObjectImplementation::doForceRegen() {
     } else {
         setForcePower(getForcePower() + forceTick);
     }
+	CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+
+	if (creature == nullptr || creature->isIncapacitated() || creature->isDead())
+		return;
+
+	const static uint32 tick = 5;
+
+	uint32 modifier = 1;
+
+	if (creature->isMeditating()) {
+		Reference<ForceMeditateTask*> medTask = creature->getPendingTask("forcemeditate").castTo<ForceMeditateTask*>();
+
+		if (medTask != nullptr)
+			modifier = 12;  //Force regenerated per tick.
+	}
+
+	uint32 forceTick = tick * modifier;
+
+	if (forceTick > getForcePowerMax() - getForcePower()){   // If the player's Force Power is going to regen again and it's close to max,
+		setForcePower(getForcePowerMax());             // Set it to max, so it doesn't go over max.
+	} else {
+		setForcePower(getForcePower() + forceTick); // Otherwise regen normally.
+	}
+
 }
 
 void PlayerObjectImplementation::clearScreenPlayData(const String& screenPlay) {

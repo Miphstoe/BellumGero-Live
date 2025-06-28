@@ -2585,12 +2585,21 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 	int xp = 0;
 	trx.addState("applyModifiers", applyModifiers);
 
+
 	if (applyModifiers && amount > 0) {  // Only apply modifiers to positive amounts
 		// Choose the appropriate experience multiplier
 		float experienceMultiplier = globalExpMultiplier;
 		
 		// Only boost jedi_general XP for Jedi players (but NOT for huge amounts)
 		if (isJedi(player) && xpType == "jedi_general" && amount < 100000) {
+
+	if (applyModifiers) {
+		// Choose the appropriate experience multiplier
+		float experienceMultiplier = globalExpMultiplier;
+		
+		// Only boost jedi_general XP for Jedi players
+		if (isJedi(player) && xpType == "jedi_general") {
+
 			experienceMultiplier = jediExpMultiplier;
 		}
 

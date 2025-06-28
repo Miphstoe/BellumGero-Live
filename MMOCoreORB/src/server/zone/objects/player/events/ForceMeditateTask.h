@@ -37,7 +37,11 @@ public:
 
 
 			if (fmeditateTask != nullptr)
+
 				fmeditateTask->reschedule(4000);
+
+				fmeditateTask->reschedule(4000); // Tick cooldown
+
 
 		} catch (Exception& e) {
 			player->error("unreported exception caught in ForceMeditateTask::activate");
