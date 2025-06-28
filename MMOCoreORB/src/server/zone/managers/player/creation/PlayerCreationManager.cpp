@@ -563,23 +563,30 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	//Join auction chat room
 	ghost->addChatRoom(chatManager->getAuctionRoom()->getRoomID());
 
-	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
-	box->setPromptTitle("PLEASE NOTE");
-	box->setPromptText("You are limited to creating one character per hour. Attempting to create another character or deleting your character before the 1 hour timer expires will reset the timer.");
+	// Welcome message box
+	ManagedReference<SuiMessageBox*> welcomeBox = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
+	welcomeBox->setPromptTitle("WELCOME");
+	welcomeBox->setPromptText("Welcome to Bellum Gero! \nDon't forget to migrate your stats! Stats can also be migrated in Image Designer tents. Have fun!");
 
-	ghost->addSuiBox(box);
-	playerCreature->sendMessage(box->generateMessage());
+	ghost->addSuiBox(welcomeBox);
+	playerCreature->sendMessage(welcomeBox->generateMessage());
 
-	return true;
-}
-
-	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
-	box->setPromptTitle("WELCOME");
-	box->setPromptText("Welcome to Bellum Gero! \nDon't forget to migrate your stats! Stats can also be migrated in Image Designer tents. Have fun!");
+	// Galaxy broadcast for new player joining
 	String playerName = playerCreature->getFirstName();
 	StringBuffer zBroadcast;
 	zBroadcast << "\\#00ace6" << playerName << " \\#ffb90f Has Joined Bellum Gero!";
 	playerCreature->getZoneServer()->getChatManager()->broadcastGalaxy(NULL, zBroadcast.toString());
+
+	// Character creation limitation message
+	ManagedReference<SuiMessageBox*> limitBox = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
+	limitBox->setPromptTitle("PLEASE NOTE");
+	limitBox->setPromptText("You are limited to creating one character per hour. Attempting to create another character or deleting your character before the 1 hour timer expires will reset the timer.");
+
+	ghost->addSuiBox(limitBox);
+	playerCreature->sendMessage(limitBox->generateMessage());
+
+	return true;
+}
 
 int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 		int attributeNumber) const {
