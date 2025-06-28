@@ -109,7 +109,6 @@ class PlayerManager extends Observer implements Logger {
 	transient CharacterNameMap nameMap;
 	private float globalExpMultiplier;
 	private float groupExpMultiplier;
-	private float jediExpMultiplier;
 
 	@dereferenced
 	private transient ReadWriteLock onlineMapMutex;
@@ -153,7 +152,6 @@ class PlayerManager extends Observer implements Logger {
 	private native void loadQuestInfo();
 	private native void loadQuestCrcTable();
 
-	private native boolean isJedi(CreatureObject player);
 
 	public native void finalize();
 
@@ -223,7 +221,7 @@ class PlayerManager extends Observer implements Logger {
 	public native void awardBadge(PlayerObject ghost, final Badge badge);
 
 	public native void setExperienceMultiplier(float globalMultiplier);
-	public native void setJediExperienceMultiplier(float jediMultiplier);
+	
 	public native int awardExperience(CreatureObject player, final string xpType, int amount, boolean sendSystemMessage = true, float localMultiplier = 1.0f, boolean applyModifiers = true, boolean spaceBonus = false);
 
 	@local @dereferenced
