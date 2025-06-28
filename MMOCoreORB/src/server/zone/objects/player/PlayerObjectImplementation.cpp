@@ -73,6 +73,7 @@
 #include "server/zone/objects/tangible/deed/eventperk/EventPerkDeed.h"
 #include "server/zone/managers/player/QuestInfo.h"
 #include "server/zone/objects/player/events/ForceMeditateTask.h"
+#include "server/zone/objects/player/events/ForceFocusTask.h" //New include for Force Focus
 #include "server/zone/objects/player/sui/callbacks/FieldFactionChangeSuiCallback.h"
 #include "server/zone/packets/ui/DestroyClientPathMessage.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
@@ -2693,6 +2694,30 @@ void PlayerObjectImplementation::setForcePower(int fp, bool notifyClient) {
 }
 
 void PlayerObjectImplementation::doForceRegen() {
+    CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+    if (creature == nullptr || creature->isIncapacitated() || creature->isDead())
+        return;
+        
+    const static uint32 tick = 5;
+    uint32 modifier = 1;
+    
+    if (creature->isMeditating()) {
+        Reference<ForceMeditateTask*> medTask = creature->getPendingTask("forcemeditate").castTo<ForceMeditateTask*>();
+        Reference<ForceFocusTask*> focusTask = creature->getPendingTask("forcefocus").castTo<ForceFocusTask*>();
+        
+        if (medTask != nullptr) {
+            modifier = 12;  // Force Meditate multiplier
+        } else if (focusTask != nullptr) {
+            modifier = 20;  // Force Focus multiplier 
+        }
+    }
+    
+    uint32 forceTick = tick * modifier;
+    if (forceTick > getForcePowerMax() - getForcePower()){
+        setForcePower(getForcePowerMax());
+    } else {
+        setForcePower(getForcePower() + forceTick);
+    }
 	CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
 
 	if (creature == nullptr || creature->isIncapacitated() || creature->isDead())
@@ -2716,6 +2741,7 @@ void PlayerObjectImplementation::doForceRegen() {
 	} else {
 		setForcePower(getForcePower() + forceTick); // Otherwise regen normally.
 	}
+
 }
 
 void PlayerObjectImplementation::clearScreenPlayData(const String& screenPlay) {
