@@ -279,7 +279,7 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	local name = item:getDisplayedName()
 	local value = TangibleObject(pItem):getJunkValue()
 	
-	-- If item has no junk value, give it a default value of 1 credit
+	-- If item has no junk value, give it a default value of 250 credit
 	if value == nil or value <= 0 then
 		value = 250 -- Default value for items without a junk value
 	end
