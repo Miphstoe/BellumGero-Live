@@ -551,7 +551,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	JediManager::instance()->onPlayerCreated(playerCreature);
 
 	// Welcome Mail
-	chatManager->sendMail("system", "@newbie_tutorial/newbie_mail:welcome_subject", "@newbie_tutorial/newbie_mail:welcome_body", playerCreature->getFirstName());
+	chatManager->sendMail("Bellum Gero", "@newbie_tutorial/newbie_mail:welcome_subject", "@newbie_tutorial/newbie_mail:welcome_body", playerCreature->getFirstName());
 
 	// Schedule Task to send out JTL Recruitment Mail
 	SendJtlRecruitment* jtlMailTask = new SendJtlRecruitment(playerCreature);
@@ -572,6 +572,14 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 	return true;
 }
+
+	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
+	box->setPromptTitle("WELCOME");
+	box->setPromptText("Welcome to Bellum Gero! \nDon't forget to migrate your stats! Stats can also be migrated in Image Designer tents. Have fun!");
+	String playerName = playerCreature->getFirstName();
+	StringBuffer zBroadcast;
+	zBroadcast << "\\#00ace6" << playerName << " \\#ffb90f Has Joined Bellum Gero!";
+	playerCreature->getZoneServer()->getChatManager()->broadcastGalaxy(NULL, zBroadcast.toString());
 
 int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 		int attributeNumber) const {
