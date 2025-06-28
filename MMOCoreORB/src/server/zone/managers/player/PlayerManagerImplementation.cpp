@@ -1855,11 +1855,10 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 
 	// Jedi experience loss.
 	if (ghost->getJediState() >= 2) {
-		int jediXpCap = ghost->getXpCap("jedi_general");
-		int xpLoss = (int)(jediXpCap * -0.05);
+		int xpLoss = -200000;  // Fixed 200k XP loss regardless of cap
 		int curExp = ghost->getExperience("jedi_general");
 
-		int negXpCap = -10000000; // Cap on negative jedi experience
+		int negXpCap = -1000000; // Cap on negative jedi experience
 
 		if ((curExp + xpLoss) < negXpCap)
 			xpLoss = negXpCap - curExp;
@@ -2586,12 +2585,12 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 	int xp = 0;
 	trx.addState("applyModifiers", applyModifiers);
 
-	if (applyModifiers) {
+	if (applyModifiers && amount > 0) {  // Only apply modifiers to positive amounts
 		// Choose the appropriate experience multiplier
 		float experienceMultiplier = globalExpMultiplier;
 		
-		// Only boost jedi_general XP for Jedi players
-		if (isJedi(player) && xpType == "jedi_general") {
+		// Only boost jedi_general XP for Jedi players (but NOT for huge amounts)
+		if (isJedi(player) && xpType == "jedi_general" && amount < 100000) {
 			experienceMultiplier = jediExpMultiplier;
 		}
 
@@ -2602,7 +2601,7 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 		trx.addState("activeExpMultiplier", experienceMultiplier);
 		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * experienceMultiplier));
 	} else {
-		xp = playerObject->addExperience(trx, xpType, (int)amount);
+		xp = playerObject->addExperience(trx, xpType, (int)amount);  // No modifiers applied for negative amounts or when applyModifiers is false
 	}
 
 	player->notifyObservers(ObserverEventType::XPAWARDED, player, xp);
