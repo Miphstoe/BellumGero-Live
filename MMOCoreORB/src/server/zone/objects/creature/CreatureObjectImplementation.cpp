@@ -93,6 +93,7 @@
 #include "server/zone/objects/tangible/Instrument.h"
 #include "server/zone/managers/director/ScreenPlayObserver.h"
 #include "server/zone/objects/player/events/SpawnHelperDroidTask.h"
+#include "server/zone/objects/player/events/ForceFocusTask.h" //force focus
 
 float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376f;
 
@@ -3066,17 +3067,26 @@ void CreatureObjectImplementation::notifySelfPositionUpdate() {
 void CreatureObjectImplementation::activateHAMRegeneration(int latency) {
 	if (isIncapacitated() || isDead())
 		return;
-
 	if (!isPlayerCreature() && isInCombat())
 		return;
-
+		
 	float modifier = (float)latency/1000.f;
-
+	
 	if (isKneeling())
 		modifier *= 1.25f;
 	else if (isSitting())
 		modifier *= 1.75f;
-
+	
+	if (isMeditating()) {
+		PlayerObject* ghost = getPlayerObject();
+		if (ghost != nullptr) {
+			Reference<ForceFocusTask*> focusTask = getPendingTask("forcefocus").castTo<ForceFocusTask*>();
+			if (focusTask != nullptr) {
+				modifier *= 5.0f;
+			}
+		}
+	}
+	
 	// this formula gives the amount of regen per second
 	uint32 healthTick = (uint32) ceil((float) Math::max(0, getHAM(
 			CreatureAttribute::CONSTITUTION)) * 13.0f / 2100.0f * modifier);
@@ -3084,20 +3094,18 @@ void CreatureObjectImplementation::activateHAMRegeneration(int latency) {
 			CreatureAttribute::STAMINA)) * 13.0f / 2100.0f * modifier);
 	uint32 mindTick = (uint32) ceil((float) Math::max(0, getHAM(
 			CreatureAttribute::WILLPOWER)) * 13.0f / 2100.0f * modifier);
-
+			
 	if (healthTick < 1)
 		healthTick = 1;
-
 	if (actionTick < 1)
 		actionTick = 1;
-
 	if (mindTick < 1)
 		mindTick = 1;
-
+		
 	healDamage(asCreatureObject(), CreatureAttribute::HEALTH, healthTick, true, false);
 	healDamage(asCreatureObject(), CreatureAttribute::ACTION, actionTick, true, false);
 	healDamage(asCreatureObject(), CreatureAttribute::MIND, mindTick, true, false);
-
+	
 	activatePassiveWoundRegeneration();
 }
 
