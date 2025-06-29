@@ -51,7 +51,7 @@ function myswg_vendor:start()
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
     
     local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -374, 0, -3021, 35, 0 )--Rose Red
-    local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5059,13,1359, 35, 0 )--Chyna Town 
+    local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town 
     --local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 5767.33,20.00,4408.53, 35, 0 )--pc
     --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3184.02,10.00,-6778.87, 35, 0 )--pc  
     --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -4337, 0.0, 54, 35, 0 )--pc
