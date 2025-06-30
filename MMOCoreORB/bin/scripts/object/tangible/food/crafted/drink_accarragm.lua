@@ -44,6 +44,7 @@
 object_tangible_food_crafted_drink_accarragm = object_tangible_food_crafted_shared_drink_accarragm:new {
 	templateType = CONSUMABLE,
 
+	useCount = 5,
 	duration = 1800,
 	filling = 33,
 	nutrition = 150,
