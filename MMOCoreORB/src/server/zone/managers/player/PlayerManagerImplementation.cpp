@@ -7223,3 +7223,11 @@ void PlayerManagerImplementation::iteratePlayerNames(const PlayerNameIterator& i
 		iterator(name, oid);
 	}
 }
+}
+
+bool PlayerManagerImplementation::isJedi(CreatureObject* player) {
+	if (player == nullptr)
+		return false;
+	
+	return player->hasSkill("force_title_jedi_rank_02");
+}
