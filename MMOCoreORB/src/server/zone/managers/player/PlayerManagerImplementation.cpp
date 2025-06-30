@@ -247,8 +247,6 @@ void PlayerManagerImplementation::loadLuaConfig() {
 
 	globalExpMultiplier = lua->getGlobalFloat("globalExpMultiplier");
 
-	jediExpMultiplier = lua->getGlobalFloat("jediExpMultiplier");
-
 	baseStoredCreaturePets = lua->getGlobalInt("baseStoredCreaturePets");
 	baseStoredFactionPets = lua->getGlobalInt("baseStoredFactionPets");
 	baseStoredDroids = lua->getGlobalInt("baseStoredDroids");
@@ -1856,10 +1854,10 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 	// Jedi experience loss.
 	if (ghost->getJediState() >= 2) {
 		int jediXpCap = ghost->getXpCap("jedi_general");
-		int xpLoss = (int)(jediXpCap * -0.05);
+		int xpLoss = (int)(jediXpCap * -0.02);
 		int curExp = ghost->getExperience("jedi_general");
 
-		int negXpCap = -10000000; // Cap on negative jedi experience
+		int negXpCap = -1000000; // Cap on negative jedi experience
 
 		if ((curExp + xpLoss) < negXpCap)
 			xpLoss = negXpCap - curExp;
@@ -2130,11 +2128,11 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				if (winningFaction != Factions::FACTIONNEUTRAL && winningFaction == attackerCreo->getFaction())
 					xpAmount *= gcwBonus;
 
-				// Jedi experience doesn't count towards combat experience, and is earned at 20% the rate of normal experience
+				// Jedi experience doesn't count towards combat experience
 				if (xpType != "jedi_general")
 					combatXp += xpAmount;
-				else
-					xpAmount *= 0.2f;
+				//else
+				//	xpAmount *= 0.2f;  //Removed jedi XP penalty
 
 				if (xpType == "dotDMG") { // Prevents XP generated from DoTs from applying to the equiped weapon, but still counts towards combat XP
 					continue;
@@ -2556,10 +2554,6 @@ void PlayerManagerImplementation::setExperienceMultiplier(float globalMultiplier
 	globalExpMultiplier = globalMultiplier;
 }
 
-void PlayerManagerImplementation::setJediExperienceMultiplier(float jediMultiplier) {
-	jediExpMultiplier = jediMultiplier;
-}
-
 /*
  * Award experience to a player.
  * Ex.
@@ -2587,19 +2581,17 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 	trx.addState("applyModifiers", applyModifiers);
 
 	if (applyModifiers) {
-		// Choose the appropriate experience multiplier
 		float experienceMultiplier = globalExpMultiplier;
 		
-		// Only boost jedi_general XP for Jedi players
-		if (isJedi(player) && xpType == "jedi_general") {
-			experienceMultiplier = jediExpMultiplier;
+		// Don't apply multipliers to large amounts
+		if (abs(amount) > 200000) {  // If amount is larger than 200k (positive or negative)
+			experienceMultiplier = 1.0f;  // Use no multiplier
 		}
 
 		trx.addState("speciesModifier", speciesModifier);
 		trx.addState("buffMultiplier", buffMultiplier);
 		trx.addState("localMultiplier", localMultiplier);
 		trx.addState("globalExpMultiplier", globalExpMultiplier);
-		trx.addState("activeExpMultiplier", experienceMultiplier);
 		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * experienceMultiplier));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
@@ -2631,7 +2623,6 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 
 	return xp;
 }
-
 void PlayerManagerImplementation::sendLoginMessage(CreatureObject* creature) {
 	String motd = server->getLoginMessage();
 
@@ -7231,6 +7222,7 @@ void PlayerManagerImplementation::iteratePlayerNames(const PlayerNameIterator& i
 		iter.getNextKeyAndValue(name, oid);
 		iterator(name, oid);
 	}
+}
 }
 
 bool PlayerManagerImplementation::isJedi(CreatureObject* player) {
