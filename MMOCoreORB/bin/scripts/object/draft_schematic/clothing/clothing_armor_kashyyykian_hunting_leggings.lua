@@ -49,7 +49,7 @@ object_draft_schematic_clothing_clothing_armor_kashyyykian_hunting_leggings = ob
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
    complexity = 45, 
-   size = 4, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_clothing_armor", 
@@ -67,7 +67,7 @@ object_draft_schematic_clothing_clothing_armor_kashyyykian_hunting_leggings = ob
    ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement"},
    ingredientSlotType = {0, 0, 0, 0, 0, 1, 1, 1, 0},
    resourceTypes = {"softwood_evergreen_dathomir", "hide_leathery_lok", "hide_wooly_tatooine", "copper_mythra", "petrochem_inert_polymer", "object/tangible/component/clothing/shared_padding_segment.iff", "object/tangible/component/armor/shared_armor_segment_kashyyykian_hunting.iff", "object/tangible/component/clothing/shared_synthetic_cloth.iff", "fiberplast_naboo"},
-   resourceQuantities = {70, 70, 60, 30, 30, 4, 3, 1, 40},
+   resourceQuantities = {70, 70, 40, 30, 30, 4, 3, 1, 35},
    contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 

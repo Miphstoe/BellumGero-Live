@@ -49,7 +49,7 @@ object_draft_schematic_clothing_clothing_armor_zam_chest = object_draft_schemati
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
    complexity = 20, 
-   size = 4, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_clothing_armor", 
@@ -63,12 +63,12 @@ object_draft_schematic_clothing_clothing_armor_zam_chest = object_draft_schemati
    customizationStringNames = {"/private/index_color_1", "/private/index_color_2", "/private/index_color_3"},
    customizationDefaults = {108, 82, 20},
 
-   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-   ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness"},
-   ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1},
-   resourceTypes = {"metal", "hide", "fiberplast", "metal", "petrochem_inert", "fiberplast", "object/tangible/component/armor/shared_armor_segment_zam.iff", "object/tangible/component/clothing/shared_synthetic_cloth.iff"},
-   resourceQuantities = {40, 40, 40, 40, 15, 25, 1, 1},
-   contribution = {100, 100, 100, 100, 100, 100, 100, 100},
+   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+   ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement"},
+   ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1},
+   resourceTypes = {"metal", "hide", "fiberplast", "metal", "petrochem_inert", "fiberplast", "object/tangible/component/armor/shared_armor_segment_zam.iff", "object/tangible/component/clothing/shared_synthetic_cloth.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff"},
+   resourceQuantities = {100, 100, 50, 60, 50, 40, 4, 1, 1},
+   contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 
    targetTemplate = "object/tangible/wearables/armor/zam/armor_zam_wesell_chest_plate.iff",

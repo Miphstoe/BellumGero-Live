@@ -49,7 +49,7 @@ object_draft_schematic_armor_armor_segment_composite_advanced = object_draft_sch
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 30,
-	size = 6,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 
