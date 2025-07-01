@@ -49,7 +49,7 @@ object_draft_schematic_clothing_clothing_armor_bone_leggings = object_draft_sche
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
    complexity = 16, 
-   size = 3, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_general", 
@@ -63,12 +63,12 @@ object_draft_schematic_clothing_clothing_armor_bone_leggings = object_draft_sche
    customizationStringNames = {"/private/index_color_1", "/private/index_color_2"},
    customizationDefaults = {7, 0},
 
-   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-   ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement", "auxiliary_coverage_2"},
-   ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1},
-   resourceTypes = {"bone", "hide", "hide", "metal", "petrochem_inert", "hide", "object/tangible/component/armor/shared_armor_segment_bone.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff"},
-   resourceQuantities = {30, 30, 30, 20, 10, 10, 1, 1, 1, 1},
-   contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100, 100},
+   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+   ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement"},
+   ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1},
+   resourceTypes = {"bone", "hide", "hide", "metal", "petrochem_inert", "hide", "object/tangible/component/armor/shared_armor_segment_bone.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff"},
+   resourceQuantities = {70, 70, 35, 40, 30, 30, 3, 1, 1},
+   contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 
    targetTemplate = "object/tangible/wearables/armor/bone/armor_bone_s01_leggings.iff",
