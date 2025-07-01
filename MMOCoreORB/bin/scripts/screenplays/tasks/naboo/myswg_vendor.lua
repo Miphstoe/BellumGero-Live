@@ -43,6 +43,8 @@ function myswg_vendor:start()
     
     local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, 619, 3.0, 3090, 35, 0 )--trade
     local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, -47, 18.0, -1586, 35, 0 )--science
+    local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, 5253, 78.0, -4217, 35, 0 )--Village
+
      
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -265, 35.0, 4897, 35, 0 )--mining
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4053, 17.0, -6217, 35, 0 )--imp
@@ -54,7 +56,7 @@ function myswg_vendor:start()
     local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town 
     --local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 5767.33,20.00,4408.53, 35, 0 )--pc
     --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3184.02,10.00,-6778.87, 35, 0 )--pc  
-    --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -4337, 0.0, 54, 35, 0 )--pc
+    local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -374, 0.0, -3028, 35, 0 )--Rose red
     
     --junk dealers
     --local pWeaponsmith4 = spawnMobile("endor", "junk_dealer", 1, -4679, 12.0, 4334, 35, 0 )--dwb
