@@ -59,7 +59,7 @@ function myswg_vendor:start()
     local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -374, 0.0, -3028, 35, 0 )--Rose red
     
     --junk dealers
-    --local pWeaponsmith4 = spawnMobile("endor", "junk_dealer", 1, -4679, 12.0, 4334, 35, 0 )--dwb
+    local pWeaponsmith4 = spawnMobile("lok", "junk_dealer", 1, 5050, 12.0, 1353, 35, 0 )--Chyna Town
     --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -3947, 124.0, -54, 35, 0 )--ns    
     --local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -615, 3.0, 2505, 35, 0 )--dant mo
     --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, 617, 3.0, 3090, 35, 0 )--trade
