@@ -1854,10 +1854,10 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 	// Jedi experience loss.
 	if (ghost->getJediState() >= 2) {
 		int jediXpCap = ghost->getXpCap("jedi_general");
-		int xpLoss = (int)(jediXpCap * -0.05);
+		int xpLoss = (int)(jediXpCap * -0.02);
 		int curExp = ghost->getExperience("jedi_general");
 
-		int negXpCap = -10000000; // Cap on negative jedi experience
+		int negXpCap = -1000000; // Cap on negative jedi experience
 
 		if ((curExp + xpLoss) < negXpCap)
 			xpLoss = negXpCap - curExp;
@@ -2128,11 +2128,11 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				if (winningFaction != Factions::FACTIONNEUTRAL && winningFaction == attackerCreo->getFaction())
 					xpAmount *= gcwBonus;
 
-				// Jedi experience doesn't count towards combat experience, and is earned at 20% the rate of normal experience
+				// Jedi experience doesn't count towards combat experience
 				if (xpType != "jedi_general")
 					combatXp += xpAmount;
-				else
-					xpAmount *= 0.2f;
+				//else
+				//	xpAmount *= 0.2f;  //Removed jedi XP penalty
 
 				if (xpType == "dotDMG") { // Prevents XP generated from DoTs from applying to the equiped weapon, but still counts towards combat XP
 					continue;
@@ -2563,34 +2563,36 @@ void PlayerManagerImplementation::setExperienceMultiplier(float globalMultiplier
  */
 int PlayerManagerImplementation::awardExperience(CreatureObject* player, const String& xpType, int amount, bool sendSystemMessage, float localMultiplier, bool applyModifiers, bool spaceBonus) {
 	PlayerObject* playerObject = player->getPlayerObject();
-
 	if (playerObject == nullptr)
 		return 0;
 
 	TransactionLog trx(TrxCode::EXPERIENCE, player);
 
 	float speciesModifier = 1.f;
-
 	if (amount > 0) {
 		speciesModifier = getSpeciesXpModifier(player->getSpeciesName(), xpType);
 	}
 
 	float buffMultiplier = 1.f;
-
 	if (player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
 		buffMultiplier += player->getSkillModFromBuffs("xp_increase") / 100.f;
 
 	int xp = 0;
-
 	trx.addState("applyModifiers", applyModifiers);
 
 	if (applyModifiers) {
+		float experienceMultiplier = globalExpMultiplier;
+		
+		// Don't apply multipliers to large amounts
+		if (abs(amount) > 200000) {  // If amount is larger than 200k (positive or negative)
+			experienceMultiplier = 1.0f;  // Use no multiplier
+		}
+
 		trx.addState("speciesModifier", speciesModifier);
 		trx.addState("buffMultiplier", buffMultiplier);
 		trx.addState("localMultiplier", localMultiplier);
 		trx.addState("globalExpMultiplier", globalExpMultiplier);
-
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalExpMultiplier));
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * experienceMultiplier));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}
@@ -2611,8 +2613,9 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 				player->sendSystemMessage(message);
 			}
 		}
+
 		if (xp > 0 && playerObject->hasCappedExperience(xpType)) {
-			StringIdChatParameter message("base_player", "prose_hit_xp_cap"); //You have achieved your current limit for %TO experience.
+			StringIdChatParameter message("base_player", "prose_hit_xp_cap");
 			message.setTO("exp_n", xpType);
 			player->sendSystemMessage(message);
 		}
@@ -2620,7 +2623,6 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 
 	return xp;
 }
-
 void PlayerManagerImplementation::sendLoginMessage(CreatureObject* creature) {
 	String motd = server->getLoginMessage();
 
@@ -3211,6 +3213,15 @@ int PlayerManagerImplementation::notifyObserverEvent(uint32 eventType, Observabl
 
 				if (fmeditateTask->isScheduled())
 					fmeditateTask->cancel();
+			}
+
+			// Check POSTERCHANGE on Force Focus...
+			Reference<ForceMeditateTask*> ffocusTask = creature->getPendingTask("forcefocus").castTo<ForceMeditateTask*>();
+			if (ffocusTask != nullptr) {
+    			creature->removePendingTask("forcefocus");
+
+    			if (ffocusTask->isScheduled())
+        			ffocusTask->cancel();
 			}
 		}
 

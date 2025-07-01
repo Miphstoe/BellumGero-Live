@@ -99,8 +99,8 @@ object_weapon_melee_2h_sword_crafted_saber_sword_lightsaber_two_handed_s9_gen3 =
 
 
 	-- The values below are the default values.  To be used for blue frog objects primarily
-	healthAttackCost = 85,
-	actionAttackCost = 50,
+	healthAttackCost = 50,
+	actionAttackCost = 85,
 	mindAttackCost = 35,
 	forceCost = 36,
 
@@ -113,15 +113,15 @@ object_weapon_melee_2h_sword_crafted_saber_sword_lightsaber_two_handed_s9_gen3 =
 	maxRange = 5,
 	maxRangeAccuracy = 5,
 
-	minDamage = 175,
-	maxDamage = 255,
+	minDamage = 195,
+	maxDamage = 285,
 
-	attackSpeed = 4.8,
+	attackSpeed = 5.1,
 
 	woundsRatio = 25,
 
 	defenderToughnessModifiers = { "lightsaber_toughness" },
-	
+
 	noTrade = 1,
 
 	childObjects = {
@@ -133,8 +133,8 @@ object_weapon_melee_2h_sword_crafted_saber_sword_lightsaber_two_handed_s9_gen3 =
 	experimentalWeights = {1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "forcecost", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 175, 255, 4.8, 19, 40, 85, 50, 35},
-	experimentalMax = {0, 0, 185, 295, 4.5, 31, 36, 55, 45, 30},
+	experimentalMin = {0, 0, 195, 285, 5.1, 19, 40, 50, 85, 35},
+	experimentalMax = {0, 0, 215, 305, 4.8, 31, 36, 45, 55, 30},
 	experimentalPrecision = {0, 0, 0, 0, 1, 0, 1, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
 }

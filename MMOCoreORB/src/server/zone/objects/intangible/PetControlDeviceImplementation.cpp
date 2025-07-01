@@ -303,10 +303,10 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		Reference<CallPetTask*> callPet = new CallPetTask(_this.getReferenceUnsafeStaticCast(), player, "call_pet");
 
 		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
-		message.setDI(15);
+		message.setDI(1);
 		player->sendSystemMessage(message);
 
-		player->addPendingTask("call_pet", callPet, 15 * 1000);
+		player->addPendingTask("call_pet", callPet, 1 * 1000); // 1 sec delay before starting call
 
 		if (petControlObserver == nullptr) {
 			petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());

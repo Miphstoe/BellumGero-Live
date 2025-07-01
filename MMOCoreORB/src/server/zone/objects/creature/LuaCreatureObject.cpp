@@ -1515,7 +1515,7 @@ int LuaCreatureObject::failQuestMission(lua_State* L) {
 			continue;
 		}
 
-		missionManager->handleMissionFail(mission, realObject);
+		missionManager->handleMissionAbort(mission, realObject);
 
 		return 0;
 	}

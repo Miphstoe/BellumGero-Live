@@ -1,19 +1,28 @@
---and this mission_level_choice.lua -- Allows players to choose a mission level range, regardless of their own CL/Group Level
+-- Allows players to choose a mission level range, regardless of their own CL/Group Level
 
 mission_level_choice = ScreenPlay:new {
 	numberOfActs = 1,
 
 	levels = {
-		{levelRange = "Reset Level Range", levelSelect = 0},	
-		{levelRange = "Easiest", levelSelect = 1},
-		{levelRange = "Mid 1", levelSelect = 2}, 
-		{levelRange = "Mid 2", levelSelect = 12}, 
-		{levelRange = "Mid 3", levelSelect = 25}, 
-		{levelRange = "High 1", levelSelect = 35}, 
-		{levelRange = "High 2", levelSelect = 45}, 
-		{levelRange = "High 3", levelSelect = 60}, 
-		{levelRange = "Hard", levelSelect = 135}, 
-		{levelRange = "Hardest", levelSelect = 200}, 
+		{levelRange = "Reset Level Range", levelSelect = 0},
+		{levelRange = "Level 5-10", levelSelect = 1},
+		{levelRange = "Level 10-20", levelSelect = 5},
+		{levelRange = "Level 20-35", levelSelect = 10},
+		{levelRange = "Level 30-50", levelSelect = 15},
+		{levelRange = "Level 40-55", levelSelect = 20},
+		{levelRange = "Level 50-65", levelSelect = 25},
+		{levelRange = "Level 60-80", levelSelect = 30},
+		{levelRange = "Level 70-90", levelSelect = 35},
+		{levelRange = "Level 80-100", levelSelect = 40},
+		{levelRange = "Level 90-120", levelSelect = 45},
+		{levelRange = "Level 110-150", levelSelect = 50},
+		{levelRange = "Level 140-200", levelSelect = 60},
+		{levelRange = "Level 180-250", levelSelect = 70},
+		{levelRange = "Level 220-300", levelSelect = 80},
+		{levelRange = "Level 270-350", levelSelect = 90},
+		{levelRange = "Level 320-400", levelSelect = 100},
+		{levelRange = "Level 370-450", levelSelect = 110},
+		{levelRange = "Level 420-500", levelSelect = 120},
 	}
 }
 

@@ -49,7 +49,7 @@ object_draft_schematic_clothing_clothing_armor_chitin_gloves = object_draft_sche
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
    complexity = 25, 
-   size = 3, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_clothing_armor", 
@@ -67,7 +67,7 @@ object_draft_schematic_clothing_clothing_armor_chitin_gloves = object_draft_sche
    ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement"},
    ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1},
    resourceTypes = {"bone", "hide_leathery", "hide_scaley", "metal_ferrous", "petrochem_inert_polymer", "hide_wooly", "object/tangible/component/armor/shared_armor_segment_chitin.iff", "object/tangible/component/clothing/shared_fiberplast_panel.iff", "object/tangible/component/clothing/shared_reinforced_fiber_panels.iff"},
-   resourceQuantities = {15, 15, 15, 5, 5, 5, 1, 1, 1},
+   resourceQuantities = {25, 25, 15, 10, 10, 10, 1, 2, 1},
    contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 

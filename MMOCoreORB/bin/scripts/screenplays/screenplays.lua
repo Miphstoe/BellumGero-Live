@@ -160,7 +160,7 @@ includeFile("dungeon/corellian_corvette/ticket_takers/klaatu.lua")
 includeFile("dungeon/corellian_corvette/ticket_takers/lt_lance.lua")
 
 --VillageCommand SUI
-includeFile("village/village_sui.lua")
+includeFile("village/village_player_sui.lua")
 
 -- Village
 includeFile("village/village_community_crafting.lua")
@@ -601,6 +601,7 @@ includeFile("cities/dantooine_imperial_outpost.lua")
 includeFile("cities/dantooine_mining_outpost.lua")
 includeFile("cities/dathomir_science_outpost.lua")
 includeFile("cities/dathomir_trade_outpost.lua")
+--includeFile("cities/dathomir_village.lua")
 includeFile("cities/endor_research_outpost.lua")
 includeFile("cities/endor_smuggler_outpost.lua")
 includeFile("cities/lok_nym_stronghold.lua")

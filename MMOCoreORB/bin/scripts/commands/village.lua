@@ -41,9 +41,9 @@
 --which carries forward this exception.
 --true = 1, false = 0
 
+-- ADDED: New player village command definition
 VillageCommand = {
         name = "village",
 }
 
 AddCommand(VillageCommand)
-

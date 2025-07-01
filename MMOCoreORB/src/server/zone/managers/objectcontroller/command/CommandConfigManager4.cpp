@@ -149,6 +149,7 @@
 #include "server/zone/objects/creature/commands/IffscrambleCommand.h"
 #include "server/zone/objects/creature/commands/DroidCommand.h"
 #include "server/zone/objects/creature/commands/LootAllCommand.h"
+#include "server/zone/objects/creature/commands/AreaLootCommand.h" //area loot command
 #include "server/zone/objects/creature/commands/ServerAsteroidDataListenCommand.h"
 #include "server/zone/objects/creature/commands/ServerAsteroidDataStopListeningCommand.h"
 #include "server/zone/objects/creature/commands/DisableTargetCommand.h"
@@ -293,6 +294,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<IffscrambleCommand>(String("iffscramble").toLowerCase());
 	commandFactory.registerCommand<DroidCommand>(String("droid").toLowerCase());
 	commandFactory.registerCommand<LootAllCommand>(String("lootAll").toLowerCase());
+	commandFactory.registerCommand<AreaLootCommand>(String("arealoot").toLowerCase()); //area loot command
 	commandFactory.registerCommand<ServerAsteroidDataListenCommand>(String("serverAsteroidDataListen").toLowerCase());
 	commandFactory.registerCommand<ServerAsteroidDataStopListeningCommand>(String("serverAsteroidDataStopListening").toLowerCase());
 	commandFactory.registerCommand<DisableTargetCommand>(String("disableTarget").toLowerCase());

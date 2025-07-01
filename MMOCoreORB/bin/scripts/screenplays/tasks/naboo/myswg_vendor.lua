@@ -50,8 +50,8 @@ function myswg_vendor:start()
     
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
     
-   -- local pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, -4964, 9.0, 3620, 35, 0 )--pcity
-    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -1453.02,10.00,-3211.87, 35, 0 )--pc  
+    local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -374, 0, -3021, 35, 0 )--Rose Red
+    local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town 
     --local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 5767.33,20.00,4408.53, 35, 0 )--pc
     --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3184.02,10.00,-6778.87, 35, 0 )--pc  
     --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -4337, 0.0, 54, 35, 0 )--pc
@@ -1194,7 +1194,26 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/mission/mission_bounty_droid_probot.iff", -1)
                     --createLoot(pInventory, "junk", 300, false) 
-                    
+                  -- Add this new option for Politician Master
+                
+               -- elseif (optionLink == "option300" and credits < 50000) then
+                    -- Bail if the player doesn't have enough cash on hand.  
+               --     nextConversationScreen = conversation:getScreen("insufficient_funds")
+               --     creature:sendSystemMessage("You have insufficient funds") 
+               -- elseif (optionLink == "option300" and credits >= 50000) then
+                    -- Take 50,000 credits from the player's cash on hand and grant politician master
+               --     creature:subtractCashCredits(50000)
+    
+                    -- Grant politician master access (you can customize what this does)
+                -- Grant politician skills (you'll need to find the correct skill names)
+               --   CreatureObject(conversingPlayer):addSkill("social_politician_master")
+                    -- or whatever the actual politician skill names are in your server
+    
+                -- Or if you want to give an item instead:
+                -- giveItem(pInventory, "object/tangible/politician_master_token.iff", -1)
+    
+                -- Send confirmation message
+               -- creature:sendSystemMessage("You have been granted Politician Master access!")  
                                        
                 end
             end

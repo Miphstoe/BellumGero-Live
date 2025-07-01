@@ -748,11 +748,11 @@ float InstallationObjectImplementation::getActualRate() {
 }
 
 void InstallationObjectImplementation::setExtractionRate(float rate){
-	extractionRate = rate;
+    extractionRate = rate * 1.5; // Multiplies the base extraction rate by 1.5
 }
 
 void InstallationObjectImplementation::setHopperSizeMax(float size){
-	hopperSizeMax = size;
+    hopperSizeMax = size * 10; // Hopper size max is set to 10 times the base size
 }
 
 void InstallationObjectImplementation::updateStructureStatus() {

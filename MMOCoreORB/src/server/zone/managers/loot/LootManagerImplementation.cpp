@@ -277,6 +277,49 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
 	}
 }
 
+//New function to set the attachment name based on skill mods
+void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
+	if (prototype == nullptr || !prototype->isAttachment()) {
+		return;
+	}
+
+	Attachment* attachment = cast<Attachment*>(prototype);
+	
+	if (attachment == nullptr) {
+		return;
+	}
+
+	// Fixed: Use VectorMap instead of HashTable
+	VectorMap<String, int>* skillMods = attachment->getSkillMods();
+	
+	if (skillMods == nullptr || skillMods->size() == 0) {
+		return;
+	}
+	
+	// Get the first skill mod for naming
+	String key = skillMods->elementAt(0).getKey();
+	int value = skillMods->elementAt(0).getValue();
+	StringId attachmentName;
+	
+	// Determine attachment type prefix
+	String attachmentType = "CA"; // Default to Clothing Attachment
+	
+	if (attachment->isArmorAttachment()) {
+		attachmentType = "AA"; // Armor Attachment
+	}
+	
+	// Set the StringId for the skill mod name
+	attachmentName.setStringId("stat_n", key);
+	
+	// Set the object name to the skill mod name
+	prototype->setObjectName(attachmentName, false);
+	
+	// Set the custom name with format: "AA/CA - (ModVal) ModName"
+	prototype->setCustomObjectName(
+		attachmentType + " - (" + String::valueOf(value) + ") " + prototype->getDisplayedName(), 
+		false
+	);
+}
 void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
 	float valueMin = itemTemplate->getJunkMinValue() * junkValueModifier;
 	float valueMax = itemTemplate->getJunkMaxValue() * junkValueModifier;
@@ -426,6 +469,11 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 		setSkillMods(prototype, templateObject, level, excMod);
 	}
 
+	// Set attachment names after skill mods are applied
+	if (prototype->isAttachment()) {
+		setAttachmentName(prototype);
+	}
+
 	// Add static DoT's to weapons and check for chance to add random DoTs
 	if (prototype->isWeaponObject()) {
 		addStaticDots(prototype, templateObject, level);
@@ -561,7 +609,7 @@ void LootManagerImplementation::addConditionDamage(TangibleObject* prototype) {
 		return;
 	}
 
-	int conditionDmg = std::round(conditionMax / 3.f);
+	int conditionDmg = std::round(conditionMax / 50.f);
 
 	if (conditionDmg > 1) {
 		prototype->setConditionDamage(System::random(conditionDmg), false);

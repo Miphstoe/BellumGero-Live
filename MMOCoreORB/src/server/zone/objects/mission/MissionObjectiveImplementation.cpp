@@ -307,7 +307,7 @@ void MissionObjectiveImplementation::awardReward() {
 
 	int divisor = mission->getRewardCreditsDivisor();
 	bool expanded = false;
-
+/*
 	if (playerCount > divisor) {
 		divisor = playerCount;
 		expanded = true;
@@ -316,8 +316,9 @@ void MissionObjectiveImplementation::awardReward() {
 	if (playerCount > players.size()) {
 		owner->sendSystemMessage("@mission/mission_generic:group_too_far"); // Mission Alert! Some group members are too far away from the group to receive their reward and and are not eligible for reward.
 	}
-
-	int dividedReward = mission->getRewardCredits() / Math::max(divisor, 1);
+*/
+//	int dividedReward = mission->getRewardCredits() / Math::max(divisor, 1);
+	int dividedReward = mission->getRewardCredits() / players.size();
 	int bonusCreds = mission->getBonusCredits();
 	int dividedBonus = 0;
 
@@ -325,7 +326,8 @@ void MissionObjectiveImplementation::awardReward() {
 
 	if (anonymousPlayerBounties && bonusCreds > 0) {
 		trx.addState("missionBonusCredits", bonusCreds);
-		dividedBonus = bonusCreds / Math::max(divisor, 1);
+//		dividedBonus = bonusCreds / Math::max(divisor, 1);
+		dividedBonus = bonusCreds / players.size();
 	}
 
 	if (expanded) {
@@ -370,7 +372,7 @@ void MissionObjectiveImplementation::awardReward() {
 
 	if (anonymousPlayerBounties)
 		trx.addState("missionTotalBonusRewarded", totalBonusRewarded);
-
+/*
 	if (group != nullptr) {
 		if (expanded) {
 			owner->sendSystemMessage("@mission/mission_generic:group_expanded"); // Group Mission Success! Reward credits have been transmitted to the bank account of all group members in the immediate area. They have been recalculated to reflect the newly added members.
@@ -378,7 +380,7 @@ void MissionObjectiveImplementation::awardReward() {
 			owner->sendSystemMessage("@mission/mission_generic:group_success"); // Group Mission Success! Reward credits have been transmitted to the bank account of all group members in the immediate area.
 		}
 	}
-
+*/
 	StatisticsManager::instance()->completeMission(mission->getTypeCRC(), totalRewarded);
 }
 
