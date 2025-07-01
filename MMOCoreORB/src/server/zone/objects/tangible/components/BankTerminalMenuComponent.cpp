@@ -44,17 +44,10 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 	if (!sceneObject->isTangibleObject() || !creature->isPlayerCreature())
 		return 0;
 
-	Zone* playerZone = creature->getZone();
-
-	if (playerZone == nullptr)
-		return 0;
-
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	if (ghost == nullptr)
-		return 0;
-
-	String planet = ghost->getBankLocation();
+		return 0;	
 
 	ManagedReference<CityRegion*> region = sceneObject->getCityRegion().get();
 
@@ -68,32 +61,19 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 
 		sui->addCash(creature->getCashCredits());
 		sui->addBank(creature->getBankCredits());
-		sui->setCallback(new BankTerminalSuiCallback(playerZone->getZoneServer()));
+		sui->setCallback(new BankTerminalSuiCallback(creature->getZoneServer()));
 
 		ghost->addSuiBox(sui);
 		creature->sendMessage(sui->generateMessage());
 
 		return 0;
 	} else if (selectedID == JOIN) {
-		if (planet == "") {
-			// JOIN BANK
-			ghost->setBankLocation(playerZone->getZoneName());
-
-			SceneObject* bank = creature->getSlottedObject("bank");
-
-			if (bank != nullptr) {
-				bank->sendTo(creature, true);
-
-				creature->sendSystemMessage("@system_msg:succesfully_joined_bank");
-			}
-		} else if (planet == playerZone->getZoneName()) {
-			// Already joined this bank
-			creature->sendSystemMessage("@system_msg:already_member_of_bank");
-		} else {
-			// Already member different bank
-			creature->sendSystemMessage("@system_msg:member_of_different_bank");
+		
+		SceneObject* bank = creature->getSlottedObject("bank");
+		if (bank != nullptr) {
+			bank->sendTo(creature, true);
+			creature->sendSystemMessage("@system_msg:succesfully_joined_bank");
 		}
-
 		return 0;
 	} else if (selectedID == QUIT) {
 		SceneObject* bank = creature->getSlottedObject("bank");
@@ -106,10 +86,6 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 
 		if (bank->getContainerObjectsSize() == 0) {
 			bank->sendDestroyTo(creature);
-
-			// QUIT BANK
-			ghost->setBankLocation("");
-
 			creature->sendSystemMessage("@system_msg:succesfully_quit_bank");
 		} else {
 			// Not empty
@@ -119,13 +95,8 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 		return 0;
 
 	} else if (selectedID == DEPOSIT) {
-		if (planet == playerZone->getZoneName() || GLOBALSAFETYDEPOSIT) {
-			ManagedReference<SceneObject*> bank = creature->getSlottedObject("bank");
-			bank->openContainerTo(creature);
-		} else {
-			creature->sendSystemMessage("@newbie_tutorial/system_messages:bank_info_2");
-		}
-
+		ManagedReference<SceneObject*> bank = creature->getSlottedObject("bank");
+		bank->openContainerTo(creature);
 		return 0;
 	} else if (selectedID == DEPOSITALL) {
 		uint32 cash = creature->getCashCredits();
@@ -158,4 +129,3 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 
 	return 0;
 }
-
