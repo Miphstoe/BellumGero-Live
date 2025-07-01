@@ -141,9 +141,13 @@ dathomir = {
 	weatherEnabled = 0,
 	gcwEnabled = 1,
 
+	-- CORRECTED: Merge both planetTravelPoints sections
 	planetTravelPoints = {
-		{name = "Trade Outpost", x = 618.89258, z = 6.039608, y = 3092.0142, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Science Outpost", x = -49.021923, z = 18, y = -1584.7278, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
+		-- Original travel points (if any existed)
+		-- Add your new droid transport points here:
+		{name = "Aurillia Droid Transport", x = 5240, z = 78, y = -4069, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Mining Outpost Droid Transport", x = -2500, z = 15, y = 1500, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Research Station Droid Transport", x = 3000, z = 25, y = -2000, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
 	},
 
 	jtlLaunchPoint = {"space_dathomir", -6900, 2750, -4000},
@@ -192,9 +196,23 @@ dathomir = {
 	},
 
 	planetObjects = {
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.701463, oz = 0, ow = 0.712705, x = 592.612, z = 6, y = 3089.84, parentid = 0},
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = -67.6585, z = 18, y = -1595.3, parentid = 0},
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = 5289.6, z = 78.5, y = -4146.1, parentid = 0}
+		-- Original commented character builder terminals
+		-- {templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.701463, oz = 0, ow = 0.712705, x = 592.612, z = 6, y = 3089.84, parentid = 0},
+		-- {templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = -67.6585, z = 18, y = -1595.3, parentid = 0},
+		-- {templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = 5289.6, z = 78.5, y = -4146.1, parentid = 0}
+
+		-- Add your permanent droid transport objects here:
+		-- Aurillia Droid Transport Station
+		{templateFile = "object/mobile/protocol_droid_3po_red.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5238, z = 78, y = -4069, parentid = 0},
+		{templateFile = "object/building/general/travel_terminal_s01.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5240, z = 78, y = -4069, parentid = 0},
+		
+		-- Mining Outpost Droid Transport Station
+		{templateFile = "object/mobile/protocol_droid_3po_red.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -2502, z = 15, y = 1500, parentid = 0},
+		{templateFile = "object/building/general/travel_terminal_s01.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -2500, z = 15, y = 1500, parentid = 0},
+		
+		-- Research Station Droid Transport
+		{templateFile = "object/mobile/protocol_droid_3po_red.iff", ox = 0, oy = 0.707, oz = 0, ow = 0.707, x = 2998, z = 25, y = -2000, parentid = 0},
+		{templateFile = "object/building/general/travel_terminal_s01.iff", ox = 0, oy = 0.707, oz = 0, ow = 0.707, x = 3000, z = 25, y = -2000, parentid = 0},
 	}
 }
 
