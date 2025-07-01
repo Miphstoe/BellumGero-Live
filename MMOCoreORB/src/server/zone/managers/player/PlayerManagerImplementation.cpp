@@ -7224,7 +7224,6 @@ void PlayerManagerImplementation::iteratePlayerNames(const PlayerNameIterator& i
 		iterator(name, oid);
 	}
 }
-}
 
 bool PlayerManagerImplementation::isJedi(CreatureObject* player) {
 	if (player == nullptr)
