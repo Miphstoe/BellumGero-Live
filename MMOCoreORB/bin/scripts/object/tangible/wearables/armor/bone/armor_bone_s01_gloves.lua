@@ -86,7 +86,7 @@ object_tangible_wearables_armor_bone_armor_bone_s01_gloves = object_tangible_wea
 	-- Damagetypes in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
+	specialResists = ENERGY,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 6,

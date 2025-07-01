@@ -90,7 +90,7 @@ object_tangible_wearables_armor_chitin_armor_chitin_s01_bicep_l = object_tangibl
 	-- Damagetypes in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
+	specialResists = KINETIC,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 13,

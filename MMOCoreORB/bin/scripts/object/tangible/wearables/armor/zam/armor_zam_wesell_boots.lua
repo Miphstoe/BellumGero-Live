@@ -86,7 +86,7 @@ object_tangible_wearables_armor_zam_armor_zam_wesell_boots = object_tangible_wea
 	-- Damage types in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
+	specialResists = HEAT,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,

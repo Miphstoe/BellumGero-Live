@@ -53,7 +53,7 @@ object_tangible_wearables_armor_ithorian_guardian_ith_armor_s02_leggings = objec
 	-- Damage types in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
+	specialResists = KINETIC,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,

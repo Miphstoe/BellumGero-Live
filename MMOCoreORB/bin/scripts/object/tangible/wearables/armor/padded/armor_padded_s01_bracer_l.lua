@@ -90,7 +90,7 @@ object_tangible_wearables_armor_padded_armor_padded_s01_bracer_l = object_tangib
 	-- Damage types in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
+	specialResists = blast,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
