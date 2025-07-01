@@ -30,84 +30,58 @@ public:
 	}
 
 	void run() {
-		if (player == nullptr) {
-			return;
-		}
-
 		Locker playerLocker(player);
 
 		try {
 			Reference<ForceFocusTask*> ffocusTask = player->getPendingTask("forcefocus").castTo<ForceFocusTask*>();
 
-			if (!player->isMeditating()) {
+			if (!player->isMeditating())
 				return;
-			}
 
-			bool healPerformed = false;
-
-			// Wound healing
-			Vector<uint8> woundedPools;
-			Vector<uint8> hamPools;
-			Vector<uint8> regenPools;
-
-			for (uint8 i = 0; i < 9; ++i) {
-				if (player->getWounds(i) > 0) {
-					woundedPools.add(i);
-					if ((i == 0) || (i == 3) || (i == 6)) {
-						hamPools.add(i);
-					}
-					else if ((i == 2) || (i == 5) || (i == 8)) {
-						regenPools.add(i);
-					}
-				}
-			}
-
-			if (woundedPools.size() > 0) {
-				uint8 pool;
-				if (hamPools.size() > 0) {
-					pool = hamPools.get(System::random(hamPools.size() - 1));
-				}
-				else if (regenPools.size() > 0) {
-					pool = regenPools.get(System::random(regenPools.size() - 1));
-				}
-				else {
-					pool = woundedPools.get(System::random(woundedPools.size() - 1));
-				}
-
-				int wounds = player->getWounds(pool);
-				int heal = 25;
-				heal = Math::min(wounds, heal);
-
-				player->healWound(player, pool, heal, true, false);
-				healPerformed = true;
-			}
-
-			// DoT healing
+			// Priority system: DoTs first, then wounds, then battle fatigue (only one type per tick)
 			if (player->isBleeding() || player->isPoisoned() || player->isDiseased()) {
-				if (player->isBleeding())
+				// Priority 1: DoT healing
+				if (player->isBleeding()) {
 					player->healDot(CreatureState::BLEEDING, 20);
-				else if (player->isPoisoned())
+					player->sendSystemMessage("Healing bleeding");
+				} else if (player->isPoisoned()) {
 					player->healDot(CreatureState::POISONED, 20);
-				else if (player->isDiseased())
+					player->sendSystemMessage("Healing poison");
+				} else if (player->isDiseased()) {
 					player->healDot(CreatureState::DISEASED, 20);
+					player->sendSystemMessage("Healing disease");
+				}
+			} else {
+				// Check for wounds (Priority 2)
+				Vector<uint8> woundedPools;
+				for (uint8 i = 0; i < 9; ++i) {
+					if (player->getWounds(i) > 0)
+						woundedPools.add(i);
+				}
 
-				healPerformed = true;
+				if (woundedPools.size() > 0) {
+					// Priority 2: Wound healing
+					uint8 pool = woundedPools.get(System::random(woundedPools.size() - 1));
+					int wounds = player->getWounds(pool);
+					int heal = 25;
+					heal = Math::min(wounds, heal);
+
+					player->healWound(player, pool, heal, true, false);
+					player->sendSystemMessage("Healed " + String::valueOf(heal) + " wounds");
+				} else {
+					// Priority 3: Battle fatigue (only if no DoTs and no wounds)
+					int battleFatigue = player->getShockWounds();
+					if (battleFatigue > 0) {
+						int healAmount = Math::min(10, battleFatigue);
+						player->addShockWounds(-healAmount, true, false);
+						player->sendSystemMessage("Healed " + String::valueOf(healAmount) + " battle fatigue");
+					}
+				}
 			}
 
-			// BF healing
-			int fixedHealAmount = 10;
-			int battleFatigue = player->getShockWounds();
-
-			if (battleFatigue > 0) {
-				int healAmount = Math::min(fixedHealAmount, battleFatigue);
-				player->addShockWounds(-healAmount, true, false);
-				healPerformed = true;
-			}
-
-			// Client effect
+			// Visual effect
 			player->playEffect("clienteffect/pl_force_meditate_self.cef", "");
 
-			// Reschedule task
 			if (ffocusTask != nullptr)
 				ffocusTask->reschedule(3000);
 			else

@@ -50,6 +50,7 @@
 #include "server/zone/objects/creature/events/ProposeUnityExpiredTask.h"
 #include "server/zone/objects/player/events/ForceMeditateTask.h"
 #include "server/zone/objects/player/events/MeditateTask.h"
+#include "server/zone/objects/player/events/ForceFocusTask.h"
 #include "server/zone/objects/player/events/LogoutTask.h"
 #include "server/zone/objects/player/sessions/EntertainingSession.h"
 #include "templates/building/CloneSpawnPoint.h"
@@ -3216,7 +3217,7 @@ int PlayerManagerImplementation::notifyObserverEvent(uint32 eventType, Observabl
 			}
 
 			// Check POSTERCHANGE on Force Focus...
-			Reference<ForceMeditateTask*> ffocusTask = creature->getPendingTask("forcefocus").castTo<ForceMeditateTask*>();
+			Reference<ForceFocusTask*> ffocusTask = creature->getPendingTask("forcefocus").castTo<ForceFocusTask*>();
 			if (ffocusTask != nullptr) {
     			creature->removePendingTask("forcefocus");
 
