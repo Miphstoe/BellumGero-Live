@@ -49,7 +49,7 @@ object_draft_schematic_clothing_clothing_armor_padded_bracer_r = object_draft_sc
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
    complexity = 40, 
-   size = 4,
+   size = 1,
    factoryCrateType = "object/factory/factory_crate_clothing.iff", 
 
    xpType = "crafting_clothing_armor", 
@@ -67,7 +67,7 @@ object_draft_schematic_clothing_clothing_armor_padded_bracer_r = object_draft_sc
    ingredientTitleNames = {"auxilary_coverage", "body", "liner", "hardware_and_attachments", "binding_and_reinforcement", "padding", "armor", "load_bearing_harness", "reinforcement"},
    ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1},
    resourceTypes = {"hide_leathery_lok", "hide_scaley", "fiberplast_corellia", "metal", "petrochem_inert_polymer", "hide_wooly", "object/tangible/component/armor/shared_armor_segment_padded.iff", "object/tangible/component/clothing/shared_synthetic_cloth.iff", "object/tangible/component/clothing/shared_reinforced_fiber_panels.iff"},
-   resourceQuantities = {40, 40, 20, 25, 25, 30, 1, 2, 1},
+   resourceQuantities = {50, 50, 25, 30, 20, 20, 2, 1, 1},
    contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 

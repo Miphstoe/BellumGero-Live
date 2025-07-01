@@ -79,7 +79,9 @@ object_tangible_wearables_armor_chitin_armor_chitin_s01_helmet = object_tangible
 				"object/mobile/vendor/zabrak_male.iff" },
 
 	-- Damagetypes in WeaponObject
-	vulnerability = STUN + HEAT + COLD + ELECTRICITY + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
+
+	specialResists = KINETIC,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 13,
@@ -101,13 +103,13 @@ object_tangible_wearables_armor_chitin_armor_chitin_s01_helmet = object_tangible
 	acid = 15,
 	lightSaber = 0,
 
-	numberExperimentalProperties = {1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 2, 1},
-	experimentalProperties = {"XX", "XX", "XX", "OQ", "SR", "OQ", "SR", "OQ", "UT", "MA", "OQ", "MA", "OQ", "MA", "OQ", "XX", "XX", "OQ", "SR", "XX"},
-	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	experimentalGroupTitles = {"null", "null", "null", "null", "exp_quality", "exp_durability", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
+	numberExperimentalProperties = {1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 2, 1},
+	experimentalProperties = {"XX", "XX", "XX", "XX", "OQ", "SR", "OQ", "UT", "MA", "OQ", "MA", "OQ", "MA", "OQ", "XX", "XX", "OQ", "SR", "XX"},
+	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	experimentalGroupTitles = {"null", "null", "null", "exp_durability", "exp_quality", "exp_resistance", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
 	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
-	experimentalMin = {0, 0, 0, 1000, 5, 15000, 13, 13, 188, 1, 1, 5, 15000},
-	experimentalMax = {0, 0, 0, 1000, 30, 25000, 8, 8, 113, 1, 1, 40, 25000},
+	experimentalMin = {0, 0, 0, 1000, 1, 30000, 25, 22, 300, 1, 0, 0, 0},
+	experimentalMax = {0, 0, 0, 1000, 40, 50000, 15, 13, 180, 1, 0, 0, 0},
 	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }
