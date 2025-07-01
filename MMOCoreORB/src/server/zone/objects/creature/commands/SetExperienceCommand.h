@@ -58,9 +58,13 @@ public:
 			args.getStringToken(xpType);
 			int amount = args.getIntToken();
 
-			int num = (player->getSlottedObject("ghost").castTo<PlayerObject*>())->getExperience(xpType);
+			PlayerObject* playerObject = player->getPlayerObject();
+			int num = playerObject->getExperience(xpType);
 			amount -= num;
-			player->getZoneServer()->getPlayerManager()->awardExperience(player, xpType, amount);
+
+			// Admin command - bypass all multipliers and set exact amount
+			TransactionLog trx(TrxCode::EXPERIENCE, player);
+			playerObject->addExperience(trx, xpType, amount);
 
 			creature->sendSystemMessage("Experience Successfully changed");
 

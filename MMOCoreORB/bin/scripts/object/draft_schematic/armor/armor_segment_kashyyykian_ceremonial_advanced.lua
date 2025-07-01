@@ -49,7 +49,7 @@ object_draft_schematic_armor_armor_segment_kashyyykian_ceremonial_advanced = obj
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 21,
-	size = 0,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 
@@ -64,12 +64,12 @@ object_draft_schematic_armor_armor_segment_kashyyykian_ceremonial_advanced = obj
 	customizationStringNames = {},
 	customizationDefaults = {},
 
-	ingredientTemplateNames = {"craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n"},
-	ingredientTitleNames = {"armor_segment_ceremonial", "segment_mounting_tabs", "segment_enhancement"},
-	ingredientSlotType = {0, 0, 3},
-	resourceTypes = {"hide_leathery_yavin4", "wood_deciduous_endor", "object/tangible/component/armor/shared_base_armor_segment_enhancement.iff"},
-	resourceQuantities = {8, 25, 1},
-	contribution = {100, 100, 100},
+	ingredientTemplateNames = {"craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n", "craft_armor_ingredients_n"},
+	ingredientTitleNames = {"segment_layer_assembly_plate", "armor_layer_weld_tabs", "segment_mounting_tabs", "defensive_layer", "defensive_layer_2", "defensive_layer_3", "segment_enhancement"},
+	ingredientSlotType = {0, 0, 0, 3, 3, 3, 3},
+	resourceTypes = {"hide_leathery_yavin4", "wood_deciduous_endor", "copper_polysteel", "object/tangible/component/armor/shared_armor_layer.iff", "object/tangible/component/armor/shared_armor_layer.iff", "object/tangible/component/armor/shared_armor_layer.iff", "object/tangible/component/armor/shared_base_armor_segment_enhancement.iff"},
+	resourceQuantities = {16, 8, 5, 1, 1, 1, 1},
+	contribution = {100, 100, 100, 100, 100, 100, 100},
 
 	targetTemplate = "object/tangible/component/armor/armor_segment_kashyyykian_ceremonial_advanced.iff",
 

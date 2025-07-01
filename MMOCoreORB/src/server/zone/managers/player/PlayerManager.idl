@@ -152,6 +152,7 @@ class PlayerManager extends Observer implements Logger {
 	private native void loadQuestInfo();
 	private native void loadQuestCrcTable();
 
+
 	public native void finalize();
 
 	private transient PermissionLevelList permissionLevelList;
@@ -220,6 +221,7 @@ class PlayerManager extends Observer implements Logger {
 	public native void awardBadge(PlayerObject ghost, final Badge badge);
 
 	public native void setExperienceMultiplier(float globalMultiplier);
+	
 	public native int awardExperience(CreatureObject player, final string xpType, int amount, boolean sendSystemMessage = true, float localMultiplier = 1.0f, boolean applyModifiers = true, boolean spaceBonus = false);
 
 	@local @dereferenced

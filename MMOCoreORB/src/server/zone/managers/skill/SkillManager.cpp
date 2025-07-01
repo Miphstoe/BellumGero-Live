@@ -34,6 +34,179 @@ SkillManager::SkillManager()
 	apprenticeshipEnabled = false;
 }
 
+bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired) {
+	Skill* skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr) {
+		return false;
+	}
+
+	//If they already have the skill, then return false.
+	if (creature->hasSkill(skillName)) {
+		return false;
+	}
+
+	if (!fulfillsSkillPrerequisites(skillName, creature)) {
+		return false;
+	}
+
+	ManagedReference<PlayerObject* > ghost = creature->getPlayerObject();
+	if (ghost != nullptr) {
+		//Check if player has enough xp to learn the skill.
+		if (!noXpRequired) {
+			if (ghost->getExperience(skill->getXpType()) < skill->getXpCost()) {
+				return false;
+			}
+		}
+
+		//Check if player has enough skill points to learn the skill.
+		if (ghost->getSkillPoints() < skill->getSkillPointsRequired()) {
+			return false;
+		}
+	} else {
+		//Could not retrieve player object.
+		return false;
+	}
+
+
+	return true;
+}
+
+bool SkillManager::fulfillsSkillPrerequisitesAndXp(const String& skillName, CreatureObject* creature) {
+	if (!fulfillsSkillPrerequisites(skillName, creature)) {
+		return false;
+	}
+
+	Skill* skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr) {
+		return false;
+	}
+
+	ManagedReference<PlayerObject* > ghost = creature->getPlayerObject();
+	if (ghost != nullptr) {
+		//Check if player has enough xp to learn the skill.
+		if (skill->getXpCost() > 0 && ghost->getExperience(skill->getXpType()) < skill->getXpCost()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool SkillManager::fulfillsSkillPrerequisites(const String& skillName, CreatureObject* creature) {
+	Skill* skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr) {
+		return false;
+	}
+
+	if (skillName.contains("admin_") && !(creature->getPlayerObject()->getAdminLevel() > 0)) {
+		return false;
+	}
+
+	auto requiredSpecies = skill->getSpeciesRequired();
+	if (requiredSpecies->size() > 0) {
+		bool foundSpecies = false;
+		for (int i = 0; i < requiredSpecies->size(); i++) {
+			if (creature->getSpeciesName() == requiredSpecies->get(i)) {
+				foundSpecies = true;
+				break;
+			}
+		}
+		if (!foundSpecies) {
+			return false;
+		}
+	}
+
+	//Check for required skills.
+	auto requiredSkills = skill->getSkillsRequired();
+	for (int i = 0; i < requiredSkills->size(); ++i) {
+		const String& requiredSkillName = requiredSkills->get(i);
+		Skill* requiredSkill = skillMap.get(requiredSkillName.hashCode());
+
+		if (requiredSkill == nullptr) {
+			continue;
+		}
+
+		if (!creature->hasSkill(requiredSkillName)) {
+			return false;
+		}
+	}
+
+	PlayerObject* ghost = creature->getPlayerObject();
+	if (ghost == nullptr || ghost->getJediState() < skill->getJediStateRequired()) {
+		return false;
+	}
+
+	if (ghost->isPrivileged())
+		return true;
+
+	if (skillName.beginsWith("force_")) {
+		return JediManager::instance()->canLearnSkill(creature, skillName);
+	}
+
+	return true;
+}
+
+int SkillManager::getForceSensitiveSkillCount(CreatureObject* creature, bool includeNoviceMasterBoxes) {
+	const SkillList* skills =  creature->getSkillList();
+	int forceSensitiveSkillCount = 0;
+
+	for (int i = 0; i < skills->size(); ++i) {
+		const String& skillName = skills->get(i)->getSkillName();
+		if (skillName.contains("force_sensitive") && (includeNoviceMasterBoxes || skillName.indexOf("0") != -1)) {
+			forceSensitiveSkillCount++;
+		}
+	}
+
+	return forceSensitiveSkillCount;
+}
+
+bool SkillManager::villageKnightPrereqsMet(CreatureObject* creature, const String& skillToDrop) {
+	const SkillList* skillList = creature->getSkillList();
+
+	int fullTrees = 0;
+	int totalJediPoints = 0;
+
+	for (int i = 0; i < skillList->size(); ++i) {
+		Skill* skill = skillList->get(i);
+
+		String skillName = skill->getSkillName();
+		if (skillName.contains("force_discipline_") &&
+			(skillName.indexOf("0") != -1 || skillName.contains("novice") || skillName.contains("master") )) {
+			totalJediPoints += skill->getSkillPointsRequired();
+
+			if (skillName.indexOf("4") != -1) {
+				fullTrees++;
+			}
+		}
+	}
+
+	if (!skillToDrop.isEmpty()) {
+		Skill* skillBeingDropped = skillMap.get(skillToDrop.hashCode());
+
+		if (skillToDrop.indexOf("4") != -1) {
+			fullTrees--;
+		}
+
+		totalJediPoints -= skillBeingDropped->getSkillPointsRequired();
+	}
+
+	return fullTrees >= 2 && totalJediPoints >= 206;
+}
+
+void SkillManager::getPlayerDroidCommands(PlayerObject* ghost, Vector<String>& playerDroidCommands) {
+	if (ghost == nullptr) {
+		return;
+	}
+
+	for (int i = 0; i < droidCommands.size(); ++i) {
+		if (ghost->hasAbility(droidCommands.get(i)))
+			playerDroidCommands.add(droidCommands.get(i));
+	}
+}
+
 SkillManager::~SkillManager() {
 	delete performanceManager;
 }
@@ -823,6 +996,9 @@ void SkillManager::updateXpLimits(PlayerObject* ghost) {
 			xpTypeCapList->put(xpType, xpLimit);
 	}
 
+	// COMMENTED OUT TO PREVENT XP LOSS WHEN TRAINING/UNTRAINING SKILLS
+	// This section was automatically capping XP to the calculated limits
+	/*
 	//Iterate over the player xp types and cap all xp types to the limits.
 	DeltaVectorMap<String, int>* experienceList = ghost->getExperienceList();
 
@@ -833,177 +1009,5 @@ void SkillManager::updateXpLimits(PlayerObject* ghost) {
 			ghost->addExperience(trx, xpType, xpTypeCapList->get(xpType) - experienceList->get(xpType), true);
 		}
 	}
-}
-
-bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired) {
-	Skill* skill = skillMap.get(skillName.hashCode());
-
-	if (skill == nullptr) {
-		return false;
-	}
-
-	//If they already have the skill, then return false.
-	if (creature->hasSkill(skillName)) {
-		return false;
-	}
-
-	if (!fulfillsSkillPrerequisites(skillName, creature)) {
-		return false;
-	}
-
-	ManagedReference<PlayerObject* > ghost = creature->getPlayerObject();
-	if (ghost != nullptr) {
-		//Check if player has enough xp to learn the skill.
-		if (!noXpRequired) {
-			if (ghost->getExperience(skill->getXpType()) < skill->getXpCost()) {
-				return false;
-			}
-		}
-
-		//Check if player has enough skill points to learn the skill.
-		if (ghost->getSkillPoints() < skill->getSkillPointsRequired()) {
-			return false;
-		}
-	} else {
-		//Could not retrieve player object.
-		return false;
-	}
-
-
-	return true;
-}
-
-bool SkillManager::fulfillsSkillPrerequisitesAndXp(const String& skillName, CreatureObject* creature) {
-	if (!fulfillsSkillPrerequisites(skillName, creature)) {
-		return false;
-	}
-
-	Skill* skill = skillMap.get(skillName.hashCode());
-
-	if (skill == nullptr) {
-		return false;
-	}
-
-	ManagedReference<PlayerObject* > ghost = creature->getPlayerObject();
-	if (ghost != nullptr) {
-		//Check if player has enough xp to learn the skill.
-		if (skill->getXpCost() > 0 && ghost->getExperience(skill->getXpType()) < skill->getXpCost()) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool SkillManager::fulfillsSkillPrerequisites(const String& skillName, CreatureObject* creature) {
-	Skill* skill = skillMap.get(skillName.hashCode());
-
-	if (skill == nullptr) {
-		return false;
-	}
-
-	if (skillName.contains("admin_") && !(creature->getPlayerObject()->getAdminLevel() > 0)) {
-		return false;
-	}
-
-	auto requiredSpecies = skill->getSpeciesRequired();
-	if (requiredSpecies->size() > 0) {
-		bool foundSpecies = false;
-		for (int i = 0; i < requiredSpecies->size(); i++) {
-			if (creature->getSpeciesName() == requiredSpecies->get(i)) {
-				foundSpecies = true;
-				break;
-			}
-		}
-		if (!foundSpecies) {
-			return false;
-		}
-	}
-
-	//Check for required skills.
-	auto requiredSkills = skill->getSkillsRequired();
-	for (int i = 0; i < requiredSkills->size(); ++i) {
-		const String& requiredSkillName = requiredSkills->get(i);
-		Skill* requiredSkill = skillMap.get(requiredSkillName.hashCode());
-
-		if (requiredSkill == nullptr) {
-			continue;
-		}
-
-		if (!creature->hasSkill(requiredSkillName)) {
-			return false;
-		}
-	}
-
-	PlayerObject* ghost = creature->getPlayerObject();
-	if (ghost == nullptr || ghost->getJediState() < skill->getJediStateRequired()) {
-		return false;
-	}
-
-	if (ghost->isPrivileged())
-		return true;
-
-	if (skillName.beginsWith("force_")) {
-		return JediManager::instance()->canLearnSkill(creature, skillName);
-	}
-
-	return true;
-}
-
-int SkillManager::getForceSensitiveSkillCount(CreatureObject* creature, bool includeNoviceMasterBoxes) {
-	const SkillList* skills =  creature->getSkillList();
-	int forceSensitiveSkillCount = 0;
-
-	for (int i = 0; i < skills->size(); ++i) {
-		const String& skillName = skills->get(i)->getSkillName();
-		if (skillName.contains("force_sensitive") && (includeNoviceMasterBoxes || skillName.indexOf("0") != -1)) {
-			forceSensitiveSkillCount++;
-		}
-	}
-
-	return forceSensitiveSkillCount;
-}
-
-bool SkillManager::villageKnightPrereqsMet(CreatureObject* creature, const String& skillToDrop) {
-	const SkillList* skillList = creature->getSkillList();
-
-	int fullTrees = 0;
-	int totalJediPoints = 0;
-
-	for (int i = 0; i < skillList->size(); ++i) {
-		Skill* skill = skillList->get(i);
-
-		String skillName = skill->getSkillName();
-		if (skillName.contains("force_discipline_") &&
-			(skillName.indexOf("0") != -1 || skillName.contains("novice") || skillName.contains("master") )) {
-			totalJediPoints += skill->getSkillPointsRequired();
-
-			if (skillName.indexOf("4") != -1) {
-				fullTrees++;
-			}
-		}
-	}
-
-	if (!skillToDrop.isEmpty()) {
-		Skill* skillBeingDropped = skillMap.get(skillToDrop.hashCode());
-
-		if (skillToDrop.indexOf("4") != -1) {
-			fullTrees--;
-		}
-
-		totalJediPoints -= skillBeingDropped->getSkillPointsRequired();
-	}
-
-	return fullTrees >= 2 && totalJediPoints >= 206;
-}
-
-void SkillManager::getPlayerDroidCommands(PlayerObject* ghost, Vector<String>& playerDroidCommands) {
-	if (ghost == nullptr) {
-		return;
-	}
-
-	for (int i = 0; i < droidCommands.size(); ++i) {
-		if (ghost->hasAbility(droidCommands.get(i)))
-			playerDroidCommands.add(droidCommands.get(i));
-	}
+	*/
 }

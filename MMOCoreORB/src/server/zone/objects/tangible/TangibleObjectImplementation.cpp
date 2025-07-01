@@ -1381,7 +1381,7 @@ void TangibleObjectImplementation::repair(CreatureObject* player, RepairTool * r
 
 	/// Profession Bonus
 	if (player->hasSkill(repairTemplate->getSkill()))
-		repairChance += 35;
+		repairChance += 45;
 
 	/// Get Skill mods
 	repairChance += player->getSkillMod(repairTemplate->getSkillMod());
@@ -1396,18 +1396,15 @@ void TangibleObjectImplementation::repair(CreatureObject* player, RepairTool * r
 
 	/// Increase if near station
 	if (playerMan->getNearbyCraftingStation(player, repairTemplate->getStationType()) != nullptr) {
-		repairChance += 15;
+		repairChance += 20;
 	}
 
 	/// Subtract battle fatigue
 	repairChance -= (player->getShockWounds() / 2);
 
-	/// Subtract complexity
-	repairChance -= (getComplexity() / 3);
-
-	/// 5% random failure
-	if (getMaxCondition() < 20 || roll < 5)
-		repairChance = 0;
+	/// Items below 5 max condition cannot be repaired
+	if (getMaxCondition() < 5)
+    repairChance = 0;
 
 	if (roll > 95)
 		repairChance = 100;

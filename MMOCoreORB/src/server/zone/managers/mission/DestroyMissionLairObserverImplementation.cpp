@@ -1,4 +1,3 @@
-
 #include "server/zone/managers/mission/DestroyMissionLairObserver.h"
 #include "templates/mobile/LairTemplate.h"
 #include "server/zone/objects/creature/ai/CreatureTemplate.h"
@@ -65,15 +64,15 @@ bool DestroyMissionLairObserverImplementation::checkForNewSpawns(TangibleObject*
 		spawnLimit *= 2;
 	}
 
-	// Schedule the aggro task
+	// Schedule the aggro task - MAXIMUM AGGRESSION
 	if (attacker != nullptr && attacker->isCreatureObject() && lastAggroTime.isPast()) {
 		lastAggroTime.updateToCurrentTime();
-		lastAggroTime.addMiliTime(LairObserver::AGGRO_CHECK_INTERVAL * 1000);
+		lastAggroTime.addMiliTime(500); // 0.5 second cooldown - maximum aggro frequency
 
 		auto aggroTask = new LairAggroTask(lairObject, attacker, _this.getReferenceUnsafeStaticCast(), false);
 
 		if (aggroTask != nullptr) {
-			aggroTask->schedule(LairObserver::AGGRO_TASK_DELAY * 1000);
+			aggroTask->schedule(100); // Immediate aggro - 0.1 second delay
 		}
 	}
 
@@ -107,9 +106,9 @@ bool DestroyMissionLairObserverImplementation::checkForNewSpawns(TangibleObject*
 					return false;
 				}
 				break;
-			// 2nd Wave of spawns when lair condition drops past half of the total condition
+			// 2nd Wave of spawns when lair condition drops past 30% of the total condition (70% health remaining)
 			case 2:
-				if (conditionDamage > (maxCondition / 2)) {
+				if (conditionDamage > (maxCondition * 3 / 10)) {
 					spawnNumber.increment();
 				} else {
 					return false;
@@ -170,16 +169,8 @@ bool DestroyMissionLairObserverImplementation::checkForNewSpawns(TangibleObject*
 				continue;
 			}
 
-			// Initial spawn wave should spawn quicker then the others
-			if (spawnNumber < 2) {
-				// Initial spawn is spawned almost immediately
-				spawnTask->schedule((j + 1) * 200);
-			} else {
-				// Create a spawn time that is at least between the min and max
-				int spawnTime = System::random(LairObserver::SPAWN_TIME_MAX - LairObserver::SPAWN_TIME_MIN) + LairObserver::SPAWN_TIME_MIN;
-
-				spawnTask->schedule(spawnTime * 1000);
-			}
+			// All waves spawn immediately - NO MORE SLOW SPAWNING
+			spawnTask->schedule(50); // 50ms delay for all creatures - practically instant
 		}
 	}
 
@@ -213,8 +204,8 @@ void DestroyMissionLairObserverImplementation::spawnLairMobile(LairObject* lair,
 	float tamingChance = creatureTemplate->getTame();
 	uint32 lairTemplateCRC = templateToSpawn.hashCode();
 
-	float x = lair->getPositionX() + (size - System::random(size * 20) / 10.0f);
-	float y = lair->getPositionY() + (size - System::random(size * 20) / 10.0f);
+	float x = lair->getPositionX() + (size/4 - System::random(size * 5) / 10.0f);
+	float y = lair->getPositionY() + (size/4 - System::random(size * 5) / 10.0f);
 	float z = zone->getHeight(x, y);
 
 	bool spawnScout = false;
@@ -296,12 +287,7 @@ void DestroyMissionLairObserverImplementation::spawnLairMobile(LairObject* lair,
 		return;
 	}
 
-	// Any spawn wave with the exception of the initial wave causes lair damage
-	int newDamage = (lair->getMaxCondition() / ((lairTemplate->getSpawnLimit() / 3) * 5));
-
-#ifdef DEBUG_MISSION_LAIRS
-	info(true) << "Wild Lair - Name: " << lair->getDisplayedName() << " ID: " << lair->getObjectID() << " Damaging Self from creature spawn: " << newDamage;
-#endif // DEBUG_MISSION_LAIRS
-
-	lair->inflictDamage(lair, 0, newDamage, true, true, false);
+	// Self-damage system removed - lairs no longer hurt themselves when spawning creatures
+	// int newDamage = (lair->getMaxCondition() / ((lairTemplate->getSpawnLimit() / 3) * 5));
+	// lair->inflictDamage(lair, 0, newDamage, true, true, false);
 }

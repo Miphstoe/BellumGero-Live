@@ -25,7 +25,11 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 		return
 	end
 
+	-- Add some debugging
+	print("JunkDealer: Found " .. #junkList .. " eligible items")
+	
 	local suiManager = LuaSuiManager()
+	-- Restore original 3-button structure: Cancel, Sell All (junk only), Sell (individual any item)
 	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell_all", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
 end
 
@@ -50,12 +54,6 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 		return junkList
 	end
 
-	local dealerNum = self:getDealerNum(dealerType)
-
-	if dealerNum == 0 then
-		return junkList
-	end
-
 	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
 		local pItem = SceneObject(pInventory):getContainerObject(i)
 
@@ -64,16 +62,97 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 			local sceno = SceneObject(pItem)
 
 			if sceno:getObjectID() ~= skipItem then
-				if tano:getJunkDealerNeeded() & dealerNum > 0 and tano:getCraftersName() == "" and not tano:isBroken() and not tano:isSliced() and not tano:isNoTrade() and sceno:getContainerObjectsSize() == 0 then
-					local name = sceno:getDisplayedName()
-					local value = tano:getJunkValue()
+				-- Get item info first
+				local name = sceno:getDisplayedName()
+				local craftersName = ""
+				
+				-- Safely get crafter's name
+				if tano.getCraftersName then
+					craftersName = tano:getCraftersName() or ""
+				end
+				
+				-- More comprehensive resource container detection
+				local isResourceContainer = false
+				if name ~= nil then
+					local lowerName = string.lower(name)
+					
+					-- Check for resource container keywords
+					local resourceKeywords = {
+						"hide", "bone", "meat", "milk", "blood", "hair", "horn", "scalp",
+						"wood", "softwood", "hardwood", "conifer", "deciduous", "evergreen",
+						"ore", "metal", "iron", "copper", "aluminum", "steel", "radioactive",
+						"gas", "inert", "reactive", "chemical", "liquid", "solid",
+						"water", "moisture", "condensed", "vapor", "steam",
+						"energy", "geothermal", "solar", "tidal", "wind",
+						"gemstone", "crystal", "carbonate", "sedimentary", "igneous",
+						"fiber", "vegetable", "fruit", "grain", "tuber", "berry",
+						"seafood", "fish", "crustacean", "mollusk"
+					}
+					
+					-- Also check for common resource container patterns
+					local containerPatterns = {
+						"container", "units of", "units", "sample", "batch"
+					}
+					
+					-- Check if name contains resource keywords
+					for _, keyword in ipairs(resourceKeywords) do
+						if string.find(lowerName, keyword) then
+							isResourceContainer = true
+							break
+						end
+					end
+					
+					-- Additional checks for container patterns
+					if not isResourceContainer then
+						for _, pattern in ipairs(containerPatterns) do
+							if string.find(lowerName, pattern) then
+								isResourceContainer = true
+								break
+							end
+						end
+					end
+					
+					-- Check for quantity brackets [number] which almost always indicates resources
+					if not isResourceContainer and string.find(name, "%[%d+%]") then
+						isResourceContainer = true
+					end
+					
+					-- Check for "wooly hide" specifically since that was your example
+					if string.find(lowerName, "wooly") then
+						isResourceContainer = true
+					end
+				end
+				
+				print("Checking item: " .. (name or "nil") .. ", crafter: " .. craftersName .. ", isResource: " .. tostring(isResourceContainer))
+				
+				-- Check exclusions
+				local isCrafted = (craftersName ~= nil and craftersName ~= "")
+				
+				if isResourceContainer then
+					print("Excluding resource container: " .. name)
+				elseif isCrafted then
+					print("Excluding crafted item: " .. name .. " by " .. craftersName)
+				elseif name ~= nil and name ~= "" then
+					-- Item is eligible
+					local value = 1 -- Default value
+					
+					-- Safely get junk value
+					if tano.getJunkValue then
+						local junkValue = tano:getJunkValue()
+						if junkValue ~= nil and junkValue > 0 then
+							value = junkValue
+						end
+					end
+					
 					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
+					print("Added item to sell list: " .. name .. " for " .. value .. " credits")
 				end
 			end
 		end
 	end
 
+	print("Total eligible items found: " .. #junkList)
 	return junkList
 end
 
@@ -86,8 +165,10 @@ function JunkDealer:sellListSuiCallback(pPlayer, pSui, eventIndex, otherPressed,
 	end
 
 	if (otherPressed == "true") then
-		self:sellAllItems(pPlayer, pSui, pInventory)
+		-- "Sell All" button pressed - only sell actual junk items
+		self:sellAllJunkOnly(pPlayer, pSui, pInventory)
 	else
+		-- "Sell" button pressed - sell individual item (any item)
 		rowIndex = tonumber(rowIndex)
 
 		if (rowIndex == -1) then
@@ -96,6 +177,48 @@ function JunkDealer:sellListSuiCallback(pPlayer, pSui, eventIndex, otherPressed,
 		end
 
 		self:sellItem(pPlayer, pSui, rowIndex, pInventory)
+	end
+end
+
+function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
+	deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+	local listBox = LuaSuiListBox(pSui)
+	local pNpc = listBox:getUsingObject()
+
+	if pNpc == nil then
+		return
+	end
+
+	local name = SceneObject(pNpc):getDisplayedName()
+	local amount = 0
+	local itemsSold = 0
+
+	-- Only sell items that have proper junk values (> 0)
+	for i = 0, listBox:getMenuSize() - 1, 1 do
+		local oid = listBox:getMenuObjectID(i)
+		local pItem = SceneObject(pInventory):getContainerObjectById(oid)
+
+		if pItem ~= nil then
+			local value = TangibleObject(pItem):getJunkValue()
+			
+			-- Only sell items with actual junk values > 0
+			if value ~= nil and value > 0 then
+				createEvent(10, "JunkDealer", "destroyItem", pItem, "")
+				amount = amount + value
+				itemsSold = itemsSold + 1
+			end
+		end
+	end
+
+	if itemsSold > 0 then
+		CreatureObject(pPlayer):addCashCredits(amount, true)
+
+		local messageString = LuaStringIdChatParameter("@loot_dealer:prose_sold_all_junk") -- You sell all of your loot to %TT for %DI credits
+		messageString:setTT(name)
+		messageString:setDI(amount)
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	else
+		CreatureObject(pPlayer):sendSystemMessage("You have no actual junk items to sell in bulk.")
 	end
 end
 
@@ -155,6 +278,11 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	local skipItem = item:getObjectID()
 	local name = item:getDisplayedName()
 	local value = TangibleObject(pItem):getJunkValue()
+	
+	-- If item has no junk value, give it a default value of 250 credit
+	if value == nil or value <= 0 then
+		value = 250 -- Default value for items without a junk value
+	end
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
 

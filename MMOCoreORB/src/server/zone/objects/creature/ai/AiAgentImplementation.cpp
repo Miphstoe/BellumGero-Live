@@ -1845,6 +1845,9 @@ void AiAgentImplementation::setDespawnOnNoPlayerInRange(bool val) {
 }
 
 void AiAgentImplementation::runAway(CreatureObject* target, float range, bool random, bool setTarget) {
+	
+	range = 1.0f;  // Override any range parameter
+	
 	if (getParent().get() != nullptr || getParentID() > 0 || target == nullptr || target->getParent().get() != nullptr || getZoneUnsafe() == nullptr) {
 		return;
 	}
@@ -1916,7 +1919,6 @@ void AiAgentImplementation::runAway(CreatureObject* target, float range, bool ra
 
 	setNextPosition(runTrajectory.getX(), zone->getHeight(runTrajectory.getX(), runTrajectory.getY()), runTrajectory.getY(), getParent().get().castTo<CellObject*>());
 }
-
 void AiAgentImplementation::leash(bool forcePeace) {
 	Locker locker(&targetMutex);
 
@@ -3364,7 +3366,7 @@ int AiAgentImplementation::setDestination() {
 	case AiAgent::FLEEING: {
 		int64 fleeDiff = (fleeDelay.miliDifference() / 4) * -1;
 
-		if (fleeDiff < 1500) {
+		if (fleeDiff < 100) { // MODIFIED: Make flee duration very short
 			eraseBlackboard("fleeRange");
 			setMovementState(AiAgent::FOLLOWING);
 
