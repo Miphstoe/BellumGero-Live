@@ -56,7 +56,7 @@ medicalDuration = 7200 -- in seconds
 --Sets the experience multiplier while grouped
 groupExpMultiplier = 1.2
 
---Sets a global experience multiplier
+-- Sets a global experience multiplier
 globalExpMultiplier = 10
 
 --Sets the base number of control devices of each type that a player can have in their datapad at once
