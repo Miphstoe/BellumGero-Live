@@ -7,11 +7,11 @@ dantari_raiders_tier_2 = {
 	lootItems = {
 		{groupTemplate = "armor_attachments", weight = 500000},
 		{groupTemplate = "clothing_attachments", weight = 500000},
-		{groupTemplate = "junk", weight = 3700000},
-		{groupTemplate = "loot_kit_parts", weight = 2700000},
+		{groupTemplate = "junk", weight = 3000000},
+		{groupTemplate = "loot_kit_parts", weight = 2200000},
 		{groupTemplate = "wearables_all", weight = 1800000},
-		{groupTemplate = "resource_creature", weight = 600000},
-		{groupTemplate = "resource_water", weight = 200000},
+		{groupTemplate = "power_crystals", weight = 800000},
+		{groupTemplate = "color_crystals", weight = 1200000},		
 	}
 }
 
