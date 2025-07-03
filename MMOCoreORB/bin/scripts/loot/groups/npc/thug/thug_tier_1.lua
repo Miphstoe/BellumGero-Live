@@ -14,7 +14,7 @@ thug_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 2128000},
 		{groupTemplate = "tailor_components", weight = 560000},
 		{groupTemplate = "wearables_common", weight = 1344000},
-		{groupTemplate = "crafting_component", weight = 280000},,
+		{groupTemplate = "crafting_component", weight = 280000},
 	}
 }
 
