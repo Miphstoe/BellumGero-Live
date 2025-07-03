@@ -3,7 +3,7 @@ krayt_dragon_adolescent = Creature:new {
 	socialGroup = "krayt",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 200,
+	level = 180,
 	chanceHit = 5.0,
 	damageMin = 900,
 	damageMax = 1500,
@@ -25,7 +25,7 @@ krayt_dragon_adolescent = Creature:new {
 	creatureBitmask = PACK + KILLER + STALKER,
 	optionsBitmask = AIENABLED,
 	diet = CARNIVORE,
-	scale = 0.85,
+	scale = 0.7,
 
 	templates = {"object/mobile/krayt_dragon_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
