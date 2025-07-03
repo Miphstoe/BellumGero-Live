@@ -1752,7 +1752,23 @@ void MissionManagerImplementation::generateRandomFactionalDestroyMissionDescript
 	int randomNumber = System::random(randomMax) + 1;
 
 	String diffDisplay = String::valueOf(mission->getDifficultyLevel());
-	String mobileName = mission->getMissionTargetName().replaceAll("_", " ");
+	String groupSuffix;
+    
+        if (lairTemplateObject->getMobType() == LairTemplate::NPC){
+            missionType = "_npc";
+            groupSuffix =" camp.";
+        }
+        else{
+            missionType = "_creature";
+            groupSuffix = " lair.";
+        }
+    
+        const VectorMap<String, int>* mobiles = lairTemplateObject->getMobiles();
+        String mobileName ="mysterious";
+    
+        if (mobiles->size() > 0){
+            mobileName = mobiles->elementAt(0).getKey();
+        }
 
 	//mission->setMissionTitle("mission/mission_destroy_" + difficultyString, "m" + String::valueOf(randomNumber) + "t");
 	mission->setMissionTitle("CL" + String::valueOf(diffDisplay), " Destroy the " + mobileName.replaceAll("_", " "));
