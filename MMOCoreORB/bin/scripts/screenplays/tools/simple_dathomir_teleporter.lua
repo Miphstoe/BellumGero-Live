@@ -103,7 +103,7 @@ function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 	end
 	
 	-- Try switching zone first, then direct teleport
-	player:switchZone("dathomir", 5240, -4069, 78)
+	player:teleport("dathomir", 5240, -4069, 78)
 	player:sendSystemMessage("Welcome to Aurillia Village!")
 end
 
@@ -116,6 +116,6 @@ function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 	end
 	
 	-- Try switching zone first, then direct teleport  
-	player:switchZone("dathomir", -49, -1584, 18)
+	player:teleport("dathomir", -49, -1584, 18)
 	player:sendSystemMessage("Welcome to Science Outpost!")
 end
