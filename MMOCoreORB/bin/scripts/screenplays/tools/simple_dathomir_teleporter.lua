@@ -16,7 +16,7 @@ end
 
 function SimpleDathomirTeleporter:createTeleporters()
 	-- Create teleporter at Science Outpost
-	local scienceObj = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_bank.iff", -49, 18, -1584, 0, 0, 0, 1, 0)
+	local scienceObj = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_insurance.iff", -49, 18, -1584, 0, 0, 0, 1, 0)
 	
 	if (scienceObj ~= nil) then
 		local sceneObject = LuaSceneObject(scienceObj)
@@ -25,7 +25,7 @@ function SimpleDathomirTeleporter:createTeleporters()
 	end
 	
 	-- Create teleporter at Aurillia Village
-	local aurilliaObj = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_bank.iff", 5240, 78, -4069, 0, 0, 0, 1, 0)
+	local aurilliaObj = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_insurance.iff", 5240, 78, -4069, 0, 0, 0, 1, 0)
 	
 	if (aurilliaObj ~= nil) then
 		local sceneObject = LuaSceneObject(aurilliaObj)
@@ -102,7 +102,8 @@ function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 		return
 	end
 	
-	player:teleport("dathomir", 5240, 78, -4069)
+	-- Try switching zone first, then direct teleport
+	player:switchZone("dathomir", 5240, -4069, 78)
 	player:sendSystemMessage("Welcome to Aurillia Village!")
 end
 
@@ -114,6 +115,7 @@ function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 		return
 	end
 	
-	player:teleport("dathomir", -49, 18, -1584)
+	-- Try switching zone first, then direct teleport  
+	player:switchZone("dathomir", -49, -1584, 18)
 	player:sendSystemMessage("Welcome to Science Outpost!")
 end
