@@ -102,8 +102,8 @@ function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 		return
 	end
 	
-	-- Try switching zone first, then direct teleport
-	player:teleport("dathomir", 5240, -4069, 78)
+	-- Use the correct teleport format for your Core3 build: X Y Planet (no Z)
+	player:teleport("dathomir", 5240, -4069)
 	player:sendSystemMessage("Welcome to Aurillia Village!")
 end
 
@@ -115,7 +115,7 @@ function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 		return
 	end
 	
-	-- Try switching zone first, then direct teleport  
-	player:teleport("dathomir", -49, -1584, 18)
+	-- Use the correct teleport format for your Core3 build: X Y Planet (no Z)
+	player:teleport("dathomir", -49, -1584)
 	player:sendSystemMessage("Welcome to Science Outpost!")
 end
