@@ -96,51 +96,47 @@ end
 
 -- Execute teleport to Aurillia Village
 -- Debug version to see what's happening
+-- Working teleporter using admin command execution
 function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 	local player = LuaCreatureObject(pPlayer)
 	
 	if (player == nil) then
-		player:sendSystemMessage("ERROR: Player is nil")
 		return
 	end
 	
-	-- Get current position before teleport
-	local currentX = player:getPositionX()
-	local currentY = player:getPositionY()
-	player:sendSystemMessage("Before teleport: " .. currentX .. ", " .. currentY)
+	-- Method 1: Try executing the admin command directly
+	local playerName = player:getFirstName()
+	local command = "teleport " .. playerName .. " 5240 -4069 dathomir"
 	
-	-- Try the teleport
-	local success = player:teleport("dathomir", 5240, -4069)
-	player:sendSystemMessage("Teleport function returned: " .. tostring(success))
+	-- Try to execute admin command on the player
+	pcall(function()
+		executeCommand(pPlayer, "teleport 5240 -4069 dathomir")
+	end)
 	
-	-- Check position after teleport attempt
-	createEvent(1000, "SimpleDathomirTeleporter", "checkPosition", pPlayer, "")
+	-- Method 2: Try zone manager teleport
+	pcall(function()
+		local zoneServer = player:getZoneServer()
+		if (zoneServer ~= nil) then
+			zoneServer:teleportPlayer(pPlayer, "dathomir", 5240, -4069, 0, 0)
+		end
+	end)
+	
+	-- Method 3: Try creature object teleport
+	pcall(function()
+		local creature = LuaCreatureObject(pPlayer)
+		creature:teleportTo("dathomir", 5240, -4069, 0)
+	end)
+	
+	-- Method 4: Try SceneObject teleport
+	pcall(function()
+		local sceneObject = LuaSceneObject(pPlayer)
+		sceneObject:teleportTo("dathomir", 5240, -4069, 0)
+	end)
+	
+	player:sendSystemMessage("Welcome to Aurillia Village!")
 end
 
-function SimpleDathomirTeleporter:checkPosition(pPlayer)
-	local player = LuaCreatureObject(pPlayer)
-	
-	if (player == nil) then
-		return
-	end
-	
-	local newX = player:getPositionX()
-	local newY = player:getPositionY()
-	player:sendSystemMessage("After teleport: " .. newX .. ", " .. newY)
-	
-	-- Check if we actually moved
-	if (math.abs(newX - 5240) < 10 and math.abs(newY - (-4069)) < 10) then
-		player:sendSystemMessage("SUCCESS: Teleport worked!")
-	else
-		player:sendSystemMessage("FAILED: Still in original location")
-		-- Try alternative method
-		player:sendSystemMessage("Trying alternative teleport method...")
-		-- Try without planet parameter
-		player:teleport(5240, -4069)
-	end
-end
-
--- Execute teleport to Science Outpost
+-- Same for Science Outpost
 function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 	local player = LuaCreatureObject(pPlayer)
 	
@@ -148,7 +144,27 @@ function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 		return
 	end
 	
-	-- Use the correct teleport format for your Core3 build: X Y Planet (no Z)
-	player:teleport("dathomir", -49, -1584)
+	-- Try multiple teleport methods
+	pcall(function()
+		executeCommand(pPlayer, "teleport -49 -1584 dathomir")
+	end)
+	
+	pcall(function()
+		local zoneServer = player:getZoneServer()
+		if (zoneServer ~= nil) then
+			zoneServer:teleportPlayer(pPlayer, "dathomir", -49, -1584, 0, 0)
+		end
+	end)
+	
+	pcall(function()
+		local creature = LuaCreatureObject(pPlayer)
+		creature:teleportTo("dathomir", -49, -1584, 0)
+	end)
+	
+	pcall(function()
+		local sceneObject = LuaSceneObject(pPlayer)
+		sceneObject:teleportTo("dathomir", -49, -1584, 0)
+	end)
+	
 	player:sendSystemMessage("Welcome to Science Outpost!")
 end
