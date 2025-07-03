@@ -95,8 +95,6 @@ function SimpleDathomirTeleporter:transportToScience(pObject, pPlayer, requestTy
 end
 
 -- Execute teleport to Aurillia Village
--- Debug version to see what's happening
--- Working teleporter using admin command execution
 function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 	local player = LuaCreatureObject(pPlayer)
 	
@@ -104,39 +102,12 @@ function SimpleDathomirTeleporter:doTeleportToAurillia(pPlayer)
 		return
 	end
 	
-	-- Method 1: Try executing the admin command directly
-	local playerName = player:getFirstName()
-	local command = "teleport " .. playerName .. " 5240 -4069 dathomir"
-	
-	-- Try to execute admin command on the player
-	pcall(function()
-		executeCommand(pPlayer, "teleport 5240 -4069 dathomir")
-	end)
-	
-	-- Method 2: Try zone manager teleport
-	pcall(function()
-		local zoneServer = player:getZoneServer()
-		if (zoneServer ~= nil) then
-			zoneServer:teleportPlayer(pPlayer, "dathomir", 5240, -4069, 0, 0)
-		end
-	end)
-	
-	-- Method 3: Try creature object teleport
-	pcall(function()
-		local creature = LuaCreatureObject(pPlayer)
-		creature:teleportTo("dathomir", 5240, -4069, 0)
-	end)
-	
-	-- Method 4: Try SceneObject teleport
-	pcall(function()
-		local sceneObject = LuaSceneObject(pPlayer)
-		sceneObject:teleportTo("dathomir", 5240, -4069, 0)
-	end)
-	
+	-- Use the correct teleport format for your Core3 build: X Y Planet (no Z)
+	player:teleport("dathomir", 5240, -4069)
 	player:sendSystemMessage("Welcome to Aurillia Village!")
 end
 
--- Same for Science Outpost
+-- Execute teleport to Science Outpost
 function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 	local player = LuaCreatureObject(pPlayer)
 	
@@ -144,27 +115,7 @@ function SimpleDathomirTeleporter:doTeleportToScience(pPlayer)
 		return
 	end
 	
-	-- Try multiple teleport methods
-	pcall(function()
-		executeCommand(pPlayer, "teleport -49 -1584 dathomir")
-	end)
-	
-	pcall(function()
-		local zoneServer = player:getZoneServer()
-		if (zoneServer ~= nil) then
-			zoneServer:teleportPlayer(pPlayer, "dathomir", -49, -1584, 0, 0)
-		end
-	end)
-	
-	pcall(function()
-		local creature = LuaCreatureObject(pPlayer)
-		creature:teleportTo("dathomir", -49, -1584, 0)
-	end)
-	
-	pcall(function()
-		local sceneObject = LuaSceneObject(pPlayer)
-		sceneObject:teleportTo("dathomir", -49, -1584, 0)
-	end)
-	
+	-- Use the correct teleport format for your Core3 build: X Y Planet (no Z)
+	player:teleport("dathomir", -49, -1584)
 	player:sendSystemMessage("Welcome to Science Outpost!")
 end
