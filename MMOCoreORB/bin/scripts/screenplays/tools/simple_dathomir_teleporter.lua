@@ -21,7 +21,6 @@ function SimpleDathomirTeleporter:createTeleporters()
 	if (scienceObj ~= nil) then
 		local sceneObject = LuaSceneObject(scienceObj)
 		sceneObject:setCustomObjectName("Transport to Aurillia Village")
-		sceneObject:setDetailedDescription("Click to teleport to Aurillia Village (Cost: 100 credits)")
 		createObserver(OBJECTRADIALUSED, "SimpleDathomirTeleporter", "transportToAurillia", scienceObj)
 	end
 	
@@ -31,7 +30,6 @@ function SimpleDathomirTeleporter:createTeleporters()
 	if (aurilliaObj ~= nil) then
 		local sceneObject = LuaSceneObject(aurilliaObj)
 		sceneObject:setCustomObjectName("Transport to Science Outpost")
-		sceneObject:setDetailedDescription("Click to teleport to Science Outpost (Cost: 100 credits)")
 		createObserver(OBJECTRADIALUSED, "SimpleDathomirTeleporter", "transportToScience", aurilliaObj)
 	end
 end
