@@ -1751,8 +1751,11 @@ void MissionManagerImplementation::generateRandomFactionalDestroyMissionDescript
 
 	int randomNumber = System::random(randomMax) + 1;
 
+	String diffDisplay = String::valueOf(mission->getDifficultyLevel());
+	String mobileName = mission->getMissionTargetName().replaceAll("_", " ");
+
 	//mission->setMissionTitle("mission/mission_destroy_" + difficultyString, "m" + String::valueOf(randomNumber) + "t");
-	mission->setMissionTitle("CL" + String::valueOf(diffDisplay), " Destroy the " + mobileName.replaceAll("_", " ") + groupSuffix);
+	mission->setMissionTitle("CL" + String::valueOf(diffDisplay), " Destroy the " + mobileName.replaceAll("_", " "));
 	mission->setMissionDescription("mission/mission_destroy_" +  difficultyString, "m" + String::valueOf(randomNumber) + "d");
 }
 
