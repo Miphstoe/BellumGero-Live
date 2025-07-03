@@ -5,15 +5,13 @@ wilder_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "junk", weight = 2800000},
-		{groupTemplate = "loot_kit_parts", weight = 1350000},
-		{groupTemplate = "tailor_components", weight = 600000},
-		{groupTemplate = "wearables_common", weight = 2000000},
-		{groupTemplate = "resource_creature", weight = 750000},
-		{groupTemplate = "resource_water", weight = 250000},
-		{groupTemplate = "crafting_component", weight = 250000},
-		{groupTemplate = "melee_weapons_common", weight = 1000000},
-		{groupTemplate = "ranged_weapons_common", weight = 1000000},
+		{groupTemplate = "junk", weight = 3080000},
+		{groupTemplate = "loot_kit_parts", weight = 1485000},
+		{groupTemplate = "tailor_components", weight = 660000},
+		{groupTemplate = "wearables_common", weight = 2200000},
+		{groupTemplate = "crafting_component", weight = 275000},
+		{groupTemplate = "melee_weapons_common", weight = 1100000},
+		{groupTemplate = "ranged_weapons_common", weight = 1100000},
 	}
 }
 
