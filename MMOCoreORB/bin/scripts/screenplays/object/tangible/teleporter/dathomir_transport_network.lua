@@ -18,7 +18,7 @@ end
 
 function DathomirTransportNetwork:spawnTeleporters()
 	-- Spawn teleporter at Science Outpost (to Aurillia)
-	local scienceTeleporter = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_mission.iff", -49, 18, -1584, 0, 0, 0, 1, 0)
+	local scienceTeleporter = spawnSceneObject("dathomir", "object/tangible/furniture/technical/console_1.iff", -49, 18, -1584, 0, 0, 0, 1, 0)
 	
 	if (scienceTeleporter ~= nil) then
 		local teleporter = LuaSceneObject(scienceTeleporter)
@@ -28,7 +28,7 @@ function DathomirTransportNetwork:spawnTeleporters()
 	end
 	
 	-- Spawn teleporter at Aurillia Village (to Science Outpost)  
-	local aurillaTeleporter = spawnSceneObject("dathomir", "object/tangible/terminal/terminal_mission.iff", 5240, 78, -4069, 0, 0, 0, 1, 0)
+	local aurillaTeleporter = spawnSceneObject("dathomir", "object/tangible/furniture/technical/console_1.iff", 5240, 78, -4069, 0, 0, 0, 1, 0)
 	
 	if (aurillaTeleporter ~= nil) then
 		local teleporter = LuaSceneObject(aurillaTeleporter)
