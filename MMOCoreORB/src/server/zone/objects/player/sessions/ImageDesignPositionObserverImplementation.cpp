@@ -17,12 +17,12 @@ int ImageDesignPositionObserverImplementation::notifyObserverEvent(uint32 eventT
     if (scene == nullptr)
         return 1;
 
-    // MODIFIED: Check if actually in salon, if yes use original logic, if no do nothing
-    if (scene->getParentRecursively(SceneObjectType::SALONBUILDING) != nullptr) {
-        // Actually in salon - cancel timeout as normal
+    if (scene->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr) {
+        //queue the timeout
+        strongRef->queueIdTimeoutEvent();
+    } else {
+        //cancel the timeout
         strongRef->checkDequeueEvent(scene);
     }
-    // If not in salon, do nothing (don't queue timeout, don't dequeue)
-    
     return 0;
 }
