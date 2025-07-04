@@ -1,73 +1,117 @@
--- Add these new variables to the VillageRaids table
-VillageRaids = ScreenPlay:new {
-	-- ... existing variables ...
-	
-	-- NEW: Break system variables
-	raidBreakData = {
-		minBreakTime = 2700 * 1000, -- 45 minutes break between raids
-		maxBreakTime = 3600 * 1000, -- 60 minutes break between raids
-		raidDuration = 2500 * 1000,  -- 41.7 minutes (how long a raid lasts)
-	},
-	
-	-- ... rest of existing variables ...
-}
-
--- MODIFIED: Update doEnemySpawnPulse to include break system
-function VillageRaids:doEnemySpawnPulse()
-	local pMaster = VillageJediManagerTownship:getMasterObject()
-
-	if (pMaster == nil) then
-		printLuaError("VillageRaids:doEnemySpawnPulse(), unable to get master village object.")
-		return
-	end
-
+-- SOLUTION 1: Manual kickstart function
+function VillageRaids:kickstartRaidSystem()
 	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
-
+	
 	if (currentPhase ~= 4) then
+		printLuaError("VillageRaids:kickstartRaidSystem() - Village not in Phase 4, current phase: " .. tostring(currentPhase))
+		return false
+	end
+	
+	local pMaster = VillageJediManagerTownship:getMasterObject()
+	if (pMaster == nil) then
+		printLuaError("VillageRaids:kickstartRaidSystem() - Cannot get master village object")
+		return false
+	end
+	
+	-- Check if raids are already running by looking for existing events
+	-- (This is optional - you can remove this check if you want to force restart)
+	
+	printLuaError("VillageRaids:kickstartRaidSystem() - Starting raid system...")
+	
+	-- Start the first raid immediately (or with a short delay)
+	createEvent(30 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	
+	printLuaError("VillageRaids:kickstartRaidSystem() - First raid will start in 30 seconds")
+	return true
+end
+
+-- SOLUTION 2: Add a periodic check to ensure raids are running
+function VillageRaids:ensureRaidsRunning()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+	
+	if (currentPhase ~= 4) then
+		-- Schedule next check in 5 minutes
+		createEvent(5 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
+		return
+	end
+	
+	local pMaster = VillageJediManagerTownship:getMasterObject()
+	if (pMaster == nil) then
+		-- Schedule next check in 1 minute
+		createEvent(60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
+		return
+	end
+	
+	-- Check if there are any active enemy spawners or recent raid activity
+	-- If not, restart the raid system
+	local phaseID = VillageJediManagerTownship:getCurrentPhaseID()
+	local foundActiveTurret = false
+	
+	for i = 1, #self.turretSpawnLocs, 1 do
+		local turretID = readData("Village:Turret:" .. phaseID .. ":" .. i)
+		local pTurret = getSceneObject(turretID)
+		if (pTurret ~= nil) then
+			foundActiveTurret = true
+			break
+		end
+	end
+	
+	if (not foundActiveTurret) then
+		printLuaError("VillageRaids:ensureRaidsRunning() - No active turrets found, restarting raid system...")
+		self:doPhaseInit()
+	end
+	
+	-- Schedule next check in 10 minutes
+	createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
+end
+
+-- SOLUTION 3: Enhanced doPhaseInit that handles Phase 4 transitions better
+function VillageRaids:doPhaseInit()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+	
+	printLuaError("VillageRaids:doPhaseInit() called - Current Phase: " .. tostring(currentPhase))
+
+	if (currentPhase ~= 3 and currentPhase ~= 4) then
+		printLuaError("VillageRaids:doPhaseInit() - Not in Phase 3 or 4, exiting")
 		return
 	end
 
+	printLuaError("VillageRaids:doPhaseInit() - Spawning turrets...")
 	self:despawnTurrets()
 	self:spawnTurrets()
 
-	self:spawnVictims(pMaster)
-
-	local numPlayers = self:getPlayersInVillage(pMaster)
-	local spawnWaveData
-
-	if (numPlayers >= self.playerWaveSizeThresholds.mega) then
-		spawnWaveData = self.enemyWaveData.mega
-	elseif (numPlayers >= self.playerWaveSizeThresholds.large) then
-		spawnWaveData = self.enemyWaveData.large
-	elseif (numPlayers >= self.playerWaveSizeThresholds.medium) then
-		spawnWaveData = self.enemyWaveData.medium
-	else
-		spawnWaveData = self.enemyWaveData.small
-	end
-
-	local usedLocs = { }
-
-	for i = 1,  #self.enemySpawnLocs, 1 do
-		table.insert(usedLocs, false)
-	end
-
-	for i = 1, #spawnWaveData, 1 do
-		local randomLoc = getRandomNumber(1, #self.enemySpawnLocs)
-
-		while usedLocs[randomLoc] == true do
-			randomLoc = getRandomNumber(1, #self.enemySpawnLocs)
+	if (currentPhase == 4) then
+		printLuaError("VillageRaids:doPhaseInit() - Phase 4 detected, starting enemy spawn pulse in 2 minutes...")
+		local pMaster = VillageJediManagerTownship:getMasterObject()
+		if (pMaster ~= nil) then
+			-- Start raids in 2 minutes to give turrets time to fully spawn
+			createEvent(2 * 60 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+			
+			-- Also start the monitoring system
+			createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
+		else
+			printLuaError("VillageRaids:doPhaseInit() - Cannot get master object for Phase 4 raids")
 		end
-
-		usedLocs[randomLoc] = true
-		local waveInfo = self[spawnWaveData[i]]
-		local loc = getSpawnPoint("dathomir", self.enemySpawnLocs[randomLoc][1], self.enemySpawnLocs[randomLoc][2], self.enemyData.minDistance, self.enemyData.maxDistance, true)
-		QuestSpawner:createQuestSpawner("VillageRaids", waveInfo[1], waveInfo[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
+	else
+		printLuaError("VillageRaids:doPhaseInit() - Phase 3 detected, turrets only (no raids)")
 	end
+end
 
-	-- CHANGED: Instead of immediately scheduling next raid, schedule the break period
-	local breakTime = getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
-	createEvent(breakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+-- SOLUTION 4: Server restart recovery function
+function VillageRaids:serverStartupCheck()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
 	
-	-- Optional: Print message for debugging
-	printLuaError("VillageRaids: Raid spawned, next raid in " .. (breakTime / 60000) .. " minutes")
+	printLuaError("VillageRaids:serverStartupCheck() - Current Phase: " .. tostring(currentPhase))
+	
+	if (currentPhase == 4) then
+		printLuaError("VillageRaids:serverStartupCheck() - Village in Phase 4, starting raid system...")
+		self:kickstartRaidSystem()
+		
+		-- Start monitoring
+		createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
+	elseif (currentPhase == 3) then
+		printLuaError("VillageRaids:serverStartupCheck() - Village in Phase 3, spawning turrets only...")
+		self:despawnTurrets()
+		self:spawnTurrets()
+	end
 end
