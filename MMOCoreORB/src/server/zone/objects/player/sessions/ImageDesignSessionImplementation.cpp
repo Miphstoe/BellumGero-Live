@@ -50,46 +50,9 @@ int ImageDesignSessionImplementation::cancelSession() {
 void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer, CreatureObject* targetPlayer) {
 	sessionStartTime.updateToCurrentTime();
 
-	uint64 designerTentID = 0; // Equals False, that controls if you can stat migrate or not (only in a Salon or Cantina).
-	uint64 targetTentID = 0;
-
-	// Check if designer is in a valid stat migration location (salon or cantina)
-	ManagedReference<SceneObject*> designerLocation = nullptr;
-	ManagedReference<SceneObject*> salonObj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
-	ManagedReference<SceneObject*> cantinaObj = designer->getParentRecursively(SceneObjectType::CANTINA);
-	
-	if (salonObj != nullptr) {
-		designerLocation = salonObj;
-	} else if (cantinaObj != nullptr) {
-		designerLocation = cantinaObj;
-	}
-
-	if (designerLocation != nullptr) { // If they are in a salon or cantina, enable the tickmark for stat migration.
-		designerTentID = designerLocation->getObjectID();
-		
-		// Check if target is in the same type of building
-		ManagedReference<SceneObject*> targetLocation = nullptr;
-		if (salonObj != nullptr) {
-			targetLocation = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
-		} else if (cantinaObj != nullptr) {
-			targetLocation = targetPlayer->getParentRecursively(SceneObjectType::CANTINA);
-		}
-
-		if (targetLocation != nullptr) {
-			targetTentID = targetLocation->getObjectID();
-			
-			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
-			designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
-
-			if (targetPlayer != designer)
-				targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
-		}
-	}
-
-	if (targetTentID == 0 || designerTentID == 0) {
-		targetTentID = 0;
-		designerTentID = 0;
-	}
+	// MODIFIED: Always enable stat migration (remove location restrictions)
+	uint64 designerTentID = 1; // Set to 1 to enable stat migration checkbox
+	uint64 targetTentID = 1;   // Set to 1 to enable stat migration checkbox
 
 	designer->addActiveSession(SessionFacadeType::IMAGEDESIGN, _this.getReferenceUnsafeStaticCast());
 
@@ -207,13 +170,8 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		// Modified stat migration check to include cantinas - INLINE CHECK
-		if (statMig && strongReferenceDesigner != strongReferenceTarget && 
-			((strongReferenceDesigner->getParentRecursively(SceneObjectType::SALONBUILDING) != nullptr && 
-			  strongReferenceTarget->getParentRecursively(SceneObjectType::SALONBUILDING) != nullptr) ||
-			 (strongReferenceDesigner->getParentRecursively(SceneObjectType::CANTINA) != nullptr && 
-			  strongReferenceTarget->getParentRecursively(SceneObjectType::CANTINA) != nullptr))) {
-			
+		// MODIFIED: Allow stat migration anywhere (remove location restrictions)
+		if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
 
@@ -392,26 +350,7 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (targetCreature == nullptr || designerCreature == nullptr)
 		return;
 
-	if (scene == designerCreature) {
-		Locker clocker(targetCreature, designerCreature);
-
-		// Modified to check for both salon and cantina - INLINE CHECK
-		if ((targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 targetCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr) || 
-			(designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 designerCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr))
-			return;
-	} else if (scene == targetCreature) {
-		Locker clocker(designerCreature, targetCreature);
-
-		// Modified to check for both salon and cantina - INLINE CHECK
-		if ((targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 targetCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr) || 
-			(designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 designerCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr))
-			return;
-	}
-
+	// MODIFIED: Remove location restrictions - no longer check for building types
 	dequeueIdTimeoutEvent();
 }
 
@@ -422,10 +361,8 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 	if (designerCreature != nullptr) {
 		Locker locker(designerCreature);
 
-		// Modified to check for both salon and cantina - INLINE CHECK
-		if ((designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 designerCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr) || 
-			imageDesignData.isAcceptedByDesigner()) {
+		// MODIFIED: Remove location restrictions - only check if already accepted
+		if (imageDesignData.isAcceptedByDesigner()) {
 			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
 			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
@@ -438,10 +375,8 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 		Locker locker(designerCreature);
 		Locker clocker(targetCreature, designerCreature);
 
-		// Modified to check for both salon and cantina - INLINE CHECK
-		if ((targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr && 
-			 targetCreature->getParentRecursively(SceneObjectType::CANTINA) == nullptr) || 
-			imageDesignData.isAcceptedByDesigner()) {
+		// MODIFIED: Remove location restrictions - only check if already accepted
+		if (imageDesignData.isAcceptedByDesigner()) {
 			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
 			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
