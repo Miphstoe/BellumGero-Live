@@ -11,7 +11,7 @@ krayt_dragon_grand = Creature:new {
 	baseHAM = 510000,
 	baseHAMmax = 601000,
 	armor = 3,
-	resists = {185,185,185,185,165,185,185,185,25},
+	resists = {185,185,185,185,165,185,185,185,125},
 	meatType = "meat_carnivore",
 	meatAmount = 1700,
 	hideType = "hide_bristley",
@@ -25,7 +25,7 @@ krayt_dragon_grand = Creature:new {
 	creatureBitmask = PACK + KILLER + STALKER,
 	optionsBitmask = AIENABLED,
 	diet = CARNIVORE,
-	scale = 2.0,
+	scale = 1.8,
 
 	templates = {"object/mobile/krayt_dragon_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
