@@ -73,12 +73,14 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 		}
 
 		if (targetTentID != 0) {
-			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
-
-			designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
-
-			if (targetPlayer != designer)
-				targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+			// MODIFIED: Don't use position observer to prevent 30-second timeout
+			// positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
+			// designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+			// if (targetPlayer != designer)
+			//     targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+			
+			// Set position observer to null to prevent timeout checks
+			positionObserver = nullptr;
 		}
 	}
 
@@ -109,7 +111,11 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	designerCreature = designer;
 	targetCreature = targetPlayer;
 
+	// MODIFIED: Create timeout event with much longer duration (10 minutes)
 	idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
+	if (idTimeoutEvent != nullptr && !idTimeoutEvent->isScheduled()) {
+		idTimeoutEvent->schedule(600000); // 10 minutes instead of default timeout
+	}
 
 #ifdef DEBUG_ID
 	info(true) << "startImageDesign - for Target Player: " << targetPlayer->getFirstName() << " Target Tent ID = " <<  targetTentID << " Designer Tent ID = " << designerTentID << " Holoemote = " << holoemote;
