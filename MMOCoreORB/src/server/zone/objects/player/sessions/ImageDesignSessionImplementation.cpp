@@ -55,22 +55,14 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 
 	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-	if (obj != nullptr) { // If they are in a salon, enable the tickmark for stat migration.
+	if (obj != nullptr) // If they are in a salon, enable the tickmark for stat migration.
 		designerTentID = obj->getObjectID();
-	} else {
-		// MODIFIED: Use real salon building ID to fake being in salon
-		designerTentID = 8215863; // Real salon building ID from your server
-	}
 
 	if (designerTentID != 0) {
 		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-		if (obj != nullptr) {
+		if (obj != nullptr)
 			targetTentID = obj->getObjectID();
-		} else {
-			// MODIFIED: Use the same real salon building ID for target
-			targetTentID = 8215863; // Same real salon building ID
-		}
 
 		if (targetTentID != 0) {
 			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
@@ -203,7 +195,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		// MODIFIED: Remove location check - allow stat migration anywhere since we're faking salon ID
+		// ONLY CHANGE: Remove building check for stat migration
 		if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
@@ -383,13 +375,49 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (targetCreature == nullptr || designerCreature == nullptr)
 		return;
 
-	// MODIFIED: Always dequeue (don't check building location) to prevent timeout
+	if (scene == designerCreature) {
+		Locker clocker(targetCreature, designerCreature);
+
+		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
+			return;
+	} else if (scene == targetCreature) {
+		Locker clocker(designerCreature, targetCreature);
+
+		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
+			return;
+	}
+
 	dequeueIdTimeoutEvent();
 }
 
 void ImageDesignSessionImplementation::sessionTimeout() {
-	// MODIFIED: Don't timeout for location reasons - session only ends on manual close or completion
-	return;
+	ManagedReference<CreatureObject*> designerCreature = this->designerCreature.get();
+	ManagedReference<CreatureObject*> targetCreature = this->targetCreature.get();
+
+	if (designerCreature != nullptr) {
+		Locker locker(designerCreature);
+
+		if (designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || imageDesignData.isAcceptedByDesigner()) {
+			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
+
+			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
+
+			return;
+		}
+	}
+
+	if (targetCreature != nullptr) {
+		Locker locker(designerCreature);
+		Locker clocker(targetCreature, designerCreature);
+
+		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || imageDesignData.isAcceptedByDesigner()) {
+			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
+
+			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
+
+			return;
+		}
+	}
 }
 
 void ImageDesignSessionImplementation::cancelImageDesign(uint64 designer, uint64 targetPlayer, uint64 tent, int type, const ImageDesignData& data) {
