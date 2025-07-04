@@ -50,12 +50,44 @@ int ImageDesignSessionImplementation::cancelSession() {
 void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer, CreatureObject* targetPlayer) {
 	sessionStartTime.updateToCurrentTime();
 
-	// MODIFIED: Always enable stat migration and don't use position observer (TEST VERSION)
-	uint64 designerTentID = 1; // Always enable stat migration
-	uint64 targetTentID = 1;   // Always enable stat migration
+	uint64 designerTentID = 0; // Equals False, that controls if you can stat migrate or not (only in a Salon).
+	uint64 targetTentID = 0;
 
-	// DON'T create position observer - this might be what's causing the immediate close
-	// positionObserver = nullptr;
+	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
+
+	// MODIFIED: If not in salon, fake it by using designer's object ID
+	if (obj != nullptr) { // If they are in a salon, enable the tickmark for stat migration.
+		designerTentID = obj->getObjectID();
+	} else {
+		// FAKE being in a salon by using a valid object ID
+		designerTentID = designer->getObjectID(); // Use designer's ID to fake salon
+	}
+
+	if (designerTentID != 0) {
+		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
+
+		// MODIFIED: If target not in salon, fake it too
+		if (obj != nullptr) {
+			targetTentID = obj->getObjectID();
+		} else {
+			// FAKE being in a salon by using target's object ID
+			targetTentID = targetPlayer->getObjectID(); // Use target's ID to fake salon
+		}
+
+		if (targetTentID != 0) {
+			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
+
+			designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+
+			if (targetPlayer != designer)
+				targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+		}
+	}
+
+	if (targetTentID == 0 || designerTentID == 0) {
+		targetTentID = 0;
+		designerTentID = 0;
+	}
 
 	designer->addActiveSession(SessionFacadeType::IMAGEDESIGN, _this.getReferenceUnsafeStaticCast());
 
@@ -79,11 +111,7 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	designerCreature = designer;
 	targetCreature = targetPlayer;
 
-	// Create timeout event but set it for a longer time (10 minutes instead of default)
 	idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
-	if (idTimeoutEvent != nullptr && !idTimeoutEvent->isScheduled()) {
-		idTimeoutEvent->schedule(600000); // 10 minutes
-	}
 
 #ifdef DEBUG_ID
 	info(true) << "startImageDesign - for Target Player: " << targetPlayer->getFirstName() << " Target Tent ID = " <<  targetTentID << " Designer Tent ID = " << designerTentID << " Holoemote = " << holoemote;
@@ -177,7 +205,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		// MODIFIED: Allow stat migration anywhere
+		// MODIFIED: Remove location check for stat migration - allow anywhere
 		if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
@@ -351,13 +379,39 @@ bool ImageDesignSessionImplementation::doPayment() {
 }
 
 void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
-	// DO NOTHING - remove all location-based session ending
-	return;
+	// MODIFIED: Don't check for salon buildings, just dequeue
+	dequeueIdTimeoutEvent();
 }
 
 void ImageDesignSessionImplementation::sessionTimeout() {
-	// DO NOTHING - let the session run until manually closed or completed
-	return;
+	ManagedReference<CreatureObject*> designerCreature = this->designerCreature.get();
+	ManagedReference<CreatureObject*> targetCreature = this->targetCreature.get();
+
+	// MODIFIED: Don't timeout based on building location
+	if (designerCreature != nullptr) {
+		Locker locker(designerCreature);
+
+		if (imageDesignData.isAcceptedByDesigner()) {
+			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
+
+			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
+
+			return;
+		}
+	}
+
+	if (targetCreature != nullptr) {
+		Locker locker(designerCreature);
+		Locker clocker(targetCreature, designerCreature);
+
+		if (imageDesignData.isAcceptedByDesigner()) {
+			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
+
+			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
+
+			return;
+		}
+	}
 }
 
 void ImageDesignSessionImplementation::cancelImageDesign(uint64 designer, uint64 targetPlayer, uint64 tent, int type, const ImageDesignData& data) {
