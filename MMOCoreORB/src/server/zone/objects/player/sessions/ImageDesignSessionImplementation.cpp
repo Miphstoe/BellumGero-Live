@@ -54,7 +54,6 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	uint64 targetTentID = 0;
 
 	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
-	bool designerInRealSalon = (obj != nullptr);
 
 	if (obj != nullptr) { // If they are in a salon, enable the tickmark for stat migration.
 		designerTentID = obj->getObjectID();
@@ -65,7 +64,6 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 
 	if (designerTentID != 0) {
 		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
-		bool targetInRealSalon = (obj != nullptr);
 
 		if (obj != nullptr) {
 			targetTentID = obj->getObjectID();
@@ -74,17 +72,14 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 			targetTentID = 8215863; // Same real salon building ID
 		}
 
-		// MODIFIED: Only create position observer if BOTH players are in real salons
-		if (targetTentID != 0 && designerInRealSalon && targetInRealSalon) {
+		if (targetTentID != 0) {
+			// ALWAYS create position observer to keep client happy
 			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
 
 			designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
 
 			if (targetPlayer != designer)
 				targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
-		} else {
-			// Don't create position observer when faking salon IDs
-			positionObserver = nullptr;
 		}
 	}
 
@@ -389,18 +384,7 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (targetCreature == nullptr || designerCreature == nullptr)
 		return;
 
-	if (scene == designerCreature) {
-		Locker clocker(targetCreature, designerCreature);
-
-		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
-			return;
-	} else if (scene == targetCreature) {
-		Locker clocker(designerCreature, targetCreature);
-
-		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
-			return;
-	}
-
+	// MODIFIED: Always dequeue timeout events - don't check building location
 	dequeueIdTimeoutEvent();
 }
 

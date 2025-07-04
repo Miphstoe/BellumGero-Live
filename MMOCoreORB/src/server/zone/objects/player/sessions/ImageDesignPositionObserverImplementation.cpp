@@ -17,12 +17,9 @@ int ImageDesignPositionObserverImplementation::notifyObserverEvent(uint32 eventT
     if (scene == nullptr)
         return 1;
 
-    if (scene->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr) {
-        //queue the timeout
-        strongRef->queueIdTimeoutEvent();
-    } else {
-        //cancel the timeout
-        strongRef->checkDequeueEvent(scene);
-    }
+    // MODIFIED: Always act as if in salon - never queue timeouts
+    // This allows stat migration anywhere without timeouts
+    strongRef->checkDequeueEvent(scene);
+
     return 0;
 }
