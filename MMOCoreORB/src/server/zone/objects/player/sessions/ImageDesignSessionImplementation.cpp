@@ -18,7 +18,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
- #define DEBUG_ID
+// #define DEBUG_ID
 
 void ImageDesignSessionImplementation::initializeTransientMembers() {
 	FacadeImplementation::initializeTransientMembers();
@@ -55,23 +55,21 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 
 	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-	// MODIFIED: If not in salon, fake it by using designer's object ID
 	if (obj != nullptr) { // If they are in a salon, enable the tickmark for stat migration.
 		designerTentID = obj->getObjectID();
 	} else {
-		// FAKE being in a salon by using a valid object ID
-		designerTentID = designer->getObjectID(); // Use designer's ID to fake salon
+		// MODIFIED: Use real salon building ID to fake being in salon
+		designerTentID = 8215863; // Real salon building ID from your server
 	}
 
 	if (designerTentID != 0) {
 		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-		// MODIFIED: If target not in salon, fake it too
 		if (obj != nullptr) {
 			targetTentID = obj->getObjectID();
 		} else {
-			// FAKE being in a salon by using target's object ID
-			targetTentID = targetPlayer->getObjectID(); // Use target's ID to fake salon
+			// MODIFIED: Use the same real salon building ID for target
+			targetTentID = 8215863; // Same real salon building ID
 		}
 
 		if (targetTentID != 0) {
@@ -205,7 +203,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		// MODIFIED: Remove location check for stat migration - allow anywhere
+		// MODIFIED: Remove location check - allow stat migration anywhere since we're faking salon ID
 		if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
@@ -379,7 +377,7 @@ bool ImageDesignSessionImplementation::doPayment() {
 }
 
 void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
-	// MODIFIED: Don't check for salon buildings, just dequeue
+	// MODIFIED: Don't check for salon location since we're faking it
 	dequeueIdTimeoutEvent();
 }
 
@@ -387,10 +385,10 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 	ManagedReference<CreatureObject*> designerCreature = this->designerCreature.get();
 	ManagedReference<CreatureObject*> targetCreature = this->targetCreature.get();
 
-	// MODIFIED: Don't timeout based on building location
 	if (designerCreature != nullptr) {
 		Locker locker(designerCreature);
 
+		// MODIFIED: Don't check building location since we're faking salon
 		if (imageDesignData.isAcceptedByDesigner()) {
 			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
@@ -404,6 +402,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 		Locker locker(designerCreature);
 		Locker clocker(targetCreature, designerCreature);
 
+		// MODIFIED: Don't check building location since we're faking salon
 		if (imageDesignData.isAcceptedByDesigner()) {
 			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
