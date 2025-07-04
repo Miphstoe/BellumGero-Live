@@ -17,9 +17,9 @@ int ImageDesignPositionObserverImplementation::notifyObserverEvent(uint32 eventT
     if (scene == nullptr)
         return 1;
 
-    // MODIFIED: Always cancel timeout instead of checking building location
-    // This allows image design and stat migration to work anywhere
-    strongRef->checkDequeueEvent(scene);
+    // MODIFIED: Do nothing - don't enforce location restrictions
+    // This prevents any timeout events from being queued or dequeued based on position
+    return 0;
 
     // Original code that enforced salon requirement:
     // if (scene->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr) {
@@ -29,6 +29,4 @@ int ImageDesignPositionObserverImplementation::notifyObserverEvent(uint32 eventT
     //     //cancel the timeout
     //     strongRef->checkDequeueEvent(scene);
     // }
-
-    return 0;
 }
