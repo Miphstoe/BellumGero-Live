@@ -111,11 +111,12 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	designerCreature = designer;
 	targetCreature = targetPlayer;
 
-	// MODIFIED: Create timeout event with much longer duration (10 minutes)
-	idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
-	if (idTimeoutEvent != nullptr && !idTimeoutEvent->isScheduled()) {
-		idTimeoutEvent->schedule(600000); // 10 minutes instead of default timeout
-	}
+	// MODIFIED: Don't create any timeout event to prevent automatic session ending
+	// idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
+	// if (idTimeoutEvent != nullptr && !idTimeoutEvent->isScheduled()) {
+	//     idTimeoutEvent->schedule(600000); // 10 minutes instead of default timeout
+	// }
+	idTimeoutEvent = nullptr; // Disable timeout completely
 
 #ifdef DEBUG_ID
 	info(true) << "startImageDesign - for Target Player: " << targetPlayer->getFirstName() << " Target Tent ID = " <<  targetTentID << " Designer Tent ID = " << designerTentID << " Holoemote = " << holoemote;
@@ -383,40 +384,13 @@ bool ImageDesignSessionImplementation::doPayment() {
 }
 
 void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
-	// MODIFIED: Don't check for salon location since we're faking it
-	dequeueIdTimeoutEvent();
+	// MODIFIED: Completely disable - do nothing to prevent any timeout triggers
+	return;
 }
 
 void ImageDesignSessionImplementation::sessionTimeout() {
-	ManagedReference<CreatureObject*> designerCreature = this->designerCreature.get();
-	ManagedReference<CreatureObject*> targetCreature = this->targetCreature.get();
-
-	if (designerCreature != nullptr) {
-		Locker locker(designerCreature);
-
-		// MODIFIED: Don't check building location since we're faking salon
-		if (imageDesignData.isAcceptedByDesigner()) {
-			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
-
-			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
-
-			return;
-		}
-	}
-
-	if (targetCreature != nullptr) {
-		Locker locker(designerCreature);
-		Locker clocker(targetCreature, designerCreature);
-
-		// MODIFIED: Don't check building location since we're faking salon
-		if (imageDesignData.isAcceptedByDesigner()) {
-			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
-
-			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
-
-			return;
-		}
-	}
+	// MODIFIED: Completely disable automatic timeout - do nothing
+	return;
 }
 
 void ImageDesignSessionImplementation::cancelImageDesign(uint64 designer, uint64 targetPlayer, uint64 tent, int type, const ImageDesignData& data) {
