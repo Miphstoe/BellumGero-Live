@@ -81,11 +81,14 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
 		float step = 1.f - ((i / (float)modCount) * 0.5f);
 		int min = Math::clamp(-1, (int)round(0.075f * level) - 1, 25) * step;
 		int max = Math::clamp(-1, (int)round(0.125f * level) + 1, 25);
-		int mod = System::random(max - min) + min;
+		
+		// FIXED: Proper random range calculation + clamping
+		int mod = System::random(max - min + 1) + min;
+		mod = Math::clamp(1, mod, 25);
 
 		String modName = lootManager->getRandomLootableMod(gameObjectType);
 
-		skillModifiers.put(modName, ((mod <= 0) ? 1 : mod));
+		skillModifiers.put(modName, mod);
 	}
 }
 
