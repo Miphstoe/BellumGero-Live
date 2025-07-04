@@ -17,9 +17,12 @@ int ImageDesignPositionObserverImplementation::notifyObserverEvent(uint32 eventT
     if (scene == nullptr)
         return 1;
 
-    // MODIFIED: Always treat as if in salon building (always call checkDequeueEvent)
-    // This prevents timeout from being queued while keeping the session stable
-    strongRef->checkDequeueEvent(scene);
-
+    // MODIFIED: Check if actually in salon, if yes use original logic, if no do nothing
+    if (scene->getParentRecursively(SceneObjectType::SALONBUILDING) != nullptr) {
+        // Actually in salon - cancel timeout as normal
+        strongRef->checkDequeueEvent(scene);
+    }
+    // If not in salon, do nothing (don't queue timeout, don't dequeue)
+    
     return 0;
 }
