@@ -55,14 +55,22 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 
 	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-	if (obj != nullptr) // If they are in a salon, enable the tickmark for stat migration.
+	if (obj != nullptr) { // If they are in a salon, enable the tickmark for stat migration.
 		designerTentID = obj->getObjectID();
+	} else {
+		// MODIFIED: Use real salon ID to enable stat migration anywhere
+		designerTentID = 8215863; // Real salon building ID from your server
+	}
 
 	if (designerTentID != 0) {
 		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
 
-		if (obj != nullptr)
+		if (obj != nullptr) {
 			targetTentID = obj->getObjectID();
+		} else {
+			// MODIFIED: Use same real salon ID for target
+			targetTentID = 8215863; // Same real salon building ID
+		}
 
 		if (targetTentID != 0) {
 			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
