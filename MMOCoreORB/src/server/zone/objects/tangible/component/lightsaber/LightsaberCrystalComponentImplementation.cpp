@@ -37,11 +37,11 @@ void LightsaberCrystalComponentImplementation::notifyLoadFromDatabase() {
 		else if (quality == QUALITY)
 			itemLevel = 100 + System::random(39); // 100-139
 		else if (quality == SELECT)
-			itemLevel = 140 + System::random(79); // 140-219
+			itemLevel = 140 + System::random(139); // 140-279
 		else if (quality == PREMIUM)
-			itemLevel = 220 + System::random(109); // 220-329
+			itemLevel = 280 + System::random(49); // 280-329 (moved up from 220, rarer premiums)
 		else
-			itemLevel = 330 + System::random(20);
+			itemLevel = 330 + System::random(70); // 330+ (increased upper range, very rare flawless items)
 
 		attackSpeed = 0.0;
 		minimumDamage = 0;
@@ -115,8 +115,14 @@ void LightsaberCrystalComponentImplementation::generateCrystalStats() {
 	}
 
 	quality = getCrystalQuality();
+	
+	if (quality == FLAWLESS && color == 31) {
+		damage = 70;
+		setMaxCondition(1400);
+		attackSpeed = -0.75;
+		floatForceCost = -9.9;
+	}
 }
-
 void LightsaberCrystalComponentImplementation::validateCrystalStats() {
 	ManagedReference<LootManager*> lootManager = getZoneServer()->getLootManager();
 
@@ -190,10 +196,10 @@ int LightsaberCrystalComponentImplementation::getCrystalQuality() {
 		return GOOD;
 	else if (itemLevel < 140)
 		return QUALITY;
-	else if (itemLevel < 220)
+	else if (itemLevel < 280) 
 		return SELECT;
-	else if (itemLevel < 330)
-		return PREMIUM;
+	else if (itemLevel < 330) //much rarer premiums and flawless
+		return PREMIUM; 
 	else
 		return FLAWLESS;
 }
