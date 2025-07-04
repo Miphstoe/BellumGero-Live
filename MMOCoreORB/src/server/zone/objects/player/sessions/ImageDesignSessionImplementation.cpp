@@ -54,6 +54,13 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	uint64 designerTentID = 1; // Set to 1 to enable stat migration checkbox
 	uint64 targetTentID = 1;   // Set to 1 to enable stat migration checkbox
 
+	// Keep position observer to prevent session timeout, but remove building restrictions
+	positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
+	designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+
+	if (targetPlayer != designer)
+		targetPlayer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
+
 	designer->addActiveSession(SessionFacadeType::IMAGEDESIGN, _this.getReferenceUnsafeStaticCast());
 
 	String holoemote;
@@ -350,7 +357,8 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (targetCreature == nullptr || designerCreature == nullptr)
 		return;
 
-	// MODIFIED: Remove location restrictions - no longer check for building types
+	// MODIFIED: Keep position checking but remove building location restrictions
+	// This prevents the session from timing out when players move around
 	dequeueIdTimeoutEvent();
 }
 
@@ -361,7 +369,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 	if (designerCreature != nullptr) {
 		Locker locker(designerCreature);
 
-		// MODIFIED: Remove location restrictions - only check if already accepted
+		// MODIFIED: Remove location restrictions but keep timeout logic
 		if (imageDesignData.isAcceptedByDesigner()) {
 			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
@@ -375,7 +383,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 		Locker locker(designerCreature);
 		Locker clocker(targetCreature, designerCreature);
 
-		// MODIFIED: Remove location restrictions - only check if already accepted
+		// MODIFIED: Remove location restrictions but keep timeout logic  
 		if (imageDesignData.isAcceptedByDesigner()) {
 			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
