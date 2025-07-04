@@ -50,11 +50,11 @@ int ImageDesignSessionImplementation::cancelSession() {
 void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer, CreatureObject* targetPlayer) {
 	sessionStartTime.updateToCurrentTime();
 
-	// MODIFIED: Always enable stat migration (remove location restrictions)
-	uint64 designerTentID = 1; // Set to 1 to enable stat migration checkbox
-	uint64 targetTentID = 1;   // Set to 1 to enable stat migration checkbox
+	// MODIFIED: Always enable stat migration regardless of location
+	uint64 designerTentID = 1; // Set to 1 to enable stat migration
+	uint64 targetTentID = 1;   // Set to 1 to enable stat migration
 
-	// Keep position observer to prevent session timeout, but remove building restrictions
+	// Always register position observer and set tent IDs (fake the salon check)
 	positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
 	designer->registerObserver(ObserverEventType::POSITIONCHANGED, positionObserver);
 
@@ -177,7 +177,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		// MODIFIED: Allow stat migration anywhere (remove location restrictions)
+		// MODIFIED: Remove location restriction - allow stat migration anywhere
 		if (statMig && strongReferenceDesigner != strongReferenceTarget) {
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
@@ -357,8 +357,8 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (targetCreature == nullptr || designerCreature == nullptr)
 		return;
 
-	// MODIFIED: Keep position checking but remove building location restrictions
-	// This prevents the session from timing out when players move around
+	// MODIFIED: Always allow - don't check building locations
+	// Just dequeue the timeout event since we're not enforcing location restrictions
 	dequeueIdTimeoutEvent();
 }
 
@@ -369,7 +369,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 	if (designerCreature != nullptr) {
 		Locker locker(designerCreature);
 
-		// MODIFIED: Remove location restrictions but keep timeout logic
+		// MODIFIED: Don't check building location, only check if already accepted
 		if (imageDesignData.isAcceptedByDesigner()) {
 			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
@@ -383,7 +383,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 		Locker locker(designerCreature);
 		Locker clocker(targetCreature, designerCreature);
 
-		// MODIFIED: Remove location restrictions but keep timeout logic  
+		// MODIFIED: Don't check building location, only check if already accepted
 		if (imageDesignData.isAcceptedByDesigner()) {
 			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
