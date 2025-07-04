@@ -27,8 +27,8 @@ VillageRaids = ScreenPlay:new {
 	},
 
 	enemyData = {
-		minSpawnPulse = 5000 * 1000,
-		maxSpawnPulse = 7000 * 1000,
+		minSpawnPulse = 2700 * 1000,
+		maxSpawnPulse = 3600 * 1000,
 		minDistance = 25, -- Min distance from center of spawn loc
 		maxDistance = 50 -- Max distance from center of spawn loc
 	},
