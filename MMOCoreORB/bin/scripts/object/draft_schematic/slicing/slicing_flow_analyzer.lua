@@ -49,6 +49,7 @@ object_draft_schematic_slicing_slicing_flow_analyzer = object_draft_schematic_sl
 	craftingToolTab = 524288, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 7,
 	size = 1,
+	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_electronics.iff",
 
 	xpType = "crafting_general",
