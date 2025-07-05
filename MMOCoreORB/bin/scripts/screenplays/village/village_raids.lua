@@ -28,9 +28,9 @@ VillageRaids = ScreenPlay:new {
 
 	-- Break system between raids
 	raidBreakData = {
-		minBreakTime = 2700 * 1000, -- 45 minutes break between raids
-		maxBreakTime = 3600 * 1000, -- 60 minutes break between raids
 		raidDuration = 2500 * 1000,  -- 41.7 minutes (how long a raid lasts)
+		minBreakTime = 2700 * 1000, -- 45 minutes break AFTER raid ends
+		maxBreakTime = 3600 * 1000, -- 60 minutes break AFTER raid ends
 	},
 
 	enemyData = {
@@ -335,9 +335,11 @@ function VillageRaids:doEnemySpawnPulse()
 		QuestSpawner:createQuestSpawner("VillageRaids", waveInfo[1], waveInfo[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
 	end
 
-	-- Schedule next raid with break time
-	local breakTime = getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
-	createEvent(breakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	-- Schedule next raid with break time AFTER this raid ends
+	local totalBreakTime = self.raidBreakData.raidDuration + getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
+	createEvent(totalBreakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	
+	printLuaError("VillageRaids: Raid started, next raid in " .. (totalBreakTime / 60000) .. " minutes (includes " .. (self.raidBreakData.raidDuration / 60000) .. " min raid duration + " .. ((totalBreakTime - self.raidBreakData.raidDuration) / 60000) .. " min break)")
 end
 
 function VillageRaids:getPlayersInVillage(pMaster)
