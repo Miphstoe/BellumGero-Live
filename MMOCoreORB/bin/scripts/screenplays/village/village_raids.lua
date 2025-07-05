@@ -26,9 +26,14 @@ VillageRaids = ScreenPlay:new {
 		mega = 35
 	},
 
+	-- Break system between raids
+	raidBreakData = {
+		raidDuration = 2500 * 1000,  -- 41.7 minutes (how long a raid lasts)
+		minBreakTime = 2700 * 1000, -- 45 minutes break AFTER raid ends
+		maxBreakTime = 3600 * 1000, -- 60 minutes break AFTER raid ends
+	},
+
 	enemyData = {
-		minSpawnPulse = 5000 * 1000,
-		maxSpawnPulse = 7000 * 1000,
 		minDistance = 25, -- Min distance from center of spawn loc
 		maxDistance = 50 -- Max distance from center of spawn loc
 	},
@@ -190,7 +195,11 @@ function VillageRaids:doPhaseInit()
 	self:spawnTurrets()
 
 	if (currentPhase == 4) then
-		self:doEnemySpawnPulse()
+		local pMaster = VillageJediManagerTownship:getMasterObject()
+		if (pMaster ~= nil) then
+			-- Start first raid in 2 minutes
+			createEvent(2 * 60 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+		end
 	end
 end
 
@@ -326,9 +335,11 @@ function VillageRaids:doEnemySpawnPulse()
 		QuestSpawner:createQuestSpawner("VillageRaids", waveInfo[1], waveInfo[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
 	end
 
-	local spawnPulse = getRandomNumber(self.enemyData.minSpawnPulse, self.enemyData.maxSpawnPulse)
-
-	createEvent(spawnPulse, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	-- Schedule next raid with break time AFTER this raid ends
+	local totalBreakTime = self.raidBreakData.raidDuration + getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
+	createEvent(totalBreakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	
+	printLuaError("VillageRaids: Raid started, next raid in " .. (totalBreakTime / 60000) .. " minutes (includes " .. (self.raidBreakData.raidDuration / 60000) .. " min raid duration + " .. ((totalBreakTime - self.raidBreakData.raidDuration) / 60000) .. " min break)")
 end
 
 function VillageRaids:getPlayersInVillage(pMaster)
@@ -347,4 +358,28 @@ function VillageRaids:spawnVictims(pMaster)
 		local loc = self.victimSpawnLocs[i]
 		QuestSpawner:createQuestSpawner("VillageRaids", self.victimWave[1], self.victimWave[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
 	end
+end
+
+-- Manual kickstart function for testing
+function VillageRaids:kickstartRaidSystem()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+	
+	if (currentPhase ~= 4) then
+		printLuaError("VillageRaids:kickstartRaidSystem() - Village not in Phase 4")
+		return false
+	end
+	
+	local pMaster = VillageJediManagerTownship:getMasterObject()
+	if (pMaster == nil) then
+		printLuaError("VillageRaids:kickstartRaidSystem() - Cannot get master village object")
+		return false
+	end
+	
+	printLuaError("VillageRaids:kickstartRaidSystem() - Starting raid system...")
+	
+	-- Start the first raid in 30 seconds
+	createEvent(30 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+	
+	printLuaError("VillageRaids:kickstartRaidSystem() - First raid will start in 30 seconds")
+	return true
 end
