@@ -1,9 +1,369 @@
--- SOLUTION 1: Manual kickstart function
+local ObjectManager = require("managers.object.object_manager")
+
+VillageRaids = ScreenPlay:new {
+	turretSpawnLocs = {
+		-- { x, z, y, yaw },
+		{ 5309, 78.5, -4002, 0 },
+		{ 5294, 78.5, -4006, 0 },
+		{ 5282, 78.5, -4008, 0 },
+		{ 5348, 78.5, -4012, 0 },
+		{ 5364, 78.5, -4022, 0 },
+		{ 5378, 78.5, -4029, 0 },
+		{ 5293, 78.5, -4253, 174 },
+		{ 5309, 78.5, -4252, 174 },
+		{ 5326, 78.5, -4249, 174 },
+		{ 5257, 78.5, -4250, 174 },
+		{ 5242, 78.5, -4251, 174 },
+		{ 5216, 78.5, -4239, 174 },
+		{ 5294, 78.5, -4203, 156 },
+		{ 5328, 78.5, -4047, 34 },
+	},
+
+	-- Number of players needed near village to move up a wave size
+	playerWaveSizeThresholds = {
+		medium = 10,
+		large = 20,
+		mega = 35
+	},
+
+	-- Break system between raids
+	raidBreakData = {
+		minBreakTime = 2700 * 1000, -- 45 minutes break between raids
+		maxBreakTime = 3600 * 1000, -- 60 minutes break between raids
+		raidDuration = 2500 * 1000,  -- 41.7 minutes (how long a raid lasts)
+	},
+
+	enemyData = {
+		minDistance = 25, -- Min distance from center of spawn loc
+		maxDistance = 50 -- Max distance from center of spawn loc
+	},
+
+	-- Locations to spawn enemy spawners
+	enemySpawnLocs = {
+		{ 5240, -4335 },
+		{ 5374, -3947 },
+		{ 5415, -3959 },
+		{ 5331, -4361 },
+		{ 5187, -4369 }
+	},
+
+	-- Locations to spawn victim spawners
+	victimSpawnLocs = {
+		{ 5245, 78.5, -4199 },
+		{ 5304, 78.5, -4218 },
+		{ 5319, 78.5, -4213 },
+		{ 5194, 78.5, -4146 },
+		{ 5181, 78.5, -4137 },
+		{ 5306, 78.5, -4155 },
+		{ 5397, 78.5, -4114 },
+		{ 5231, 78.5, -4138 },
+		{ 5243, 78.5, -4122 },
+		{ 5288, 78.5, -4046 },
+	},
+	-- Victim wave data
+	victimWaveDataTable = {
+		spawnerPulse = 180 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 2, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "" -- Name of function that should setup a defender after it's spawned
+	},
+
+	victimWaveSpawnList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "fs_villager_male", 2, 3, 1 },
+		{ "fs_villager_female", 2, 3, 1 },
+	},
+
+	victimWave = { "victimWaveDataTable", "victimWaveSpawnList" },
+
+	-- These are wave stages, each wave listed will spawn in order after the wave before it is complete
+	enemyWaveData = {
+		small = { "enemySmall", "enemySmall", "enemySmall" },
+		medium = { "enemyMedium", "enemyMedium", "enemyMedium", "uberEnemyMedium" },
+		large = { "enemyLarge", "enemyLarge", "uberEnemyLarge", "uberEnemyLarge" },
+		mega = { "enemyLarge", "enemyLarge", "uberEnemyLarge", "uberEnemyLarge", "uberEnemyLarge" }
+	},
+
+	enemySmallList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "sith_shadow_thug_nonaggro", 5, 10, 1 },
+		{ "sith_shadow_pirate_nonaggro", 5, 10, 2 },
+		{ "sith_shadow_outlaw_nonaggro", 5, 10, 4 }
+	},
+
+	enemySmallData = {
+		spawnerPulse = 20 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 5, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "setupSpawnedRaider", -- Name of function that should setup a defender after it's spawned
+		spawnVerifyFunc = "verifyCurrentPhase" -- Function to verify if a spawner should continue creating waves
+	},
+
+	enemySmall = { "enemySmallData", "enemySmallList" },
+
+	enemyMediumList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "sith_shadow_thug_nonaggro", 10, 15, 1 },
+		{ "sith_shadow_pirate_nonaggro", 10, 15, 2 },
+		{ "sith_shadow_outlaw_nonaggro", 10, 15, 4 }
+	},
+
+	enemyMediumData = {
+		spawnerPulse = 20 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 10, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "setupSpawnedRaider", -- Name of function that should setup a defender after it's spawned
+		spawnVerifyFunc = "verifyCurrentPhase" -- Function to verify if a spawner should continue creating waves
+	},
+
+	enemyMedium = { "enemyMediumData", "enemyMediumList" },
+
+	uberEnemyMediumList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "sith_shadow_thug_nonaggro", 10, 15, 1 },
+		{ "sith_shadow_pirate_nonaggro", 10, 15, 3 },
+		{ "sith_shadow_outlaw_nonaggro", 10, 15, 5 },
+		{ "sith_shadow_mercenary_nonaggro", 3, 5, 3 }
+	},
+
+	uberEnemyMediumData = {
+		spawnerPulse = 20 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 10, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "setupSpawnedRaider", -- Name of function that should setup a defender after it's spawned
+		spawnVerifyFunc = "verifyCurrentPhase" -- Function to verify if a spawner should continue creating waves
+	},
+
+	uberEnemyMedium = { "uberEnemyMediumData", "uberEnemyMediumList" },
+
+	enemyLargeList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "sith_shadow_thug_nonaggro", 15, 20, 1 },
+		{ "sith_shadow_pirate_nonaggro", 15, 20, 2 },
+		{ "sith_shadow_outlaw_nonaggro", 15, 20, 4 }
+	},
+
+	enemyLargeData = {
+		spawnerPulse = 20 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 10, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "setupSpawnedRaider", -- Name of function that should setup a defender after it's spawned
+		spawnVerifyFunc = "verifyCurrentPhase" -- Function to verify if a spawner should continue creating waves
+	},
+
+	enemyLarge = { "enemyLargeData", "enemyLargeList" },
+
+	uberEnemyLargeList = {
+		-- { "template", minToSpawn, maxToSpawn, weight }
+		{ "sith_shadow_thug_nonaggro", 15, 20, 1 },
+		{ "sith_shadow_pirate_nonaggro", 15, 20, 2 },
+		{ "sith_shadow_outlaw_nonaggro", 15, 20, 4 },
+		{ "sith_shadow_mercenary_nonaggro", 5, 10, 3 }
+	},
+
+	uberEnemyLargeData = {
+		spawnerPulse = 20 * 1000, -- Time between spawn pulses
+		maxSpawn = 100, -- Max waves of mobiles to spawn over the entire lifetime of the spawner
+		maxPopulation = 10, -- Max mobs to have up at any one time
+		mobileLifespan = 20 * 60 * 1000, -- Time until spawned mobs should be destroyed
+		expireTime = 2500 * 1000, -- Time until spawner should expire
+		aiHandlerFunc = "setupSpawnedRaider", -- Name of function that should setup a defender after it's spawned
+		spawnVerifyFunc = "verifyCurrentPhase" -- Function to verify if a spawner should continue creating waves
+	},
+
+	uberEnemyLarge = { "uberEnemyLargeData", "uberEnemyLargeList" },
+}
+
+function VillageRaids:doPhaseInit()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+
+	if (currentPhase ~= 3 and currentPhase ~= 4) then
+		return
+	end
+
+	self:despawnTurrets()
+	self:spawnTurrets()
+
+	if (currentPhase == 4) then
+		local pMaster = VillageJediManagerTownship:getMasterObject()
+		if (pMaster ~= nil) then
+			-- Start first raid in 2 minutes
+			createEvent(2 * 60 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+		end
+	end
+end
+
+function VillageRaids:spawnTurrets()
+	local phaseID = VillageJediManagerTownship:getCurrentPhaseID()
+
+	for i = 1, #self.turretSpawnLocs, 1 do
+		local loc = self.turretSpawnLocs[i]
+		local pTurret = spawnSceneObject("dathomir", "object/installation/turret/turret_fs_village.iff", loc[1], loc[2], loc[3], 0, math.rad(loc[4]))
+
+		if (pTurret ~= nil) then
+			writeData("Village:Turret:" .. phaseID .. ":" .. i, SceneObject(pTurret):getObjectID())
+		end
+	end
+end
+
+-- Verify phase prior to spawning spawner waves
+function VillageRaids:verifyCurrentPhase()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+
+	return currentPhase == 4
+end
+
+function VillageRaids:setupSpawnedRaider(pMobile)
+	if (pMobile == nil) then
+		return
+	end
+
+	AiAgent(pMobile):addObjectFlag(AI_ESCORT)
+	AiAgent(pMobile):setMovementState(AI_PATROLLING)
+
+	createObserver(OBJECTDESTRUCTION, "FsVillageDefense", "notifyKilledRaider", pMobile)
+
+	VillageRaids:startAttackerPatrolPath(pMobile)
+end
+
+function VillageRaids:startAttackerPatrolPath(pMobile)
+	if (pMobile == nil) then
+		return
+	end
+
+	if (AiAgent(pMobile):isInCombat()) then
+		createEvent(30 * 1000, "VillageRaids", "startAttackerPatrolPath", pMobile, "")
+		return
+	end
+
+	local closestVictimLoc = -1
+	local closestVictimDist = -1
+
+	for i = 1, #self.victimSpawnLocs, 1 do
+		local loc = self.victimSpawnLocs[i]
+		local dist = SceneObject(pMobile):getDistanceToPosition(loc[1], loc[2], loc[3])
+
+		if (closestVictimDist == -1 or closestVictimDist > dist) then
+			closestVictimLoc = i
+			closestVictimDist = dist
+		end
+	end
+
+	if (closestVictimLoc == -1) then
+		printLuaError("VillageRaids:startPatrolPath, unable to get closest victim loc.")
+		return
+	end
+
+	local locInfo = self.victimSpawnLocs[closestVictimLoc]
+	AiAgent(pMobile):setHomeLocation(locInfo[1], locInfo[2], locInfo[3], 0)
+	AiAgent(pMobile):setNextPosition(locInfo[1], locInfo[2], locInfo[3], 0)
+end
+
+function VillageRaids:despawnTurrets()
+	local phaseID = VillageJediManagerTownship:getCurrentPhaseID()
+
+	for i = 1, #self.turretSpawnLocs, 1 do
+		local turretID = readData("Village:Turret:" .. phaseID .. ":" .. i)
+
+		local pTurret = getSceneObject(turretID)
+
+		if (pTurret ~= nil) then
+			SceneObject(pTurret):destroyObjectFromWorld()
+			deleteData("Village:Turret:" .. phaseID .. ":" .. i)
+		end
+	end
+end
+
+function VillageRaids:doEnemySpawnPulse()
+	local pMaster = VillageJediManagerTownship:getMasterObject()
+
+	if (pMaster == nil) then
+		printLuaError("VillageRaids:doEnemySpawnPulse(), unable to get master village object.")
+		return
+	end
+
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+
+	if (currentPhase ~= 4) then
+		return
+	end
+
+	self:despawnTurrets()
+	self:spawnTurrets()
+
+	self:spawnVictims(pMaster)
+
+	local numPlayers = self:getPlayersInVillage(pMaster)
+	local spawnWaveData
+
+	if (numPlayers >= self.playerWaveSizeThresholds.mega) then
+		spawnWaveData = self.enemyWaveData.mega
+	elseif (numPlayers >= self.playerWaveSizeThresholds.large) then
+		spawnWaveData = self.enemyWaveData.large
+	elseif (numPlayers >= self.playerWaveSizeThresholds.medium) then
+		spawnWaveData = self.enemyWaveData.medium
+	else
+		spawnWaveData = self.enemyWaveData.small
+	end
+
+	local usedLocs = { }
+
+	for i = 1,  #self.enemySpawnLocs, 1 do
+		table.insert(usedLocs, false)
+	end
+
+	for i = 1, #spawnWaveData, 1 do
+		local randomLoc = getRandomNumber(1, #self.enemySpawnLocs)
+
+		while usedLocs[randomLoc] == true do
+			randomLoc = getRandomNumber(1, #self.enemySpawnLocs)
+		end
+
+		usedLocs[randomLoc] = true
+		local waveInfo = self[spawnWaveData[i]]
+		local loc = getSpawnPoint("dathomir", self.enemySpawnLocs[randomLoc][1], self.enemySpawnLocs[randomLoc][2], self.enemyData.minDistance, self.enemyData.maxDistance, true)
+		QuestSpawner:createQuestSpawner("VillageRaids", waveInfo[1], waveInfo[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
+	end
+
+	-- Schedule next raid with break time
+	local breakTime = getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
+	createEvent(breakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+end
+
+function VillageRaids:getPlayersInVillage(pMaster)
+	if (pMaster == nil) then
+		printLuaError("VillageRaids:getPlayersInVillage(), unable to get master village object.")
+		return
+	end
+
+	local playerTable = SceneObject(pMaster):getPlayersInRange(192)
+
+	return #playerTable
+end
+
+function VillageRaids:spawnVictims(pMaster)
+	for i = 1, #self.victimSpawnLocs, 1 do
+		local loc = self.victimSpawnLocs[i]
+		QuestSpawner:createQuestSpawner("VillageRaids", self.victimWave[1], self.victimWave[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
+	end
+end
+
+-- Manual kickstart function for testing
 function VillageRaids:kickstartRaidSystem()
 	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
 	
 	if (currentPhase ~= 4) then
-		printLuaError("VillageRaids:kickstartRaidSystem() - Village not in Phase 4, current phase: " .. tostring(currentPhase))
+		printLuaError("VillageRaids:kickstartRaidSystem() - Village not in Phase 4")
 		return false
 	end
 	
@@ -13,105 +373,11 @@ function VillageRaids:kickstartRaidSystem()
 		return false
 	end
 	
-	-- Check if raids are already running by looking for existing events
-	-- (This is optional - you can remove this check if you want to force restart)
-	
 	printLuaError("VillageRaids:kickstartRaidSystem() - Starting raid system...")
 	
-	-- Start the first raid immediately (or with a short delay)
+	-- Start the first raid in 30 seconds
 	createEvent(30 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
 	
 	printLuaError("VillageRaids:kickstartRaidSystem() - First raid will start in 30 seconds")
 	return true
-end
-
--- SOLUTION 2: Add a periodic check to ensure raids are running
-function VillageRaids:ensureRaidsRunning()
-	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
-	
-	if (currentPhase ~= 4) then
-		-- Schedule next check in 5 minutes
-		createEvent(5 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
-		return
-	end
-	
-	local pMaster = VillageJediManagerTownship:getMasterObject()
-	if (pMaster == nil) then
-		-- Schedule next check in 1 minute
-		createEvent(60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
-		return
-	end
-	
-	-- Check if there are any active enemy spawners or recent raid activity
-	-- If not, restart the raid system
-	local phaseID = VillageJediManagerTownship:getCurrentPhaseID()
-	local foundActiveTurret = false
-	
-	for i = 1, #self.turretSpawnLocs, 1 do
-		local turretID = readData("Village:Turret:" .. phaseID .. ":" .. i)
-		local pTurret = getSceneObject(turretID)
-		if (pTurret ~= nil) then
-			foundActiveTurret = true
-			break
-		end
-	end
-	
-	if (not foundActiveTurret) then
-		printLuaError("VillageRaids:ensureRaidsRunning() - No active turrets found, restarting raid system...")
-		self:doPhaseInit()
-	end
-	
-	-- Schedule next check in 10 minutes
-	createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
-end
-
--- SOLUTION 3: Enhanced doPhaseInit that handles Phase 4 transitions better
-function VillageRaids:doPhaseInit()
-	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
-	
-	printLuaError("VillageRaids:doPhaseInit() called - Current Phase: " .. tostring(currentPhase))
-
-	if (currentPhase ~= 3 and currentPhase ~= 4) then
-		printLuaError("VillageRaids:doPhaseInit() - Not in Phase 3 or 4, exiting")
-		return
-	end
-
-	printLuaError("VillageRaids:doPhaseInit() - Spawning turrets...")
-	self:despawnTurrets()
-	self:spawnTurrets()
-
-	if (currentPhase == 4) then
-		printLuaError("VillageRaids:doPhaseInit() - Phase 4 detected, starting enemy spawn pulse in 2 minutes...")
-		local pMaster = VillageJediManagerTownship:getMasterObject()
-		if (pMaster ~= nil) then
-			-- Start raids in 2 minutes to give turrets time to fully spawn
-			createEvent(2 * 60 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
-			
-			-- Also start the monitoring system
-			createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
-		else
-			printLuaError("VillageRaids:doPhaseInit() - Cannot get master object for Phase 4 raids")
-		end
-	else
-		printLuaError("VillageRaids:doPhaseInit() - Phase 3 detected, turrets only (no raids)")
-	end
-end
-
--- SOLUTION 4: Server restart recovery function
-function VillageRaids:serverStartupCheck()
-	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
-	
-	printLuaError("VillageRaids:serverStartupCheck() - Current Phase: " .. tostring(currentPhase))
-	
-	if (currentPhase == 4) then
-		printLuaError("VillageRaids:serverStartupCheck() - Village in Phase 4, starting raid system...")
-		self:kickstartRaidSystem()
-		
-		-- Start monitoring
-		createEvent(10 * 60 * 1000, "VillageRaids", "ensureRaidsRunning", nil, "")
-	elseif (currentPhase == 3) then
-		printLuaError("VillageRaids:serverStartupCheck() - Village in Phase 3, spawning turrets only...")
-		self:despawnTurrets()
-		self:spawnTurrets()
-	end
 end
