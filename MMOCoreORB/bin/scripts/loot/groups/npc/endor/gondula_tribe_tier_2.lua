@@ -7,8 +7,7 @@ gondula_tribe_tier_2 = {
 	lootItems = {
 		{groupTemplate = "ewok", weight = 8400000},
 		{groupTemplate = "wearables_uncommon", weight = 800000},
-		{groupTemplate = "resource_creature", weight = 600000},
-		{groupTemplate = "resource_water", weight = 200000},
+		{groupTemplate = "junk", weight = 800000},
 	}
 }
 

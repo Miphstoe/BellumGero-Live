@@ -7,8 +7,7 @@ panshee_tribe_tier_1 = {
 	lootItems = {
 		{groupTemplate = "ewok", weight = 8200000},
 		{groupTemplate = "wearables_uncommon", weight = 800000},
-		{groupTemplate = "resource_creature", weight = 750000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "junk", weight = 1000000},
 	}
 }
 
