@@ -9,12 +9,11 @@ plasma_thief_tier_1 = {
 		{groupTemplate = "loot_kit_parts", weight = 1400000},
 		{groupTemplate = "plasma_thief_common", weight = 700000},
 		{groupTemplate = "tailor_components", weight = 1400000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "melee_weapons_common", weight = 1000000},
 		{groupTemplate = "ranged_weapons_common", weight = 1000000},
+		{groupTemplate = "power_crystals", weight = 660000},
+		{groupTemplate = "clothing_attachments", weight = 170000},
+		{groupTemplate = "armor_attachments", weight = 170000},
 	}
 }
 

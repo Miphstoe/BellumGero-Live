@@ -9,11 +9,9 @@ prisoner_tier_1 = {
 		{groupTemplate = "loot_kit_parts", weight = 1750000},
 		{groupTemplate = "tailor_components", weight = 800000},
 		{groupTemplate = "wearables_common", weight = 2600000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
+		{groupTemplate = "clothing_attachments", weight = 500000},
+		{groupTemplate = "armor_attachments", weight = 500000},
 	}
 }
 
