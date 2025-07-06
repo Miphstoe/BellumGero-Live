@@ -32,38 +32,30 @@ public:
 			return;
 		}
 
-		// Player must have sufficient funds including surcharge
+		// Player must have sufficient funds (no surcharge)
 		int cash = player->getBankCredits();
-		int surcharge = amount < 21 ? 1 : round(amount * 0.05); // minimum surcharge is 1c as per Live.
+		int surcharge = 0; // No surcharge for bank transfers
 
-		TransactionLog trxFee(player, TrxCode::TIPSURCHARGE, surcharge, false);
-
-		if (ConfigManager::instance()->getBool("Core3.SameAccountTipsAreFree", false)) {
-			auto ghost = player->getPlayerObject();
-			auto dstGhost = targetPlayer->getPlayerObject();
-
-			if (ghost != nullptr && dstGhost != nullptr && ghost->getAccountID() == dstGhost->getAccountID()) {
-				trxFee.addState("WaivedFeeAmount", surcharge);
-				surcharge = 0;
-				trxFee.setAmount(0, false);
-			}
-		}
-
-		if ((amount + surcharge) > cash) {
-			StringIdChatParameter ptnsfw("base_player", "prose_tip_nsf_wire"); // You do not have %DI credits (surcharge included) to tip the desired amount to %TT.
-			ptnsfw.setDI(amount + surcharge);
+		if (amount > cash) {
+			StringIdChatParameter ptnsfw("base_player", "prose_tip_nsf_wire"); // You do not have %DI credits to tip the desired amount to %TT.
+			ptnsfw.setDI(amount);
 			ptnsfw.setTT(targetPlayer->getCreatureName());
 			player->sendSystemMessage(ptnsfw);
 			return;
+		}
+
+		// Player must not be ignored
+		auto target = targetPlayer->getPlayerObject();
+		if (target == nullptr || target->isIgnoring(player->getFirstName())) {
+				return;
 		}
 
 		// Perform the bank tip
 		Locker clocker(targetPlayer, player);
 
 		TransactionLog trx(player, targetPlayer, TrxCode::PLAYERTIP, amount, false);
-		trxFee.groupWith(trx);
 
-		player->subtractBankCredits(amount + surcharge);
+		player->subtractBankCredits(amount);
 		targetPlayer->addBankCredits(amount, true);
 
 		// Duly notify parties involved
