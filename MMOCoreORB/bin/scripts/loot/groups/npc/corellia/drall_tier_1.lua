@@ -8,7 +8,7 @@ drall_tier_1 = {
 		{groupTemplate = "junk", weight = 5280000},
 		{groupTemplate = "loot_kit_parts", weight = 1485000},
 		{groupTemplate = "tailor_components", weight = 660000},
-		{groupTemplate = "crafting_component", weight = 275000},
+		{groupTemplate = "crafting_component", weight = 375000},
 		{groupTemplate = "melee_weapons_common", weight = 1100000},
 		{groupTemplate = "ranged_weapons_common", weight = 1100000},
 	}

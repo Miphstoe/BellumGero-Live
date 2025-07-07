@@ -10,7 +10,7 @@ flail_tier_1 = {
 		{groupTemplate = "junk", weight = 2475000},
 		{groupTemplate = "rifles", weight = 1430000},
 		{groupTemplate = "wearables_all", weight = 4620000},
-		{groupTemplate = "crafting_component", weight = 275000},
+		{groupTemplate = "crafting_component", weight = 375000},
 	}
 }
 
