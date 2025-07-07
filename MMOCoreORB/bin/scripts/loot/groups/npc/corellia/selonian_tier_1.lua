@@ -5,18 +5,15 @@ selonian_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "heavy_weapons", weight = 600000},
-		{groupTemplate = "junk", weight = 1600000},
-		{groupTemplate = "loot_kit_parts", weight = 1400000},
-		{groupTemplate = "melee_weapons", weight = 550000},
-		{groupTemplate = "ranged_weapons", weight = 1500000},
-		{groupTemplate = "tailor_components", weight = 700000},
-		{groupTemplate = "wearables_all", weight = 2400000},
-		{groupTemplate = "resource_chemical", weight = 250000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
-		{groupTemplate = "crafting_component", weight = 250000},
+		{groupTemplate = "heavy_weapons", weight = 660000},
+		{groupTemplate = "junk", weight = 1760000},
+		{groupTemplate = "loot_kit_parts", weight = 1540000},
+		{groupTemplate = "melee_weapons", weight = 605000},
+		{groupTemplate = "ranged_weapons", weight = 1650000},
+		{groupTemplate = "tailor_components", weight = 770000},
+		{groupTemplate = "wearables_all", weight = 2640000},
+		{groupTemplate = "crafting_component", weight = 375000},
+
 	}
 }
 

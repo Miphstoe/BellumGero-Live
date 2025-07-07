@@ -5,15 +5,12 @@ corsec_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "corsec_common", weight = 1900000},
-		{groupTemplate = "junk", weight = 3150000},
-		{groupTemplate = "tailor_components", weight = 1100000},
-		{groupTemplate = "wearables_all", weight = 2600000},
-		{groupTemplate = "resource_chemical", weight = 250000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
-		{groupTemplate = "crafting_component", weight = 250000},
+
+		{groupTemplate = "corsec_common", weight = 2090000},
+		{groupTemplate = "junk", weight = 3465000},
+		{groupTemplate = "tailor_components", weight = 1210000},
+		{groupTemplate = "wearables_all", weight = 2860000},
+		{groupTemplate = "crafting_component", weight = 375000},
 	}
 }
 
