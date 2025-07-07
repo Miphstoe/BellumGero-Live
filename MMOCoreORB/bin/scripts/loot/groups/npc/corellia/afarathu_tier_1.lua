@@ -7,7 +7,7 @@ afarathu_tier_1 = {
 	lootItems = {
 		{groupTemplate = "junk", weight = 5390000},
 		{groupTemplate = "loot_kit_parts", weight = 1540000},
-		{groupTemplate = "tailor_components", weight = 770000},
+		{groupTemplate = "tailor_components", weight = 870000},
 		{groupTemplate = "melee_weapons_common", weight = 1100000},
 		{groupTemplate = "ranged_weapons_common", weight = 1100000},
 	}
