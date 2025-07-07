@@ -5,16 +5,20 @@ bloodrazor_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 633333},
+		{groupTemplate = "armor_attachments", weight = 300000},
 		{groupTemplate = "bloodrazor_common", weight = 1800000},
-		{groupTemplate = "clothing_attachments", weight = 633333},
+		{groupTemplate = "clothing_attachments", weight = 300000},
 		{groupTemplate = "color_crystals", weight = 400000},
 		{groupTemplate = "junk", weight = 3350000},
 		{groupTemplate = "melee_polearm", weight = 500000},
 		{groupTemplate = "melee_unarmed", weight = 500000},
 		{groupTemplate = "pistols", weight = 500000},
-		{groupTemplate = "power_crystals", weight = 633334},
+		{groupTemplate = "power_crystals", weight = 300000},
 		{groupTemplate = "tailor_components", weight = 800000},
+		{groupTemplate = "resource_gemstone", weight = 250000},
+		{groupTemplate = "resource_metal", weight = 250000},
+		{groupTemplate = "resource_ore", weight = 250000},
+		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

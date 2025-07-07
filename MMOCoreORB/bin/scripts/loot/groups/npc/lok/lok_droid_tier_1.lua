@@ -5,12 +5,16 @@ lok_droid_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "junk", weight = 6160000},
-		{groupTemplate = "nyms_common", weight = 880000},
-		{groupTemplate = "ranged_weapons", weight = 1870000},
-		{groupTemplate = "tailor_components", weight = 440000},
-		{groupTemplate = "crafting_component", weight = 275000},
-		{groupTemplate = "component_enhancement", weight = 275000},
+		{groupTemplate = "junk", weight = 5600000},
+		{groupTemplate = "nyms_common", weight = 800000},
+		{groupTemplate = "ranged_weapons", weight = 1700000},
+		{groupTemplate = "tailor_components", weight = 400000},
+		{groupTemplate = "resource_gemstone", weight = 250000},
+		{groupTemplate = "resource_metal", weight = 250000},
+		{groupTemplate = "resource_ore", weight = 250000},
+		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "crafting_component", weight = 250000},
+		{groupTemplate = "component_enhancement", weight = 250000},
 	}
 }
 

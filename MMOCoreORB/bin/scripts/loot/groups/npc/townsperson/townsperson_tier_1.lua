@@ -5,14 +5,16 @@ townsperson_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "junk", weight = 3520000},
-		{groupTemplate = "loot_kit_parts", weight = 1100000},
-		{groupTemplate = "melee_weapons", weight = 825000},
-		{groupTemplate = "printer_parts", weight = 440000},
-		{groupTemplate = "ranged_weapons", weight = 1650000},
-		{groupTemplate = "tailor_components", weight = 660000},
-		{groupTemplate = "wearables_common", weight = 1430000},
-		{groupTemplate = "crafting_component", weight = 275000},
+		{groupTemplate = "junk", weight = 3200000},
+		{groupTemplate = "loot_kit_parts", weight = 1000000},
+		{groupTemplate = "melee_weapons", weight = 750000},
+		{groupTemplate = "printer_parts", weight = 400000},
+		{groupTemplate = "ranged_weapons", weight = 1500000},
+		{groupTemplate = "tailor_components", weight = 600000},
+		{groupTemplate = "wearables_common", weight = 1300000},
+		{groupTemplate = "resource_creature", weight = 750000},
+		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }
 
