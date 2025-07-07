@@ -8,7 +8,7 @@ ragtag_tier_1 = {
 		{groupTemplate = "junk", weight = 3190000},
 		{groupTemplate = "loot_kit_parts", weight = 1100000},
 		{groupTemplate = "power_crystals", weight = 330000},
-		{groupTemplate = "tailor_components", weight = 770000},
+		{groupTemplate = "tailor_components", weight = 870000},
 		{groupTemplate = "wearables_common", weight = 2310000},
 		{groupTemplate = "melee_weapons_common", weight = 1100000},
 		{groupTemplate = "ranged_weapons_common", weight = 1100000},
