@@ -5,6 +5,7 @@ rogue_corsec_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
+
 		{groupTemplate = "corsec_common", weight = 2090000},
 		{groupTemplate = "junk", weight = 4950000},
 		{groupTemplate = "tailor_components", weight = 1310000},

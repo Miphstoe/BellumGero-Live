@@ -12,6 +12,7 @@ followers_of_lord_nyax_tier_4 = {
 		{groupTemplate = "nyax", weight = 2820000},
 		{groupTemplate = "crafting_component", weight = 204444},
 		{groupTemplate = "crafting_component_advanced", weight = 313333},
+
 	}
 }
 

@@ -15,6 +15,7 @@ meatlump_tier_1 = {
 		{groupTemplate = "power_crystals", weight = 660000},
 		{groupTemplate = "clothing_attachments", weight = 170000},
 		{groupTemplate = "armor_attachments", weight = 170000},
+
 	}
 }
 

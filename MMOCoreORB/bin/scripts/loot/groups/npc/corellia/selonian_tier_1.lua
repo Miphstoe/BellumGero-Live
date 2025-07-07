@@ -13,6 +13,7 @@ selonian_tier_1 = {
 		{groupTemplate = "tailor_components", weight = 770000},
 		{groupTemplate = "wearables_all", weight = 2640000},
 		{groupTemplate = "crafting_component", weight = 375000},
+
 	}
 }
 

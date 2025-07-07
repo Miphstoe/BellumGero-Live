@@ -9,6 +9,7 @@ followers_of_lord_nyax_tier_1 = {
 		{groupTemplate = "junk", weight = 5247500},
 		{groupTemplate = "ranged_weapons", weight = 2673750},
 		{groupTemplate = "crafting_component", weight = 1236250},
+
 	}
 }
 

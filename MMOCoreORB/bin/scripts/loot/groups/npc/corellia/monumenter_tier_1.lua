@@ -10,6 +10,7 @@ monumenter_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 2860000},
 		{groupTemplate = "wearables_common", weight = 1870000},
 		{groupTemplate = "crafting_component", weight = 375000},
+
 	}
 }
 

@@ -14,10 +14,11 @@ lost_aqualish_tier_1 = {
 		{groupTemplate = "tailor_components", weight = 700000},
 		{groupTemplate = "wearables_common", weight = 700000},
 		{groupTemplate = "wearables_uncommon", weight = 100000},
+		{groupTemplate = "resource_gemstone", weight = 250000},
+		{groupTemplate = "resource_metal", weight = 250000},
+		{groupTemplate = "resource_ore", weight = 250000},
+		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
-		{groupTemplate = "power_crystals", weight = 660000},
-		{groupTemplate = "clothing_attachments", weight = 170000},
-		{groupTemplate = "armor_attachments", weight = 170000},
 	}
 }
 
