@@ -9,7 +9,7 @@ meatlump_tier_1 = {
 		{groupTemplate = "junk", weight = 2310000},
 		{groupTemplate = "loot_kit_parts", weight = 1100000},
 		{groupTemplate = "meatlump_common", weight = 3850000},
-		{groupTemplate = "tailor_components", weight = 330000},
+		{groupTemplate = "tailor_components", weight = 430000},
 		{groupTemplate = "melee_weapons_common", weight = 1100000},
 		{groupTemplate = "ranged_weapons_common", weight = 1100000},
 	}
