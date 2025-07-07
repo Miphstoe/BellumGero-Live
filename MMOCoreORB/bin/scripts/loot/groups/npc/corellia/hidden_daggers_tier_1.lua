@@ -5,13 +5,17 @@ hidden_daggers_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "hidden_dagger_common", weight = 1980000},
-		{groupTemplate = "junk", weight = 3080000},
-		{groupTemplate = "loot_kit_parts", weight = 1320000},
-		{groupTemplate = "tailor_components", weight = 660000},
-		{groupTemplate = "wearables_all", weight = 660000},
-		{groupTemplate = "melee_weapons_common", weight = 1100000},
-		{groupTemplate = "ranged_weapons_common", weight = 1100000},
+		{groupTemplate = "hidden_dagger_common", weight = 1800000},
+		{groupTemplate = "junk", weight = 2800000},
+		{groupTemplate = "loot_kit_parts", weight = 1200000},
+		{groupTemplate = "tailor_components", weight = 600000},
+		{groupTemplate = "wearables_all", weight = 600000},
+		{groupTemplate = "resource_gemstone", weight = 250000},
+		{groupTemplate = "resource_metal", weight = 250000},
+		{groupTemplate = "resource_ore", weight = 250000},
+		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "melee_weapons_common", weight = 1000000},
+		{groupTemplate = "ranged_weapons_common", weight = 1000000},
 	}
 }
 
