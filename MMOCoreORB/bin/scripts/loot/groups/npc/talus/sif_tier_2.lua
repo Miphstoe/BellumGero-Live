@@ -9,12 +9,11 @@ sif_tier_2 = {
 		{groupTemplate = "melee_weapons", weight = 900000},
 		{groupTemplate = "ranged_weapons", weight = 2700000},
 		{groupTemplate = "wearables_common", weight = 800000},
-		{groupTemplate = "resource_gemstone", weight = 200000},
-		{groupTemplate = "resource_metal", weight = 200000},
-		{groupTemplate = "resource_ore", weight = 200000},
-		{groupTemplate = "resource_water", weight = 200000},
 		{groupTemplate = "crafting_component", weight = 225000},
 		{groupTemplate = "crafting_component_advanced", weight = 75000},
+		{groupTemplate = "power_crystals", weight = 528000},
+		{groupTemplate = "clothing_attachments", weight = 136000},
+		{groupTemplate = "armor_attachments", weight = 136000},
 	}
 }
 

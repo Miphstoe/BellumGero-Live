@@ -15,9 +15,8 @@ gungan_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 1300000},
 		{groupTemplate = "tailor_components", weight = 700000},
 		{groupTemplate = "wearables_all", weight = 2200000},
-		{groupTemplate = "resource_creature", weight = 750000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
+		{groupTemplate = "power_crystals", weight = 1000000},
 	}
 }
 
