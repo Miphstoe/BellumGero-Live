@@ -56,6 +56,7 @@ public:
 				
 				// NEW FIXED FORMULA - ONLY CHANGE
 				int baseChance = 70; // 70% minimum always
+
 				int skillBonus = (int)(tauntMod * 0.5); // Each skill point = +0.5%
 				int successChance = baseChance + skillBonus;
 				if (successChance > 95) successChance = 95;

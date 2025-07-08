@@ -78,6 +78,7 @@ public:
 					int tauntMod = creature->getSkillMod("taunt");
 					
 					int baseChance = 70; // 70% minimum always
+
 					int skillBonus = (int)(tauntMod * 0.5); // Each skill point = +0.5%
 					int successChance = baseChance + skillBonus;
 					
@@ -86,7 +87,9 @@ public:
 
 					if (System::random(100) < successChance) {
 						threatMap->setThreatState(creature, ThreatStates::TAUNTED, (uint64)tauntMod * 1000, (uint64)tauntMod * 1000);
+
 						threatMap->addAggro(creature, tauntMod * 100, (uint64)tauntMod * 1000);
+
 						
 						CombatManager* combatManager = CombatManager::instance();
 						if (combatManager != nullptr && (!areaAgent->hasDefender(creature) || !areaAgent->isInCombat())) {

@@ -1057,17 +1057,13 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     --giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
                     --createLoot(pInventory, "junk", 1, false)
                     
-            
                 elseif (optionLink == "reset_buffs" and credits < 2000) then
-                     --Bail if the player doesn’t have enough cash on hand.  
-                     --Plays a chat box message from the NPC as well as a system message.
-                      nextConversationScreen = conversation:getScreen("insufficient_funds")
-                      creature:sendSystemMessage("You have insufficient funds") 
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds") 
                 elseif (optionLink == "reset_buffs" and credits >= 2000) then
-                     --Take 2,000 credits from the player’s cash on hand and give player a speederbike.
-                     creature:subtractCashCredits(2000)
+                    creature:subtractCashCredits(2000)
+                    CreatureObject(conversingPlayer):reset_buffs()
 
-										CreatureObject(conversingPlayer):reset_buffs()
                -- elseif (optionLink == "buff3" and credits < 30000) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
