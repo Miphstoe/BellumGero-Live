@@ -1,0 +1,136 @@
+/*
+				Copyright <SWGEmu>
+		See file COPYING for copying conditions.*/
+
+package server.zone.managers.discord;
+
+import engine.core.ManagedService;
+import engine.log.Logger;
+import server.zone.ZoneServer;
+import server.zone.objects.creature.CreatureObject;
+import server.chat.ChatManager;
+
+include system.lang.String;
+include system.lang.ref.Reference;
+
+@dirty
+class DiscordManager extends ManagedService implements Logger {
+	private transient ZoneServer server;
+	private transient ChatManager chatManager;
+	
+	// Discord configuration
+	private string botToken;
+	private string relayChannelId;
+	private boolean enabled;
+	private boolean debugMode;
+	
+
+	
+
+	
+
+	
+
+	
+	public static final int DISCORD_MAX_MESSAGE_LENGTH = 2000;
+	public static final int GAME_MAX_MESSAGE_LENGTH = 255;
+	
+	public DiscordManager(ZoneServer serv) {
+		Logger.setLoggingName("DiscordManager");
+		Logger.setLogging(false);
+		Logger.setGlobalLogging(true);
+		
+		server = serv;
+		chatManager = null;
+		
+		// Default configuration
+		botToken = "";
+		relayChannelId = "";
+		enabled = false;
+		debugMode = false;
+		
+
+		
+
+		
+
+	}
+	
+	public void setChatManager(ChatManager chatmanager) {
+		chatManager = chatmanager;
+	}
+	
+	// Configuration methods
+	public native void loadConfiguration();
+	public native void validateConfiguration();
+	
+	// Core Discord functionality
+	public native void initialize();
+	public native void start();
+	public native void stop();
+	public native void shutdown();
+	
+	// Message relay methods
+	public native void sendToDiscord(final string channel, final string message, final string author);
+	public native void sendToGame(final string channel, final string message, final string author);
+	
+	// Game chat event handlers
+	public native void handleGameMessage(final string channel, final string message, final string author, CreatureObject player = null);
+	
+	// Discord event handlers (implemented in C++)
+	public native void handleDiscordMessage(final string channelId, final string message, final string author, final string userId);
+	public native void handleDiscordReady();
+	public native void handleDiscordError(final string error);
+	
+	// Utility methods
+	public native string formatGameMessage(final string message, final string author);
+	public native string formatDiscordMessage(final string message, final string author);
+	public native string escapeDiscordMarkdown(final string text);
+	public native string truncateMessage(final string message, int maxLength);
+	
+
+	
+
+	
+	// Status and diagnostics
+	public native boolean isConnected();
+	public native string getConnectionStatus();
+	
+	// Helper methods
+	public native boolean shouldRelayChannel(final string channel);
+	
+	// Getters and setters
+	public boolean isEnabled() {
+		return enabled;
+	}
+	
+	public void setEnabled(boolean value) {
+		enabled = value;
+	}
+	
+	public boolean isDebugMode() {
+		return debugMode;
+	}
+	
+	public void setDebugMode(boolean value) {
+		debugMode = value;
+	}
+	
+	public string getBotToken() {
+		return botToken;
+	}
+	
+	public void setBotToken(final string token) {
+		botToken = token;
+	}
+	
+
+	
+	public string getRelayChannelId() {
+		return relayChannelId;
+	}
+	
+	public void setRelayChannelId(final string id) {
+		relayChannelId = id;
+	}
+} 

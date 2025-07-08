@@ -51,6 +51,9 @@
 #include "templates/string/StringFile.h"
 #include "templates/faction/Factions.h"
 
+// Include Discord manager for integration
+#include "server/zone/managers/discord/DiscordManager.h"
+
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
 	playerManager = nullptr;
@@ -754,6 +757,28 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	BaseMessage* amsg = new ChatOnSendRoomMessage(counter);
 	channel->broadcastMessage(amsg);
+
+	// Discord integration - relay room chat to Discord
+	if (server != nullptr) {
+		server::zone::managers::discord::DiscordManager* discordManager = 
+			server->getDiscordManager();
+		
+		if (discordManager != nullptr) {
+			String channelName = channel->getName();
+			String channelPath = channel->getFullPath();
+			String messageText = formattedMessage.toString();
+			
+			// Build the expected path for this galaxy
+			String expectedGeneralPath = "SWG." + server->getGalaxyName() + ".General";
+			if (discordManager->isDebugMode()) {
+				info("Room chat message: [" + channelName + "] [" + channelPath + "] [" + name + "] " + messageText, true);
+			}
+			// Check if this is the General chat channel
+			if (channelName == "General" && channelPath == expectedGeneralPath) {
+				discordManager->handleGameMessage("general", messageText, name, sender);
+			}
+		}
+	}
 
 }
 

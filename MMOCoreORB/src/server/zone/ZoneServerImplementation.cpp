@@ -38,6 +38,7 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
+#include "server/zone/managers/discord/DiscordManager.h"
 
 #include "server/zone/ZoneProcessServer.h"
 #include "ZonePacketHandler.h"
@@ -80,6 +81,7 @@ ZoneServerImplementation::ZoneServerImplementation(ConfigManager* config) :
 	guildManager = nullptr;
 	cityManager = nullptr;
 	petManager = nullptr;
+	discordManager = nullptr;
 
 	totalSentPackets = 0;
 	totalResentPackets = 0;
@@ -195,6 +197,13 @@ void ZoneServerImplementation::initialize() {
 
 	petManager = new PetManager(_this.getReferenceUnsafeStaticCast());
 	petManager->initialize();
+
+	// Initialize Discord Manager
+	info("Initializing Discord manager...", true);
+	discordManager = new DiscordManager(_this.getReferenceUnsafeStaticCast());
+	discordManager->deploy("DiscordManager");
+	discordManager->setChatManager(chatManager);
+	discordManager->initialize();
 
 	// Load ship data
 	ShipManager::instance()->initialize();
@@ -343,6 +352,11 @@ void ZoneServerImplementation::startManagers() {
 	frsManager = new FrsManager(_this.getReferenceUnsafeStaticCast());
 	frsManager->initialize();
 
+	// Start Discord Manager
+	if (discordManager != nullptr) {
+		discordManager->start();
+	}
+
 	info(true) << "ZoneServerImplementation -- Managers Started.";
 }
 
@@ -465,6 +479,11 @@ void ZoneServerImplementation::stopManagers() {
 	if (cityManager != nullptr) {
 		cityManager->stop();
 		cityManager = nullptr;
+	}
+
+	if (discordManager != nullptr) {
+		discordManager->stop();
+		discordManager = nullptr;
 	}
 
 	if (chatManager != nullptr) {
