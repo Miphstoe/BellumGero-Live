@@ -229,7 +229,7 @@ newbuff1 = ConvoScreen:new {
     options = { 
 
         {"2500 Buffs 2hr - 10k", "buff1"},
-    --    {"Reset Buffs - 2k", "reset_buffs"},
+        {"Reset Buffs - 2k", "reset_buffs"},
     --    {"300% Doctor Buffs 6hr - 30k", "buff3"},
     --    {"200% Entertainer Buffs 4hr - 10k", "buff4"},
    --     {"300% Entertainer Buffs 6hr - 20k", "buff5"},
