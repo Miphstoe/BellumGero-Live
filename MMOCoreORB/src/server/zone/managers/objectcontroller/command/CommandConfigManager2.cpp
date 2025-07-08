@@ -311,6 +311,7 @@
 #include "server/zone/objects/creature/commands/HarmfulCommand.h"
 #include "server/zone/objects/creature/commands/HarmlessCommand.h"
 #include "server/zone/objects/creature/commands/HarvestCorpseCommand.h"
+#include "server/zone/objects/creature/commands/HarvestAreaCommand.h" //harvest area command
 #include "server/zone/objects/creature/commands/HarvesterActivateCommand.h"
 #include "server/zone/objects/creature/commands/HarvesterDeactivateCommand.h"
 #include "server/zone/objects/creature/commands/HarvesterDiscardHopperCommand.h"
@@ -718,6 +719,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<HarmfulCommand>(String("harmful").toLowerCase());
 	commandFactory.registerCommand<HarmlessCommand>(String("harmless").toLowerCase());
 	commandFactory.registerCommand<HarvestCorpseCommand>(String("harvestCorpse").toLowerCase());
+	commandFactory.registerCommand<HarvestAreaCommand>(String("harvestArea").toLowerCase()); //Harvest Area Command
 	commandFactory.registerCommand<HarvesterActivateCommand>(String("harvesterActivate").toLowerCase());
 	commandFactory.registerCommand<HarvesterDeactivateCommand>(String("harvesterDeactivate").toLowerCase());
 	commandFactory.registerCommand<HarvesterDiscardHopperCommand>(String("harvesterDiscardHopper").toLowerCase());
