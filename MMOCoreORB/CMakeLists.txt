@@ -21,7 +21,7 @@ endif()
 project(core3 CXX C)
 
 # Set cpp requirements
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -101,6 +101,19 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
+
+# Find DPP (Discord++) library for Discord bot integration
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(DPP REQUIRED dpp)
+if(DPP_FOUND)
+	include_directories(${DPP_INCLUDE_DIRS})
+	link_directories(${DPP_LIBRARY_DIRS})
+	add_definitions(${DPP_CFLAGS_OTHER})
+	add_definitions(-DWITH_DISCORD_INTEGRATION)
+	message(STATUS "Discord integration enabled - DPP library found")
+else()
+	message(FATAL_ERROR "Discord integration required but DPP library not found")
+endif()
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 	message(STATUS "Compiling with AI debug enabled")
@@ -326,6 +339,7 @@ add_subdirectory(src/server/web)
 add_subdirectory(src/server/ping)
 add_subdirectory(src/server/login)
 add_subdirectory(src/server/chat)
+add_subdirectory(src/server/zone/managers/discord)
 
 if (ENABLE_BUILD_CLIENT)
 	add_subdirectory(src/client)

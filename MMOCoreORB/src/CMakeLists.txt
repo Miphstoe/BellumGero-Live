@@ -132,6 +132,11 @@ target_link_libraries(core3
 	${DB_LIBRARIES} ${OPENSSL_LIBRARIES}
 	${ZLIB_LIBRARIES} ${CMAKE_DL_LIBS})
 
+# Link DPP library for Discord integration
+if(DPP_FOUND)
+	target_link_libraries(core3 ${DPP_LIBRARIES})
+endif()
+
 if (NOT ENABLE_ASAN AND NOT ENABLE_TSAN AND NOT ENABLE_UBSAN AND JEMALLOC_FOUND AND ENABLE_JEMALLOC_LINK)
 	target_link_libraries(core3 ${JEMALLOC_LIBRARIES})
 endif()

@@ -850,6 +850,66 @@ namespace conf {
 
 			return cachedLaunchFromDevice;
 		}
+
+		/*
+
+			Discord Configuration
+
+		*/
+
+		inline bool getDiscordEnabled() {
+			static uint32 cachedVersion = 0;
+			static bool cachedDiscordEnabled;
+
+			if (configVersion.get() > cachedVersion) {
+				Locker guard(&mutex);
+				cachedDiscordEnabled = getBool("Core3.DiscordManager.Enabled", false);
+				cachedVersion = configVersion.get();
+			}
+
+			return cachedDiscordEnabled;
+		}
+
+		inline const String& getDiscordBotToken() {
+			static uint32 cachedVersion = 0;
+			static String cachedBotToken;
+
+			if (configVersion.get() > cachedVersion) {
+				Locker guard(&mutex);
+				cachedBotToken = getString("Core3.DiscordManager.BotToken", "");
+				cachedVersion = configVersion.get();
+			}
+
+			return cachedBotToken;
+		}
+
+		inline const String& getDiscordRelayChannelId() {
+			static uint32 cachedVersion = 0;
+			static String cachedRelayChannelId;
+
+			if (configVersion.get() > cachedVersion) {
+				Locker guard(&mutex);
+				cachedRelayChannelId = getString("Core3.DiscordManager.RelayChannelId", "");
+				cachedVersion = configVersion.get();
+			}
+
+			return cachedRelayChannelId;
+		}
+
+		inline bool getDiscordDebugMode() {
+			static uint32 cachedVersion = 0;
+			static bool cachedDebugMode;
+
+			if (configVersion.get() > cachedVersion) {
+				Locker guard(&mutex);
+				cachedDebugMode = getBool("Core3.DiscordManager.DebugMode", false);
+				cachedVersion = configVersion.get();
+			}
+
+			return cachedDebugMode;
+		}
+
+
 	};
 }
 
