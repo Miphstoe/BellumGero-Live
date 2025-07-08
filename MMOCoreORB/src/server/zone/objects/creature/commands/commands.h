@@ -839,8 +839,8 @@
 #include "VillageCommand.h"
 #include "ForceFocusCommand.h"
 #include "AreaLootCommand.h"
-#include "AreaLootCommand.h"
+#include "HarvestAreaCommand.h"
+#include "Taunt2Command.h"
 
 
 #endif /* COMMANDSNEW_H_ */
-

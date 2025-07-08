@@ -55,6 +55,7 @@
 #include "server/zone/objects/creature/commands/TameCommand.h"
 #include "server/zone/objects/creature/commands/TargetCommand.h"
 #include "server/zone/objects/creature/commands/TauntCommand.h"
+#include "server/zone/objects/creature/commands/Taunt2Command.h" //Taunt2 command
 #include "server/zone/objects/creature/commands/TeachCommand.h"
 #include "server/zone/objects/creature/commands/TeleportCommand.h"
 #include "server/zone/objects/creature/commands/TeleportTargetCommand.h"
@@ -199,6 +200,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<TameCommand>(String("tame").toLowerCase());
 	commandFactory.registerCommand<TargetCommand>(String("target").toLowerCase());
 	commandFactory.registerCommand<TauntCommand>(String("taunt").toLowerCase());
+	commandFactory.registerCommand<Taunt2Command>(String("taunt2").toLowerCase()); //Taunt2 command
 	commandFactory.registerCommand<TeachCommand>(String("teach").toLowerCase());
 	commandFactory.registerCommand<TeleportCommand>(String("teleport").toLowerCase());
 	commandFactory.registerCommand<TeleportTargetCommand>(String("teleportTarget").toLowerCase());

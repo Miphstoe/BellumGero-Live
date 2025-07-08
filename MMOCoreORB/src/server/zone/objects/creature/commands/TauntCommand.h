@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
+#include "server/zone/objects/tangible/threat/ThreatStates.h"
 
 class TauntCommand : public CombatQueueCommand {
 public:
@@ -52,11 +53,16 @@ public:
 
 			if (threatMap != nullptr) {
 				int tauntMod = creature->getSkillMod("taunt");
-				int levelCombine = targetCreature->getLevel() + creature->getLevel();
+				
+				// NEW FIXED FORMULA - ONLY CHANGE
+				int baseChance = 70; // 70% minimum always
+				int skillBonus = (int)(tauntMod * 0.5); // Each skill point = +0.5%
+				int successChance = baseChance + skillBonus;
+				if (successChance > 95) successChance = 95;
 
-				if (System::random(levelCombine + tauntMod) >= System::random(levelCombine - tauntMod)) {
+				if (System::random(100) < successChance) {
 					threatMap->setThreatState(creature, ThreatStates::TAUNTED, (uint64)tauntMod * 1000, (uint64)tauntMod * 1000);
-					threatMap->addAggro(creature, tauntMod * 10, (uint64)tauntMod * 1000);
+					threatMap->addAggro(creature, tauntMod * 100, (uint64)tauntMod * 1000);
 
 					/* Returns no grammar data
 					CombatManager::instance()->broadcastCombatSpam(creature, agent, nullptr, 0, "cbt_spam", "taunt_success", 0);
