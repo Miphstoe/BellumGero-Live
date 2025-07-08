@@ -64,4 +64,9 @@ function LokStaticSpawnsScreenPlay:spawnMobiles()
 	spawnMobile("lok", "langlatch_giant", 900, getRandomNumber(10) + -4448.2, 11.9, getRandomNumber(10) + -5769.9, getRandomNumber(360), 0)
 	spawnMobile("lok", "langlatch_giant", 900, getRandomNumber(10) + -4448.2, 11.9, getRandomNumber(10) + -5769.9, getRandomNumber(360), 0)
 
+	--Enraged Kimogila Static Spawns (Jedi Trials)
+	spawnMobile("lok", "enraged_kimogila",1800,-149,13,2782,150,0)
+	spawnMobile("lok", "enraged_kimogila",1800,4604,13,-1118,170,0)
+	spawnMobile("lok", "enraged_kimogila",1800,3068,359,-4592,160,0)
+
 end

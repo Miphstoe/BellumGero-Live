@@ -6,17 +6,14 @@ imperial_officer_tier_1 = {
 	maximumLevel = -1,
 	lootItems = {
 		{groupTemplate = "armor_all", weight = 800000},
-		{groupTemplate = "armor_attachments", weight = 100000},
-		{groupTemplate = "clothing_attachments", weight = 100000},
+		{groupTemplate = "armor_attachments", weight = 350000},
+		{groupTemplate = "clothing_attachments", weight = 350000},
 		{groupTemplate = "color_crystals", weight = 100000},
+		{groupTemplate = "power_crystals", weight = 500000},
 		{groupTemplate = "imperial_officer_common", weight = 150000},
 		{groupTemplate = "junk", weight = 3300000},
 		{groupTemplate = "weapons_all", weight = 3000000},
 		{groupTemplate = "wearables_all", weight = 1200000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }
