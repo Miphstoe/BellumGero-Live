@@ -836,3 +836,5 @@ RunSlashCommandsFile("village.lua")
 RunSlashCommandsFile("forceFocus.lua")
 RunSlashCommandsFile("arealoot.lua")
 RunSlashCommandsFile("harvestArea.lua")
+RunSlashCommandsFile("taunt2.lua")
+
