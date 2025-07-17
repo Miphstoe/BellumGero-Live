@@ -12,6 +12,7 @@
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/Zone.h"
 #include "server/zone/TreeEntry.h"
+#include "server/zone/objects/cell/CellObject.h"
 
 class AreaLootCommand : public QueueCommand {
 public:
@@ -36,6 +37,78 @@ public:
 
 private:
     int performAreaLoot(CreatureObject* creature, float range) const {
+        // Check if player is inside a cave/building
+        if (creature->getParent() != nullptr && creature->getParent().get()->isCellObject()) {
+            // Player is in a cave - search the cell
+            return performCellLoot(creature, range);
+        } else {
+            // Player is outdoors - search the zone
+            return performZoneLoot(creature, range);
+        }
+    }
+
+    int performCellLoot(CreatureObject* creature, float range) const {
+        SceneObject* parent = creature->getParent().get();
+        if (parent == nullptr)
+            return GENERALERROR;
+
+        // Cast to CellObject to access container methods
+        CellObject* cell = dynamic_cast<CellObject*>(parent);
+        if (cell == nullptr)
+            return GENERALERROR;
+
+        int lootedCorpses = 0;
+        int totalItems = 0;
+        int skippedCorpses = 0;
+
+        try {
+            ReadLocker rlocker(cell->getContainerLock());
+
+            // Iterate through all objects in the cell
+            for (int i = 0; i < cell->getContainerObjectsSize(); ++i) {
+                Reference<SceneObject*> obj = cell->getContainerObject(i);
+                
+                if (obj == nullptr || !obj->isAiAgent())
+                    continue;
+
+                AiAgent* agent = cast<AiAgent*>(obj.get());
+                if (agent == nullptr || !agent->isDead())
+                    continue;
+
+                // Check distance
+                if (!creature->isInRange(agent, range))
+                    continue;
+
+                // Try to loot this corpse
+                int result = lootSingleCorpse(creature, agent);
+                if (result > 0) {
+                    lootedCorpses++;
+                    totalItems += result;
+                } else if (result == -1) {
+                    skippedCorpses++;
+                }
+            }
+        } catch (...) {
+            return GENERALERROR;
+        }
+
+        // Send feedback to player
+        if (lootedCorpses == 0 && skippedCorpses == 0) {
+            creature->sendSystemMessage("No lootable corpses found in range.");
+        } else {
+            StringBuffer msg;
+            msg << "Area loot complete: " << totalItems << " items from " << lootedCorpses << " corpses";
+            if (skippedCorpses > 0) {
+                msg << " (" << skippedCorpses << " corpses skipped - no permission or lottery in progress)";
+            }
+            msg << ".";
+            creature->sendSystemMessage(msg.toString());
+        }
+
+        return SUCCESS;
+    }
+
+    int performZoneLoot(CreatureObject* creature, float range) const {
         Zone* zone = creature->getZone();
         
         if (zone == nullptr)
@@ -73,7 +146,7 @@ private:
                 lootedCorpses++;
                 totalItems += result;
             } else if (result == -1) {
-                skippedCorpses++; // Corpse had no permission or was skipped
+                skippedCorpses++;
             }
         }
 
@@ -118,8 +191,8 @@ private:
             if (group != nullptr) {
                 switch (group->getLootRule()) {
                 case GroupManager::FREEFORALL:
-                    // Pick up individual items only
-                    itemsLooted = pickupOwnedItemsOnly(creature, agent, lootContainer);
+                    // In free-for-all, anyone can loot everything
+                    itemsLooted = lootAllFromCorpse(creature, agent, lootContainer);
                     break;
                 case GroupManager::MASTERLOOTER:
                     // Only master looter can area loot group corpses
@@ -129,8 +202,8 @@ private:
                         itemsLooted = pickupOwnedItemsOnly(creature, agent, lootContainer);
                     }
                     break;
-                case GroupManager::LOTTERY:
                 case GroupManager::RANDOM:
+                case GroupManager::LOTTERY:
                     // Skip these corpses - too complex for batch processing
                     // But still pick up individual items
                     itemsLooted = pickupOwnedItemsOnly(creature, agent, lootContainer);
