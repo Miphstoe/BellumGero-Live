@@ -4,16 +4,16 @@ giant_canyon_krayt_dragon = Creature:new {
 	faction = "",
 	mobType = MOB_CARNIVORE,
 	level = 300,
-	chanceHit = 30.0,
+	chanceHit = 25.0,
 	damageMin = 1645,
 	damageMax = 3000,
 	baseXp = 28549,
 	baseHAM = 385000,
 	baseHAMmax = 471000,
 	armor = 3,
-	resists = {170,170,170,170,130,170,170,170,-1},
+	resists = {170,170,170,170,130,170,170,170,115},
 	meatType = "meat_carnivore",
-	meatAmount = 1000,
+	meatAmount = 1500,
 	hideType = "hide_bristley",
 	hideAmount = 870,
 	boneType = "bone_mammal",
@@ -31,17 +31,53 @@ giant_canyon_krayt_dragon = Creature:new {
 	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
 
 	lootGroups = {
-		{
-			groups = {
-				{group = "krayt_dragon_common", chance = 2500000},
-				{group = "krayt_tissue_uncommon", chance = 2000000},
-				{group = "krayt_pearls", chance = 1500000},
-				{group = "armor_all", chance = 2000000},
-				{group = "weapons_all", chance = 2000000},
-			},
-			lootChance = 7500000
-		}
+	{
+        groups = {
+			{group = "krayt_tissue_uncommon", chance = 2000000},         -- 20.00% of group, 20.00% total
+			{group = "krayt_dragon_common", chance = 5500000},           -- 55.00% of group, 55.00% total
+			{group = "krayt_pearls", chance = 1500000},                  -- 15.00% of group, 15.00% total
+			{group = "armor_attachments", chance = 500000},              -- 5.00% of group, 5.00% total
+			{group = "clothing_attachments", chance = 500000},           -- 5.00% of group, 5.00% total
+		},
+		lootChance = 10000000, -- 100.00% total chance
 	},
+	{
+        groups = {
+			{group = "krayt_tissue_uncommon", chance = 2500000},         -- 25.00% of group, 10.00% total
+			{group = "krayt_dragon_common", chance = 3500000},           -- 35.00% of group, 14.00% total
+			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 8.00% total
+			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 4.00% total
+			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 4.00% total
+		},
+		lootChance = 4000000, -- 40.00% total chance
+	},
+	{
+        groups = {
+			{group = "krayt_tissue_uncommon", chance = 2500000},         -- 25.00% of group, 5.00% total
+			{group = "krayt_dragon_common", chance = 3500000},           -- 35.00% of group, 7.00% total
+			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 4.00% total
+			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 2.00% total
+			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 2.00% total
+		},
+		lootChance = 2000000, -- 20.00% total chance
+	},
+	{
+        groups = {
+			{group = "krayt_tissue_uncommon", chance = 2500000},         -- 25.00% of group, 2.50% total
+			{group = "krayt_dragon_common", chance = 3500000},           -- 35.00% of group, 3.50% total
+			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 2.00% total
+			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 1.00% total
+			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 1.00% total
+		},
+		lootChance = 1000000, -- 10.00% total chance
+	},
+	{
+        groups = {
+			{group = "krayt_pearls", chance = 10000000},                 -- 100.00% of group, 10.00% total
+		},
+		lootChance = 1000000, -- 10.00% total chance
+	},
+},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
