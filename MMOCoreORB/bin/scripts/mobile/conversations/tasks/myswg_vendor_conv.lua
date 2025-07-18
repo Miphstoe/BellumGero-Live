@@ -49,8 +49,8 @@ weaps1 = ConvoScreen:new {
         {"1h Sword (240 damage, 4 speed) - 25k", "option4"},
         {"2h Battle Axe (300 damage, 4.5 speed) - 25k", "option5"},
         {"Reinforced Combat Staff (300 damage, 4.5 speed) - 25k", "option6"},
-      --  {"Light Lightning Cannon (730damage, 4.7speed) - 25k", "option8"},
-       -- {"Flame Thrower (830damage, 6.0speed) - 25k", "option9"},
+        {"Light Lightning Cannon (365damage, 4.7speed) - 25k", "option8"},
+        {"Flame Thrower (415damage, 6.0speed) - 25k", "option9"},
         -- {"Heavy Acid Rifle (770damage, 5.5speed) - 25k", "option10"},
         {"Main menu.", "first_screen"},
     }
