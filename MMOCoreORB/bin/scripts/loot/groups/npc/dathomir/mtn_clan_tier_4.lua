@@ -5,19 +5,16 @@ mtn_clan_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 400000},
-		{groupTemplate = "clothing_attachments", weight = 400000},
-		{groupTemplate = "color_crystals", weight = 500000},
-		{groupTemplate = "junk", weight = 1400000},
-		{groupTemplate = "melee_weapons", weight = 2400000},
-		{groupTemplate = "power_crystals", weight = 500000},
-		{groupTemplate = "ranged_weapons", weight = 2800000},
-		{groupTemplate = "tailor_components", weight = 400000},
-		{groupTemplate = "wearables_uncommon", weight = 400000},
-		{groupTemplate = "resource_creature", weight = 300000},
-		{groupTemplate = "resource_water", weight = 100000},
-		{groupTemplate = "crafting_component", weight = 100000},
-		{groupTemplate = "crafting_component_advanced", weight = 300000},
+		{groupTemplate = "armor_attachments", weight = 1000000},           -- 10.00%
+		{groupTemplate = "clothing_attachments", weight = 1000000},        -- 10.00%
+		{groupTemplate = "color_crystals", weight = 1200000},              -- 12.00%
+		{groupTemplate = "melee_weapons", weight = 1700000},               -- 17.00%
+		{groupTemplate = "power_crystals", weight = 1000000},              -- 10.00%
+		{groupTemplate = "ranged_weapons", weight = 1650000},              -- 16.50%
+		{groupTemplate = "tailor_components", weight = 500000},            -- 5.00%
+		{groupTemplate = "wearables_uncommon", weight = 500000},           -- 5.00%
+		{groupTemplate = "crafting_component", weight = 500000},           -- 5.00%
+		{groupTemplate = "crafting_component_advanced", weight = 1200000}  -- 12.00%
 	}
 }
 
