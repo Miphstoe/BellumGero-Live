@@ -53,43 +53,57 @@ private:
             return GENERALERROR;
 
         // Cast to CellObject to access container methods
-        CellObject* cell = dynamic_cast<CellObject*>(parent);
-        if (cell == nullptr)
+        CellObject* currentCell = dynamic_cast<CellObject*>(parent);
+        if (currentCell == nullptr)
+            return GENERALERROR;
+
+        // Get the building that contains this cell
+        BuildingObject* building = currentCell->getParent().get().castTo<BuildingObject*>();
+        if (building == nullptr)
             return GENERALERROR;
 
         int lootedCorpses = 0;
         int totalItems = 0;
         int skippedCorpses = 0;
 
-        try {
-            ReadLocker rlocker(cell->getContainerLock());
+        // Search all cells in the building
+        for (int j = 1; j <= building->getMapCellSize(); ++j) {
+            CellObject* cell = building->getCell(j);
+            
+            if (cell == nullptr || !cell->isContainerLoaded())
+                continue;
 
-            // Iterate through all objects in the cell
-            for (int i = 0; i < cell->getContainerObjectsSize(); ++i) {
-                Reference<SceneObject*> obj = cell->getContainerObject(i);
-                
-                if (obj == nullptr || !obj->isAiAgent())
-                    continue;
+            try {
+                ReadLocker rlocker(cell->getContainerLock());
 
-                AiAgent* agent = cast<AiAgent*>(obj.get());
-                if (agent == nullptr || !agent->isDead())
-                    continue;
+                // Iterate through all objects in this cell
+                for (int i = 0; i < cell->getContainerObjectsSize(); ++i) {
+                    Reference<SceneObject*> obj = cell->getContainerObject(i);
+                    
+                    if (obj == nullptr || !obj->isAiAgent())
+                        continue;
 
-                // Check distance
-                if (!creature->isInRange(agent, range))
-                    continue;
+                    AiAgent* agent = cast<AiAgent*>(obj.get());
+                    if (agent == nullptr || !agent->isDead())
+                        continue;
 
-                // Try to loot this corpse
-                int result = lootSingleCorpse(creature, agent);
-                if (result > 0) {
-                    lootedCorpses++;
-                    totalItems += result;
-                } else if (result == -1) {
-                    skippedCorpses++;
+                    // Check distance - still respects 32m range
+                    if (!creature->isInRange(agent, range))
+                        continue;
+
+                    // Try to loot this corpse
+                    int result = lootSingleCorpse(creature, agent);
+                    if (result > 0) {
+                        lootedCorpses++;
+                        totalItems += result;
+                    } else if (result == -1) {
+                        skippedCorpses++;
+                    }
                 }
+            } catch (...) {
+                // Continue to next cell if this one fails
+                continue;
             }
-        } catch (...) {
-            return GENERALERROR;
         }
 
         // Send feedback to player
