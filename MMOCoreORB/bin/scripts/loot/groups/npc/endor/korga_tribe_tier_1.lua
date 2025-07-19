@@ -5,12 +5,12 @@ korga_tribe_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 300000},
-		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "armor_attachments", weight = 600000},
+		{groupTemplate = "clothing_attachments", weight = 600000},
 		{groupTemplate = "ewok", weight = 7600000},
 		{groupTemplate = "wearables_uncommon", weight = 800000},
-		{groupTemplate = "resource_creature", weight = 750000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 	}
 }
 
