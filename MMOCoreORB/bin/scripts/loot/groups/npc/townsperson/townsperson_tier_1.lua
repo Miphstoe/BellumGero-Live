@@ -12,8 +12,10 @@ townsperson_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 1500000},
 		{groupTemplate = "tailor_components", weight = 600000},
 		{groupTemplate = "wearables_common", weight = 1300000},
-		{groupTemplate = "resource_creature", weight = 750000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

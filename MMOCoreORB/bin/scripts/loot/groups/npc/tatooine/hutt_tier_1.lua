@@ -5,16 +5,14 @@ hutt_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 100000},
-		{groupTemplate = "clothing_attachments", weight = 100000},
+		{groupTemplate = "armor_attachments", weight = 400000},
+		{groupTemplate = "clothing_attachments", weight = 400000},
 		{groupTemplate = "junk", weight = 3400000},
 		{groupTemplate = "melee_weapons", weight = 850000},
 		{groupTemplate = "ranged_weapons", weight = 2600000},
 		{groupTemplate = "wearables_common", weight = 1700000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

@@ -5,11 +5,15 @@ bandit_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "junk", weight = 4968000},
-		{groupTemplate = "loot_kit_parts", weight = 1512000},
-		{groupTemplate = "tailor_components", weight = 1080000},
-		{groupTemplate = "melee_weapons_common", weight = 1080000},
-		{groupTemplate = "ranged_weapons_common", weight = 1080000},
+		{groupTemplate = "junk", weight = 4600000},
+		{groupTemplate = "loot_kit_parts", weight = 1400000},
+		{groupTemplate = "tailor_components", weight = 1000000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
+		{groupTemplate = "melee_weapons_common", weight = 1000000},
+		{groupTemplate = "ranged_weapons_common", weight = 1000000},
 	}
 }
 
