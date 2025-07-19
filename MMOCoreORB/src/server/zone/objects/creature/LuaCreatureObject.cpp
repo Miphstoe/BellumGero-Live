@@ -169,6 +169,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "setSpawnerID", &LuaCreatureObject::setSpawnerID },
 		{ "getSpawnerID", &LuaCreatureObject::getSpawnerID },
 		{ "storePets", &LuaCreatureObject::storePets },
+		{ "reset_buffs", &LuaCreatureObject::reset_buffs },
 
 		// JTL
 		{ "isRebelPilot", &LuaCreatureObject::isRebelPilot },
@@ -1620,4 +1621,21 @@ int LuaCreatureObject::removeSpaceMissionObject(lua_State* L) {
 	realObject->removeSpaceMissionObject(realObject->getObjectID(), missionObjectID, notifyClient, true);
 
 	return 0;
+}
+
+int LuaCreatureObject::reset_buffs(lua_State* L) {
+    if (realObject->isInCombat()){
+        realObject->sendSystemMessage("is in combat, cannot reset buffs.");
+        return 0;
+    }
+    realObject->sendSystemMessage("Your Buffs Have Been Reset.");
+    realObject->clearBuffs(true, false);
+    
+    ManagedReference<PlayerObject*> ghost = realObject->getPlayerObject();
+    if (ghost != nullptr) {
+        ghost->setFoodFilling(0);
+        ghost->setDrinkFilling(0);
+    }
+    
+    return 0;
 }

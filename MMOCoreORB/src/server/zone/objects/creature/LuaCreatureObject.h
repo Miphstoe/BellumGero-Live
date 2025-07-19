@@ -136,6 +136,7 @@ namespace creature {
 		int setSpawnerID(lua_State* L);
 		int getSpawnerID(lua_State* L);
 		int storePets(lua_State* L);
+		int reset_buffs(lua_State* L);
 
 		// JTL
 		int isRebelPilot(lua_State* L);

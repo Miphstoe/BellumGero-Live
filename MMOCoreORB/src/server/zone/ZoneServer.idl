@@ -47,6 +47,7 @@ import server.zone.managers.creature.PetManager;
 import server.zone.managers.guild.GuildManager;
 import server.zone.managers.city.CityManager;
 import server.zone.managers.name.NameManager;
+import server.zone.managers.discord.DiscordManager;
 
 @dirty
 class ZoneServer extends ManagedService implements Logger {
@@ -78,6 +79,7 @@ class ZoneServer extends ManagedService implements Logger {
 	private MissionManager missionManager;
 	private GuildManager guildManager;
 	private PetManager petManager;
+	private DiscordManager discordManager;
 
 	private transient boolean deleteNavAreas;
 
@@ -414,6 +416,10 @@ class ZoneServer extends ManagedService implements Logger {
 	@dirty
 	public PetManager getPetManager() {
 		return petManager;
+	}
+
+	public DiscordManager getDiscordManager() {
+		return discordManager;
 	}
 
 	@local
