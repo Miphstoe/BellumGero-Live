@@ -11,6 +11,7 @@
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/Zone.h"
 #include "server/zone/TreeEntry.h"
+#include "server/zone/objects/cell/CellObject.h"
 
 class HarvestAreaCommand : public QueueCommand {
 public:
@@ -60,6 +61,95 @@ public:
 
 private:
     int performAreaHarvest(CreatureObject* player, byte harvestType, float range) const {
+        // Check if player is inside a cave/building
+        if (player->getParent() != nullptr && player->getParent().get()->isCellObject()) {
+            // Player is in a cave - search all cells in the building
+            return performCellHarvest(player, harvestType, range);
+        } else {
+            // Player is outdoors - search the zone
+            return performZoneHarvest(player, harvestType, range);
+        }
+    }
+
+    int performCellHarvest(CreatureObject* player, byte harvestType, float range) const {
+        SceneObject* parent = player->getParent().get();
+        if (parent == nullptr)
+            return GENERALERROR;
+
+        // Cast to CellObject to access container methods
+        CellObject* currentCell = dynamic_cast<CellObject*>(parent);
+        if (currentCell == nullptr)
+            return GENERALERROR;
+
+        // Get the building that contains this cell
+        BuildingObject* building = currentCell->getParent().get().castTo<BuildingObject*>();
+        if (building == nullptr)
+            return GENERALERROR;
+
+        int harvestedCorpses = 0;
+        int skippedCorpses = 0;
+
+        // Search all cells in the building
+        for (int j = 1; j <= building->getMapCellSize(); ++j) {
+            CellObject* cell = building->getCell(j);
+            
+            if (cell == nullptr || !cell->isContainerLoaded())
+                continue;
+
+            try {
+                ReadLocker rlocker(cell->getContainerLock());
+
+                // Iterate through all objects in this cell
+                for (int i = 0; i < cell->getContainerObjectsSize(); ++i) {
+                    Reference<SceneObject*> obj = cell->getContainerObject(i);
+                    
+                    if (obj == nullptr || !obj->isCreatureObject())
+                        continue;
+
+                    CreatureObject* creo = cast<CreatureObject*>(obj.get());
+                    if (creo == nullptr || !creo->isCreature())
+                        continue;
+
+                    Creature* cr = cast<Creature*>(creo);
+                    if (cr == nullptr)
+                        continue;
+
+                    // Check distance - still respects 32m range
+                    if (!player->isInRange(cr, range))
+                        continue;
+
+                    // Try to harvest this corpse
+                    int result = harvestSingleCorpse(player, cr, harvestType);
+                    if (result == 1) {
+                        harvestedCorpses++;
+                    } else if (result == 0) {
+                        skippedCorpses++;
+                    }
+                    // result == -1 means error, but we continue processing other corpses
+                }
+            } catch (...) {
+                // Continue to next cell if this one fails
+                continue;
+            }
+        }
+
+        // Send feedback to player
+        if (harvestedCorpses == 0 && skippedCorpses == 0) {
+            player->sendSystemMessage("No harvestable corpses found in range.");
+        } else {
+            StringBuffer msg;
+            msg << "Area harvest complete: " << harvestedCorpses << " corpses harvested";
+            if (skippedCorpses > 0) {
+                msg << " (" << skippedCorpses << " corpses skipped - no resources or already harvested)";
+            }
+            msg << ".";
+            player->sendSystemMessage(msg.toString());
+        }
+
+        return SUCCESS;
+    }
+
+    int performZoneHarvest(CreatureObject* player, byte harvestType, float range) const {
         Zone* zone = player->getZone();
         
         if (zone == nullptr)
