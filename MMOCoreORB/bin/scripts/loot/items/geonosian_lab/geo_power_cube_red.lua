@@ -12,7 +12,7 @@ geo_power_cube_red = {
 		{"attackhealthcost",-4,-8,0},
 		{"attackactioncost",-4,-8,0},
 		{"attackmindcost",-4,-8,0},
-		{"useCount",1,11,0},
+		{"useCount",1,10,0},
 	},
 	customizationStringNames = {},
 	customizationValues = {}
