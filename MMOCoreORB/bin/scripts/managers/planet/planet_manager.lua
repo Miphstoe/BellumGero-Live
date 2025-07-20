@@ -144,7 +144,7 @@ dathomir = {
 	planetTravelPoints = {
 		{name = "Trade Outpost", x = 618.89258, z = 6.039608, y = 3092.0142, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Science Outpost", x = -49.021923, z = 18, y = -1584.7278, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		--{name = "Village Shuttleport", x = 5240, z = 78, y = -4069, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Aurillian Village", x = 5240, z = 78, y = -4069, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
 	},
 
 	jtlLaunchPoint = {"space_dathomir", -6900, 2750, -4000},
@@ -190,15 +190,16 @@ dathomir = {
 		{"tower_and_stones",-443,-1156,32},
 		{"tree_hut",-5045,-2773,32},
 		{"wall",7442,-3024,32},
+		{"aurillian_village",5240,-4069,150}
 	},
 
 	planetObjects = {
-	{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0.383, oz = 0, ow = 0.924, x = 5259.9, z = 78.5, y = -4224.0, parentid = 0}, -- Adds a mission terminal for Village!
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.701463, oz = 0, ow = 0.712705, x = 592.612, z = 6, y = 3089.84, parentid = 0},
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = -67.6585, z = 18, y = -1595.3, parentid = 0},
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.314904, oz = 0, ow = 0.949123, x = 5289.6, z = 78.5, y = -4146.1, parentid = 0}
+		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0.383, oz = 0, ow = 0.924, x = 5259.9, z = 78.5, y = -4224.0, parentid = 0},
+		{templateFile = "object/building/naboo/shuttleport_naboo.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5240, z = 78, y = -4069, parentid = 0}
 	}
 }
+
+
 
 endor = {
 	weatherEnabled = 0,
