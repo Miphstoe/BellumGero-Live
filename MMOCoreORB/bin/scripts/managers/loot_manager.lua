@@ -79,8 +79,6 @@ randomDotUses = {250, 4999}
 junkValueModifier = 5;
 
 lootableArmorAttachmentStatMods = {
-
-
 --	"aim",
 --	"alert",
 --	"berserk",
@@ -148,14 +146,11 @@ lootableArmorAttachmentStatMods = {
 	"twohandmelee_speed",
 	"unarmed_accuracy",
 --	"unarmed_damage",
-	"unarmed_speed"
 --	"volley",
 --	"warcry"
 }
 
 lootableClothingAttachmentStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"armor_assembly",
@@ -268,7 +263,7 @@ lootableClothingAttachmentStatMods = {
 --	"warcry",
 	"weapon_assembly",
 	"weapon_experimentation",
-	"weapon_repair",
+	"weapon_repair"
 	"jedi_saber_assembly",
   	"jedi_saber_experimentation",
   	"jedi_force_power_regen",
@@ -294,8 +289,6 @@ lootableClothingAttachmentStatMods = {
 }
 
 lootableArmorStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"armor_assembly",
@@ -407,8 +400,6 @@ lootableArmorStatMods = {
 }
 
 lootableClothingStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"armor_assembly",
@@ -542,8 +533,6 @@ lootableClothingStatMods = {
 }
 
 lootableOneHandedMeleeStatMods = {
-
-
 --	"berserk",
 	"blind_defense",
 	"block",
@@ -583,8 +572,6 @@ lootableOneHandedMeleeStatMods = {
 }
 
 lootableTwoHandedMeleeStatMods = {
-
-
 --	"berserk",
 	"blind_defense",
 	"block",
@@ -624,8 +611,6 @@ lootableTwoHandedMeleeStatMods = {
 }
 
 lootableUnarmedStatMods = {
-
-
 --	"berserk",
 	"blind_defense",
 	"block",
@@ -665,8 +650,6 @@ lootableUnarmedStatMods = {
 }
 
 lootablePistolStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"blind_defense",
@@ -704,13 +687,12 @@ lootablePistolStatMods = {
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
+
 	"thrown_speed"
 --	"volley"
 }
 
 lootableRifleStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"blind_defense",
@@ -756,8 +738,6 @@ lootableRifleStatMods = {
 }
 
 lootableCarbineStatMods = {
-
-
 --	"aim",
 --	"alert",
 	"blind_defense",
@@ -799,8 +779,6 @@ lootableCarbineStatMods = {
 }
 
 lootablePolearmStatMods = {
-
-
 --	"berserk",
 	"blind_defense",
 	"block",
@@ -839,8 +817,6 @@ lootablePolearmStatMods = {
 }
 
 lootableHeavyWeaponStatMods = {
-
-	
 --	"aim",
 --	"alert",
 	"blind_defense",
@@ -877,6 +853,7 @@ lootableHeavyWeaponStatMods = {
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
+
 	"thrown_speed"
 --	"volley"
 }
