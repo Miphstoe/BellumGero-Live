@@ -3043,11 +3043,11 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				"Color Crystal", "color_crystals",
 				"Krayt Pearl", "krayt_pearls"
 			},
-			"Attachments",
-			{
-				"Armor Attachment", "object/tangible/gem/armor.iff",
-				"Clothing Attachment", "object/tangible/gem/clothing.iff",
-			},
+			--"Attachments",
+			--{
+			--	"Armor Attachment", "object/tangible/gem/armor.iff",
+			--	"Clothing Attachment", "object/tangible/gem/clothing.iff",
+			--},
 			"Armor",
 			{
 				"Components",
