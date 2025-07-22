@@ -5,15 +5,15 @@ singing_mountain_clan_councilwoman = Creature:new {
 	mobType = MOB_NPC,
 	socialGroup = "mtn_clan",
 	faction = "mtn_clan",
-	level = 253,
-	chanceHit = 23.5,
-	damageMin = 1395,
-	damageMax = 2500,
-	baseXp = 24180,
-	baseHAM = 261000,
-	baseHAMmax = 320000,
+	level = 278,
+	chanceHit = 27.25,
+	damageMin = 1520,
+	damageMax = 2750,
+	baseXp = 26654,
+	baseHAM = 321000,
+	baseHAMmax = 392000,
 	armor = 3,
-	resists = {100,35,35,100,100,100,100,100,-1},
+	resists = {100,35,35,100,100,100,100,100,-1}, -- Kin, Eng, Blast, Heat, Cold, Elec, Acid, Stun, LS
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -33,9 +33,11 @@ singing_mountain_clan_councilwoman = Creature:new {
 		{
 			groups = {
 				{group = "mtn_clan_tier_5", chance = 10000000}
-			}
+			},
+			lootChance = 10000000
 		}
 	},
+
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
