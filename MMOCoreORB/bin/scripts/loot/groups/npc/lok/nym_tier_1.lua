@@ -11,10 +11,9 @@ nym_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 1300000},
 		{groupTemplate = "tailor_components", weight = 300000},
 		{groupTemplate = "wearables_uncommon", weight = 1300000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 400000},
 		{groupTemplate = "crafting_component", weight = 250000},
 		{groupTemplate = "component_enhancement", weight = 250000},
 	}
