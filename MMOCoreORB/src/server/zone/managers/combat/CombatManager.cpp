@@ -90,13 +90,14 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 	attacker->clearState(CreatureState::PEACE);
 
 	if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
-    ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
-    if (weapon != nullptr && weapon->isJediWeapon()) {
-        VisibilityManager::instance()->increaseVisibility(attacker, 25);
-    }
-} // <-- Add this closing brace!
-}
-Locker clocker(defender, attacker);
+		ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
+
+		if (weapon != nullptr && weapon->isJediWeapon()) {
+			VisibilityManager::instance()->increaseVisibility(attacker, 25);
+		}
+	}
+
+	Locker clocker(defender, attacker);
 
 	if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
 		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
@@ -1232,17 +1233,23 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 // Calculate Damage - TanO attacker & CreO defender
 float CombatManager::calculateDamage(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, const CreatureAttackData& data) const {
 	float damage = 0;
+
 	int diff = calculateDamageRange(attacker, defender, weapon);
 	float minDamage = weapon->getMinDamage();
+
 	if (diff > 0)
 		damage = System::random(diff) + (int)minDamage;
+
 	damage += defender->getSkillMod("private_damage_susceptibility");
+
 	if (defender->isKnockedDown())
 		damage *= 1.5f;
+
 	// Toughness reduction
 	damage = getDefenderToughnessModifier(defender, weapon->getAttackType(), weapon->getDamageType(), damage);
+
 	return damage;
-} // <-- This closing brace was missing!
+}
 
 int CombatManager::calculateDamageRange(TangibleObject* attacker, CreatureObject* defender, WeaponObject* weapon) const {
 	int attackType = weapon->getAttackType();
