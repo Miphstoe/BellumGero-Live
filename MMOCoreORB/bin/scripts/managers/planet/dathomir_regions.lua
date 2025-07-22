@@ -208,5 +208,10 @@ dathomir_regions = {
 
 	--{"@dathomir_region_names:forest_5", -7999, -7999, {RECTANGLE, 7999, 7999}, SPAWNAREA, {"dathomir_world"}, 256},
 
-	{"@dathomir_region_names:world_spawner", 0, 0, {RECTANGLE, 0, 0}, SPAWNAREA + WORLDSPAWNAREA, {"dathomir_world"}, 2048}
+	{"@dathomir_region_names:world_spawner", 0, 0, {RECTANGLE, 0, 0}, SPAWNAREA + WORLDSPAWNAREA, {"dathomir_world"}, 2048},
+
+-- Aurillian Village Shuttleport Protection Zones
+	{"aurillian_village_shuttleport", 5240, -4069, {CIRCLE, 50}, NOSPAWNAREA + NOBUILDZONEAREA},
+	{"aurillian_village_nobuild", 5240, -4069, {CIRCLE, 200}, NOBUILDZONEAREA},
+	{"@dathomir_region_names:aurillian_village", 5240, -4069, {CIRCLE, 300}, NAMEDREGION}
 }
