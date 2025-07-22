@@ -5,19 +5,15 @@ hutt_exp_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 200000},
-		{groupTemplate = "clothing_attachments", weight = 200000},
-		{groupTemplate = "color_crystals", weight = 200000},
+		{groupTemplate = "armor_attachments", weight = 500000},
+		{groupTemplate = "clothing_attachments", weight = 500000},
+		{groupTemplate = "color_crystals", weight = 300000},
 		{groupTemplate = "hutt_exp_common", weight = 1800000},
 		{groupTemplate = "junk", weight = 3000000},
 		{groupTemplate = "loot_kit_parts", weight = 900000},
-		{groupTemplate = "power_crystals", weight = 150000},
+		{groupTemplate = "power_crystals", weight = 450000},
 		{groupTemplate = "ranged_weapons", weight = 1500000},
 		{groupTemplate = "tailor_components", weight = 800000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

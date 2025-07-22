@@ -25,7 +25,7 @@ public:
 			return GENERALERROR;
 		}
 
-		skillManager->surrenderSkill(arguments.toString(), creature, true);
+		skillManager->surrenderSkill(arguments.toString(), creature, true, true, true);
 
 		return SUCCESS;
 	}

@@ -6,10 +6,10 @@ technician_tier_1 = {
 	maximumLevel = -1,
 	lootItems = {
 		{groupTemplate = "junk", weight = 7000000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "melee_weapons_common", weight = 1000000},
 		{groupTemplate = "ranged_weapons_common", weight = 1000000},
 	}

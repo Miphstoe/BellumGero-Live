@@ -686,13 +686,13 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 
 	const SkillList* skillList = creature->getSkillList();
 
-	for (int i = 0; i < skillList->size(); ++i) {
-		Skill* checkSkill = skillList->get(i);
+		for (int i = 0; i < skillList->size(); ++i) {
+			Skill* checkSkill = skillList->get(i);
 
-		if (checkSkill->isRequiredSkillOf(skill)) {
-			return false;
+			if (checkSkill->isRequiredSkillOf(skill)) {
+				return false;
+			}
 		}
-	}
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
@@ -700,50 +700,50 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		return false;
 	}
 
-	if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
-		return false;
-	} else if (!allowPilot && skillName.beginsWith("pilot_")) {
-		if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
+		if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+			return false;
+		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
+			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
+				return false;
+			}
+
+			ManagedReference<SuiMessageBox*> pilotBox = new SuiMessageBox(creature, SuiWindowType::SURRENDER_PILOT_DENY);
+
+			if (pilotBox == nullptr) {
+				return false;
+			}
+
+			pilotBox->setPromptTitle("@space/space_interaction:retire_warning_title"); // "Surrender Skill"
+
+			uint32 faction = Factions::FACTIONNEUTRAL;
+
+			if (skillName.contains("rebel")) {
+				pilotBox->setPromptText("@space/space_interaction:retire_rebel_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Rebel Navy, you should speak to the recruiter for the Rebel Alliance on Corellia. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+				faction = Factions::FACTIONREBEL;
+
+			} else if (skillName.contains("imperial")) {
+				pilotBox->setPromptText("@space/space_interaction:retire_imperial_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Imperial Navy, you should speak to the navy recruiter for the Empire on Naboo. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+				faction = Factions::FACTIONIMPERIAL;
+			} else {
+				pilotBox->setPromptText("@space/space_interaction:retire_neutral_warning"); // "You cannot manually surrender pilot skills.If you wish to retire your pilot skills, you should speak to the recruiter for the Pilot's Guild on Tatooine. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+			}
+
+			pilotBox->setCallback(new SurrenderPilotSuiCallback(creature->getZoneServer(), faction));
+
+			pilotBox->setUsingObject(creature);
+			pilotBox->setForceCloseDisabled();
+
+			pilotBox->setOkButton(true, "@ok");
+			pilotBox->setCancelButton(true, "@space/space_interaction:retire_waypoint_btn");
+			pilotBox->setOtherButton(false, "");
+
+			ghost->addSuiBox(pilotBox);
+			creature->sendMessage(pilotBox->generateMessage());
+
 			return false;
 		}
 
-		ManagedReference<SuiMessageBox*> pilotBox = new SuiMessageBox(creature, SuiWindowType::SURRENDER_PILOT_DENY);
-
-		if (pilotBox == nullptr) {
-			return false;
-		}
-
-		pilotBox->setPromptTitle("@space/space_interaction:retire_warning_title"); // "Surrender Skill"
-
-		uint32 faction = Factions::FACTIONNEUTRAL;
-
-		if (skillName.contains("rebel")) {
-			pilotBox->setPromptText("@space/space_interaction:retire_rebel_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Rebel Navy, you should speak to the recruiter for the Rebel Alliance on Corellia. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
-			faction = Factions::FACTIONREBEL;
-
-		} else if (skillName.contains("imperial")) {
-			pilotBox->setPromptText("@space/space_interaction:retire_imperial_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Imperial Navy, you should speak to the navy recruiter for the Empire on Naboo. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
-			faction = Factions::FACTIONIMPERIAL;
-		} else {
-			pilotBox->setPromptText("@space/space_interaction:retire_neutral_warning"); // "You cannot manually surrender pilot skills.If you wish to retire your pilot skills, you should speak to the recruiter for the Pilot's Guild on Tatooine. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
-		}
-
-		pilotBox->setCallback(new SurrenderPilotSuiCallback(creature->getZoneServer(), faction));
-
-		pilotBox->setUsingObject(creature);
-		pilotBox->setForceCloseDisabled();
-
-		pilotBox->setOkButton(true, "@ok");
-		pilotBox->setCancelButton(true, "@space/space_interaction:retire_waypoint_btn");
-		pilotBox->setOtherButton(false, "");
-
-		ghost->addSuiBox(pilotBox);
-		creature->sendMessage(pilotBox->generateMessage());
-
-		return false;
-	}
-
-	removeSkillRelatedMissions(creature, skill);
+		removeSkillRelatedMissions(creature, skill);
 
 	creature->removeSkill(skill, notifyClient);
 
@@ -789,60 +789,60 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		auto schematicsGranted = skill->getSchematicsGranted();
 		SchematicMap::instance()->removeSchematics(ghost, *schematicsGranted, notifyClient);
 
-		//Update maximum experience.
-		updateXpLimits(ghost);
+			//Update maximum experience.
+			updateXpLimits(ghost);
 
-		FrsManager* frsManager = creature->getZoneServer()->getFrsManager();
+			FrsManager* frsManager = creature->getZoneServer()->getFrsManager();
 
-		if (checkFrs && frsManager->isFrsEnabled()) {
-			frsManager->handleSkillRevoked(creature, skillName);
-		}
-
-		/// Update Force Power Max
-		ghost->recalculateForcePower();
-
-		const SkillList* list = creature->getSkillList();
-
-		int totalSkillPointsWasted = 250;
-
-		for (int i = 0; i < list->size(); ++i) {
-			Skill* skill = list->get(i);
-
-			totalSkillPointsWasted -= skill->getSkillPointsRequired();
-		}
-
-		if (ghost->getSkillPoints() != totalSkillPointsWasted) {
-			creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
-			ghost->setSkillPoints(totalSkillPointsWasted);
-		}
-
-		ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
-		if (playerManager != nullptr) {
-			creature->setLevel(playerManager->calculatePlayerLevel(creature));
-		}
-
-		MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
-
-		if (skill->getSkillName() == "force_title_jedi_rank_02") {
-			if (missionManager != nullptr)
-				missionManager->removePlayerFromBountyList(creature->getObjectID());
-		} else if (skill->getSkillName().contains("force_discipline")) {
-			if (missionManager != nullptr)
-				missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
-		} else if (skill->getSkillName().contains("squadleader")) {
-			Reference<GroupObject*> group = creature->getGroup();
-
-			if (group != nullptr && group->getLeader() == creature) {
-				Core::getTaskManager()->executeTask([group] () {
-					Locker locker(group);
-
-					group->removeGroupModifiers();
-
-					if (group->hasSquadLeader())
-						group->addGroupModifiers();
-				}, "UpdateGroupModsLambda2");
+			if (checkFrs && frsManager->isFrsEnabled()) {
+				frsManager->handleSkillRevoked(creature, skillName);
 			}
-		}
+
+			/// Update Force Power Max
+			ghost->recalculateForcePower();
+
+			const SkillList* list = creature->getSkillList();
+
+			int totalSkillPointsWasted = 250;
+
+			for (int i = 0; i < list->size(); ++i) {
+				Skill* skill = list->get(i);
+
+				totalSkillPointsWasted -= skill->getSkillPointsRequired();
+			}
+
+			if (ghost->getSkillPoints() != totalSkillPointsWasted) {
+				creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
+				ghost->setSkillPoints(totalSkillPointsWasted);
+			}
+
+			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
+			if (playerManager != nullptr) {
+				creature->setLevel(playerManager->calculatePlayerLevel(creature));
+			}
+
+			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
+
+			if (skill->getSkillName() == "force_title_jedi_rank_02") {
+				if (missionManager != nullptr)
+					missionManager->removePlayerFromBountyList(creature->getObjectID());
+			} else if (skill->getSkillName().contains("force_discipline")) {
+				if (missionManager != nullptr)
+					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
+			} else if (skill->getSkillName().contains("squadleader")) {
+				Reference<GroupObject*> group = creature->getGroup();
+
+				if (group != nullptr && group->getLeader() == creature) {
+					Core::getTaskManager()->executeTask([group] () {
+						Locker locker(group);
+
+						group->removeGroupModifiers();
+
+						if (group->hasSquadLeader())
+							group->addGroupModifiers();
+					}, "UpdateGroupModsLambda2");
+				}
+			}
 	}
 
 	/// Update client with new values for things like Terrain Negotiation
@@ -860,6 +860,7 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	creature->sendMessage(msg4);
 
 	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+	
 	JediManager::instance()->onSkillRevoked(creature, skill);
 
 	return true;
@@ -1010,4 +1011,373 @@ void SkillManager::updateXpLimits(PlayerObject* ghost) {
 		}
 	}
 	*/
+}
+
+bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired, bool regrant) {
+	auto skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr)
+		return false;
+
+	Locker locker(creature);
+	TransactionLog trx(TrxCode::SKILLTRAININGSYSTEM, creature);
+	trx.addState("skill", skillName);
+
+	//If they already have the skill, then return true.
+	if (creature->hasSkill(skill->getSkillName()))
+		return true;
+
+	if (!regrant) {
+		//Check for required skills.
+		auto requiredSkills = skill->getSkillsRequired();
+		for (int i = 0; i < requiredSkills->size(); ++i) {
+			const String& requiredSkillName = requiredSkills->get(i);
+			auto requiredSkill = skillMap.get(requiredSkillName.hashCode());
+
+			if (requiredSkill == nullptr)
+				continue;
+
+			if (awardRequiredSkills)
+				awardSkill(requiredSkillName, creature, notifyClient, awardRequiredSkills, noXpRequired);
+
+			if (!creature->hasSkill(requiredSkillName))
+				return false;
+		}
+
+		if (!canLearnSkill(skillName, creature, noXpRequired)) {
+			return false;
+		}
+	}
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost != nullptr) {
+		//Withdraw skill points.
+		ghost->addSkillPoints(-skill->getSkillPointsRequired());
+
+		//Witdraw experience.
+		if (!regrant && !noXpRequired) {
+			TransactionLog trxExperience(TrxCode::EXPERIENCE, creature);
+			trxExperience.groupWith(trx);
+			ghost->addExperience(trxExperience, skill->getXpType(), -skill->getXpCost(), true);
+		}
+
+		creature->addSkill(skill, notifyClient);
+
+		//Add skill modifiers
+		auto skillModifiers = skill->getSkillModifiers();
+
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+			creature->addSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
+
+		}
+
+		//Add abilities
+		auto abilityNames = skill->getAbilities();
+		addAbilities(ghost, *abilityNames, notifyClient);
+		if (skill->isGodOnly()) {
+			for (int i = 0; i < abilityNames->size(); ++i) {
+				const String& ability = abilityNames->get(i);
+				StringIdChatParameter params;
+				params.setTU(ability);
+				params.setStringId("ui", "skill_command_acquired_prose");
+
+				creature->sendSystemMessage(params);
+			}
+		}
+
+		//Add draft schematic groups
+		auto schematicsGranted = skill->getSchematicsGranted();
+		SchematicMap::instance()->addSchematics(ghost, *schematicsGranted, notifyClient);
+
+		if (!regrant) {
+			//Update maximum experience.
+			updateXpLimits(ghost);
+
+			// Update Force Power Max.
+			ghost->recalculateForcePower();
+
+			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
+
+			if (skillName.contains("master")) {
+				if (playerManager != nullptr) {
+					const Badge* badge = BadgeList::instance()->get(skillName);
+
+					if (badge == nullptr && skillName == "crafting_shipwright_master") {
+						badge = BadgeList::instance()->get("crafting_shipwright");
+					}
+
+					if (badge != nullptr) {
+						playerManager->awardBadge(ghost, badge);
+					}
+				}
+			}
+
+			const SkillList* list = creature->getSkillList();
+
+			int totalSkillPointsWasted = 250;
+
+			for (int i = 0; i < list->size(); ++i) {
+				Skill* skill = list->get(i);
+
+				totalSkillPointsWasted -= skill->getSkillPointsRequired();
+			}
+
+			if (ghost->getSkillPoints() != totalSkillPointsWasted) {
+				creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
+				ghost->setSkillPoints(totalSkillPointsWasted);
+			}
+
+			if (playerManager != nullptr) {
+				creature->setLevel(playerManager->calculatePlayerLevel(creature));
+			}
+
+			if (skill->getSkillName().contains("force_sensitive") && skill->getSkillName().contains("_04"))
+				JediManager::instance()->onFSTreeCompleted(creature, skill->getSkillName());
+
+			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
+
+			if (skill->getSkillName() == "force_title_jedi_rank_02") {
+				if (missionManager != nullptr)
+					missionManager->addPlayerToBountyList(creature->getObjectID(), ghost->calculateBhReward());
+			} else if (skill->getSkillName().contains("force_discipline")) {
+				if (missionManager != nullptr)
+					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
+			} else if (skill->getSkillName().contains("squadleader")) {
+				Reference<GroupObject*> group = creature->getGroup();
+
+				if (group != nullptr && group->getLeader() == creature) {
+					Core::getTaskManager()->executeTask([group] () {
+						Locker locker(group);
+
+						group->removeGroupModifiers();
+						group->addGroupModifiers();
+					}, "UpdateGroupModsLambda");
+				}
+			}
+		}
+	}
+
+	/// Update client with new values for things like Terrain Negotiation
+	CreatureObjectDeltaMessage4* msg4 = new CreatureObjectDeltaMessage4(creature);
+	msg4->updateAccelerationMultiplierBase();
+	msg4->updateAccelerationMultiplierMod();
+	msg4->updateSpeedMultiplierBase();
+	msg4->updateSpeedMultiplierMod();
+	msg4->updateRunSpeed();
+	msg4->updateWalkSpeed();
+	msg4->updateSlopeModAngle();
+	msg4->updateSlopeModPercent();
+	msg4->updateWaterModPercent();
+	msg4->close();
+	creature->sendMessage(msg4);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+
+	return true;
+}
+
+bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool regrant) {
+	Skill* skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr) {
+		return false;
+	}
+
+	Locker locker(creature);
+
+	//If they have already surrendered the skill, then return true.
+	if (!creature->hasSkill(skill->getSkillName())) {
+		return true;
+	}
+
+	const SkillList* skillList = creature->getSkillList();
+
+	if (!regrant) {
+		for (int i = 0; i < skillList->size(); ++i) {
+			Skill* checkSkill = skillList->get(i);
+
+			if (checkSkill->isRequiredSkillOf(skill)) {
+				return false;
+			}
+		}
+	}
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == nullptr) {
+		return false;
+	}
+
+	if (!regrant) {
+		if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+			return false;
+		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
+			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
+				return false;
+			}
+
+			ManagedReference<SuiMessageBox*> pilotBox = new SuiMessageBox(creature, SuiWindowType::SURRENDER_PILOT_DENY);
+
+			if (pilotBox == nullptr) {
+				return false;
+			}
+
+			pilotBox->setPromptTitle("@space/space_interaction:retire_warning_title"); // "Surrender Skill"
+
+			uint32 faction = Factions::FACTIONNEUTRAL;
+
+			if (skillName.contains("rebel")) {
+				pilotBox->setPromptText("@space/space_interaction:retire_rebel_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Rebel Navy, you should speak to the recruiter for the Rebel Alliance on Corellia. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+				faction = Factions::FACTIONREBEL;
+
+			} else if (skillName.contains("imperial")) {
+				pilotBox->setPromptText("@space/space_interaction:retire_imperial_warning"); // "You cannot manually surrender pilot skills.If you wish to retire from the Imperial Navy, you should speak to the navy recruiter for the Empire on Naboo. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+				faction = Factions::FACTIONIMPERIAL;
+			} else {
+				pilotBox->setPromptText("@space/space_interaction:retire_neutral_warning"); // "You cannot manually surrender pilot skills.If you wish to retire your pilot skills, you should speak to the recruiter for the Pilot's Guild on Tatooine. If you need a waypoint to the location of your local recruiter, please press the Get Waypoint button below."
+			}
+
+			pilotBox->setCallback(new SurrenderPilotSuiCallback(creature->getZoneServer(), faction));
+
+			pilotBox->setUsingObject(creature);
+			pilotBox->setForceCloseDisabled();
+
+			pilotBox->setOkButton(true, "@ok");
+			pilotBox->setCancelButton(true, "@space/space_interaction:retire_waypoint_btn");
+			pilotBox->setOtherButton(false, "");
+
+			ghost->addSuiBox(pilotBox);
+			creature->sendMessage(pilotBox->generateMessage());
+
+			return false;
+		}
+
+		removeSkillRelatedMissions(creature, skill);
+	}
+
+	creature->removeSkill(skill, notifyClient);
+
+	//Remove skill modifiers
+	auto skillModifiers = skill->getSkillModifiers();
+
+	for (int i = 0; i < skillModifiers->size(); ++i) {
+		auto entry = &skillModifiers->elementAt(i);
+		creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
+
+	}
+
+	//Give the player the used skill points back.
+	ghost->addSkillPoints(skill->getSkillPointsRequired());
+
+	//Remove abilities but only if the creature doesn't still have a skill that grants the
+	//ability.  Some abilities are granted by multiple skills. For example Dazzle for dancers
+	//and musicians.
+	auto skillAbilities = skill->getAbilities();
+
+	if (skillAbilities->size() > 0) {
+		SortedVector<String> abilitiesLost;
+		for (int i = 0; i < skillAbilities->size(); i++) {
+			abilitiesLost.put(skillAbilities->get(i));
+		}
+		for (int i = 0; i < skillList->size(); i++) {
+			Skill* remainingSkill = skillList->get(i);
+			auto remainingAbilities = remainingSkill->getAbilities();
+			for(int j = 0; j < remainingAbilities->size(); j++) {
+				if (abilitiesLost.contains(remainingAbilities->get(j))) {
+					abilitiesLost.drop(remainingAbilities->get(j));
+					if (abilitiesLost.size() == 0) {
+						break;
+					}
+				}
+			}
+		}
+		if (abilitiesLost.size() > 0) {
+			removeAbilities(ghost, abilitiesLost, notifyClient);
+		}
+
+		//Remove draft schematic groups
+		auto schematicsGranted = skill->getSchematicsGranted();
+		SchematicMap::instance()->removeSchematics(ghost, *schematicsGranted, notifyClient);
+
+		if (!regrant) {
+			//Update maximum experience.
+			updateXpLimits(ghost);
+
+			FrsManager* frsManager = creature->getZoneServer()->getFrsManager();
+
+			if (checkFrs && frsManager->isFrsEnabled()) {
+				frsManager->handleSkillRevoked(creature, skillName);
+			}
+
+			/// Update Force Power Max
+			ghost->recalculateForcePower();
+
+			const SkillList* list = creature->getSkillList();
+
+			int totalSkillPointsWasted = 250;
+
+			for (int i = 0; i < list->size(); ++i) {
+				Skill* skill = list->get(i);
+
+				totalSkillPointsWasted -= skill->getSkillPointsRequired();
+			}
+
+			if (ghost->getSkillPoints() != totalSkillPointsWasted) {
+				creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
+				ghost->setSkillPoints(totalSkillPointsWasted);
+			}
+
+			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
+			if (playerManager != nullptr) {
+				creature->setLevel(playerManager->calculatePlayerLevel(creature));
+			}
+
+			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
+
+			if (skill->getSkillName() == "force_title_jedi_rank_02") {
+				if (missionManager != nullptr)
+					missionManager->removePlayerFromBountyList(creature->getObjectID());
+			} else if (skill->getSkillName().contains("force_discipline")) {
+				if (missionManager != nullptr)
+					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
+			} else if (skill->getSkillName().contains("squadleader")) {
+				Reference<GroupObject*> group = creature->getGroup();
+
+				if (group != nullptr && group->getLeader() == creature) {
+					Core::getTaskManager()->executeTask([group] () {
+						Locker locker(group);
+
+						group->removeGroupModifiers();
+
+						if (group->hasSquadLeader())
+							group->addGroupModifiers();
+					}, "UpdateGroupModsLambda2");
+				}
+			}
+		}
+	}
+
+	/// Update client with new values for things like Terrain Negotiation
+	CreatureObjectDeltaMessage4* msg4 = new CreatureObjectDeltaMessage4(creature);
+	msg4->updateAccelerationMultiplierBase();
+	msg4->updateAccelerationMultiplierMod();
+	msg4->updateSpeedMultiplierBase();
+	msg4->updateSpeedMultiplierMod();
+	msg4->updateRunSpeed();
+	msg4->updateWalkSpeed();
+	msg4->updateSlopeModAngle();
+	msg4->updateSlopeModPercent();
+	msg4->updateWaterModPercent();
+	msg4->close();
+	creature->sendMessage(msg4);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+	
+	if (!regrant) {
+		JediManager::instance()->onSkillRevoked(creature, skill);
+	}
+
+	return true;
 }

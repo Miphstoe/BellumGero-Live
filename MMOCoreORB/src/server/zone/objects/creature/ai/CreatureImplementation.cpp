@@ -231,7 +231,7 @@ void CreatureImplementation::notifyDespawn(Zone* zone) {
 
 bool CreatureImplementation::canHarvestMe(CreatureObject* player) {
 
-	if(!player->isInRange(_this.getReferenceUnsafeStaticCast(), 10.0f) || player->isInCombat() || !player->hasSkill("outdoors_scout_novice")
+	if(!player->isInRange(_this.getReferenceUnsafeStaticCast(), 32.0f) || player->isInCombat() || !player->hasSkill("outdoors_scout_novice")
 			|| player->isDead() || player->isIncapacitated() || isPet())
 		return false;
 

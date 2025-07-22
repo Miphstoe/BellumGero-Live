@@ -5,18 +5,16 @@ rebel_marshall_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 200000},
-		{groupTemplate = "clothing_attachments", weight = 200000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
 		{groupTemplate = "holocron_dark", weight = 400000},
 		{groupTemplate = "holocron_light", weight = 400000},
-		{groupTemplate = "junk", weight = 2950000},
+		{groupTemplate = "power_crystals", weight = 200000},
+		{groupTemplate = "color_crystals", weight = 400000},		
+		{groupTemplate = "junk", weight = 3150000},
 		{groupTemplate = "melee_weapons", weight = 700000},
 		{groupTemplate = "ranged_weapons", weight = 3500000},
 		{groupTemplate = "wearables_common", weight = 400000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

@@ -13,7 +13,7 @@ singing_mountain_clan_arch_witch = Creature:new {
 	baseHAM = 24000,
 	baseHAMmax = 30000,
 	armor = 2,
-	resists = {100,5,5,100,100,100,100,100,-1},
+	resists = {100,5,5,100,100,100,100,100,-1}, -- Kin, Eng, Blast, Heat, Cold, Elec, Acid, Stun, LS
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -33,7 +33,8 @@ singing_mountain_clan_arch_witch = Creature:new {
 		{
 			groups = {
 				{group = "mtn_clan_tier_4", chance = 10000000}
-			}
+			},
+			lootChance = 7000000
 		}
 	},
 

@@ -9,10 +9,10 @@ swamp_rat_tier_1 = {
 		{groupTemplate = "loot_kit_parts", weight = 450000},
 		{groupTemplate = "melee_weapons", weight = 800000},
 		{groupTemplate = "ranged_weapons", weight = 2600000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }

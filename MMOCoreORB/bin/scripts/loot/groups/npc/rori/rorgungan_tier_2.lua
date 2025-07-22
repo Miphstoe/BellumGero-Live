@@ -10,8 +10,10 @@ rorgungan_tier_2 = {
 		{groupTemplate = "tailor_components", weight = 1800000},
 		{groupTemplate = "wearables_common", weight = 400000},
 		{groupTemplate = "wearables_uncommon", weight = 400000},
-		{groupTemplate = "resource_creature", weight = 600000},
-		{groupTemplate = "resource_water", weight = 200000},
+		{groupTemplate = "armor_attachments", weight = 250000},
+		{groupTemplate = "clothing_attachments", weight = 250000},
+		{groupTemplate = "power_crystals", weight = 200000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "crafting_component", weight = 225000},
 		{groupTemplate = "crafting_component_advanced", weight = 75000},
 	}
