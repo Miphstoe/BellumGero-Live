@@ -95,7 +95,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
         VisibilityManager::instance()->increaseVisibility(attacker, 25);
     }
 } // <-- Add this closing brace!
-
+}
 Locker clocker(defender, attacker);
 
 	if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
