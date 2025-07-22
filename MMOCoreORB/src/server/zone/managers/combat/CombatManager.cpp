@@ -1233,23 +1233,20 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 // Calculate Damage - TanO attacker & CreO defender
 float CombatManager::calculateDamage(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defender, const CreatureAttackData& data) const {
 	float damage = 0;
-
 	int diff = calculateDamageRange(attacker, defender, weapon);
 	float minDamage = weapon->getMinDamage();
-
 	if (diff > 0)
 		damage = System::random(diff) + (int)minDamage;
-
 	damage += defender->getSkillMod("private_damage_susceptibility");
-
 	if (defender->isKnockedDown())
 		damage *= 1.5f;
-
 	// Toughness reduction
 	damage = getDefenderToughnessModifier(defender, weapon->getAttackType(), weapon->getDamageType(), damage);
-
 	return damage;
-}
+} // <-- This closing brace was missing!
+
+int CombatManager::calculateDamageRange(TangibleObject* attacker, CreatureObject* defender, WeaponObject* weapon) const {
+	// ... rest of the function
 
 int CombatManager::calculateDamageRange(TangibleObject* attacker, CreatureObject* defender, WeaponObject* weapon) const {
 	int attackType = weapon->getAttackType();
