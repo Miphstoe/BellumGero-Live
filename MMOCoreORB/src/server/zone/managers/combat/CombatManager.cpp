@@ -1246,9 +1246,6 @@ float CombatManager::calculateDamage(TangibleObject* attacker, WeaponObject* wea
 } // <-- This closing brace was missing!
 
 int CombatManager::calculateDamageRange(TangibleObject* attacker, CreatureObject* defender, WeaponObject* weapon) const {
-	// ... rest of the function
-
-int CombatManager::calculateDamageRange(TangibleObject* attacker, CreatureObject* defender, WeaponObject* weapon) const {
 	int attackType = weapon->getAttackType();
 	int damageMitigation = 0;
 	float minDamage = weapon->getMinDamage(), maxDamage = weapon->getMaxDamage();
