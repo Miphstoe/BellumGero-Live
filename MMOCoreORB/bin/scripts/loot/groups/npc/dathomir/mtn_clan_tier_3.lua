@@ -5,6 +5,7 @@ mtn_clan_tier_3 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
+
 		{groupTemplate = "armor_attachments", weight = 1000000},           -- 10.00%
 		{groupTemplate = "clothing_attachments", weight = 1000000},        -- 10.00%
 		{groupTemplate = "color_crystals", weight = 780000},               -- 7.80%
@@ -16,6 +17,8 @@ mtn_clan_tier_3 = {
 		{groupTemplate = "wearables_uncommon", weight = 560000},           -- 5.60%
 		{groupTemplate = "crafting_component", weight = 700000},           -- 7.00%
 		{groupTemplate = "crafting_component_advanced", weight = 560000}   -- 5.60%
+
+
 	}
 }
 

@@ -10,10 +10,8 @@ followers_of_lord_nyax_tier_4 = {
 		{groupTemplate = "grenades_looted", weight = 900000},
 		{groupTemplate = "junk", weight = 3600000},
 		{groupTemplate = "nyax", weight = 2700000},
-		{groupTemplate = "resource_chemical", weight = 100000},
-		{groupTemplate = "resource_gemstone", weight = 100000},
-		{groupTemplate = "resource_metal", weight = 100000},
-		{groupTemplate = "resource_water", weight = 100000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "crafting_component", weight = 100000},
 		{groupTemplate = "crafting_component_advanced", weight = 300000},
 	}

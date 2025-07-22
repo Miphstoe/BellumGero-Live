@@ -5,17 +5,17 @@ dark_jedi_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 1040500},
-		{groupTemplate = "clothing_attachments", weight = 1040500},
-		{groupTemplate = "color_crystals", weight = 1155333},
-		{groupTemplate = "holocron_dark", weight = 462667},
-		{groupTemplate = "holocron_light", weight = 462667},
-		{groupTemplate = "melee_weapons", weight = 861667},
-		{groupTemplate = "power_crystals", weight = 1677333},
-		{groupTemplate = "ranged_weapons", weight = 1837000},
-		{groupTemplate = "wearables_rare", weight = 809611},
-		{groupTemplate = "crafting_component", weight = 115611},
-		{groupTemplate = "crafting_component_advanced", weight = 346833},
+		{groupTemplate = "armor_attachments", weight = 1000000},
+		{groupTemplate = "clothing_attachments", weight = 1000000},
+		{groupTemplate = "color_crystals", weight = 500000},
+		{groupTemplate = "holocron_dark", weight = 400000},
+		{groupTemplate = "holocron_light", weight = 400000},
+		{groupTemplate = "melee_weapons", weight = 1100000},
+		{groupTemplate = "power_crystals", weight = 1000000},
+		{groupTemplate = "ranged_weapons", weight = 3500000},
+		{groupTemplate = "wearables_rare", weight = 700000},
+		{groupTemplate = "crafting_component", weight = 100000},
+		{groupTemplate = "crafting_component_advanced", weight = 300000},
 	}
 }
 

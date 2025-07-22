@@ -5,6 +5,7 @@ mtn_clan_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
+
 		{groupTemplate = "armor_attachments", weight = 1000000},           -- 10.00%
 		{groupTemplate = "clothing_attachments", weight = 1000000},        -- 10.00%
 		{groupTemplate = "color_crystals", weight = 1200000},              -- 12.00%
@@ -15,6 +16,7 @@ mtn_clan_tier_4 = {
 		{groupTemplate = "wearables_uncommon", weight = 500000},           -- 5.00%
 		{groupTemplate = "crafting_component", weight = 500000},           -- 5.00%
 		{groupTemplate = "crafting_component_advanced", weight = 1200000}  -- 12.00%
+
 	}
 }
 

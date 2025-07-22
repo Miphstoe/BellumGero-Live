@@ -269,7 +269,9 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
 		suffixName = " (Legendary)";
 	} else if (excMod >= exceptionalModifier) {
 		suffixName = " (Exceptional)";
-	}
+	} else if (excMod >= yellowModifier) {
+		suffixName = " (Uncommon)";
+   }	
 
 	if (suffixName != "") {
 		object->setCustomObjectName(object->getDisplayedName() + suffixName, false);
@@ -448,7 +450,9 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 		excMod = legendaryModifier;
 	} else if (System::random(exceptionalChance) <= chance) {
 		excMod = exceptionalModifier;
-	}
+	} else if (System::random(yellowChance) <= chance) {
+		excMod = yellowModifier;
+	}	
 
 #ifdef DEBUG_LOOT_MAN
 	info(true) << "Exceptional Modifier (excMod) = " << excMod << "  chance = " << chance;

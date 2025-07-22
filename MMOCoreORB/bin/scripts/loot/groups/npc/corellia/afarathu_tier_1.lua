@@ -8,12 +8,12 @@ afarathu_tier_1 = {
 		{groupTemplate = "junk", weight = 4900000},
 		{groupTemplate = "loot_kit_parts", weight = 1400000},
 		{groupTemplate = "tailor_components", weight = 700000},
-		{groupTemplate = "resource_chemical", weight = 250000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "melee_weapons_common", weight = 1000000},
 		{groupTemplate = "ranged_weapons_common", weight = 1000000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 	}
 }
 
