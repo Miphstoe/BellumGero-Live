@@ -5,7 +5,7 @@ dark_jedi_knight = Creature:new {
 	mobType = MOB_NPC,
 	socialGroup = "dark_jedi",
 	faction = "",
-	level = 265,
+	level = 281,
 	chanceHit = 23.5,
 	damageMin = 1645,
 	damageMax = 3000,
@@ -30,12 +30,25 @@ dark_jedi_knight = Creature:new {
 
 	templates = { "dark_jedi" },
 	lootGroups = {
-		{
-			groups = {
-				{group = "dark_jedi_tier_5", chance = 10000000}
-			}
-		}
+	{
+        groups = {
+			{group = "dark_jedi_tier_5", chance = 10000000}
+		},
+		lootChance = 9000000, -- 90.00% total chance
 	},
+	{
+        groups = {
+			{group = "dark_jedi_tier_5", chance = 10000000}
+		},
+		lootChance = 2000000, -- 20.00% total chance
+	},
+	{
+        groups = {
+			{group = "dark_jedi_tier_5", chance = 10000000}
+		},
+		lootChance = 500000, -- 5.00% total chance
+	},
+},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary

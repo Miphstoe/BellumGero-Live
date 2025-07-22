@@ -6,18 +6,15 @@ imperial_tier_1 = {
 	maximumLevel = -1,
 	lootItems = {
 		{groupTemplate = "armor_all", weight = 600000},
-		{groupTemplate = "armor_attachments", weight = 100000},
-		{groupTemplate = "clothing_attachments", weight = 100000},
-		{groupTemplate = "color_crystals", weight = 100000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 200000},
+		{groupTemplate = "power_crystals", weight = 500000},
 		{groupTemplate = "junk", weight = 2500000},
 		{groupTemplate = "loot_kit_parts", weight = 950000},
 		{groupTemplate = "tailor_components", weight = 700000},
 		{groupTemplate = "weapons_all", weight = 2800000},
 		{groupTemplate = "wearables_all", weight = 900000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
 		{groupTemplate = "crafting_component", weight = 250000},
 	}
 }
