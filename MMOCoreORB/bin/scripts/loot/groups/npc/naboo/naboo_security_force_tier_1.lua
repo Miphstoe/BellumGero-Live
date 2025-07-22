@@ -11,10 +11,10 @@ naboo_security_force_tier_1 = {
 		{groupTemplate = "ranged_weapons", weight = 3700000},
 		{groupTemplate = "tailor_components", weight = 1000000},
 		{groupTemplate = "wearables_common", weight = 1000000},
-		{groupTemplate = "resource_gemstone", weight = 250000},
-		{groupTemplate = "resource_metal", weight = 250000},
-		{groupTemplate = "resource_ore", weight = 250000},
-		{groupTemplate = "resource_water", weight = 250000},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "power_crystals", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 100000},
 	}
 }
 
