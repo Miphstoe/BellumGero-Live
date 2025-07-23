@@ -80,6 +80,7 @@ TatooineAnchorheadScreenPlay = CityScreenPlay:new {
 		{"commoner_fat", 60, -8.8, 1.0, 6.5, -99, 3355388, "happy"},
 
 		--Outside
+		{"rebel_recruiter", 60,69.6872,52,-5349.47,360.011, ""},
 		{"junk_dealer", 0, 110.87, 52, -5428.19, 53, 0, ""}
 	}
 }
@@ -135,7 +136,7 @@ function TatooineAnchorheadScreenPlay:spawnMobiles()
 	spawnMobile("tatooine", "cu_pa",300,188.14,9.71503,-5485.52,63.2364,0)
 	spawnMobile("tatooine", "cu_pa",300,186.305,14.9233,-5467.36,145.471,0)
 	spawnMobile("tatooine", "cu_pa",300,166.736,4.42212,-5483.28,304.088,0)
-	spawnMobile("tatooine", "rebel_recruiter",60,69.6872,52,-5349.47,360.011,0)
+	--spawnMobile("tatooine", "rebel_recruiter",60,69.6872,52,-5349.47,360.011,0)
 	spawnMobile("tatooine", "rill",300,3.34558,86.6525,-5245.25,82.0905,0)
 	spawnMobile("tatooine", "rill",300,-26.4483,85.5717,-5227.67,257.612,0)
 	spawnMobile("tatooine", "rill",300,-4.51558,88.9463,-5226.49,314.221,0)
