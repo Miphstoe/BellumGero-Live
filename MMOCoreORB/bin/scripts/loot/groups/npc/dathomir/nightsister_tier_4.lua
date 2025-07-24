@@ -5,17 +5,17 @@ nightsister_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 500000},
-		{groupTemplate = "clothing_attachments", weight = 500000},
-		{groupTemplate = "color_crystals", weight = 500000},
-		{groupTemplate = "melee_weapons", weight = 1900000},
-		{groupTemplate = "nightsister_common", weight = 2200000},
-		{groupTemplate = "power_crystals", weight = 400000},
-		{groupTemplate = "ranged_weapons", weight = 2800000},
-		{groupTemplate = "tailor_components", weight = 400000},
-		{groupTemplate = "wearables_common", weight = 400000},
-		{groupTemplate = "crafting_component", weight = 100000},
-		{groupTemplate = "crafting_component_advanced", weight = 300000},
+		{groupTemplate = "armor_attachments", weight = 1000000},               -- 10.00%
+		{groupTemplate = "clothing_attachments", weight = 1000000},            -- 10.00%
+		{groupTemplate = "color_crystals", weight = 500000},                   -- 5.00%
+		{groupTemplate = "melee_weapons", weight = 1700000},                   -- 17.00%
+		{groupTemplate = "nightsister_common", weight = 1700000},              -- 17.00%
+		{groupTemplate = "power_crystals", weight = 500000},                   -- 5.00%
+		{groupTemplate = "ranged_weapons", weight = 1700000},                  -- 17.00%
+		{groupTemplate = "tailor_components", weight = 400000},                -- 4.00%
+		{groupTemplate = "wearables_common", weight = 400000},                 -- 4.00%
+		{groupTemplate = "crafting_component", weight = 100000},               -- 1.00%
+		{groupTemplate = "crafting_component_advanced", weight = 1000000},     -- 10.00%
 	}
 }
 
