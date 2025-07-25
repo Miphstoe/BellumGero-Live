@@ -44,15 +44,15 @@
 object_tangible_component_droid_item_storage_module_3 = object_tangible_component_droid_shared_item_storage_module_3:new {
 
 	dataObjectComponent = "DroidItemStorageModuleDataComponent",
-	numberExperimentalProperties = {1, 1, 2, 1, 2, 2},
-	experimentalProperties = {"XX", "XX", "CD", "OQ", "XX", "CD", "OQ", "CD", "OQ"},
+	numberExperimentalProperties = {1, 1, 1, 1, 1, 1},
+	experimentalProperties = {"XX", "XX", "XX", "XX", "XX", "XX", "XX", "XX", "XX"},
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "exp_durability", "null", "exp_effectiveness", "exp_effectiveness"},
 	experimentalSubGroupTitles = {"null", "null", "decayrate", "hitpoints", "mechanism_quality", "storage_module"},
-	experimentalMin = {0, 0, 5, 1000, -10, 5},
-	experimentalMax = {0, 0, 15, 1000, 15, 7},
+	experimentalMin = {0, 0, 15, 1000, 40, 40},
+	experimentalMax = {0, 0, 15, 1000, 40, 40},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0},
-	experimentalCombineType = {0, 0, 1, 4, 1, 1},
+	experimentalCombineType = {0, 0, 1, 1, 1, 1},
 }
 
 ObjectTemplates:addTemplate(object_tangible_component_droid_item_storage_module_3, "object/tangible/component/droid/item_storage_module_3.iff")
