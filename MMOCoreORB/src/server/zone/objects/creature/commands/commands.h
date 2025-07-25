@@ -840,6 +840,7 @@
 #include "ForceFocusCommand.h"
 #include "AreaLootCommand.h"
 #include "HarvestAreaCommand.h"
+#include "UpdateSkillsCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */

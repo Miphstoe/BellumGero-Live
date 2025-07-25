@@ -717,7 +717,7 @@ void FrsManagerImplementation::handleSkillRevoked(CreatureObject* player, const 
 			String rankSkill = rankData->getSkillName();
 
 			if (player->hasSkill(rankSkill)) {
-				skillManager->surrenderSkill(rankSkill, player, true, false);
+				skillManager->surrenderSkill(rankSkill, player, true, false, true);
 			}
 		}
 
@@ -797,7 +797,7 @@ void FrsManagerImplementation::updatePlayerSkills(CreatureObject* player) {
 				player->addSkill("force_title_jedi_master", true);
 		} else {
 			if (player->hasSkill(rankSkill))
-				skillManager->surrenderSkill(rankSkill, player, true, false);
+				skillManager->surrenderSkill(rankSkill, player, true, false, true);
 		}
 	}
 }
