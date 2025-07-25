@@ -32,13 +32,26 @@ axkva_min = Creature:new {
 		{
 			groups = {
 				{group = "nightsister_tier_5", chance = 10000000}
-			}
+			},
+			lootChance = 10000000
+		},
+		{
+			groups = {
+				{group = "nightsister_tier_5", chance = 10000000}
+			},
+			lootChance = 7000000 --70%
 		},
 		{
 			groups = {
 				{group = "axkva_min", chance = 10000000},
 			},
-			lootChance = 5000000
+			lootChance = 7000000 --70%
+		},
+		{
+			groups = {
+				{group = "axkva_min", chance = 10000000},
+			},
+			lootChance = 500000 --5%
 		}
 	},
 
