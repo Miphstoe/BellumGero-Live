@@ -27,8 +27,8 @@ public:
 
 		ManagedReference<SceneObject*> object = server->getZoneServer()->getObject(target);
 
-		// Fail if target is not a player...
-		if (object == nullptr || !object->isPlayerCreature())
+		// Modified: Allow NPCs to be targeted (removed !object->isPlayerCreature() check)
+		if (object == nullptr)
 			return INVALIDTARGET;
 
 		CreatureObject* targetCreature = cast<CreatureObject*>( object.get());
@@ -53,7 +53,13 @@ public:
 		ManagedReference<PlayerObject*> targetGhost = targetCreature->getPlayerObject();
 		ManagedReference<PlayerObject*> playerGhost = creature->getPlayerObject();
 
-		if (targetGhost == nullptr || playerGhost == nullptr)
+		// Added: Debug message for NPCs without PlayerObject
+		if (targetGhost == nullptr) {
+			creature->sendSystemMessage("Target has no PlayerObject (probably an NPC)");
+			return GENERALERROR;
+		}
+
+		if (playerGhost == nullptr)
 			return GENERALERROR;
 
 		CombatManager* manager = CombatManager::instance();
