@@ -114,7 +114,7 @@ public:
 				}
 				
 				// Calculate drain amount with FRS integration
-				int drain = 100 + System::random(151); // Base 100-250
+				int drain = 50 + System::random(151); // Base 50-200
 				
 				// Get attacker's FRS power bonus
 				int attackerPowerMod = 0;
@@ -191,7 +191,7 @@ public:
 			}
 
 			// Calculate drain amount with FRS integration
-			int drain = 100 + System::random(151); // Base 100-250
+			int drain = 50 + System::random(151); // Base 50-200
 			
 			// Get attacker's FRS power bonus
 			int attackerPowerMod = 0;
