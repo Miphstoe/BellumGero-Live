@@ -23,6 +23,10 @@ void ContainerImplementation::initializeTransientMembers() {
 
 void ContainerImplementation::notifyLoadFromDatabase() {
 	TangibleObjectImplementation::notifyLoadFromDatabase();
+
+	    // —— bump every container’s limit to whatever your .iff says ——
+    setContainerVolumeLimit(getObjectTemplate()->getContainerVolumeLimit());
+
 	if (getGameObjectType() == SceneObjectType::STATICLOOTCONTAINER) {
 		if (System::random(100) < getLockChance()) {
 			setLockedStatus(true);

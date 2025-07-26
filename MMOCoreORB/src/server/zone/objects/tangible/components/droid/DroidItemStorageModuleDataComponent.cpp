@@ -38,30 +38,20 @@ void DroidItemStorageModuleDataComponent::updateCraftingValues(CraftingValues* v
 }
 
 int DroidItemStorageModuleDataComponent::getStorageRating() {
-	switch(rating) {
-		case 1:
-		case 2:
-			return 1;
-		case 3:
-		case 4:
-			return 2;
-		case 5:
-		case 6:
-			return 3;
-		case 7:
-		case 8:
-			return 4;
-		case 9:
-		case 10:
-			return 5;
-	}
+    // cap raw rating at 100
+    const int r = rating > 100 ? 100 : rating;
 
-	return 6;
+    if      (r <= 10)  return 1;  //  1–10 → Module_1
+    else if (r <= 20)  return 2;  // 11–20 → Module_2
+    else if (r <= 40)  return 3;  // 21–40 → Module_3
+    else if (r <= 60)  return 4;  // 41–60 → Module_4
+    else if (r <= 80)  return 5;  // 61–80 → Module_5
+    else               return 6;  // 81–100 → Module_6
 }
 
 void DroidItemStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
 	// convert module rating to actual rating
-	alm->insertAttribute( "storage_module", rating > 10 ? 10 : rating );
+	alm->insertAttribute( "storage_module", rating > 100 ? 100 : rating );
 }
 
 String DroidItemStorageModuleDataComponent::toString() const {

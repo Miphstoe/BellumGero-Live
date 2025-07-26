@@ -33,7 +33,8 @@ nightsister_spell_weaver = Creature:new {
 		{
 			groups = {
 				{group = "nightsister_tier_4", chance = 10000000}
-			}
+			},
+			lootChance = 7000000
 		}
 	},
 

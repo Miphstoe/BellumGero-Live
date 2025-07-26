@@ -125,6 +125,7 @@ function TatooineAnchorheadScreenPlay:spawnMobiles()
 	end
 
 	--Outside
+	spawnMobile("tatooine", "rebel_recruiter",60,69.6872,52,-5349.47,360.011,0)
 	--[[spawnMobile("tatooine", "bantha",300,216.9,11.7,-5425.4,-121,0)
 	spawnMobile("tatooine", "cu_pa",300,75.5625,88.9439,-5217.41,276.531,0)
 	spawnMobile("tatooine", "cu_pa",300,81.1976,85.0672,-5200.6,174.759,0)
