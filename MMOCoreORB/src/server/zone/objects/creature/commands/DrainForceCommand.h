@@ -72,26 +72,31 @@ public:
 			if (targetGhost == nullptr) {
 				// This is an NPC - check if it has Force powers
 				bool isForceNPC = false;
-				const CreatureAttackMap* attackMap = targetCreature->getAttackMap();
-				if (attackMap != nullptr) {
-					for (int i = 0; i < attackMap->size(); i++) {
-						String attackName = attackMap->getCommand(i);
-						if (attackName == "forcelightningsingle1" || 
-							attackName == "forcelightningsingle2" ||
-							attackName == "forcelightningcone1" ||
-							attackName == "forcelightningcone2" ||
-							attackName == "mindblast1" || 
-							attackName == "mindblast2" ||
-							attackName == "forceknockdown1" ||
-							attackName == "forceknockdown2" ||
-							attackName == "forceweaken1" ||
-							attackName == "forceweaken2" ||
-							attackName == "forcethrow2" ||
-							attackName == "forcechoke" ||
-							attackName == "forceintimidate1" ||
-							attackName == "forceintimidate2") {
-							isForceNPC = true;
-							break; // Found Force power, no need to check more
+				
+				// Only AiAgents have attack maps, regular NPCs don't
+				if (targetCreature->isAiAgent()) {
+					AiAgent* aiAgent = cast<AiAgent*>(targetCreature);
+					const CreatureAttackMap* attackMap = aiAgent->getAttackMap();
+					if (attackMap != nullptr) {
+						for (int i = 0; i < attackMap->size(); i++) {
+							String attackName = attackMap->getCommand(i);
+							if (attackName == "forcelightningsingle1" || 
+								attackName == "forcelightningsingle2" ||
+								attackName == "forcelightningcone1" ||
+								attackName == "forcelightningcone2" ||
+								attackName == "mindblast1" || 
+								attackName == "mindblast2" ||
+								attackName == "forceknockdown1" ||
+								attackName == "forceknockdown2" ||
+								attackName == "forceweaken1" ||
+								attackName == "forceweaken2" ||
+								attackName == "forcethrow2" ||
+								attackName == "forcechoke" ||
+								attackName == "forceintimidate1" ||
+								attackName == "forceintimidate2") {
+								isForceNPC = true;
+								break; // Found Force power, no need to check more
+							}
 						}
 					}
 				}
