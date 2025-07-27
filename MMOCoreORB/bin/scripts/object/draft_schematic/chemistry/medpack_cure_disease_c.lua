@@ -49,7 +49,7 @@ object_draft_schematic_chemistry_medpack_cure_disease_c = object_draft_schematic
 
 	craftingToolTab = 64, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 20,
-	size = 3,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_chemicals.iff",
 

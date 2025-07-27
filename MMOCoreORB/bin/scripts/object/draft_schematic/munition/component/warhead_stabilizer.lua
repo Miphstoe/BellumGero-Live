@@ -49,7 +49,7 @@ object_draft_schematic_munition_component_warhead_stabilizer = object_draft_sche
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 30, 
-   size = 8, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general", 

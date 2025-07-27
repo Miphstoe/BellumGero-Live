@@ -49,7 +49,7 @@ object_draft_schematic_structure_installation_generator_wind = object_draft_sche
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 13,
-	size = 10,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    

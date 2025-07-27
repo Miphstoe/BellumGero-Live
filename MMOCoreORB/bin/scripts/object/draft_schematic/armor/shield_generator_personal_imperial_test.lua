@@ -49,7 +49,7 @@ object_draft_schematic_armor_shield_generator_personal_imperial_test = object_dr
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 60,
-	size = 14,
+	size = 1,
 	factoryCrateSize = 20,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 

@@ -49,7 +49,7 @@ object_draft_schematic_munition_grenade_glop = object_draft_schematic_munition_s
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 25, 
-   size = 3, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general", 

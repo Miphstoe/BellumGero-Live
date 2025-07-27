@@ -49,7 +49,7 @@ object_draft_schematic_droid_component_chassis_droid_probot = object_draft_schem
 
 	craftingToolTab = 32, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 25,
-	size = 6,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_electronics.iff",
 

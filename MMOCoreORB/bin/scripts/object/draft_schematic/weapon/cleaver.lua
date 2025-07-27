@@ -49,7 +49,7 @@ object_draft_schematic_weapon_cleaver = object_draft_schematic_weapon_shared_cle
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 30, 
-   size = 4, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general", 

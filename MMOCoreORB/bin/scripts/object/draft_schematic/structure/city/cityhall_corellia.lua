@@ -49,7 +49,7 @@ object_draft_schematic_structure_city_cityhall_corellia = object_draft_schematic
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 50,
-	size = 14,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    

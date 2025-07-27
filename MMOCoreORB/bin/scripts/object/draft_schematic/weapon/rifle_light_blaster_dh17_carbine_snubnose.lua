@@ -49,7 +49,7 @@ object_draft_schematic_weapon_rifle_light_blaster_dh17_carbine_snubnose = object
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 25,
-   size = 2,
+   size = 1,
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general",

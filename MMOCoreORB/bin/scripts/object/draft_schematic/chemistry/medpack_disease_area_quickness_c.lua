@@ -49,7 +49,7 @@ object_draft_schematic_chemistry_medpack_disease_area_quickness_c = object_draft
 
 	craftingToolTab = 64, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 45,
-	size = 3,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_chemicals.iff",
 

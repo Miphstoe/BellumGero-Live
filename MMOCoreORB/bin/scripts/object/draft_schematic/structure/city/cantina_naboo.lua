@@ -49,7 +49,7 @@ object_draft_schematic_structure_city_cantina_naboo = object_draft_schematic_str
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 25,
-	size = 14,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
