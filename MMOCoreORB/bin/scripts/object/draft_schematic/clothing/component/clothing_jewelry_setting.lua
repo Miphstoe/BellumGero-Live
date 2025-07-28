@@ -49,7 +49,7 @@ object_draft_schematic_clothing_component_clothing_jewelry_setting = object_draf
 
    craftingToolTab = 8, -- (See DraftSchematicObjectTemplate.h)
    complexity = 15, 
-   size = 2, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_clothing_general", 
@@ -63,12 +63,12 @@ object_draft_schematic_clothing_component_clothing_jewelry_setting = object_draf
    customizationStringNames = {},
    customizationDefaults = {},
 
-   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-   ingredientTitleNames = {"jewel", "setting", "trim"},
-   ingredientSlotType = {0, 0, 0},
-   resourceTypes = {"gemstone_crystalline", "metal", "copper"},
-   resourceQuantities = {15, 10, 5},
-   contribution = {100, 100, 100},
+   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+   ingredientTitleNames = {"jewel", "setting", "trim", "enhancement"},
+   ingredientSlotType = {0, 0, 0, 3},
+   resourceTypes = {"gemstone_crystalline", "metal", "copper", "object/tangible/component/bio/shared_base_bio_component_clothing_casual.iff"},
+   resourceQuantities = {15, 10, 5, 1},
+   contribution = {100, 100, 100, 100},
 
 
    targetTemplate = "object/tangible/component/clothing/jewelry_setting.iff",

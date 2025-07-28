@@ -211,8 +211,8 @@ bool ResourceLabratory::applyComponentStats(TangibleObject* prototype, Manufactu
 
 		ManagedReference<Component*> component = cast<Component*>(tano.get());
 
-		if (prototype->isWearableObject() && !prototype->isArmorObject()) {
-			if (component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:reinforced_fiber_panels" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:synthetic_cloth"){
+		if (prototype->isWearableObject()/* && !prototype->isArmorObject()*/) {
+			if (component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:reinforced_fiber_panels" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:synthetic_cloth" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:jewelry_setting" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:metal_fasteners" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:padding_segment" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:fiberplast_panel"){
 				for (int k = 0; k < component->getPropertyCount(); ++k) {
 					attribute = component->getProperty(k);
 
