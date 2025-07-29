@@ -7,6 +7,7 @@ global_dark_jedi_master_neutral_none = Lair:new {
 	buildingsHard = {},
 	buildingsVeryHard = {},
 	mobType = "npc",
+	missionBuilding = "object/tangible/lair/base/objective_banner_generic_2.iff",
 	buildingType = "none"
 }
 
