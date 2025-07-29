@@ -49,7 +49,7 @@ object_draft_schematic_clothing_component_clothing_metal_fasteners = object_draf
 
 	craftingToolTab = 8, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 6,
-	size = 2,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
@@ -64,12 +64,12 @@ object_draft_schematic_clothing_component_clothing_metal_fasteners = object_draf
 	customizationStringNames = {},
 	customizationDefaults = {},
 
-	ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-	ingredientTitleNames = {"fastener_housing", "fastener_clip"},
-	ingredientSlotType = {0, 0},
-	resourceTypes = {"metal", "metal"},
-	resourceQuantities = {5, 10},
-	contribution = {100, 100},
+	ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+	ingredientTitleNames = {"fastener_housing", "fastener_clip", "enhancement"},
+	ingredientSlotType = {0, 0, 3},
+	resourceTypes = {"metal", "metal", "object/tangible/component/bio/shared_base_bio_component_clothing_field.iff"},
+	resourceQuantities = {5, 10, 1},
+	contribution = {100, 100, 100},
 
 	targetTemplate = "object/tangible/component/clothing/metal_fasteners.iff",
 

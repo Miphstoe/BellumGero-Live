@@ -49,7 +49,7 @@ object_draft_schematic_clothing_component_clothing_fiberplast_panel = object_dra
 
 	craftingToolTab = 8, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 5,
-	size = 2,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
@@ -64,12 +64,12 @@ object_draft_schematic_clothing_component_clothing_fiberplast_panel = object_dra
 	customizationStringNames = {},
 	customizationDefaults = {},
 
-	ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-	ingredientTitleNames = {"body", "binding_and_reinforcement"},
-	ingredientSlotType = {0, 0},
-	resourceTypes = {"fiberplast", "metal"},
-	resourceQuantities = {8, 2},
-	contribution = {100, 100},
+	ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+	ingredientTitleNames = {"body", "binding_and_reinforcement", "enhancement"},
+	ingredientSlotType = {0, 0, 3},
+	resourceTypes = {"fiberplast", "metal", "object/tangible/component/bio/shared_base_bio_component_clothing_field.iff"},
+	resourceQuantities = {8, 2, 1},
+	contribution = {100, 100, 100},
 
 	targetTemplate = "object/tangible/component/clothing/fiberplast_panel.iff",
 
