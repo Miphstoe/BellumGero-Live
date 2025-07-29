@@ -22,6 +22,23 @@
 #include "server/zone/objects/ship/components/ShipComponent.h"
 #include "server/zone/objects/ship/ai/ShipAiAgent.h"
 
+
+// ————————————————————————————————————————————————
+// file‐scope: carry the last‐rolled lootGroup into the naming logic
+static String               s_currentLootGroup;
+// list every loot‐group name you want to exempt:
+static const std::vector<String> SKIPPED_LOOT_GROUPS = {
+	"clothing_attachments",
+	"armor_attachments",
+	"holocron_light",
+	"holocron_dark",
+	"looted_container",
+    "color_crystals",
+    "power_crystals",
+    // … add more exact group names here …
+};
+// ————————————————————————————————————————————————
+
 // #define DEBUG_LOOT_MAN
 
 void LootManagerImplementation::initialize() {
@@ -263,20 +280,37 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
 		}
 	}
 
-	String suffixName = "";
+    // skip suffix for attachments OR any group in our SKIPPED_LOOT_GROUPS list
+    const bool skipSuffix =
+        object->isAttachment() ||
+        ( std::find(
+              SKIPPED_LOOT_GROUPS.begin(),
+              SKIPPED_LOOT_GROUPS.end(),
+              s_currentLootGroup
+          ) != SKIPPED_LOOT_GROUPS.end()
+        );
 
-	if (excMod >= legendaryModifier) {
-		suffixName = " (Legendary)";
-	} else if (excMod >= exceptionalModifier) {
-		suffixName = " (Exceptional)";
-	} else if (excMod >= yellowModifier) {
-		suffixName = " (Uncommon)";
-   }	
+    if (!skipSuffix) {
+        String suffixName = "";
 
-	if (suffixName != "") {
-		object->setCustomObjectName(object->getDisplayedName() + suffixName, false);
-		object->addMagicBit(false);
-	}
+        if (excMod >= legendaryModifier) {
+            suffixName = " (Legendary)";
+        } else if (excMod >= exceptionalModifier) {
+            suffixName = " (Exceptional)";
+        } else if (excMod >= yellowModifier) {
+            suffixName = " (Uncommon)";
+        }
+
+        if (suffixName != "") {
+            object->setCustomObjectName(
+                object->getDisplayedName() + suffixName,
+                false
+            );
+            object->addMagicBit(false);
+        }
+    }
+    // clear for next item
+    s_currentLootGroup = "";
 }
 
 //New function to set the attachment name based on skill mods
@@ -844,6 +878,8 @@ uint64 LootManagerImplementation::createLoot(TransactionLog& trx, SceneObject* c
 	} else if (itemTemplate->isShipComponent()) {
 		obj = createShipComponent(trx, itemTemplate);
 	} else {
+        // carry our group‐context into the object creation step
+        s_currentLootGroup = lootGroup;
 		obj = createLootObject(trx, itemTemplate, level, maxCondition);
 	}
 
