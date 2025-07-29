@@ -49,7 +49,7 @@ object_draft_schematic_armor_component_armor_layer_kinetic = object_draft_schema
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 20,
-	size = 3,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_generic_items.iff",
 

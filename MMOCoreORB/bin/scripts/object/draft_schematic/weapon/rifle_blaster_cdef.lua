@@ -49,7 +49,7 @@ object_draft_schematic_weapon_rifle_blaster_cdef = object_draft_schematic_weapon
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 8, 
-   size = 3, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_general", 

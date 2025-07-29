@@ -49,7 +49,7 @@ object_draft_schematic_weapon_rifle_light_blaster_imperial_scout_carbine = objec
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 24, 
-   size = 3, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general", 

@@ -49,7 +49,7 @@ object_draft_schematic_droid_component_medic_module_5 = object_draft_schematic_d
 
    craftingToolTab = 32, -- (See DraftSchematicObjectTemplate.h)
    complexity = 22, 
-   size = 2, 
+   size = 1, 
 	factoryCrateType = "object/factory/factory_crate_electronics.iff",
 
    xpType = "crafting_droid_general", 

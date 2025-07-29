@@ -49,7 +49,7 @@ object_draft_schematic_structure_house_guild_hall = object_draft_schematic_struc
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 36,
-	size = 14,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    

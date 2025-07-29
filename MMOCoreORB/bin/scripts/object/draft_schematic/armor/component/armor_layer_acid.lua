@@ -49,7 +49,7 @@ object_draft_schematic_armor_component_armor_layer_acid = object_draft_schematic
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 35,
-	size = 3,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_generic_items.iff",
 

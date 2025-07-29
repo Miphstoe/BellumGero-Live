@@ -49,7 +49,7 @@ object_draft_schematic_weapon_pistol_projectile_striker = object_draft_schematic
 
    craftingToolTab = 1, -- (See DraftSchematicObjectTemplate.h)
    complexity = 15, 
-   size = 2, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_weapon.iff",
    
    xpType = "crafting_weapons_general", 

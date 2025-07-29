@@ -49,7 +49,7 @@ object_draft_schematic_structure_city_garden_exotic_dathomir = object_draft_sche
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 27,
-	size = 12,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    
