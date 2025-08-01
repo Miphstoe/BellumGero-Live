@@ -241,4 +241,24 @@ CitySpecializations = {
 			{"private_defense", 90}
 		}
 	},
+{--Enhancement District
+        name = "@city/city:city_spec_enhancement_district",
+        cost = 160000,
+        --minRank = 5, -- Available at Level 5 and above
+        skillMods = {
+            {"private_spec_entertainer", 10},
+            {"private_medical_rating", 10}
+        }
+    },
+    {--Industrial District
+        name = "@city/city:city_spec_industrial_district",
+        cost = 175000,
+        --minRank = 5, -- Available at Level 5 and above
+        skillMods = {
+            {"private_spec_assembly", 10},
+            {"private_spec_experimentation", 15},
+            {"private_spec_manufacturing", 10}
+        }
+    },
+
 }

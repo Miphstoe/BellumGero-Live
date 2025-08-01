@@ -59,7 +59,11 @@ int CitySpecializationSessionImplementation::initializeSession() {
 				sui->addMenuItem("@city/city:" + abilityName);
 		}
 	}
-
+	// Add metropolis-only specializations if city rank is high enough
+	if (cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+    	sui->addMenuItem("Enhancement District");
+ 		sui->addMenuItem("Industrial District");
+}
 	if (!cityRegion->getCitySpecialization().isEmpty()) {
 		sui->addMenuItem("@city/city:null",-1);
 	}

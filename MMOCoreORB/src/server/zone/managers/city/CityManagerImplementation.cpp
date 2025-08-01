@@ -39,6 +39,7 @@
 #include "server/zone/objects/player/sui/callbacks/RenameCitySuiCallback.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
+
 #ifndef CITY_DEBUG
 #define CITY_DEBUG
 #endif
@@ -400,29 +401,41 @@ void CityManagerImplementation::promptCitySpecialization(CityRegion* city, Creat
 	mayor->addActiveSession(SessionFacadeType::CITYSPEC, session);
 	session->initializeSession();
 }
+// Add this BEFORE the changeCitySpecialization function
+static bool isMetropolisOnlySpecialization(const String& spec) {
+    if (spec == "@city/city:city_spec_enhancement_district" || 
+        spec == "@city/city:city_spec_industrial_district") {
+        return true;
+    }
+    return false;
+}
 
 void CityManagerImplementation::changeCitySpecialization(CityRegion* city, CreatureObject* mayor, const String& spec) {
-	Locker _clock(city, mayor);
-
-	city->setCitySpecialization(spec);
-
-	PlayerObject* ghost = mayor->getPlayerObject().get();
-
-	if (ghost != nullptr && !ghost->isPrivileged())
-		mayor->addCooldown("city_specialization", citySpecializationCooldown); //1 week.
-
-	StringIdChatParameter params("city/city", "spec_set"); //The city's specialization has been set to %TO.
-
-	if (spec.isEmpty())
-		params.setTO("@city/city:null");
-	else
-		params.setTO(spec);
-
-	mayor->sendSystemMessage(params);
-
-	//Resetting the city radius will remove it and reinsert it, updating it to everything in the area.
-	city->setRadius(city->getRadius());
+    Locker _clock(city, mayor);
+    
+    // Add rank validation for metropolis-only specializations
+    int cityRank = city->getCityRank();
+    
+    // Check if this is a metropolis-only specialization
+    if (isMetropolisOnlySpecialization(spec) && cityRank < METROPOLIS) {
+        mayor->sendSystemMessage("This specialization requires Metropolis rank.");
+        return;
+    }
+    
+    city->setCitySpecialization(spec);
+    PlayerObject* ghost = mayor->getPlayerObject().get();
+    if (ghost != nullptr && !ghost->isPrivileged())
+        mayor->addCooldown("city_specialization", citySpecializationCooldown); //1 week.
+    StringIdChatParameter params("city/city", "spec_set"); //The city's specialization has been set to %TO.
+    if (spec.isEmpty())
+        params.setTO("@city/city:null");
+    else
+        params.setTO(spec);
+    mayor->sendSystemMessage(params);
+    //Resetting the city radius will remove it and reinsert it, updating it to everything in the area.
+    city->setRadius(city->getRadius());
 }
+
 
 void CityManagerImplementation::sendStatusReport(CityRegion* city, CreatureObject* creature, SceneObject* terminal) {
 	/* Status Report - Lists basic information about the city.
