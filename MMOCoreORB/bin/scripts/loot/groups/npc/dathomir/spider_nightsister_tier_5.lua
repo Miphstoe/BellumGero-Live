@@ -5,15 +5,11 @@ spider_nightsister_tier_5 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 700000},
-		{groupTemplate = "clothing_attachments", weight = 700000},
-		{groupTemplate = "color_crystals", weight = 300000},
-		{groupTemplate = "junk", weight = 1450000},
-		{groupTemplate = "melee_weapons", weight = 2600000},
-		{groupTemplate = "power_crystals", weight = 600000},
-		{groupTemplate = "ranged_weapons", weight = 2800000},
-		{groupTemplate = "wearables_scarce", weight = 400000},
-		{groupTemplate = "crafting_component_advanced", weight = 450000},
+		{groupTemplate = "armor_attachments", weight = 2500000},
+		{groupTemplate = "clothing_attachments", weight = 2500000},
+		{groupTemplate = "power_crystals", weight = 2300000},
+		{groupTemplate = "weapon_component_advanced", weight = 2200000},
+		{groupTemplate = "color_crystals", weight = 500000},
 	}
 }
 
