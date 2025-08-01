@@ -60,6 +60,10 @@ object_tangible_wearables_armor_marauder_armor_marauder_s01_chest_plate = object
 				"object/creature/player/twilek_female.iff",
 				"object/creature/player/zabrak_male.iff",
 				"object/creature/player/zabrak_female.iff",
+				"object/creature/player/ithorian_male.iff",
+				"object/creature/player/ithorian_female.iff",
+				"object/creature/player/wookiee_male.iff",
+				"object/creature/player/wookiee_female.iff",
 				"object/mobile/vendor/aqualish_female.iff",
 				"object/mobile/vendor/aqualish_male.iff",
 				"object/mobile/vendor/bith_female.iff",
@@ -85,7 +89,11 @@ object_tangible_wearables_armor_marauder_armor_marauder_s01_chest_plate = object
 				"object/mobile/vendor/twilek_male.iff",
 				"object/mobile/vendor/weequay_male.iff",
 				"object/mobile/vendor/zabrak_female.iff",
-				"object/mobile/vendor/zabrak_male.iff" },
+				"object/mobile/vendor/zabrak_male.iff",
+				"object/mobile/vendor/ithorian_female.iff",
+				"object/mobile/vendor/ithorian_male.iff",
+				"object/mobile/vendor/wookiee_female.iff",
+				"object/mobile/vendor/wookiee_male.iff" },
 	
 	-- Damage types in WeaponObject
 	vulnerability = ELECTRICITY + ACID + STUN + LIGHTSABER,
