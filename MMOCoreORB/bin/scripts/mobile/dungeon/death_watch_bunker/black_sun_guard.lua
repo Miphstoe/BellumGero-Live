@@ -42,6 +42,7 @@ black_sun_guard = Creature:new {
 				{group = "wearables_common", chance = 500000},
 				{group = "wearables_uncommon", chance = 500000}
 			}
+			lootChance = 4000000, -- 40.00% total chance
 		}
 	},
 
