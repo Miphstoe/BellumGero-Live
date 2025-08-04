@@ -43,6 +43,7 @@
 
 object_building_player_player_guildhall_tatooine_style_02 = object_building_player_shared_player_guildhall_tatooine_style_02:new {
 	lotSize = 5,
+	storageLimit = 1000,
 	baseMaintenanceRate = 100,
 	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
 	publicStructure = 0,
