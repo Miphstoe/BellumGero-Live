@@ -43,6 +43,7 @@
 
 object_building_player_city_hospital_corellia = object_building_player_city_shared_hospital_corellia:new {
 	lotSize = 3,
+	storageLimit = 600,
 	baseMaintenanceRate = 50,
 	planetMapCategory = "medicalcenter",
 	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
