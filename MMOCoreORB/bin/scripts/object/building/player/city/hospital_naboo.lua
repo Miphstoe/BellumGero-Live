@@ -43,6 +43,7 @@
 
 object_building_player_city_hospital_naboo = object_building_player_city_shared_hospital_naboo:new {
 	lotSize = 3,
+	storageLimit = 600,
 	baseMaintenanceRate = 50,
 	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
 	length = 5,
