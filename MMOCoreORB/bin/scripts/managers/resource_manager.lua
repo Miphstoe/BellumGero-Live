@@ -111,10 +111,10 @@ minimumpoolexcludes = jtlresources
   -- The random pool spawns a total number of resources equal to the size
 randompoolincludes = { {"metal", 32}, {"ore", 13}, {"fuel_petrochem_solid", 6}, {"radioactive", 4}, {"gemstone", 12}, {"gas", 16}, {"water", 2}, {"fuel_petrochem_liquid", 7}, {"petrochem_inert", 8} }
 randompoolexcludes = jtlresources..",iron,fiberplast"
-randompoolsize = 27
+randompoolsize = 33
 
   -- The fixed pool is a table of resources and occurrences. A resource will always be in spawn a number of times equal to it's occurrence. The function call inserts each JTL resource into the table with an occurrence of 1.
-fixedpoolincludes = InsertJtlIntoTable(jtlresources, { {"iron", 14} })
+fixedpoolincludes = InsertJtlIntoTable(jtlresources, { {"iron", 8} })
 fixedpoolexcludes = ""
 
   -- The native pool will have one of each of the items listed in the includes spawned on each planet at all times, but planet restricted.

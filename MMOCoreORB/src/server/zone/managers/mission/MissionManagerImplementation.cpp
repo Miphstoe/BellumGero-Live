@@ -1893,7 +1893,7 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 	if (levelChoice > 0)
 		playerLevel = levelChoice;
 
-	if (player->isGrouped()) {
+/*	if (player->isGrouped()) {
 		bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
 		Reference<GroupObject*> group = player->getGroup();
 
@@ -1901,7 +1901,7 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 			Locker locker(group);
 			playerLevel = group->getGroupLevel(includeFactionPets);
 		}
-	}
+	}*/
 
 	LairSpawn* lairSpawn = nullptr;
 
