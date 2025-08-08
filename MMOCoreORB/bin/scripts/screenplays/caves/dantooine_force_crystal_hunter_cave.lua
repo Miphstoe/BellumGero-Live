@@ -55,7 +55,7 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
         local heading = data[5]
         local cell    = data[6]
 
-        local pMob = spawnMobile("dantooine", tpl, 300, x, y, z, heading, cell)
+        local pMob = spawnMobile("dantooine", tpl, 1800, x, y, z, heading, cell)
         if pMob then
             Logger:log(
               string.format("ForceCrystalCaveScreenPlay: spawned '%s' #%d at [%.1f,%.1f,%.1f] cell %d",
