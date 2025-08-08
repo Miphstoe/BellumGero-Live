@@ -26,6 +26,7 @@ namespace tangible {
 		LuaTangibleObject(lua_State *L);
 		~LuaTangibleObject();
 
+		int setMaxSockets(lua_State* L);
 		int _setObject(lua_State* L);
 		int getOptionsBitmask(lua_State *L);
 		int setOptionsBitmask(lua_State *L);

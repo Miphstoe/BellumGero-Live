@@ -830,24 +830,17 @@ void TangibleObjectImplementation::fillAttributeList(AttributeListMessage* alm, 
 		alm->insertAttribute("volume", volume);
 	}
 
-	if (isWearableObject() || isWearableContainerObject()) {
-		int remainingSockets = 0;
+// Show sockets only on true wearables (not wearable containers)
+if (isWearableObject()) {
+    WearableObject* wearable = cast<WearableObject*>(asTangibleObject());
+    if (wearable != nullptr) {
+        int remainingSockets = wearable->getRemainingSockets();
 
-		if (isWearableObject()) {
-			WearableObject* wearable = cast<WearableObject*>(asTangibleObject());
-
-			if (wearable != nullptr)
-				remainingSockets = wearable->getRemainingSockets();
-		} else {
-			WearableContainerObject* container = cast<WearableContainerObject*>(asTangibleObject());
-
-			if (container != nullptr)
-				remainingSockets = container->getRemainingSockets();
-		}
-
-		if (remainingSockets > 0)
-			alm->insertAttribute("sockets", remainingSockets);
-	}
+        // Legacy behavior: only show when there are sockets left
+        if (remainingSockets > 0)
+            alm->insertAttribute("sockets", remainingSockets);
+    }
+}
 
 	if (!craftersName.isEmpty()) {
 		alm->insertAttribute("crafter", craftersName);
