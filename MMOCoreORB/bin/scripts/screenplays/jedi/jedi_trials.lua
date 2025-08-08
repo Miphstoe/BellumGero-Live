@@ -22,6 +22,14 @@ JediTrials = ScreenPlay:new {
 	COUNCIL_DARK = 2,
 }
 
+local function give_socketed(pInventory, template, sockets)
+    local pItem = giveItem(pInventory, template, -1)
+    if pItem ~= nil then
+        TangibleObject(pItem):setMaxSockets(sockets)
+    end
+    return pItem
+end
+
 function JediTrials:isEligibleForPadawanTrials(pPlayer)
 	if (pPlayer == nil or not self.padawanTrialsEnabled) then
 		return false
@@ -141,7 +149,7 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
 	else
 		local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
-		local pItem = giveItem(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan.iff", -1)
+		local pItem = give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan.iff", 4)
 	end
 
 	sendMail("system", "@jedi_spam:welcome_subject", "@jedi_spam:welcome_body", CreatureObject(pPlayer):getFirstName())
@@ -204,7 +212,7 @@ function JediTrials:unlockJediKnight(pPlayer)
 	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
 		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
 	else
-		giveItem(pInventory, knightRobe, -1)
+		local pItem = give_socketed(pInventory, knightRobe, 4)
 	end
 
 end

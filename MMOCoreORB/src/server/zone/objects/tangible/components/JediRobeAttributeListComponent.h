@@ -16,30 +16,11 @@ public:
 	 */
 	void fillAttributeList(AttributeListMessage* alm, CreatureObject* creature, SceneObject* object) const {
 
+		AttributeListComponent::fillAttributeList(alm, creature, object);
+
 		ManagedReference<RobeObject*> robe = cast<RobeObject*> (object);
 		if (robe == nullptr) {
 			return;
-		}
-
-		int maxCondition = robe->getMaxCondition();
-
-		if (maxCondition > 0) {
-			StringBuffer cond;
-			cond << maxCondition << "/" << maxCondition;
-
-			auto config = ConfigManager::instance();
-
-			if (robe->isForceNoTrade()) {
-				cond << config->getForceNoTradeMessage();
-			}
-
-			alm->insertAttribute("condition", cond);
-		}
-
-		int volume = robe->getVolume();
-
-		if (volume > 0) {
-			alm->insertAttribute("volume", volume);
 		}
 
 		String rankRequired = robe->getSkillRequired();
