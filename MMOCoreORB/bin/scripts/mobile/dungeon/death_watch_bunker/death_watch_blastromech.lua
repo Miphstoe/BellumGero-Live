@@ -33,7 +33,13 @@ death_watch_blastromech = Creature:new {
 			groups = {
 				{group = "death_watch_bunker_commoners", chance = 10000000}
 			},
-			lootChance = 500000
+			lootChance = 3500000, -- 35.00% total chance
+		},
+		{
+			groups = {
+				{group = "death_watch_bunker_commoners", chance = 10000000}
+			},
+			lootChance = 500000, -- 5.00% total chance
 		}
 	},
 	conversationTemplate = "",

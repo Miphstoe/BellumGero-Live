@@ -182,6 +182,18 @@ dantooine_destroy_missions = {
 			maxDifficulty = 62,
 			size = 25,
 		},
+		{
+			lairTemplateName = "global_dark_jedi_master_neutral_none",
+			minDifficulty = 80,
+			maxDifficulty = 80,
+			size = 25,
+		},
+		{
+			lairTemplateName = "global_dark_jedi_camp_dark_jedi_theater",
+			minDifficulty = 125,
+			maxDifficulty = 125,
+			size = 25,
+		},
 	}
 }
 

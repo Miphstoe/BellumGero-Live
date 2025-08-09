@@ -49,7 +49,7 @@ object_draft_schematic_armor_component_deflector_shield_projector_plate = object
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 30,
-	size = 2,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 

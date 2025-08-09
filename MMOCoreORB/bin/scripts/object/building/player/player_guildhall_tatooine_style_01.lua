@@ -43,6 +43,9 @@
 
 object_building_player_player_guildhall_tatooine_style_01 = object_building_player_shared_player_guildhall_tatooine_style_01:new {
 	lotSize = 5,
+	containerComponentTemplate = "object/building/container/player_house_container.iff", -- ✅ required
+    containerVolumeLimit = 1000, -- ✅ 5 lots * 200
+
 	baseMaintenanceRate = 100,
 	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
 	publicStructure = 0,

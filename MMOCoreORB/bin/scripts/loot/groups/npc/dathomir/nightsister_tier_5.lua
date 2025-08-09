@@ -5,15 +5,11 @@ nightsister_tier_5 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 1000000},              -- 10.00%
-		{groupTemplate = "clothing_attachments", weight = 1000000},           -- 10.00%
-		{groupTemplate = "melee_weapons", weight = 1600000},                  -- 16.00%
-		{groupTemplate = "nightsister_common", weight = 1800000},             -- 18.00%
-		{groupTemplate = "power_crystals", weight = 1000000},                 -- 10.00%
-		{groupTemplate = "ranged_weapons", weight = 1800000},                 -- 18.00%
-		{groupTemplate = "wearables_rare", weight = 300000},                  -- 3.00%
-		{groupTemplate = "wearables_scarce", weight = 300000},                -- 3.00%
-		{groupTemplate = "crafting_component_advanced", weight = 1200000},    -- 12.00%
+		{groupTemplate = "armor_attachments", weight = 2000000},
+		{groupTemplate = "clothing_attachments", weight = 2000000},
+		{groupTemplate = "nightsister_common", weight = 1800000},
+		{groupTemplate = "power_crystals", weight = 2000000},
+		{groupTemplate = "weapon_component_advanced", weight = 2200000},
 	}
 }
 

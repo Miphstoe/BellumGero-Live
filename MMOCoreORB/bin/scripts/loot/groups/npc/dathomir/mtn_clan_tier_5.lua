@@ -5,16 +5,11 @@ mtn_clan_tier_5 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-
-		{groupTemplate = "armor_attachments", weight = 1300000},          -- 13.00%
-		{groupTemplate = "clothing_attachments", weight = 1300000},       -- 13.00%
-		{groupTemplate = "color_crystals", weight = 700000},              -- 7.00%
-		{groupTemplate = "melee_weapons", weight = 1900000},              -- 19.00%
-		{groupTemplate = "power_crystals", weight = 1200000},             -- 12.00%
-		{groupTemplate = "ranged_weapons", weight = 1900000},             -- 19.00%
-		{groupTemplate = "wearables_rare", weight = 400000},              -- 4.00%
-		{groupTemplate = "crafting_component_advanced", weight = 1300000} -- 13.00%
-
+		{groupTemplate = "armor_attachments", weight = 2500000},
+		{groupTemplate = "clothing_attachments", weight = 2500000},
+		{groupTemplate = "power_crystals", weight = 2300000},
+		{groupTemplate = "weapon_component_advanced", weight = 2200000},
+		{groupTemplate = "color_crystals", weight = 500000},
 	}
 }
 

@@ -41,7 +41,8 @@ black_sun_thug = Creature:new {
 				{group = "jetpack_base", chance = 50000},
 				{group = "wearables_common", chance = 500000},
 				{group = "wearables_uncommon", chance = 500000}
-			}
+			},
+			lootChance = 3500000, -- 35.00% total chance
 		}
 	},
 

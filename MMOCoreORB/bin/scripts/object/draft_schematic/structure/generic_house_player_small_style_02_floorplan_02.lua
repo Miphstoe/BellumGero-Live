@@ -49,7 +49,7 @@ object_draft_schematic_structure_generic_house_player_small_style_02_floorplan_0
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 22,
-	size = 10,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    

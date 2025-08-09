@@ -49,7 +49,7 @@ object_draft_schematic_structure_installation_factory_food = object_draft_schema
 
 	craftingToolTab = 1024, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 16,
-	size = 16,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
    

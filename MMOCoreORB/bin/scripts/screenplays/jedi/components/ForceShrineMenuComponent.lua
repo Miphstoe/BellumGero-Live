@@ -1,5 +1,13 @@
 ForceShrineMenuComponent = {}
 
+local function give_socketed(pInventory, template, sockets)
+    local pItem = giveItem(pInventory, template, -1)
+    if pItem ~= nil then
+        TangibleObject(pItem):setMaxSockets(sockets)
+    end
+    return pItem
+end
+
 function ForceShrineMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
 	local menuResponse = LuaObjectMenuResponse(pMenuResponse)
 
@@ -104,6 +112,6 @@ function ForceShrineMenuComponent:recoverRobe(pPlayer)
 		robeTemplate = "object/tangible/wearables/robe/robe_jedi_padawan.iff"
 	end
 
-	giveItem(pInventory, robeTemplate, -1)
+	local pItem = give_socketed(pInventory, robeTemplate, 4)
 	CreatureObject(pPlayer):sendSystemMessage("@force_rank:items_recovered")
 end

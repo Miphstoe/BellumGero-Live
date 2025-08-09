@@ -63,12 +63,12 @@ object_draft_schematic_clothing_component_clothing_padding_segment = object_draf
    customizationStringNames = {},
    customizationDefaults = {},
 
-   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
-   ingredientTitleNames = {"body", "stuffing", "binding"},
-   ingredientSlotType = {0, 0, 0},
-   resourceTypes = {"hide", "hide_wooly", "fiberplast"},
-   resourceQuantities = {15, 10, 5},
-   contribution = {100, 100, 100},
+   ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
+   ingredientTitleNames = {"body", "stuffing", "binding", "enhancement"},
+   ingredientSlotType = {0, 0, 0, 3},
+   resourceTypes = {"hide", "hide_wooly", "fiberplast", "object/tangible/component/bio/shared_base_bio_component_clothing_field.iff"},
+   resourceQuantities = {15, 10, 5, 1},
+   contribution = {100, 100, 100, 100},
 
 
    targetTemplate = "object/tangible/component/clothing/padding_segment.iff",

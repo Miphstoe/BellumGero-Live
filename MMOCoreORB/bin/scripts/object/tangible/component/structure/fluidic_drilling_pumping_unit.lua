@@ -49,8 +49,8 @@ object_tangible_component_structure_fluidic_drilling_pumping_unit = object_tangi
 	experimentalWeights = {1, 1, 1, 1, 1, 2},
 	experimentalGroupTitles = {"null", "null", "null", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "hitpoints", "extractrate"},
-	experimentalMin = {0, 0, 1000, 1},
-	experimentalMax = {0, 0, 5000, 5},
+	experimentalMin = {0, 0, 1000, 3},
+	experimentalMax = {0, 0, 5000, 10},
 	experimentalPrecision = {0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1},
 }

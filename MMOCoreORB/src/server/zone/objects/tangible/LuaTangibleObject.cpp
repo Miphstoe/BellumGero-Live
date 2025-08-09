@@ -11,6 +11,7 @@
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "templates/appearance/PaletteTemplate.h"
 #include "server/zone/objects/player/FactionStatus.h"
+#include "server/zone/objects/tangible/wearables/WearableObject.h"
 
 const char LuaTangibleObject::className[] = "LuaTangibleObject";
 
@@ -34,6 +35,7 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "getPaletteColorCount", &LuaTangibleObject::getPaletteColorCount },
 		{ "setConditionDamage", &LuaTangibleObject::setConditionDamage },
 		{ "setMaxCondition", &LuaTangibleObject::setMaxCondition },
+		{ "setMaxSockets", &LuaTangibleObject::setMaxSockets },
 		{ "setFaction", &LuaTangibleObject::setFaction },
 		{ "getFaction", &LuaTangibleObject::getFaction },
 		{ "setFactionStatus", &LuaTangibleObject::setFactionStatus },
@@ -246,6 +248,15 @@ int LuaTangibleObject::setMaxCondition(lua_State* L) {
 	realObject->setMaxCondition(damage, true);
 
 	return 0;
+}
+
+int LuaTangibleObject::setMaxSockets(lua_State* L) {
+    int sockets = lua_tointeger(L, -1);
+    WearableObject* wear = cast<WearableObject*>(realObject);
+    if (wear != nullptr) {
+        wear->setMaxSockets(sockets); // clamped to MAXSOCKETS (4)
+    }
+    return 0;
 }
 
 int LuaTangibleObject::setFaction(lua_State* L){

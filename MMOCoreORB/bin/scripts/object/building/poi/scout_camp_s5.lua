@@ -69,6 +69,7 @@ object_building_poi_scout_camp_s5 = object_building_poi_shared_scout_camp_s5:new
 		{templateFile = "object/tangible/camp/camp_control_panel.iff", x = -4.83, z = 0, y = 12.17, ox = 0, oy = -0.998, oz = 0, ow = 0.061, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/crafting/station/public_food_station.iff", x = 6.59, z = 0, y = -3.11, ox = 0, oy = -0.501, oz = 0, ow = 0.865, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/crafting/station/public_weapon_station.iff", x = 3.66, z = 0, y = 14.53, ox = 0, oy = -0.659, oz = 0, ow = 0.752, cellid = -1, containmentType = -1},
+		{templateFile = "object/tangible/terminal/terminal_mission.iff", x = 2.0, z = 0, y = 5.0, ox = 0, oy = -0, oz = 0, ow = 1, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/camp/camp_chair_s2.iff", x = -1.7, z = 0, y = -7.06, ox = 0, oy = -0.898, oz = 0, ow = 0.440, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/camp/camp_chair_s3.iff", x = -1.88, z = 0, y = 4.27, ox = 0, oy = -0.891, oz = 0, ow = 0.454, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/camp/camp_chair_s3.iff", x = -5.04, z = 0, y = -1.1, ox = 0, oy = 0.286, oz = .0, ow = 0.958, cellid = -1, containmentType = -1},

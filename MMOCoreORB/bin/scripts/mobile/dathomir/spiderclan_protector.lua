@@ -33,7 +33,8 @@ spiderclan_protector = Creature:new {
 		{
 			groups = {
 				{group = "spider_nightsister_tier_4", chance = 10000000}
-			}
+			},
+			lootChance = 7000000
 		}
 	},
 

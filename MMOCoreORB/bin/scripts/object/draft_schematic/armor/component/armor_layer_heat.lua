@@ -49,7 +49,7 @@ object_draft_schematic_armor_component_armor_layer_heat = object_draft_schematic
 
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 25,
-	size = 2,
+	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_generic_items.iff",
 

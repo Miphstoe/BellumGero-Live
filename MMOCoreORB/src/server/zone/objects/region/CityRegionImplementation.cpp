@@ -192,141 +192,116 @@ int CityRegionImplementation::getTimeToUpdate() {
 }
 
 void CityRegionImplementation::notifyEnter(SceneObject* object) {
-	if (object->getCityRegion().get() != _this.getReferenceUnsafeStaticCast() && object->isPlayerCreature()) {
-		currentPlayers.increment();
-	}
-
-	object->setCityRegion(_this.getReferenceUnsafeStaticCast());
-
-	if (object->isBazaarTerminal() || object->isVendor()) {
-		if (object->isBazaarTerminal()) {
-			bazaars.put(object->getObjectID(), cast<TangibleObject*>(object));
-		}
-
-		AuctionTerminalDataComponent* terminalData = nullptr;
-		DataObjectComponentReference* data = object->getDataObjectComponent();
-
-		if (data != nullptr && data->get() != nullptr && data->get()->isAuctionTerminalData()) {
-			terminalData = cast<AuctionTerminalDataComponent*>(data->get());
-		}
-
-		if (terminalData != nullptr) {
-			terminalData->updateUID();
-		}
-	}
-
-	if (isClientRegion()) {
-		return;
-	}
-
-	if (object->isCreatureObject()) {
-		CreatureObject* creature = cast<CreatureObject*>(object);
-
-		StringIdChatParameter params("city/city", "city_enter_city"); //You have entered %TT (%TO).
-		params.setTT(getCityRegionName());
-
-		UnicodeString strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
-
+    if (object->getCityRegion().get() != _this.getReferenceUnsafeStaticCast() && object->isPlayerCreature()) {
+        currentPlayers.increment();
+    }
+    object->setCityRegion(_this.getReferenceUnsafeStaticCast());
+    if (object->isBazaarTerminal() || object->isVendor()) {
+        if (object->isBazaarTerminal()) {
+            bazaars.put(object->getObjectID(), cast<TangibleObject*>(object));
+        }
+        AuctionTerminalDataComponent* terminalData = nullptr;
+        DataObjectComponentReference* data = object->getDataObjectComponent();
+        if (data != nullptr && data->get() != nullptr && data->get()->isAuctionTerminalData()) {
+            terminalData = cast<AuctionTerminalDataComponent*>(data->get());
+        }
+        if (terminalData != nullptr) {
+            terminalData->updateUID();
+        }
+    }
+    if (isClientRegion()) {
+        return;
+    }
+    if (object->isCreatureObject()) {
+        CreatureObject* creature = cast<CreatureObject*>(object);
+        StringIdChatParameter params("city/city", "city_enter_city"); //You have entered %TT (%TO).
+        params.setTT(getCityRegionName());
+        UnicodeString strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
+        		
 		if (citySpecialization.isEmpty()) {
-			params.setTO(strRank);
-		}
-		else {
-			UnicodeString citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
-			params.setTO(strRank + ", " + citySpec);
-		}
+            params.setTO(strRank);
+        }
+        else {
+            UnicodeString citySpec;
+            // Handle custom metropolis specializations
+           // Handle custom metropolis specializations
+		if (citySpecialization == "Enhancement District") {
+    			citySpec = "Enhancement District";
+} 			else if (citySpecialization == "Industrial District") {
+    			citySpec = "Industrial District";
+} 		else {
+    		citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+}
+            params.setTO(strRank + ", " + citySpec);
+        }
+        creature->sendSystemMessage(params);
+        applySpecializationModifiers(creature);
+    }
 
-		creature->sendSystemMessage(params);
-
-		applySpecializationModifiers(creature);
-	}
-
-	auto zoneServer = zone->getZoneServer();
-
-	if (zoneServer == nullptr) {
-		return;
-	}
-
-	if (object->isStructureObject()) {
-		StructureObject* structure = cast<StructureObject*>(object);
-
-		if (structure != nullptr) {
-			Locker slocker(&structureListMutex);
-
-			if (isLoaded() && !completeStructureList.contains(structure->getObjectID()) && structure->getBaseMaintenanceRate() > 0) {
-				CityManager* cityManager = zoneServer->getCityManager();
-
-				if (cityManager != nullptr) {
-					cityManager->sendAddStructureMails(_this.getReferenceUnsafeStaticCast(), structure);
-				}
-			}
-
-			if (structure->isBuildingObject()) {
-				auto ownerID = structure->getOwnerObjectID();
-				auto building = structure->asBuildingObject();
-
-				if (building != nullptr && building->isResidence() && !isCitizen(ownerID)) {
-					Core::getTaskManager()->executeTask([ownerID, weakRegion = WeakReference<CityRegion*>(_this.getReferenceUnsafeStaticCast())] () {
-						auto strongRegion = weakRegion.get();
-
-						if (strongRegion == nullptr) {
-							return;
-						}
-
-						auto zone = strongRegion->getZone();
-
-						if (zone == nullptr) {
-							return;
-						}
-
-						auto zoneServer = zone->getZoneServer();
-
-						if (zoneServer == nullptr) {
-							return;
-						}
-
-						auto cityManager = zoneServer->getCityManager();
-
-						if (cityManager == nullptr) {
-							return;
-						}
-
-						Reference<CreatureObject*> owner = zoneServer->getObject(ownerID).castTo<CreatureObject*>();
-
-						if (owner != nullptr) {
-							Locker lock(strongRegion);
-							Locker clock(strongRegion, owner);
-
-							cityManager->registerCitizen(strongRegion, owner);
-						}
-					}, "CityRegionNotifyEnterLambda");
-				}
-			}
-		}
-
-		completeStructureList.put(structure->getObjectID());
-
-		if (structure->isCivicStructure() && !structure->isDecoration()) {
-			addStructure(structure);
-		} else if (structure->isCommercialStructure()) {
-			addCommercialStructure(structure);
-		}
-
-		if (registered) {
-			zone->registerObjectWithPlanetaryMap(structure);
-		}
-	}
-
-	if (object->isDecoration() && object->getParent().get() == nullptr) {
-		addDecoration(object);
-	}
-
-	if (registered && cityMissionTerminals.contains(object)) {
-		zone->registerObjectWithPlanetaryMap(object);
-	}
-
-	if (!registered && citySkillTrainers.contains(object)) {
-		zone->unregisterObjectWithPlanetaryMap(object);
-	}
+    auto zoneServer = zone->getZoneServer();
+    if (zoneServer == nullptr) {
+        return;
+    }
+    if (object->isStructureObject()) {
+        StructureObject* structure = cast<StructureObject*>(object);
+        if (structure != nullptr) {
+            Locker slocker(&structureListMutex);
+            if (isLoaded() && !completeStructureList.contains(structure->getObjectID()) && structure->getBaseMaintenanceRate() > 0) {
+                CityManager* cityManager = zoneServer->getCityManager();
+                if (cityManager != nullptr) {
+                    cityManager->sendAddStructureMails(_this.getReferenceUnsafeStaticCast(), structure);
+                }
+            }
+            if (structure->isBuildingObject()) {
+                auto ownerID = structure->getOwnerObjectID();
+                auto building = structure->asBuildingObject();
+                if (building != nullptr && building->isResidence() && !isCitizen(ownerID)) {
+                    Core::getTaskManager()->executeTask([ownerID, weakRegion = WeakReference<CityRegion*>(_this.getReferenceUnsafeStaticCast())] () {
+                        auto strongRegion = weakRegion.get();
+                        if (strongRegion == nullptr) {
+                            return;
+                        }
+                        auto zone = strongRegion->getZone();
+                        if (zone == nullptr) {
+                            return;
+                        }
+                        auto zoneServer = zone->getZoneServer();
+                        if (zoneServer == nullptr) {
+                            return;
+                        }
+                        auto cityManager = zoneServer->getCityManager();
+                        if (cityManager == nullptr) {
+                            return;
+                        }
+                        Reference<CreatureObject*> owner = zoneServer->getObject(ownerID).castTo<CreatureObject*>();
+                        if (owner != nullptr) {
+                            Locker lock(strongRegion);
+                            Locker clock(strongRegion, owner);
+                            cityManager->registerCitizen(strongRegion, owner);
+                        }
+                    }, "CityRegionNotifyEnterLambda");
+                }
+            }
+        }
+        completeStructureList.put(structure->getObjectID());
+        if (structure->isCivicStructure() && !structure->isDecoration()) {
+            addStructure(structure);
+        } else if (structure->isCommercialStructure()) {
+            addCommercialStructure(structure);
+        }
+        if (registered) {
+            zone->registerObjectWithPlanetaryMap(structure);
+        }
+    }
+    if (object->isDecoration() && object->getParent().get() == nullptr) {
+        addDecoration(object);
+    }
+    if (registered && cityMissionTerminals.contains(object)) {
+        zone->registerObjectWithPlanetaryMap(object);
+    }
+    if (!registered && citySkillTrainers.contains(object)) {
+        zone->unregisterObjectWithPlanetaryMap(object);
+    }
 }
 
 void CityRegionImplementation::notifyExit(SceneObject* object) {
