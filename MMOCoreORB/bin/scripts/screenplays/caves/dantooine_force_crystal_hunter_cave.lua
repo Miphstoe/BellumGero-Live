@@ -57,6 +57,7 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
         { "dark_jedi_knight", 117.4, -66, -107.8,  -89, 8535490 },
         { "dark_jedi_knight", 141.3, -66.6, -87.5,  -138, 8535490 },
         { "dark_jedi_knight", 150.1, -66.6, -126,  -50, 8535490 },
+        { "imperial_inquisitor_boss", 191.7, -66.8, -102,  -84, 8535491 },
     }
 
     for i, data in ipairs(spawnPoints) do
@@ -88,7 +89,7 @@ end
 function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
     -- only proceed for real player killers
     if not (pKiller and SceneObject(pKiller):isPlayerCreature()) then
-        return 1
+        return 0
     end
 
     local co = CreatureObject(pKiller)
@@ -97,5 +98,5 @@ function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
         co:awardExperience("force_rank_xp", 100, true)
     end
 
-    return 1
+    return 0
 end
