@@ -263,7 +263,7 @@ void EntertainingSessionImplementation::doPerformanceAction() {
 	int actionDrain = entertainer->calculateCostAdjustment(CreatureAttribute::QUICKNESS, performance->getActionPointsPerLoop());
 
     // Lower the cost by 50%
-    actionDrain = (int)(actionDrain * 0.50);
+    actionDrain = (int)(actionDrain * 0.30);
 
 	if (entertainer->getHAM(CreatureAttribute::ACTION) <= actionDrain) {
 		if (isDancing()) {
@@ -625,7 +625,7 @@ void EntertainingSessionImplementation::doFlourish(int flourishNumber, bool gran
 		baseActionDrain = 0;
 
 	//float baseActionDrain = -40 + (getQuickness() / 37.5);
-	float flourishActionDrain = baseActionDrain / 5.0; // 5.0 is the flourish action drain modifier
+	float flourishActionDrain = baseActionDrain / 15.0; // 15.0 is the flourish action drain modifier
 
 	int actionDrain = (int)round((flourishActionDrain * 5 + 0.5) / 15.0); // Round to nearest dec for actual int cost
 
