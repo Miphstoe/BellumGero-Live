@@ -280,30 +280,36 @@ bool ArmorObjectImplementation::isVulnerable(int type) const {
 }
 
 float ArmorObjectImplementation::getTypeValue(int type, float value) const {
-	int newValue = 0;
+    int val = 0;
 
-	if (vulnerabilites & type)
-		newValue = value;
+    // If this armor is vulnerable to the requested type, no protection applies.
+    if ( (vulnerabilites & type) == type ) {
+        return value;
+    }
 
-	else if (isSpecial(type)) {
-		newValue = specialProtection + value;
+    // Special vs base handling stays exactly as before
+    if (isSpecial(type)) {
+        val = specialProtection + static_cast<int>(value);
+        if (val > 80) val = 80;                    // generic special cap
+    } else {
+        val = baseProtection + static_cast<int>(value);
+        val = static_cast<int>(val * effectivenessSlice);
 
-		if (newValue > 80)
-			newValue = 80;
-	} else {
-		newValue = baseProtection + value;
-		newValue *= effectivenessSlice;
+        // base (non-special) caps
+        if (sliced && effectivenessSlice > 1) {
+            if (val > 90) val = 90;               // sliced base can reach 90
+        } else {
+            if (val > 80) val = 80;               // unsliced base cap
+        }
+    }
 
-		if(sliced && effectivenessSlice > 1) {
-			if(newValue > 90)
-				newValue = 90;
-		} else {
-			if(newValue > 80)
-				newValue = 80;
-		}
-	}
+    // Lightsaber-only hard cap (does not affect other types)
+    if ((type == SharedWeaponObjectTemplate::LIGHTSABER ||
+         type == SharedWeaponObjectTemplate::STUN) && val > 40) {
+        val = 40;
+    }
 
-	return newValue;
+    return static_cast<float>(val);
 }
 
 int ArmorObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
