@@ -1,4 +1,5 @@
 includeFile("groups/armor_attachments.lua")
+includeFile("groups/bounty_hunter_armor_schematics.lua")
 includeFile("groups/clothing_attachments.lua")
 includeFile("groups/coa_encoded_disk_fragments.lua")
 includeFile("groups/coa2_decoder_components.lua")
