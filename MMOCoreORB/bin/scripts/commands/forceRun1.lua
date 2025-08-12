@@ -42,13 +42,14 @@
 --true = 1, false = 0
 
 ForceRun1Command = {
-        name = "forcerun1",
-        forceCost = 200,
-        duration = 120,
-        --animationCRC = hashCode()
-        clientEffect = "clienteffect/pl_force_run_self.cef",
-        speedMod = 1.5
+    name = "forcerun1",
+    forceCost = 200,      -- keep your server’s preferred value
+    duration = 0,         -- 0 => toggle mode (no timer; press again to turn off)
+    clientEffect = "clienteffect/pl_force_run_self.cef",
+    toggle = true,
+    speedMod = 1.5        -- typical FR1 step; adjust if your server uses a different scale
 }
 
 AddCommand(ForceRun1Command)
+
 

@@ -42,13 +42,14 @@
 --true = 1, false = 0
 
 ForceRun2Command = {
-        name = "forcerun2",
-        forceCost = 400,
-        duration = 120,
-        --animationCRC = hashCode()
-        clientEffect = "clienteffect/pl_force_run_self.cef",
-        speedMod = 2.5
+    name = "forcerun2",
+    forceCost = 400,
+    duration = 0, -- 0 => toggle mode (no timer; stays on until you run /forcerun2 again)
+    clientEffect = "clienteffect/pl_force_run_self.cef",
+    toggle = true,
+    speedMod = 2.5
 }
 
 AddCommand(ForceRun2Command)
+
 

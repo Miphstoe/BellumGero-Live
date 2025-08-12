@@ -42,12 +42,13 @@
 --true = 1, false = 0
 
 ForceRun3Command = {
-        name = "forcerun3",
-        forceCost = 600,
-        duration = 120,
-        --animationCRC = hashCode()
-        clientEffect = "clienteffect/pl_force_run_self.cef",
-        speedMod = 3.5
+    name = "forcerun3",
+    forceCost = 600,
+    duration = 0, -- toggle (no timer; C++ will ignore timing when <= 0)
+    clientEffect = "clienteffect/pl_force_run_self.cef",
+    speedMod = 3.5,
+    toggle = true,
+    buffName = "force_run_3" -- helpful label for the C++ side
 }
 
 AddCommand(ForceRun3Command)
