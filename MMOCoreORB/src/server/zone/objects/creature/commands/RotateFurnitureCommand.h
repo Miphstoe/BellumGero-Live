@@ -1,4 +1,5 @@
-  /*   Copyright <SWGEmu>
+/*
+                Copyright <SWGEmu>
         See file COPYING for copying conditions.*/
 
 /*
@@ -78,11 +79,13 @@ public:
         // Validate ranges
         if (!resetRotate) {
             if (rotateYaw && (dir == "left" || dir == "right")) {
+                // Legacy left/right: 1..180
                 if (degrees < 1 || degrees > 180) {
-                    creature->sendSystemMessage("@player_structure:rotate_params");
+                    creature->sendSystemMessage("@player_structure:rotate_params"); // The amount to rotate must be between 1 and 180.
                     return INVALIDPARAMETERS;
                 }
             } else {
+                // Axis form: -180..180
                 if (degrees < -180 || degrees > 180) {
                     creature->sendSystemMessage("The amount to rotate must be between -180 and 180.");
                     return INVALIDPARAMETERS;
@@ -94,7 +97,7 @@ public:
         ManagedReference<SceneObject*> obj = zoneServer->getObject(target);
 
         if (obj == nullptr) {
-            creature->sendSystemMessage("@player_structure:rotate_what");
+            creature->sendSystemMessage("@player_structure:rotate_what"); // What do you want to rotate?
             return GENERALERROR;
         }
 
@@ -131,17 +134,16 @@ public:
 
         if (data != nullptr) {
             EventPerkDeed* deed = data->getDeed();
-
             if (deed == nullptr)
                 return false;
 
             ManagedReference<CreatureObject*> owner = deed->getOwner().get();
-
             if (owner == nullptr || owner != player) {
                 player->sendSystemMessage("@player_structure:cant_manipulate");
                 return false;
             }
 
+            // Event perks: yaw only (or reset)
             if (!rotateYaw && !resetRotate) {
                 player->sendSystemMessage("Event perks can only be rotated by yaw.");
                 return false;
@@ -156,7 +158,6 @@ public:
         }
 
         ManagedReference<SceneObject*> rootParent = player->getRootParent();
-
         if (rootParent == nullptr || (!rootParent->isBuildingObject() && !rootParent->isPobShip())) {
             player->sendSystemMessage("@player_structure:must_be_in_building");
             return false;
@@ -167,36 +168,21 @@ public:
 
         if (rootParent->isPobShip()) {
             PobShipObject* pobShip = rootParent->asPobShip();
-
             if (pobShip == nullptr) {
                 player->sendSystemMessage("@player_structure:must_be_in_building");
                 return false;
             }
-
-            if (!pobShip->containsChildObject(object)) {
-                player->sendSystemMessage("@player_structure:item_not_in_building");
-                return false;
-            }
-
             onAdmin = pobShip->isOnAdminList(player);
         } else {
             BuildingObject* buildingObject = cast<BuildingObject*>(rootParent.get());
-
             if (buildingObject == nullptr) {
                 player->sendSystemMessage("@player_structure:must_be_in_building");
                 return false;
             }
-
             if (buildingObject->isGCWBase()) {
                 player->sendSystemMessage("@player_structure:no_move_hq");
                 return false;
             }
-
-            if (!buildingObject->containsChildObject(object)) {
-                player->sendSystemMessage("@player_structure:item_not_in_building");
-                return false;
-            }
-
             onAdmin = buildingObject->isOnAdminList(player);
             onVendor = buildingObject->isOnPermissionList("VENDOR", player);
         }
@@ -206,6 +192,7 @@ public:
                 player->sendSystemMessage("@player_structure:admin_move_only");
                 return false;
             }
+            // Vendors: yaw only (or reset)
             if (!rotateYaw && !resetRotate) {
                 player->sendSystemMessage("Vendors can only be rotated by yaw.");
                 return false;
@@ -215,9 +202,10 @@ public:
             return false;
         }
 
+        // Final safety: same structure check
         ManagedReference<SceneObject*> objectRootParent = object->getRootParent();
         if (objectRootParent == nullptr || objectRootParent != rootParent) {
-            player->sendSystemMessage("@player_structure:item_not_in_building");
+            player->sendSystemMessage("@player_structure:item_not_in_building"); // That object is not within the building.
             return false;
         }
 
@@ -225,4 +213,4 @@ public:
     }
 };
 
-#endif // ROTATEFURNITURECOMMAND_H
+#endif // ROTATEFURNITURECOMMAND_H_
