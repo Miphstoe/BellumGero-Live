@@ -47,7 +47,7 @@ death_watch_black_sun_thug = Creature:new {
 			groups = {
 				{group = "blacksun_rare", chance = 10000000},
 			},
-			lootChance = 400000, -- 5.00% total chance
+			lootChance = 400000, -- 4.00% total chance
 		},	
 	},
 
