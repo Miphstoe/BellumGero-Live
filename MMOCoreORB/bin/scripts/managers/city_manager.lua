@@ -247,7 +247,8 @@ CitySpecializations = {
         --minRank = 5, -- Available at Level 5 and above
         skillMods = {
             {"private_spec_entertainer", 10},
-            {"private_medical_rating", 10}
+            {"private_medical_rating", 10},
+			{"private_spec_missions", 15}
         }
     },
     {--Industrial District
@@ -257,7 +258,9 @@ CitySpecializations = {
         skillMods = {
             {"private_spec_assembly", 10},
             {"private_spec_experimentation", 15},
-            {"private_spec_manufacturing", 10}
+            {"private_spec_manufacturing", 10},
+			{"private_spec_samplerate", 10},
+			{"private_spec_samplesize", 20}
         }
     },
 

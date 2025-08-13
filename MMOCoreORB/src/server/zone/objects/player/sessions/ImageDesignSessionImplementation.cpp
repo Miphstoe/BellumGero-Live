@@ -15,10 +15,44 @@
 #include "server/zone/objects/player/sessions/ImageDesignSession.h"
 #include "server/zone/objects/player/sessions/MigrateStatsSession.h"
 #include "server/zone/packets/object/ImageDesignMessage.h"
-#include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
+// NEW: allow cantinas as valid stat migration venues in addition to salons
+#include "server/zone/objects/building/BuildingObject.h"
+
 // #define DEBUG_ID
+
+// Helper: returns the building the player is in if it's a valid stat migration venue
+// (either a Salon (image design tent) or any Cantina). Otherwise returns nullptr.
+static SceneObject* getEligibleStatMigVenue(CreatureObject* creo) {
+    if (creo == nullptr)
+        return nullptr;
+
+    // Original behavior: salons (image design tents)
+    SceneObject* salon = creo->getParentRecursively(SceneObjectType::SALONBUILDING);
+    if (salon != nullptr)
+        return salon;
+
+    // New behavior: any cantina building (by template path)
+    SceneObject* root = creo->getRootParent();
+    if (root == nullptr || !root->isBuildingObject())
+        return nullptr;
+
+    auto* building = cast<BuildingObject*>(root);
+    if (building == nullptr)
+        return nullptr;
+
+    SharedObjectTemplate* shot = building->getObjectTemplate();
+    if (shot == nullptr)
+        return nullptr;
+
+    // Common NPC-city and player-city cantinas have template names containing "cantina".
+    String tmpl = shot->getFullTemplateString();
+    if (tmpl.contains("cantina"))
+        return building;
+
+    return nullptr;
+}
 
 void ImageDesignSessionImplementation::initializeTransientMembers() {
 	FacadeImplementation::initializeTransientMembers();
@@ -50,19 +84,18 @@ int ImageDesignSessionImplementation::cancelSession() {
 void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer, CreatureObject* targetPlayer) {
 	sessionStartTime.updateToCurrentTime();
 
-	uint64 designerTentID = 0; // Equals False, that controls if you can stat migrate or not (only in a Salon).
+	uint64 designerTentID = 0; // non-zero enables the Stat Migration checkbox client-side
 	uint64 targetTentID = 0;
 
-	ManagedReference<SceneObject*> obj = designer->getParentRecursively(SceneObjectType::SALONBUILDING);
-
-	if (obj != nullptr) // If they are in a salon, enable the tickmark for stat migration.
-		designerTentID = obj->getObjectID();
+	ManagedReference<SceneObject*> venue = getEligibleStatMigVenue(designer);
+	if (venue != nullptr)
+		designerTentID = venue->getObjectID();
 
 	if (designerTentID != 0) {
-		obj = targetPlayer->getParentRecursively(SceneObjectType::SALONBUILDING);
+		venue = getEligibleStatMigVenue(targetPlayer);
 
-		if (obj != nullptr)
-			targetTentID = obj->getObjectID();
+		if (venue != nullptr)
+			targetTentID = venue->getObjectID();
 
 		if (targetTentID != 0) {
 			positionObserver = new ImageDesignPositionObserver(_this.getReferenceUnsafeStaticCast());
@@ -104,7 +137,7 @@ void ImageDesignSessionImplementation::startImageDesign(CreatureObject* designer
 	idTimeoutEvent = new ImageDesignTimeoutEvent(_this.getReferenceUnsafeStaticCast());
 
 #ifdef DEBUG_ID
-	info(true) << "startImageDesign - for Target Player: " << targetPlayer->getFirstName() << " Target Tent ID = " <<  targetTentID << " Designer Tent ID = " << designerTentID << " Holoemote = " << holoemote;
+	info(true) << "startImageDesign - for Target Player: " << targetPlayer->getFirstName() << " Target Venue ID = " <<  targetTentID << " Designer Venue ID = " << designerTentID << " Holoemote = " << holoemote;
 #endif
 }
 
@@ -140,10 +173,10 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 		int remainingTime = (4 * 60) - timeElapsed;
 
 #ifdef DEBUG_ID
-		info(true) << "updateImageDesign - start time elapsed = " << timeElapsed << " with remining time of " << remainingTime;
+		info(true) << "updateImageDesign - start time elapsed = " << timeElapsed << " with remaining time of " << remainingTime;
 #endif
 
-		// Only Break the session if the ID attempts to accept prior to the enough time being elapsed
+		// Only break the session if the ID attempts to accept prior to sufficient time elapsing
 		if (designerAccepted && remainingTime > 0) {
 			int minutes = remainingTime / 60;
 
@@ -195,7 +228,12 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 
 		int xpGranted = 0; // Minimum Image Design XP granted (base amount).
 
-		if (statMig && strongReferenceDesigner != strongReferenceTarget && strongReferenceDesigner->getParentRecursively(SceneObjectType::SALONBUILDING) && strongReferenceDesigner->getParentRecursively(SceneObjectType::SALONBUILDING)) {
+		// Only allow stat migration when BOTH parties are in an eligible venue (salon or cantina)
+		if (statMig
+			&& strongReferenceDesigner != strongReferenceTarget
+			&& getEligibleStatMigVenue(strongReferenceDesigner) != nullptr
+			&& getEligibleStatMigVenue(strongReferenceTarget)   != nullptr) {
+
 			ManagedReference<Facade*> facade = strongReferenceTarget->getActiveSession(SessionFacadeType::MIGRATESTATS);
 			ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());
 
@@ -247,7 +285,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 				xpGranted = 100;
 		}
 
-		int bodyAttSize= bodyAttributes->size();
+		int bodyAttSize = bodyAttributes->size();
 		int colorAttSize = colorAttributes->size();
 
 		// Modification type pulled from iff customization_data
@@ -271,8 +309,8 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 		info(true) << "updateImageDesign - Type: " << type << " Body Attributes Size = " << bodyAttSize << " Color Attributes = " << colorAttSize << " Modification Type = " << modificationType;
 #endif
 
-		// Set XP based on modifcation type
-		switch(modificationType) {
+		// Set XP based on modification type
+		switch (modificationType) {
 			case ImageDesignManager::PHYSICAL: {
 				if (xpGranted < 300)
 					xpGranted = 300;
@@ -296,7 +334,7 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 			if (ghost != nullptr) {
 				ghost->setInstalledHoloEmote(holoemote); // Also resets number of uses available
 
-				strongReferenceTarget->sendSystemMessage("@image_designer:new_holoemote"); //"Congratulations! You have purchased a new Holo-Emote generator. Type '/holoemote help' for instructions."
+				strongReferenceTarget->sendSystemMessage("@image_designer:new_holoemote"); // "Congratulations! You have purchased a new Holo-Emote generator. Type '/holoemote help' for instructions."
 
 				if (xpGranted < 100)
 					xpGranted = 100;
@@ -377,12 +415,12 @@ void ImageDesignSessionImplementation::checkDequeueEvent(SceneObject* scene) {
 	if (scene == designerCreature) {
 		Locker clocker(targetCreature, designerCreature);
 
-		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
+		if (getEligibleStatMigVenue(targetCreature) == nullptr || getEligibleStatMigVenue(designerCreature) == nullptr)
 			return;
 	} else if (scene == targetCreature) {
 		Locker clocker(designerCreature, targetCreature);
 
-		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr)
+		if (getEligibleStatMigVenue(targetCreature) == nullptr || getEligibleStatMigVenue(designerCreature) == nullptr)
 			return;
 	}
 
@@ -396,7 +434,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 	if (designerCreature != nullptr) {
 		Locker locker(designerCreature);
 
-		if (designerCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || imageDesignData.isAcceptedByDesigner()) {
+		if (getEligibleStatMigVenue(designerCreature) == nullptr || imageDesignData.isAcceptedByDesigner()) {
 			designerCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
 			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
@@ -409,7 +447,7 @@ void ImageDesignSessionImplementation::sessionTimeout() {
 		Locker locker(designerCreature);
 		Locker clocker(targetCreature, designerCreature);
 
-		if (targetCreature->getParentRecursively(SceneObjectType::SALONBUILDING) == nullptr || imageDesignData.isAcceptedByDesigner()) {
+		if (getEligibleStatMigVenue(targetCreature) == nullptr || imageDesignData.isAcceptedByDesigner()) {
 			targetCreature->sendSystemMessage("Image Design session has timed out. Changes aborted.");
 
 			cancelImageDesign(designerCreature->getObjectID(), targetCreature->getObjectID(), 0, 0, imageDesignData);
