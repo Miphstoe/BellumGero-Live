@@ -1,6 +1,20 @@
+     Copyright <SWGEmu>
+        See file COPYING for copying conditions.*/
+
 /*
-				Copyright <SWGEmu>
-		See file COPYING for copying conditions.*/
+Usage:
+  /rotateFurniture yaw <degrees>
+  /rotateFurniture pitch <degrees>
+  /rotateFurniture roll <degrees>
+  /rotateFurniture left <degrees>   (legacy yaw)
+  /rotateFurniture right <degrees>  (legacy yaw)
+  /rotateFurniture reset 1          (resets orientation)
+
+Notes:
+  - Axis forms allow degrees in [-180, 180].
+  - Legacy left/right requires degrees in [1, 180].
+  - Event Perks and Vendors: yaw-only (no pitch/roll).
+*/
 
 #ifndef ROTATEFURNITURECOMMAND_H_
 #define ROTATEFURNITURECOMMAND_H_
@@ -10,212 +24,205 @@
 
 class RotateFurnitureCommand : public QueueCommand {
 public:
+    RotateFurnitureCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) { }
 
-	RotateFurnitureCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) {
+    int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
+        if (!checkStateMask(creature))
+            return INVALIDSTATE;
 
-	}
+        if (!checkInvalidLocomotions(creature))
+            return INVALIDLOCOMOTION;
 
-	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
-		if (!checkStateMask(creature))
-			return INVALIDSTATE;
+        ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+        if (ghost == nullptr)
+            return GENERALERROR;
 
-		if (!checkInvalidLocomotions(creature))
-			return INVALIDLOCOMOTION;
+        String dir;
+        int degrees = 0;
+        bool rotateYaw = false;
+        bool rotatePitch = false;
+        bool rotateRoll = false;
+        bool resetRotate = false;
 
-		ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+        // Parse: accept axis+degrees, legacy left/right+degrees, or reset.
+        try {
+            UnicodeTokenizer tokenizer(arguments.toString());
+            tokenizer.getStringToken(dir);
+            dir = dir.toLowerCase();
 
-		if (ghost == nullptr)
-			return GENERALERROR;
+            if (dir == "reset") {
+                if (tokenizer.hasMoreTokens())
+                    degrees = tokenizer.getIntToken();
+                resetRotate = true;
+            } else {
+                if (!tokenizer.hasMoreTokens())
+                    throw Exception();
 
-		bool enhancedRotate = ConfigManager::instance()->getBool("Core3.StructureManager.EnhancedFurnitureRotate", false);
+                degrees = tokenizer.getIntToken();
 
-		String dir;
-		int degrees = 0;
-		bool rotateYaw = false;
-		bool rotatePitch = false;
-		bool rotateRoll = false;
-		bool resetRotate = false;
+                if (dir == "yaw" || dir == "right" || dir == "left")
+                    rotateYaw = true;
+                else if (dir == "pitch")
+                    rotatePitch = true;
+                else if (dir == "roll")
+                    rotateRoll = true;
+                else
+                    throw Exception();
+            }
+        } catch (Exception& e) {
+            creature->sendSystemMessage("[YPR] Format: /rotateFurniture <yaw|pitch|roll|left|right> <degrees>");
+            creature->sendSystemMessage("[YPR] Reset:  /rotateFurniture reset 1");
+            return INVALIDPARAMETERS;
+        }
 
-		try {
-			UnicodeTokenizer tokenizer(arguments.toString());
-			tokenizer.getStringToken(dir);
-			degrees = tokenizer.getIntToken();
+        // Validate ranges
+        if (!resetRotate) {
+            if (rotateYaw && (dir == "left" || dir == "right")) {
+                if (degrees < 1 || degrees > 180) {
+                    creature->sendSystemMessage("@player_structure:rotate_params");
+                    return INVALIDPARAMETERS;
+                }
+            } else {
+                if (degrees < -180 || degrees > 180) {
+                    creature->sendSystemMessage("The amount to rotate must be between -180 and 180.");
+                    return INVALIDPARAMETERS;
+                }
+            }
+        }
 
-			dir = dir.toLowerCase();
+        ZoneServer* zoneServer = creature->getZoneServer();
+        ManagedReference<SceneObject*> obj = zoneServer->getObject(target);
 
-			if (enhancedRotate) {
-				if (dir == "yaw" || dir == "right" || dir == "left")
-					rotateYaw = true;
-				else if (dir == "pitch")
-					rotatePitch = true;
-				else if (dir == "roll")
-					rotateRoll = true;
-				else if (dir == "reset")
-					resetRotate = true;
-				else
-					throw Exception();
-			} else {
-				if (dir == "left" || dir == "right")
-					rotateYaw = true;
-				else
-					throw Exception();
-			}
-		} catch (Exception& e) {
-			if (enhancedRotate) {
-				creature->sendSystemMessage("Format: /rotateFurniture <yaw/pitch/roll> [degrees]. Degrees can be -180 to 180 when using this format.");
-				creature->sendSystemMessage("Reset position: /rotateFurniture reset 1");
-			} else {
-				creature->sendSystemMessage("@player_structure:formet_rotratefurniture_degrees"); //Format: /rotateFurniture <LEFT/RIGHT> <degrees>
-			}
+        if (obj == nullptr) {
+            creature->sendSystemMessage("@player_structure:rotate_what");
+            return GENERALERROR;
+        }
 
-			return INVALIDPARAMETERS;
-		}
+        if (!isValidMoveable(creature, obj, rotateYaw, rotatePitch, rotateRoll, resetRotate))
+            return GENERALERROR;
 
-		if (enhancedRotate && (rotatePitch || rotateRoll || rotateYaw) && (degrees < -180 || degrees > 180)) {
-			creature->sendSystemMessage("The amount to rotate must be between -180 and 180.");
-			return INVALIDPARAMETERS;
-		} else if (!enhancedRotate && (degrees < 1 || degrees > 180)) {
-			creature->sendSystemMessage("@player_structure:rotate_params"); // The amount to rotate must be between 1 and 180.
-			return INVALIDPARAMETERS;
-		}
+        // Apply rotation
+        if (rotateYaw) {
+            if (dir == "right")
+                obj->rotate(-degrees); // maintain legacy direction
+            else
+                obj->rotate(degrees);  // yaw (dir == "left" or "yaw")
+        } else if (rotatePitch) {
+            obj->rotatePitch(degrees);
+        } else if (rotateRoll) {
+            obj->rotateRoll(degrees);
+        } else if (resetRotate) {
+            obj->setDirection(1, 0, 0, 0);
+        }
 
-		ZoneServer* zoneServer = creature->getZoneServer();
-		ManagedReference<SceneObject*> obj = zoneServer->getObject(target);
+        obj->incrementMovementCounter();
 
-		if (obj == nullptr) {
-			creature->sendSystemMessage("@player_structure:rotate_what"); // What do you want to rotate?
-			return GENERALERROR;
-		}
+        ManagedReference<SceneObject*> objParent = obj->getParent().get();
+        if (objParent != nullptr)
+            obj->teleport(obj->getPositionX(), obj->getPositionZ(), obj->getPositionY(), objParent->getObjectID());
+        else
+            obj->teleport(obj->getPositionX(), obj->getPositionZ(), obj->getPositionY());
 
-		if (!isValidMoveable(creature, obj, rotateYaw, rotatePitch, rotateRoll, resetRotate, enhancedRotate))
-			return GENERALERROR;
+        return SUCCESS;
+    }
 
-		if (rotateYaw) {
-			if (dir == "right")
-				obj->rotate(-degrees);
-			else if (dir == "left")
-				obj->rotate(degrees);
-			else
-				obj->rotate(degrees);
-		} else if (rotatePitch) {
-			obj->rotatePitch(degrees);
-		} else if (rotateRoll) {
-			obj->rotateRoll(degrees);
-		} else if (resetRotate) {
-			obj->setDirection(1, 0, 0, 0);
-		}
+    bool isValidMoveable(CreatureObject* player, SceneObject* object, bool rotateYaw, bool rotatePitch, bool rotateRoll, bool resetRotate) const {
+        EventPerkDataComponent* data = cast<EventPerkDataComponent*>(object->getDataObjectComponent()->get());
 
-		obj->incrementMovementCounter();
+        if (data != nullptr) {
+            EventPerkDeed* deed = data->getDeed();
 
-		ManagedReference<SceneObject*> objParent = obj->getParent().get();
-		if (objParent != nullptr)
-			obj->teleport(obj->getPositionX(), obj->getPositionZ(), obj->getPositionY(), objParent->getObjectID());
-		else
-			obj->teleport(obj->getPositionX(), obj->getPositionZ(), obj->getPositionY());
+            if (deed == nullptr)
+                return false;
 
-		return SUCCESS;
-	}
+            ManagedReference<CreatureObject*> owner = deed->getOwner().get();
 
-	bool isValidMoveable(CreatureObject* player, SceneObject* object, bool rotateYaw, bool rotatePitch, bool rotateRoll, bool resetRotate, bool enhancedRotate) const {
-		EventPerkDataComponent* data = cast<EventPerkDataComponent*>(object->getDataObjectComponent()->get());
+            if (owner == nullptr || owner != player) {
+                player->sendSystemMessage("@player_structure:cant_manipulate");
+                return false;
+            }
 
-		if (data != nullptr) {
-			EventPerkDeed* deed = data->getDeed();
+            if (!rotateYaw && !resetRotate) {
+                player->sendSystemMessage("Event perks can only be rotated by yaw.");
+                return false;
+            }
 
-			if (deed == nullptr)
-				return false;
+            return true;
+        }
 
-			ManagedReference<CreatureObject*> owner = deed->getOwner().get();
+        if (object->isPlayerCreature() || (object->isCreatureObject() && !object->isVendor())) {
+            player->sendSystemMessage("@player_structure:cant_manipulate");
+            return false;
+        }
 
-			if (owner == nullptr || owner != player) {
-				player->sendSystemMessage("@player_structure:cant_manipulate"); // You can't manipulate that.
-				return false;
-			}
+        ManagedReference<SceneObject*> rootParent = player->getRootParent();
 
-			if (enhancedRotate && !rotateYaw && !resetRotate) {
-				player->sendSystemMessage("Event perks can only be rotated by yaw.");
-				return false;
-			}
+        if (rootParent == nullptr || (!rootParent->isBuildingObject() && !rootParent->isPobShip())) {
+            player->sendSystemMessage("@player_structure:must_be_in_building");
+            return false;
+        }
 
-			return true;
-		}
+        bool onAdmin = false;
+        bool onVendor = false;
 
-		if (object->isPlayerCreature() || (object->isCreatureObject() && !object->isVendor())) {
-			player->sendSystemMessage("@player_structure:cant_manipulate"); // You can't manipulate that.
-			return false;
-		}
+        if (rootParent->isPobShip()) {
+            PobShipObject* pobShip = rootParent->asPobShip();
 
-		ManagedReference<SceneObject*> rootParent = player->getRootParent();
+            if (pobShip == nullptr) {
+                player->sendSystemMessage("@player_structure:must_be_in_building");
+                return false;
+            }
 
-		if (rootParent == nullptr || (!rootParent->isBuildingObject() && !rootParent->isPobShip())) {
-			player->sendSystemMessage("@player_structure:must_be_in_building"); // You must be in a building to do that.
-			return false;
-		}
+            if (!pobShip->containsChildObject(object)) {
+                player->sendSystemMessage("@player_structure:item_not_in_building");
+                return false;
+            }
 
-		bool onAdmin = false;
-		bool onVendor = false;
+            onAdmin = pobShip->isOnAdminList(player);
+        } else {
+            BuildingObject* buildingObject = cast<BuildingObject*>(rootParent.get());
 
-		if (rootParent->isPobShip()) {
-			PobShipObject* pobShip = rootParent->asPobShip();
+            if (buildingObject == nullptr) {
+                player->sendSystemMessage("@player_structure:must_be_in_building");
+                return false;
+            }
 
-			if (pobShip == nullptr) {
-				player->sendSystemMessage("@player_structure:must_be_in_building"); // You must be in a building to do that.
-				return false;
-			}
+            if (buildingObject->isGCWBase()) {
+                player->sendSystemMessage("@player_structure:no_move_hq");
+                return false;
+            }
 
-			if (pobShip->containsChildObject(object)) {
-				player->sendSystemMessage("@player_structure:cant_move_item"); // You cannot move that object.
-				return false;
-			}
+            if (!buildingObject->containsChildObject(object)) {
+                player->sendSystemMessage("@player_structure:item_not_in_building");
+                return false;
+            }
 
-			onAdmin = pobShip->isOnAdminList(player);
-		} else {
-			BuildingObject* buildingObject = cast<BuildingObject*>(rootParent.get());
+            onAdmin = buildingObject->isOnAdminList(player);
+            onVendor = buildingObject->isOnPermissionList("VENDOR", player);
+        }
 
-			if (buildingObject == nullptr) {
-				player->sendSystemMessage("@player_structure:must_be_in_building"); // You must be in a building to do that.
-				return false;
-			}
+        if (object->isVendor()) {
+            if (!onAdmin && !onVendor) {
+                player->sendSystemMessage("@player_structure:admin_move_only");
+                return false;
+            }
+            if (!rotateYaw && !resetRotate) {
+                player->sendSystemMessage("Vendors can only be rotated by yaw.");
+                return false;
+            }
+        } else if (!onAdmin) {
+            player->sendSystemMessage("@player_structure:admin_move_only");
+            return false;
+        }
 
-			if (buildingObject->isGCWBase()) {
-				player->sendSystemMessage("@player_structure:no_move_hq"); // You may not move or rotate objects inside a factional headquarters.
-				return false;
-			}
+        ManagedReference<SceneObject*> objectRootParent = object->getRootParent();
+        if (objectRootParent == nullptr || objectRootParent != rootParent) {
+            player->sendSystemMessage("@player_structure:item_not_in_building");
+            return false;
+        }
 
-			if (buildingObject->containsChildObject(object)) {
-				player->sendSystemMessage("@player_structure:cant_move_item"); // You cannot move that object.
-				return false;
-			}
-
-			onAdmin = buildingObject->isOnAdminList(player);
-			onVendor = buildingObject->isOnPermissionList("VENDOR", player);
-		}
-
-		if (object->isVendor()) {
-			if (!onAdmin && !onVendor) {
-				player->sendSystemMessage("@player_structure:admin_move_only"); // You must be an admin to manipulate objects.
-				return false;
-			}
-		} else if (!onAdmin) {
-			player->sendSystemMessage("@player_structure:admin_move_only"); // You must be an admin to manipulate objects.
-			return false;
-		}
-
-		ManagedReference<SceneObject*> objectRootParent = object->getRootParent();
-
-		if (objectRootParent == nullptr || objectRootParent != rootParent) {
-			player->sendSystemMessage("@player_structure:item_not_in_building"); // That object is not within the building.
-			return false;
-		}
-
-		if (enhancedRotate && object->isVendor() && !rotateYaw && !resetRotate) {
-			player->sendSystemMessage("Vendors can only be rotated by yaw.");
-			return false;
-		}
-
-		return true;
-	}
-
+        return true;
+    }
 };
 
-#endif //ROTATEFURNITURECOMMAND_H_
+#endif // ROTATEFURNITURECOMMAND_H
