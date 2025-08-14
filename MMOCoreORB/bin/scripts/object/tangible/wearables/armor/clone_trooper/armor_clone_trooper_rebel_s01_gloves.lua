@@ -1,4 +1,4 @@
-object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_bicep_r = object_tangible_wearables_armor_clone_trooper_shared_armor_clone_trooper_imperial_s01_bicep_r:new {
+object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_rebel_s01_gloves = object_tangible_wearables_armor_clone_trooper_shared_armor_clone_trooper_rebel_s01_gloves:new {
 
 	templateType = ARMOROBJECT,
 
@@ -89,4 +89,4 @@ object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_b
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }
 
-ObjectTemplates:addTemplate(object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_bicep_r, "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_bicep_r.iff")
+ObjectTemplates:addTemplate(object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_rebel_s01_gloves, "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s01_gloves.iff")

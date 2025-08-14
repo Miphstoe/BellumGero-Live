@@ -100,6 +100,7 @@ schematics = {
 	{path="object/draft_schematic/clothing/clothing_armor_clonetrooper_gloves_crafted.iff"},
 	{path="object/draft_schematic/clothing/clothing_armor_clonetrooper_helmet_crafted.iff"},
 	{path="object/draft_schematic/clothing/clothing_armor_clonetrooper_leggings_crafted.iff"},
+	{path="object/draft_schematic/clothing/clothing_armor_clonetrooper_utility_belt_crafted.iff"},
 	{path="object/draft_schematic/clothing/clothing_armor_ithorian_guardian_bicep_l.iff"},
 	{path="object/draft_schematic/clothing/clothing_armor_ithorian_guardian_bicep_r.iff"},
 	{path="object/draft_schematic/clothing/clothing_armor_ithorian_guardian_boots.iff"},

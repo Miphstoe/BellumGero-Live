@@ -58,8 +58,6 @@ object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_h
 	-- Damage types in WeaponObject
 	vulnerability = STUN + LIGHTSABER,
 
-	specialResists = ELECTRICITY,
-
 	-- These are default Blue Frog stats
 	healthEncumbrance = 80,
 	actionEncumbrance = 80,

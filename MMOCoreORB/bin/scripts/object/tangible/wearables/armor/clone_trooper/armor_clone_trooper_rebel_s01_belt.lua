@@ -1,8 +1,5 @@
-object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_bicep_r = object_tangible_wearables_armor_clone_trooper_shared_armor_clone_trooper_imperial_s01_bicep_r:new {
-
+object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_rebel_s01_belt = object_tangible_wearables_armor_clone_trooper_shared_armor_clone_trooper_rebel_s01_belt:new {
 	templateType = ARMOROBJECT,
-
-	objectMenuComponent = "ArmorObjectMenuComponent",
 
 	playerRaces = { "object/creature/player/bothan_male.iff",
 				"object/creature/player/bothan_female.iff",
@@ -55,38 +52,15 @@ object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_b
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	-- Damage types in WeaponObject
-	vulnerability = STUN + LIGHTSABER,
-
-	-- These are default Blue Frog stats
-	healthEncumbrance = 80,
-	actionEncumbrance = 80,
-	mindEncumbrance = 80,
-
-	maxCondition = 30000,
-
-	-- LIGHT, MEDIUM, HEAVY
-	rating = LIGHT,
-
-	kinetic = 60,
-	energy = 60,
-	electricity = 60,
-	stun = 0,
-	blast = 60,
-	heat = 60,
-	cold = 60,
-	acid = 60,
-	lightSaber = 0,
-
-	numberExperimentalProperties = {1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 2, 1},
-	experimentalProperties = {"XX", "XX", "XX", "XX", "OQ", "SR", "OQ", "UT", "MA", "OQ", "MA", "OQ", "MA", "OQ", "XX", "XX", "OQ", "SR", "XX"},
-	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	experimentalGroupTitles = {"null", "null", "null", "exp_durability", "exp_quality", "exp_resistance", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
-	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
-	experimentalMin = {0, 0, 0, 1000, 1, 30000, 25, 22, 25, 1, 0, 0, 0},
-	experimentalMax = {0, 0, 0, 1000, 40, 50000, 15, 13, 15, 1, 0, 0, 0},
-	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
-	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
+	numberExperimentalProperties = {1, 1, 1},
+	experimentalProperties = {"XX", "XX", "XX"},
+	experimentalWeights = {1, 1, 1},
+	experimentalGroupTitles = {"null", "null", "null"},
+	experimentalSubGroupTitles = {"null", "null", "sockets"},
+	experimentalMin = {0, 0, 0},
+	experimentalMax = {0, 0, 0},
+	experimentalPrecision = {0, 0, 0},
+	experimentalCombineType = {0, 0, 4},				
 }
 
-ObjectTemplates:addTemplate(object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_imperial_s01_bicep_r, "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_bicep_r.iff")
+ObjectTemplates:addTemplate(object_tangible_wearables_armor_clone_trooper_armor_clone_trooper_rebel_s01_belt, "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s01_belt.iff")
