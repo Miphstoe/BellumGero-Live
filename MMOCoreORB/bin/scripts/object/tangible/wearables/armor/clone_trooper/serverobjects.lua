@@ -1,3 +1,6 @@
+--Children folder includes
+
+-- Server Objects
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_bicep_l.lua")
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_bicep_r.lua")
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_boots.lua")

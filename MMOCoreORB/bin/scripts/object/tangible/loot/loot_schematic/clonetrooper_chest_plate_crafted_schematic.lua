@@ -4,7 +4,7 @@ object_tangible_loot_loot_schematic_clonetrooper_chest_plate_crafted_schematic =
 	objectMenuComponent = "LootSchematicMenuComponent",
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_armorsmith_master",
-	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_clonetrooper_chest_plate_crafted.iff",
+	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_clonetrooper_chest_crafted.iff",
 	targetUseCount = 1,
 }
 
