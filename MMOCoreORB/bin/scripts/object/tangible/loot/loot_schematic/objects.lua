@@ -1398,6 +1398,65 @@ object_tangible_loot_loot_schematic_shared_clonetrooper_leggings_crafted_schemat
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_clonetrooper_leggings_crafted_schematic, "object/tangible/loot/loot_schematic/shared_clonetrooper_leggings_crafted_schematic.iff")
 
+object_tangible_loot_loot_schematic_shared_clonetrooper_utility_belt_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_clonetrooper_utility_belt_crafted_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_handheld_viewscreen_s1.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:armor_clone_trooper_bracer",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:armor_bounty_hunter_bracer",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 4001355238,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_clonetrooper_utility_belt_crafted_schematic, "object/tangible/loot/loot_schematic/shared_clonetrooper_utility_belt_crafted_schematic.iff")
+
 object_tangible_loot_loot_schematic_shared_command_console_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_command_console_schematic.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

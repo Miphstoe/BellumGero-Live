@@ -68,6 +68,7 @@ includeFile("tangible/loot/loot_schematic/clonetrooper_chest_plate_crafted_schem
 includeFile("tangible/loot/loot_schematic/clonetrooper_gloves_crafted_schematic.lua")
 includeFile("tangible/loot/loot_schematic/clonetrooper_helmet_crafted_schematic.lua")
 includeFile("tangible/loot/loot_schematic/clonetrooper_leggings_crafted_schematic.lua")
+includeFile("tangible/loot/loot_schematic/clonetrooper_utility_belt_crafted_schematic.lua")
 includeFile("tangible/loot/loot_schematic/command_console_schematic.lua")
 includeFile("tangible/loot/loot_schematic/corellian_corvette_landspeeder_av21_schematic.lua")
 includeFile("tangible/loot/loot_schematic/corellian_corvette_rifle_berserker_schematic.lua")

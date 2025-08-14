@@ -89,6 +89,7 @@ includeFile("draft_schematic/clothing/clothing_armor_clonetrooper_chest_crafted.
 includeFile("draft_schematic/clothing/clothing_armor_clonetrooper_gloves_crafted.lua")
 includeFile("draft_schematic/clothing/clothing_armor_clonetrooper_helmet_crafted.lua")
 includeFile("draft_schematic/clothing/clothing_armor_clonetrooper_leggings_crafted.lua")
+includeFile("draft_schematic/clothing/clothing_armor_clonetrooper_utility_belt_crafted.lua")
 includeFile("draft_schematic/clothing/clothing_armor_composite_bicep_l.lua")
 includeFile("draft_schematic/clothing/clothing_armor_composite_bicep_r.lua")
 includeFile("draft_schematic/clothing/clothing_armor_composite_boots.lua")
