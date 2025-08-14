@@ -108,6 +108,72 @@ rebelRewardData = {
 	schematic = {
 		dead_eye_prototype = {type = factionRewardType.schematic, display = "@item_n:dead_eye_prototype", item = "object/draft_schematic/item/theme_park/alderaan/act3/dead_eye_prototype.iff", cost = 750, useCount = 10},
 	},
+
+	lootSchematicList = {
+		"clonetrooper_helmet_crafted_schematic",
+		"clonetrooper_chest_plate_crafted_schematic",
+		"clonetrooper_leggings_crafted_schematic",
+		"clonetrooper_boots_crafted_schematic",
+		"clonetrooper_bicep_l_crafted_schematic",
+		"clonetrooper_bicep_r_crafted_schematic",
+		"clonetrooper_bracer_l_crafted_schematic",
+		"clonetrooper_bracer_r_crafted_schematic",
+		"clonetrooper_gloves_crafted_schematic",
+		"clonetrooper_utility_belt_crafted_schematic",
+	},
+
+		lootSchematics = {
+		clonetrooper_helmet_crafted_schematic = {
+			display = "Clone Trooper Helmet Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_helmet_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_chest_plate_crafted_schematic = {
+			display = "Clone Trooper Chestplate Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_chest_plate_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_leggings_crafted_schematic = {
+			display = "Clone Trooper Leggings Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_leggings_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_boots_crafted_schematic = {
+			display = "Clone Trooper Boots Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_boots_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bicep_l_crafted_schematic = {
+			display = "Clone Trooper Bicep (L) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bicep_l_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bicep_r_crafted_schematic = {
+			display = "Clone Trooper Bicep (R) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bicep_r_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bracer_l_crafted_schematic = {
+			display = "Clone Trooper Bracer (L) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bracer_l_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bracer_r_crafted_schematic = {
+			display = "Clone Trooper Bracer (R) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bracer_r_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_gloves_crafted_schematic = {
+			display = "Clone Trooper Gloves Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_gloves_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_utility_belt_crafted_schematic = {
+			display = "Clone Trooper Utility Belt Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_utility_belt_crafted_schematic.iff",
+			cost    = 5000
+		},
+	},
 }
 
 imperialRewardData = {
@@ -231,4 +297,71 @@ imperialRewardData = {
 	schematic = {
 		dead_eye_prototype = {type = factionRewardType.schematic, display = "@item_n:dead_eye_prototype", item = "object/draft_schematic/item/theme_park/alderaan/act3/dead_eye_prototype.iff", cost = 750, useCount = 10},
 	},
-}
+
+	lootSchematicList = {
+		"clonetrooper_helmet_crafted_schematic",
+		"clonetrooper_chest_plate_crafted_schematic",
+		"clonetrooper_leggings_crafted_schematic",
+		"clonetrooper_boots_crafted_schematic",
+		"clonetrooper_bicep_l_crafted_schematic",
+		"clonetrooper_bicep_r_crafted_schematic",
+		"clonetrooper_bracer_l_crafted_schematic",
+		"clonetrooper_bracer_r_crafted_schematic",
+		"clonetrooper_gloves_crafted_schematic",
+		"clonetrooper_utility_belt_crafted_schematic",
+	},
+
+		lootSchematics = {
+		clonetrooper_helmet_crafted_schematic = {
+			display = "Clone Trooper Helmet Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_helmet_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_chest_plate_crafted_schematic = {
+			display = "Clone Trooper Chestplate Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_chest_plate_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_leggings_crafted_schematic = {
+			display = "Clone Trooper Leggings Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_leggings_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_boots_crafted_schematic = {
+			display = "Clone Trooper Boots Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_boots_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bicep_l_crafted_schematic = {
+			display = "Clone Trooper Bicep (L) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bicep_l_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bicep_r_crafted_schematic = {
+			display = "Clone Trooper Bicep (R) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bicep_r_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bracer_l_crafted_schematic = {
+			display = "Clone Trooper Bracer (L) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bracer_l_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_bracer_r_crafted_schematic = {
+			display = "Clone Trooper Bracer (R) Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_bracer_r_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_gloves_crafted_schematic = {
+			display = "Clone Trooper Gloves Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_gloves_crafted_schematic.iff",
+			cost    = 5000
+		},
+		clonetrooper_utility_belt_crafted_schematic = {
+			display = "Clone Trooper Utility Belt Schematic",
+			item    = "object/tangible/loot/loot_schematic/clonetrooper_utility_belt_crafted_schematic.iff",
+			cost    = 5000
+		},
+	},
+}		
+	
