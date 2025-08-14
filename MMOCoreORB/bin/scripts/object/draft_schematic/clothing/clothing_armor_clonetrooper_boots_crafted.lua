@@ -28,7 +28,7 @@ object_draft_schematic_clothing_clothing_armor_clonetrooper_boots_crafted = obje
    contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 
-   targetTemplate = "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_boots.iff",
+   targetTemplate = "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_neutral_s01_boots.iff",
 
    additionalTemplates = {
              }
