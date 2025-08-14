@@ -28,7 +28,7 @@ object_draft_schematic_clothing_clothing_armor_clonetrooper_utility_belt_crafted
    contribution = {100, 100, 100},
 
 
-   targetTemplate = "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_neutral_s01_belt.iff",
+   targetTemplate = "object/tangible/wearables/armor/clone_trooper/armor_clone_trooper_imperial_s01_belt.iff",
 
    additionalTemplates = {
              }
