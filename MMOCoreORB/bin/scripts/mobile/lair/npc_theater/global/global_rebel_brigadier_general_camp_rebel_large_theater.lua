@@ -1,10 +1,10 @@
 global_rebel_brigadier_general_camp_rebel_large_theater = Lair:new {
 	mobiles = {
-		{"rebel_brigadier_general",1},
-		{"rebel_major",1},
-		{"rebel_first_lieutenant",2}
+		{"rebel_brigadier_general",3},
+		{"rebel_major",3},
+		{"rebel_first_lieutenant",6}
 	},
-	spawnLimit = 15,
+	spawnLimit = 32,
 	buildingsVeryEasy = {"object/building/poi/anywhere_rebel_camp_large_1.iff"},
 	buildingsEasy = {"object/building/poi/anywhere_rebel_camp_large_1.iff"},
 	buildingsMedium = {"object/building/poi/anywhere_rebel_camp_large_1.iff"},
