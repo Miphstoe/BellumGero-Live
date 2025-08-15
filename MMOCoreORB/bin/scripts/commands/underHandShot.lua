@@ -56,7 +56,7 @@ UnderHandShotCommand = {
 		{ "knockdownRecovery", "lastKnockdown" }, 
 		{ "knockdown_defense" }, 
 		{},
-		85, 
+		115, 
 		0, 
 		0 
 	  )
@@ -67,7 +67,7 @@ UnderHandShotCommand = {
 
 	combatSpam = "underhandshot",
 	
-	weaponType = CARBINEWEAPON,
+	weaponType = PISTOLWEAPON + CARBINEWEAPON,
 
 	range = -1
 }
