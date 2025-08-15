@@ -44,11 +44,12 @@
 ConfusionShotCommand = {
         name = "confusionshot",
 
-	damageMultiplier = 3.0,
-	speedMultiplier = 2.3,
+	damageMultiplier = 3.5,
+	speedMultiplier = 2.5,
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
 	mindCostMultiplier = 1,
+	accuracyBonus = 25,
 
 	stateEffects = {
 	  StateEffect( 
@@ -76,7 +77,7 @@ ConfusionShotCommand = {
 
 	combatSpam = "confusionshot",
 	
-	weaponType = CARBINEWEAPON,
+	weaponType = PISTOLWEAPON + CARBINEWEAPON,
 
 	range = -1
 }

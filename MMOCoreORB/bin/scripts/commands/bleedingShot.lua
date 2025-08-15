@@ -44,17 +44,15 @@
 BleedingShotCommand = {
         name = "bleedingshot",
 
-	damageMultiplier = 2.0,
+	damageMultiplier = 3.0,
 	speedMultiplier = 1.5,
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
 	mindCostMultiplier = 1,
-
+	accuracyBonus = 25,
 	animation = "fire_3_single", 
 	animType = GENERATE_RANGED,
-
 	combatSpam = "bleedingshot",
-
 	dotEffects = {
 	  DotEffect( 
 		BLEEDING, 
@@ -63,13 +61,11 @@ BleedingShotCommand = {
 		true,
 		0,
 		100,
-		30, 
-		30
+		0, 
+		40
 	  )
 	},
-	
-	weaponType = PISTOLWEAPON,
-
+	weaponType = PISTOLWEAPON + CARBINEWEAPON,
 	range = -1
 }
 

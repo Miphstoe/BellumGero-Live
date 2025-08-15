@@ -44,20 +44,20 @@
 FullAutoArea2Command = {
         name = "fullautoarea2",
 
-	damageMultiplier = 2.0,
+	damageMultiplier = 3.0,
 	speedMultiplier = 1.5,
 	healthCostMultiplier = 2.5,
 	actionCostMultiplier = 2.5,
 	mindCostMultiplier = 0.5,
-	accuracyBonus = 25,
+	accuracyBonus = 35,
 
 	animation = "fire_area",
 	animType = GENERATE_INTENSITY,
 
 	combatSpam = "a_auto",
 
-	coneAngle = 30,
-	coneAction = true,
+	areaAction = true,
+	areaRange = 32,
 
 	stateEffects = {
 	  StateEffect( 
@@ -65,7 +65,7 @@ FullAutoArea2Command = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" }, 
-		30, 
+		85, 
 		0, 
 		30 
 	  ),
@@ -74,7 +74,7 @@ FullAutoArea2Command = {
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		30, 
+		85, 
 		0, 
 		40 
 	  ),
@@ -83,7 +83,7 @@ FullAutoArea2Command = {
 		{}, 
 		{ "stun_defense" }, 
 		{ "jedi_state_defense", "resistance_states" }, 
-		30, 
+		85, 
 		0, 
 		30 
 	  )
