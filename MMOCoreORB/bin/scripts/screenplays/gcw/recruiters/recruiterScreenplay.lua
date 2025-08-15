@@ -152,6 +152,11 @@ function recruiterScreenplay:isSchematic(faction, strItem)
 	return factionRewardData.schematic[strItem] ~= nil
 end
 
+function recruiterScreenplay:isLootSchematic(faction, strItem)
+	local factionRewardData = self:getFactionDataTable(faction)
+	return factionRewardData.lootSchematics ~= nil and factionRewardData.lootSchematics[strItem] ~= nil
+end
+
 function recruiterScreenplay:getWeaponsArmorOptions(faction, gcwDiscount, smugglerDiscount)
 	local optionsTable = { }
 	local factionRewardData = self:getFactionDataTable(faction)
@@ -242,6 +247,39 @@ function recruiterScreenplay:getSchematicOptions(faction, gcwDiscount, smugglerD
 	return optionsTable
 end
 
+function recruiterScreenplay:getLootSchematicOptions(faction, gcwDiscount, smugglerDiscount)
+	local optionsTable = { }
+	local factionRewardData = self:getFactionDataTable(faction)
+
+	if factionRewardData.lootSchematicList == nil then
+		return optionsTable
+	end
+
+	for i = 1, #factionRewardData.lootSchematicList, 1 do
+		local key = factionRewardData.lootSchematicList[i]
+		local d = factionRewardData.lootSchematics and factionRewardData.lootSchematics[key]
+		if d and d.display and d.cost then
+			local cost = math.ceil(d.cost * gcwDiscount * smugglerDiscount)
+
+			-- Build a safe label that works even if server can't localize stringIds
+			local label = d.display
+			if type(label) == "string" and string.sub(label,1,1) == "@" then
+				local loc = getStringId(label)
+				if loc ~= nil and loc ~= "" then
+					label = loc
+				else
+					local _, keypart = string.match(label, "^@([^:]+):(.*)$")
+					label = keypart or label
+				end
+			end
+
+			table.insert(optionsTable, { (label .. " (Cost: " .. cost .. ")"), 0 })
+		end
+	end
+
+	return optionsTable
+end
+
 function recruiterScreenplay:getUniformsOptions(faction, gcwDiscount, smugglerDiscount)
 	local optionsTable = { }
 	local factionRewardData = self:getFactionDataTable(faction)
@@ -272,6 +310,8 @@ function recruiterScreenplay:getItemCost(faction, itemString)
 		return factionRewardData.hirelings[itemString].cost
 	elseif self:isSchematic(faction, itemString) and factionRewardData.schematic[itemString].cost ~= nil then
 		return factionRewardData.schematic[itemString].cost
+	elseif self:isLootSchematic(faction, itemString) and factionRewardData.lootSchematics[itemString].cost ~= nil then
+		return factionRewardData.lootSchematics[itemString].cost	
 	end
 	return nil
 end
@@ -290,6 +330,8 @@ function recruiterScreenplay:getTemplatePath(faction, itemString)
 		return factionRewardData.hirelings[itemString].item
 	elseif self:isSchematic(faction, itemString) then
 		return factionRewardData.schematic[itemString].item
+	elseif self:isLootSchematic(faction, itemString) then
+		return factionRewardData.lootSchematics[itemString].item	
 	end
 	return nil
 end
@@ -306,6 +348,8 @@ function recruiterScreenplay:getDisplayName(faction, itemString)
 		return factionRewardData.installations[itemString].display
 	elseif self:isHireling(faction, itemString) then
 		return factionRewardData.hirelings[itemString].display
+	elseif self:isLootSchematic(faction, itemString) then
+		return factionRewardData.lootSchematics[itemString].display	
 	end
 	return nil
 end
@@ -374,6 +418,8 @@ function recruiterScreenplay:sendPurchaseSui(pNpc, pPlayer, screenID, gcwDiscoun
 		options = self:getHirelingsOptions(faction, gcwDiscount, smugglerDiscount)
 	elseif screenID == "fp_schematics" then
 		options = self:getSchematicOptions(faction, gcwDiscount, smugglerDiscount)
+	elseif screenID == "fp_loot_schematics" then
+		options = self:getLootSchematicOptions(faction, gcwDiscount, smugglerDiscount)	
 	end
 
 	suiManager:sendListBox(pNpc, pPlayer, "@faction_recruiter:faction_purchase", "@faction_recruiter:select_item_purchase", 2, "@cancel", "", "@ok", "recruiterScreenplay", "handleSuiPurchase", 32, options)
@@ -754,6 +800,8 @@ function recruiterScreenplay:getItemListTable(faction, screenID)
 		return dataTable.hirelingList
 	elseif screenID == "fp_schematics" then
 		return dataTable.schematicList
+	elseif screenID == "fp_loot_schematics" then
+		return dataTable.lootSchematicList	
 	end
 end
 
