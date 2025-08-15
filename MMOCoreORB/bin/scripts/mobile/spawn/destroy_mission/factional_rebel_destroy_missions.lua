@@ -178,20 +178,20 @@ factional_rebel_destroy_missions = {
 		},
 		{
 			lairTemplateName = "global_imperial_stormtrooper_camp2_imperial_small_theater",
-			minDifficulty = 25,
-			maxDifficulty = 29,
+			minDifficulty = 40,
+			maxDifficulty = 40,
 			size = 25,
 		},
 		{
 			lairTemplateName = "global_imperial_stormtrooper_camp_imperial_large_theater",
-			minDifficulty = 25,
-			maxDifficulty = 29,
+			minDifficulty = 45,
+			maxDifficulty = 45,
 			size = 25,
 		},
 		{
 			lairTemplateName = "global_imperial_stormtrooper_camp2_imperial_large_theater",
-			minDifficulty = 25,
-			maxDifficulty = 32,
+			minDifficulty = 50,
+			maxDifficulty = 50,
 			size = 25,
 		},
 	}
