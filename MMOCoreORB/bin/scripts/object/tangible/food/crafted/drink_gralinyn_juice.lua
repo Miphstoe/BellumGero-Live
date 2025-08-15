@@ -44,7 +44,7 @@
 object_tangible_food_crafted_drink_gralinyn_juice = object_tangible_food_crafted_shared_drink_gralinyn_juice:new {
 	templateType = CONSUMABLE,
 
-	duration = 10,
+	duration = 1000,
 	filling = 10,
 	nutrition = 10,
 
@@ -59,7 +59,7 @@ object_tangible_food_crafted_drink_gralinyn_juice = object_tangible_food_crafted
 	quantityMin = 6,
 	quantityMax = 12,
 
-	modifiers = { "creature_hit_bonus", 0 },
+	modifiers = { "jedi_force_power_regen", 0 },
 
 	buffName = "food.drink_gralinyn_juice",
 	buffCRC = 0,
