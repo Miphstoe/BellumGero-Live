@@ -664,6 +664,26 @@ int CombatManager::doTargetCombatAction(TangibleObject* attacker, WeaponObject* 
 int CombatManager::tanoTargetCombatAction(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defenderObject, DefenderHitList* targetHitList, const CreatureAttackData& data) const {
 	if (defenderObject == nullptr || !defenderObject->isAttackableBy(attacker))
 		return 0;
+	// Block player-vs-player via pets/installations when either is in a safe interior
+CreatureObject* owningAttacker = nullptr;
+if (attacker->isCreatureObject()) {
+    CreatureObject* ac = attacker->asCreatureObject();
+    if (ac != nullptr) {
+        owningAttacker = ac;
+if (ac && ac->isPet()) {
+    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get(); // strong ref
+    owningAttacker = ownerRef.get();                                            // raw pointer
+}
+    }
+}
+
+if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
+    defenderObject->isPlayerCreature() &&
+    (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(defenderObject))) {
+    return 0;
+}
+
+
 
 	if (defenderObject->isEntertaining()) {
 		defenderObject->stopEntertaining();
@@ -1061,6 +1081,31 @@ Reference<SortedVector<ManagedReference<TangibleObject*>>*> CombatManager::getAr
 			SceneObject* object = static_cast<SceneObject*>(closeObjects.get(i));
 
 			TangibleObject* tano = object->asTangibleObject();
+			// --- SAFE INTERIOR PvP BLOCK (AOE/cone target filtering) ---
+if (tano->isCreatureObject()) {
+    CreatureObject* tCre = tano->asCreatureObject();
+
+    // Resolve the real (player) attacker if possible
+    CreatureObject* owningAttacker = nullptr;
+    if (attacker->isCreatureObject()) {
+        CreatureObject* ac = attacker->asCreatureObject();
+        if (ac != nullptr) {
+            owningAttacker = ac;
+if (ac && ac->isPet()) {
+    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get();
+    owningAttacker = ownerRef.get();
+}
+        }
+    }
+
+    if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
+        tCre != nullptr && tCre->isPlayerCreature() &&
+        (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(tCre))) {
+        continue; // skip PvP targets in safe interiors
+    }
+}
+
+
 
 			if (tano == nullptr) {
 				continue;
@@ -2742,6 +2787,26 @@ float CombatManager::doObjectDetonation(TangibleObject* attackerTanO, CreatureOb
 	if (defender->isInvulnerable()) {
 		return 0;
 	}
+// Block player-vs-player explosive damage if either is inside a safe interior
+CreatureObject* owningAttacker = nullptr;
+if (attackerTanO->isCreatureObject()) {
+    CreatureObject* ac = attackerTanO->asCreatureObject();
+    if (ac != nullptr) {
+        owningAttacker = ac;
+if (ac && ac->isPet()) {
+    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get();
+    owningAttacker = ownerRef.get();
+}
+
+    }
+}
+
+if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
+    defender->isPlayerCreature() &&
+    (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(defender))) {
+    return 0.f;
+}
+
 
 	int armorPiercing = 0;
 
