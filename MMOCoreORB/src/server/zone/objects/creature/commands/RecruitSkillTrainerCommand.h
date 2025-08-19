@@ -83,6 +83,7 @@ public:
 		suiTrainerType->addMenuItem("@city/city:st_weaponsmith", 33);
 		suiTrainerType->addMenuItem("Shipwright (Trainer)", 34);
 		suiTrainerType->addMenuItem("Informant (BH - Level 3)", 35);
+		suiTrainerType->addMenuItem("Junk Dealer", 36);
 		
 
 		ghost->addSuiBox(suiTrainerType);

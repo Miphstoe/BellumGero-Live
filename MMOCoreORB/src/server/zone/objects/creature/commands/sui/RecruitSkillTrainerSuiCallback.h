@@ -165,6 +165,9 @@ public:
 				break;		
 
 		case 35: trainerTemplatePath = "trainer_informant_bh_l3";
+				break;		
+
+		case 36: trainerTemplatePath = "trainer_junkdealer";
 
 		}
 
