@@ -225,10 +225,10 @@ TatooineMosEspaScreenPlay = CityScreenPlay:new {
 		{"desert_demon",300,-2821.38,5,2432.95,176.513,0, ""},
 		{"desert_demon",300,-2861.27,5,2393.34,146.859,0, ""},
 		{"desert_demon",300,-2823.03,5,2448.69,64.4102,0, ""},
-		{"informant_npc_lvl_1",0,-2804,5,2237,315,0, ""},
-		{"informant_npc_lvl_1",0,-2836,5,2275,45,0, ""},
-		{"informant_npc_lvl_1",0,-2935,5,2393,90,0, ""},
-		{"informant_npc_lvl_2",0,-2879,5,2555,135,0, ""},
+		{"informant_npc_lvl_3",0,-2804,5,2237,315,0, ""},
+		{"informant_npc_lvl_3",0,-2836,5,2275,45,0, ""},
+		{"informant_npc_lvl_3",0,-2935,5,2393,90,0, ""},
+		{"informant_npc_lvl_3",0,-2879,5,2555,135,0, ""},
 
 		--Jawa's
 		{"jawa",300,-2930.03,5,2038.02,270.008,0, "conversation"},

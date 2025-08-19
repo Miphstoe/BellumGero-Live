@@ -92,7 +92,7 @@ RoriRestussScreenPlay = CityScreenPlay:new {
 
 		--misc
 		{"imperial_recruiter", 1, 5349, 80, 5617.6, 0, 0, ""},
-		{"informant_npc_lvl_1", 1, 5401, 80, 5857, 45, 0, ""},
+		{"informant_npc_lvl_3", 1, 5401, 80, 5857, 45, 0, ""},
 		{"informant_npc_lvl_3", 1, 5102, 79.98, 5652, 30, 0, ""},
 		{"junk_dealer", 1, 5353.8, 80, 5665.9, 180, 0, ""},
 		{"junk_dealer", 1, 5350.2, 81.3, 5484.8, -50, 0, ""},

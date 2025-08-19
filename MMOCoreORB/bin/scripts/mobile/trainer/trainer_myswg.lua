@@ -3,7 +3,7 @@ trainer_myswg = Creature:new {
 	--objectName = "@mob/creature_names:trainer_architect",
 --	randomNameType = NAME_GENERIC,
 --	randomNameTag = true,
-  customName = "mySWG Trainer", 
+  customName = "mySWG Vendor", 
 	faction = "",
 	level = 100,
 	chanceHit = 0.390000,
@@ -29,12 +29,13 @@ trainer_myswg = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {
-		"object/mobile/dressed_corsair_destroyer_hum_f.iff",
-		"object/mobile/dressed_corsair_destroyer_hum_m.iff",
+		"object/mobile/dressed_merchant_trainer_01.iff",
+		"object/mobile/dressed_merchant_trainer_02.iff",
+		"object/mobile/dressed_merchant_trainer_03.iff"
 	},
 	lootGroups = {},
 	weapons = {},
-	conversationTemplate = "myswgTrainerConvoTemplate",
+	conversationTemplate = "myswg_vendor_conv",
 	attacks = {}
 }
 CreatureTemplates:addCreatureTemplate(trainer_myswg,"trainer_myswg")

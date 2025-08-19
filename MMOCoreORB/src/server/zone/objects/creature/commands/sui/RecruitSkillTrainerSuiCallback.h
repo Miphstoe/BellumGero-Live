@@ -122,40 +122,49 @@ public:
 		case 20: trainerTemplatePath = "trainer_musician";
 				break;
 
-		case 21: trainerTemplatePath = "trainer_pistol";
+		case 21: trainerTemplatePath = "trainer_myswg";
+				break;		
+
+		case 22: trainerTemplatePath = "trainer_pistol";
 				break;
 
-		case 22: trainerTemplatePath = "trainer_polearm";
+		case 23: trainerTemplatePath = "trainer_polearm";
 				break;
 
-		case 23: trainerTemplatePath = "trainer_politician";
+		case 24: trainerTemplatePath = "trainer_politician";
 				break;
 
-		case 24: trainerTemplatePath = "trainer_ranger";
+		case 25: trainerTemplatePath = "trainer_ranger";
 				break;
 
-		case 25: trainerTemplatePath = "trainer_rifleman";
+		case 26: trainerTemplatePath = "trainer_rifleman";
 				break;
 
-		case 26: trainerTemplatePath = "trainer_scout";
+		case 27: trainerTemplatePath = "trainer_scout";
 				break;
 
-		case 27: trainerTemplatePath = "trainer_smuggler";
+		case 28: trainerTemplatePath = "trainer_smuggler";
 				break;
 
-		case 28: trainerTemplatePath = "trainer_squadleader";
+		case 29: trainerTemplatePath = "trainer_squadleader";
 				break;
 
-		case 29: trainerTemplatePath = "trainer_2hsword";
+		case 30: trainerTemplatePath = "trainer_2hsword";
 				break;
 
-		case 30: trainerTemplatePath = "trainer_tailor";
+		case 31: trainerTemplatePath = "trainer_tailor";
 				break;
 
-		case 31: trainerTemplatePath = "trainer_unarmed";
+		case 32: trainerTemplatePath = "trainer_unarmed";
 				break;
 
-		case 32: trainerTemplatePath = "trainer_weaponsmith";
+		case 33: trainerTemplatePath = "trainer_weaponsmith";
+				break;
+
+		case 34: trainerTemplatePath = "trainer_shipwright";
+				break;		
+
+		case 35: trainerTemplatePath = "trainer_informant_bh_l3";
 
 		}
 
