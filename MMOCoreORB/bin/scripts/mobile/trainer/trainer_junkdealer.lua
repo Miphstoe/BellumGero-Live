@@ -1,10 +1,11 @@
-
-trainer_myswg = Creature:new {
+trainer_junkdealer = Creature:new {
 	--objectName = "@mob/creature_names:trainer_architect",
 --	randomNameType = NAME_GENERIC,
 --	randomNameTag = true,
-  customName = "mySWG Vendor", 
+  customName = "Junk Dealer", 
 	faction = "",
+    planetMapCategory = "junkshop",
+	socialGroup = "townsperson",
 	level = 100,
 	chanceHit = 0.390000,
 	damageMin = 290,
@@ -29,13 +30,13 @@ trainer_myswg = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {
-		"object/mobile/dressed_merchant_trainer_01.iff",
-		"object/mobile/dressed_merchant_trainer_02.iff",
-		"object/mobile/dressed_merchant_trainer_03.iff"
+		"object/mobile/dressed_weaponsmith_trainer_01.iff",
+		"object/mobile/dressed_weaponsmith_trainer_02.iff",
+		"object/mobile/dressed_weaponsmith_trainer_03.iff"
 	},
 	lootGroups = {},
 	weapons = {},
-	conversationTemplate = "myswg_vendor_conv",
+	conversationTemplate = "junkDealerGenericConvoTemplate",
 	attacks = {}
 }
-CreatureTemplates:addCreatureTemplate(trainer_myswg,"trainer_myswg")
+CreatureTemplates:addCreatureTemplate(trainer_junkdealer,"trainer_junkdealer")

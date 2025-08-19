@@ -217,7 +217,7 @@ void BountyMissionObjectiveImplementation::updateMissionStatus(int informantLeve
 			startNpcTargetTask();
 		}
 
-		if (informantLevel == 1) {
+		if (informantLevel >= 1) {
 			updateWaypoint();
 		}
 		objectiveStatus = HASBIOSIGNATURESTATUS;

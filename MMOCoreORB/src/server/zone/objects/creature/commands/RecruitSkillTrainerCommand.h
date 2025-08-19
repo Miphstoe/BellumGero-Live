@@ -68,18 +68,23 @@ public:
 		suiTrainerType->addMenuItem("@city/city:st_medic", 18);
 		suiTrainerType->addMenuItem("@city/city:st_merchant", 19);
 		suiTrainerType->addMenuItem("@city/city:st_musician", 20);
-		suiTrainerType->addMenuItem("@city/city:st_pistol", 21);
-		suiTrainerType->addMenuItem("@city/city:st_polearm", 22);
-		suiTrainerType->addMenuItem("@city/city:st_politician", 23);
-		suiTrainerType->addMenuItem("@city/city:st_ranger", 24);
-		suiTrainerType->addMenuItem("@city/city:st_rifleman", 25);
-		suiTrainerType->addMenuItem("@city/city:st_scout", 26);
-		suiTrainerType->addMenuItem("@city/city:st_smuggler", 27);
-		suiTrainerType->addMenuItem("@city/city:st_squadleader", 28);
-		suiTrainerType->addMenuItem("@city/city:st_2hsword", 29);
-		suiTrainerType->addMenuItem("@city/city:st_tailor", 30);
-		suiTrainerType->addMenuItem("@city/city:st_unarmed", 31);
-		suiTrainerType->addMenuItem("@city/city:st_weaponsmith", 32);
+		suiTrainerType->addMenuItem("mySWG Vendor", 21);
+		suiTrainerType->addMenuItem("@city/city:st_pistol", 22);
+		suiTrainerType->addMenuItem("@city/city:st_polearm", 23);
+		suiTrainerType->addMenuItem("@city/city:st_politician", 24);
+		suiTrainerType->addMenuItem("@city/city:st_ranger", 25);
+		suiTrainerType->addMenuItem("@city/city:st_rifleman", 26);
+		suiTrainerType->addMenuItem("@city/city:st_scout", 27);
+		suiTrainerType->addMenuItem("@city/city:st_smuggler", 28);
+		suiTrainerType->addMenuItem("@city/city:st_squadleader", 29);
+		suiTrainerType->addMenuItem("@city/city:st_2hsword", 30);
+		suiTrainerType->addMenuItem("@city/city:st_tailor", 31);
+		suiTrainerType->addMenuItem("@city/city:st_unarmed", 32);
+		suiTrainerType->addMenuItem("@city/city:st_weaponsmith", 33);
+		suiTrainerType->addMenuItem("Shipwright (Trainer)", 34);
+		suiTrainerType->addMenuItem("Informant (BH - Level 3)", 35);
+		suiTrainerType->addMenuItem("Junk Dealer", 36);
+		
 
 		ghost->addSuiBox(suiTrainerType);
 		creature->sendMessage(suiTrainerType->generateMessage());

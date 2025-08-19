@@ -76,9 +76,9 @@ RoriNarmleScreenPlay = CityScreenPlay:new {
 		{"patron", 1, 7.7, 1.0, -8.2, -105, 4635491, ""},
 		{"patron", 1, -3.6, 1.0, -4.0, -35, 4635491, ""},
 		{"imperial_recruiter", 1, -5256, 80, -2256, 270, 0, ""},
-		{"informant_npc_lvl_1", 1, -5120, 80, -2269, 0, 0, ""},
-		{"informant_npc_lvl_1", 1, -5127, 80, -2266, 45, 0, ""},
-		{"informant_npc_lvl_1", 1, -5331, 80, -2233, 180, 0, ""},
+		{"informant_npc_lvl_3", 1, -5120, 80, -2269, 0, 0, ""},
+		{"informant_npc_lvl_3", 1, -5127, 80, -2266, 45, 0, ""},
+		{"informant_npc_lvl_3", 1, -5331, 80, -2233, 180, 0, ""},
 		{"junk_dender", 0, -5258, 80, -2213.58, -6, 0, ""},
 
 		{"junk_dealer", 0, -14.1, 1.1, 2.8, 127, 4615372, ""},

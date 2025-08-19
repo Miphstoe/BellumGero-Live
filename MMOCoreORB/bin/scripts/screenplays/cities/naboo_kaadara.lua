@@ -155,12 +155,12 @@ NabooKaadaraScreenPlay = CityScreenPlay:new {
 		{"gi_a_pei", 1, 5207.32, -192, 6681.31, 117, 0, "neutral"},
 
 		--misc
-		{"informant_npc_lvl_1", 1, 5042, -188, 6734, 0, 0, ""},
-		{"informant_npc_lvl_1", 1, 5199, -192, 6546, 0, 0, ""},
-		{"informant_npc_lvl_2", 1, 5410, -192, 6672, 225, 0, ""},
-		{"informant_npc_lvl_2", 1, 5075, -192, 6784, 0, 0, ""},
-		{"informant_npc_lvl_2", 1, 5261, -192, 6793, 90, 0, ""},
-		{"informant_npc_lvl_2", 1, 5084, -192, 6593, 225, 0, ""},
+		{"informant_npc_lvl_3", 1, 5042, -188, 6734, 0, 0, ""},
+		{"informant_npc_lvl_3", 1, 5199, -192, 6546, 0, 0, ""},
+		{"informant_npc_lvl_3", 1, 5410, -192, 6672, 225, 0, ""},
+		{"informant_npc_lvl_3", 1, 5075, -192, 6784, 0, 0, ""},
+		{"informant_npc_lvl_3", 1, 5261, -192, 6793, 90, 0, ""},
+		{"informant_npc_lvl_3", 1, 5084, -192, 6593, 225, 0, ""},
 		{"informant_npc_lvl_3", 1, 4999, -192, 6822, 270, 0, ""},
 		{"informant_npc_lvl_3", 1, 6.37977, -0.894992, 6.05897, 225, 64, ""},
 		{"informant_npc_lvl_3", 1, 5009, -192, 6652, 315, 0, ""},

@@ -37,8 +37,8 @@ TatooineMosTaikeScreenPlay = CityScreenPlay:new {
 		--misc
 		{"r3",60,4.9,-4.0,-5.6,171,1154128,"neutral"},
 		{"entertainer",120,-6.0,1.0,7.2,-96,1154123, "themepark_music_2"},
-		{"informant_npc_lvl_1", 1, 3775, 8.7, 2371, 180, 0, ""},
-		{"informant_npc_lvl_2", 1, 0.93374, 1.00421, 9.03511, 180, 1154123, ""},
+		{"informant_npc_lvl_3", 1, 3775, 8.7, 2371, 180, 0, ""},
+		{"informant_npc_lvl_3", 1, 0.93374, 1.00421, 9.03511, 180, 1154123, ""},
 		{"informant_npc_lvl_3", 1, -1.97807, -9.54192, 9.62469, -45, 1154131, ""},
 		{"junk_dealer", 1, 3902.19, 33, 2362.52, -97, 0, ""},
 		{"junk_nathan", 1, 3821.75, 17.51, 2343.11, 0, 0, ""}

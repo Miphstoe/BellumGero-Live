@@ -133,13 +133,13 @@ CorelliaBelaVistalScreenPlay = CityScreenPlay:new {
 		{"imperial_recruiter", 60,6718.8,315.0,-5804.6,-174,0, ""},
 
 		--Misc
-		{"informant_npc_lvl_1", 0, 20.9951, -0.894992, 21.3608, 100, 3375357, ""},
-		{"informant_npc_lvl_1", 0, 6687, 315, -5594, 0, 0, ""},
-		{"informant_npc_lvl_1", 0, 6733, 314.9, -5609, 90, 0, ""},
-		{"informant_npc_lvl_1", 0, 6832, 315, -5545, 270, 0, ""},
-		{"informant_npc_lvl_1", 0, 6901, 330, -5606, 0, 0, ""},
-		{"informant_npc_lvl_2", 0, 6775, 315, -5487, 150, 0, ""},
-		{"informant_npc_lvl_2", 0, 6876, 330, -5466, 0, 0, ""},
+		{"informant_npc_lvl_3", 0, 20.9951, -0.894992, 21.3608, 100, 3375357, ""},
+		{"informant_npc_lvl_3", 0, 6687, 315, -5594, 0, 0, ""},
+		{"informant_npc_lvl_3", 0, 6733, 314.9, -5609, 90, 0, ""},
+		{"informant_npc_lvl_3", 0, 6832, 315, -5545, 270, 0, ""},
+		{"informant_npc_lvl_3", 0, 6901, 330, -5606, 0, 0, ""},
+		{"informant_npc_lvl_3", 0, 6775, 315, -5487, 150, 0, ""},
+		{"informant_npc_lvl_3", 0, 6876, 330, -5466, 0, 0, ""},
 		{"informant_npc_lvl_3", 0, 6860, 315, -5761, 45 ,0, ""},
 
 		--Trainers
