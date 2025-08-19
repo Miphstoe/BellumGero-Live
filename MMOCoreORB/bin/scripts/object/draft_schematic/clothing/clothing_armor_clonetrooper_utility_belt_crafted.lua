@@ -23,7 +23,7 @@ object_draft_schematic_clothing_clothing_armor_clonetrooper_utility_belt_crafted
    ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
    ingredientTitleNames = {"shell", "binding_and_reinforcement", "hardware"},
    ingredientSlotType = {0, 0, 1},
-   resourceTypes = {"copper_beyrllius", "hide_wooly", "object/tangible/component/clothing/shared_reinforced_fiber_panels.iff"},
+   resourceTypes = {"iron_kammris", "hide_wooly", "object/tangible/component/clothing/shared_reinforced_fiber_panels.iff"},
    resourceQuantities = {5, 5, 1},
    contribution = {100, 100, 100},
 
