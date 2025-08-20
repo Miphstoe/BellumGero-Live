@@ -110,7 +110,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) + 1250) then
 		recruiterScreenplay:grantBribe(pNpc, pPlayer, 100000, 1250)
 
-	elseif (screenID == "fp_furniture" or screenID == "fp_weapons_armor" or screenID == "fp_installations" or screenID == "fp_uniforms" or screenID == "fp_hirelings" or screenID == "fp_schematics") then
+	elseif (screenID == "fp_furniture" or screenID == "fp_weapons_armor" or screenID == "fp_installations" or screenID == "fp_uniforms" or screenID == "fp_hirelings" or screenID == "fp_schematics" or screenID == "fp_loot_schematics") then
 		recruiterScreenplay:sendPurchaseSui(pNpc, pPlayer, screenID, getGCWDiscount(pPlayer))
 
 	elseif (screenID == "greet_neutral_start") then

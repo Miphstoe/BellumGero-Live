@@ -136,20 +136,20 @@ factional_imperial_destroy_missions = {
 		},
 		{
 			lairTemplateName = "global_rebel_brigadier_general_camp_rebel_large_theater",
-			minDifficulty = 20,
-			maxDifficulty = 25,
+			minDifficulty = 40,
+			maxDifficulty = 40,
 			size = 25,
 		},
 		{
 			lairTemplateName = "global_rebel_specforce_base_rebel_large_theater",
-			minDifficulty = 20,
-			maxDifficulty = 25,
+			minDifficulty = 45,
+			maxDifficulty = 45,
 			size = 25,
 		},
 		{
 			lairTemplateName = "global_rebel_patrol_camp2_rebel_small_theater",
-			minDifficulty = 23,
-			maxDifficulty = 27,
+			minDifficulty = 50,
+			maxDifficulty = 50,
 			size = 25,
 		},
 	}

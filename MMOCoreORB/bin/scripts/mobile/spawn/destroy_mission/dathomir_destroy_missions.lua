@@ -170,6 +170,12 @@ dathomir_destroy_missions = {
 			maxDifficulty = 125,
 			size = 25,
 		},
+		{
+			lairTemplateName = "dathomir_nightsister_elder_escort_neutral_none",
+			minDifficulty = 125,
+			maxDifficulty = 125,
+			size = 25,
+		},
 	}
 }
 

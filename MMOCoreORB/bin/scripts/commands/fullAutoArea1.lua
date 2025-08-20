@@ -56,8 +56,8 @@ FullAutoArea1Command = {
 
 	combatSpam = "areashot",
 
-	coneAngle = 30,
-	coneAction = true,
+	areaAction = true,
+	areaRange = 16,
 
 	stateEffects = {
 	  StateEffect( 
@@ -65,7 +65,7 @@ FullAutoArea1Command = {
 		{}, 
 		{ "dizzy_defense", "resistance_states" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		30, 
+		50, 
 		0, 
 		30 
 	  ),
@@ -74,7 +74,7 @@ FullAutoArea1Command = {
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		30, 
+		50, 
 		0, 
 		40 
 	  ),
@@ -83,7 +83,7 @@ FullAutoArea1Command = {
 		{}, 
 		{ "stun_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		30, 
+		50, 
 		0, 
 		30 
 	  )

@@ -44,7 +44,7 @@
 KnockdownFireCommand = {
         name = "knockdownfire",
 
-	damageMultiplier = 2.5,
+	damageMultiplier = 3.5,
 	speedMultiplier = 2.0,
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
@@ -56,7 +56,7 @@ KnockdownFireCommand = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		85, 
+		100, 
 		0, 
 		10 
 	  ),
@@ -65,7 +65,7 @@ KnockdownFireCommand = {
 		{ "knockdownRecovery", "lastKnockdown" }, 
 		{ "knockdown_defense" }, 
 		{},
-		85, 
+		115, 
 		0, 
 		0 
 	  )
@@ -76,7 +76,7 @@ KnockdownFireCommand = {
 
 	combatSpam = "knockdownfire",
 	
-	weaponType = CARBINEWEAPON,
+	weaponType = PISTOLWEAPON + CARBINEWEAPON,
 
 	range = -1
 }
