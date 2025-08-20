@@ -1082,9 +1082,10 @@ Reference<SortedVector<ManagedReference<TangibleObject*>>*> CombatManager::getAr
 
 			TangibleObject* tano = object->asTangibleObject();
 			// --- SAFE INTERIOR PvP BLOCK (AOE/cone target filtering) ---
-if (tano->isCreatureObject()) {
-    CreatureObject* tCre = tano->asCreatureObject();
-
+		if (tano != nullptr && tano->isCreatureObject()) {
+   			CreatureObject* creature = cast<CreatureObject*>(tano);
+    i		f (creature == nullptr)
+       		 continue;
     // Resolve the real (player) attacker if possible
     CreatureObject* owningAttacker = nullptr;
     if (attacker->isCreatureObject()) {
