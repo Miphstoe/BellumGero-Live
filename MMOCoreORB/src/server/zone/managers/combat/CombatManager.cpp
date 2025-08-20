@@ -1077,17 +1077,50 @@ Reference<SortedVector<ManagedReference<TangibleObject*>>*> CombatManager::getAr
 			zone->getInRangeObjects(attackerPos.getX(), 0, attackerPos.getY(), 128, &closeObjects, true);
 		}
 
-		for (int i = 0; i < closeObjects.size(); ++i) {
-			SceneObject* object = static_cast<SceneObject*>(closeObjects.get(i));
+		for (int i = 0; i < objects.size(); i++) {
+    SceneObject* tano = objects.get(i);
 
-			TangibleObject* tano = object->asTangibleObject();
-			// --- SAFE INTERIOR PvP BLOCK (AOE/cone target filtering) ---
-		// tano may be null or not a creature, so check before use
-		if (tano != nullptr && tano->isCreatureObject()) {
-    		CreatureObject* creature = cast<CreatureObject*>(tano);
-
-    		if (creature == nullptr)
+    // Skip if tano is null
+    if (tano == nullptr)
         continue;
+
+    // Only handle creatures
+    if (!tano->isCreatureObject())
+        continue;
+
+    CreatureObject* creature = cast<CreatureObject*>(tano);
+
+    if (creature == nullptr)
+        continue;
+
+    // Example: prevent PvP in safe zones
+    if (creature->isPlayerCreature() &&
+        (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(creature))) {
+        continue;
+    }
+
+    // Don’t hit attacker or defender
+    if (tano == attacker || tano == defenderObject)
+        continue;
+
+    // Must be attackable
+    if (!tano->isAttackableBy(attacker))
+        continue;
+
+    // Parent / cell checks
+    uint64 tarParentID = tano->getParentID();
+    if (tarParentID != 0) {
+        Reference<CellObject*> targetCell = tano->getParent().get().castTo<CellObject*>();
+        if (targetCell != nullptr) {
+            // whatever logic you already had here...
+        }
+    }
+
+    // Radius checks
+    float tanoRadiusSq = tano->getTemplateRadius() * tano->getTemplateRadius();
+    // ...
+}
+
 
     // existing logic using 'creature' goes here
 }
