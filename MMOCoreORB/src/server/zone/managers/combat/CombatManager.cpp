@@ -31,50 +31,8 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
-#include "server/zone/objects/scene/SceneObject.h"
-#include "server/zone/objects/cell/CellObject.h"
-
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
-// --- Safe-interior (no-PvP) detector for player-city civic buildings ---
-namespace {
-// True if the creature is inside a player-city Cantina or Medical/Hospital/Clinic
-static bool isInNoPvPInterior(CreatureObject* creo) {
-    if (creo == nullptr) return false;
-
-    SceneObject* parent = creo->getParent().get();
-    if (parent == nullptr || !parent->isCellObject()) return false;
-
-    CellObject* cell = cast<CellObject*>(parent);
-    if (cell == nullptr) return false;
-
-    ManagedReference<SceneObject*> buildingSo = cell->getParent();
-    if (buildingSo == nullptr || !buildingSo->isBuildingObject()) return false;
-
-    BuildingObject* building = cast<BuildingObject*>(buildingSo.get());
-    if (building == nullptr) return false;
-
-    const String tmplPath = building->getObjectTemplate()->getFullTemplateString();
-
-    // Civic player-city buildings live under "object/building/player/city/"
-    // (keep a fallback for older naming too)
-    if (!(tmplPath.contains("object/building/player/city/") ||
-          tmplPath.contains("object/building/player_city/"))) {
-        return false;
-    }
-
-    const bool isCantina  = tmplPath.contains("cantina");
-    const bool isMedical  = tmplPath.contains("medical")   ||
-                            tmplPath.contains("med_center") ||
-                            tmplPath.contains("medcenter")  ||
-                            tmplPath.contains("clinic")     ||
-                            tmplPath.contains("hospital");
-    return (isCantina || isMedical);
-}
-}
-
-
-
 
 /*
 * Notes:
@@ -87,95 +45,83 @@ static bool isInNoPvPInterior(CreatureObject* creo) {
 
 // Sets attackers mainDefender and puts both in combat
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) const {
-    if (attacker == defender) {
-        return false;
-    }
+	if (attacker == defender) {
+		return false;
+	}
 
-    if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
-        return false;
-    }
+	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
+		return false;
+	}
 
-    if (attacker->isRidingMount()) {
-        ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+	if (attacker->isRidingMount()) {
+		ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
 
-        if (parent == nullptr || !parent->isMount()) {
-            return false;
-        }
+		if (parent == nullptr || !parent->isMount()) {
+			return false;
+		}
 
-        if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
-            return false;
-        }
-    }
+		if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
+			return false;
+		}
+	}
 
-    if (attacker->hasRidingCreature()) {
-        return false;
-    }
+	if (attacker->hasRidingCreature()) {
+		return false;
+	}
 
-    // >>> NEW: hard-block player-vs-player combat if either player is inside a player-city Cantina/Medical Center
-    if (attacker->isPlayerCreature()) {
-        CreatureObject* defCreoStart = defender->asCreatureObject();
-        if (defCreoStart != nullptr && defCreoStart->isPlayerCreature()) {
-            if (isInNoPvPInterior(attacker) || isInNoPvPInterior(defCreoStart)) {
-                attacker->sendSystemMessage("PvP is disabled inside player-city Cantinas and Medical Centers.");
-                return false;
-            }
-        }
-    }
+	if (!defender->isAttackableBy(attacker)) {
+		return false;
+	}
 
-    if (!defender->isAttackableBy(attacker)) {
-        return false;
-    }
+	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+		return false;
+	}
 
-    if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
-        return false;
-    }
+	CreatureObject* creo = defender->asCreatureObject();
+	if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
+		if (allowIncapTarget) {
+			attacker->clearState(CreatureState::PEACE);
+			return true;
+		}
 
-    CreatureObject* creo = defender->asCreatureObject();
-    if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
-        if (allowIncapTarget) {
-            attacker->clearState(CreatureState::PEACE);
-            return true;
-        }
+		return false;
+	}
 
-        return false;
-    }
+	attacker->clearState(CreatureState::PEACE);
 
-    attacker->clearState(CreatureState::PEACE);
+	if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
+		ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
 
-    if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
-        ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
+		if (weapon != nullptr && weapon->isJediWeapon()) {
+			VisibilityManager::instance()->increaseVisibility(attacker, 25);
+		}
+	}
 
-        if (weapon != nullptr && weapon->isJediWeapon()) {
-            VisibilityManager::instance()->increaseVisibility(attacker, 25);
-        }
-    }
+	Locker clocker(defender, attacker);
 
-    Locker clocker(defender, attacker);
+	if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
+		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
 
-    if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
-        ManagedReference<WeaponObject*> weapon = creo->getWeapon();
+		if (weapon != nullptr && weapon->isJediWeapon()) {
+			VisibilityManager::instance()->increaseVisibility(creo, 25);
+		}
+	}
 
-        if (weapon != nullptr && weapon->isJediWeapon()) {
-            VisibilityManager::instance()->increaseVisibility(creo, 25);
-        }
-    }
+	attacker->setCombatState();
+	defender->setCombatState();
 
-    attacker->setCombatState();
-    defender->setCombatState();
+	attacker->setDefender(defender);
 
-    attacker->setDefender(defender);
+	if (defender->isCreatureObject()) {
+		ThreatMap* defenderThreatMap = defender->getThreatMap();
 
-    if (defender->isCreatureObject()) {
-        ThreatMap* defenderThreatMap = defender->getThreatMap();
+		if (defenderThreatMap != nullptr) {
+			defenderThreatMap->addDamage(attacker, 0);
+		}
+	}
 
-        if (defenderThreatMap != nullptr) {
-            defenderThreatMap->addDamage(attacker, 0);
-        }
-    }
-
-    return true;
+	return true;
 }
-
 
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
@@ -392,95 +338,81 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 */
 
-int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* tano,
-        SortedVector<DefenderHitList*>* targetDefenders, const CreatureAttackData& data,
-        bool* shouldGcwCrackdownTef, bool* shouldGcwTef, bool* shouldBhTef) const {
-    int damage = 0;
+int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* tano, SortedVector<DefenderHitList*>* targetDefenders, const CreatureAttackData& data, bool* shouldGcwCrackdownTef, bool* shouldGcwTef, bool* shouldBhTef) const {
+	int damage = 0;
 
-    Locker clocker(tano, attacker);
+	Locker clocker(tano, attacker);
 
-    if (!tano->isAttackableBy(attacker)) {
-        return -1;
-    }
+	if (!tano->isAttackableBy(attacker)) {
+		return -1;
+	}
 
-    if (targetDefenders == nullptr) {
-        return -1;
-    }
+	if (targetDefenders == nullptr) {
+		return -1;
+	}
 
-    // Block PvP if either player is inside a safe interior (player-city cantina or medical)
-    if (attacker->isPlayerCreature() && tano->isPlayerCreature()) {
-        CreatureObject* defCre = tano->asCreatureObject();
-        if (defCre != nullptr) {
-            if (isInNoPvPInterior(attacker) || isInNoPvPInterior(defCre)) {
-                // Silent fail; startCombat() handled the user message in the normal path.
-                return -1;
-            }
-        }
-    }
+	DefenderHitList* hitList = new DefenderHitList();
 
-    // Create and register a hit list entry for this defender
-    DefenderHitList* hitList = new DefenderHitList();
-    if (hitList == nullptr) {
-        return -1;
-    }
-    hitList->setDefender(tano);
-    targetDefenders->add(hitList);
+	if (hitList == nullptr) {
+		return -1;
+	}
 
-    if (tano->isCreatureObject()) {
-        CreatureObject* defender = tano->asCreatureObject();
+	// Add DefenderHitList to the targetDefenders Vector and set the defender to that list
+	hitList->setDefender(tano);
+	targetDefenders->add(hitList);
 
-        if (defender->getWeapon() == nullptr) {
-            return -1;
-        }
+	if (tano->isCreatureObject()) {
+		CreatureObject* defender = tano->asCreatureObject();
 
-        damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data,
-                                        shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
-    } else {
-        // Tangible (non-creature) target
-        int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
-        damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
+		if (defender->getWeapon() == nullptr) {
+			return -1;
+		}
 
-        // No accuracy/defense calc vs TanO; mark as HIT for spam/animation purposes
-        hitList->setHit(HIT);
+		damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data, shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
+	} else {
+		int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
 
-        // TEF update for covert/overt if applicable
-        bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
-        uint32 tanoFaction = tano->getFaction();
+		damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
 
-        if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 &&
-            attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
-            if (PlayerObject* ghost = attacker->getPlayerObject()) {
-                ghost->updateLastCombatActionTimestamp(false, true, false);
-            }
-        }
-    }
+		// No Accuracy / Defense Calculation for TanO defender. setHit to HIT value.
+		hitList->setHit(HIT);
 
-    // NPC reactions
-    if (damage > 0 && tano->isAiAgent()) {
-        AiAgent* aiAgent = cast<AiAgent*>(tano);
-        bool help = false;
+		bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
+		uint32 tanoFaction = tano->getFaction();
 
-        for (int i = 0; i < 9; i += 3) {
-            if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
-                help = true;
-                break;
-            }
-        }
+		if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 && attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
+			PlayerObject* ghost = attacker->getPlayerObject();
 
-        if (help)
-            aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
-        else
-            aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
-    }
+			if (ghost != nullptr) {
+				ghost->updateLastCombatActionTimestamp(false, true, false);
+			}
+		}
+	}
 
-    if (damage > -1 && attacker->isAiAgent()) {
-        AiAgent* aiAgent = cast<AiAgent*>(attacker);
-        aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
-    }
+	if (damage > 0 && tano->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(tano);
+		bool help = false;
 
-    return damage;
+		for (int i = 0; i < 9; i += 3) {
+			if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
+				help = true;
+				break;
+			}
+		}
+
+		if (help)
+			aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
+		else
+			aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
+	}
+
+	if (damage > -1 && attacker->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(attacker);
+		aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
+	}
+
+	return damage;
 }
-
 
 /*
 
@@ -664,26 +596,6 @@ int CombatManager::doTargetCombatAction(TangibleObject* attacker, WeaponObject* 
 int CombatManager::tanoTargetCombatAction(TangibleObject* attacker, WeaponObject* weapon, CreatureObject* defenderObject, DefenderHitList* targetHitList, const CreatureAttackData& data) const {
 	if (defenderObject == nullptr || !defenderObject->isAttackableBy(attacker))
 		return 0;
-	// Block player-vs-player via pets/installations when either is in a safe interior
-CreatureObject* owningAttacker = nullptr;
-if (attacker->isCreatureObject()) {
-    CreatureObject* ac = attacker->asCreatureObject();
-    if (ac != nullptr) {
-        owningAttacker = ac;
-if (ac && ac->isPet()) {
-    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get(); // strong ref
-    owningAttacker = ownerRef.get();                                            // raw pointer
-}
-    }
-}
-
-if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
-    defenderObject->isPlayerCreature() &&
-    (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(defenderObject))) {
-    return 0;
-}
-
-
 
 	if (defenderObject->isEntertaining()) {
 		defenderObject->stopEntertaining();
@@ -1077,75 +989,10 @@ Reference<SortedVector<ManagedReference<TangibleObject*>>*> CombatManager::getAr
 			zone->getInRangeObjects(attackerPos.getX(), 0, attackerPos.getY(), 128, &closeObjects, true);
 		}
 
-		for (int i = 0; i < objects.size(); i++) {
-    SceneObject* tano = objects.get(i);
+		for (int i = 0; i < closeObjects.size(); ++i) {
+			SceneObject* object = static_cast<SceneObject*>(closeObjects.get(i));
 
-    // Skip if tano is null
-    if (tano == nullptr)
-        continue;
-
-    // Only handle creatures
-    if (!tano->isCreatureObject())
-        continue;
-
-    CreatureObject* creature = cast<CreatureObject*>(tano);
-
-    if (creature == nullptr)
-        continue;
-
-    // Example: prevent PvP in safe zones
-    if (creature->isPlayerCreature() &&
-        (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(creature))) {
-        continue;
-    }
-
-    // Don’t hit attacker or defender
-    if (tano == attacker || tano == defenderObject)
-        continue;
-
-    // Must be attackable
-    if (!tano->isAttackableBy(attacker))
-        continue;
-
-    // Parent / cell checks
-    uint64 tarParentID = tano->getParentID();
-    if (tarParentID != 0) {
-        Reference<CellObject*> targetCell = tano->getParent().get().castTo<CellObject*>();
-        if (targetCell != nullptr) {
-            // whatever logic you already had here...
-        }
-    }
-
-    // Radius checks
-    float tanoRadiusSq = tano->getTemplateRadius() * tano->getTemplateRadius();
-    // ...
-}
-
-
-    // existing logic using 'creature' goes here
-}
-
-    // Resolve the real (player) attacker if possible
-    CreatureObject* owningAttacker = nullptr;
-    if (attacker->isCreatureObject()) {
-        CreatureObject* ac = attacker->asCreatureObject();
-        if (ac != nullptr) {
-            owningAttacker = ac;
-if (ac && ac->isPet()) {
-    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get();
-    owningAttacker = ownerRef.get();
-}
-        }
-    }
-
-    if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
-        tCre != nullptr && tCre->isPlayerCreature() &&
-        (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(tCre))) {
-        continue; // skip PvP targets in safe interiors
-    }
-}
-
-
+			TangibleObject* tano = object->asTangibleObject();
 
 			if (tano == nullptr) {
 				continue;
@@ -2827,26 +2674,6 @@ float CombatManager::doObjectDetonation(TangibleObject* attackerTanO, CreatureOb
 	if (defender->isInvulnerable()) {
 		return 0;
 	}
-// Block player-vs-player explosive damage if either is inside a safe interior
-CreatureObject* owningAttacker = nullptr;
-if (attackerTanO->isCreatureObject()) {
-    CreatureObject* ac = attackerTanO->asCreatureObject();
-    if (ac != nullptr) {
-        owningAttacker = ac;
-if (ac && ac->isPet()) {
-    ManagedReference<CreatureObject*> ownerRef = ac->getLinkedCreature().get();
-    owningAttacker = ownerRef.get();
-}
-
-    }
-}
-
-if (owningAttacker != nullptr && owningAttacker->isPlayerCreature() &&
-    defender->isPlayerCreature() &&
-    (isInNoPvPInterior(owningAttacker) || isInNoPvPInterior(defender))) {
-    return 0.f;
-}
-
 
 	int armorPiercing = 0;
 
