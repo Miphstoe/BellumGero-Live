@@ -5,13 +5,13 @@ nightsister_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 2000000},
-		{groupTemplate = "clothing_attachments", weight = 2000000},
+		{groupTemplate = "armor_attachments", weight = 1750000},
+		{groupTemplate = "clothing_attachments", weight = 1750000},
 		{groupTemplate = "color_crystals", weight = 500000},
 		{groupTemplate = "nightsister_common", weight = 1700000},
 		{groupTemplate = "power_crystals", weight = 1000000},
-		{groupTemplate = "weapon_component", weight = 300000},
 		{groupTemplate = "weapon_component_advanced", weight = 2500000},
+		{groupTemplate = "nightsister_clothing_schematics", weight = 800000},
 	}
 }
 

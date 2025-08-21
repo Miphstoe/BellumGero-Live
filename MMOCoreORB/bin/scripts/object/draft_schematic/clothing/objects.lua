@@ -9694,6 +9694,55 @@ object_draft_schematic_clothing_shared_clothing_boots_field_34 = SharedDraftSche
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_boots_field_34, "object/draft_schematic/clothing/shared_clothing_boots_field_34.iff")
 
+object_draft_schematic_clothing_shared_clothing_boots_nightsister = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_boots_nightsister.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 862910034,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_boots_nightsister, "object/draft_schematic/clothing/shared_clothing_boots_nightsister.iff")
+
 object_draft_schematic_clothing_shared_clothing_bustier_casual_01 = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_bustier_casual_01.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
@@ -11066,6 +11115,55 @@ object_draft_schematic_clothing_shared_clothing_dress_formal_35 = SharedDraftSch
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_dress_formal_35, "object/draft_schematic/clothing/shared_clothing_dress_formal_35.iff")
 
+object_draft_schematic_clothing_shared_clothing_dress_nightsister = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_dress_nightsister.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 4980410,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_dress_nightsister, "object/draft_schematic/clothing/shared_clothing_dress_nightsister.iff")
+
 object_draft_schematic_clothing_shared_clothing_gloves_casual_03 = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_gloves_casual_03.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
@@ -11898,6 +11996,153 @@ object_draft_schematic_clothing_shared_clothing_hat_formal_13 = SharedDraftSchem
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_hat_formal_13, "object/draft_schematic/clothing/shared_clothing_hat_formal_13.iff")
+
+object_draft_schematic_clothing_shared_clothing_hat_nightsister_s01 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s01.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 1205434404,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_hat_nightsister_s01, "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s01.iff")
+
+object_draft_schematic_clothing_shared_clothing_hat_nightsister_s02 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s02.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 1205434404,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_hat_nightsister_s02, "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s02.iff")
+
+object_draft_schematic_clothing_shared_clothing_hat_nightsister_s03 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s03.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 1205434404,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_hat_nightsister_s03, "object/draft_schematic/clothing/shared_clothing_hat_nightsister_s03.iff")
 
 object_draft_schematic_clothing_shared_clothing_hat_twilek_casual_01 = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_hat_twilek_casual_01.iff"
@@ -21307,6 +21552,104 @@ object_draft_schematic_clothing_shared_clothing_pants_formal_38 = SharedDraftSch
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_pants_formal_38, "object/draft_schematic/clothing/shared_clothing_pants_formal_38.iff")
 
+object_draft_schematic_clothing_shared_clothing_pants_nightsister_s01 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_pants_nightsister_s01.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 1585164335,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_pants_nightsister_s01, "object/draft_schematic/clothing/shared_clothing_pants_nightsister_s01.iff")
+
+object_draft_schematic_clothing_shared_clothing_pants_nightsister_s02 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_pants_nightsister_s02.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 1585164335,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_pants_nightsister_s02, "object/draft_schematic/clothing/shared_clothing_pants_nightsister_s02.iff")
+
 object_draft_schematic_clothing_shared_clothing_quest_jacket_rebel_pilot = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_quest_jacket_rebel_pilot.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
@@ -22874,6 +23217,153 @@ object_draft_schematic_clothing_shared_clothing_shirt_formal_32 = SharedDraftSch
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_shirt_formal_32, "object/draft_schematic/clothing/shared_clothing_shirt_formal_32.iff")
+
+object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s01 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s01.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 2531031782,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s01, "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s01.iff")
+
+object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s02 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s02.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 2531031782,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s02, "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s02.iff")
+
+object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s03 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s03.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/arrangement_datapad.iff",
+
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 2049,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 0,
+	collisionActionPassFlags = 0,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 0,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 0,
+
+	detailedDescription = "string_id_table",
+
+	gameObjectType = 2049,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "string_id_table",
+	onlyVisibleInTools = 0,
+
+	portalLayoutFilename = "",
+
+	scale = 0,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 0,
+	surfaceType = 0,
+
+	totalCellNumber = 0,
+
+	clientObjectCRC = 2531031782,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/intangible/base/shared_base_intangible.iff", "object/draft_schematic/base/shared_base_draft_schematic.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_shirt_nightsister_s03, "object/draft_schematic/clothing/shared_clothing_shirt_nightsister_s03.iff")
 
 object_draft_schematic_clothing_shared_clothing_shoes_casual_02 = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_shoes_casual_02.iff"
