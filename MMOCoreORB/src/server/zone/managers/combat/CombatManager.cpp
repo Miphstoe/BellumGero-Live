@@ -81,6 +81,33 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 
 	// 🚫 NEW SAFE ZONE CHECK (Cantinas, Hospitals, Medical Centers)
 	if (SafeZoneManager::isInSafeBuilding(attacker) || SafeZoneManager::isInSafeBuilding(defender)) {
+
+	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
+		return false;
+	}
+
+	if (attacker->isRidingMount()) {
+		ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+
+		if (parent == nullptr || !parent->isMount()) {
+			return false;
+		}
+
+		if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
+			return false;
+		}
+	}
+
+	if (attacker->hasRidingCreature()) {
+		return false;
+	}
+
+	if (!defender->isAttackableBy(attacker)) {
+		return false;
+	}
+
+	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+
 		return false;
 	}
 
@@ -129,7 +156,6 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 
 	return true;
 }
-
 
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
@@ -426,7 +452,80 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 
     return damage;
 }
+	int damage = 0;
 
+	Locker clocker(tano, attacker);
+
+	if (!tano->isAttackableBy(attacker)) {
+		return -1;
+	}
+
+	if (targetDefenders == nullptr) {
+		return -1;
+	}
+
+	DefenderHitList* hitList = new DefenderHitList();
+
+	if (hitList == nullptr) {
+		return -1;
+	}
+
+	// Add DefenderHitList to the targetDefenders Vector and set the defender to that list
+	hitList->setDefender(tano);
+	targetDefenders->add(hitList);
+
+	if (tano->isCreatureObject()) {
+		CreatureObject* defender = tano->asCreatureObject();
+
+		if (defender->getWeapon() == nullptr) {
+			return -1;
+		}
+
+		damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data, shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
+	} else {
+		int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
+
+		damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
+
+		// No Accuracy / Defense Calculation for TanO defender. setHit to HIT value.
+		hitList->setHit(HIT);
+
+		bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
+		uint32 tanoFaction = tano->getFaction();
+
+		if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 && attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
+			PlayerObject* ghost = attacker->getPlayerObject();
+
+			if (ghost != nullptr) {
+				ghost->updateLastCombatActionTimestamp(false, true, false);
+			}
+		}
+	}
+
+	if (damage > 0 && tano->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(tano);
+		bool help = false;
+
+		for (int i = 0; i < 9; i += 3) {
+			if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
+				help = true;
+				break;
+			}
+		}
+
+		if (help)
+			aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
+		else
+			aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
+	}
+
+	if (damage > -1 && attacker->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(attacker);
+		aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
+	}
+
+	return damage;
+}
 
 /*
 
