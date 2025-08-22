@@ -31,6 +31,8 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
+
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
@@ -74,6 +76,38 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 	}
 
 	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+		return false;
+	}
+
+	// 🚫 NEW SAFE ZONE CHECK (Cantinas, Hospitals, Medical Centers)
+	if (SafeZoneManager::isInSafeBuilding(attacker) || SafeZoneManager::isInSafeBuilding(defender)) {
+
+	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
+		return false;
+	}
+
+	if (attacker->isRidingMount()) {
+		ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+
+		if (parent == nullptr || !parent->isMount()) {
+			return false;
+		}
+
+		if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
+			return false;
+		}
+	}
+
+	if (attacker->hasRidingCreature()) {
+		return false;
+	}
+
+	if (!defender->isAttackableBy(attacker)) {
+		return false;
+	}
+
+	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+
 		return false;
 	}
 
@@ -339,6 +373,85 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 */
 
 int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* tano, SortedVector<DefenderHitList*>* targetDefenders, const CreatureAttackData& data, bool* shouldGcwCrackdownTef, bool* shouldGcwTef, bool* shouldBhTef) const {
+    int damage = 0;
+
+    Locker clocker(tano, attacker);
+
+    if (!tano->isAttackableBy(attacker)) {
+        return -1;
+    }
+
+    if (targetDefenders == nullptr) {
+        return -1;
+    }
+
+    // 🚫 SAFE ZONE CHECK (Hospitals, Medical Centers, Cantinas)
+    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
+        return -1; // Block combat action entirely
+    }
+
+    DefenderHitList* hitList = new DefenderHitList();
+
+    if (hitList == nullptr) {
+        return -1;
+    }
+
+    // Add DefenderHitList to the targetDefenders Vector and set the defender to that list
+    hitList->setDefender(tano);
+    targetDefenders->add(hitList);
+
+    if (tano->isCreatureObject()) {
+        CreatureObject* defender = tano->asCreatureObject();
+
+        if (defender->getWeapon() == nullptr) {
+            return -1;
+        }
+
+        damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data, shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
+    } else {
+        int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
+
+        damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
+
+        // No Accuracy / Defense Calculation for TanO defender. setHit to HIT value.
+        hitList->setHit(HIT);
+
+        bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
+        uint32 tanoFaction = tano->getFaction();
+
+        if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 && attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
+            PlayerObject* ghost = attacker->getPlayerObject();
+
+            if (ghost != nullptr) {
+                ghost->updateLastCombatActionTimestamp(false, true, false);
+            }
+        }
+    }
+
+    if (damage > 0 && tano->isAiAgent()) {
+        AiAgent* aiAgent = cast<AiAgent*>(tano);
+        bool help = false;
+
+        for (int i = 0; i < 9; i += 3) {
+            if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
+                help = true;
+                break;
+            }
+        }
+
+        if (help)
+            aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
+        else
+            aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
+    }
+
+    if (damage > -1 && attacker->isAiAgent()) {
+        AiAgent* aiAgent = cast<AiAgent*>(attacker);
+        aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
+    }
+
+    return damage;
+}
 	int damage = 0;
 
 	Locker clocker(tano, attacker);
@@ -1593,25 +1706,33 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 		}
 	}
 
-	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
-	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
+	    int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
+    defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
-	if (attacker->isPlayerCreature()) {
-		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
-	}
+    if (attacker->isPlayerCreature()) {
+        showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
+    }
 
-	defenderHitList->setInitialDamage(logDamage);
-	defenderHitList->setHitLocation(hitLocation);
-	defenderHitList->setFoodMitigation(totalFoodMit);
-	defenderHitList->setPoolsToWound(poolsToWound);
+    defenderHitList->setInitialDamage(logDamage);
+    defenderHitList->setHitLocation(hitLocation);
+    defenderHitList->setFoodMitigation(totalFoodMit);
+    defenderHitList->setPoolsToWound(poolsToWound);
 
 #ifdef DEBUG_SPILL_DAMAGE
-	spillOverDebug << " ========== END Spill Over Debug ==========\n";
-	attacker->info(true) << spillOverDebug.toString();
+    spillOverDebug << " ========== END Spill Over Debug ==========\n";
+    attacker->info(true) << spillOverDebug.toString();
 #endif
 
-	return totalDamage;
+    // ========= SAFE ZONE CHECK =========
+    // Prevent applying combat damage if either attacker or defender is in a safe zone
+    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
+        return -1;
+    }
+    // ===================================
+
+    return totalDamage;
 }
+
 
 int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* defender, DefenderHitList* defenderHitList, int poolsToDamage, const CreatureAttackData& data) const {
 	if (defender == nullptr || defenderHitList == nullptr || poolsToDamage == 0) {
