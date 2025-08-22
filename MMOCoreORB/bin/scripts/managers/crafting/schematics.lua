@@ -1184,6 +1184,7 @@ schematics = {
 	{path="object/draft_schematic/weapon/lance_vibro_controller_fp.iff"},
 	{path="object/draft_schematic/weapon/baton_gaderiffi.iff"},
 	{path="object/draft_schematic/weapon/battleaxe.iff"},
+	{path="object/draft_schematic/weapon/blasterfist.iff"},
 	{path="object/draft_schematic/weapon/knuckler_vibro.iff"},
 	{path="object/draft_schematic/weapon/sword_curved.iff"},
 	{path="object/draft_schematic/weapon/component/sword_core_advanced.iff"},
