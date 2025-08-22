@@ -6,6 +6,8 @@
 #define THROWGRENADECOMMAND_H_
 
 #include "engine/core/TaskManager.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
+
 
 class ThrowGrenadeCommand : public CombatQueueCommand {
 public:
