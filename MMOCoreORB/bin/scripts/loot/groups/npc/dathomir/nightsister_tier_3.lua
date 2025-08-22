@@ -11,11 +11,12 @@ nightsister_tier_3 = {
 		{groupTemplate = "melee_weapons", weight = 2300000},
 		{groupTemplate = "nightsister_common", weight = 1850000},
 		{groupTemplate = "power_crystals", weight = 400000},
-		{groupTemplate = "ranged_weapons", weight = 2800000},
+		{groupTemplate = "ranged_weapons", weight = 2400000},
 		{groupTemplate = "tailor_components", weight = 400000},
 		{groupTemplate = "wearables_common", weight = 400000},
 		{groupTemplate = "crafting_component", weight = 175000},
 		{groupTemplate = "crafting_component_advanced", weight = 175000},
+		{groupTemplate = "nightsister_clothing_schematics", weight = 400000},
 	}
 }
 
