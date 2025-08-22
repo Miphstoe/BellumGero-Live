@@ -479,7 +479,7 @@ includeFile("items/loot_kit/sculpture_structure_6.lua")
 includeFile("items/loot_kit/sculpture_structure_7.lua")
 
 --loot_schematic sub-folder
-includeFile("items/loot_schematic/blasterfist.lua")
+includeFile("items/loot_schematic/blasterfist_schematic.lua")
 includeFile("items/loot_schematic/bounty_hunter_belt_schematic.lua")
 includeFile("items/loot_schematic/bounty_hunter_boots_schematic.lua")
 includeFile("items/loot_schematic/bounty_hunter_gloves_schematic.lua")
