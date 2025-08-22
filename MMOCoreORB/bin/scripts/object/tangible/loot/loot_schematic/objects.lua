@@ -277,6 +277,12 @@ object_tangible_loot_loot_schematic_shared_basket_closed_schematic = SharedTangi
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_basket_closed_schematic, "object/tangible/loot/loot_schematic/shared_basket_closed_schematic.iff")
 
+object_tangible_loot_loot_schematic_shared_blasterfist_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_blasterfist_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_blasterfist_schematic, "object/tangible/loot/loot_schematic/shared_blasterfist_schematic.iff")
+
 object_tangible_loot_loot_schematic_shared_bottle_fat_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_bottle_fat_schematic.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
