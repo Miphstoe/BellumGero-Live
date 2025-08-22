@@ -79,8 +79,8 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
-	// 🚫 NEW SAFE ZONE CHECK (Cantinas, Hospitals, Medical Centers)
-	if (SafeZoneManager::isInSafeBuilding(attacker) || SafeZoneManager::isInSafeBuilding(defender)) {
+	// 🚫 Safe-zone: block ALL combat if either party is inside a protected player-city building
+	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
 		return false;
 	}
 
@@ -131,6 +131,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 }
 
 
+
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
 	if (creature == nullptr)
@@ -158,7 +159,7 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 			SceneObject* mainDefender = threatTano->getMainDefender();
 
-			// If the defender is in range and is the maind defender of the creature, fail to peace
+			// If the defender is in range and is the main defender of the creature, fail to peace
 			if (creature->isInRange(threatTano, 128.f) && mainDefender != nullptr && mainDefender->getObjectID() == creatureID) {
 				return false;
 			}
@@ -169,6 +170,7 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 	return true;
 }
+
 
 // Called for AiAgents to break their combat state
 void CombatManager::forcePeace(CreatureObject* attacker) const {
@@ -204,6 +206,7 @@ void CombatManager::forcePeace(CreatureObject* attacker) const {
 
 	}, "ForcePeaceLambda", 250);
 }
+
 
 /*
 *
@@ -257,6 +260,13 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 					continue;
 				}
 
+				// 🚫 Safe-zone: skip any AoE target if attacker or target is in a protected building
+				if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
+					areaDefenders->remove(i);
+					tano->unlock();
+					continue;
+				}
+
 				areaDam += doTargetCombatAction(attacker, weapon, areaDefenders->get(i), &targetDefenders, data, &shouldGcwCrackdownTef, &shouldGcwTef, &shouldBhTef);
 				areaDefenders->remove(i);
 
@@ -295,7 +305,6 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 	for (int i = defenderSize - 1; i >= 0; i--) {
 		DefenderHitList* list = targetDefenders.get(i);
-
 		delete list;
 	}
 
@@ -347,85 +356,86 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 */
 
 int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* tano, SortedVector<DefenderHitList*>* targetDefenders, const CreatureAttackData& data, bool* shouldGcwCrackdownTef, bool* shouldGcwTef, bool* shouldBhTef) const {
-    int damage = 0;
+	int damage = 0;
 
-    Locker clocker(tano, attacker);
+	Locker clocker(tano, attacker);
 
-    if (!tano->isAttackableBy(attacker)) {
-        return -1;
-    }
+	if (!tano->isAttackableBy(attacker)) {
+		return -1;
+	}
 
-    if (targetDefenders == nullptr) {
-        return -1;
-    }
+	if (targetDefenders == nullptr) {
+		return -1;
+	}
 
-    // 🚫 SAFE ZONE CHECK (Hospitals, Medical Centers, Cantinas)
-    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
-        return -1; // Block combat action entirely
-    }
+	// 🚫 Safe-zone guard: block combat action entirely if either party is in a protected building
+	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
+		return -1;
+	}
 
-    DefenderHitList* hitList = new DefenderHitList();
+	DefenderHitList* hitList = new DefenderHitList();
 
-    if (hitList == nullptr) {
-        return -1;
-    }
+	if (hitList == nullptr) {
+		return -1;
+	}
 
-    // Add DefenderHitList to the targetDefenders Vector and set the defender to that list
-    hitList->setDefender(tano);
-    targetDefenders->add(hitList);
+	// Add DefenderHitList to the targetDefenders Vector and set the defender to that list
+	hitList->setDefender(tano);
+	targetDefenders->add(hitList);
 
-    if (tano->isCreatureObject()) {
-        CreatureObject* defender = tano->asCreatureObject();
+	if (tano->isCreatureObject()) {
+		CreatureObject* defender = tano->asCreatureObject();
 
-        if (defender->getWeapon() == nullptr) {
-            return -1;
-        }
+		if (defender->getWeapon() == nullptr) {
+			return -1;
+		}
 
-        damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data, shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
-    } else {
-        int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
+		damage = creoTargetCombatAction(attacker, weapon, defender, hitList, data, shouldGcwCrackdownTef, shouldGcwTef, shouldBhTef);
+	} else {
+		int poolsToDamage = calculatePoolsToDamage(data.getPoolsToDamage());
 
-        damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
+		damage = applyDamage(attacker, weapon, tano, hitList, poolsToDamage, data);
 
-        // No Accuracy / Defense Calculation for TanO defender. setHit to HIT value.
-        hitList->setHit(HIT);
+		// No Accuracy / Defense Calculation for TanO defender. setHit to HIT value.
+		hitList->setHit(HIT);
 
-        bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
-        uint32 tanoFaction = tano->getFaction();
+		bool covertOvert = ConfigManager::instance()->useCovertOvertSystem();
+		uint32 tanoFaction = tano->getFaction();
 
-        if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 && attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
-            PlayerObject* ghost = attacker->getPlayerObject();
+		if (covertOvert && attacker->isPlayerCreature() && tanoFaction > 0 && attacker->getFaction() != tanoFaction && attacker->getFactionStatus() >= FactionStatus::COVERT) {
+			PlayerObject* ghost = attacker->getPlayerObject();
 
-            if (ghost != nullptr) {
-                ghost->updateLastCombatActionTimestamp(false, true, false);
-            }
-        }
-    }
+			if (ghost != nullptr) {
+				ghost->updateLastCombatActionTimestamp(false, true, false);
+			}
+		}
+	}
 
-    if (damage > 0 && tano->isAiAgent()) {
-        AiAgent* aiAgent = cast<AiAgent*>(tano);
-        bool help = false;
+	if (damage > 0 && tano->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(tano);
+		bool help = false;
 
-        for (int i = 0; i < 9; i += 3) {
-            if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
-                help = true;
-                break;
-            }
-        }
+		for (int i = 0; i < 9; i += 3) {
+			if (aiAgent->getHAM(i) < (aiAgent->getMaxHAM(i) / 2)) {
+				help = true;
+				break;
+			}
+		}
 
-        if (help)
-            aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
-        else
-            aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
-    }
+		if (help)
+			aiAgent->sendReactionChat(attacker, ReactionManager::HELP);
+		else
+			aiAgent->sendReactionChat(attacker, ReactionManager::HIT);
+	}
 
-    if (damage > -1 && attacker->isAiAgent()) {
-        AiAgent* aiAgent = cast<AiAgent*>(attacker);
-        aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
-    }
+	if (damage > -1 && attacker->isAiAgent()) {
+		AiAgent* aiAgent = cast<AiAgent*>(attacker);
+		aiAgent->sendReactionChat(tano, ReactionManager::HITTARGET);
+	}
 
-    return damage;
+	return damage;
 }
+
 
 
 /*
