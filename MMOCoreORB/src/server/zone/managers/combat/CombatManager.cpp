@@ -47,93 +47,95 @@
 
 // Sets attackers mainDefender and puts both in combat
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) const {
-	if (attacker == defender) {
-		return false;
-	}
+    if (attacker == defender) {
+        return false;
+    }
 
-	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
-		return false;
-	}
+    if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
+        return false;
+    }
 
-	if (attacker->isRidingMount()) {
-		ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+    if (attacker->isRidingMount()) {
+        ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
 
-		if (parent == nullptr || !parent->isMount()) {
-			return false;
-		}
+        if (parent == nullptr || !parent->isMount()) {
+            return false;
+        }
 
-		if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
-			return false;
-		}
-	}
+        if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
+            return false;
+        }
+    }
 
-	if (attacker->hasRidingCreature()) {
-		return false;
-	}
+    if (attacker->hasRidingCreature()) {
+        return false;
+    }
 
-	if (!defender->isAttackableBy(attacker)) {
-		return false;
-	}
+    if (!defender->isAttackableBy(attacker)) {
+        return false;
+    }
 
-	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
-		return false;
-	}
+    if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+        return false;
+    }
 
-	// 🚫 Safe-zone: block ALL combat if either party is inside a protected player-city building
-	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
-		return false;
-	}
+    // Safe-zone: block ALL combat if either party is inside a protected player-city building
+    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
+        return false;
+    }
 
-	CreatureObject* creo = defender->asCreatureObject();
-	if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
-		if (allowIncapTarget) {
-			attacker->clearState(CreatureState::PEACE);
-			return true;
-		}
+    CreatureObject* creo = defender->asCreatureObject();
+    if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
+        if (allowIncapTarget) {
+            attacker->clearState(CreatureState::PEACE);
+            return true;
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	attacker->clearState(CreatureState::PEACE);
+    attacker->clearState(CreatureState::PEACE);
 
-	if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
-		ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
+    if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
+        ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
 
-		if (weapon != nullptr && weapon->isJediWeapon()) {
-			VisibilityManager::instance()->increaseVisibility(attacker, 25);
-		}
-	}
+        if (weapon != nullptr && weapon->isJediWeapon()) {
+            VisibilityManager::instance()->increaseVisibility(attacker, 25);
+        }
+    }
 
-	Locker clocker(defender, attacker);
+    Locker clocker(defender, attacker);
 
-	if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
-		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
+    if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
+        ManagedReference<WeaponObject*> weapon = creo->getWeapon();
 
-		if (weapon != nullptr && weapon->isJediWeapon()) {
-			VisibilityManager::instance()->increaseVisibility(creo, 25);
-		}
-	}
+        if (weapon != nullptr && weapon->isJediWeapon()) {
+            VisibilityManager::instance()->increaseVisibility(creo, 25);
+        }
+    }
 
-	attacker->setCombatState();
-	defender->setCombatState();
+    attacker->setCombatState();
+    defender->setCombatState();
 
-	attacker->setDefender(defender);
+    attacker->setDefender(defender);
 
-	if (defender->isCreatureObject()) {
-		ThreatMap* defenderThreatMap = defender->getThreatMap();
+    if (defender->isCreatureObject()) {
+        ThreatMap* defenderThreatMap = defender->getThreatMap();
 
-		if (defenderThreatMap != nullptr) {
-			defenderThreatMap->addDamage(attacker, 0);
-		}
-	}
+        if (defenderThreatMap != nullptr) {
+            defenderThreatMap->addDamage(attacker, 0);
+        }
+    }
 
-	return true;
+    return true;
 }
+
 
 
 
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
+
 	if (creature == nullptr)
 		return false;
 
