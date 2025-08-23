@@ -31,8 +31,6 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
-#include "server/zone/managers/safezone/SafeZoneManager.h"
-
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
@@ -47,95 +45,86 @@
 
 // Sets attackers mainDefender and puts both in combat
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) const {
-    if (attacker == defender) {
-        return false;
-    }
+	if (attacker == defender) {
+		return false;
+	}
 
-    if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
-        return false;
-    }
+	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
+		return false;
+	}
 
-    if (attacker->isRidingMount()) {
-        ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
+	if (attacker->isRidingMount()) {
+		ManagedReference<CreatureObject*> parent = attacker->getParent().get().castTo<CreatureObject*>();
 
-        if (parent == nullptr || !parent->isMount()) {
-            return false;
-        }
+		if (parent == nullptr || !parent->isMount()) {
+			return false;
+		}
 
-        if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
-            return false;
-        }
-    }
+		if (parent->hasBuff(STRING_HASHCODE("gallop"))) {
+			return false;
+		}
+	}
 
-    if (attacker->hasRidingCreature()) {
-        return false;
-    }
+	if (attacker->hasRidingCreature()) {
+		return false;
+	}
 
-    if (!defender->isAttackableBy(attacker)) {
-        return false;
-    }
+	if (!defender->isAttackableBy(attacker)) {
+		return false;
+	}
 
-    if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
-        return false;
-    }
+	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+		return false;
+	}
 
-    // Safe-zone: block ALL combat if either party is inside a protected player-city building
-    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
-        return false;
-    }
+	CreatureObject* creo = defender->asCreatureObject();
+	if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
+		if (allowIncapTarget) {
+			attacker->clearState(CreatureState::PEACE);
+			return true;
+		}
 
-    CreatureObject* creo = defender->asCreatureObject();
-    if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
-        if (allowIncapTarget) {
-            attacker->clearState(CreatureState::PEACE);
-            return true;
-        }
+		return false;
+	}
 
-        return false;
-    }
+	attacker->clearState(CreatureState::PEACE);
 
-    attacker->clearState(CreatureState::PEACE);
+	if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
+		ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
 
-    if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
-        ManagedReference<WeaponObject*> weapon = attacker->getWeapon();
+		if (weapon != nullptr && weapon->isJediWeapon()) {
+			VisibilityManager::instance()->increaseVisibility(attacker, 25);
+		}
+	}
 
-        if (weapon != nullptr && weapon->isJediWeapon()) {
-            VisibilityManager::instance()->increaseVisibility(attacker, 25);
-        }
-    }
+	Locker clocker(defender, attacker);
 
-    Locker clocker(defender, attacker);
+	if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
+		ManagedReference<WeaponObject*> weapon = creo->getWeapon();
 
-    if (creo != nullptr && creo->isPlayerCreature() && !creo->hasDefender(attacker)) {
-        ManagedReference<WeaponObject*> weapon = creo->getWeapon();
+		if (weapon != nullptr && weapon->isJediWeapon()) {
+			VisibilityManager::instance()->increaseVisibility(creo, 25);
+		}
+	}
 
-        if (weapon != nullptr && weapon->isJediWeapon()) {
-            VisibilityManager::instance()->increaseVisibility(creo, 25);
-        }
-    }
+	attacker->setCombatState();
+	defender->setCombatState();
 
-    attacker->setCombatState();
-    defender->setCombatState();
+	attacker->setDefender(defender);
 
-    attacker->setDefender(defender);
+	if (defender->isCreatureObject()) {
+		ThreatMap* defenderThreatMap = defender->getThreatMap();
 
-    if (defender->isCreatureObject()) {
-        ThreatMap* defenderThreatMap = defender->getThreatMap();
+		if (defenderThreatMap != nullptr) {
+			defenderThreatMap->addDamage(attacker, 0);
+		}
+	}
 
-        if (defenderThreatMap != nullptr) {
-            defenderThreatMap->addDamage(attacker, 0);
-        }
-    }
-
-    return true;
+	return true;
 }
-
-
-
 
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
-
 	if (creature == nullptr)
 		return false;
 
@@ -161,7 +150,7 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 			SceneObject* mainDefender = threatTano->getMainDefender();
 
-			// If the defender is in range and is the main defender of the creature, fail to peace
+			// If the defender is in range and is the maind defender of the creature, fail to peace
 			if (creature->isInRange(threatTano, 128.f) && mainDefender != nullptr && mainDefender->getObjectID() == creatureID) {
 				return false;
 			}
@@ -172,7 +161,6 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 	return true;
 }
-
 
 // Called for AiAgents to break their combat state
 void CombatManager::forcePeace(CreatureObject* attacker) const {
@@ -208,7 +196,6 @@ void CombatManager::forcePeace(CreatureObject* attacker) const {
 
 	}, "ForcePeaceLambda", 250);
 }
-
 
 /*
 *
@@ -262,13 +249,6 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 					continue;
 				}
 
-				// 🚫 Safe-zone: skip any AoE target if attacker or target is in a protected building
-				if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
-					areaDefenders->remove(i);
-					tano->unlock();
-					continue;
-				}
-
 				areaDam += doTargetCombatAction(attacker, weapon, areaDefenders->get(i), &targetDefenders, data, &shouldGcwCrackdownTef, &shouldGcwTef, &shouldBhTef);
 				areaDefenders->remove(i);
 
@@ -307,6 +287,7 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 	for (int i = defenderSize - 1; i >= 0; i--) {
 		DefenderHitList* list = targetDefenders.get(i);
+
 		delete list;
 	}
 
@@ -367,11 +348,6 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 	}
 
 	if (targetDefenders == nullptr) {
-		return -1;
-	}
-
-	// 🚫 Safe-zone guard: block combat action entirely if either party is in a protected building
-	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
 		return -1;
 	}
 
@@ -437,8 +413,6 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 
 	return damage;
 }
-
-
 
 /*
 
@@ -1619,33 +1593,25 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 		}
 	}
 
-	    int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
-    defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
+	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
+	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
-    if (attacker->isPlayerCreature()) {
-        showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
-    }
+	if (attacker->isPlayerCreature()) {
+		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
+	}
 
-    defenderHitList->setInitialDamage(logDamage);
-    defenderHitList->setHitLocation(hitLocation);
-    defenderHitList->setFoodMitigation(totalFoodMit);
-    defenderHitList->setPoolsToWound(poolsToWound);
+	defenderHitList->setInitialDamage(logDamage);
+	defenderHitList->setHitLocation(hitLocation);
+	defenderHitList->setFoodMitigation(totalFoodMit);
+	defenderHitList->setPoolsToWound(poolsToWound);
 
 #ifdef DEBUG_SPILL_DAMAGE
-    spillOverDebug << " ========== END Spill Over Debug ==========\n";
-    attacker->info(true) << spillOverDebug.toString();
+	spillOverDebug << " ========== END Spill Over Debug ==========\n";
+	attacker->info(true) << spillOverDebug.toString();
 #endif
 
-    // ========= SAFE ZONE CHECK =========
-    // Prevent applying combat damage if either attacker or defender is in a safe zone
-    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
-        return -1;
-    }
-    // ===================================
-
-    return totalDamage;
+	return totalDamage;
 }
-
 
 int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* defender, DefenderHitList* defenderHitList, int poolsToDamage, const CreatureAttackData& data) const {
 	if (defender == nullptr || defenderHitList == nullptr || poolsToDamage == 0) {
