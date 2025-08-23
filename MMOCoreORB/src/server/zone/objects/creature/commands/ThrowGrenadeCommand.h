@@ -1,6 +1,6 @@
 /*
 				Copyright <SWGEmu>
-		See file COPYING for copying conditions.*/
+		See files COPYING for copying conditions.*/
 
 #ifndef THROWGRENADECOMMAND_H_
 #define THROWGRENADECOMMAND_H_

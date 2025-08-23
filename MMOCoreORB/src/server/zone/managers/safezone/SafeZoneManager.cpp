@@ -8,7 +8,7 @@ bool SafeZoneManager::isInSafeBuilding(SceneObject* obj) {
 
     SceneObject* parent = obj->getParent().get();
     while (parent != nullptr) {
-        // We walk up the parent chain until we hit a BuildingObject (or run out)
+        // We walked up the parent chain until we hit a BuildingObject (or run out)
         BuildingObject* building = parent->asBuildingObject();
         if (building != nullptr) {
             const SharedObjectTemplate* tmplObj = building->getObjectTemplate();

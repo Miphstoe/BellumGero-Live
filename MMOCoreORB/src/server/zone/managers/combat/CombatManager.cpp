@@ -79,7 +79,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
-	// 🚫 Safe-zone: block ALL combat if either party is inside a protected player-city building
+	// 🚫 Safe-zone: blocks ALL combat if either party is inside a protected player-city building
 	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
 		return false;
 	}
