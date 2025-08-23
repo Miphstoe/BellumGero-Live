@@ -6,8 +6,6 @@
 #define THROWGRENADECOMMAND_H_
 
 #include "engine/core/TaskManager.h"
-#include "server/zone/managers/safezone/SafeZoneManager.h"
-
 
 class ThrowGrenadeCommand : public CombatQueueCommand {
 public:
@@ -54,16 +52,7 @@ public:
 
 			UnicodeString args = "combatSpam=" + grenadeData->getCombatSpam() + ";";
 
-			int result = GENERALERROR;
-
-// Safe Zone Check (prevent use if attacker OR target in safe zone)
-			if (SafeZoneManager::isInSafeZone(creature) ||
-    			SafeZoneManager::isInSafeZone(targetObject)) {
-    			creature->sendSystemMessage("You cannot throw grenades inside a city Cantina or Hospital safe zone.");
-    			return INVALIDTARGET;
-}
-
-			result = doCombatAction(creature, target, args, grenade);
+			int result = doCombatAction(creature, target, args, grenade);
 
 			if (result == SUCCESS) {
 				// We need to give some time for the combat animation to start playing before destroying the tano
@@ -137,3 +126,4 @@ public:
 };
 
 #endif // THROWGRENADECOMMAND_H_
+
