@@ -104,6 +104,12 @@ object_weapon_melee_special_shared_blacksun_razor = SharedWeaponObjectTemplate:n
 
 ObjectTemplates:addClientTemplate(object_weapon_melee_special_shared_blacksun_razor, "object/weapon/melee/special/shared_blacksun_razor.iff")
 
+object_weapon_melee_special_shared_blasterfist = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/melee/special/shared_blasterfist.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_melee_special_shared_blasterfist, "object/weapon/melee/special/shared_blasterfist.iff")
+
 object_weapon_melee_special_shared_vibroknuckler = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/melee/special/shared_vibroknuckler.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

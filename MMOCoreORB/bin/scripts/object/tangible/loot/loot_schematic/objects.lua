@@ -277,6 +277,12 @@ object_tangible_loot_loot_schematic_shared_basket_closed_schematic = SharedTangi
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_basket_closed_schematic, "object/tangible/loot/loot_schematic/shared_basket_closed_schematic.iff")
 
+object_tangible_loot_loot_schematic_shared_blasterfist_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_blasterfist_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_blasterfist_schematic, "object/tangible/loot/loot_schematic/shared_blasterfist_schematic.iff")
+
 object_tangible_loot_loot_schematic_shared_bottle_fat_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_bottle_fat_schematic.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
@@ -4288,6 +4294,596 @@ object_tangible_loot_loot_schematic_shared_microphone_s02_schematic = SharedTang
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_microphone_s02_schematic, "object/tangible/loot/loot_schematic/shared_microphone_s02_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_boots_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_boots_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_boots_schematic, "object/tangible/loot/loot_schematic/shared_ns_boots_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_dress_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_dress_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_dress_schematic, "object/tangible/loot/loot_schematic/shared_ns_dress_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_hat_s01_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_hat_s01_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_hat_s01_schematic, "object/tangible/loot/loot_schematic/shared_ns_hat_s01_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_hat_s02_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_hat_s02_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_hat_s02_schematic, "object/tangible/loot/loot_schematic/shared_ns_hat_s02_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_hat_s03_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_hat_s03_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_hat_s03_schematic, "object/tangible/loot/loot_schematic/shared_ns_hat_s03_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_pants_s01_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_pants_s01_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_pants_s01_schematic, "object/tangible/loot/loot_schematic/shared_ns_pants_s01_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_pants_s02_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_pants_s02_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_pants_s02_schematic, "object/tangible/loot/loot_schematic/shared_ns_pants_s02_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_shirt_s01_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_shirt_s01_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_shirt_s01_schematic, "object/tangible/loot/loot_schematic/shared_ns_shirt_s01_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_shirt_s02_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_shirt_s02_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_shirt_s02_schematic, "object/tangible/loot/loot_schematic/shared_ns_shirt_s02_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_ns_shirt_s03_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ns_shirt_s03_schematic.iff"
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "appearance/eqp_tool_engineering_analysis_board.apt",
+	arrangementDescriptorFilename = "",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 8211,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@craft_item_ingredients_d:microphone",
+
+	gameObjectType = 8211,
+
+	locationReservationRadius = 0,
+	lookAtText = "string_id_table",
+
+	noBuildRadius = 0,
+
+	objectName = "@craft_item_ingredients_n:microphone",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 1194071997,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff"}
+]]
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_shirt_s03_schematic, "object/tangible/loot/loot_schematic/shared_ns_shirt_s03_schematic.iff")
 
 object_tangible_loot_loot_schematic_shared_ore_recycler_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ore_recycler_schematic.iff"

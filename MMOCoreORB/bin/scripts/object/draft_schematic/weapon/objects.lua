@@ -384,6 +384,12 @@ object_draft_schematic_weapon_shared_blaster_cannon = SharedDraftSchematicObject
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_blaster_cannon, "object/draft_schematic/weapon/shared_blaster_cannon.iff")
 
+object_draft_schematic_weapon_shared_blasterfist = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_blasterfist.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_blasterfist, "object/draft_schematic/weapon/shared_blasterfist.iff")
+
 object_draft_schematic_weapon_shared_carbine_blaster_cdef = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/weapon/shared_carbine_blaster_cdef.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

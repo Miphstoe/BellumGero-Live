@@ -26,13 +26,13 @@ trainer_shipwright = Creature:new {
 	ferocity = 0,
 	pvpBitmask = NONE,
 	creatureBitmask = NONE,
-	optionsBitmask = INVULNERABLE + CONVERSABLE + JTLINTERESTING,
+	optionsBitmask = INVULNERABLE + CONVERSABLE,
 	diet = HERBIVORE,
 
 	templates = {
-		"object/mobile/space_shipwright_trainer_01.iff",
-		"object/mobile/space_shipwright_trainer_02.iff",
-		"object/mobile/space_shipwright_trainer_03.iff"
+		"object/mobile/dressed_weaponsmith_trainer_01.iff",
+		"object/mobile/dressed_weaponsmith_trainer_02.iff",
+		"object/mobile/dressed_weaponsmith_trainer_03.iff"
 	},
 	lootGroups = {},
 

@@ -107,7 +107,7 @@ TatooineWayfarScreenPlay = CityScreenPlay:new {
 		{"stanic_wavingstar",60,17.9368,-0.894992,22.6329,180,1134562, "calm"},
 		{"trainer_bountyhunter",0,19,-0.894,-17,0,1134561, ""},
 		{"farmer",60,-25.6583,-0.894991,24.4065,134.995,1134569, "conversation"},
-		{"informant_npc_lvl_1",0,-5216,75,-6563,270,0, ""},
+		{"informant_npc_lvl_3",0,-5216,75,-6563,270,0, ""},
 		{"informant_npc_lvl_3",0,-31.4241,-0.894991,19.0307,70,1134569, ""},
 		{"comm_operator",300,-24.5583,-0.894991,23.3065,360.011,1134569, "npc_imperial"},
 		{"contractor",300,-24.5583,-0.894991,24.4065,179.993,1134569, "conversation"},
@@ -166,7 +166,7 @@ function TatooineWayfarScreenPlay:spawnMobiles()
 
 	--Outside
 	spawnMobile(self.planet, "criminal",300,-5210.29,75,-6570.98,235.683,0)
-	spawnMobile(self.planet, "informant_npc_lvl_2",0,-5205,75,-6503,315,0)
+	spawnMobile(self.planet, "informant_npc_lvl_3",0,-5205,75,-6503,315,0)
 	spawnMobile(self.planet, "jabba_enforcer",360,-5233.49,75,-6571.71,339.496,0)
 	spawnMobile(self.planet, "jabba_enforcer",360,-5248.39,75,-6549.52,120.944,0)
 	spawnMobile(self.planet, "jabba_enforcer",360,-5273.74,75,-6518.97,98.1445,0)

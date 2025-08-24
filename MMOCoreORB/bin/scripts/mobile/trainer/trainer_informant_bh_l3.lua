@@ -1,0 +1,49 @@
+trainer_informant_bh_l3 = Creature:new {
+    objectName = "@mob/creature_names:trainer_informant_bh_l3",
+    customName = "a SpyNet operative",
+	mobType = MOB_NPC,
+	socialGroup = "",
+	faction = "",
+	level = 100,
+	chanceHit = 0.39,
+	damageMin = 290,
+	damageMax = 300,
+	baseXp = 2914,
+	baseHAM = 8400,
+	baseHAMmax = 10200,
+	armor = 0,
+	resists = {-1,-1,-1,-1,-1,-1,-1,-1,-1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = NONE,
+	creatureBitmask = NONE,
+	optionsBitmask = INVULNERABLE + CONVERSABLE,
+	diet = HERBIVORE,
+
+    templates = {
+        "object/mobile/dressed_bountyhunter_trainer_01.iff",
+        "object/mobile/dressed_bountyhunter_trainer_02.iff",
+        "object/mobile/dressed_bountyhunter_trainer_03.iff"
+    },
+    lootGroups = {},
+
+	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
+	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+
+    conversationTemplate = "informant_npc_lvl_3",  -- << uses the Informant convo
+    -- primaryAttacks and secondaryAttacks should be separate skill groups specific to the weapon type listed in primaryWeapon and secondaryWeapon
+	-- Use merge() to merge groups in creatureskills.lua together. If a weapon is set to "none", set the attacks variable to empty brackets
+	primaryAttacks = {},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(trainer_informant_bh_l3, "trainer_informant_bh_l3")

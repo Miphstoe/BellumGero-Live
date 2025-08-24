@@ -8,7 +8,7 @@ nightsister_tier_2 = {
 		{groupTemplate = "armor_attachments", weight = 500000},
 		{groupTemplate = "clothing_attachments", weight = 500000},
 		{groupTemplate = "color_crystals", weight = 500000},
-		{groupTemplate = "melee_weapons", weight = 2300000},
+		{groupTemplate = "melee_weapons", weight = 1900000},
 		{groupTemplate = "nightsister_common", weight = 1800000},
 		{groupTemplate = "power_crystals", weight = 600000},
 		{groupTemplate = "ranged_weapons", weight = 2700000},
@@ -16,6 +16,7 @@ nightsister_tier_2 = {
 		{groupTemplate = "wearables_common", weight = 400000},
 		{groupTemplate = "crafting_component", weight = 225000},
 		{groupTemplate = "crafting_component_advanced", weight = 75000},
+		{groupTemplate = "nightsister_clothing_schematics", weight = 400000},
 	}
 }
 

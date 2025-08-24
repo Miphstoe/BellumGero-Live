@@ -106,12 +106,12 @@ NabooDeejaPeakScreenPlay = CityScreenPlay:new {
 
 		--Outside
 		{"imperial_recruiter", 0,5307,326,-1584,74,0, ""},
-		{"informant_npc_lvl_2", 0,5332,327,-1568,225,0, ""},
-		{"informant_npc_lvl_2", 0,4980,360,-1489,270,0, ""},
-		{"informant_npc_lvl_2", 0,4923,360,-1411,180,0, ""},
-		{"informant_npc_lvl_2", 0,4754,330,-1358,0,0, ""},
-		{"informant_npc_lvl_2", 0,4688,330,-1342,135,0, ""},
-		{"informant_npc_lvl_1", 0,4700,330,-1406,153,0, ""},
+		{"informant_npc_lvl_3", 0,5332,327,-1568,225,0, ""},
+		{"informant_npc_lvl_3", 0,4980,360,-1489,270,0, ""},
+		{"informant_npc_lvl_3", 0,4923,360,-1411,180,0, ""},
+		{"informant_npc_lvl_3", 0,4754,330,-1358,0,0, ""},
+		{"informant_npc_lvl_3", 0,4688,330,-1342,135,0, ""},
+		{"informant_npc_lvl_3", 0,4700,330,-1406,153,0, ""},
 		{"trainer_artisan", 0,4715,330,-1393,77,0, ""},
 		{"trainer_politician", 0,4702,330,-1368,84,0, ""},
 		{"trainer_marksman", 0,4980,360,-1425,-100,0, ""},

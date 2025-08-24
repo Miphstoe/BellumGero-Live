@@ -31,8 +31,6 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
-#include "server/zone/managers/safezone/SafeZoneManager.h"
-
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
@@ -1617,33 +1615,25 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 		}
 	}
 
-	    int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
-    defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
+	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
+	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
-    if (attacker->isPlayerCreature()) {
-        showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
-    }
+	if (attacker->isPlayerCreature()) {
+		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
+	}
 
-    defenderHitList->setInitialDamage(logDamage);
-    defenderHitList->setHitLocation(hitLocation);
-    defenderHitList->setFoodMitigation(totalFoodMit);
-    defenderHitList->setPoolsToWound(poolsToWound);
+	defenderHitList->setInitialDamage(logDamage);
+	defenderHitList->setHitLocation(hitLocation);
+	defenderHitList->setFoodMitigation(totalFoodMit);
+	defenderHitList->setPoolsToWound(poolsToWound);
 
 #ifdef DEBUG_SPILL_DAMAGE
-    spillOverDebug << " ========== END Spill Over Debug ==========\n";
-    attacker->info(true) << spillOverDebug.toString();
+	spillOverDebug << " ========== END Spill Over Debug ==========\n";
+	attacker->info(true) << spillOverDebug.toString();
 #endif
 
-    // ========= SAFE ZONE CHECK =========
-    // Prevent applying combat damage if either attacker or defender is in a safe zone
-    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
-        return -1;
-    }
-    // ===================================
-
-    return totalDamage;
+	return totalDamage;
 }
-
 
 int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* defender, DefenderHitList* defenderHitList, int poolsToDamage, const CreatureAttackData& data) const {
 	if (defender == nullptr || defenderHitList == nullptr || poolsToDamage == 0) {

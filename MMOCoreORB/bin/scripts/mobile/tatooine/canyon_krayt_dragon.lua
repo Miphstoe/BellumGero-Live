@@ -33,13 +33,12 @@ canyon_krayt_dragon = Creature:new {
 	lootGroups = {
 	{
         groups = {
-			{group = "krayt_tissue_uncommon", chance = 1000000},     -- 10.00% of group, 9.00% total
-			{group = "krayt_dragon_common", chance = 4000000},       -- 40.00% of group, 36.00% total
-			{group = "krayt_pearls", chance = 1000000},              -- 10.00% of group, 9.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 9.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 9.00% total
-			{group = "armor_all", chance = 1000000},                 -- 10.00% of group, 9.00% total
-			{group = "weapons_all", chance = 1000000},               -- 10.00% of group, 9.00% total
+			{group = "krayt_tissue_uncommon", chance = 1000000},         -- 10.00% of group, 9.00% total
+			{group = "krayt_dragon_common", chance = 4000000},           -- 40.00% of group, 36.00% total
+			{group = "krayt_pearls", chance = 1000000},                  -- 10.00% of group, 9.00% total
+			{group = "armor_attachments", chance = 1500000},             -- 15.00% of group, 13.50% total
+			{group = "clothing_attachments", chance = 1500000},          -- 15.00% of group, 13.50% total
+			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 9.00% total
 		},
 		lootChance = 9000000, -- 90.00% total chance
 	},
@@ -50,20 +49,18 @@ canyon_krayt_dragon = Creature:new {
 			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 6.00% total
 			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 3.00% total
 			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 3.00% total
-			{group = "armor_all", chance = 500000},                      -- 5.00% of group, 1.50% total
-			{group = "weapons_all", chance = 500000},                    -- 5.00% of group, 1.50% total
+			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 3.00% total
 		},
 		lootChance = 3000000, -- 30.00% total chance
 	},
 	{
         groups = {
-			{group = "krayt_tissue_uncommon", chance = 2500000},         -- 25.00% of group, 2.50% total
-			{group = "krayt_dragon_common", chance = 3500000},           -- 35.00% of group, 3.50% total
+			{group = "krayt_tissue_uncommon", chance = 2000000},         -- 20.00% of group, 2.00% total
+			{group = "krayt_dragon_common", chance = 3000000},           -- 30.00% of group, 3.00% total
 			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 2.00% total
 			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 1.00% total
 			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 1.00% total
-			{group = "armor_all", chance = 500000},                      -- 5.00% of group, 0.50% total
-			{group = "weapons_all", chance = 500000},                    -- 5.00% of group, 0.50% total
+			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 1.00% total
 		},
 		lootChance = 1000000, -- 10.00% total chance
 	},

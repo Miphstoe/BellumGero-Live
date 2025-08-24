@@ -36,22 +36,20 @@ lootGroups = {
 			{group = "krayt_tissue_uncommon", chance = 1000000},         -- 10.00% of group, 7.00% total
 			{group = "krayt_dragon_common", chance = 4000000},           -- 40.00% of group, 28.00% total
 			{group = "krayt_pearls", chance = 1000000},                  -- 10.00% of group, 7.00% total
-			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 7.00% total
-			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 7.00% total
-			{group = "armor_all", chance = 1000000},                     -- 10.00% of group, 7.00% total
-			{group = "weapons_all", chance = 1000000},                   -- 10.00% of group, 7.00% total
+			{group = "armor_attachments", chance = 1500000},             -- 15.00% of group, 10.50% total
+			{group = "clothing_attachments", chance = 1500000},          -- 15.00% of group, 10.50% total
+			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 7.00% total
 		},
 		lootChance = 7000000, -- 70.00% total chance
 	},
 	{
         groups = {
-			{group = "krayt_tissue_uncommon", chance = 2000000},         -- 20.00% of group, 4.00% total
-			{group = "krayt_dragon_common", chance = 3000000},           -- 30.00% of group, 6.00% total
-			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 4.00% total
-			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 2.00% total
-			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 2.00% total
-			{group = "armor_all", chance = 500000},                      -- 5.00% of group, 1.00% total
-			{group = "weapons_all", chance = 500000},                    -- 5.00% of group, 1.00% total
+			{group = "krayt_tissue_uncommon", chance = 2000000},         -- 20.00% of group, 2.00% total
+			{group = "krayt_dragon_common", chance = 3000000},           -- 30.00% of group, 3.00% total
+			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 2.00% total
+			{group = "armor_attachments", chance = 1000000},             -- 10.00% of group, 1.00% total
+			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 1.00% total
+			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 1.00% total
 		},
 		lootChance = 1000000, -- 10.00% total chance
 	},
