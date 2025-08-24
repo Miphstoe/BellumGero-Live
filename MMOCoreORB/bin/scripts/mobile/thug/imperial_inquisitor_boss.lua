@@ -53,7 +53,7 @@ imperial_inquisitor_boss = Creature:new {
         groups = {
 			{group = "blasterfist_schematic", chance = 10000000}
 		},
-		lootChance = 500000, -- 5.00% total chance
+		lootChance = 2000000, -- 20.00% total chance
 	},
 },
 

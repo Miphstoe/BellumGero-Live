@@ -5,7 +5,7 @@ object_tangible_loot_loot_schematic_blasterfist_schematic = object_tangible_loot
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_weaponsmith_master",
 	targetDraftSchematic = "object/draft_schematic/weapon/blasterfist.iff",
-	targetUseCount = 1,
+	targetUseCount = 3,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_blasterfist_schematic, "object/tangible/loot/loot_schematic/blasterfist_schematic.iff")
