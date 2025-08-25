@@ -32,49 +32,59 @@ acklay_worldboss = Creature:new {
     templates = {"object/mobile/acklay_hue.iff"},
 
     lootGroups = {
-        -- Roll 1: your original "acklay" pool (optional)
-        {
-            groups = {
-                {group = "acklay", chance = 10000000}
-            },
-            lootChance = 10000000   -- 10% chance; adjust as you want
-        },
-
-        -- Roll 2: crystals (GUARANTEED)
-        {
-            groups = {
-                {group = "power_crystals", chance = 7000000}, -- 70%
-                {group = "color_crystals", chance = 3000000}, -- 30%
-            },
-            lootChance = 10000000
-        },
-
-        -- Roll 3: holocron (30% chance)
-        {
-            groups = {
-                {group = "holocron_dark",  chance = 5000000},
-                {group = "holocron_light", chance = 5000000},
-            },
-            lootChance = 10000000
-        },
-
-        -- Roll 4: attachment (70% chance)
-        {
-            groups = {
-                {group = "armor_attachments",    chance = 5000000},
-                {group = "clothing_attachments", chance = 5000000},
-            },
-            lootChance = 10000000
-        },
-
-        -- Roll 5: weapon component (80% chance)
-        {
-            groups = {
-                {group = "weapon_component", chance = 10000000},
-            },
-            lootChance = 10000000
-        }
-    },
+	{
+        groups = {
+			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
+			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
+			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
+			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
+			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
+		},
+		lootChance = 10000000, -- 100.00% total chance
+	},
+	{
+        groups = {
+			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
+			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
+			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
+			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
+			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
+		},
+		lootChance = 10000000, -- 100.00% total chance
+	},
+	{
+        groups = {
+			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
+			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
+			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
+			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
+			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
+		},
+		lootChance = 10000000, -- 100.00% total chance
+	},
+	{
+        groups = {
+			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
+			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
+			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
+			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
+			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
+		},
+		lootChance = 10000000, -- 100.00% total chance
+	},
+	{
+        groups = {
+			{group = "power_crystals", chance = 10000000},             -- 100.00% of group, 15.00% total
+		},
+		lootChance = 5000000, -- 50.00% total chance
+	},
+	{
+        groups = {
+			{group = "power_crystals", chance = 10000000},             -- 100.00% of group, 10.00% total
+		},
+		lootChance = 2500000, -- 25.00% total chance
+	}
+},
 
     primaryWeapon = "unarmed",
     secondaryWeapon = "none",
