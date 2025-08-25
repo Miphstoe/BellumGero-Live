@@ -121,6 +121,16 @@ object_weapon_ranged_carbine_carbine_nym_slugthrower = object_weapon_ranged_carb
 	woundsRatio = 16,
 
 	attackSpeed = 4.0
+
+	numberExperimentalProperties = {1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2},
+	experimentalProperties = {"XX", "XX", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "XX", "XX", "XX", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ"},
+	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
+	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
+	experimentalMin = {0, 0, 56, 91, 5.3, 8, 30, 750, -35, -50, 40, 5, 33, 52, 26},
+	experimentalMax = {0, 0, 90, 163, 3.7, 16, 65, 1500, -35, -50, 40, 15, 18, 28, 14},
+	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
 
 ObjectTemplates:addTemplate(object_weapon_ranged_carbine_carbine_nym_slugthrower, "object/weapon/ranged/carbine/carbine_nym_slugthrower.iff")

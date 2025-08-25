@@ -1419,6 +1419,12 @@ object_draft_schematic_weapon_shared_maul = SharedDraftSchematicObjectTemplate:n
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_maul, "object/draft_schematic/weapon/shared_maul.iff")
 
+object_draft_schematic_weapon_shared_nym_slugthrower = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_nym_slugthrower.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_nym_slugthrower, "object/draft_schematic/weapon/shared_nym_slugthrower.iff")
+
 object_draft_schematic_weapon_shared_pistol_blaster_cdef = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/weapon/shared_pistol_blaster_cdef.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

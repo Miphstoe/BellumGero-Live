@@ -4885,6 +4885,12 @@ object_tangible_loot_loot_schematic_shared_ns_shirt_s03_schematic = SharedTangib
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_ns_shirt_s03_schematic, "object/tangible/loot/loot_schematic/shared_ns_shirt_s03_schematic.iff")
 
+object_tangible_loot_loot_schematic_shared_nym_slugthrower_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_nym_slugthrower_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_nym_slugthrower_schematic, "object/tangible/loot/loot_schematic/shared_nym_slugthrower_schematic.iff")
+
 object_tangible_loot_loot_schematic_shared_ore_recycler_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_ore_recycler_schematic.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
