@@ -1,6 +1,6 @@
 /*
-				Copyright <SWGEmu>
-		See file COPYING for copying conditions.*/
+                Copyright <SWGEmu>
+        See file COPYING for copying conditions.*/
 
 #ifndef DETONATEDROIDCOMMAND_H_
 #define DETONATEDROIDCOMMAND_H_
@@ -8,94 +8,99 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/components/droid/DroidDetonationModuleDataComponent.h"
 #include "server/zone/objects/creature/events/DroidDetonationTask.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h" // ⬅️ Safe-zone helper
 
 class DetonateDroidCommand : public QueueCommand {
 public:
-	DetonateDroidCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) {
-	}
+    DetonateDroidCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) {
+    }
 
-	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
-		if (!creature->isPlayerCreature() || creature->isDead() || creature->isIncapacitated()) {
-			return INVALIDSTATE;
-		}
+    int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
+        if (!creature->isPlayerCreature() || creature->isDead() || creature->isIncapacitated()) {
+            return INVALIDSTATE;
+        }
 
-		if (creature->isFrozen()) {
-			return INVALIDLOCOMOTION;
-		}
+        if (creature->isFrozen()) {
+            return INVALIDLOCOMOTION;
+        }
 
-		auto zoneServer = creature->getZoneServer();
+        auto zoneServer = creature->getZoneServer();
+        if (zoneServer == nullptr) {
+            return GENERALERROR;
+        }
 
-		if (zoneServer == nullptr) {
-			return GENERALERROR;
-		}
+        // We must have a target
+        ManagedReference<SceneObject*> object = zoneServer->getObject(target);
+        if (object == nullptr || !object->isDroidObject()) {
+            creature->sendSystemMessage("@pet/droid_modules:invalid_droid_bomb");
+            return INVALIDTARGET;
+        }
 
-		// we must have a target
-		ManagedReference<SceneObject*> object = zoneServer->getObject(target);
+        DroidObject* droid = cast<DroidObject*>(object.get());
+        if (droid == nullptr || !droid->isBombDroid()) {
+            creature->sendSystemMessage("@pet/droid_modules:invalid_droid_bomb");
+            return INVALIDTARGET;
+        }
 
-		if (object == nullptr || !object->isDroidObject()) {
-			creature->sendSystemMessage("@pet/droid_modules:invalid_droid_bomb");
-			return INVALIDTARGET;
-		}
+        // Player must be droid owner
+        if (droid->getLinkedCreature().get() != creature) {
+            creature->sendSystemMessage("@pet/droid_modules:must_be_owner_droid_bomb");
+            return GENERALERROR;
+        }
 
-		DroidObject* droid = cast<DroidObject*>(object.get());
+        // Skill gate
+        if (!creature->hasSkill("combat_bountyhunter_novice") && !creature->hasSkill("combat_smuggler_novice")) {
+            creature->sendSystemMessage("@pet/droid_modules:insufficient_skill_detonate");
+            return GENERALERROR;
+        }
 
-		if (droid == nullptr || !droid->isBombDroid()) {
-			creature->sendSystemMessage("@pet/droid_modules:invalid_droid_bomb");
-			return INVALIDTARGET;
-		}
+        // Droid must have power
+        if (!droid->hasPower()){
+            droid->showFlyText("npc_reaction/flytext","low_power", 204, 0, 0);  // "*Low Power*"
+            return GENERALERROR;
+        }
 
-		// Player must be droid owner
-		if (droid->getLinkedCreature().get() != creature) {
-			creature->sendSystemMessage("@pet/droid_modules:must_be_owner_droid_bomb");
-			return GENERALERROR;
-		}
+        // Check for detonation module
+        auto module = droid->getModule("detonation_module").castTo<DroidDetonationModuleDataComponent*>();
+        if (module == nullptr) {
+            creature->sendSystemMessage("@pet/droid_modules:no_bomb_module");
+            return INVALIDTARGET;
+        }
 
-		if (!creature->hasSkill("combat_bountyhunter_novice") && !creature->hasSkill("combat_smuggler_novice")) {
-			creature->sendSystemMessage("@pet/droid_modules:insufficient_skill_detonate");
-			return GENERALERROR;
-		}
+        // Check to make sure droid is not dead
+        if (droid->isDead()) {
+            creature->sendSystemMessage("@pet/droid_modules:droid_bomb_failed");
+            return GENERALERROR;
+        }
 
-		// Check to make sure droid has power
-		if (!droid->hasPower()){
-			droid->showFlyText("npc_reaction/flytext","low_power", 204, 0, 0);  // "*Low Power*"
-			return GENERALERROR;
-		}
+        // Make sure detonation module is ready
+        if (!module->readyForDetonation()) {
+            creature->sendSystemMessage("@pet/droid_modules:detonation_warmup");
+            return GENERALERROR;
+        }
 
-		// Check for detonation module
-		auto module = droid->getModule("detonation_module").castTo<DroidDetonationModuleDataComponent*>();
+        if (droid->getPendingTask("droid_detonation") != nullptr) {
+            creature->sendSystemMessage("@pet/droid_modules:countdown_already_started");
+            return GENERALERROR;
+        }
 
-		if (module == nullptr) {
-			creature->sendSystemMessage("@pet/droid_modules:no_bomb_module");
-			return INVALIDTARGET;
-		}
+        // 🚫 SAFE-ZONE BLOCKERS — prevent starting detonation in protected buildings
+        // (player-city Cantinas / Hospitals / Medical Centers)
+        if (SafeZoneManager::isInSafeZone(creature) || SafeZoneManager::isInSafeZone(droid)) {
+            creature->sendSystemMessage("You cannot detonate a droid inside a city Cantina or Hospital safe zone.");
+            return INVALIDTARGET;
+        }
 
-		// Check to make sure droid is not dead
-		if (droid->isDead()) {
-			creature->sendSystemMessage("@pet/droid_modules:droid_bomb_failed");
-			return GENERALERROR;
-		}
+        // Schedule the detonation countdown task
+        Reference<Task*> task = new DroidDetonationTask(module, creature);
+        if (task == nullptr) {
+            return GENERALERROR;
+        }
 
-		// Make sure detonation module is ready
-		if (!module->readyForDetonation()) {
-			creature->sendSystemMessage("@pet/droid_modules:detonation_warmup");
-			return GENERALERROR;
-		}
+        droid->addPendingTask("droid_detonation", task, 0);
 
-		if (droid->getPendingTask("droid_detonation") != nullptr) {
-			creature->sendSystemMessage("@pet/droid_modules:countdown_already_started");
-			return GENERALERROR;
-		}
-
-		Reference<Task*> task = new DroidDetonationTask(module, creature);
-
-		if (task == nullptr) {
-			return GENERALERROR;
-		}
-
-		droid->addPendingTask("droid_detonation", task, 0);
-
-		return SUCCESS;
-	}
+        return SUCCESS;
+    }
 };
 
-#endif //DETONATEDROIDCOMMAND_H_
+#endif // DETONATEDROIDCOMMAND_H_
