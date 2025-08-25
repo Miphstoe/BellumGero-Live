@@ -87,15 +87,48 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
 end
 
 function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
-    -- only proceed for real player killers
-    if not (pKiller and SceneObject(pKiller):isPlayerCreature()) then
-        return 0
+    -- resolve the *player* responsible (handle pets)
+    if pKiller == nil then return 0 end
+
+    local pPlayer = nil
+    if SceneObject(pKiller):isPlayerCreature() then
+        pPlayer = pKiller
+    else
+        -- if the killer is a pet/vehicle/etc, try to credit the owner
+        local ko = CreatureObject(pKiller)
+        if ko and ko.getOwner then
+            local pOwner = ko:getOwner()
+            if pOwner ~= nil and SceneObject(pOwner):isPlayerCreature() then
+                pPlayer = pOwner
+            end
+        end
+    end
+    if pPlayer == nil then return 0 end
+
+    local RANGE_METERS = 80 -- only grant to group members present at the kill
+    local mobSO = SceneObject(pMob)
+
+    local function grantIfEligible(pTarget)
+        if pTarget == nil or not SceneObject(pTarget):isPlayerCreature() then return end
+        -- must be within range of the mob that died
+        if mobSO and not SceneObject(pTarget):isInRangeWithObject(pMob, RANGE_METERS) then return end
+
+        local c = CreatureObject(pTarget)
+        if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
+            c:awardExperience("force_rank_xp", 100, true)
+        end
     end
 
-    local co = CreatureObject(pKiller)
-    -- ONLY Jedi Knight: requires the Knight title/skill
-    if co and co.hasSkill and co:hasSkill("force_title_jedi_rank_03") then
-        co:awardExperience("force_rank_xp", 100, true)
+    local killerCO = CreatureObject(pPlayer)
+    if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
+        local size = killerCO:getGroupSize()
+        for i = 0, size - 1 do
+            local pMember = killerCO:getGroupMember(i)
+            grantIfEligible(pMember)
+        end
+    else
+        -- not grouped: just grant to the solo killer if eligible
+        grantIfEligible(pPlayer)
     end
 
     return 0
