@@ -5,7 +5,7 @@ object_tangible_loot_loot_schematic_nym_slugthrower_schematic = object_tangible_
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_weaponsmith_master",
 	targetDraftSchematic = "object/draft_schematic/weapon/nym_slugthrower.iff",
-	targetUseCount = 1
+	targetUseCount = 3
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_nym_slugthrower_schematic, "object/tangible/loot/loot_schematic/nym_slugthrower_schematic.iff")
