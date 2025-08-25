@@ -120,7 +120,7 @@ object_weapon_ranged_carbine_carbine_nym_slugthrower = object_weapon_ranged_carb
 
 	woundsRatio = 16,
 
-	attackSpeed = 4.0
+	attackSpeed = 4.0,
 
 	numberExperimentalProperties = {1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2},
 	experimentalProperties = {"XX", "XX", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ", "XX", "XX", "XX", "CD", "OQ", "CD", "OQ", "CD", "OQ", "CD", "OQ"},
