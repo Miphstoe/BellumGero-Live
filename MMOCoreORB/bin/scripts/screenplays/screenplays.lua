@@ -738,3 +738,8 @@ includeFile("../custom_scripts/screenplays/screenplays.lua")
 includeFile("tasks/naboo/myswg_vendor.lua")
 includeFile("tools/mission_direction_choice.lua")
 includeFile("tools/mission_level_choice.lua")
+-- near your other includes
+printLuaError("[WBOSS-SC] include: acklay_worldboss.lua")
+includeFile("acklay_worldboss.lua")
+printLuaError("[WBOSS-SC] loader end")
+

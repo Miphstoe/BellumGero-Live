@@ -201,6 +201,12 @@ naboo_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "naboo_peko_peko_albatross_neutral_none",
+			minDifficulty = 22,
+			maxDifficulty = 26,
+			size = 25,
+		},
+		{
 			lairTemplateName = "naboo_gungan_war_base_neutral_large_theater",
 			minDifficulty = 23,
 			maxDifficulty = 27,

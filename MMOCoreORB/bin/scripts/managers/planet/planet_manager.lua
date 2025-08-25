@@ -144,7 +144,7 @@ dathomir = {
 	planetTravelPoints = {
 		{name = "Trade Outpost", x = 618.89258, z = 6.039608, y = 3092.0142, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Science Outpost", x = -49.021923, z = 18, y = -1584.7278, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Village", x = 5240, z = 78, y = -4069, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
+		{name = "Village", x = 5221, z = 78, y = -4069, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
 	},
 
 	jtlLaunchPoint = {"space_dathomir", -6900, 2750, -4000},
@@ -513,6 +513,7 @@ tatooine = {
 		{name = "Mos Entha Starport", x = 1266.0996, z = 7, y = 3065.1392, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle B", x = 1395.447, z = 7, y = 3467.0117, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle A", x = 1730.8828, z = 7, y = 3184.6135, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
+		{name = "Wayfair Shuttleport", x = -5043, z = 75, y = -6549, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Jabba's Palace", x = -6171.6, z = 90.0, y = -6381.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 0, landingRange = 3}
 	},
 
@@ -559,7 +560,8 @@ tatooine = {
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.768226, oz = 0, ow = -0.640178, x = 3533.04, z = 5, y = -4796, parentid = 0},
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.486657, oz = 0, ow = 0.873593, x = -1271.07, z = 12, y = -3590.22, parentid = 0},
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.514176, oz = 0, ow = 0.857684, x = -2896.35, z = 5, y = 2130.87, parentid = 0},
-	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.989124, oz = 0, ow = -0.147086, x = 1299.08, z = 7, y = 3145.21, parentid = 0}
+	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.989124, oz = 0, ow = -0.147086, x = 1299.08, z = 7, y = 3145.21, parentid = 0},
+		{templateFile = "object/building/tatooine/shuttleport_tatooine.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -5064, z = 75, y = -6549, parentid = 0}
 	}
 }
 
