@@ -18,7 +18,7 @@ AcklayWorldBoss = ScreenPlay:new {
   bossTemplate   = "acklay_worldboss",
   leashRadius    = 120,
 
-  -- TEST value; use 43200 for 12 hours
+  --TEST value; use 43200 for 12 hours
   respawnSeconds = 86400,
 
   -- boot guard key (prevents multi-start on the same server boot)
