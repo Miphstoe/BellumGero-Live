@@ -1,4 +1,4 @@
--- scripts/screenplays/acklay_worldboss.lua..
+--scripts/screenplays/acklay_worldboss.lua..
 -- Acklay World Boss (AUTO + ONE-SHOT): engine respawn, guarded against duplicate startup spawns
 
 local TAG = "[ACKLAY-WB/AUTO-ONE]"

@@ -5,3 +5,5 @@ luacov.stats.out
 .cache
 compile_commands.json
 .ccache/
+MMOCoreORB/bin/scripts/managers/ghoutput.xml
+MMOCoreORB/bin/scripts/managers/resource_manager_spawns.lua

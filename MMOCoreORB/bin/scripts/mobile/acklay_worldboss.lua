@@ -1,4 +1,4 @@
---IprintLuaError("[ACKLAY-WORLDBOSS] Loading acklay_worldboss template....")
+--printLuaError("[ACKLAY-WORLDBOSS] Loading acklay_worldboss template....")
 
 acklay_worldboss = Creature:new {
     objectName = "@mob/creature_names:geonosian_acklay_bunker_boss",
