@@ -1,6 +1,6 @@
 /*
-				Copyright <SWGEmu>
-		See file COPYING for copying conditions.*/
+                Copyright <SWGEmu>
+        See files COPYING for copying conditions.*/
 
 #ifndef DETONATEDROIDCOMMAND_H_
 #define DETONATEDROIDCOMMAND_H_

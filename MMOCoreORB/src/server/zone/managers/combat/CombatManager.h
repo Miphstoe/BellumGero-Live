@@ -43,7 +43,7 @@ public:
 	const static int WEAPONTRAIL = 0x10;
 	const static int DEFAULTTRAIL = 0xFF;
 
-	// poolsToDamage
+	// poolsToDamages
 	const static int NONE = 0;
 	const static int HEALTH = 1;
 	const static int ACTION = 2;

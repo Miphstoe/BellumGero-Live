@@ -77,6 +77,11 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
+	// 🚫 Safe-zone: blocks ALL combat if either party is inside a protected player-city building
+	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
+		return false;
+	}
+
 	CreatureObject* creo = defender->asCreatureObject();
 	if (creo != nullptr && creo->isIncapacitated() && creo->isFeigningDeath() == false) {
 		if (allowIncapTarget) {
@@ -123,6 +128,8 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 	return true;
 }
 
+
+
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
 	if (creature == nullptr)
@@ -150,7 +157,7 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 			SceneObject* mainDefender = threatTano->getMainDefender();
 
-			// If the defender is in range and is the maind defender of the creature, fail to peace
+			// If the defender is in range and is the main defender of the creature, fail to peace
 			if (creature->isInRange(threatTano, 128.f) && mainDefender != nullptr && mainDefender->getObjectID() == creatureID) {
 				return false;
 			}
@@ -161,6 +168,7 @@ bool CombatManager::attemptPeace(CreatureObject* creature) const {
 
 	return true;
 }
+
 
 // Called for AiAgents to break their combat state
 void CombatManager::forcePeace(CreatureObject* attacker) const {
@@ -196,6 +204,7 @@ void CombatManager::forcePeace(CreatureObject* attacker) const {
 
 	}, "ForcePeaceLambda", 250);
 }
+
 
 /*
 *
@@ -249,6 +258,13 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 					continue;
 				}
 
+				// 🚫 Safe-zone: skip any AoE target if attacker or target is in a protected building
+				if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
+					areaDefenders->remove(i);
+					tano->unlock();
+					continue;
+				}
+
 				areaDam += doTargetCombatAction(attacker, weapon, areaDefenders->get(i), &targetDefenders, data, &shouldGcwCrackdownTef, &shouldGcwTef, &shouldBhTef);
 				areaDefenders->remove(i);
 
@@ -287,7 +303,6 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 	for (int i = defenderSize - 1; i >= 0; i--) {
 		DefenderHitList* list = targetDefenders.get(i);
-
 		delete list;
 	}
 
@@ -348,6 +363,11 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 	}
 
 	if (targetDefenders == nullptr) {
+		return -1;
+	}
+
+	// 🚫 Safe-zone guard: block combat action entirely if either party is in a protected building
+	if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(tano)) {
 		return -1;
 	}
 
@@ -413,6 +433,8 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 
 	return damage;
 }
+
+
 
 /*
 
