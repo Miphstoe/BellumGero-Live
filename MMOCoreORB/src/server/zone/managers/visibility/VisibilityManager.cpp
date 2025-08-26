@@ -8,6 +8,8 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/visibility/tasks/VisibilityDecayTask.h"
 #include "server/zone/Zone.h"
+#include "server/zone/managers/director/DirectorManager.h"
+#include "conf/ConfigManager.h"
 
 const String VisibilityManager::factionStringRebel = "rebel";
 const String VisibilityManager::factionStringImperial = "imperial";
@@ -141,23 +143,79 @@ void VisibilityManager::removeFromVisibilityList(CreatureObject* creature) {
 }
 
 void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibilityMultiplier) {
-	//info("Increasing visibility for " + creature->getFirstName(), true);
+	// Existing behavior: adjust player ghost visibility and keep them in the list
 	Reference<PlayerObject*> ghost = creature->getSlottedObject("ghost").castTo<PlayerObject*>();
 
-	if (ghost != nullptr  && !ghost->hasGodMode()) {
+	float baseVis = 0.f;
+	float newVis  = 0.f;
+
+	if (ghost != nullptr && !ghost->hasGodMode()) {
 		Locker locker(ghost);
+
+		// Your current tick decay before increase
 		decreaseVisibility(creature);
 
-		float newVis = ghost->getVisibility() + (calculateVisibilityIncrease(creature) * visibilityMultiplier); // Calculate new total vis
-		newVis = Math::min(maxVisibility,  newVis); // Cap visibility
+		baseVis = ghost->getVisibility();
+
+		float addVis = calculateVisibilityIncrease(creature) * visibilityMultiplier;
+		newVis = Math::min(maxVisibility, baseVis + addVis);
 
 		ghost->setVisibility(newVis);
+		// info("New visibility for " + creature->getFirstName() + " is " + String::valueOf(ghost->getVisibility()), true);
 
-		//info("New visibility for " + creature->getFirstName() + " is " + String::valueOf(ghost->getVisibility()), true);
 		locker.release();
 
 		addToVisibilityList(creature);
 	}
+
+	// ---- Threshold gating + once-per-hour C++ gate ----
+	if (!creature->isPlayerCreature())
+		return;
+
+	// Read the threshold from config; default to 1500 if not set
+	// Add to your server config (e.g., core3 config) as:
+	// JediKnightEncounterVisibilityThreshold=1500
+	const int threshold = ConfigManager::instance()->getInt("JediKnightEncounterVisibilityThreshold", 1500);
+
+	// Recommended behavior: eligible whenever newVis is at/above the threshold
+	bool eligible = (newVis >= threshold);
+
+	// If you prefer edge-only (only on crossing upward), replace the line above with:
+	// bool eligible = (baseVis < threshold && newVis >= threshold);
+
+	if (!eligible)
+		return;
+
+	// Per-player 1-hour gate (to avoid repeated Lua calls)
+	uint64 oid = creature->getObjectID();
+	uint64 now = (uint64) time(nullptr);
+	const uint64 ONE_HOUR = 60 * 60;
+
+	{
+		Locker guard(&jkvNextAllowedLock);
+
+		uint64* nextPtr = jkvNextAllowed.get(oid);
+		uint64 nextAllowed = nextPtr == nullptr ? 0 : *nextPtr;
+
+		if (now < nextAllowed) {
+			return; // still on cooldown; don't call Lua
+		}
+
+		// Arm cooldown BEFORE Lua call to avoid re-entrancy/double-fires
+		jkvNextAllowed.put(oid, now + ONE_HOUR);
+	}
+
+	// Call the screenplay hook (same pattern as PlayerTriggers/HelperDroid)
+	Lua* lua = DirectorManager::instance()->getLuaInstance();
+	if (lua == nullptr)
+		return;
+
+	Reference<LuaFunction*> onVis = lua->createFunction("JediKnightVisibilityEncounter", "onVisibilityIncreased", 0);
+	if (onVis == nullptr)
+		return;
+
+	*onVis << creature;     // pass CreatureObject* to Lua
+	onVis->callFunction();  // Lua will enforce login grace + Knight skill and spawn the encounter
 }
 
 void VisibilityManager::clearVisibility(CreatureObject* creature) {

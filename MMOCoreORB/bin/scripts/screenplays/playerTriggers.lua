@@ -6,6 +6,7 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
 	end
 	ServerEventAutomation:playerLoggedIn(pPlayer)
 	BestineElection:playerLoggedIn(pPlayer)
+	JediKnightVisibilityEncounter:playerLoggedIn(pPlayer)
 end
 
 function PlayerTriggers:playerLoggedOut(pPlayer)
@@ -13,4 +14,5 @@ function PlayerTriggers:playerLoggedOut(pPlayer)
 		return
 	end
 	ServerEventAutomation:playerLoggedOut(pPlayer)
+	JediKnightVisibilityEncounter:playerLoggedOut(pPlayer)
 end
