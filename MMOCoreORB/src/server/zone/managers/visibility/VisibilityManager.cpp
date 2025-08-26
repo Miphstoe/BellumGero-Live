@@ -212,13 +212,16 @@ void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibil
 	// Call into Lua screenplay
 	Lua* lua = DirectorManager::instance()->getLuaInstance();
 	if (lua == nullptr)
-		return;
+    	return;
 
 	Reference<LuaFunction*> onVis = lua->createFunction("JediKnightVisibilityEncounter", "onVisibilityIncreased", 0);
 	if (onVis == nullptr)
-		return;
+    	return;
 
-	*onVis << creature;   // pass CreatureObject*
+	// Pass: creature, threshold, cooldownSeconds
+	*onVis << creature;
+	*onVis << (int)threshold;
+	*onVis << (int)COOLDOWN;
 	onVis->callFunction();
 }
 

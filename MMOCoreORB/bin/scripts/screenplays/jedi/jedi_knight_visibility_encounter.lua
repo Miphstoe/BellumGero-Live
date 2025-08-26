@@ -1,19 +1,27 @@
--- Jedi Knight Visibility Encounter (Encounter-based)
--- Triggers from C++ when newVis >= threshold and the per-player cooldown has elapsed.
+-- Jedi Knight Visibility Encounter (Encounter-based, event-only)
+-- Triggered from C++ VisibilityManager when newVis >= threshold and the per-player cooldown gate has elapsed.
 
 local ObjectManager = require("managers.object.object_manager")
 local SpawnMobiles  = require("utils.spawn_mobiles")
 
 -- Storage prefix for per-player keys
 local PREFIX = "JkvEnc"
+local DEBUG  = false -- set true while testing to get breadcrumbs
+
+local function dbg(co, msg)
+    if DEBUG and co ~= nil then
+        CreatureObject(co):sendSystemMessage("\\#888888[JKV] " .. msg)
+    end
+end
 
 -- ===========================
 -- Main screenplay definition
 -- ===========================
 JediKnightVisibilityEncounter = ScreenPlay:new {
-    -- No polling. C++ VisibilityManager calls :onVisibilityIncreased when eligible.
-    LOGIN_GRACE_SECONDS = 120,        -- don't spawn immediately on login
-    DESPAWN_MS          = 5 * 60 * 1000, -- auto-despawn thug after 5 minutes
+    -- No polling. C++ calls :onVisibilityIncreased when eligible.
+    LOGIN_GRACE_SECONDS = 120,            -- block spawns right after login
+    DESPAWN_MS          = 5 * 60 * 1000,  -- thug lifetime if ignored (5 minutes)
+    SPAWN_GUARD_MS      = 2000            -- prevent double-fires within 2s
 }
 
 registerScreenPlay("JediKnightVisibilityEncounter", true)
@@ -27,6 +35,7 @@ end
 function JediKnightVisibilityEncounter:playerLoggedIn(pPlayer)
     if (pPlayer == nil) then return end
     local pid = SceneObject(pPlayer):getObjectID()
+
     -- seed a grace window on login
     writeData(pid .. ":" .. PREFIX .. ":notBefore", os.time() + self.LOGIN_GRACE_SECONDS)
 
@@ -49,52 +58,122 @@ end
 
 -- ====================================
 -- C++ hook: called when threshold hit
+-- Receives (pPlayer, threshold, cooldownSeconds)
 -- ====================================
-function JediKnightVisibilityEncounter:onVisibilityIncreased(pPlayer)
+function JediKnightVisibilityEncounter:onVisibilityIncreased(pPlayer, threshold, cooldownSeconds)
     if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then return end
     local co = CreatureObject(pPlayer)
     if (co == nil or not co:hasSkill("force_title_jedi_rank_03")) then return end
 
-    -- respect login grace
     local pid = SceneObject(pPlayer):getObjectID()
+
+    -- cache the current threshold/cooldown for this Knight (used by the retry timer)
+    if (threshold ~= nil) then writeData(pid .. ":" .. PREFIX .. ":thr", tonumber(threshold)) end
+    if (cooldownSeconds ~= nil) then writeData(pid .. ":" .. PREFIX .. ":cd",  tonumber(cooldownSeconds)) end
+
+    -- spawn guard: avoid back-to-back double triggers within a few ms
+    local nowms = os.time() * 1000
+    local last  = readData(pid .. ":" .. PREFIX .. ":spawnGuard")
+    if (last ~= nil and nowms < tonumber(last)) then
+        dbg(pPlayer, "spawn guarded")
+        return
+    end
+    writeData(pid .. ":" .. PREFIX .. ":spawnGuard", nowms + self.SPAWN_GUARD_MS)
+
+    -- Respect login grace
     local notBefore = readData(pid .. ":" .. PREFIX .. ":notBefore")
     if (notBefore ~= nil and os.time() < tonumber(notBefore)) then
+        dbg(pPlayer, "blocked by login grace")
         return
     end
 
-    -- one-active-encounter guard
+    -- One-active-encounter: if a thug is still up, replace it so new triggers work
     local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
-    if (mobOID ~= nil and tonumber(mobOID) > 0) then
+    if (mobOID ~= nil) then
         local pExisting = getSceneObject(tonumber(mobOID))
         if (pExisting ~= nil) then
-            return -- already have an active thug
+            dbg(pPlayer, "replacing existing thug")
+            self:despawnForPlayer(pPlayer) -- clear old one
         else
-            -- stale; clean up
+            -- stale; clean up keys
             deleteData(pid .. ":" .. PREFIX .. ":mobOID")
             deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
             deleteData(pid .. ":" .. PREFIX .. ":tagged")
         end
     end
 
-    -- Start the Encounter (Sith-Shadow style)
+    -- Try to start the encounter (announcement happens inside the encounter on success)
     if JediKnightThugEncounter:start(pPlayer) then
-        co:sendSystemMessage("\\#FFCC00A bounty hunter has picked up your trail!")
+        dbg(pPlayer, "encounter started")
+        -- schedule a post-cooldown retry check so we can spawn again even without a vis bump
+        local cd = readData(pid .. ":" .. PREFIX .. ":cd")
+        if (cd ~= nil) then
+            createEvent(tonumber(cd) * 1000, "JediKnightVisibilityEncounter", "cooldownCheck", pPlayer, "")
+        end
+    else
+        dbg(pPlayer, "encounter start returned false")
     end
+end
+
+-- Fired after the cooldown window. If the Knight is still >= threshold, spawn again.
+function JediKnightVisibilityEncounter:cooldownCheck(pPlayer)
+    if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then return end
+    local co = CreatureObject(pPlayer)
+    if (co == nil or not co:hasSkill("force_title_jedi_rank_03")) then return end
+
+    local pid = SceneObject(pPlayer):getObjectID()
+    local thr = readData(pid .. ":" .. PREFIX .. ":thr")
+    if (thr == nil) then return end
+    thr = tonumber(thr)
+
+    -- read current visibility
+    local pGhost = co:getPlayerObject()
+    if (pGhost == nil) then return end
+    local vis = math.floor(PlayerObject(pGhost):getVisibility() or 0)
+
+    if (vis < thr) then
+        dbg(pPlayer, "cooldownCheck: below threshold (" .. vis .. " < " .. thr .. ")")
+        return
+    end
+
+    -- if an old thug is still around, replace it so the new attempt can start cleanly
+    local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
+    if (mobOID ~= nil) then
+        local pExisting = getSceneObject(tonumber(mobOID))
+        if (pExisting ~= nil) then
+            dbg(pPlayer, "cooldownCheck: despawning old thug")
+            self:despawnForPlayer(pPlayer)
+        else
+            deleteData(pid .. ":" .. PREFIX .. ":mobOID")
+            deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+            deleteData(pid .. ":" .. PREFIX .. ":tagged")
+        end
+    end
+
+    dbg(pPlayer, "cooldownCheck: starting new encounter")
+    JediKnightThugEncounter:start(pPlayer)
 end
 
 -- ===========================
 -- Encounter task (Sith-Shadow style)
 -- ===========================
 JediKnightThugEncounter = Encounter:new {
-    taskName            = "JediKnightThugEncounter",
+    taskName             = "JediKnightThugEncounter",
     encounterDespawnTime = 5 * 60 * 1000,  -- keep in sync with DESPAWN_MS
     spawnObjectList = {
-        -- Tweak distances/behavior here just like sith_shadow_encounter.lua
-        { template = "bounty_hunter_thug", minimumDistance = 64, maximumDistance = 96, referencePoint = 0, followPlayer = true, setNotAttackable = false, runOnDespawn = true }
+        {
+            template = "bounty_hunter_thug",
+            minimumDistance = 64,  -- per your request
+            maximumDistance = 90,
+            referencePoint  = 0,
+            followPlayer    = true,
+            setNotAttackable = false,
+            runOnDespawn    = true
+        }
     }
 }
 
--- Keep API parity with other Encounters
+-- Provide a start() alias to mirror other Encounters
 function JediKnightThugEncounter:start(pPlayer)
     return self:taskStart(pPlayer)
 end
@@ -119,14 +198,14 @@ function JediKnightThugEncounter:taskStart(pPlayer, ...)
                 writeData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID", pid)
 
                 -- Observe damage and death
-                createObserver(DAMAGERECEIVED,  "JediKnightVisibilityEncounter", "onThugDamaged", mob)
+                createObserver(DAMAGERECEIVED,    "JediKnightVisibilityEncounter", "onThugDamaged", mob)
                 createObserver(OBJECTDESTRUCTION, "JediKnightVisibilityEncounter", "onThugDied",    mob)
 
                 -- Force aggro on the Knight
                 if (AiAgent ~= nil) then
                     AiAgent(mob):addDefender(pPlayer)
-                    AiAgent(mob):addHate(pPlayer, 100000) -- big bias toward the Knight
                 end
+                CreatureObject(mob):addHate(pPlayer, 100000)
                 CreatureObject(mob):engageCombat(pPlayer)
             end
         end
@@ -134,8 +213,11 @@ function JediKnightThugEncounter:taskStart(pPlayer, ...)
 
     -- Reassert target once in case something stole initial aggro
     createEvent(2000, "JediKnightVisibilityEncounter", "retargetKnight", pPlayer, "")
-    -- Auto-despawn (mirror encounterDespawnTime)
+    -- Auto-despawn (matches encounterDespawnTime)
     createEvent(self.encounterDespawnTime, "JediKnightVisibilityEncounter", "onDespawnTimer", pPlayer, "")
+
+    -- Announce on confirmed spawn
+    CreatureObject(pPlayer):sendSystemMessage("\\#FFCC00A bounty hunter has picked up your trail!")
 
     return true
 end
@@ -154,8 +236,8 @@ function JediKnightVisibilityEncounter:retargetKnight(pPlayer)
 
     if (AiAgent ~= nil) then
         AiAgent(pMob):addDefender(pPlayer)
-        AiAgent(pMob):addHate(pPlayer, 100000)
     end
+    CreatureObject(pMob):addHate(pPlayer, 100000)
     CreatureObject(pMob):engageCombat(pPlayer)
 end
 
@@ -164,7 +246,7 @@ function JediKnightVisibilityEncounter:onThugDamaged(pMob, pAttacker, damage)
     if (pMob == nil or pAttacker == nil) then return 0 end
     if (not SceneObject(pAttacker):isPlayerCreature()) then return 0 end
 
-    local mobOID = SceneObject(pMob):getObjectID()
+    local mobOID   = SceneObject(pMob):getObjectID()
     local ownerPID = readData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
     if (ownerPID == nil) then return 0 end
 
