@@ -43,7 +43,7 @@
 object_building_naboo_cantina_naboo = object_building_naboo_shared_cantina_naboo:new {
 	skillMods = {
 		{"private_med_wound_mind", 100},
-		{"private_buff_mind", 100},
+		{"private_buff_mind", 125},
 		{"private_med_battle_fatigue", 5},
 		{"private_safe_logout", 1}
 	},
