@@ -31,6 +31,7 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
