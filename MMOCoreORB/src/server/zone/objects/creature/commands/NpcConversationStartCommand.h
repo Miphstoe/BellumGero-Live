@@ -73,10 +73,10 @@ public:
 					// Calculate the distance squared without use of the z coordinate. We also check LoS below
 					float distanceSq = playerPosition.squaredDistanceTo2d(agentPosition);
 
-					if (distanceSq > 25) {
+					if (distanceSq > 35) {
 						return TOOFAR;
 					}
-				} else if (playerPosition.squaredDistanceTo(agentPosition) > 25) {
+				} else if (playerPosition.squaredDistanceTo(agentPosition) > 35) {
 					return TOOFAR;
 				}
 

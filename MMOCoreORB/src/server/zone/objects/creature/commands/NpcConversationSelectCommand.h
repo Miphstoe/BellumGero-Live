@@ -52,7 +52,7 @@ public:
 
 			Vector3 validCoords = validPosition->getWorldPosition(zoneServer);
 
-			if (object->isShipObject() || validCoords.squaredDistanceTo(object->getWorldPosition()) < 25.f) {
+			if (object->isShipObject() || validCoords.squaredDistanceTo(object->getWorldPosition()) < 35.f) {
 				object->selectConversationOption(option, creature);
 
 				object->notifyObservers(ObserverEventType::SELECTCONVERSATION, creature, option);
