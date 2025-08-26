@@ -1,32 +1,43 @@
-local ObjectManager = require("managers.object.object_manager")
+-- Jedi Knight Visibility Encounter (Encounter-based)
+-- Triggers from C++ when newVis >= threshold and the per-player cooldown has elapsed.
 
--- Storage prefix for per-player data
+local ObjectManager = require("managers.object.object_manager")
+local SpawnMobiles  = require("utils.spawn_mobiles")
+
+-- Storage prefix for per-player keys
 local PREFIX = "JkvEnc"
 
+-- ===========================
+-- Main screenplay definition
+-- ===========================
 JediKnightVisibilityEncounter = ScreenPlay:new {
-    LOGIN_GRACE_SECONDS = 120,  -- time after login before an encounter may fire
-    DESPAWN_MS = 5 * 60 * 1000, -- thug lifetime if ignored (5 minutes)
+    -- No polling. C++ VisibilityManager calls :onVisibilityIncreased when eligible.
+    LOGIN_GRACE_SECONDS = 120,        -- don't spawn immediately on login
+    DESPAWN_MS          = 5 * 60 * 1000, -- auto-despawn thug after 5 minutes
 }
 
 registerScreenPlay("JediKnightVisibilityEncounter", true)
 
 function JediKnightVisibilityEncounter:start()
-    -- No world spawns on boot; logic is event-only (called from C++).
+    -- No world spawns on boot; everything is event-driven.
     return true
 end
 
--- Seed login grace and clear any stale tracking
+-- Called from playerTriggers.lua (only for Knights)
 function JediKnightVisibilityEncounter:playerLoggedIn(pPlayer)
     if (pPlayer == nil) then return end
     local pid = SceneObject(pPlayer):getObjectID()
+    -- seed a grace window on login
     writeData(pid .. ":" .. PREFIX .. ":notBefore", os.time() + self.LOGIN_GRACE_SECONDS)
-    -- Optional: clear stale mob pointer if the mob no longer exists
+
+    -- clear stale mob tracking if needed
     local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
     if (mobOID ~= nil) then
         local pMob = getSceneObject(tonumber(mobOID))
         if (pMob == nil) then
             deleteData(pid .. ":" .. PREFIX .. ":mobOID")
             deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+            deleteData(pid .. ":" .. PREFIX .. ":tagged")
         end
     end
 end
@@ -36,66 +47,163 @@ function JediKnightVisibilityEncounter:playerLoggedOut(pPlayer)
     self:despawnForPlayer(pPlayer)
 end
 
--- Called from C++ when (newVis >= threshold) and the per-player cooldown gate passed.
+-- ====================================
+-- C++ hook: called when threshold hit
+-- ====================================
 function JediKnightVisibilityEncounter:onVisibilityIncreased(pPlayer)
     if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then return end
     local co = CreatureObject(pPlayer)
     if (co == nil or not co:hasSkill("force_title_jedi_rank_03")) then return end
 
-    -- Respect login grace
+    -- respect login grace
     local pid = SceneObject(pPlayer):getObjectID()
     local notBefore = readData(pid .. ":" .. PREFIX .. ":notBefore")
     if (notBefore ~= nil and os.time() < tonumber(notBefore)) then
         return
     end
 
-    -- Only one active encounter per player
+    -- one-active-encounter guard
     local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
     if (mobOID ~= nil and tonumber(mobOID) > 0) then
         local pExisting = getSceneObject(tonumber(mobOID))
         if (pExisting ~= nil) then
-            return
+            return -- already have an active thug
+        else
+            -- stale; clean up
+            deleteData(pid .. ":" .. PREFIX .. ":mobOID")
+            deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+            deleteData(pid .. ":" .. PREFIX .. ":tagged")
         end
-        -- stale pointer; clear it
-        deleteData(pid .. ":" .. PREFIX .. ":mobOID")
-        deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
     end
 
-    self:startEncounter(pPlayer)
+    -- Start the Encounter (Sith-Shadow style)
+    if JediKnightThugEncounter:start(pPlayer) then
+        co:sendSystemMessage("\\#FFCC00A bounty hunter has picked up your trail!")
+    end
 end
 
-function JediKnightVisibilityEncounter:startEncounter(pPlayer)
-    if (pPlayer == nil) then return end
+-- ===========================
+-- Encounter task (Sith-Shadow style)
+-- ===========================
+JediKnightThugEncounter = Encounter:new {
+    taskName            = "JediKnightThugEncounter",
+    encounterDespawnTime = 5 * 60 * 1000,  -- keep in sync with DESPAWN_MS
+    spawnObjectList = {
+        -- Tweak distances/behavior here just like sith_shadow_encounter.lua
+        { template = "bounty_hunter_thug", minimumDistance = 64, maximumDistance = 96, referencePoint = 0, followPlayer = true, setNotAttackable = false, runOnDespawn = true }
+    }
+}
 
-    local zone = SceneObject(pPlayer):getZoneName()
-    local px = SceneObject(pPlayer):getWorldPositionX()
-    local py = SceneObject(pPlayer):getWorldPositionY()
-    local sx, sy = px + 6, py + 6
-    local sz = getTerrainHeight(zone, sx, sy)
+-- Keep API parity with other Encounters
+function JediKnightThugEncounter:start(pPlayer)
+    return self:taskStart(pPlayer)
+end
 
-    local mob = spawnMobile(zone, "bounty_hunter_thug", 0, sx, sz, sy, 0, 0)
-    if (mob == nil) then
-        CreatureObject(pPlayer):sendSystemMessage("Could not spawn bounty hunter thug.")
-        return
+function JediKnightThugEncounter:taskStart(pPlayer, ...)
+    if (pPlayer == nil) then return false end
+    if not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03") then return false end
+
+    local ok = self:createEncounter(pPlayer)
+    if not ok then return false end
+
+    local pid = SceneObject(pPlayer):getObjectID()
+    local spawned = SpawnMobiles.getSpawnedMobiles(pPlayer, self.taskName)
+    if (spawned ~= nil) then
+        for i = 1, #spawned do
+            local mob = spawned[i]
+            if SpawnMobiles.isValidMobile(mob) then
+                local mobOID = SceneObject(mob):getObjectID()
+
+                -- Track ownership for credit logic
+                writeData(pid .. ":" .. PREFIX .. ":mobOID", mobOID)
+                writeData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID", pid)
+
+                -- Observe damage and death
+                createObserver(DAMAGERECEIVED,  "JediKnightVisibilityEncounter", "onThugDamaged", mob)
+                createObserver(OBJECTDESTRUCTION, "JediKnightVisibilityEncounter", "onThugDied",    mob)
+
+                -- Force aggro on the Knight
+                if (AiAgent ~= nil) then
+                    AiAgent(mob):addDefender(pPlayer)
+                    AiAgent(mob):addHate(pPlayer, 100000) -- big bias toward the Knight
+                end
+                CreatureObject(mob):engageCombat(pPlayer)
+            end
+        end
     end
 
-    local mobOID = SceneObject(mob):getObjectID()
+    -- Reassert target once in case something stole initial aggro
+    createEvent(2000, "JediKnightVisibilityEncounter", "retargetKnight", pPlayer, "")
+    -- Auto-despawn (mirror encounterDespawnTime)
+    createEvent(self.encounterDespawnTime, "JediKnightVisibilityEncounter", "onDespawnTimer", pPlayer, "")
+
+    return true
+end
+
+-- ===========================
+-- Helpers / observers
+-- ===========================
+function JediKnightVisibilityEncounter:retargetKnight(pPlayer)
+    if (pPlayer == nil) then return end
     local pid = SceneObject(pPlayer):getObjectID()
+    local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
+    if (mobOID == nil) then return end
 
-    -- Track both ways so we can verify ownership on death
-    writeData(pid .. ":" .. PREFIX .. ":mobOID", mobOID)
-    writeData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID", pid)
+    local pMob = getSceneObject(tonumber(mobOID))
+    if (pMob == nil) then return end
 
-    -- Reward on death if killed by the owner Knight
-    createObserver(OBJECTDESTRUCTION, "JediKnightVisibilityEncounter", "onThugDied", mob)
+    if (AiAgent ~= nil) then
+        AiAgent(pMob):addDefender(pPlayer)
+        AiAgent(pMob):addHate(pPlayer, 100000)
+    end
+    CreatureObject(pMob):engageCombat(pPlayer)
+end
 
-    -- Attack immediately
-    CreatureObject(mob):engageCombat(pPlayer)
+-- Mark the Knight as having "tagged" the mob (did damage)
+function JediKnightVisibilityEncounter:onThugDamaged(pMob, pAttacker, damage)
+    if (pMob == nil or pAttacker == nil) then return 0 end
+    if (not SceneObject(pAttacker):isPlayerCreature()) then return 0 end
 
-    -- Auto-despawn timer
-    createEvent(self.DESPAWN_MS, "JediKnightVisibilityEncounter", "onDespawnTimer", pPlayer, "")
+    local mobOID = SceneObject(pMob):getObjectID()
+    local ownerPID = readData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+    if (ownerPID == nil) then return 0 end
 
-    CreatureObject(pPlayer):sendSystemMessage("\\#FFCC00A bounty hunter has picked up your trail!")
+    if (SceneObject(pAttacker):getObjectID() == tonumber(ownerPID)) then
+        writeData(ownerPID .. ":" .. PREFIX .. ":tagged", 1)
+    end
+    return 0
+end
+
+-- Award credit if the Knight killed OR had tagged the mob
+function JediKnightVisibilityEncounter:onThugDied(pMob, pKiller)
+    if (pMob == nil) then return 0 end
+
+    local mobOID   = SceneObject(pMob):getObjectID()
+    local ownerPID = readData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+    if (ownerPID == nil) then return 0 end
+
+    local pOwner = getSceneObject(tonumber(ownerPID))
+    local ownerIsKnight = (pOwner ~= nil and SceneObject(pOwner):isPlayerCreature() and CreatureObject(pOwner):hasSkill("force_title_jedi_rank_03"))
+
+    local killerIsOwner = false
+    if (pKiller ~= nil and SceneObject(pKiller):isPlayerCreature()) then
+        killerIsOwner = (SceneObject(pKiller):getObjectID() == tonumber(ownerPID))
+    end
+
+    local tagged = readData(ownerPID .. ":" .. PREFIX .. ":tagged")
+    local ownerTagged = (tagged ~= nil and tonumber(tagged) == 1)
+
+    if ownerIsKnight and (killerIsOwner or ownerTagged) then
+        CreatureObject(pOwner):awardExperience("force_rank_xp", 1000, true)
+        CreatureObject(pOwner):sendSystemMessage("\\#00FF00You earned 1,000 Force Rank XP for defeating the attacker.")
+    end
+
+    -- cleanup keys
+    deleteData(ownerPID .. ":" .. PREFIX .. ":mobOID")
+    deleteData(ownerPID .. ":" .. PREFIX .. ":tagged")
+    deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+
+    return 0
 end
 
 function JediKnightVisibilityEncounter:onDespawnTimer(pPlayer)
@@ -104,45 +212,19 @@ end
 
 function JediKnightVisibilityEncounter:despawnForPlayer(pPlayer)
     if (pPlayer == nil) then return end
-    local pid = SceneObject(pPlayer):getObjectID()
+
+    -- Encounter-aware despawn
+    if (SpawnMobiles ~= nil) then
+        SpawnMobiles.despawnMobiles(pPlayer, JediKnightThugEncounter.taskName, false)
+    end
+
+    local pid    = SceneObject(pPlayer):getObjectID()
     local mobOID = readData(pid .. ":" .. PREFIX .. ":mobOID")
-    if (mobOID == nil) then return end
-
-    local pMob = getSceneObject(tonumber(mobOID))
-    if (pMob ~= nil) then
-        SceneObject(pMob):destroyObjectFromWorld(true)
-        SceneObject(pMob):destroyObjectFromDatabase()
-    end
-
-    deleteData(pid .. ":" .. PREFIX .. ":mobOID")
-    deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
-end
-
-function JediKnightVisibilityEncounter:onThugDied(pMob, pKiller)
-    if (pMob == nil or pKiller == nil) then return 0 end
-    if (not SceneObject(pKiller):isPlayerCreature()) then return 0 end
-
-    local mobOID = SceneObject(pMob):getObjectID()
-    local ownerPID = readData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
-    if (ownerPID == nil) then return 0 end
-
-    local killerPID = SceneObject(pKiller):getObjectID()
-    if (tonumber(ownerPID) ~= tonumber(killerPID)) then
-        -- Not the owner who triggered this encounter; clean ownership and exit
+    if (mobOID ~= nil) then
+        deleteData(pid .. ":" .. PREFIX .. ":mobOID")
+        deleteData(pid .. ":" .. PREFIX .. ":tagged")
         deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
-        return 0
     end
-
-    local co = CreatureObject(pKiller)
-    if (co ~= nil and co:hasSkill("force_title_jedi_rank_03")) then
-        co:awardExperience("force_rank_xp", 1000, true)
-        co:sendSystemMessage("\\#00FF00You earned 1,000 Force Rank XP for defeating the attacker.")
-    end
-
-    -- Clear tracking for the owner
-    deleteData(killerPID .. ":" .. PREFIX .. ":mobOID")
-    deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
-    return 0
 end
 
 return JediKnightVisibilityEncounter

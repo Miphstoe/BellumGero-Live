@@ -180,8 +180,8 @@ void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibil
 		return;
 
 	// --- threshold + per-player cooldown ---
-	const int    threshold = ConfigManager::instance()->getInt("JediKnightEncounterVisibilityThreshold", 1500);
-	const uint64 COOLDOWN  = (uint64) ConfigManager::instance()->getInt("JediKnightEncounterCooldownSeconds", 3600);
+	const int    threshold = ConfigManager::instance()->getInt("JediKnightEncounterVisibilityThreshold", 500);
+	const uint64 COOLDOWN  = (uint64) ConfigManager::instance()->getInt("JediKnightEncounterCooldownSeconds", 30);
 
 	// Eligible whenever resulting visibility is at/above the threshold
 	bool eligible = (newVis >= threshold);
