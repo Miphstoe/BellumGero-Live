@@ -210,7 +210,7 @@ function ThemeParkNym:completePark(pPlayer)
 		return
 	end
 
-	local pItem = giveItem(pInventory, "object/weapon/ranged/carbine/carbine_nym_slugthrower.iff", -1)
+	local pItem = giveItem(pInventory, "object/tangible/loot/loot_schematic/nym_slugthrower_schematic.iff", -1)
 
 	if (pItem ~= nil) then
 		SceneObject(pItem):sendTo(pPlayer)

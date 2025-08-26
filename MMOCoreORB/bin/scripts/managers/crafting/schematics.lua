@@ -1209,6 +1209,7 @@ schematics = {
 	{path="object/draft_schematic/weapon/cleaver.iff"},
 	{path="object/draft_schematic/weapon/poleaxe_vibro.iff"},
 	{path="object/draft_schematic/weapon/maul.iff"},
+	{path="object/draft_schematic/weapon/nym_slugthrower.iff"},
 	{path="object/draft_schematic/slicing/slicing_weapon_upgrade_kit.iff"},
 	{path="object/draft_schematic/weapon/component/blaster_pistol_barrel.iff"},
 	{path="object/draft_schematic/weapon/component/blaster_power_handler.iff"},
