@@ -82,12 +82,6 @@ class VisibilityManager : public Singleton<VisibilityManager>, public Logger, pu
 	VectorMap<uint64, ManagedReference<CreatureObject*> > visibilityList;
 
 	/**
-	 * Per-player cooldown for Jedi Knight encounter trigger (once per hour).
-	 */
-	VectorMap<uint64, uint64> jkvNextAllowed;
-	Mutex jkvNextAllowedLock;
-
-	/**
 	 * Mutex for the visibilityList.
 	 */
 	Mutex visibilityListLock;
