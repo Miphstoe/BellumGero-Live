@@ -75,33 +75,42 @@ public:
 	}
 
 	bool doVolleyFire(CreatureObject* leader, GroupObject* group, uint64* target) const {
-		if (leader == nullptr || group == nullptr)
-			return false;
+    if (leader == nullptr || group == nullptr)
+        return false;
 
-		for (int i = 0; i < group->getGroupSize(); i++) {
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return false; // leader not on a planet yet
 
-			if (!member->isPlayerCreature() || !member->isInRange(leader, 128.0))
-				continue;
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, false))
-				continue;
+        // ✅ Planetwide targeting: same planet only, ignore range/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			if (!member->isInCombat())
-				continue;
+        // Sensible filters (keep behavior sane)
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			Locker clocker(member, leader);
+        // Keep original requirement: only order members already in combat
+        if (!member->isInCombat())
+            continue;
 
-			String queueAction = "volleyfireattack";
-			uint64 queueActionCRC = queueAction.hashCode();
+        Locker clocker(member, leader);
 
-			member->executeObjectControllerAction(queueActionCRC, (uint64)target, "");
+        // Issue the volley attack order to the member against the leader's chosen target
+        static const uint64 queueActionCRC = String("volleyfireattack").hashCode();
+        member->executeObjectControllerAction(queueActionCRC, (uint64)target, "");
 
-			checkForTef(leader, member);
-		}
+        checkForTef(leader, member);
+    }
 
-		return true;
-	}
+    return true;
+}
+
 
 };
 
