@@ -6,7 +6,7 @@ jk_hunt_bh = Creature:new {
 	socialGroup = "mercenary",
 	faction = "",
 	level = 285,
-	chanceHit = 75,
+	chanceHit = 55,
 	damageMin = 1200,
 	damageMax = 2300,
 	baseXp = 25266,
@@ -28,11 +28,13 @@ jk_hunt_bh = Creature:new {
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
     scale = 1.15,
+    customAiMap = "enclaveSentinel",
 
 	templates = {"object/mobile/dressed_death_watch_silver.iff",
 		"object/mobile/dressed_death_watch_red.iff",
         "object/mobile/dressed_death_watch_grey.iff",
         "object/mobile/dressed_death_watch_gold.iff"},
+
 	lootGroups = {
 		{
         groups = {
