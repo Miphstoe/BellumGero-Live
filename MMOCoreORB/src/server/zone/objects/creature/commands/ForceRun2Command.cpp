@@ -21,7 +21,7 @@ int ForceRun2Command::doQueueCommand(CreatureObject* creature, const uint64& tar
 
     // Block activation while in combat (swap for PvP-only helper if desired)
     if (creature->isInCombat()) {
-        // creature->sendSystemMessage("You cannot activate Force Run while in PvP combat.");
+         creature->sendSystemMessage("You cannot activate Force Run while in PvP combat.");
         creature->sendSystemMessage("@jedi_spam:force_run_blocked_pvp");
         return GENERALERROR;
     }
