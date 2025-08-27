@@ -178,8 +178,8 @@ JediKnightThugEncounter = Encounter:new {
     spawnObjectList = {
         {
             template         = "jk_hunt_bh", -- your custom hunter (customAiMap="enclaveSentinel")
-            minimumDistance  = 64,
-            maximumDistance  = 90,
+            minimumDistance  = 30,
+            maximumDistance  = 45,
             referencePoint   = 0,
             followPlayer     = true,
             setNotAttackable = false,
@@ -231,7 +231,7 @@ function JediKnightThugEncounter:taskStart(pPlayer, ...)
         end
     end
 
-    CreatureObject(pPlayer):sendSystemMessage("\\#FFA500A Bounty Hunter thug is on your trail!")
+    CreatureObject(pPlayer):sendSystemMessage("\\#FFA500A Bounty Hunter is on your trail!")
     return true
 end
 
@@ -271,7 +271,6 @@ function JediKnightVisibilityEncounter:onThugDied(pMob, pKiller)
 
     if ownerIsKnight and (killerIsOwner or ownerTagged) then
         CreatureObject(pOwner):awardExperience("force_rank_xp", 1000, true)
-        CreatureObject(pOwner):sendSystemMessage("\\#00FF00You earned 1,000 Force Rank XP for defeating the attacker.")
     end
 
     -- Keep owner mapping until loot so we can attribute the corpse.
@@ -344,11 +343,22 @@ function JediKnightVisibilityEncounter:onDeathWatchdog(pPlayer)
 
     local ownerCO = CreatureObject(pPlayer)
     if (ownerCO ~= nil and ownerCO:isDead()) then
-        dbg(pPlayer, "owner dead: despawn & reschedule")
-        self:despawnForPlayer(pPlayer)
+        dbg(pPlayer, "owner dead: hunter withdrawing")
+
+        -- EXACTLY like Village: run away now, despawn ~18s later
+        createEvent(2 * 1000, "JediKnightThugEncounter", "handleDespawnEvent", pPlayer, "")
+
+        -- keep your grace + reschedule timings
         writeData(pid .. ":" .. PREFIX .. ":notBefore", os.time() + self.DEATH_GRACE_SECONDS)
         self:scheduleNext(pPlayer, self.DEATH_RESPAWN_MIN_SECONDS, self.DEATH_RESPAWN_MAX_SECONDS)
-        CreatureObject(pPlayer):sendSystemMessage("\\#FF8080The hunter lost your trail—for now.")
+        CreatureObject(pPlayer):sendSystemMessage("\\#FF8080The hunter withdraws into the shadows...")
+
+        -- cleanup encounter keys now; the Encounter will finish the despawn later
+        if (mobOID ~= nil) then
+            deleteData("mob:" .. tostring(mobOID) .. ":" .. PREFIX .. ":ownerPID")
+        end
+        deleteData(pid .. ":" .. PREFIX .. ":mobOID")
+        deleteData(pid .. ":" .. PREFIX .. ":tagged")
         return 0
     end
 
