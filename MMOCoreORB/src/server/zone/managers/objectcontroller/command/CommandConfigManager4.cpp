@@ -55,6 +55,7 @@
 #include "server/zone/objects/creature/commands/TameCommand.h"
 #include "server/zone/objects/creature/commands/TargetCommand.h"
 #include "server/zone/objects/creature/commands/TauntCommand.h"
+#include "server/zone/objects/creature/commands/Taunt2Command.h"
 #include "server/zone/objects/creature/commands/TeachCommand.h"
 #include "server/zone/objects/creature/commands/TeleportCommand.h"
 #include "server/zone/objects/creature/commands/TeleportTargetCommand.h"
