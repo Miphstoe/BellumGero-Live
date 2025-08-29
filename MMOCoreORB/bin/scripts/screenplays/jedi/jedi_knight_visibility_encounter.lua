@@ -82,7 +82,7 @@ end
 JediKnightVisibilityEncounter = ScreenPlay:new {
     -- Spawn cadence
     LOGIN_GRACE_SECONDS       = 60,               -- no ambush right after login
-    FIRST_DELAY_MIN_SECONDS   = 2700,               -- 3–10 min first window
+    FIRST_DELAY_MIN_SECONDS   = 2700,               -- 45 min - 2 hours first window
     FIRST_DELAY_MAX_SECONDS   = 7200,
     RESPAWN_MIN_SECONDS       = 2700,               -- after loot, new window
     RESPAWN_MAX_SECONDS       = 7200,
