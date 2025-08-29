@@ -6,7 +6,7 @@ local ObjectManager = require("managers.object.object_manager")
 local SpawnMobiles  = require("utils.spawn_mobiles")
 
 local PREFIX = "JkhEnc"
-local DEBUG  = true -- keep ON while testing
+local DEBUG  = false -- keep ON while testing
 
 -- Probe prelude config
 local PROBE_PRELUDE_LIFETIME_MS = 6000  -- ~6s on-screen, then BH spawns/engages
@@ -82,17 +82,17 @@ end
 JediKnightVisibilityEncounter = ScreenPlay:new {
     -- Spawn cadence
     LOGIN_GRACE_SECONDS       = 60,               -- no ambush right after login
-    FIRST_DELAY_MIN_SECONDS   = 60,               -- 3–10 min first window
-    FIRST_DELAY_MAX_SECONDS   = 80,
-    RESPAWN_MIN_SECONDS       = 60,               -- after loot, new window
-    RESPAWN_MAX_SECONDS       = 80,
+    FIRST_DELAY_MIN_SECONDS   = 2700,               -- 3–10 min first window
+    FIRST_DELAY_MAX_SECONDS   = 7200,
+    RESPAWN_MIN_SECONDS       = 2700,               -- after loot, new window
+    RESPAWN_MAX_SECONDS       = 7200,
     DESPAWN_MS                = 5 * 60 * 1000,    -- auto-despawn safety if ignored
 
     -- Light watchdogs (no manual DB logic)
     DEATH_CHECK_PERIOD_MS     = 4000,             -- check owner death/incap regularly
     DEATH_GRACE_SECONDS       = 180,              -- short grace after owner death
-    DEATH_RESPAWN_MIN_SECONDS = 300,              -- window to next encounter after death
-    DEATH_RESPAWN_MAX_SECONDS = 900,
+    DEATH_RESPAWN_MIN_SECONDS = 2700,              -- window to next encounter after death
+    DEATH_RESPAWN_MAX_SECONDS = 7200,
 }
 
 registerScreenPlay("JediKnightVisibilityEncounter", true)
