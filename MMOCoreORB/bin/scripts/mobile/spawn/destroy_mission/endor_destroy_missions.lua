@@ -237,6 +237,12 @@ endor_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "endor_blurrg_lair_neutral_small",
+			minDifficulty = 50,
+			maxDifficulty = 50,
+			size = 25,
+		},
+		{
 			lairTemplateName = "endor_mantigrue_screecher_lair_neutral_small",
 			minDifficulty = 53,
 			maxDifficulty = 57,
