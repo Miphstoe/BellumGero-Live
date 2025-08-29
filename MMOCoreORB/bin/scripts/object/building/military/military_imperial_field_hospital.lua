@@ -44,9 +44,9 @@
 object_building_military_military_imperial_field_hospital = object_building_military_shared_military_imperial_field_hospital:new {
 
 skillMods = {
-		{"private_medical_rating", 100},
-		{"private_med_wound_health", 100},
-		{"private_med_wound_action", 100}
+		{"private_medical_rating", 125},
+		{"private_med_wound_health", 125},
+		{"private_med_wound_action", 125}
 	}
 
 }
