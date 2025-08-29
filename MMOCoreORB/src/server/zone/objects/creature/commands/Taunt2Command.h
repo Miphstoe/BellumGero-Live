@@ -80,10 +80,15 @@ public:
             if (threatMap != nullptr) {
                 int levelCombine = targetCreature->getLevel() + creature->getLevel();
                 
-                // Taunt calculation with slight area penalty for balance
-                int areaModifier = tauntMod * 0.8f; // 20% penalty for area effect
+                // Taunt calculation with reduced area penalty for better success rate
+                int areaModifier = tauntMod * 0.9f; // Only 10% penalty for area effect
                 
-                if (System::random(levelCombine + areaModifier) >= System::random(levelCombine - areaModifier)) {
+                // Improved success calculation - add base bonus for better hit rate
+                int baseBonus = 25; // Base success bonus
+                int attackerAdvantage = levelCombine + areaModifier + baseBonus;
+                int defenderResistance = Math::max(1, levelCombine - areaModifier - (baseBonus / 2));
+                
+                if (System::random(attackerAdvantage) >= System::random(defenderResistance)) {
                     threatMap->setThreatState(creature, ThreatStates::TAUNTED, 
                                             (uint64)areaModifier * 1000, 
                                             (uint64)areaModifier * 1000);

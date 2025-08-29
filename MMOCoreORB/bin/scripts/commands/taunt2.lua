@@ -40,7 +40,14 @@ Taunt2Command = {
     combatSpam = "taunt2",
     effectString = "clienteffect/combat_special_attacker_taunt.cef",
     poolsToDamage = NO_ATTRIBUTE,
-    range = 15
+    range = 64,
+    actionCost = 0,
+    mindCost = 0,
+    healthCost = 0,
+    cooldownTime = 3000,  -- 3 second cooldown
+    queueTime = 3000,
+    combatCommand = true,
+    targetType = "none"   -- Since it's area effect, no specific target needed
 }
 
 AddCommand(Taunt2Command)

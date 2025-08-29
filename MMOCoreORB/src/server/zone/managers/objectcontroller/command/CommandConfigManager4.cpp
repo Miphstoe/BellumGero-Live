@@ -200,6 +200,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<TameCommand>(String("tame").toLowerCase());
 	commandFactory.registerCommand<TargetCommand>(String("target").toLowerCase());
 	commandFactory.registerCommand<TauntCommand>(String("taunt").toLowerCase());
+	commandFactory.registerCommand<Taunt2Command>(String("taunt2").toLowerCase());
 	commandFactory.registerCommand<TeachCommand>(String("teach").toLowerCase());
 	commandFactory.registerCommand<TeleportCommand>(String("teleport").toLowerCase());
 	commandFactory.registerCommand<TeleportTargetCommand>(String("teleportTarget").toLowerCase());
