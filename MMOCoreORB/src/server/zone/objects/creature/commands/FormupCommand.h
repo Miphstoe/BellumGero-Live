@@ -64,34 +64,42 @@ public:
 	}
 
 	bool doFormUp(CreatureObject* leader, GroupObject* group) const {
-		if (leader == nullptr || group == nullptr)
-			return false;
+    if (leader == nullptr || group == nullptr)
+        return false;
 
-		for (int i = 0; i < group->getGroupSize(); i++) {
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return false; // leader not on a planet yet
 
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (member == nullptr || !member->isPlayerCreature())
-				continue;
+        // ✅ Planetwide: only require same planet/zone; ignore distance/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, false))
-				continue;
+        // Optional sanity filters (keeps behavior sensible)
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			Locker clocker(member, leader);
+        Locker clocker(member, leader);
 
-			sendCombatSpam(member);
+        sendCombatSpam(member);
 
-			if (member->isDizzied())
-				member->removeStateBuff(CreatureState::DIZZY);
-					
-			if (member->isStunned())
-				member->removeStateBuff(CreatureState::STUNNED);
+        if (member->isDizzied())
+            member->removeStateBuff(CreatureState::DIZZY);
 
-			checkForTef(leader, member);
-		}
+        if (member->isStunned())
+            member->removeStateBuff(CreatureState::STUNNED);
 
-		return true;
-	}
+        checkForTef(leader, member);
+    }
+
+    return true;
+}
+
 
 };
 

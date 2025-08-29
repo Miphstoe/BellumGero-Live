@@ -55,57 +55,60 @@ public:
 	}
 
 	bool doRally(CreatureObject* leader, GroupObject* group) const {
-		if (leader == nullptr || group == nullptr)
-			return false;
+    if (leader == nullptr || group == nullptr)
+        return false;
 
-		int duration = 30;
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return false; // leader not on a planet yet
 
-		leader->sendSystemMessage("@cbt_spam:rally_success_single"); //"You rally the group!"
-		sendRallyCombatSpam(leader, group, true);
+    const int duration = 30;
 
-		for (int i = 0; i < group->getGroupSize(); i++) {
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    // Leader feedback + existing spam (group spam here is already planetwide via zone check)
+    leader->sendSystemMessage("@cbt_spam:rally_success_single"); //"You rally the group!"
+    sendRallyCombatSpam(leader, group, true);
 
-			if (member == nullptr)
-				continue;
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, true))
-				continue;
+        // ✅ Planetwide targeting: same planet only, ignore distance/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			Locker clocker(member, leader);
+        // Sensible filters
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			if (member != leader)
-				member->sendSystemMessage("@cbt_spam:rally_success_group_msg"); //"Your group rallies to the attack!"
+        Locker clocker(member, leader);
 
-			ManagedReference<Buff*> buff = new Buff(member, actionCRC, duration, BuffType::SKILL);
+        if (member != leader)
+            member->sendSystemMessage("@cbt_spam:rally_success_group_msg"); //"Your group rallies to the attack!"
 
-			Locker locker(buff);
+        ManagedReference<Buff*> buff = new Buff(member, actionCRC, duration, BuffType::SKILL);
+        Locker locker(buff);
 
-			ManagedReference<WeaponObject*> weapon = member->getWeapon();
+        // Preserve original weapon-based accuracy boost
+        ManagedReference<WeaponObject*> weapon = member->getWeapon();
+        if (weapon != nullptr && !weapon->getCreatureAccuracyModifiers()->isEmpty()) {
+            String skillCRC = weapon->getCreatureAccuracyModifiers()->get(0);
+            buff->setSkillModifier(skillCRC, 50);
+        }
 
-			if (weapon != nullptr) {
-				if (!weapon->getCreatureAccuracyModifiers()->isEmpty()) {
-					String skillCRC = weapon->getCreatureAccuracyModifiers()->get(0);
+        // Preserve original defense bonuses
+        buff->setSkillModifier("private_group_ranged_defense", 30);
+        buff->setSkillModifier("private_group_melee_defense", 30);
 
-					buff->setSkillModifier(skillCRC, 50);
-				}
-			}
+        member->addBuff(buff);
+        member->setRalliedState(duration);
 
-			buff->setSkillModifier("private_group_ranged_defense", 30);
-			buff->setSkillModifier("private_group_melee_defense", 30);
+        checkForTef(leader, member);
+    }
 
-			member->addBuff(buff);
+    return true;
+}
 
-			member->setRalliedState(duration);
-
-			checkForTef(leader, member);
-		}
-
-//		What is this used for?
-//		leader->updateCooldownTimer("rally", (duration + 30) * 1000);
-
-		return true;
-	}
 
 	void sendRallyCombatSpam(CreatureObject* leader, GroupObject* group, bool success) const {
 		if (leader == nullptr || group == nullptr)

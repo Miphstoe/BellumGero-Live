@@ -49,6 +49,7 @@ FireLightningSingle1Command = {
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
 	mindCostMultiplier = 1,
+	accuracyBonus = 35,
 
 	animation = "fire_lightning_rifle_single_1",
 	animType = GENERATE_INTENSITY,

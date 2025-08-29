@@ -714,6 +714,7 @@
 #include "TameCommand.h"
 #include "TargetCommand.h"
 #include "TauntCommand.h"
+#include "Taunt2Command.h"
 #include "TeachCommand.h"
 #include "TeleportCommand.h"
 #include "TeleportTargetCommand.h"

@@ -67,44 +67,50 @@ public:
 	}
 
 	bool doSteadyAim(CreatureObject* leader, GroupObject* group, int amount) const {
-		if (leader == nullptr || group == nullptr)
-			return false;
+    if (leader == nullptr || group == nullptr)
+        return false;
 
-		for (int i = 0; i < group->getGroupSize(); i++) {
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return false; // leader not on a planet yet
 
-			if (member == nullptr || !member->isPlayerCreature())
-				continue;
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, false))
-				continue;
+        // ✅ Planetwide: only require same planet/zone; ignore distance/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			Locker clocker(member, leader);
+        // Sensible filters
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			sendCombatSpam(member);
+        Locker clocker(member, leader);
 
-			ManagedReference<WeaponObject*> weapon = member->getWeapon();
+        sendCombatSpam(member);
 
-			if (!weapon->isRangedWeapon())
-				continue;
+        ManagedReference<WeaponObject*> weapon = member->getWeapon();
+        if (weapon == nullptr || !weapon->isRangedWeapon())
+            continue;
 
-			int duration = 300;
+        const int duration = 300; // 5 minutes, unchanged
 
-			ManagedReference<Buff*> buff = new Buff(member, actionCRC, duration, BuffType::SKILL);
+        ManagedReference<Buff*> buff = new Buff(member, actionCRC, duration, BuffType::SKILL);
+        Locker locker(buff);
 
-			Locker locker(buff);
+        buff->setSkillModifier("private_aim", amount);
+        buff->setStartFlyText("combat_effects", "go_steady", 0, 0xFF, 0); // there is no "no_steady" pair
 
-			buff->setSkillModifier("private_aim", amount);
-			buff->setStartFlyText("combat_effects", "go_steady", 0, 0xFF, 0); // there is no corresponding no_steady fly text
+        member->addBuff(buff);
 
-			member->addBuff(buff);
-			//			memberPlayer->showFlyText("combat_effects", "go_steadied", 0, 0xFF, 0); // there is no corresponding no_steady fly text
+        checkForTef(leader, member);
+    }
 
-			checkForTef(leader, member);
-		}
+    return true;
+}
 
-		return true;
-	}
 
 };
 

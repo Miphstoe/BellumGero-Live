@@ -71,87 +71,104 @@ public:
 	}
 
 	void getWounds(CreatureObject* leader, GroupObject* group, int* wounds) const {
-		if (group == nullptr || leader == nullptr)
-			return;
+    if (group == nullptr || leader == nullptr)
+        return;
 
-		for (int i = 0; i < group->getGroupSize(); i++) {
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return; // leader not on a planet yet
 
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (member == nullptr)
-				continue;
+        // ✅ Planetwide targeting: same planet only, ignore distance/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			if (!member->isPlayerCreature())
-				continue;
+        // Sensible filters
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, false))
-				continue;
+        Locker clocker(member, leader);
 
-			Locker clocker(member, leader);
+        for (int j = 0; j < 9; j++) {
+            wounds[1] += member->getWounds(j);
+            member->setWounds(j, 0);
+        }
 
-			for (int j = 0; j < 9; j++) {
-				wounds[1] += member->getWounds(j);
-				member->setWounds(j, 0);
-			}
+        wounds[0]++;
+    }
+}
 
-			wounds[0]++;
-		}
-	}
 
 	bool distributeWounds(CreatureObject* leader, GroupObject* group, int* wounds) const {
-		if (group == nullptr || leader == nullptr)
-			return false;
+    if (group == nullptr || leader == nullptr)
+        return false;
 
-		int woundsPerMember = ceil((float)wounds[1]/(float)wounds[0]);
-		int woundsPerAttribute = ceil((float)woundsPerMember/9.f);
+    Zone* leaderZone = leader->getZone();
+    if (leaderZone == nullptr)
+        return false;
 
-		int totalWoundsApplied = 0;
-		for (int i = 0; i < group->getGroupSize(); i++) {
+    if (wounds[0] <= 0 || wounds[1] <= 0)
+        return true; // nothing to do
 
-			ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+    int woundsPerMember    = (int) ceil((float)wounds[1] / (float)wounds[0]);
+    int woundsPerAttribute = (int) ceil((float)woundsPerMember / 9.f);
 
-			if (member == nullptr)
-				continue;
+    int totalWoundsApplied = 0;
 
-			if (!member->isPlayerCreature())
-				continue;
+    for (int i = 0; i < group->getGroupSize(); i++) {
+        ManagedReference<CreatureObject*> member = group->getGroupMember(i);
+        if (member == nullptr || !member->isPlayerCreature())
+            continue;
 
-			if (!isValidGroupAbilityTarget(leader, member, false))
-				continue;
+        // ✅ Planetwide targeting: same planet only, ignore distance/LOS
+        if (member->getZone() != leaderZone)
+            continue;
 
-			Locker clocker(member, leader);
+        // Sensible filters
+        if (member->isDead() || member->isIncapacitated())
+            continue;
 
-			sendCombatSpam(member);
+        Locker clocker(member, leader);
 
-			int woundsApplied = 0;
-			for (int j = 0; j < 9; j++) {
-				int woundsToApply = woundsPerAttribute;
+        sendCombatSpam(member);
 
-				// if we've already applied enough wounds to this member, reduce to the amount we have left
-				if (woundsApplied + woundsToApply > woundsPerMember)
-					woundsToApply = woundsPerMember - woundsApplied;
+        int woundsApplied = 0;
+        for (int j = 0; j < 9; j++) {
+            int woundsToApply = woundsPerAttribute;
 
-				// if we've already applied enough wounds to the entire group, reduce to the amount we have left
-				if (totalWoundsApplied + woundsToApply > wounds[1])
-					woundsToApply = wounds[1] - totalWoundsApplied;
+            // cap by per-member allocation
+            if (woundsApplied + woundsToApply > woundsPerMember)
+                woundsToApply = woundsPerMember - woundsApplied;
 
-				member->addWounds(j, woundsToApply, true, false);
+            // cap by total remaining pool
+            if (totalWoundsApplied + woundsToApply > wounds[1])
+                woundsToApply = wounds[1] - totalWoundsApplied;
 
-				woundsApplied += woundsToApply;
-				totalWoundsApplied += woundsToApply;
+            if (woundsToApply <= 0)
+                break;
 
-				if (woundsApplied >= woundsPerMember || totalWoundsApplied >= wounds[1])
-					break;
-			}
+            member->addWounds(j, woundsToApply, true, false);
 
-			checkForTef(leader, member);
+            woundsApplied      += woundsToApply;
+            totalWoundsApplied += woundsToApply;
 
-			if (totalWoundsApplied >= wounds[1])
-				break;
-		}
+            if (woundsApplied >= woundsPerMember || totalWoundsApplied >= wounds[1])
+                break;
+        }
 
-		return true;
-	}
+        checkForTef(leader, member);
+
+        if (totalWoundsApplied >= wounds[1])
+            break;
+    }
+
+    return true;
+}
+
 
 };
 
