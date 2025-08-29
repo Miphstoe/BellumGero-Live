@@ -1,5 +1,5 @@
 ForceTauntCommand = {
-  name = "forceTaunt",
+  name = "forcetaunt",
 
     forceCost = 25,
 	forceAttack = true,
