@@ -8,6 +8,9 @@ local SpawnMobiles  = require("utils.spawn_mobiles")
 local PREFIX = "JkhEnc"
 local DEBUG  = true -- keep ON while testing
 
+-- Probe prelude config
+local PROBE_PRELUDE_LIFETIME_MS = 6000  -- ~6s on-screen, then BH spawns/engages
+
 local function dbg(co, msg)
     if DEBUG and co ~= nil then
         CreatureObject(co):sendSystemMessage("\\#888888[JKH] " .. msg)
@@ -32,6 +35,50 @@ local function bumpGen(pPlayer)
 end
 -- --------------------------------------------------------------------
 
+-- ====== BH Taunts ======
+local BH_TAUNT_LINES = {
+    "You cannot run forever.",
+    "There is no escape.",
+    "Your lightsaber will make a fine addition to my collection.",
+    "The Guild pays extra for live captures, don’t test me.",
+    "Stand still; this will only hurt a lot.",
+    "I’ve hunted bigger game than you.",
+    "I can bring you in warm, or I can bring you in cold.",
+    "I have you now.",
+    "Don't make me destroy you.",
+    "There will be no one to stop us this time.",
+    "Ready to die?",
+}
+
+-- Local helper (avoids ordering/nil issues at load time)
+local function bhSayRandomTaunt(pMob)
+    if (pMob == nil) then return 0 end
+    local n = #BH_TAUNT_LINES
+    if n == 0 then return 0 end
+    local idx = getRandomNumber(1, n)  -- inclusive
+    spatialChat(pMob, BH_TAUNT_LINES[idx])
+    return 0
+end
+
+-- ====== BH Victory / Finisher Taunts ======
+local BH_FINISHER_LINES = {
+    "All too easy.",
+    "This is the way.",
+    "You are beaten.",
+    "Target neutralized.",
+    "Another mark paid in full.",
+    "The Guild will be pleased.",
+}
+
+local function bhSayFinishTaunt(pMob)
+    if (pMob == nil) then return 0 end
+    local n = #BH_FINISHER_LINES
+    if n == 0 then return 0 end
+    local idx = getRandomNumber(1, n)  -- inclusive
+    spatialChat(pMob, BH_FINISHER_LINES[idx])
+    return 0
+end
+
 JediKnightVisibilityEncounter = ScreenPlay:new {
     -- Spawn cadence
     LOGIN_GRACE_SECONDS       = 60,               -- no ambush right after login
@@ -39,12 +86,12 @@ JediKnightVisibilityEncounter = ScreenPlay:new {
     FIRST_DELAY_MAX_SECONDS   = 80,
     RESPAWN_MIN_SECONDS       = 60,               -- after loot, new window
     RESPAWN_MAX_SECONDS       = 80,
-    DESPAWN_MS                = 5 * 60 * 1000,     -- auto-despawn safety if ignored
+    DESPAWN_MS                = 5 * 60 * 1000,    -- auto-despawn safety if ignored
 
     -- Light watchdogs (no manual DB logic)
-    DEATH_CHECK_PERIOD_MS     = 4000,              -- check owner death/incap regularly
-    DEATH_GRACE_SECONDS       = 180,               -- short grace after owner death
-    DEATH_RESPAWN_MIN_SECONDS = 300,               -- window to next encounter after death
+    DEATH_CHECK_PERIOD_MS     = 4000,             -- check owner death/incap regularly
+    DEATH_GRACE_SECONDS       = 180,              -- short grace after owner death
+    DEATH_RESPAWN_MIN_SECONDS = 300,              -- window to next encounter after death
     DEATH_RESPAWN_MAX_SECONDS = 900,
 }
 
@@ -77,7 +124,7 @@ function JediKnightVisibilityEncounter:playerLoggedIn(pPlayer)
     self:scheduleNext(pPlayer, self.FIRST_DELAY_MIN_SECONDS, self.FIRST_DELAY_MAX_SECONDS)
 
     -- breadcrumb
-    CreatureObject(pPlayer):sendSystemMessage("\\#FFFF80You sense you are being watched...")
+    CreatureObject(pPlayer):sendSystemMessage("\\#FFFF80You sense you are being tracked...")
 end
 
 function JediKnightVisibilityEncounter:playerLoggedOut(pPlayer)
@@ -94,6 +141,8 @@ function JediKnightVisibilityEncounter:scheduleNext(pPlayer, minS, maxS)
     local gen   = bumpGen(pPlayer) -- <- new cycle; invalidate older timers
     local delay = getRandomNumber(minS, maxS)
     writeData(pid .. ":" .. PREFIX .. ":nextAt", os.time() + delay)
+    -- allow the next window to show the probe again
+    deleteData(pid .. ":" .. PREFIX .. ":probeShownGen")
     createEvent(delay * 1000, "JediKnightVisibilityEncounter", "spawnIfEligible", pPlayer, tostring(gen))
     dbg(pPlayer, "scheduled next spawn in " .. delay .. "s (gen " .. gen .. ")")
 end
@@ -127,8 +176,25 @@ function JediKnightVisibilityEncounter:spawnIfEligible(pPlayer, args)
     if (existing ~= nil) then
         local pExisting = getSceneObject(tonumber(existing))
         if (pExisting ~= nil) then
-            dbg(pPlayer, "hunter already active; skipping spawn (gen " .. callGen .. ")")
-            return
+            -- *** CHANGED: Only treat as active if it's a *living* CreatureObject.
+            local isAlive = false
+            local ok, deadFlag = pcall(function() return CreatureObject(pExisting):isDead() end)
+            if ok then
+                isAlive = (deadFlag == false)
+            else
+                -- Not a CreatureObject (likely a corpse container) → not alive
+                isAlive = false
+            end
+
+            if isAlive then
+                dbg(pPlayer, "hunter already active; skipping spawn (gen " .. callGen .. ")")
+                return
+            else
+                -- It’s a corpse or invalid; do not block spawns. Keep mob→owner mapping for loot,
+                -- but clear the player→mob pointer so new BHs can spawn.
+                deleteData(pid .. ":" .. PREFIX .. ":mobOID") -- *** CHANGED
+                dbg(pPlayer, "previous hunter no longer alive; clearing active pointer and proceeding")
+            end
         else
             -- stale
             deleteData(pid .. ":" .. PREFIX .. ":mobOID")
@@ -146,12 +212,25 @@ function JediKnightVisibilityEncounter:spawnIfEligible(pPlayer, args)
         end
     end
 
-    -- start encounter
-    if JediKnightThugEncounter:start(pPlayer) then
-        dbg(pPlayer, "encounter started (gen " .. callGen .. ")")
+    -- Always clean up any stray probe before a new attempt
+    self:despawnProbeByOwner(pPlayer)
+
+    -- Show the probe only once per generation (window). On retries, skip the probe.
+    local shownGen = tonumber(readData(pid .. ":" .. PREFIX .. ":probeShownGen")) or -1
+
+    if shownGen ~= curGen then
+        writeData(pid .. ":" .. PREFIX .. ":probeShownGen", curGen)
+        -- prelude first; after it ends, finishPreludeStartEncounter will try BH start
+        createEvent(0, "JediKnightVisibilityEncounter", "beginPreludeThenEncounter", pPlayer, tostring(curGen))
+        dbg(pPlayer, "probe prelude scheduled once for gen " .. curGen)
     else
-        dbg(pPlayer, "start returned false; retrying in 60s (gen " .. callGen .. ")")
-        createEvent(60 * 1000, "JediKnightVisibilityEncounter", "spawnIfEligible", pPlayer, tostring(callGen))
+        -- Skip prelude on retries within the same window; try starting BH directly.
+        if not JediKnightThugEncounter:start(pPlayer) then
+            dbg(pPlayer, "start() failed on retry; scheduling another attempt in 30s (no probe)")
+            createEvent(30 * 1000, "JediKnightVisibilityEncounter", "spawnIfEligible", pPlayer, tostring(curGen))
+            return
+        end
+        dbg(pPlayer, "encounter started on retry (no probe this time)")
     end
 end
 
@@ -221,6 +300,9 @@ function JediKnightThugEncounter:taskStart(pPlayer, ...)
                     AiAgent(mob):addDefender(pPlayer)
                 end
                 CreatureObject(mob):engageCombat(pPlayer)
+                
+                -- TAUNT once on spawn
+                bhSayRandomTaunt(mob)           -- or: createEvent(500, "HelperFuncs", "spatialChatTask", mob, BH_TAUNT_LINES[getRandomNumber(1, #BH_TAUNT_LINES)])
 
                 -- minimal timers
                 createEvent(2000, "JediKnightVisibilityEncounter", "retargetKnight", pPlayer, "")
@@ -250,7 +332,7 @@ function JediKnightVisibilityEncounter:onThugDamaged(pMob, pAttacker, damage)
     return 0
 end
 
--- Award XP on death (if owner killed OR tagged); DO NOT cleanup here
+-- Award XP on death (if owner killed OR tagged); advance loop on death; DO NOT cleanup here
 function JediKnightVisibilityEncounter:onThugDied(pMob, pKiller)
     if (pMob == nil) then return 0 end
     local mobOID   = SceneObject(pMob):getObjectID()
@@ -269,17 +351,34 @@ function JediKnightVisibilityEncounter:onThugDied(pMob, pKiller)
     local tagged = readData(ownerPID .. ":" .. PREFIX .. ":tagged")
     local ownerTagged = (tagged ~= nil and tonumber(tagged) == 1)
 
+    -- XP stays the same
     if ownerIsKnight and (killerIsOwner or ownerTagged) then
         CreatureObject(pOwner):awardExperience("force_rank_xp", 1000, true)
     end
 
+    -- NEW: advance the loop on death (instead of waiting for loot)
+    if (pOwner ~= nil) then
+        -- prevent loot handler from scheduling again
+        writeData(ownerPID .. ":" .. PREFIX .. ":rescheduledOnDeath", 1)
+        JediKnightVisibilityEncounter:scheduleNext(
+            pOwner,
+            JediKnightVisibilityEncounter.RESPAWN_MIN_SECONDS,
+            JediKnightVisibilityEncounter.RESPAWN_MAX_SECONDS
+        )
+        CreatureObject(pOwner):sendSystemMessage("\\#FFFF80You feel the hunter's network regrouping...")
+    end
+
+    -- *** CHANGED: Clear the player→mob active pointer now that the hunter is dead,
+    -- while keeping the mob→owner mapping for corpse attribution and cleanup.
+    deleteData(ownerPID .. ":" .. PREFIX .. ":mobOID")
+
     -- Keep owner mapping until loot so we can attribute the corpse.
-    -- Safety: if never looted, clean up after 20 minutes (no respawn on timeout).
+    -- Safety: if never looted, clean up after 20 minutes (no additional scheduling here).
     createEvent(20 * 60 * 1000, "JediKnightVisibilityEncounter", "onCorpseTimeout", pOwner, tostring(mobOID))
     return 0
 end
 
--- Loot advances the loop (owner-only), then cleanup
+-- Loot now only cleans up; schedules next window only if death didn't already do it
 function JediKnightVisibilityEncounter:onThugLooted(pMob, pLooter, _)
     if (pMob == nil or pLooter == nil) then return 0 end
     if (not SceneObject(pLooter):isPlayerCreature()) then return 0 end
@@ -292,19 +391,23 @@ function JediKnightVisibilityEncounter:onThugLooted(pMob, pLooter, _)
         return 0
     end
 
-    -- schedule next cycle after loot (new gen)
-    JediKnightVisibilityEncounter:scheduleNext(
-        pLooter,
-        JediKnightVisibilityEncounter.RESPAWN_MIN_SECONDS,
-        JediKnightVisibilityEncounter.RESPAWN_MAX_SECONDS
-    )
-    CreatureObject(pLooter):sendSystemMessage("\\#FFFF80You feel the hunter's network regrouping...")
+    -- If we didn't already schedule on death (e.g., owner was nil at the time), do it now as a fallback
+    local alreadyRescheduled = (readData(ownerPID .. ":" .. PREFIX .. ":rescheduledOnDeath") ~= nil)
+    if (not alreadyRescheduled) then
+        JediKnightVisibilityEncounter:scheduleNext(
+            pLooter,
+            JediKnightVisibilityEncounter.RESPAWN_MIN_SECONDS,
+            JediKnightVisibilityEncounter.RESPAWN_MAX_SECONDS
+        )
+        CreatureObject(pLooter):sendSystemMessage("\\#FFFF80You feel the hunter's network regrouping...")
+    end
 
-    -- cleanup now that loop advanced
+    -- cleanup now that corpse was handled
     deleteData(ownerPID .. ":" .. PREFIX .. ":mobOID")
     deleteData(ownerPID .. ":" .. PREFIX .. ":tagged")
     deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
-    return 0 -- don't interfere with loot flow
+    deleteData(ownerPID .. ":" .. PREFIX .. ":rescheduledOnDeath")
+    return 0
 end
 
 -- Corpse was never looted: just cleanup (do NOT schedule next cycle)
@@ -319,6 +422,7 @@ function JediKnightVisibilityEncounter:onCorpseTimeout(pOwner, args)
         deleteData(ownerPID .. ":" .. PREFIX .. ":mobOID")
         deleteData(ownerPID .. ":" .. PREFIX .. ":tagged")
         deleteData("mob:" .. mobOID .. ":" .. PREFIX .. ":ownerPID")
+        deleteData(ownerPID .. ":" .. PREFIX .. ":rescheduledOnDeath")
         dbg(pOwner, "corpse timeout cleanup")
     end
     return 0
@@ -344,6 +448,9 @@ function JediKnightVisibilityEncounter:onDeathWatchdog(pPlayer)
     local ownerCO = CreatureObject(pPlayer)
     if (ownerCO ~= nil and ownerCO:isDead()) then
         dbg(pPlayer, "owner dead: hunter withdrawing")
+
+        -- Victory taunt (if hunter still present)
+        if (pMob ~= nil) then bhSayFinishTaunt(pMob) end
 
         -- EXACTLY like Village: run away now, despawn ~18s later
         createEvent(2 * 1000, "JediKnightThugEncounter", "handleDespawnEvent", pPlayer, "")
@@ -400,6 +507,112 @@ function JediKnightVisibilityEncounter:despawnForPlayer(pPlayer)
     end
     deleteData(pid .. ":" .. PREFIX .. ":mobOID")
     deleteData(pid .. ":" .. PREFIX .. ":tagged")
+end
+
+-- =========================
+-- Probe prelude & orchestration
+-- =========================
+
+-- Despawn any stored probe for this player (robust; safe if absent)
+function JediKnightVisibilityEncounter:despawnProbeByOwner(pPlayer)
+    if (pPlayer == nil) then return 0 end
+    local key = pidOf(pPlayer) .. ":" .. PREFIX .. ":probeOID"
+    local oidStr = readData(key)
+    if (oidStr ~= nil) then
+        local pProbe = getSceneObject(tonumber(oidStr))
+        if (pProbe ~= nil) then
+            local ok = pcall(function() createEvent(0, "HelperFuncs", "despawnMobileTask", pProbe, "") end)
+            if (not ok) then
+                local so = SceneObject(pProbe)
+                if (so ~= nil) then so:destroyObjectFromWorld() end
+            end
+        end
+        deleteData(key)
+    end
+    return 0
+end
+
+-- Spawn probe now; remember OID; schedule despawn and encounter start
+function JediKnightVisibilityEncounter:beginPreludeThenEncounter(pPlayer, genStr)
+    if (pPlayer == nil) then return 0 end
+
+    local scheduledGen = tonumber(genStr) or -1
+    local curGen = tonumber(readData(pidOf(pPlayer) .. ":" .. PREFIX .. ":gen")) or 0
+    if scheduledGen ~= curGen then
+        return 0
+    end
+
+    -- Spawn Imperial Probe Droid a bit to the side
+    local so   = SceneObject(pPlayer)
+    local zone = so:getZoneName()
+    local px   = so:getWorldPositionX()
+    local py   = so:getWorldPositionY()
+    local pz   = so:getWorldPositionZ()
+
+    local heading = getRandomNumber(360) - 180
+    local offset  = 20  -- ~20m lateral
+
+    -- spawnMobile uses (x, z, y)
+    local pProbe = spawnMobile(zone, "imperial_probe_drone", 0, px + offset, pz, py, heading, 0, "")
+    if (pProbe ~= nil) then
+        -- Robust chat: use the global helper (method form may not be bound)
+        spatialChat(pProbe, "Target located. Reporting back.")
+        writeData(pidOf(pPlayer) .. ":" .. PREFIX .. ":probeOID", SceneObject(pProbe):getObjectID())
+    end
+
+    -- Despawn probe after lifetime, then start the encounter
+    createEvent(PROBE_PRELUDE_LIFETIME_MS, "JediKnightVisibilityEncounter", "finishPreludeStartEncounter", pPlayer, genStr)
+    return 0
+end
+
+-- Finish the probe prelude: ensure probe is gone, then (re)start encounter sanely.
+function JediKnightVisibilityEncounter:finishPreludeStartEncounter(pPlayer, _genStr)
+    if (pPlayer == nil) then return 0 end
+
+    -- Ensure probe is despawned
+    self:despawnProbeByOwner(pPlayer)
+
+    -- If a hunter is already active, we're done.
+    local existing = readData(pidOf(pPlayer) .. ":" .. PREFIX .. ":mobOID")
+    if (existing ~= nil) then
+        local pExisting = getSceneObject(tonumber(existing))
+        if (pExisting ~= nil) then
+            -- Only block if *alive* (same logic as in spawnIfEligible)
+            local ok, deadFlag = pcall(function() return CreatureObject(pExisting):isDead() end)
+            if ok and (deadFlag == false) then
+                dbg(pPlayer, "prelude finished: hunter already active; skipping start")
+                return 0
+            else
+                deleteData(pidOf(pPlayer) .. ":" .. PREFIX .. ":mobOID")
+            end
+        else
+            -- stale mapping
+            deleteData(pidOf(pPlayer) .. ":" .. PREFIX .. ":mobOID")
+            deleteData("mob:" .. tostring(existing) .. ":" .. PREFIX .. ":ownerPID")
+            deleteData(pidOf(pPlayer) .. ":" .. PREFIX .. ":tagged")
+        end
+    end
+
+    -- If current location isn't valid anymore, reschedule a normal attempt and exit.
+    if (JediKnightThugEncounter.isPlayerInPositionForEncounter ~= nil)
+       and (not JediKnightThugEncounter:isPlayerInPositionForEncounter(pPlayer)) then
+        dbg(pPlayer, "prelude finished: location invalid; retrying window in 30s")
+        -- Use the CURRENT generation; don't bump it here.
+        local curGen = tonumber(readData(pidOf(pPlayer) .. ":" .. PREFIX .. ":gen")) or 0
+        createEvent(30 * 1000, "JediKnightVisibilityEncounter", "spawnIfEligible", pPlayer, tostring(curGen))
+        return 0
+    end
+
+    -- Try to start now. If it fails, hand control back to spawnIfEligible (no 3s spin).
+    if (not JediKnightThugEncounter:start(pPlayer)) then
+        dbg(pPlayer, "prelude finished: start() failed; retrying window in 30s")
+        local curGen = tonumber(readData(pidOf(pPlayer) .. ":" .. PREFIX .. ":gen")) or 0
+        createEvent(30 * 1000, "JediKnightVisibilityEncounter", "spawnIfEligible", pPlayer, tostring(curGen))
+        return 0
+    end
+
+    dbg(pPlayer, "prelude finished: hunter engaged")
+    return 0
 end
 
 return JediKnightVisibilityEncounter
