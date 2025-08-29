@@ -49,6 +49,7 @@ FireLightningCone1Command = {
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
 	mindCostMultiplier = 1,
+	accuracyBonus = 35,
 
 	animation = "fire_area",
 	animType = GENERATE_INTENSITY,
