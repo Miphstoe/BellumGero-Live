@@ -27,15 +27,17 @@ int PlayerContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject
 
 		SharedTangibleObjectTemplate* tanoData = dynamic_cast<SharedTangibleObjectTemplate*>(wearable->getObjectTemplate());
 
+		// BG: ignore playerRaces entirely for all wearables (clothing + armor).
 		if (tanoData != nullptr) {
-			const auto races = tanoData->getPlayerRaces();
-			String race = creo->getObjectTemplate()->getFullTemplateString();
+    		if (!object->isWearableObject()) {
+        		const auto races = tanoData->getPlayerRaces();
+        		String race = creo->getObjectTemplate()->getFullTemplateString();
 
-			if (!races->contains(race.hashCode())) {
-				errorDescription = "You lack the necessary requirements to wear this object";
-
-				return TransferErrorCode::PLAYERUSEMASKERROR;
-			}
+        		if (!races->contains(race.hashCode())) {
+            errorDescription = "You lack the necessary requirements to wear this object";
+            return TransferErrorCode::PLAYERUSEMASKERROR;
+        		}
+    		}
 		}
 
 		if (creo->isPlayerCreature()) {
