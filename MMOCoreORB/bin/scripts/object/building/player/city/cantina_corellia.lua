@@ -55,7 +55,7 @@ object_building_player_city_cantina_corellia = object_building_player_city_share
 	skillMods = {
 		{"private_buff_mind", 125},
 		{"private_medical_rating", 100},
-		{"private_med_battle_healing", 5},
+		{"private_med_battle_fatigue", 10},
 		{"private_safe_logout", 1}
 	},
 	groundZoneComponent = "StructureZoneComponent",

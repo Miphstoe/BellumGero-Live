@@ -53,7 +53,7 @@ object_building_player_city_theater_corellia = object_building_player_city_share
 	abilityRequired = "place_theater",
 	skillMods = {
 		{"private_buff_mind", 125},
-		{"private_med_battle_fatigue", 5},
+		{"private_med_battle_fatigue", 10},
 		{"private_safe_logout", 1}
 	},
 	ejectDistance = 1.5,
