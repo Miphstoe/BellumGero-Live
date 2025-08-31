@@ -225,9 +225,19 @@ bool CellObjectImplementation::transferObject(SceneObject* object, int containme
 			// Push building template skillMods onto the creature
 			structure->addTemplateSkillMods(creature);
 
-			// TEMP debug
-			int v = creature->getSkillMod("private_buff_mind");
-			creature->sendSystemMessage("Entered building: private_buff_mind now " + String::valueOf(v));
+			// DEBUG: show all relevant building mods
+			int mind = creature->getSkillMod("private_buff_mind");
+			int med  = creature->getSkillMod("private_medical_rating");
+			int bf   = creature->getSkillMod("private_med_battle_fatigue");
+
+			StringBuffer dbg;
+			dbg << "Entered building mods — ";
+			bool any = false;
+			if (mind > 0) { dbg << "private_buff_mind=" << mind; any = true; }
+			if (med  > 0) { if (any) dbg << " | "; dbg << "private_medical_rating=" << med; any = true; }
+			if (bf   > 0) { if (any) dbg << " | "; dbg << "private_med_battle_fatigue=" << bf; any = true; }
+			if (!any) dbg << "none.";
+			creature->sendSystemMessage(dbg.toString());
 		}
 	}
 	// === END: apply structure skillMods on building entry ===
@@ -299,9 +309,19 @@ bool CellObjectImplementation::removeObject(SceneObject* object, SceneObject* de
 
 			structure->removeTemplateSkillMods(creature);
 
-			// TEMP debug
-			int v = creature->getSkillMod("private_buff_mind");
-			creature->sendSystemMessage("Left building: private_buff_mind now " + String::valueOf(v));
+			// DEBUG: show resulting values after removal
+			int mind = creature->getSkillMod("private_buff_mind");
+			int med  = creature->getSkillMod("private_medical_rating");
+			int bf   = creature->getSkillMod("private_med_battle_fatigue");
+
+			StringBuffer dbg;
+			dbg << "Left building mods — ";
+			bool any = false;
+			if (mind != 0) { dbg << "private_buff_mind=" << mind; any = true; }
+			if (med  != 0) { if (any) dbg << " | "; dbg << "private_medical_rating=" << med; any = true; }
+			if (bf   != 0) { if (any) dbg << " | "; dbg << "private_med_battle_fatigue=" << bf; any = true; }
+			if (!any) dbg << "all cleared.";
+			creature->sendSystemMessage(dbg.toString());
 		}
 	}
 	// === END: remove structure skillMods on building exit ===
