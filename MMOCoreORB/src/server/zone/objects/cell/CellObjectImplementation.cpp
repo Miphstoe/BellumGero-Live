@@ -14,6 +14,8 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/objects/ship/PobShipObject.h"
+// ADDED:
+#include "server/zone/objects/structure/StructureObject.h"
 
 void CellObjectImplementation::initializeTransientMembers() {
 	SceneObjectImplementation::initializeTransientMembers();
@@ -205,6 +207,31 @@ bool CellObjectImplementation::transferObject(SceneObject* object, int containme
 	} catch (...) {
 	}
 
+	// === BEGIN: apply structure skillMods when a creature ENTERS the building ===
+	if (object->isCreatureObject()) {
+		CreatureObject* creature = object->asCreatureObject();
+
+		// Root of the building we just entered
+		SceneObject* currentRoot = getRootParent();
+		// Root of where we came from before the transfer (could be null if outside)
+		SceneObject* prevRoot = nullptr;
+		if (oldParent != nullptr)
+			prevRoot = oldParent->getRootParent();
+
+		// Only add on first entry to this building (NOT when swapping between its cells)
+		if (currentRoot != nullptr && currentRoot->isStructureObject() && currentRoot != prevRoot) {
+			StructureObject* structure = cast<StructureObject*>(currentRoot);
+
+			// Push building template skillMods onto the creature
+			structure->addTemplateSkillMods(creature);
+
+			// TEMP debug
+			int v = creature->getSkillMod("private_buff_mind");
+			creature->sendSystemMessage("Entered building: private_buff_mind now " + String::valueOf(v));
+		}
+	}
+	// === END: apply structure skillMods on building entry ===
+
 	if (oldParent == nullptr) {
 		ManagedReference<SceneObject*> strongParent = parent.get().castTo<SceneObject*>();
 
@@ -254,6 +281,30 @@ bool CellObjectImplementation::removeObject(SceneObject* object, SceneObject* de
 			}, "RemoveCellFireLambda");
 		}
 	}
+
+	// === BEGIN: remove structure skillMods when a creature LEAVES the building ===
+	if (object->isCreatureObject()) {
+		CreatureObject* creature = object->asCreatureObject();
+
+		// Root of the building we are leaving (this cell's root)
+		SceneObject* currentRoot = getRootParent();
+		// Root of the destination (might be another cell of same building)
+		SceneObject* destRoot = nullptr;
+		if (destination != nullptr)
+			destRoot = destination->getRootParent();
+
+		// Only remove if destination is NOT in the same building (i.e., truly leaving)
+		if (currentRoot != nullptr && currentRoot->isStructureObject() && currentRoot != destRoot) {
+			StructureObject* structure = cast<StructureObject*>(currentRoot);
+
+			structure->removeTemplateSkillMods(creature);
+
+			// TEMP debug
+			int v = creature->getSkillMod("private_buff_mind");
+			creature->sendSystemMessage("Left building: private_buff_mind now " + String::valueOf(v));
+		}
+	}
+	// === END: remove structure skillMods on building exit ===
 
 	return ret;
 }

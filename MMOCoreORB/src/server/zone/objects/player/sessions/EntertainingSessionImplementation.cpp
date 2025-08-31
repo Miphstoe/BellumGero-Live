@@ -819,121 +819,150 @@ void EntertainingSessionImplementation::sendEntertainingUpdate(CreatureObject* c
 }
 
 void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* creature, int performanceType) {
-	ManagedReference<CreatureObject*> entertainer = this->entertainer.get();
+    ManagedReference<CreatureObject*> entertainer = this->entertainer.get();
 
-	try {
-		//Check if on Deny Service list
-		if (isInDenyServiceList(creature))
-			return;
+    try {
+        //Check if on Deny Service list
+        if (isInDenyServiceList(creature))
+            return;
 
-		ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
-		//Check if the patron is a valid buff target
-		//Whether it be passive(in the same group) or active (/setPerform target)
-		if ((!entertainer->isGrouped() || entertainer->getGroupID() != creature->getGroupID()) && entPlayer->getPerformanceBuffTarget() != creature->getObjectID())
-			return;
+        ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
+        //Check if the patron is a valid buff target
+        //Whether it be passive(in the same group) or active (/setPerform target)
+        if ((!entertainer->isGrouped() || entertainer->getGroupID() != creature->getGroupID()) && entPlayer->getPerformanceBuffTarget() != creature->getObjectID())
+            return;
 
-		if (creature->isIncapacitated() || creature->isDead()) {
-			return;
-		}
+        if (creature->isIncapacitated() || creature->isDead()) {
+            return;
+        }
 
-		if (!canGiveEntertainBuff())
-			return;
+        // Must have facility (from structure) to give buff
+        if (!canGiveEntertainBuff())
+            return;
 
-		// Returns the Number of Minutes for the Buff Duration
-		float buffDuration = getEntertainerBuffDuration(creature, performanceType);
+        // Returns the Number of Minutes for the Buff Duration
+        float buffDuration = getEntertainerBuffDuration(creature, performanceType);
 
-		if (buffDuration * 60 < 10.0f) { //10 sec minimum buff duration
-			return;
-		}
+        if (buffDuration * 60 < 10.0f) { //10 sec minimum buff duration
+            return;
+        }
 
-		//1 minute minimum listen/watch time
-		int timeElapsed = time(0) - getEntertainerBuffStartTime(creature, performanceType);
-		if (timeElapsed < 60) {
-			creature->sendSystemMessage("You must listen or watch a performer for at least 1 minute in order to gain the entertainer buffs.");
-			return;
-		}
+        //1 minute minimum listen/watch time
+        int timeElapsed = time(0) - getEntertainerBuffStartTime(creature, performanceType);
+        if (timeElapsed < 60) {
+            creature->sendSystemMessage("You must listen or watch a performer for at least 1 minute in order to gain the entertainer buffs.");
+            return;
+        }
 
-		// Calculate flat 1250 + tape bonus for each stat separately
-		int baseMind = creature->getBaseHAM(CreatureAttribute::MIND);
-		int baseFocus = creature->getBaseHAM(CreatureAttribute::FOCUS);
-		int baseWill = creature->getBaseHAM(CreatureAttribute::WILLPOWER);
-		
-		// Get tape bonuses - subtract base 100 and multiply by 4
-		float danceSkillMod = (float) entertainer->getSkillMod("healing_dance_mind");
-		float musicSkillMod = (float) entertainer->getSkillMod("healing_music_mind");
-		
-		// Calculate actual tape bonuses: (skill_mod - 100) * 4
-		float danceTapeBonus = Math::max(0.0f, (danceSkillMod - 100.0f) * 4.0f);
-		float musicTapeBonus = Math::max(0.0f, (musicSkillMod - 100.0f) * 4.0f);
-		
-		// Determine performance type
-		bool isDancePerformance = isDancing();
-		bool isMusicPerformance = isPlayingMusic();
+        // ---------- facility (private_buff_mind) scaling ----------
+        // Read the structure-provided facility on the *performer* (entertainer).
+        int facility = 0;
+        if (entertainer != nullptr)
+            facility = Math::max(0, entertainer->getSkillMod("private_buff_mind"));
 
-		// Apply bonuses: base 1250 to all, plus appropriate tape bonuses
-		float totalMindBuff = 1250.0f;
-		float totalFocusBuff = 1250.0f;
-		float totalWillBuff = 1250.0f;
+        // Cap facility so your Lua template values have a known ceiling.
+        const int FACILITY_CAP = 200;                  // <-- raise/lower to match your templates
+        facility = Math::min(facility, FACILITY_CAP);
 
-		if (isDancePerformance) {
-			// When dancing: Mind gets dance bonus, Focus/Will get music bonus
-			totalMindBuff += danceTapeBonus;
-			totalFocusBuff += musicTapeBonus;
-			totalWillBuff += musicTapeBonus;
-		} else if (isMusicPerformance) {
-			// When playing music: Mind gets dance bonus, Focus/Will get music bonus  
-			totalMindBuff += danceTapeBonus;
-			totalFocusBuff += musicTapeBonus;
-			totalWillBuff += musicTapeBonus;
-		}
-		
-		// Calculate what percentage each total is of each base stat
-		float mindBuffStrength = totalMindBuff / baseMind;
-		float focusBuffStrength = totalFocusBuff / baseFocus;
-		float willBuffStrength = totalWillBuff / baseWill;
-		
-		// Create the buff objects
-		uint32 mindBuffCRC = STRING_HASHCODE("performance_enhance_dance_mind");
-		uint32 focusBuffCRC = STRING_HASHCODE("performance_enhance_music_focus");
-		uint32 willBuffCRC = STRING_HASHCODE("performance_enhance_music_willpower");
-		
-		// Check if buffs already exist and remove them first
-		ManagedReference<PerformanceBuff*> oldMindBuff = cast<PerformanceBuff*>(creature->getBuff(mindBuffCRC));
-		ManagedReference<PerformanceBuff*> oldFocusBuff = cast<PerformanceBuff*>(creature->getBuff(focusBuffCRC));
-		ManagedReference<PerformanceBuff*> oldWillBuff = cast<PerformanceBuff*>(creature->getBuff(willBuffCRC));
-		
-		if (oldMindBuff != nullptr) creature->removeBuff(mindBuffCRC);
-		if (oldFocusBuff != nullptr) creature->removeBuff(focusBuffCRC);
-		if (oldWillBuff != nullptr) creature->removeBuff(willBuffCRC);
-		
-		// Create new buffs - each will give the calculated amount
-		ManagedReference<PerformanceBuff*> mindBuff = new PerformanceBuff(creature, mindBuffCRC, mindBuffStrength, buffDuration * 60, PerformanceBuffType::DANCE_MIND);
-		ManagedReference<PerformanceBuff*> focusBuff = new PerformanceBuff(creature, focusBuffCRC, focusBuffStrength, buffDuration * 60, PerformanceBuffType::MUSIC_FOCUS);
-		ManagedReference<PerformanceBuff*> willBuff = new PerformanceBuff(creature, willBuffCRC, willBuffStrength, buffDuration * 60, PerformanceBuffType::MUSIC_WILLPOWER);
+        // Up to +25% power at cap (gentle, avoids runaway numbers). Adjust 0.25f to taste.
+        const float FACILITY_MAX_BONUS = 0.25f;        // 25% at FACILITY_CAP
+        float facMul = 1.0f + (facility / (float)FACILITY_CAP) * FACILITY_MAX_BONUS;
+        // ---------------------------------------------------------
 
-		Locker locker3(mindBuff);
-		creature->addBuff(mindBuff);
-		locker3.release();
+        // Calculate flat 1250 + tape bonus for each stat separately
+        int baseMind  = creature->getBaseHAM(CreatureAttribute::MIND);
+        int baseFocus = creature->getBaseHAM(CreatureAttribute::FOCUS);
+        int baseWill  = creature->getBaseHAM(CreatureAttribute::WILLPOWER);
 
-		Locker locker(focusBuff);
-		creature->addBuff(focusBuff);
-		locker.release();
+        // Guard against divide-by-zero later
+        if (baseMind  <= 0) baseMind  = 1;
+        if (baseFocus <= 0) baseFocus = 1;
+        if (baseWill  <= 0) baseWill  = 1;
 
-		Locker locker2(willBuff);
-		creature->addBuff(willBuff);
-		locker2.release();
+        // Get tape bonuses - subtract base 100 and multiply by 4
+        float danceSkillMod = (float) entertainer->getSkillMod("healing_dance_mind");
+        float musicSkillMod = (float) entertainer->getSkillMod("healing_music_mind");
 
-		// Inform player of the buff with details
-		String buffMessage = "You have been inspired by the performance! ";
-		buffMessage += "Mind: " + String::valueOf((int)totalMindBuff) + ", ";
-		buffMessage += "Focus: " + String::valueOf((int)totalFocusBuff) + ", ";
-		buffMessage += "Willpower: " + String::valueOf((int)totalWillBuff);
-		creature->sendSystemMessage(buffMessage);
+        // Calculate actual tape bonuses: (skill_mod - 100) * 4
+        float danceTapeBonus = Math::max(0.0f, (danceSkillMod - 100.0f) * 4.0f);
+        float musicTapeBonus = Math::max(0.0f, (musicSkillMod - 100.0f) * 4.0f);
 
-	} catch(Exception& e) {
+        // Determine performance type
+        bool isDancePerformance = isDancing();
+        bool isMusicPerformance = isPlayingMusic();
 
-	}
+        // Apply bonuses: base 1250 to all, plus appropriate tape bonuses
+        float totalMindBuff  = 1250.0f;
+        float totalFocusBuff = 1250.0f;
+        float totalWillBuff  = 1250.0f;
+
+        if (isDancePerformance) {
+            // When dancing: Mind gets dance bonus, Focus/Will get music bonus
+            totalMindBuff  += danceTapeBonus;
+            totalFocusBuff += musicTapeBonus;
+            totalWillBuff  += musicTapeBonus;
+        } else if (isMusicPerformance) {
+            // When playing music: Mind gets dance bonus, Focus/Will get music bonus
+            totalMindBuff  += danceTapeBonus;
+            totalFocusBuff += musicTapeBonus;
+            totalWillBuff  += musicTapeBonus;
+        }
+
+        // ---------- apply facility multiplier to the absolute buffs ----------
+        totalMindBuff  *= facMul;
+        totalFocusBuff *= facMul;
+        totalWillBuff  *= facMul;
+        // (Optional) If you also want longer durations inside better facilities:
+        // buffDuration = int(buffDuration * facMul);
+        // --------------------------------------------------------------------
+
+        // Convert to strength ratios vs base stats
+        float mindBuffStrength  = totalMindBuff  / baseMind;
+        float focusBuffStrength = totalFocusBuff / baseFocus;
+        float willBuffStrength  = totalWillBuff  / baseWill;
+
+        // Create the buff objects
+        uint32 mindBuffCRC  = STRING_HASHCODE("performance_enhance_dance_mind");
+        uint32 focusBuffCRC = STRING_HASHCODE("performance_enhance_music_focus");
+        uint32 willBuffCRC  = STRING_HASHCODE("performance_enhance_music_willpower");
+
+        // Remove existing performance buffs so new ones overwrite cleanly
+        if (creature->getBuff(mindBuffCRC)  != nullptr) creature->removeBuff(mindBuffCRC);
+        if (creature->getBuff(focusBuffCRC) != nullptr) creature->removeBuff(focusBuffCRC);
+        if (creature->getBuff(willBuffCRC)  != nullptr) creature->removeBuff(willBuffCRC);
+
+        // Create new buffs
+        ManagedReference<PerformanceBuff*> mindBuff  = new PerformanceBuff(creature, mindBuffCRC,  mindBuffStrength,  buffDuration * 60, PerformanceBuffType::DANCE_MIND);
+        ManagedReference<PerformanceBuff*> focusBuff = new PerformanceBuff(creature, focusBuffCRC, focusBuffStrength, buffDuration * 60, PerformanceBuffType::MUSIC_FOCUS);
+        ManagedReference<PerformanceBuff*> willBuff  = new PerformanceBuff(creature, willBuffCRC,  willBuffStrength,  buffDuration * 60, PerformanceBuffType::MUSIC_WILLPOWER);
+
+        Locker locker3(mindBuff);
+        creature->addBuff(mindBuff);
+        locker3.release();
+
+        Locker locker(focusBuff);
+        creature->addBuff(focusBuff);
+        locker.release();
+
+        Locker locker2(willBuff);
+        creature->addBuff(willBuff);
+        locker2.release();
+
+        // Inform player of the buff with details (round down to ints for display)
+        String buffMessage = "You have been inspired by the performance! ";
+        buffMessage += "Mind: "     + String::valueOf((int)totalMindBuff)  + ", ";
+        buffMessage += "Focus: "    + String::valueOf((int)totalFocusBuff) + ", ";
+        buffMessage += "Willpower: "+ String::valueOf((int)totalWillBuff);
+        creature->sendSystemMessage(buffMessage);
+
+        // (Optional) Debug for you: uncomment to see facility used
+        // entertainer->sendSystemMessage("Facility: " + String::valueOf(facility) + "  Multiplier: " + String::valueOf(facMul));
+
+    } catch(Exception& e) {
+        // swallow to match your existing style
+    }
 }
+
 void EntertainingSessionImplementation::updateEntertainerMissionStatus(bool entertaining, const int missionType) {
 	ManagedReference<CreatureObject*> entertainer = this->entertainer.get();
 
