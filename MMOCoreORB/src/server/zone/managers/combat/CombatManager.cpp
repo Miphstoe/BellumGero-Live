@@ -32,6 +32,16 @@
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
 #include "server/zone/managers/safezone/SafeZoneManager.h"
+#include "server/zone/objects/creature/buffs/BuffCRC.h"
+
+namespace {
+	inline bool hasFR3(CreatureObject* co) {
+		if (!co) return false;
+		// Check both the official CRC and the string hash to be 100% safe across forks.
+		return co->hasBuff(BuffCRC::JEDI_FORCE_RUN_3) || co->hasBuff(STRING_HASHCODE("forcerun3"));
+	}
+}
+
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
@@ -55,6 +65,7 @@ namespace {
 }
 
 
+// Sets attackers mainDefender and puts both in combat
 // Sets attackers mainDefender and puts both in combat
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) const {
 	if (attacker == defender) {
@@ -104,6 +115,16 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
+	// FR3 hard block: if either side has Force Run 3, do not enter combat.
+	if (hasFR3(attacker)) {
+		attacker->sendSystemMessage("@jedi_spam:force_run_cannot_attack");
+		return false;
+	}
+	if (creo && hasFR3(creo)) {
+		creo->sendSystemMessage("@jedi_spam:force_run_cannot_attack");
+		return false;
+	}
+
 	attacker->clearState(CreatureState::PEACE);
 
 	if (attacker->isPlayerCreature() && !attacker->hasDefender(defender)) {
@@ -124,15 +145,8 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		}
 	}
 
-attacker->setCombatState();
-// --- ForceRun3 auto-cancel (attacker) ---
-dropFR3(attacker);
-
-defender->setCombatState();
-// --- ForceRun3 auto-cancel (defender if creature) ---
-if (defender->isCreatureObject())
-    dropFR3(defender->asCreatureObject());
-
+	attacker->setCombatState();
+	defender->setCombatState();
 
 	attacker->setDefender(defender);
 
@@ -241,6 +255,12 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 	if (data.getCommand() == nullptr)
 		return -3;
+
+	// FR3 hard block: cannot perform any attack while Force Run 3 is active.
+	if (hasFR3(attacker)) {
+		attacker->sendSystemMessage("@jedi_spam:force_run_cannot_attack"); // fallback: "You cannot attack while Force Run is active."
+		return -1;
+	}
 
 	if (!startCombat(attacker, defenderObject, true, data.getHitIncapTarget()))
 		return -1;
@@ -365,6 +385,7 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 
 	return damage;
 }
+
 
 /*
 
