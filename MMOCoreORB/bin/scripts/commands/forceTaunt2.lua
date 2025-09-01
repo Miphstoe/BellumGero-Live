@@ -7,6 +7,8 @@ ForceTaunt2Command = {
 	areaAction = true,
 	areaRange = 32,
 	visMod = 25,
+  speed = 0.0,               -- instant
+  	cooldown = 0.0,            -- short anti-spam
 
     poolsToDamage = NO_ATTRIBUTE,
 
