@@ -43,6 +43,17 @@
 * Peace will clear a Object's defender list, but they will not be able to exit Combat if checks are not passed.
 *
 */
+namespace {
+    inline void dropFR3(CreatureObject* co) {
+        if (!co) return;
+        static const uint32 FORCERUN3 = STRING_HASHCODE("forcerun3");
+        if (co->hasBuff(FORCERUN3)) {
+            co->removeBuff(FORCERUN3);
+            co->sendSystemMessage("@jedi_spam:force_run_off");
+        }
+    }
+}
+
 
 // Sets attackers mainDefender and puts both in combat
 bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defender, bool lockDefender, bool allowIncapTarget) const {
@@ -113,8 +124,15 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		}
 	}
 
-	attacker->setCombatState();
-	defender->setCombatState();
+attacker->setCombatState();
+// --- ForceRun3 auto-cancel (attacker) ---
+dropFR3(attacker);
+
+defender->setCombatState();
+// --- ForceRun3 auto-cancel (defender if creature) ---
+if (defender->isCreatureObject())
+    dropFR3(defender->asCreatureObject());
+
 
 	attacker->setDefender(defender);
 

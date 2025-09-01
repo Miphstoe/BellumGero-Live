@@ -7,6 +7,19 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/Zone.h"
 
+// --- ForceRun3 auto-break on combat helper ---
+namespace {
+	inline void stripForceRun3OnCombat(CreatureObject* co) {
+		if (!co) return;
+		static const uint32 FORCERUN3 = STRING_HASHCODE("forcerun3");
+		if (co->hasBuff(FORCERUN3)) {
+			co->removeBuff(FORCERUN3);
+			co->sendSystemMessage("@jedi_spam:force_run_off");
+		}
+	}
+}
+
+
 int ForceRun3Command::doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
     if (creature == nullptr || creature->isDead() || creature->isIncapacitated())
         return INVALIDTARGET;
@@ -37,10 +50,9 @@ int ForceRun3Command::doQueueCommand(CreatureObject* creature, const uint64& tar
     if (creature->hasBuff(STRING_HASHCODE("retreat")))
         creature->removeBuff(STRING_HASHCODE("retreat"));
 
-    // Optional: auto-cancel on combat start if your Buff API supports it
-    // if (ManagedReference<Buff*> fr = creature->getBuff(buffCRC)) {
-    //     fr->setRemoveOnCombatStart(true); // or fr->setCancelOnAttack(true);
-    // }
-
+     //Optional: auto-cancel on combat start if your Buff API supports it
+     //if (ManagedReference<Buff*> fr = creature->getBuff(buffCRC)) {
+       //  fr->setRemoveOnCombatStart(true); // or fr->setCancelOnAttack(true);
+     
     return SUCCESS;
 }
