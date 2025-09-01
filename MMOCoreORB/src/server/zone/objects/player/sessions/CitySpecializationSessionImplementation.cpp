@@ -20,89 +20,90 @@
 
 int CitySpecializationSessionImplementation::initializeSession() {
 	PlayerObject* ghost = creatureObject->getPlayerObject();
-
 	if (ghost == nullptr)
 		return cancelSession();
 
+	// Only the mayor (or admin) can change the spec
 	if (!cityRegion->isMayor(creatureObject->getObjectID()) && !ghost->isAdmin())
 		return cancelSession();
 
 	ManagedReference<SuiListBox*> sui = new SuiListBox(creatureObject, SuiWindowType::CITY_SPEC, 0x00);
-	sui->setPromptTitle("@city/city:city_specs_t"); //City Specialization
+	sui->setPromptTitle("@city/city:city_specs_t"); // City Specialization
 	sui->setPromptText("@city/city:city_specs_d");
 	sui->setCallback(new CitySpecializationSuiCallback(creatureObject->getZoneServer()));
 	sui->setUsingObject(terminalObject);
 	sui->setForceCloseDistance(16.f);
 
+	// Figure out whose ability list to show (mayor's)
 	const AbilityList* abilityList = nullptr;
-
 	if (cityRegion->isMayor(creatureObject->getObjectID())) {
 		abilityList = ghost->getAbilityList();
 	} else {
-		ManagedReference<CreatureObject*> mayor = creatureObject->getZoneServer()->getObject(cityRegion->getMayorID()).castTo<CreatureObject*>();
-
+		ManagedReference<CreatureObject*> mayor =
+			creatureObject->getZoneServer()->getObject(cityRegion->getMayorID()).castTo<CreatureObject*>();
 		if (mayor != nullptr) {
 			PlayerObject* mayorGhost = mayor->getPlayerObject();
-
-			if (mayorGhost != nullptr) {
+			if (mayorGhost != nullptr)
 				abilityList = mayorGhost->getAbilityList();
-			}
 		}
 	}
 
+	// Populate list from abilities (legacy behavior), but skip the disabled multi-spec items
 	if (abilityList != nullptr) {
 		for (int i = 0; i < abilityList->size(); ++i) {
 			Reference<const Ability*> ability = abilityList->getSafe(i);
-			const String& abilityName = ability->getAbilityName();
+			if (ability == nullptr) continue;
 
-			if (abilityName.beginsWith("city_spec"))
-				sui->addMenuItem("@city/city:" + abilityName);
+			const String& abilityName = ability->getAbilityName();
+			if (!abilityName.beginsWith("city_spec"))
+				continue;
+
+			// Hide the multi-spec entries (we're reverting them)
+			if (abilityName == "city_spec_enhancement_district" ||
+			    abilityName == "city_spec_industrial_district")
+				continue;
+
+			sui->addMenuItem("@city/city:" + abilityName);
 		}
 	}
-	// Add metropolis-only specializations if city rank is high enough
-	if (cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
-    	sui->addMenuItem("Enhancement District");
- 		sui->addMenuItem("Industrial District");
-}
-	if (!cityRegion->getCitySpecialization().isEmpty()) {
-		sui->addMenuItem("@city/city:null",-1);
-	}
 
+	// Offer "None" only if a specialization is currently set
+	if (!cityRegion->getCitySpecialization().isEmpty())
+		sui->addMenuItem("@city/city:null", -1);
+
+	// If nothing to choose, tell the user and bail
 	if (sui->getMenuSize() <= 0) {
-		creatureObject->sendSystemMessage("@city/city:no_specs"); //You need to learn a specialization skill before you can select one for your city.
+		creatureObject->sendSystemMessage("@city/city:no_specs");
 		return cancelSession();
 	}
 
 	ghost->addSuiBox(sui);
 	creatureObject->sendMessage(sui->generateMessage());
-
 	return 1;
 }
 
 int CitySpecializationSessionImplementation::sendConfirmationBox(const String& choice) {
 	PlayerObject* ghost = creatureObject->getPlayerObject();
-
 	if (ghost == nullptr)
 		return cancelSession();
 
 	if (choice != "@city/city:null") {
 		if (cityRegion->getCityRank() < CityRegion::RANK_TOWNSHIP) {
-			creatureObject->sendSystemMessage("@city/city:no_rank_spec"); //Your city must be at least rank 3 before you can set a specialization
+			creatureObject->sendSystemMessage("@city/city:no_rank_spec");
 			return cancelSession();
 		}
 
 		if (!creatureObject->checkCooldownRecovery("city_specialization")) {
-			StringIdChatParameter params("city/city", "spec_time"); //You can't set another city spec right now. Time Remaining: %TO
+			StringIdChatParameter params("city/city", "spec_time"); // cooldown message
 			const Time* timeRemaining = creatureObject->getCooldownTime("city_specialization");
 			params.setTO(String::valueOf(round(fabs(timeRemaining->miliDifference() / 1000.f))) + " seconds");
 			creatureObject->sendSystemMessage(params);
-
 			return cancelSession();
 		}
 	}
 
 	SuiMessageBox* confirm = new SuiMessageBox(creatureObject, SuiWindowType::CITY_SPEC_CONFIRM);
-	confirm->setPromptTitle("@city/city:confirm_spec_t"); //Confirm Specialization
+	confirm->setPromptTitle("@city/city:confirm_spec_t"); // Confirm Specialization
 
 	if (choice == "@city/city:null") {
 		confirm->setPromptText(choice + "_d");
@@ -111,19 +112,18 @@ int CitySpecializationSessionImplementation::sendConfirmationBox(const String& c
 		confirm->setPromptText(choice + "_d\n\n@city/city:confirm_spec_d");
 		specialization = choice;
 	}
+
 	confirm->setOkButton(true, "@yes");
 	confirm->setCancelButton(true, "@no");
 	confirm->setCallback(new CitySpecializationConfirmSuiCallback(creatureObject->getZoneServer()));
 
 	ghost->addSuiBox(confirm);
 	creatureObject->sendMessage(confirm->generateMessage());
-
 	return 1;
 }
 
 int CitySpecializationSessionImplementation::acceptChoice() {
 	CityManager* cityManager = creatureObject->getZoneServer()->getCityManager();
 	cityManager->changeCitySpecialization(cityRegion, creatureObject, specialization);
-
 	return cancelSession();
 }

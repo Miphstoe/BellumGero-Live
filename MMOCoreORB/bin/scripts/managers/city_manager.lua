@@ -180,88 +180,104 @@ CityTaxes = {
 
 
 --[[
-	CITY SPECIALIZATIONS
-	====================
+  CITY SPECIALIZATIONS
+  ====================
 --]]
-CitySpecializations = {
-	{--Sample Rich
-		name = "@city/city:city_spec_sample_rich",
-		cost = 70000,
-		skillMods = {
-			{"private_spec_samplesize", 20},
-			{"private_spec_samplerate", 10}
-		}
-	},
-	{--Manufacturing Center
-		name = "@city/city:city_spec_industry",
-		cost = 50000,
-		skillMods = {
-			{"private_spec_assembly", 10}
-		}
-	},
-	{--Medical Center
-		name = "@city/city:city_spec_doctor",
-		cost = 80000,
-		skillMods = {
-			{"private_medical_rating", 10}
-		}
-	},
-	{--Clone Lab
-		name = "@city/city:city_spec_cloning",
-		cost = 80000,
-		skillMods = {
-			{"private_spec_cloning", 20}
-		}
-	},
-	{--Research Center
-		name = "@city/city:city_spec_research",
-		cost = 125000,
-		skillMods = {
-			{"private_spec_experimentation", 15}
-		}
-	},
-	{--Improved Job Market
-		name = "@city/city:city_spec_missions",
-		cost = 80000,
-		skillMods = {
-			{"private_spec_missions", 15}
-		}
-	},
-	{--Entertainment District
-		name = "@city/city:city_spec_entertainer",
-		cost = 80000,
-		skillMods = {
-			{"private_spec_entertainer", 10}
-		}
-	},
-	{--Stronghold
-		name = "@city/city:city_spec_stronghold",
-		cost = 150000,
-		skillMods = {
-			{"private_defense", 90}
-		}
-	},
-{--Enhancement District
-        name = "@city/city:city_spec_enhancement_district",
-        cost = 160000,
-        --minRank = 5, -- Available at Level 5 and above
-        skillMods = {
-            {"private_spec_entertainer", 10},
-            {"private_medical_rating", 10},
-			{"private_spec_missions", 15}
-        }
-    },
-    {--Industrial District
-        name = "@city/city:city_spec_industrial_district",
-        cost = 175000,
-        --minRank = 5, -- Available at Level 5 and above
-        skillMods = {
-            {"private_spec_assembly", 10},
-            {"private_spec_experimentation", 15},
-            {"private_spec_manufacturing", 10},
-			{"private_spec_samplerate", 10},
-			{"private_spec_samplesize", 20}
-        }
-    },
 
+CitySpecializations = {
+  { -- Sample Rich
+    name = "@city/city:city_spec_sample_rich",
+    cost = 70000,
+    skillMods = {
+      {"private_spec_samplerate", 10},
+      {"private_spec_samplesize", 20}
+    }
+  },
+
+  { -- Manufacturing Center
+    name = "@city/city:city_spec_industry",
+    cost = 50000,
+    skillMods = {
+      {"private_spec_assembly", 10},
+      {"private_spec_experimentation", 15},
+      {"private_spec_manufacturing", 10}
+    }
+  },
+
+  { -- Medical Center
+    name = "@city/city:city_spec_doctor",
+    cost = 80000,
+    skillMods = {
+      {"private_medical_rating", 10}
+    }
+  },
+
+  { -- Clone Lab
+    name = "@city/city:city_spec_cloning",
+    cost = 80000,
+    skillMods = {
+      {"private_spec_cloning", 20}
+    }
+  },
+
+  { -- Research Center
+    name = "@city/city:city_spec_research",
+    cost = 125000,
+    skillMods = {
+      {"private_spec_experimentation", 25}
+    }
+  },
+
+  { -- Improved Job Market
+    name = "@city/city:city_spec_missions",
+    cost = 80000,
+    skillMods = {
+      {"private_spec_missions", 15}
+    }
+  },
+
+  { -- Entertainment District
+    name = "@city/city:city_spec_entertainer",
+    cost = 80000,
+    skillMods = {
+      {"private_spec_entertainer", 10}
+    }
+  },
+
+  { -- Stronghold
+    name = "@city/city:city_spec_stronghold",
+    cost = 150000,
+    skillMods = {
+      {"private_defense", 90}
+    }
+  }
 }
+
+--[[  TEMP: multi-spec entries disabled
+
+{ -- Enhancement District
+  name = "@city/city:city_spec_enhancement_district",
+  cost = 160000,
+  --minRank = 5,
+  skillMods = {
+    {"private_spec_entertainer", 10},
+    {"private_medical_rating", 10},
+    {"private_spec_missions", 15}
+  }
+},
+
+{ -- Industrial District
+  name = "@city/city:city_spec_industrial_district",
+  cost = 175000,
+  --minRank = 5,
+  skillMods = {
+    {"private_spec_assembly", 10},
+    {"private_spec_experimentation", 15},
+    {"private_spec_manufacturing", 10},
+    {"private_spec_samplerate", 10},
+    {"private_spec_samplesize", 20}
+  }
+},
+
+--]]
+
