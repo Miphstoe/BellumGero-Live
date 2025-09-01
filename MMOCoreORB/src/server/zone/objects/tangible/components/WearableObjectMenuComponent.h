@@ -10,9 +10,28 @@
 
 #include "TangibleObjectMenuComponent.h"
 
+// ADD THESE so types are complete in this header:
+#include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
+#include "server/zone/objects/creature/CreatureObject.h"
+
+#include <unordered_map>
+#include <cstdint>
+
+// Per-item color trackers (in-memory; resets on server restart)
+static std::unordered_map<uint64, uint8_t> BG_ColorCycle_Primary;
+static std::unordered_map<uint64, uint8_t> BG_ColorCycle_Secondary;
+
+// Helper: ownership check (equipped or in player inventory)
+static inline bool bgOwnsWearable(CreatureObject* player, TangibleObject* item) {
+	if (!player || !item) return false;
+	if (item->isASubChildOf(player)) return true;
+	uint64 parentId = item->getParentID();
+	return parentId != 0 && parentId == player->getObjectID();
+}
+
 class WearableObjectMenuComponent : public TangibleObjectMenuComponent {
 public:
-
 	/**
 	 * Fills the radial options, needs to be overriden
 	 * @pre { this object is locked }
@@ -30,8 +49,6 @@ public:
 	 * @returns 0 if successfull
 	 */
 	virtual int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const;
-
 };
-
 
 #endif /* WEARABLEOBJECTMENUCOMPONENT_H_ */

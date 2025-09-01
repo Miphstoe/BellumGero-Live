@@ -3,7 +3,7 @@
  *
  *  Created on: 2/4/2013
  *      Author: bluree
- *		Credits: TA & Valk
+ *      Credits: TA & Valk
  */
 
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -17,9 +17,11 @@
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 
 void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
-	if (!sceneObject->isWearableObject())
+	// Allow any wearable (armor or clothing)
+	if (!sceneObject || !sceneObject->isWearableObject())
 		return;
 
+	// Ownership / admin checks (same as before)
 	ManagedReference<SceneObject*> parent = sceneObject->getParent().get();
 
 	if (parent != nullptr && parent->isCellObject()) {
@@ -36,20 +38,25 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 			return;
 	}
 
-	String text = "Color Change";
-	menuResponse->addRadialMenuItem(81, 3, text);
+	// Primary color picker
+	menuResponse->addRadialMenuItem(81, 3, "Color Change");
 
+	// Secondary color picker (will fall back safely if the item has no index_color_2)
+	menuResponse->addRadialMenuItem(82, 3, "Color Change (Secondary)");
+
+	// Preserve normal wearable/tangible menu behavior
 	WearableObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 }
 
 int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 
-	if (selectedID == 81) {
+	if (selectedID == 81 || selectedID == 82) {
 		ManagedReference<SceneObject*> parent = sceneObject->getParent().get();
 
 		if (parent == nullptr)
 			return 0;
 
+		// Original equip/inventory/location rules
 		if (parent->isPlayerCreature()) {
 			player->sendSystemMessage("@armor_rehue:equipped");
 			return 0;
@@ -72,38 +79,46 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 		ZoneServer* server = player->getZoneServer();
 
 		if (server != nullptr) {
-			// The color index.
+			// Gather customization variables for this wearable's appearance
 			String appearanceFilename = sceneObject->getObjectTemplate()->getAppearanceFilename();
 			VectorMap<String, Reference<CustomizationVariable*> > variables;
 			AssetCustomizationManagerTemplate::instance()->getCustomizationVariables(appearanceFilename.hashCode(), variables, false);
 
-			// The Sui Box.
+			// Choose palette:
+			//  - For 81, prefer key containing "index_color_1"
+			//  - For 82, prefer key containing "index_color_2"
+			//  - Fallback to first available variable if specific one not found
+			String palette;
+			for (int i = 0; i < variables.size(); ++i) {
+				String key = variables.elementAt(i).getKey();
+				if (selectedID == 81 && key.indexOf("index_color_1") != -1) { palette = key; break; }
+				if (selectedID == 82 && key.indexOf("index_color_2") != -1) { palette = key; break; }
+			}
+			if (palette.isEmpty() && variables.size() > 0)
+				palette = variables.elementAt(0).getKey();
+
+			if (palette.isEmpty())
+				return 0; // nothing we can edit
+
+			// Build the color picker SUI
 			ManagedReference<SuiColorBox*> cbox = new SuiColorBox(player, SuiWindowType::COLOR_ARMOR);
 			cbox->setCallback(new ColorArmorSuiCallback(server));
-			cbox->setColorPalette(variables.elementAt(1).getKey()); // First one seems to be the frame of it? Skip to 2nd.
+			cbox->setColorPalette(palette);
 			cbox->setUsingObject(sceneObject);
 
-			int skillMod = 255; //player->getSkillMod("armor_customization");
-
-			/*
-			if (skillMod < 64)
-				skillMod = 64;
-			else if (skillMod > 255)
-				skillMod = 255;
-			*/
-
+			// Skill cap (kept as your original)
+			int skillMod = 255; // player->getSkillMod("armor_customization");
 			cbox->setSkillMod(skillMod);
 
-			// Add to player.
+			// Send to player
 			ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
-
 			if (ghost != nullptr) {
 				ghost->addSuiBox(cbox);
 				player->sendMessage(cbox->generateMessage());
 			}
 		}
-
 	}
 
+	// Defer other options to the base wearable menu component
 	return WearableObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
 }

@@ -14,14 +14,20 @@
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/objects/tangible/wearables/ModSortingHelper.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/objects/scene/components/ObjectMenuComponent.h" // for setObjectMenuComponent()
 
 void WearableObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
+	// Give CLOTHING the exact same radial/UI as armor by attaching the armor menu component.
+	// If certain clothing templates must keep their own menu, add a template-name check here.
+	if (!isArmorObject()) {
+		setObjectMenuComponent("ArmorObjectMenuComponent");
+	}
+
 	// Wearable has too many attachments on it for the allowed socket count
 	while (usedSocketCount > socketCount) {
 		wearableSkillMods.removeElementAt(wearableSkillMods.size() - 1);
-
 		usedSocketCount--;
 	}
 }
@@ -29,7 +35,7 @@ void WearableObjectImplementation::initializeTransientMembers() {
 void WearableObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
 	TangibleObjectImplementation::fillAttributeList(alm, object);
 
-	for(int i = 0; i < wearableSkillMods.size(); ++i) {
+	for (int i = 0; i < wearableSkillMods.size(); ++i) {
 		String key = wearableSkillMods.elementAt(i).getKey();
 		String statname = "cat_skill_mod_bonus.@stat_n:" + key;
 		int value = wearableSkillMods.get(key);
@@ -38,11 +44,10 @@ void WearableObjectImplementation::fillAttributeList(AttributeListMessage* alm, 
 			alm->insertAttribute(statname, value);
 	}
 
-	//Anti Decay Kit
-	if (hasAntiDecayKit() && !isArmorObject()){
+	// Anti Decay Kit
+	if (hasAntiDecayKit() && !isArmorObject()) {
 		alm->insertAttribute("@veteran_new:antidecay_examine_title", "@veteran_new:antidecay_examine_text");
 	}
-
 }
 
 void WearableObjectImplementation::updateCraftingValues(CraftingValues* values, bool initialUpdate) {
@@ -52,7 +57,7 @@ void WearableObjectImplementation::updateCraftingValues(CraftingValues* values, 
 	 * hitpoints			1000-1000 (Don't Use)
 	 */
 	if (initialUpdate) {
-		if(values->hasExperimentalAttribute("sockets") && values->getCurrentValue("sockets") >= 0)
+		if (values->hasExperimentalAttribute("sockets") && values->getCurrentValue("sockets") >= 0)
 			generateSockets(values);
 	}
 }
@@ -95,7 +100,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	}
 
 	// Select the next mod in the SEA, sorted high-to-low. If that skill mod is already on the
-	// wearable, with higher or equal value, don't apply and continue.
+	// wearable with higher or equal value, don't apply and continue.
 	for (int i = 0; i < sortedMods.size(); i++) {
 		String modName = sortedMods.elementAt(i).getKey();
 		int modValue = sortedMods.elementAt(i).getValue();
@@ -143,8 +148,7 @@ void WearableObjectImplementation::applySkillModsTo(CreatureObject* creature) co
 		String name = wearableSkillMods.elementAt(i).getKey();
 		int value = wearableSkillMods.get(name);
 
-		if (!SkillModManager::instance()->isWearableModDisabled(name))
-		{
+		if (!SkillModManager::instance()->isWearableModDisabled(name)) {
 			creature->addSkillMod(SkillModManager::WEARABLE, name, value, true);
 			creature->updateSpeedAndAccelerationMods();
 		}
@@ -162,8 +166,7 @@ void WearableObjectImplementation::removeSkillModsFrom(CreatureObject* creature)
 		String name = wearableSkillMods.elementAt(i).getKey();
 		int value = wearableSkillMods.get(name);
 
-		if (!SkillModManager::instance()->isWearableModDisabled(name))
-		{
+		if (!SkillModManager::instance()->isWearableModDisabled(name)) {
 			creature->removeSkillMod(SkillModManager::WEARABLE, name, value, true);
 			creature->updateSpeedAndAccelerationMods();
 		}
@@ -182,22 +185,22 @@ bool WearableObjectImplementation::isEquipped() {
 
 String WearableObjectImplementation::repairAttempt(int repairChance) {
 	String message = "@error_message:";
-	
-	if(repairChance < 10) {
+
+	if (repairChance < 10) {
 		message += "sys_repair_failed";
 		setMaxCondition(getMaxCondition() * 0.50f, true);
 		setConditionDamage(0, true);
-	
-	} else if(repairChance < 25) {
+
+	} else if (repairChance < 25) {
 		message += "sys_repair_imperfect";
 		setMaxCondition(getMaxCondition() * .80f, true);
 		setConditionDamage(0, true);
-	
-	} else if(repairChance < 50) {
+
+	} else if (repairChance < 50) {
 		setMaxCondition(getMaxCondition() * .90f, true);
 		setConditionDamage(0, true);
 		message += "sys_repair_slight";
-	
+
 	} else {
 		setMaxCondition(getMaxCondition() * .97f, true);
 		setConditionDamage(0, true);
