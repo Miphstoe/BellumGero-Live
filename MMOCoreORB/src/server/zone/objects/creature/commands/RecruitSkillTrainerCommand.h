@@ -84,6 +84,8 @@ public:
 		suiTrainerType->addMenuItem("Shipwright (Trainer)", 34);
 		suiTrainerType->addMenuItem("Informant (BH - Level 3)", 35);
 		suiTrainerType->addMenuItem("Junk Dealer", 36);
+		suiTrainerType->addMenuItem("Imperial Recruiter", 37);
+		suiTrainerType->addMenuItem("Rebel Recruiter", 38);
 		
 
 		ghost->addSuiBox(suiTrainerType);

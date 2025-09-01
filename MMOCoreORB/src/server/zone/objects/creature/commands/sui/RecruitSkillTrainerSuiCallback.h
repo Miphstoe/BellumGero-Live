@@ -168,6 +168,12 @@ public:
 				break;		
 
 		case 36: trainerTemplatePath = "trainer_junkdealer";
+				break;		
+
+		case 37: trainerTemplatePath = "imperial_recruiter";
+				break;		
+
+		case 38: trainerTemplatePath = "rebel_recruiter";
 
 		}
 
@@ -187,12 +193,23 @@ public:
 				return;
 			}
 
-			CreatureObject* trainer = zone->getCreatureManager()->spawnCreature(trainerTemplatePath.hashCode(),0,player->getWorldPositionX(),player->getWorldPositionZ(),player->getWorldPositionY(),0,true);
+			CreatureObject* trainer = zone->getCreatureManager()->spawnCreature(
+				trainerTemplatePath.hashCode(),
+				0,
+				player->getWorldPositionX(),
+				player->getWorldPositionZ(),
+				player->getWorldPositionY(),
+				0,
+				true
+			);
 
 			if (trainer == nullptr) {
 				player->sendSystemMessage("@city/city:st_fail"); // Failed to create the skill trainer for some reason. Try again.
 				return;
 			}
+
+			// Ensure command-placed NPCs are removable via radial
+			trainer->setObjectMenuComponent("TrainerMenuComponent");
 
 			trainer->rotate(player->getDirectionAngle());
 			city->subtractFromCityTreasury(1000);
