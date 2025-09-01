@@ -455,17 +455,21 @@ void LightsaberCrystalComponentImplementation::updateCrystal(int value){
 }
 
 void LightsaberCrystalComponentImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
-	int colorMax = values->getMaxValue("color");
-	int color = values->getCurrentValue("color");
+	// ---- BG: equal-probability color selection (no rarity shaping) ----
+		int colorMax = values->getMaxValue("color");
+		int color    = values->getCurrentValue("color");
 
-	if (colorMax != 31) {
-		int finalColor = Math::min(color, 11);
-		setColor(finalColor);
-		updateCrystal(finalColor);
-	} else {
-		setColor(31);
-		updateCrystal(31);
-	}
+		if (colorMax != 31) {
+    		// Honor whatever the loot item rolled, clamped to 0..30.
+    		int finalColor = Math::min(Math::max(color, 0), 30);
+    		setColor(finalColor);
+    		updateCrystal(finalColor);
+		} else {
+    		// 31 is reserved for power crystals/pearls.
+    		setColor(31);
+    		updateCrystal(31);
+		}
+		// ---- BG: end ----
 
 	if (values->hasExperimentalAttribute("creatureLevel")) {
 		int level = values->getCurrentValue("creatureLevel");
