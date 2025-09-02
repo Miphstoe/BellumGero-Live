@@ -1,55 +1,66 @@
---Copyright (C) 2007 <SWGEmu>
-
---This File is part of Core3.
-
---This program is free software; you can redistribute
---it and/or modify it under the terms of the GNU Lesser
---General Public License as published by the Free Software
---Foundation; either version 2 of the License,
---or (at your option) any later version.
-
---This program is distributed in the hope that it will be useful,
---but WITHOUT ANY WARRANTY; without even the implied warranty of
---MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
---See the GNU Lesser General Public License for
---more details.
-
---You should have received a copy of the GNU Lesser General
---Public License along with this program; if not, write to
---the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
---Linking Engine3 statically or dynamically with other modules
---is making a combined work based on Engine3.
---Thus, the terms and conditions of the GNU Lesser General Public License
---cover the whole combination.
-
---In addition, as a special exception, the copyright holders of Engine3
---give you permission to combine Engine3 program with free software
---programs or libraries that are released under the GNU LGPL and with
---code included in the standard release of Core3 under the GNU LGPL
---license (or modified versions of such code, with unchanged license).
---You may copy and distribute such a system following the terms of the
---GNU LGPL for Engine3 and the licenses of the other code concerned,
---provided that you include the source code of that other code when
---and as the GNU LGPL requires distribution of source code.
-
---Note that people who make modified versions of Engine3 are not obligated
---to grant this special exception for their modified versions;
---it is their choice whether to do so. The GNU Lesser General Public License
---gives permission to release a modified version without this exception;
---this exception also makes it possible to release a modified version
---which carries forward this exception.
---true = 1, false = 0
+-- forceRun3.lua
 
 ForceRun3Command = {
-        name = "forcerun3",
-        forceCost = 600,
-        duration = 10000000000000,
-        --animationCRC = hashCode()
-        clientEffect = "clienteffect/pl_force_run_self.cef",
-        toggle = true,
-        speedMod = 3.5
+    name = "forcerun3",
+    forceCost = 600,
+    duration = 10000000000000,  -- until toggled off
+    clientEffect = "clienteffect/pl_force_run_self.cef",
+    toggle = true,
+    speedMod = 3.5,
+
+    drPercent = 90,  -- 0..90
 }
 
-AddCommand(ForceRun3Command)
+local function disableBasicAttack(creature)
+    if not creature or not creature:isPlayerCreature() then return end
+    local ghost = creature:getPlayerObject()
+    if not ghost then return end
 
+    -- Remove basic attack; server will reject attempts to use it
+    if ghost.removeAbility then
+        ghost:removeAbility("attack")
+    end
+
+    -- (Optional) tell the player why
+    if creature.sendSystemMessage then
+        creature:sendSystemMessage("@jedi_spam:force_run_cannot_attack")
+        -- fallback if you don't have that string:
+        -- creature:sendSystemMessage("You cannot attack while Force Run is active.")
+    end
+end
+
+local function enableBasicAttack(creature)
+    if not creature or not creature:isPlayerCreature() then return end
+    local ghost = creature:getPlayerObject()
+    if not ghost then return end
+
+    -- Re-grant basic attack on toggle off
+    if ghost.addAbility then
+        ghost:addAbility("attack")
+    end
+end
+
+function ForceRun3Command:onStart(creature, target, args)
+    local dr = self.drPercent or 30
+    if dr > 90 then dr = 90 end
+
+    -- Defensive only (incoming DR)
+    creature:addSkillMod("force_armor", dr)   -- non-Force damage
+    creature:addSkillMod("force_shield", dr)  -- Force damage
+
+    -- Block basic attack while FR3 is active
+    disableBasicAttack(creature)
+end
+
+function ForceRun3Command:onStop(creature)
+    local dr = self.drPercent or 30
+    if dr > 90 then dr = 90 end
+
+    creature:removeSkillMod("force_armor", dr)
+    creature:removeSkillMod("force_shield", dr)
+
+    -- Restore basic attack when FR3 ends
+    enableBasicAttack(creature)
+end
+
+AddCommand(ForceRun3Command)
