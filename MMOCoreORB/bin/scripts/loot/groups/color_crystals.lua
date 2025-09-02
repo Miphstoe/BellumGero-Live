@@ -5,7 +5,8 @@ color_crystals = {
 	minimumLevel = 0,
 	maximumLevel = 0,
 	lootItems = {
-		{itemTemplate = "force_color_crystal", weight = 10000000}
+		{itemTemplate = "force_color_crystal", weight = 9500000},
+		{itemTemplate = "force_color_crystal_special", weight = 500000},
 	}
 }
 
