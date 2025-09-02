@@ -165,6 +165,8 @@
 #include "server/zone/objects/tangible/components/PobShipObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/StarshipPaintKitObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/StarshipTextureKitObjectMenuComponent.h"
+#include "server/zone/objects/tangible/components/ClothingColorMenuComponent.h"
+
 
 ComponentManager::ComponentManager() {
 	components.put("ContainerComponent", new ContainerComponent());
@@ -285,6 +287,9 @@ ComponentManager::ComponentManager() {
 	components.put("CreatureHabitatMenuComponent", new CreatureHabitatMenuComponent());
 	components.put("WearableObjectMenuComponent", new WearableObjectMenuComponent());
 	components.put("ArmorObjectMenuComponent", new ArmorObjectMenuComponent());
+		// NEW: clothing color cycler (for clothing, not armor)
+	components.put("ClothingColorMenuComponent", new ClothingColorMenuComponent());
+
 
 	components.put("CityHallZoneComponent", new CityHallZoneComponent());
 
