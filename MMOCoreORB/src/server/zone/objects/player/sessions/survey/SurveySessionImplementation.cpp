@@ -228,6 +228,7 @@ void SurveySessionImplementation::startSample(const String& resname) {
 	message.setTO(lastResourceSampleName);
 	surveyer->sendSystemMessage(message);
 
+	/* ===== DISABLED: Rich-node minigame popup (C-node / G-node) =====
 	if (!doGamble && richSampleLocation.getPosition() == Vector3(0, 0, 0) && System::random(50) == 7) {
 
 		if (ghost->hasSuiBoxWindowType(SuiWindowType::SURVEY_TOOL_CONCENTRATED_MINIGAME)) {
@@ -249,6 +250,12 @@ void SurveySessionImplementation::startSample(const String& resname) {
 			resourceManager->sendSample(surveyer, lastResourceSampleName,
 					activeSurveyTool->getSampleAnimation());
 	}
+	===== END DISABLED ===== */
+
+	/* Always do a normal sample (what the old 'else' did) */
+		if (!lastResourceSampleName.isEmpty())
+    		resourceManager->sendSample(surveyer, lastResourceSampleName,
+            		activeSurveyTool->getSampleAnimation());
 }
 
 void SurveySessionImplementation::surveyCnodeMinigameSui() {
