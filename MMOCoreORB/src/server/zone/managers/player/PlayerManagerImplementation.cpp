@@ -5132,7 +5132,7 @@ SortedVector<String> PlayerManagerImplementation::getTeachableSkills(CreatureObj
 
 		const auto& skillName = skill->getSkillName();
 
-		if (!(skillName.contains("novice") || skillName.contains("force_sensitive") || skillName.contains("force_rank") || skillName.contains("force_title") || skillName.contains("admin_")) && skillManager->canLearnSkill(skillName, student, false))
+		if (!(skillName.contains("force_sensitive") || skillName.contains("force_rank") || skillName.contains("force_title") || skillName.contains("admin_")) && skillManager->canLearnSkill(skillName, student, false))
 			skills.put(skillName);
 	}
 
