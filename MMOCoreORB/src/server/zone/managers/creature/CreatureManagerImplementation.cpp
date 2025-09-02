@@ -1300,7 +1300,7 @@ bool CreatureManagerImplementation::addWearableItem(CreatureObject* creature, Ta
 	const Vector<uint32>* races = tanoData->getPlayerRaces();
 	const String race = creature->getObjectTemplate()->getFullTemplateString();
 
-	if (clothing->isWearableObject() && !races->contains(race.hashCode())) {
+	if (!clothing->isWearableObject() && !races->contains(race.hashCode())) {
 		int species = creature->getSpecies();
 		UnicodeString message;
 
