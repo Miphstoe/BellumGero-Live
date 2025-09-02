@@ -7,6 +7,7 @@
 
 #include "server/zone/Zone.h"
 #include "server/zone/managers/gcw/GCWManager.h"
+#include "templates/faction/Factions.h"
 
 class GcwStatusCommand : public QueueCommand {
 public:
@@ -51,7 +52,60 @@ public:
 
 			creature->sendSystemMessage(msg.toString());
 		} else {
-			creature->sendSystemMessage("@gcw:gcw_status_info"); // To see the status of the Galactic Civil War, either talk to your local factional recruiter, or read the newsnet terminals in your nearest starport.
+    		// allow simple args: "", "all", or a planet name
+    		String args = arguments.toString();
+    		args = args.toLowerCase().trim();
+
+    		auto printOne = [&](CreatureObject* who, Zone* z) {
+        		if (z == nullptr) return;
+        		GCWManager* gm = z->getGCWManager();
+        		if (gm == nullptr) return;
+
+        		unsigned int winner = gm->getWinningFaction(); // 0 neutral, Factions::FACTIONIMPERIAL, Factions::FACTIONREBEL
+        		int imp = gm->getImperialScore();
+        		int reb = gm->getRebelScore();
+        		int total = imp + reb;
+
+        		String label = "Neutral";
+        		if (winner == Factions::FACTIONIMPERIAL) label = "Imperial";
+        		else if (winner == Factions::FACTIONREBEL) label = "Rebel";
+
+        		StringBuffer msg;
+        		msg << "GCW Control on " << z->getZoneName() << ": " << label;
+
+        		if (total > 0) {
+            		int impPct = (imp * 100) / total;
+            		int rebPct = (reb * 100) / total;
+            		msg << "  (Imp " << String::valueOf(impPct) << "%, Reb " << String::valueOf(rebPct) << "%)";
+        		}
+
+        		who->sendSystemMessage(msg.toString());
+    		};
+
+    		if (args == "all") {
+        		static const char* PLANETS[] = {
+            		"tatooine","naboo","corellia","rori","talus",
+            		"dantooine","lok","endor","dathomir","yavin4"
+        		};
+        		StringBuffer header;
+        		header << "GCW Planet Control:";
+        		creature->sendSystemMessage(header.toString());
+
+        		for (int i = 0; i < (int)(sizeof(PLANETS)/sizeof(PLANETS[0])); ++i) {
+            		Zone* z = server->getZoneServer()->getZone(PLANETS[i]);
+            		printOne(creature, z);
+        		}
+    		} else if (args.length() > 0) {
+        		Zone* z = server->getZoneServer()->getZone(args);
+        		if (z == nullptr) {
+            		creature->sendSystemMessage("Unknown planet. Try: /gcwstatus, /gcwstatus all, or /gcwstatus <planet>.");
+        		} else {
+            		printOne(creature, z);
+        		}
+    		} else {
+        		// default: current planet
+        		printOne(creature, zone);
+    		}
 		}
 
 		return SUCCESS;
