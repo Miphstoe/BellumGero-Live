@@ -43,7 +43,7 @@ bh_nightsister_outcast = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 4620000
+			lootChance = 1000000
 		},
 		{
 			groups = {
@@ -73,7 +73,7 @@ bh_nightsister_outcast = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 4620000
+			lootChance = 1200000
 		}
 	},
 

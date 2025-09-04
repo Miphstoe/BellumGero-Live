@@ -41,7 +41,7 @@ bh_tusken_carnage_champion = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 5320000
+			lootChance = 10000000
 		},
 		{
 			groups = {
@@ -71,7 +71,7 @@ bh_tusken_carnage_champion = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 5320000
+			lootChance = 1500000
 		},
 	},
 
