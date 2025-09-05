@@ -29,7 +29,7 @@ void AttachmentImplementation::initializeTransientMembers() {
 
 	setLoggingName("AttachmentObject");
 
-	// This is here to convert the existing HashTable to a VectorMap
+	// Convert existing HashTable -> VectorMap on load if needed
 	if (skillModifiers.size() < 1) {
 		HashTableIterator<String, int> iterator = skillModMap.iterator();
 
@@ -38,7 +38,6 @@ void AttachmentImplementation::initializeTransientMembers() {
 
 		for (int i = 0; i < skillModMap.size(); ++i) {
 			iterator.getNextKeyAndValue(key, value);
-
 			skillModifiers.put(key, value);
 		}
 	}
@@ -46,23 +45,19 @@ void AttachmentImplementation::initializeTransientMembers() {
 
 void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
 	auto zoneServer = getZoneServer();
-
-	if (zoneServer == nullptr) {
+	if (zoneServer == nullptr)
 		return;
-	}
 
 	auto lootManager = zoneServer->getLootManager();
-
-	if (lootManager == nullptr) {
+	if (lootManager == nullptr)
 		return;
-	}
 
 	float level = values->hasExperimentalAttribute("creatureLevel") ? values->getCurrentValue("creatureLevel") : 1;
 	float bonus = values->hasExperimentalAttribute("modifier") ? values->getCurrentValue("modifier") : 1;
-	float rank = LootValues::getLevelRankValue(level, 0.2f, 0.9f);
+	float rank  = LootValues::getLevelRankValue(level, 0.2f, 0.9f);
 
 	int chance = rank * bonus * 100.f;
-	int roll = System::random(1000);
+	int roll   = System::random(1000);
 	int modCount = 1;
 
 	int pivot = chance - roll;
@@ -81,13 +76,12 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
 		float step = 1.f - ((i / (float)modCount) * 0.5f);
 		int min = Math::clamp(-1, (int)round(0.075f * level) - 1, 25) * step;
 		int max = Math::clamp(-1, (int)round(0.125f * level) + 1, 25);
-		
-		// FIXED: Proper random range calculation + clamping
+
+		// Proper random range + clamping
 		int mod = System::random(max - min + 1) + min;
 		mod = Math::clamp(1, mod, 25);
 
 		String modName = lootManager->getRandomLootableMod(gameObjectType);
-
 		skillModifiers.put(modName, mod);
 	}
 }
@@ -98,13 +92,29 @@ void AttachmentImplementation::fillAttributeList(AttributeListMessage* msg, Crea
 	StringBuffer name;
 
 	for (int i = 0; i < skillModifiers.size(); i++) {
-		auto key = skillModifiers.elementAt(i).getKey();
+		auto key   = skillModifiers.elementAt(i).getKey();
 		auto value = skillModifiers.elementAt(i).getValue();
 
 		name << "cat_skill_mod_bonus.@stat_n:" << key;
-
 		msg->insertAttribute(name.toString(), value);
-
 		name.deleteAll();
 	}
+}
+
+/**
+ * Add a specific skill mod to this attachment at runtime.
+ * Writes into both skillModifiers and skillModMap (kept in sync),
+ * and marks the object dirty so the examine UI picks it up.
+ */
+void AttachmentImplementation::addSkillMod(const String& modName, int value) {
+	if (modName.isEmpty() || value == 0)
+		return;
+
+	// Keep both containers in sync (legacy + current)
+	skillModifiers.put(modName, value);
+	skillModMap.put(modName, value);
+
+	// No setUpdated() on this codebase; not needed for examine.
+	// If you want to force a UI refresh when already open you could
+	// re-send attributes elsewhere, but it isn't required here.
 }
