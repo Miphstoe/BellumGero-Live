@@ -14,7 +14,7 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/objects/ship/PobShipObject.h"
-// ADDED:
+// Needed so we can cast the building root and apply/remove structure skillMods
 #include "server/zone/objects/structure/StructureObject.h"
 
 void CellObjectImplementation::initializeTransientMembers() {
@@ -224,20 +224,6 @@ bool CellObjectImplementation::transferObject(SceneObject* object, int containme
 
 			// Push building template skillMods onto the creature
 			structure->addTemplateSkillMods(creature);
-
-			// DEBUG: show all relevant building mods
-			int mind = creature->getSkillMod("private_buff_mind");
-			int med  = creature->getSkillMod("private_medical_rating");
-			int bf   = creature->getSkillMod("private_med_battle_fatigue");
-
-			StringBuffer dbg;
-			dbg << "Entered building mods — ";
-			bool any = false;
-			if (mind > 0) { dbg << "private_buff_mind=" << mind; any = true; }
-			if (med  > 0) { if (any) dbg << " | "; dbg << "private_medical_rating=" << med; any = true; }
-			if (bf   > 0) { if (any) dbg << " | "; dbg << "private_med_battle_fatigue=" << bf; any = true; }
-			if (!any) dbg << "none.";
-			creature->sendSystemMessage(dbg.toString());
 		}
 	}
 	// === END: apply structure skillMods on building entry ===
@@ -306,22 +292,7 @@ bool CellObjectImplementation::removeObject(SceneObject* object, SceneObject* de
 		// Only remove if destination is NOT in the same building (i.e., truly leaving)
 		if (currentRoot != nullptr && currentRoot->isStructureObject() && currentRoot != destRoot) {
 			StructureObject* structure = cast<StructureObject*>(currentRoot);
-
 			structure->removeTemplateSkillMods(creature);
-
-			// DEBUG: show resulting values after removal
-			int mind = creature->getSkillMod("private_buff_mind");
-			int med  = creature->getSkillMod("private_medical_rating");
-			int bf   = creature->getSkillMod("private_med_battle_fatigue");
-
-			StringBuffer dbg;
-			dbg << "Left building mods — ";
-			bool any = false;
-			if (mind != 0) { dbg << "private_buff_mind=" << mind; any = true; }
-			if (med  != 0) { if (any) dbg << " | "; dbg << "private_medical_rating=" << med; any = true; }
-			if (bf   != 0) { if (any) dbg << " | "; dbg << "private_med_battle_fatigue=" << bf; any = true; }
-			if (!any) dbg << "all cleared.";
-			creature->sendSystemMessage(dbg.toString());
 		}
 	}
 	// === END: remove structure skillMods on building exit ===
