@@ -43,7 +43,7 @@ bh_spiderclan_auspex = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 5140000
+			lootChance = 10000000
 		},
 		{
 			groups = {
@@ -73,7 +73,7 @@ bh_spiderclan_auspex = Creature:new {
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
-			lootChance = 5140000
+			lootChance = 1500000
 		}
 	},
 
