@@ -186,7 +186,7 @@ rebelRewardData = {
         	cost    = 2500
     	},
 	},
-},	
+}	
 
 imperialRewardData = {
 	weaponsArmorList = {
