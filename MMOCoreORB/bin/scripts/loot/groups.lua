@@ -54,6 +54,9 @@ includeFile("groups/bestine_election/bestine_election_smooth_stone.lua")
 includeFile("groups/bestine_election/bestine_election_carved_stone.lua")
 includeFile("groups/bestine_election/bestine_election_tusken_quest.lua")
 includeFile("groups/bestine_election/bestine_election_victor_visalis_rewards.lua")
+-- ... existing includes ...
+includeFile("groups/dev/sea_removal_tool_group.lua")
+
 
 -- component loot sub-folder
 includeFile("groups/component_loot/armor_component_advanced.lua")

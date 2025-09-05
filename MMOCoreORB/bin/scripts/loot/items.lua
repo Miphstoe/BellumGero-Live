@@ -168,6 +168,9 @@ includeFile("items/bestine_election/carved_stone.lua")
 includeFile("items/bestine_election/smooth_stone.lua")
 includeFile("items/bestine_election/tusken_head.lua")
 includeFile("items/bestine_election/victor_baton_gaderiffi.lua")
+includeFile("items/bestine_election/sea_removal_tool.lua")
+
+
 
 --coa sub-folder
 includeFile("items/coa/coa_decoder_housing.lua")

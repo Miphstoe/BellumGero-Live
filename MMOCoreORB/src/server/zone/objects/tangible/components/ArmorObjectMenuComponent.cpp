@@ -16,9 +16,52 @@
 #include "server/zone/ZoneServer.h"
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 
+// SEA extraction bits
+#include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
+#include "server/zone/objects/player/sui/callbacks/ExtractSEASuiCallback.h"
+#include "templates/SharedObjectTemplate.h"
+
+// ---------- SEA constants & helpers ----------
+namespace {
+	static const uint8 MENU_EXTRACT_SEA = 165;
+	static const char* TOOL_SERVER_IFF = "object/tangible/item/sea_removal_tool.iff";
+	static const char* TOOL_SHARED_IFF = "object/tangible/item/shared_sea_removal_tool.iff";
+
+	inline bool isSEATool(SceneObject* so) {
+		if (so == nullptr) return false;
+		SharedObjectTemplate* tmpl = so->getObjectTemplate();
+		if (!tmpl) return false;
+		const String full = tmpl->getFullTemplateString();
+		// Be tolerant: some forks report the shared path; others the server path.
+		return full == TOOL_SERVER_IFF || full == TOOL_SHARED_IFF ||
+		       full.indexOf("sea_removal_tool.iff") != -1;
+	}
+
+	// Depth-first search for the tool anywhere under this container
+	bool containerHasSEATool(SceneObject* container) {
+		if (container == nullptr) return false;
+
+		const int n = container->getContainerObjectsSize();
+		for (int i = 0; i < n; ++i) {
+			SceneObject* child = container->getContainerObject(i);
+			if (!child) continue;
+
+			if (isSEATool(child))
+				return true;
+
+			if (child->isContainerObject()) {
+				if (containerHasSEATool(child))
+					return true;
+			}
+		}
+		return false;
+	}
+} // namespace
+// --------------------------------------------
+
 void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	// Allow any wearable (armor or clothing)
-	if (!sceneObject || !sceneObject->isWearableObject())
+	if (!sceneObject || !sceneObject->isWearableObject() || player == nullptr)
 		return;
 
 	// Ownership / admin checks (same as before)
@@ -38,10 +81,17 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 			return;
 	}
 
-	// Primary color picker
-	menuResponse->addRadialMenuItem(81, 3, "Color Change");
+	// ----- SEA extraction radial (when item is anywhere in player's inventory and tool exists) -----
+	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+	if (inventory != nullptr && sceneObject->isASubChildOf(inventory)) {
+		if (containerHasSEATool(inventory)) {
+			menuResponse->addRadialMenuItem(MENU_EXTRACT_SEA, 3, "Extract SEA(s) (destroys item)");
+		}
+	}
+	// -----------------------------------------------------------------------------------------------
 
-	// Secondary color picker (will fall back safely if the item has no index_color_2)
+	// Your existing color options
+	menuResponse->addRadialMenuItem(81, 3, "Color Change");
 	menuResponse->addRadialMenuItem(82, 3, "Color Change (Secondary)");
 
 	// Preserve normal wearable/tangible menu behavior
@@ -49,7 +99,37 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 }
 
 int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
+	if (!sceneObject || player == nullptr)
+		return 0;
 
+	// ----- SEA extraction flow -----
+	if (selectedID == MENU_EXTRACT_SEA) {
+		ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+		if (inventory == nullptr) return 0;
+
+		// verify tool present (recursive, works inside backpacks)
+		if (!containerHasSEATool(inventory)) {
+			player->sendSystemMessage("SEA: You need a SEA Removal Tool in your inventory.");
+			return 0;
+		}
+
+		// Confirm SUI
+		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player, SuiWindowType::NONE);
+		box->setPromptText("This will extract all skill modifiers into new attachments, and DESTROY the wearable and the tool. Proceed?");
+		box->setOkButton(true, "@ok");
+		box->setCancelButton(true, "@cancel");
+
+		// ‘using object’ = the wearable; callback will fetch it from the SUI
+		box->setUsingObject(sceneObject);
+		box->setCallback(new ExtractSEASuiCallback(player->getZoneServer()));
+
+		player->getPlayerObject()->addSuiBox(box);
+		player->sendMessage(box->generateMessage());
+		return 0;
+	}
+	// -------------------------------------------------------------------
+
+	// Existing color logic (unchanged)
 	if (selectedID == 81 || selectedID == 82) {
 		ManagedReference<SceneObject*> parent = sceneObject->getParent().get();
 
@@ -84,10 +164,7 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 			VectorMap<String, Reference<CustomizationVariable*> > variables;
 			AssetCustomizationManagerTemplate::instance()->getCustomizationVariables(appearanceFilename.hashCode(), variables, false);
 
-			// Choose palette:
-			//  - For 81, prefer key containing "index_color_1"
-			//  - For 82, prefer key containing "index_color_2"
-			//  - Fallback to first available variable if specific one not found
+			// Choose palette key
 			String palette;
 			for (int i = 0; i < variables.size(); ++i) {
 				String key = variables.elementAt(i).getKey();
@@ -96,7 +173,6 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 			}
 			if (palette.isEmpty() && variables.size() > 0)
 				palette = variables.elementAt(0).getKey();
-
 			if (palette.isEmpty())
 				return 0; // nothing we can edit
 
