@@ -174,7 +174,19 @@ rebelRewardData = {
 			cost    = 5000
 		},
 	},
-}
+
+	vehicleDeedsList = {
+    	"barc_speeder_deed",
+	},
+
+	vehicleDeeds = {
+    	barc_speeder_deed = {
+        	display = "BARC Speeder Deed",
+        	item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
+        	cost    = 2500
+    	},
+	},
+},	
 
 imperialRewardData = {
 	weaponsArmorList = {
@@ -363,5 +375,18 @@ imperialRewardData = {
 			cost    = 5000
 		},
 	},
-}		
+
+	vehicleDeedsList = {
+    	"barc_speeder_deed",
+	},
+
+	vehicleDeeds = {
+    	barc_speeder_deed = {
+        	display = "BARC Speeder Deed",
+        	item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
+        	cost    = 2500
+    	},
+	},
+}	
+		
 	
