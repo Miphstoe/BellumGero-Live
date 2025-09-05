@@ -83,16 +83,16 @@ JediKnightVisibilityEncounter = ScreenPlay:new {
     -- Spawn cadence
     LOGIN_GRACE_SECONDS       = 60,               -- no ambush right after login
     FIRST_DELAY_MIN_SECONDS   = 2700,               -- 45 min - 2 hours first window
-    FIRST_DELAY_MAX_SECONDS   = 7200,
+    FIRST_DELAY_MAX_SECONDS   = 3600,
     RESPAWN_MIN_SECONDS       = 2700,               -- after loot, new window
-    RESPAWN_MAX_SECONDS       = 7200,
+    RESPAWN_MAX_SECONDS       = 3600,
     DESPAWN_MS                = 5 * 60 * 1000,    -- auto-despawn safety if ignored
 
     -- Light watchdogs (no manual DB logic)
     DEATH_CHECK_PERIOD_MS     = 4000,             -- check owner death/incap regularly
     DEATH_GRACE_SECONDS       = 180,              -- short grace after owner death
     DEATH_RESPAWN_MIN_SECONDS = 2700,              -- window to next encounter after death
-    DEATH_RESPAWN_MAX_SECONDS = 7200,
+    DEATH_RESPAWN_MAX_SECONDS = 3600,
 }
 
 registerScreenPlay("JediKnightVisibilityEncounter", true)
