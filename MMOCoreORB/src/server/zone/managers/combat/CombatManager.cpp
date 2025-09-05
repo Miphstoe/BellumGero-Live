@@ -35,12 +35,22 @@
 #include "server/zone/objects/creature/buffs/BuffCRC.h"
 
 namespace {
-	inline bool hasFR3(CreatureObject* co) {
-		if (!co) return false;
-		// Check both the official CRC and the string hash to be 100% safe across forks.
-		return co->hasBuff(BuffCRC::JEDI_FORCE_RUN_3) || co->hasBuff(STRING_HASHCODE("forcerun3"));
-	}
+    static const uint32 FORCERUN3_CRC = STRING_HASHCODE("forcerun3");
+
+    inline bool hasFR3(CreatureObject* co) {
+        if (!co) return false;
+        return co->hasBuff(BuffCRC::JEDI_FORCE_RUN_3) || co->hasBuff(FORCERUN3_CRC);
+    }
+
+    inline void cancelForceRun3IfActive(CreatureObject* c) {
+        if (!c || !hasFR3(c)) return;
+        // Remove by both, in case the fork uses a different ID
+        c->removeBuff(BuffCRC::JEDI_FORCE_RUN_3);
+        c->removeBuff(FORCERUN3_CRC);
+        c->sendSystemMessage("@jedi_spam:force_run_off");
+    }
 }
+
 
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
@@ -115,15 +125,9 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
-	// FR3 hard block: if either side has Force Run 3, do not enter combat.
-	if (hasFR3(attacker)) {
-		attacker->sendSystemMessage("@jedi_spam:force_run_cannot_attack");
-		return false;
-	}
-	if (creo && hasFR3(creo)) {
-		creo->sendSystemMessage("@jedi_spam:force_run_cannot_attack");
-		return false;
-	}
+	// ✂️ REMOVED: FR3 hard block. We want to enter combat and auto-cancel FR3 instead.
+	// if (hasFR3(attacker)) { ... return false; }
+	// if (creo && hasFR3(creo)) { ... return false; }
 
 	attacker->clearState(CreatureState::PEACE);
 
@@ -145,8 +149,15 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		}
 	}
 
+	// Mark both as in-combat
 	attacker->setCombatState();
 	defender->setCombatState();
+
+	// ✅ NEW: auto-cancel Force Run 3 the instant combat begins (both sides)
+	cancelForceRun3IfActive(attacker);
+	if (defender->isCreatureObject()) {
+		cancelForceRun3IfActive(defender->asCreatureObject());
+	}
 
 	attacker->setDefender(defender);
 
@@ -160,8 +171,6 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 
 	return true;
 }
-
-
 
 // Called when creature attempts to peace out of combat -- Creature is locked pre, Defender List is cleared
 bool CombatManager::attemptPeace(CreatureObject* creature) const {
@@ -256,14 +265,19 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 	if (data.getCommand() == nullptr)
 		return -3;
 
-	// FR3 hard block: cannot perform any attack while Force Run 3 is active.
-	if (hasFR3(attacker)) {
-		attacker->sendSystemMessage("@jedi_spam:force_run_cannot_attack"); // fallback: "You cannot attack while Force Run is active."
-		return -1;
-	}
+	// ✂️ REMOVED: FR3 hard block. We now allow combat to begin and auto-cancel FR3.
+	// if (hasFR3(attacker)) {
+	// 	attacker->sendSystemMessage("@jedi_spam:force_run_cannot_attack");
+	// 	return -1;
+	// }
 
 	if (!startCombat(attacker, defenderObject, true, data.getHitIncapTarget()))
 		return -1;
+
+	// ✅ NEW (Part C): belt-and-suspenders FR3 auto-cancel right after combat begins
+	cancelForceRun3IfActive(attacker);
+	if (defenderObject && defenderObject->isCreatureObject())
+		cancelForceRun3IfActive(defenderObject->asCreatureObject());
 
 	debug("past start combat");
 
