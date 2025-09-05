@@ -473,7 +473,7 @@ rebelRecruiterConvoTemplate:addScreen(fp_loot_schematics);
 
 fp_vehicle_deeds = ConvoScreen:new {
   id = "fp_vehicle_deeds",
-  leftDialog = "@conversation/faction_recruiter_rebel:s_342", -- same text as schematics page
+  leftDialog = "@conversation/faction_recruiter_rebel:s_490", -- same text as weapons page
   stopConversation = "true",
   options = {},
 }
