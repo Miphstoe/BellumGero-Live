@@ -157,6 +157,11 @@ function recruiterScreenplay:isLootSchematic(faction, strItem)
 	return factionRewardData.lootSchematics ~= nil and factionRewardData.lootSchematics[strItem] ~= nil
 end
 
+function recruiterScreenplay:isVehicleDeeds(faction, strItem)
+	local factionRewardData = self:getFactionDataTable(faction)
+	return factionRewardData.vehicleDeeds ~= nil and factionRewardData.vehicleDeeds[strItem] ~= nil
+end
+
 function recruiterScreenplay:getWeaponsArmorOptions(faction, gcwDiscount, smugglerDiscount)
 	local optionsTable = { }
 	local factionRewardData = self:getFactionDataTable(faction)
@@ -280,6 +285,39 @@ function recruiterScreenplay:getLootSchematicOptions(faction, gcwDiscount, smugg
 	return optionsTable
 end
 
+function recruiterScreenplay:getVehicleDeedsOptions(faction, gcwDiscount, smugglerDiscount)
+  local optionsTable = { }
+  local factionRewardData = self:getFactionDataTable(faction)
+
+  if factionRewardData.vehicleDeedsList == nil then
+    return optionsTable
+  end
+
+  for i = 1, #factionRewardData.vehicleDeedsList, 1 do
+    local key = factionRewardData.vehicleDeedsList[i]
+    local d = factionRewardData.vehicleDeeds and factionRewardData.vehicleDeeds[key]
+    if d and d.display and d.cost then
+      local cost = math.ceil(d.cost * gcwDiscount * smugglerDiscount)
+
+      -- same label handling as loot schematics
+      local label = d.display
+      if type(label) == "string" and string.sub(label,1,1) == "@" then
+        local loc = getStringId(label)
+        if loc ~= nil and loc ~= "" then
+          label = loc
+        else
+          local _, keypart = string.match(label, "^@([^:]+):(.*)$")
+          label = keypart or label
+        end
+      end
+
+      table.insert(optionsTable, { (label .. " (Cost: " .. cost .. ")"), 0 })
+    end
+  end
+
+  return optionsTable
+end
+
 function recruiterScreenplay:getUniformsOptions(faction, gcwDiscount, smugglerDiscount)
 	local optionsTable = { }
 	local factionRewardData = self:getFactionDataTable(faction)
@@ -311,7 +349,9 @@ function recruiterScreenplay:getItemCost(faction, itemString)
 	elseif self:isSchematic(faction, itemString) and factionRewardData.schematic[itemString].cost ~= nil then
 		return factionRewardData.schematic[itemString].cost
 	elseif self:isLootSchematic(faction, itemString) and factionRewardData.lootSchematics[itemString].cost ~= nil then
-		return factionRewardData.lootSchematics[itemString].cost	
+		return factionRewardData.lootSchematics[itemString].cost
+	elseif self:isVehicleDeeds(faction, itemString) and factionRewardData.vehicleDeeds[itemString].cost ~= nil then
+		return factionRewardData.vehicleDeeds[itemString].cost		
 	end
 	return nil
 end
@@ -331,7 +371,9 @@ function recruiterScreenplay:getTemplatePath(faction, itemString)
 	elseif self:isSchematic(faction, itemString) then
 		return factionRewardData.schematic[itemString].item
 	elseif self:isLootSchematic(faction, itemString) then
-		return factionRewardData.lootSchematics[itemString].item	
+		return factionRewardData.lootSchematics[itemString].item
+	elseif self:isVehicleDeeds(faction, itemString) then
+		return factionRewardData.vehicleDeeds[itemString].item		
 	end
 	return nil
 end
@@ -349,7 +391,9 @@ function recruiterScreenplay:getDisplayName(faction, itemString)
 	elseif self:isHireling(faction, itemString) then
 		return factionRewardData.hirelings[itemString].display
 	elseif self:isLootSchematic(faction, itemString) then
-		return factionRewardData.lootSchematics[itemString].display	
+		return factionRewardData.lootSchematics[itemString].display
+	elseif self:isVehicleDeeds(faction, itemString) then
+		return factionRewardData.vehicleDeeds[itemString].display		
 	end
 	return nil
 end
@@ -419,7 +463,9 @@ function recruiterScreenplay:sendPurchaseSui(pNpc, pPlayer, screenID, gcwDiscoun
 	elseif screenID == "fp_schematics" then
 		options = self:getSchematicOptions(faction, gcwDiscount, smugglerDiscount)
 	elseif screenID == "fp_loot_schematics" then
-		options = self:getLootSchematicOptions(faction, gcwDiscount, smugglerDiscount)	
+		options = self:getLootSchematicOptions(faction, gcwDiscount, smugglerDiscount)
+	elseif screenID == "fp_vehicle_deeds" then
+		options = self:getVehicleDeedsOptions(faction, gcwDiscount, smugglerDiscount)	
 	end
 
 	suiManager:sendListBox(pNpc, pPlayer, "@faction_recruiter:faction_purchase", "@faction_recruiter:select_item_purchase", 2, "@cancel", "", "@ok", "recruiterScreenplay", "handleSuiPurchase", 32, options)
@@ -801,7 +847,9 @@ function recruiterScreenplay:getItemListTable(faction, screenID)
 	elseif screenID == "fp_schematics" then
 		return dataTable.schematicList
 	elseif screenID == "fp_loot_schematics" then
-		return dataTable.lootSchematicList	
+		return dataTable.lootSchematicList
+	elseif screenID == "fp_vehicle_deeds" then
+		return dataTable.vehicleDeedsList	
 	end
 end
 

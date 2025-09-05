@@ -45,6 +45,7 @@
 --Children folder includes
 
 -- Server Objects
+includeFile("intangible/vehicle/barc_speeder_pcd.lua")
 includeFile("intangible/vehicle/jetpack_pcd.lua")
 includeFile("intangible/vehicle/landspeeder_av21_pcd.lua")
 includeFile("intangible/vehicle/landspeeder_x31_pcd.lua")
