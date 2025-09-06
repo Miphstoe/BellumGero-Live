@@ -49,3 +49,5 @@ includeFile("outfits/serverobjects.lua")
 -- Custom content - Loads last to allow for overrides...
 --includeFile("../custom_scripts/mobile/serverobjects.lua")
 includeFile("acklay_worldboss.lua")
+includeFile("enhanced_gaping_spider_boss.lua")
+
