@@ -9,7 +9,7 @@ enhanced_gaping_spider_boss = Creature:new {
 	socialGroup = "geonosian_creature",
 	mobType = MOB_CARNIVORE,
 	faction = "",
-	level = 180,
+	level = 350,
 	chanceHit = 6.5,
 	damageMin = 1500,
 	damageMax = 2400,
@@ -79,9 +79,9 @@ enhanced_gaping_spider_boss = Creature:new {
 		},
         {
       groups = {
-        { group = "sea_removal_tool_1x",  chance = 3500000 }, -- 35%
-        { group = "clothing_attachments", chance = 3500000 }, -- 35%
-        { group = "armor_attachments",    chance = 3000000 }  -- 30%
+        { group = "sea_removal_tool_1x",  chance = 2500000 }, -- 25%
+        { group = "clothing_attachments", chance = 3750000 }, -- 37.5%
+        { group = "armor_attachments",    chance = 3750000 }  -- 37.5%
       },
       lootChance = 10000000
     }
