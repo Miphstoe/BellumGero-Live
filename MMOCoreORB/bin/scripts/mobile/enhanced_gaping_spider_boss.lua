@@ -39,31 +39,41 @@ enhanced_gaping_spider_boss = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{ group = "fire_breathing_spider", chance = 10000000 }
+				{ group = "fire_breathing_spider", chance = 3500000 }, --35%
+                { group = "clothing_attachments", chance = 3500000 }, --35%
+                { group = "armor_attachments",    chance = 3000000 }-- 30%
 			},
 			lootChance = 10000000
 		},
 		{
 			groups = {
-				{ group = "fire_breathing_spider", chance = 10000000 }
+				{ group = "fire_breathing_spider", chance = 3500000 },--35%
+                { group = "holocron_dark",    chance = 3000000 },-- 30%
+                { group = "holocron_light", chance = 3500000 } --35%
+
 			},
 			lootChance = 10000000
 		},
 		{
 			groups = {
-				{ group = "fire_breathing_spider", chance = 10000000 }
+				{ group = "fire_breathing_spider", chance = 3000000 },--30%
+                { group = "power_crystals",    chance = 3500000 },-- 35%
+                { group = "color_crystals", chance = 3500000 } -- 35%
 			},
 			lootChance = 10000000
 		},
 		{
 			groups = {
-				{ group = "fire_breathing_spider", chance = 10000000 }
+				{ group = "chemistry_component_advanced", chance = 25000000 },--25%
+                { group = "armor_component_advanced", chance = 2500000 },--25%
+                { group = "weapon_component_advanced",    chance = 2500000 },--25%
+                { group = "crafting_component_advanced", chance = 2500000 } --25%
 			},
 			lootChance = 10000000
 		},
 		{
 			groups = {
-				{ group = "fire_breathing_spider", chance = 10000000 }
+				{ group = "component_enhancement", chance = 10000000 }
 			},
 			lootChance = 10000000
 		},
