@@ -133,7 +133,7 @@ public:
 
 		// Radius & cap: tune as you like. If you later add TrapTemplate getters
 		// for these (e.g., getAoeRadius(), getAoeMaxTargets()), just read them here.
-		const float aoeRadius = isAoeTrap ? 32.0f : 5.0f; // 10m AoE, 5m keeps single-target range check as before
+		const float aoeRadius = isAoeTrap ? 16.0f : 5.0f; // 10m AoE, 5m keeps single-target range check as before
 		const int   aoeCap    = 12;                        // safety cap
 		// ----------------------------------------------------------------------
 

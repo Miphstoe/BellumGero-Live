@@ -54,7 +54,7 @@ object_tangible_scout_trap_trap_noise_maker = object_tangible_scout_trap_shared_
 
   maxRange = 32,            -- throw/placement range
   areaOfEffect = true,      -- flip this to true
-  aoeRadius = 32,           -- add if your core supports it (common in some forks)
+  aoeRadius = 16,           -- add if your core supports it (common in some forks)
   aoeMaxTargets = 12,       -- optional safety cap (if supported)
 
   poolToDamage = MIND,
