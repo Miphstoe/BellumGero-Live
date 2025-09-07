@@ -6,6 +6,9 @@
  *
  *	Refactored on: 2024-04-14
  *	By: Hakry
+ *
+ *  Updated on: 2025-09-07
+ *  By: you & ChatGPT — add AoE support with safe defaults.
  */
 
 #ifndef THROWTRAPTASK_H_
@@ -96,7 +99,7 @@ public:
 
 		SortedVector<ManagedReference<TreeEntry*> > closeObjects;
 
-		// Find nearby objects to our target using the targets COV
+		// Find nearby objects to our target using the target's COV
 		CloseObjectsVector* closeObjectsVector = (CloseObjectsVector*) target->getCloseObjects();
 
 		if (closeObjectsVector != nullptr) {
@@ -111,7 +114,28 @@ public:
 		const auto defenseString = trapData->getDefenseMod();
 		const auto animationString = trapData->getAnimation();
 		uint32 trapCrc = animationString.hashCode();
+
+		// ---- AoE settings ----------------------------------------------------
+		// Primary source of truth:
 		bool isAoeTrap = trapData->isAoeTrap();
+
+		// Fallback: if your template flag isn't hooked up yet, enable AoE for the
+		// specific trap by template name (noise maker) so this works immediately.
+		if (!isAoeTrap) {
+			auto* tmpl = trap->getObjectTemplate();
+			if (tmpl != nullptr) {
+				String t = tmpl->toString(); // e.g. "object/tangible/scout/trap/trap_noise_maker.iff"
+				if (t.indexOf("trap_noise_maker") != -1) {
+					isAoeTrap = true;
+				}
+			}
+		}
+
+		// Radius & cap: tune as you like. If you later add TrapTemplate getters
+		// for these (e.g., getAoeRadius(), getAoeMaxTargets()), just read them here.
+		const float aoeRadius = isAoeTrap ? 32.0f : 5.0f; // 10m AoE, 5m keeps single-target range check as before
+		const int   aoeCap    = 12;                        // safety cap
+		// ----------------------------------------------------------------------
 
 		int debuffDuration = trapData->getDuration();
 		short hamPool = trapData->getPoolToDamage();
@@ -131,9 +155,10 @@ public:
 
 		int totalXP = 0;
 		bool hasHit = false;
+		int hitsApplied = 0;
 
 		try {
-			// Iterate the nearby elligible targets
+			// Iterate the nearby eligible targets
 			for (int i = 0; i < closeObjects.size(); ++i) {
 				auto objectCreature = closeObjects.get(i).castTo<CreatureObject*>();
 
@@ -143,7 +168,13 @@ public:
 
 				bool isPrimaryTarget = objectCreature->getObjectID() == targetID;
 
+				// If not AoE, only process the primary target
 				if (!isAoeTrap && !isPrimaryTarget) {
+					continue;
+				}
+
+				// If AoE, respect a conservative target cap (skip extras that aren't primary)
+				if (isAoeTrap && !isPrimaryTarget && hitsApplied >= aoeCap) {
 					continue;
 				}
 
@@ -155,14 +186,15 @@ public:
 
 				Locker agentLock(targetAgent, attacker);
 
-				if (!targetAgent->isInRange(target, 5.f)) {
+				// Radius around the *primary* target (feels natural for thrown traps)
+				if (!targetAgent->isInRange(target, aoeRadius)) {
 					continue;
 				}
 
 				// Handle combat start
 				combatManager->startCombat(attacker, attacker->getWeapon(), targetAgent, false);
 
-				int targetDefense = targetAgent->getSkillMod(trapData->getDefenseMod());
+				int targetDefense = targetAgent->getSkillMod(defenseString);
 
 				int attackRoll = System::random(199) + 1;
 				int defendRoll = System::random(199) + 1;
@@ -178,10 +210,9 @@ public:
 				int roll = System::random(100);
 				bool hit = roll < hitChance;
 
-				// Broadcast combat action for main target
+				// Broadcast combat action for main target only (avoid spam)
 				if (isPrimaryTarget) {
 					auto action = new CombatAction(attacker, targetAgent, trapCrc, hit, 0L);
-
 					if (action != nullptr) {
 						attacker->broadcastMessage(action, true, false);
 					}
@@ -192,7 +223,7 @@ public:
 					float damage = System::random(maxDamage - minDamage) + minDamage;
 					targetAgent->inflictDamage(attacker, hamPool, damage, true, true);
 
-					// Check the creature does not have the state
+					// Prevent duplicate / redundant state
 					if ((state > CreatureState::INVALID && targetAgent->hasState(state)) || targetAgent->hasBuff(trapCrc)) {
 						continue;
 					}
@@ -226,6 +257,9 @@ public:
 						// Add buff to the target
 						targetAgent->addBuff(buff);
 
+						// Count applied hits for AoE cap bookkeeping
+						++hitsApplied;
+
 						if (!targetAgent->isEventMob()) {
 							totalXP += targetAgent->getLevel() * 15;
 						}
@@ -251,11 +285,9 @@ public:
 		// Send trap message to the attacking player
 		attacker->sendSystemMessage(message);
 
-		// Lock the trap and reduce the use count
+		// Lock the trap and reduce the use count (consume ONCE)
 		Locker trapLock(trap, attacker);
-
 		trap->decreaseUseCount();
-
 		trapLock.release();
 
 		// Reduce cost based upon player's strength, quickness, and focus if any are over 300
