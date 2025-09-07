@@ -1,32 +1,36 @@
 -- egspider_worldboss.lua
--- Yavin IV World Boss: Enhanced Gaping Spider
--- - Single spawn (lock + adopt existing + finalize de-dup)
--- - Water-safe spawn selection in SE quadrant
--- - Waves at 75/50/25% (10x cavern_spider) with persisted, mark-before-spawn gates keyed by boss OID
--- - Respawn 12h after death (cooldown gate in spawnBoss + cooldown-aware retries)
--- - Quiet tick fallback with optional throttled logging
+-- Yavin IV World Boss: Enhanced Gaping Spider (single-instance controller)
+--  • Single main loop controls spawn/cooldown (no duplicate timers)
+--  • Water-safe spawn selection in SE quadrant
+--  • Helper waves at 75/50/25% (10x cavern_spider) with hard gates (persisted + objvar)
+--  • Respawn after cooldown (set RESPAWN_SECONDS)
+--  • Robust galaxy broadcast with zone fallback so players see it in-game
 
--- ===== single-load guard =====
+-- ===================== one-time load guard =====================
 if rawget(_G, "EGSPIDER_WB_LOADED") then return end
 EGSPIDER_WB_LOADED = true
-if readData("EGSPIDER.luaPrinted") ~= 1 then
-  print("[EGSPIDER] loading screenplay: egspider_worldboss")
-  writeData("EGSPIDER.luaPrinted", 1)
-end
+print("[EGSPIDER] loading screenplay: egspider_worldboss")
 
--- ===== ScreenPlay wrapper =====
-EGSpiderBossScreenPlay = ScreenPlay:new{ numberOfActs = 1, screenplayName = "EGSpiderBossScreenPlay" }
+-- ===================== ScreenPlay wrapper =====================
+EGSpiderBossScreenPlay = ScreenPlay:new{
+  numberOfActs   = 1,
+  screenplayName = "EGSpiderBossScreenPlay"
+}
 registerScreenPlay("EGSpiderBossScreenPlay", true)
 
--- ===== helpers (terrain & objvars) =====
+-- ===================== helpers =====================
 local function safeTerrainZ(x, y)
   local z
-  if type(getTerrainHeight) == "function" then z = getTerrainHeight(x, y)
-  elseif type(getWorldHeight) == "function" then z = getWorldHeight(x, y) end
+  if type(getTerrainHeight) == "function" then
+    z = getTerrainHeight(x, y)
+  elseif type(getWorldHeight) == "function" then
+    z = getWorldHeight(x, y)
+  end
   if type(z) ~= "number" then z = 0 end
   return z
 end
 
+-- ObjVar helpers (handle both SceneObject methods and global helpers)
 local function soHasVar(p, k)
   local ok, res = pcall(function()
     local so = LuaSceneObject(p)
@@ -51,18 +55,18 @@ local function soDelVar(p, k)
   end)
 end
 
--- ===== percent calculators =====
+-- percent calculators
 local function hamPercentAll9(co)
-  local bestPct, have = 100, false
+  local best, have = 100, false
   for i=0,8 do
-    local max = co:getMaxHAM(i) or 0
-    if max > 0 then
-      local pct = ((co:getHAM(i) or 0) * 100) / max
-      if pct < bestPct then bestPct = pct end
+    local m = co:getMaxHAM(i) or 0
+    if m > 0 then
       have = true
+      local p = ((co:getHAM(i) or 0) * 100) / m
+      if p < best then best = p end
     end
   end
-  return have and bestPct or 100
+  return have and best or 100
 end
 local function healthPercent(co)
   local m = co:getMaxHAM(0) or 0
@@ -70,7 +74,150 @@ local function healthPercent(co)
   return ((co:getHAM(0) or 0) * 100) / m
 end
 
--- ===== spawn utils =====
+-- ===== Robust broadcast helpers (v3) =====
+
+-- Try/catch wrapper
+local function _try(func, ...) return pcall(func, ...) end
+
+-- --- Low-level: send a system message to a list of player creature pointers ---
+local function _sendToPlayerList(list, msg)
+  if type(list) ~= "table" then return false end
+  local sent = false
+  for i = 1, #list do
+    local p = list[i]
+    if p then
+      _try(function()
+        local co = LuaCreatureObject(p)
+        if co and co.sendSystemMessage then
+          co:sendSystemMessage(msg)
+          sent = true
+        end
+      end)
+    end
+  end
+  return sent
+end
+
+-- --- Try a bunch of zone-scoped enumerators (cross-fork) ---
+local function _getZonePlayers(planet)
+  -- These are tried in order; any missing ones are skipped safely.
+  local try = {
+    function(pl) return _try(getPlayerCreaturesInZone, pl) end,
+    function(pl) return _try(getPlayersInZone, pl) end,
+    function(pl) return _try(getPlayerObjectsInZone, pl) end,
+  }
+  for _,fn in ipairs(try) do
+    local ok, list = fn(planet)
+    if ok and type(list) == "table" then return list end
+  end
+  return {}
+end
+
+-- --- Try a bunch of *galaxy-wide* enumerators (cross-fork) ---
+local function _getAllPlayers()
+  -- Add anything your fork supports here
+  local try = {
+    function() return _try(getOnlinePlayerList) end,
+    function() return _try(getOnlinePlayers) end,
+    function() return _try(getAllPlayers) end,
+    function() return _try(getConnectedPlayers) end,
+    function() return _try(getAllPlayerCreatures) end,
+    function() return _try(getAllPlayerObjects) end,
+    function() return _try(getPlayerCreatures) end,
+  }
+  for _,fn in ipairs(try) do
+    local ok, list = fn()
+    if ok and type(list) == "table" and #list > 0 then
+      return list
+    end
+  end
+  return nil
+end
+
+-- Zone broadcast (returns true if at least one player was messaged)
+local function zonecast(planet, msg)
+  local list = _getZonePlayers(planet)
+  return _sendToPlayerList(list, msg)
+end
+
+-- Try to execute the admin slash command as a last resort
+local function _trySlashBroadcast(msg)
+  local line = "/broadcastgalaxy " .. tostring(msg or "")
+  local tryExec = {
+    function(cmd) return _try(executeConsoleCommand, cmd) end,
+    function(cmd) return _try(runConsoleCommand, cmd) end,
+    function(cmd) return _try(executeCommand, cmd) end,
+    function(cmd) return _try(processCommand, cmd) end,
+    function(cmd) return _try(adminCommand, cmd) end,
+  }
+  for _,fn in ipairs(tryExec) do
+    local ok = fn(line)
+    if ok then return true end
+  end
+  return false
+end
+
+-- Galaxy broadcast:
+-- 1) Try native galaxy APIs
+-- 2) Try slash command execution
+-- 3) Try enumerating *all* players and DMing them
+-- 4) Fallback: print
+local _ALL_PLANETS = {
+  "tatooine","naboo","corellia","rori","lok","dantooine",
+  "talus","dathomir","yavin4","endor" -- trim/add for your server
+}
+
+local function galaxycast(msg)
+  msg = tostring(msg or "")
+
+  -- (1) Native galaxy-level calls (many forks)
+  if type(sendSystemMessageAll) == "function" and _try(sendSystemMessageAll, msg) then
+    print("[EGSPIDER][BCAST] used sendSystemMessageAll"); return true
+  end
+  if type(broadcastGalaxy) == "function" then
+    if _try(broadcastGalaxy, msg) then print("[EGSPIDER][BCAST] used broadcastGalaxy(msg)"); return true end
+    if _try(broadcastGalaxy, nil, msg) then print("[EGSPIDER][BCAST] used broadcastGalaxy(nil,msg)"); return true end
+  end
+  if type(broadcastMessage) == "function" then
+    if _try(broadcastMessage, msg) then print("[EGSPIDER][BCAST] used broadcastMessage(msg)"); return true end
+    if _try(broadcastMessage, nil, msg) then print("[EGSPIDER][BCAST] used broadcastMessage(nil,msg)"); return true end
+  end
+  if type(sendBroadcastMessage) == "function" and _try(sendBroadcastMessage, msg) then
+    print("[EGSPIDER][BCAST] used sendBroadcastMessage"); return true
+  end
+  if type(galaxyBroadcast) == "function" and _try(galaxyBroadcast, msg) then
+    print("[EGSPIDER][BCAST] used galaxyBroadcast"); return true
+  end
+
+  -- (2) Last-ditch: try to invoke the admin slash command itself
+  if _trySlashBroadcast(msg) then
+    print("[EGSPIDER][BCAST] executed /broadcastgalaxy via console bridge")
+    return true
+  end
+
+  -- (3) Enumerate all players (if the core exposes any list) and DM them
+  local all = _getAllPlayers()
+  if all and _sendToPlayerList(all, msg) then
+    print("[EGSPIDER][BCAST] messaged all players via enumerator")
+    return true
+  end
+
+  -- (4) Planet sweep (if any zone enumerator exists)
+  local any = false
+  for i = 1, #_ALL_PLANETS do
+    any = zonecast(_ALL_PLANETS[i], msg) or any
+  end
+  if any then
+    print("[EGSPIDER][BCAST] messaged players by planet sweep")
+    return true
+  end
+
+  -- (5) Last fallback: console only
+  print("[EGSPIDER][BCAST-FAIL] "..msg)
+  return false
+end
+
+-- ===================== spawn utils =====================
 local function trySpawnMobile(planet, tpl, respawn, x, z, y, dir, cell)
   local ok, mob
   ok,mob=pcall(spawnMobile,planet,tpl,respawn,x,z,y,dir,cell)  if ok and mob then return mob,"A" end
@@ -84,6 +231,7 @@ local function trySpawnMobile(planet, tpl, respawn, x, z, y, dir, cell)
   return nil,"NONE"
 end
 
+-- Water/invalid spot check
 local function spotIsDryAndValid(planet, x, y)
   local tz = safeTerrainZ(x, y)
   if type(getWaterHeight) == "function" then
@@ -93,8 +241,12 @@ local function spotIsDryAndValid(planet, x, y)
   local probe = select(1, trySpawnMobile(planet, "cavern_spider", 0, x, tz, y, 0, 0))
   if probe then
     local wet=false
-    pcall(function() local co=LuaCreatureObject(probe); if co and co.isSwimming and co:isSwimming() then wet=true end end)
-    local so=LuaSceneObject(probe); if so then so:destroyObjectFromWorld(); so:destroyObjectFromDatabase() end
+    pcall(function()
+      local co=LuaCreatureObject(probe)
+      if co and co.isSwimming and co:isSwimming() then wet=true end
+    end)
+    local so=LuaSceneObject(probe)
+    if so then so:destroyObjectFromWorld(); so:destroyObjectFromDatabase() end
     return not wet
   end
   return true
@@ -110,59 +262,27 @@ local function pickDrySpawnPoint(planet, points, tries)
   return nil,nil,nil
 end
 
-local function preflight(planet, x, z, y)
-  local mob = select(1, trySpawnMobile(planet, "cavern_spider", 0, x+1, z, y+1, 0, 0))
-  if mob then
-    local so=LuaSceneObject(mob); if so then so:destroyObjectFromWorld(); so:destroyObjectFromDatabase() end
-    return true
-  end
-  return false
-end
+-- Persisted wave gates (by OID)
+local function waveKey(oid, tag) return "EGSPIDER.wave."..tostring(oid or 0).."."..tostring(tag) end
+local function waveDone(oid, tag) local v=readData(waveKey(oid,tag)); return v and tonumber(v)==1 end
+local function waveMark(oid, tag) writeData(waveKey(oid,tag),1) end
+local function waveClearAll(oid) writeData(waveKey(oid,"75"),0); writeData(waveKey(oid,"50"),0); writeData(waveKey(oid,"25"),0) end
 
--- ===== cooldown helper =====
-local function cooldownDelay(self)
-  local nextA = readData(self.DATA_NEXT_SPAWN)
-  local now = os.time()
-  if nextA and tonumber(nextA) and tonumber(nextA) > now then
-    return tonumber(nextA) - now
-  end
-  return 0
-end
-
--- ===== wave gating (persisted + ObjVar) =====
-local function waveKey(oid, tag)
-  return "EGSPIDER.wave." .. tostring(oid or 0) .. "." .. tostring(tag)
-end
-local function waveDone(oid, tag)
-  local v = readData(waveKey(oid, tag))
-  return v ~= nil and tonumber(v) == 1
-end
-local function waveMark(oid, tag) writeData(waveKey(oid, tag), 1) end
-local function waveClearAll(oid)
-  writeData(waveKey(oid, "75"), 0)
-  writeData(waveKey(oid, "50"), 0)
-  writeData(waveKey(oid, "25"), 0)
-end
-
--- ===== controller =====
+-- ===================== controller (single main loop) =====================
 EGSpiderBoss = {
   TAG = "[EGSPIDER]",
   PLANET = "yavin4",
   BOSS_TEMPLATE = "enhanced_gaping_spider_boss",
+
+  -- >>> Change this for respawn time (seconds). Use 60 for tests, 12*60*60 for prod.
   RESPAWN_SECONDS = 12*60*60,
 
-  -- tick logging (quiet by default)
-  VERBOSE_TICK   = false,  -- set true to see throttled % logs
-  LOG_PCT_STEP   = 5,
-  LOG_MIN_PERIOD = 30,
-  TICK_ACTIVE_SEC= 2,
-  TICK_IDLE_SEC  = 10,
+  LOOP_INTERVAL   = 5,     -- seconds; main loop cadence (quiet)
+  VERBOSE_TICK    = false, -- set true to see occasional % logs
 
-  -- helpers per wave
   WAVE_COUNTS  = { cavern_spider = 10 },
   WAVE_SCATTER = { cavern_spider = 4 },
 
-  -- SE quadrant candidate points
   SPAWN_POINTS = {
     {6100,-6750},{6800,-5200},{7350,-6100},
     {4604,-6470},{4950,-6650},{3634,-5239},
@@ -171,53 +291,35 @@ EGSpiderBoss = {
   },
 
   -- persisted keys
-  DATA_FLAG_SPAWNED   = "EGSPIDER.spawned",      -- 0 idle, 1 alive, 2 spawning, 3 cooldown
-  DATA_NEXT_SPAWN     = "EGSPIDER.nextSpawnAt",
-  DATA_BOOT_SCHEDULED = "EGSPIDER.bootScheduled",
-  DATA_BOSS_OID       = "EGSPIDER.bossOID",
-  DATA_SPAWN_LOCK     = "EGSPIDER.spawnLock",
-
-  -- lock config
-  LOCK_TTL = 180,
+  DATA_STATE        = "EGSPIDER.state",       -- 0 idle, 1 alive, 3 cooldown
+  DATA_NEXT_SPAWN   = "EGSPIDER.nextSpawnAt",
+  DATA_BOSS_OID     = "EGSPIDER.bossOID",
+  DATA_LOOP_STARTED = "EGSPIDER.loopStarted",
 
   -- runtime
-  bossPtr = nil, bossOID = nil, resolveMisses = 0,
+  bossPtr = nil, bossOID = nil,
   _wave75 = false, _wave50 = false, _wave25 = false,
-  _lastTickPct = 999, _lastTickTime = 0
+  _lastPctLogAt = 0, _lastPct = 999
 }
 
-function EGSpiderBoss:d(m) print(self.TAG .. " " .. tostring(m)) end
-function EGSpiderBoss:getState() local v=readData(self.DATA_FLAG_SPAWNED); if v==nil then return 0 end; return tonumber(v) or 0 end
-function EGSpiderBoss:setState(s) writeData(self.DATA_FLAG_SPAWNED, s) end
+function EGSpiderBoss:d(m) print(self.TAG.." "..tostring(m)) end
+function EGSpiderBoss:getState() local v=readData(self.DATA_STATE); if v==nil then return 0 end; return tonumber(v) or 0 end
+function EGSpiderBoss:setState(s) writeData(self.DATA_STATE, s) end
 
--- ===== spawn lock =====
-function EGSpiderBoss:acquireSpawnLock()
-  local now = os.time()
-  local untilTs = readData(self.DATA_SPAWN_LOCK)
-  if untilTs and tonumber(untilTs) and tonumber(untilTs) > now then return false end
-  writeData(self.DATA_SPAWN_LOCK, now + (self.LOCK_TTL or 180))
-  return true
-end
-function EGSpiderBoss:releaseSpawnLock() writeData(self.DATA_SPAWN_LOCK, 0) end
-
--- ===== boot =====
+-- boot screenplay -> start single main loop
 function EGSpiderBossScreenPlay:start()
-  if readData(EGSpiderBoss.DATA_BOOT_SCHEDULED)==1 then return end
-  writeData(EGSpiderBoss.DATA_BOOT_SCHEDULED,1)
-  print("[EGSPIDER] ScreenPlay registered; booting in 90s")
-  createEvent(90, "EGSpiderBossScreenPlay", "boot", nil, "")
-end
-function EGSpiderBossScreenPlay:boot()
-  print("[EGSPIDER] ScreenPlay boot -> start boss controller")
-  EGSpiderBoss:start()
+  if readData(EGSpiderBoss.DATA_LOOP_STARTED)==1 then return end
+  writeData(EGSpiderBoss.DATA_LOOP_STARTED,1)
+  print("[EGSPIDER] ScreenPlay boot -> starting main loop in 10s")
+  createEvent(10, "EGSpiderBoss", "loop", nil, "")
 end
 
--- ===== bind OID =====
-local function bindAndPersistOID(self, pBoss)
-  local oid = nil
-  pcall(function() local co=LuaCreatureObject(pBoss); if co then oid = co:getObjectID() end end)
+-- helper: bind OID
+local function bindOID(self, pBoss)
+  local oid=nil
+  pcall(function() local co=LuaCreatureObject(pBoss); if co then oid=co:getObjectID() end end)
   if not oid or tonumber(oid)==0 then
-    pcall(function() local so=LuaSceneObject(pBoss); if so then oid = so:getObjectID() end end)
+    pcall(function() local so=LuaSceneObject(pBoss); if so then oid=so:getObjectID() end end)
   end
   if oid and tonumber(oid) and tonumber(oid) > 0 then
     self.bossOID = tonumber(oid)
@@ -227,297 +329,150 @@ local function bindAndPersistOID(self, pBoss)
   return false
 end
 
--- ===== lifecycle =====
-function EGSpiderBoss:start()
-  -- adopt existing boss by OID on restart
-  local savedOID = readData(self.DATA_BOSS_OID)
-  if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 then
-    local obj = getSceneObject(tonumber(savedOID))
-    if obj then
-      self:d("adopt existing boss by OID")
-      self.bossPtr, self.bossOID = obj, tonumber(savedOID)
-      -- reset wave gates for fresh fight after restart
-      self._wave75, self._wave50, self._wave25 = false,false,false
-      waveClearAll(self.bossOID)
-      soDelVar(self.bossPtr, "wb_wave_75"); soDelVar(self.bossPtr, "wb_wave_50"); soDelVar(self.bossPtr, "wb_wave_25")
-      -- reattach observers
-      local dmg = rawget(_G,"DAMAGERECEIVED") or rawget(_G,"COMBATDAMAGE") or rawget(_G,"DAMAGE")
-      if type(dmg)=="number" then pcall(createObserver,dmg,"EGSpiderBoss","onDamage",self.bossPtr) end
-      local death = rawget(_G,"OBJECTDESTRUCTION") or rawget(_G,"OBJECT_DESTROYED")
-      if type(death)=="number" then pcall(createObserver,death,"EGSpiderBoss","onDeath",self.bossPtr) end
-      self:setState(1)
-      createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,"")
-      return
-    else
-      writeData(self.DATA_BOSS_OID, 0)
-    end
+-- helper: attach observers (damage + death variants)
+local function attachObservers(self, pBoss)
+  local dmgCands = {"DAMAGERECEIVED","COMBATDAMAGE","DAMAGE"}
+  for _,nm in ipairs(dmgCands) do
+    local ev=rawget(_G,nm)
+    if type(ev)=="number" then pcall(createObserver,ev,"EGSpiderBoss","onDamage",pBoss) end
   end
-
-  if self:getState()==1 then self:d("start: already alive"); return end
-  local now, nextA = os.time(), readData(self.DATA_NEXT_SPAWN)
-  local delay=5
-  if nextA then
-    local n=tonumber(nextA)
-    if n and n>now then delay=math.max(5, n-now); self:d("cooldown; spawn in "..delay.."s") end
+  local deathCands = {"CREATUREDEATH","OBJECTDESTRUCTION","OBJECT_DESTROYED"}
+  for _,nm in ipairs(deathCands) do
+    local ev=rawget(_G,nm)
+    if type(ev)=="number" then pcall(createObserver,ev,"EGSpiderBoss","onDeath",pBoss) end
   end
-  createEvent(delay,"EGSpiderBoss","spawnBoss",nil,"")
 end
 
-function EGSpiderBoss:spawnBoss()
-  -- lock to prevent duplicates
-  if not self:acquireSpawnLock() then
-    self:d("spawnBoss: lock busy; another spawn in progress -> skip")
-    return
-  end
-
-  -- COOLDOWN GATE
-  local cd = cooldownDelay(self)
-  if self:getState() == 3 or cd > 0 then
-    self:d("spawnBoss: on cooldown; next in " .. tostring(cd) .. "s")
-    self:releaseSpawnLock()
-    createEvent(math.max(cd, 30), "EGSpiderBoss", "spawnBoss", nil, "")
-    return
-  end
-
-  -- adopt existing boss if saved OID is valid
-  local savedOID = readData(self.DATA_BOSS_OID)
-  if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 then
-    local existing = getSceneObject(tonumber(savedOID))
-    if existing then
-      self:d("spawnBoss: existing boss detected (OID "..tostring(savedOID)..") -> adopt/skip")
-      self.bossPtr, self.bossOID = existing, tonumber(savedOID)
-      self._wave75, self._wave50, self._wave25 = false,false,false
-      self:setState(1)
-      self:releaseSpawnLock()
-      createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,"")
-      return
-    else
-      writeData(self.DATA_BOSS_OID, 0)
-    end
-  end
-
-  if self.bossPtr or self.bossOID then self:d("spawnBoss: already tracked; skip"); self:releaseSpawnLock(); return end
-  local st=self:getState(); if st==1 or st==2 then self:d("spawnBoss: state="..st.." skip"); self:releaseSpawnLock(); return end
-  self:setState(2)
-
+-- spawn boss once; returns true on success
+function EGSpiderBoss:doSpawn()
   local x,y,z = pickDrySpawnPoint(self.PLANET, self.SPAWN_POINTS, 12)
-  if not x then
-    self:d("no dry spawn point; retry later")
-    self:setState(0); self:releaseSpawnLock()
-    local cd2 = cooldownDelay(self); createEvent((cd2>0) and cd2 or 300,"EGSpiderBoss","spawnBoss",nil,"")
-    return
-  end
-  if not preflight(self.PLANET,x,z,y) then
-    self:d("preflight failed; retry later")
-    self:setState(0); self:releaseSpawnLock()
-    local cd2 = cooldownDelay(self); createEvent((cd2>0) and cd2 or 300,"EGSpiderBoss","spawnBoss",nil,"")
-    return
-  end
-
-  self:d(string.format("SPAWN LOCATION SELECTED -> (%0.0f, %0.0f, %0.0f) on %s", x, z, y, self.PLANET))
+  if not x then self:d("spawn: no dry point found"); return false end
 
   local pBoss, sig = trySpawnMobile(self.PLANET, self.BOSS_TEMPLATE, 0, x, z, y, 0, 0)
-  if not pBoss then
-    self:d("spawnMobile failed; retry later")
-    self:setState(0); self:releaseSpawnLock()
-    local cd2 = cooldownDelay(self); createEvent((cd2>0) and cd2 or 300,"EGSpiderBoss","spawnBoss",nil,"")
-    return
-  end
+  if not pBoss then self:d("spawn: spawnMobile failed"); return false end
+
+  self.bossPtr = pBoss
+  self._wave75, self._wave50, self._wave25 = false,false,false
+  soDelVar(pBoss,"wb_wave_75"); soDelVar(pBoss,"wb_wave_50"); soDelVar(pBoss,"wb_wave_25")
+
+  bindOID(self, pBoss)
+  waveClearAll(self.bossOID)
+  attachObservers(self, pBoss)
+  self:setState(1)
 
   self:d(string.format("SPAWNED BOSS @ (%0.0f, %0.0f, %0.0f) [sig=%s]", x, z, y, sig))
 
-  self.bossPtr = pBoss
-  self.resolveMisses = 0
-  self._wave75, self._wave50, self._wave25 = false,false,false
-  soDelVar(pBoss, "wb_wave_75"); soDelVar(pBoss, "wb_wave_50"); soDelVar(pBoss, "wb_wave_25")
+  local announce = string.format(
+    "A terrifying World Boss stirs on Yavin IV! Coordinates: (%.0f, %.0f).",
+    x, y
+  )
+  galaxycast(announce) -- robust broadcast; falls back to zone-by-zone
 
-  -- attempt immediate bind; finalize will retry if needed
+  -- optional local emote for nearby players
   pcall(function()
-    local so = LuaSceneObject(pBoss)
-    if so then
-      local oid = so:getObjectID()
-      if oid and tonumber(oid) and tonumber(oid) > 0 then
-        self.bossOID = tonumber(oid)
-        writeData(self.DATA_BOSS_OID, self.bossOID)
-      end
-    end
+    local so = LuaSceneObject(self.bossPtr)
+    if so and so.spatialChat then so:spatialChat("Hsssshhhh... The nest awakens!") end
   end)
 
-  self._finalizeTries = 0
-  createEvent(1, "EGSpiderBoss", "finalizeBoss", nil, "")
+  return true
 end
 
-function EGSpiderBoss:finalizeBoss()
-  if not self.bossPtr then
-    self:d("finalize: no bossPtr; release lock and retry later")
-    self:setState(0)
-    self:releaseSpawnLock()
-    local cd = cooldownDelay(self); createEvent((cd>0) and cd or 30,"EGSpiderBoss","spawnBoss",nil,"")
-    return
+-- main loop: the *only* scheduler
+function EGSpiderBoss:loop()
+  -- re-acquire pointer if we know the OID
+  if (not self.bossPtr) then
+    local savedOID = readData(self.DATA_BOSS_OID)
+    if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 then
+      local obj = getSceneObject(tonumber(savedOID))
+      if obj then self.bossPtr = obj end
+    end
   end
 
-  -- ensure OID
-  if not (self.bossOID and tonumber(self.bossOID) and tonumber(self.bossOID) > 0) then
-    if not bindAndPersistOID(self, self.bossPtr) then
-      self._finalizeTries = (self._finalizeTries or 0) + 1
-      if self._finalizeTries < 10 then
-        createEvent(1, "EGSpiderBoss", "finalizeBoss", nil, "")
-        return
-      else
-        self:d("finalize: failed to bind OID; cleaning up and retrying later")
-        local so = LuaSceneObject(self.bossPtr)
-        if so then so:destroyObjectFromWorld(); so:destroyObjectFromDatabase() end
-        self.bossPtr, self.bossOID = nil, nil
-        self:setState(0)
-        self:releaseSpawnLock()
-        local cd = cooldownDelay(self); createEvent((cd>0) and cd or 30,"EGSpiderBoss","spawnBoss",nil,"")
-        return
+  local state = self:getState()
+  local now   = os.time()
+  local nextA = readData(self.DATA_NEXT_SPAWN)
+  local cd    = (nextA and tonumber(nextA) and (tonumber(nextA) - now)) or 0
+
+  if self.bossPtr then
+    -- alive: optional low-noise % logging and wave fallback
+    local co = LuaCreatureObject(self.bossPtr)
+    if co then
+      local pAll, pHP = hamPercentAll9(co), healthPercent(co)
+      local pct = (pAll < pHP) and pAll or pHP
+      if self.VERBOSE_TICK then
+        if (now - self._lastPctLogAt >= 30) or (math.abs(pct - self._lastPct) >= 10) then
+          self:d(string.format("tick: boss %% = %.1f", pct))
+          self._lastPctLogAt = now; self._lastPct = pct
+        end
+      end
+
+      -- fallback wave triggers (gated) in case damage observer misses
+      local f75 = self._wave75 or waveDone(self.bossOID,"75") or soHasVar(self.bossPtr,"wb_wave_75")
+      local f50 = self._wave50 or waveDone(self.bossOID,"50") or soHasVar(self.bossPtr,"wb_wave_50")
+      local f25 = self._wave25 or waveDone(self.bossOID,"25") or soHasVar(self.bossPtr,"wb_wave_25")
+      if (not f75) and pct <= 75 then self._wave75=true; waveMark(self.bossOID,"75"); soSetVar(self.bossPtr,"wb_wave_75",1); self:spawnWave(self.bossPtr,"wb_wave_75") end
+      if (not f50) and pct <= 50 then self._wave50=true; waveMark(self.bossOID,"50"); soSetVar(self.bossPtr,"wb_wave_50",1); self:spawnWave(self.bossPtr,"wb_wave_50") end
+      if (not f25) and pct <= 25 then self._wave25=true; waveMark(self.bossOID,"25"); soSetVar(self.bossPtr,"wb_wave_25",1); self:spawnWave(self.bossPtr,"wb_wave_25") end
+    end
+
+  else
+    -- no boss in world
+    if state == 1 then
+      -- we *thought* it was alive → arm cooldown
+      local when = now + (self.RESPAWN_SECONDS or 60)
+      writeData(self.DATA_NEXT_SPAWN, when)
+      self:setState(3)
+      writeData(self.DATA_BOSS_OID, 0)
+      self:d("loop: boss missing -> cooldown armed for "..tostring(self.RESPAWN_SECONDS or 60).."s")
+    elseif state ~= 3 then
+      -- idle (first boot) → spawn immediately
+      self:doSpawn()
+    else
+      -- cooldown state
+      if cd <= 0 then
+        if self:doSpawn() then
+          writeData(self.DATA_NEXT_SPAWN, 0)
+        else
+          -- spawn failed; retry in 60s without spamming
+          writeData(self.DATA_NEXT_SPAWN, now + 60)
+          self:d("loop: spawn failed; retry in 60s")
+        end
       end
     end
   end
 
-  -- de-dup vs saved OID (keep saved if alive)
-  local savedOID = readData(self.DATA_BOSS_OID)
-  if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 and tonumber(savedOID) ~= self.bossOID then
-    local existing = getSceneObject(tonumber(savedOID))
-    if existing then
-      self:d("finalize: DUPLICATE -> keep existing "..tostring(savedOID)..", remove new "..tostring(self.bossOID))
-      local soNew = LuaSceneObject(self.bossPtr)
-      if soNew then soNew:destroyObjectFromWorld(); soNew:destroyObjectFromDatabase() end
-      self.bossPtr, self.bossOID = existing, tonumber(savedOID)
-      self:setState(1)
-      local dmg = rawget(_G,"DAMAGERECEIVED") or rawget(_G,"COMBATDAMAGE") or rawget(_G,"DAMAGE")
-      if type(dmg)=="number" then pcall(createObserver,dmg,"EGSpiderBoss","onDamage",self.bossPtr) end
-      local death = rawget(_G,"OBJECTDESTRUCTION") or rawget(_G,"OBJECT_DESTROYED")
-      if type(death)=="number" then pcall(createObserver,death,"EGSpiderBoss","onDeath",self.bossPtr) end
-      self:releaseSpawnLock()
-      createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,"")
-      return
-    end
-  end
-
-  -- our current boss is canonical; persist OID, reset gates
-  writeData(self.DATA_BOSS_OID, self.bossOID)
-  waveClearAll(self.bossOID)
-  soDelVar(self.bossPtr, "wb_wave_75"); soDelVar(self.bossPtr, "wb_wave_50"); soDelVar(self.bossPtr, "wb_wave_25")
-  self._wave75, self._wave50, self._wave25 = false,false,false
-
-  -- attach observers
-  local candidates = {"DAMAGERECEIVED","COMBATDAMAGE","DAMAGE"}
-  for _,name in ipairs(candidates) do
-    local ev = rawget(_G, name)
-    if type(ev) == "number" then pcall(createObserver, ev, "EGSpiderBoss", "onDamage", self.bossPtr) end
-  end
-  local deathEv = rawget(_G,"OBJECTDESTRUCTION") or rawget(_G,"OBJECT_DESTROYED")
-  if type(deathEv) == "number" then pcall(createObserver, deathEv, "EGSpiderBoss", "onDeath", self.bossPtr) end
-
-  self:setState(1)
-  self:d("finalize: OID bound (" .. tostring(self.bossOID) .. "); observers attached")
-  self:releaseSpawnLock()
-  createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,"")
+  createEvent(self.LOOP_INTERVAL or 5, "EGSpiderBoss", "loop", nil, "")
 end
 
--- ===== tick (fallback; throttled) =====
-function EGSpiderBoss:tick()
-  if not self.bossPtr and self.bossOID and tonumber(self.bossOID)>0 then
-    local p = getSceneObject(tonumber(self.bossOID))
-    if p then self.bossPtr = p; self.resolveMisses = 0 end
-  end
-  if not self.bossPtr then createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,""); return end
-
-  local co = LuaCreatureObject(self.bossPtr)
-  if not co then createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,""); return end
-
-  local max0 = co:getMaxHAM(0) or 0
-  if max0 <= 0 then createEvent(self.TICK_IDLE_SEC or 10,"EGSpiderBoss","tick",nil,""); return end
-
-  local pAll  = hamPercentAll9(co)
-  local pHP   = healthPercent(co)
-  local percent = (pAll < pHP) and pAll or pHP
-
-  if self.VERBOSE_TICK then
-    local now = os.time()
-    local pctChanged = math.abs(percent - (self._lastTickPct or 999)) >= (self.LOG_PCT_STEP or 5)
-    local timeOk     = (now - (self._lastTickTime or 0)) >= (self.LOG_MIN_PERIOD or 30)
-    if pctChanged or timeOk then
-      self:d(string.format("tick: boss %% = %.1f (hp=%.1f, min9=%.1f)", percent, pHP, pAll))
-      self._lastTickPct  = percent
-      self._lastTickTime = now
-    end
-  end
-
-  -- wave triggers (gated)
-  local f75 = self._wave75 or waveDone(self.bossOID, "75") or soHasVar(self.bossPtr, "wb_wave_75")
-  local f50 = self._wave50 or waveDone(self.bossOID, "50") or soHasVar(self.bossPtr, "wb_wave_50")
-  local f25 = self._wave25 or waveDone(self.bossOID, "25") or soHasVar(self.bossPtr, "wb_wave_25")
-
-  if (not f75) and percent <= 75 then
-    self._wave75 = true; waveMark(self.bossOID, "75"); soSetVar(self.bossPtr, "wb_wave_75", 1)
-    self:d("tick: threshold 75 -> spawning helpers (gated)")
-    self:spawnWave(self.bossPtr, "wb_wave_75")
-  end
-  if (not f50) and percent <= 50 then
-    self._wave50 = true; waveMark(self.bossOID, "50"); soSetVar(self.bossPtr, "wb_wave_50", 1)
-    self:d("tick: threshold 50 -> spawning helpers (gated)")
-    self:spawnWave(self.bossPtr, "wb_wave_50")
-  end
-  if (not f25) and percent <= 25 then
-    self._wave25 = true; waveMark(self.bossOID, "25"); soSetVar(self.bossPtr, "wb_wave_25", 1)
-    self:d("tick: threshold 25 -> spawning helpers (gated)")
-    self:spawnWave(self.bossPtr, "wb_wave_25")
-  end
-
-  local inCombat = false
-  pcall(function() if co.isInCombat and co:isInCombat() then inCombat = true end end)
-  local delay = ((percent >= 99.9) and not inCombat) and (self.TICK_IDLE_SEC or 10) or (self.TICK_ACTIVE_SEC or 2)
-  createEvent(delay, "EGSpiderBoss", "tick", nil, "")
-end
-
--- ===== observers =====
+-- ===================== observers =====================
 function EGSpiderBoss:onDamage(pBoss, pAttacker, damage)
   if not pBoss then return 0 end
   local co = LuaCreatureObject(pBoss); if not co then return 0 end
+  local pAll, pHP = hamPercentAll9(co), healthPercent(co)
+  local pct = (pAll < pHP) and pAll or pHP
 
-  local pAll = hamPercentAll9(co)
-  local pHP  = healthPercent(co)
-  local percent = (pAll < pHP) and pAll or pHP
+  local f75 = self._wave75 or waveDone(self.bossOID,"75") or soHasVar(pBoss,"wb_wave_75")
+  local f50 = self._wave50 or waveDone(self.bossOID,"50") or soHasVar(pBoss,"wb_wave_50")
+  local f25 = self._wave25 or waveDone(self.bossOID,"25") or soHasVar(pBoss,"wb_wave_25")
 
-  local f75 = self._wave75 or waveDone(self.bossOID, "75") or soHasVar(pBoss, "wb_wave_75")
-  local f50 = self._wave50 or waveDone(self.bossOID, "50") or soHasVar(pBoss, "wb_wave_50")
-  local f25 = self._wave25 or waveDone(self.bossOID, "25") or soHasVar(pBoss, "wb_wave_25")
-
-  if (not f75) and percent <= 75 then
-    self._wave75 = true; waveMark(self.bossOID, "75"); soSetVar(pBoss,"wb_wave_75",1)
-    self:d("onDamage: threshold 75 -> spawning helpers (gated)")
-    self:spawnWave(pBoss, "wb_wave_75")
-  end
-  if (not f50) and percent <= 50 then
-    self._wave50 = true; waveMark(self.bossOID, "50"); soSetVar(pBoss,"wb_wave_50",1)
-    self:d("onDamage: threshold 50 -> spawning helpers (gated)")
-    self:spawnWave(pBoss, "wb_wave_50")
-  end
-  if (not f25) and percent <= 25 then
-    self._wave25 = true; waveMark(self.bossOID, "25"); soSetVar(pBoss,"wb_wave_25",1)
-    self:d("onDamage: threshold 25 -> spawning helpers (gated)")
-    self:spawnWave(pBoss, "wb_wave_25")
-  end
+  if (not f75) and pct <= 75 then self._wave75=true; waveMark(self.bossOID,"75"); soSetVar(pBoss,"wb_wave_75",1); self:spawnWave(pBoss,"wb_wave_75") end
+  if (not f50) and pct <= 50 then self._wave50=true; waveMark(self.bossOID,"50"); soSetVar(pBoss,"wb_wave_50",1); self:spawnWave(pBoss,"wb_wave_50") end
+  if (not f25) and pct <= 25 then self._wave25=true; waveMark(self.bossOID,"25"); soSetVar(pBoss,"wb_wave_25",1); self:spawnWave(pBoss,"wb_wave_25") end
   return 0
 end
 
 function EGSpiderBoss:onDeath(pBoss, pKiller)
-  self:d("onDeath: schedule 12h respawn")
-  self:setState(3)                      -- cooldown
-  writeData(self.DATA_BOSS_OID, 0)      -- clear canonical OID
+  local when = os.time() + (self.RESPAWN_SECONDS or 60)
+  writeData(self.DATA_NEXT_SPAWN, when)
+  writeData(self.DATA_BOSS_OID, 0)
   self.bossPtr, self.bossOID = nil, nil
-  local nextAt = os.time() + self.RESPAWN_SECONDS
-  writeData(self.DATA_NEXT_SPAWN, nextAt)
-  -- schedule a spawn attempt; spawnBoss will gate on cooldown
-  createEvent(self.RESPAWN_SECONDS, "EGSpiderBoss", "spawnBoss", nil, "")
+  self:setState(3)
+  self:d("onDeath: cooldown armed for "..tostring(self.RESPAWN_SECONDS or 60).."s (until "..tostring(when)..")")
   return 0
 end
 
--- ===== helper spawner =====
-function EGSpiderBoss:spawnWave(pBoss, flagName)
+-- ===================== helper spawner =====================
+function EGSpiderBoss:spawnWave(pBoss, tag)
   if not pBoss then return end
   local so = LuaSceneObject(pBoss); if not so then return end
 
@@ -525,23 +480,23 @@ function EGSpiderBoss:spawnWave(pBoss, flagName)
   local COUNT   = (self.WAVE_COUNTS  and self.WAVE_COUNTS.cavern_spider)  or 10
   local SCATTER = (self.WAVE_SCATTER and self.WAVE_SCATTER.cavern_spider) or 4
 
-  local function polarAround(minR,maxR)
+  local function polar(minR,maxR)
     local ang = math.random()*6.283185307179586
     local r   = math.random(minR*100, maxR*100)/100.0
     return px + math.cos(ang)*r, py + math.sin(ang)*r
   end
 
-  local spawned, attempts, MAX_ATTEMPTS = 0, 0, COUNT*6
-  while spawned<COUNT and attempts<MAX_ATTEMPTS do
-    attempts = attempts + 1
-    local sx,sy = polarAround(1.5, SCATTER)
+  local spawned, tries, MAX_TRIES = 0, 0, COUNT*6
+  while spawned < COUNT and tries < MAX_TRIES do
+    tries = tries + 1
+    local sx,sy = polar(1.5, SCATTER)
     local ok = spotIsDryAndValid(self.PLANET, sx, sy)
-    if not ok then sx,sy = polarAround(SCATTER+2, SCATTER+5); ok = spotIsDryAndValid(self.PLANET, sx, sy) end
+    if not ok then sx,sy = polar(SCATTER+2, SCATTER+5); ok = spotIsDryAndValid(self.PLANET, sx, sy) end
     if ok then
       local sz = safeTerrainZ(sx, sy)
       local mob = select(1, trySpawnMobile(self.PLANET, "cavern_spider", 0, sx, sz, sy, math.random(0,359), 0))
       if mob then spawned = spawned + 1 end
     end
   end
-  self:d(string.format("wave %s: spawned %d/%d cavern_spider (attempts=%d)", tostring(flagName), spawned, COUNT, attempts))
+  self:d(string.format("wave %s: spawned %d/%d cavern_spider (attempts=%d)", tostring(tag), spawned, COUNT, tries))
 end
