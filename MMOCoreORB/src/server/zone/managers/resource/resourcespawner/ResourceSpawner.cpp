@@ -895,13 +895,15 @@ void ResourceSpawner::sendResourceListForSurvey(CreatureObject* player,
 	VectorMap<uint64, ManagedReference<ResourceSpawn*> > matchingResources;
 	matchingResources.setAllowDuplicateInsertPlan();
 
+	const bool isAll = surveyType.toLowerCase() == "all";
+
 	for (int i = 0; i < zoneMap->size(); ++i) {
 		auto resourceSpawn = zoneMap->get(i);
 
 		if (!resourceSpawn->inShift())
 			continue;
 
-		if (resourceSpawn->getSurveyToolType() == toolType || (toolType == SurveyTool::INORGANIC && resourceSpawn->isType("inorganic"))) {
+		if (isAll || resourceSpawn->getSurveyToolType() == toolType || (toolType == SurveyTool::INORGANIC && resourceSpawn->isType("inorganic"))) {
 			matchingResources.put(resourceSpawn->getDespawned(), resourceSpawn);
 		}
 	}
@@ -1097,6 +1099,24 @@ void ResourceSpawner::sendSampleResults(TransactionLog& trx, CreatureObject* pla
 		player->sendSystemMessage(message);
 		player->setPosture(CreaturePosture::UPRIGHT, true);
 		trx.abort() << message.toString();
+		return;
+	}
+
+	// If using the ALL tool, block sampling of creature resources
+	bool isAll = surveyTool->getSurveyType().toLowerCase() == "all";
+	ManagedReference<ResourceSpawn*> resSpawnForType = resourceMap->get(resname.toLowerCase());
+	bool isCreature = false;
+	if (resSpawnForType != nullptr) {
+		int recycle = sendResourceRecycleType(resSpawnForType);
+		isCreature = (recycle == RecycleTool::HIDE || recycle == RecycleTool::MEAT || recycle == RecycleTool::BONE
+			|| recycle == RecycleTool::HORN || recycle == RecycleTool::SEAFOOD || recycle == RecycleTool::MILK);
+	}
+	if (isAll && isCreature) {
+		StringIdChatParameter message("@survey:wrong_tool"); // "%TO resources cannot be located with this tool."
+		message.setTO(resSpawnForType->getFinalClass());
+		player->sendSystemMessage(message);
+		player->setPosture(CreaturePosture::UPRIGHT, true);
+		trx.abort() << "ALL survey tool cannot sample creature resources.";
 		return;
 	}
 
