@@ -150,6 +150,7 @@ Core3 = {
 	TrePath = "/trefiles",
 	TreFiles = {
 		"bg_custom1.tre",
+		"species.tre",
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
 		"patch_14_00.tre",

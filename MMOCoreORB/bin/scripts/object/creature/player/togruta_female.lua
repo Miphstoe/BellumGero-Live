@@ -41,8 +41,8 @@
 --this exception also makes it possible to release a modified version 
 
 
-object_creature_player_rodian_female = object_creature_player_shared_rodian_female:new {
-	baseHAM = { 0, 0, 0, 200, 200, 450, 0, 0, 50 },
+object_creature_player_togruta_female = object_creature_player_shared_togruta_female:new {
+	baseHAM = { 100, 100, 100, 100, 100, 100, 100, 100, 100 },
 	gameObjectType = 1033,
 	zoneComponent = "PlayerZoneComponent",
 	objectMenuComponent = "PlayerObjectMenuComponent",
@@ -59,7 +59,7 @@ object_creature_player_rodian_female = object_creature_player_shared_rodian_fema
 	},
 	defaultLanguage = 1,
 	startingItems = { },
-	startingSkills = { "species_rodian", "social_language_basic_comprehend", "social_language_basic_speak" , "social_language_rodian_comprehend", "social_language_rodian_speak" }
+	startingSkills = { "species_togruta", "social_language_basic_comprehend", "social_language_basic_speak" }
 }
 
-ObjectTemplates:addTemplate(object_creature_player_rodian_female, "object/creature/player/rodian_female.iff")
+ObjectTemplates:addTemplate(object_creature_player_togruta_female, "object/creature/player/togruta_female.iff")

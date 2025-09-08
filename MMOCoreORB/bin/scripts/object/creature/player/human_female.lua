@@ -44,8 +44,7 @@
 object_creature_player_human_female = object_creature_player_shared_human_female:new {
 	baseHAM = { 100, 100, 100, 100, 100, 100, 100, 100, 100 },
 	gameObjectType = 1033,
-	groundZoneComponent = "PlayerZoneComponent",
-	spaceZoneComponent = "PlayerSpaceZoneComponent",
+	zoneComponent = "PlayerZoneComponent",
 	objectMenuComponent = "PlayerObjectMenuComponent",
 	containerComponent = "PlayerContainerComponent",
 	pvpStatusBitmask = PLAYER,

@@ -44,8 +44,7 @@
 object_creature_player_sullustan_male = object_creature_player_shared_sullustan_male:new {
 	baseHAM = { 150, 0, 0, 250, 50, 50, 200, 100, 100 },
 	gameObjectType = 1033,
-	groundZoneComponent = "PlayerZoneComponent",
-	spaceZoneComponent = "PlayerSpaceZoneComponent",
+	zoneComponent = "PlayerZoneComponent",
 	objectMenuComponent = "PlayerObjectMenuComponent",
 	containerComponent = "PlayerContainerComponent",
 	pvpStatusBitmask = PLAYER,
