@@ -598,6 +598,13 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     giveItem(pInventory, "object/tangible/survey_tool/survey_tool_liquid.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
 
+                elseif (optionLink == "option89" and credits < 100000) then
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "option89" and credits >= 100000) then
+                    creature:subtractCashCredits(100000)
+                    local pItem = giveItem(pInventory, "object/tangible/survey_tool/survey_tool_all.iff", -1)    
+
                 elseif (optionLink == "option66" and credits < 10000) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.

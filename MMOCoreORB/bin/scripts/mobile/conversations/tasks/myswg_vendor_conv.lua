@@ -89,6 +89,7 @@ art1 = ConvoScreen:new {
     options = {
         {"Mineral survey tool - 500", "option88"},
         {"Chemical survey tool - 500", "option25"},
+        {"Complete Resource Survey Tool - 100k", "option89"},
         {"Generic Crafting Tool - 1k", "option26"},
         {"Backpack - 5k", "option27"},
         {"Speederbike - 10k", "option28"},
