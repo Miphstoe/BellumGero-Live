@@ -8,7 +8,9 @@
 
 class SafeZoneManager {
 public:
+
     // Is the objects inside a player-city Cantina / Hospital / Medical Center?
+
     static bool isInSafeBuilding(SceneObject* obj);
 
     // Convenience wrapper for Tangible/Creature objects

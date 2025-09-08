@@ -15,6 +15,8 @@
 #include "server/zone/objects/creature/VehicleObject.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/objects/tangible/wearables/ArmorObject.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
+
 
 class CreatureAttackData;
 class CombatQueueCommand;

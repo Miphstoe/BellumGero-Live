@@ -1,4 +1,6 @@
+
 -- scripts/screenplays/acklay_worldboss.lua..
+
 -- Acklay World Boss (AUTO + ONE-SHOT): engine respawn, guarded against duplicate startup spawns
 
 local TAG = "[ACKLAY-WB/AUTO-ONE]"
@@ -18,8 +20,10 @@ AcklayWorldBoss = ScreenPlay:new {
   bossTemplate   = "acklay_worldboss",
   leashRadius    = 120,
 
+
   --TEST value; use 43200 for 12 hours
   respawnSeconds = 86400,
+
 
   -- boot guard key (prevents multi-start on the same server boot)
   bootGuardKey   = "AcklayWorldBoss:booted:v1"

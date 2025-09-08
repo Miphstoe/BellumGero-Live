@@ -245,7 +245,7 @@ Core3 = {
 
 	------Server Config------
 	CharacterBuilderEnabled = "true",
-	AutoReg = 0,
+	AutoReg = 1,
 
 	------TOS Config------
 	TermsOfServiceVersion = 0,

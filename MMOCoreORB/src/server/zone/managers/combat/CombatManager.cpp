@@ -32,6 +32,7 @@
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
 #include "server/zone/managers/safezone/SafeZoneManager.h"
+
 #include "server/zone/objects/creature/buffs/BuffCRC.h"
 
 namespace {
@@ -50,6 +51,7 @@ namespace {
         c->sendSystemMessage("@jedi_spam:force_run_off");
     }
 }
+
 
 
 
@@ -82,6 +84,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 		return false;
 	}
 
+
 	if (attacker->getZone() == nullptr || defender->getZone() == nullptr) {
 		return false;
 	}
@@ -107,6 +110,7 @@ bool CombatManager::startCombat(CreatureObject* attacker, TangibleObject* defend
 	}
 
 	if (attacker->isPlayerCreature() && attacker->getPlayerObject()->isAFK()) {
+
 		return false;
 	}
 
@@ -408,6 +412,7 @@ int CombatManager::doCombatAction(CreatureObject* attacker, WeaponObject* weapon
 */
 
 int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* tano, SortedVector<DefenderHitList*>* targetDefenders, const CreatureAttackData& data, bool* shouldGcwCrackdownTef, bool* shouldGcwTef, bool* shouldBhTef) const {
+
 	int damage = 0;
 
 	Locker clocker(tano, attacker);
@@ -435,7 +440,7 @@ int CombatManager::doTargetCombatAction(CreatureObject* attacker, WeaponObject* 
 	hitList->setDefender(tano);
 	targetDefenders->add(hitList);
 
-	if (tano->isCreatureObject()) {
+  if (tano->isCreatureObject()) {
 		CreatureObject* defender = tano->asCreatureObject();
 
 		if (defender->getWeapon() == nullptr) {
@@ -1669,25 +1674,33 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 		}
 	}
 
-	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
-	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
+	    int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
+    defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
-	if (attacker->isPlayerCreature()) {
-		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
-	}
+    if (attacker->isPlayerCreature()) {
+        showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
+    }
 
-	defenderHitList->setInitialDamage(logDamage);
-	defenderHitList->setHitLocation(hitLocation);
-	defenderHitList->setFoodMitigation(totalFoodMit);
-	defenderHitList->setPoolsToWound(poolsToWound);
+    defenderHitList->setInitialDamage(logDamage);
+    defenderHitList->setHitLocation(hitLocation);
+    defenderHitList->setFoodMitigation(totalFoodMit);
+    defenderHitList->setPoolsToWound(poolsToWound);
 
 #ifdef DEBUG_SPILL_DAMAGE
-	spillOverDebug << " ========== END Spill Over Debug ==========\n";
-	attacker->info(true) << spillOverDebug.toString();
+    spillOverDebug << " ========== END Spill Over Debug ==========\n";
+    attacker->info(true) << spillOverDebug.toString();
 #endif
 
-	return totalDamage;
+    // ========= SAFE ZONE CHECK =========
+    // Prevent applying combat damage if either attacker or defender is in a safe zone
+    if (SafeZoneManager::isInSafeZone(attacker) || SafeZoneManager::isInSafeZone(defender)) {
+        return -1;
+    }
+    // ===================================
+
+    return totalDamage;
 }
+
 
 int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, TangibleObject* defender, DefenderHitList* defenderHitList, int poolsToDamage, const CreatureAttackData& data) const {
 	if (defender == nullptr || defenderHitList == nullptr || poolsToDamage == 0) {

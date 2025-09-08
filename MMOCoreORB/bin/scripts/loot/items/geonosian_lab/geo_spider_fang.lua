@@ -6,10 +6,10 @@ geo_spider_fang = {
 	customObjectName = "",
 	directObjectTemplate = "object/tangible/component/weapon/spider_spine.iff",
 	craftingValues = {
-		{"maxdamage",15,30,0},
-		{"attackspeed",-0.15,-0.3,3},
-		{"attackhealthcost",-3,-6,0},
-		{"useCount",1,11,0},
+		{"mindamage",8,15,0},
+		{"maxdamage",32,60,0},
+		{"attackspeed",0,-2,5},
+		{"useCount",1,12,0},
 	},
 	customizationStringNames = {},
 	customizationValues = {}

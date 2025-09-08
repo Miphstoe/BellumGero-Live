@@ -43,9 +43,9 @@
 
 DrainForceCommand = {
 	name = "drainforce",
-	defaultTime = 5,
-	maxDamage = 250,
-	forceCost = 50,
+	defaultTime = 2,
+	maxDamage = 250, --C++ logic overrides this value
+	forceCost = 0,
 	visMod = 25,
 	animation = "force_drain_1",
 	combatSpam = "forcedrain_hit",
