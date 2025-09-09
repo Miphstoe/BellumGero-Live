@@ -76,16 +76,17 @@ peko_peko_infernomaw = Creature:new {
     }
   },
 
-  primaryWeapon = "none",
-  secondaryWeapon = "none",
-
-  attacks = {
-    {"flamecone2",""},{"flamecone1",""},
-    {"flamesingle2",""},{"flamesingle1",""},
-    {"fireacidcone2",""},{"fireacidcone1",""},
-    {"fireacidsingle2",""},{"fireacidsingle1",""},
-    {"unarmedknockdown2",""},{"unarmedhit3",""}
-  }
+  -- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
+	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	
+	-- primaryAttacks and secondaryAttacks should be separate skill groups specific to the weapon type listed in primaryWeapon and secondaryWeapon
+	-- Use merge() to merge groups in creatureskills.lua together. If a weapon is set to "none", set the attacks variable to empty brackets
+	primaryAttacks = { {"creatureareacombo",""}, {"creatureareaknockdown",""} },
+	secondaryAttacks = { }
+  
 }
 
 CreatureTemplates:addCreatureTemplate(peko_peko_infernomaw, "peko_peko_infernomaw")
