@@ -745,6 +745,6 @@ includeFile("acklay_worldboss.lua")
 printLuaError("[WBOSS-SC] loader end")
 includeFile("world/gorax_nw_endor.lua")
 includeFile("yavin4/egspider_worldboss.lua")
-
+includeFile("world/infernomaw_boss.lua")
 
 
