@@ -40,7 +40,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
 
-	local pConvScreen = screen:cloneScreen()
 	local clonedConversation = LuaConversationScreen(pConvScreen)
 
 	if (screenID == "greet_neutral_start") then
@@ -51,6 +50,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 				clonedConversation:addOption("@conversation/faction_recruiter_rebel:s_462", "accept_join")
 			end
 		end
+
 	elseif (screenID == "greet_member_start_covert" or screenID == "stay_covert" or screenID == "dont_resign_covert") then
 		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 
@@ -119,10 +119,12 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 	elseif (screenID == "cancel_resign") then
 		deleteData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus")
 		SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
+
 	elseif (screenID == "declare_complete") then
 		CreatureObject(pPlayer):setFutureFactionStatus(2)
 		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 		createEvent(1000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
+
 	elseif (screenID == "covert_complete") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
@@ -136,6 +138,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
 
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleGoCovert")
+
 	elseif (screenID == "ambush_enable") then
 		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), true)
 
@@ -157,8 +160,27 @@ function RecruiterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local changingStatus = readData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus")
 	local rank = CreatureObject(pPlayer):getFactionRank()
 	local faction = CreatureObject(pPlayer):getFaction()
-	local futureFactionStatus = CreatureObject(pPlayer):getFutureFactionStatus()
+
+	-- getFutureFactionStatus() isn't bound in Lua on this core; synthesize it using pending tasks + current status
+	local futureFactionStatus = -1
 	local factionStatus = CreatureObject(pPlayer):getFactionStatus()
+	if CreatureObject(pPlayer):isChangingFactionStatus() then
+		if SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleResign") then
+			futureFactionStatus = 0
+		elseif SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleGoCovert") then
+			futureFactionStatus = 1
+		elseif SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleGoOvert") then
+			futureFactionStatus = 2
+		else
+			-- infer by current status if no task has been queued yet
+			if (factionStatus == 1) then
+				futureFactionStatus = 2 -- currently covert -> going overt
+			elseif (factionStatus == 2) then
+				futureFactionStatus = 1 -- currently overt -> going covert
+			end
+		end
+	end
+	-- factionStatus already set above
 
 	if (futureFactionStatus == 0) then
 		return convoTemplate:getScreen("resign_complete")
@@ -194,6 +216,29 @@ function RecruiterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	end
 end
 
+function RecruiterConvoHandler:addRankReviewOption(faction, screenObject)
+	local pGhost = CreatureObject(screenObject:getPlayer()):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
+	local rank = CreatureObject(screenObject:getPlayer()):getFactionRank()
+
+	if rank < 0 or isHighestRank(rank) == true then
+		return
+	end
+
+	local requiredPoints = getRankCost(rank + 1)
+	local currentPoints = PlayerObject(pGhost):getFactionStanding(faction)
+
+	if (currentPoints < requiredPoints + recruiterScreenplay:getMinimumFactionStanding()) then
+		return
+	end
+
+	self:addRankReviewOption(faction, screenObject)
+end
+
 function RecruiterConvoHandler:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, faction)
 	local screenObject = LuaConversationScreen(pConvScreen)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
@@ -210,7 +255,7 @@ function RecruiterConvoHandler:updateScreenWithBribe(pPlayer, pNpc, pConvTemplat
 			if (faction == "imperial") then
 				screenObject:addOption("@conversation/faction_recruiter_imperial:s_395", "bribe")
 			else
-				screenObject:addOption("@conversation/faction_recruiter_rebel:s_547", "bribe")
+				screenObject:addOption("@conversation/faction_recruiter_rebel:s_695", "bribe")
 			end
 		end
 	end
@@ -224,48 +269,10 @@ function RecruiterConvoHandler:updateScreenWithPromotions(pPlayer, pConvTemplate
 		return
 	end
 
-	if (faction == "imperial") then
-		if (CreatureObject(pPlayer):getFactionRank() == 13) then
-			screenObject:addOption("@conversation/faction_recruiter_imperial:s_370", "choose_promotion")
-		elseif (CreatureObject(pPlayer):getFactionRank() >= 0 and CreatureObject(pPlayer):getFactionRank() < 13) then
-			screenObject:addOption("@conversation/faction_recruiter_imperial:s_370", "choose_promotion")
-		end
-	else
-		if (CreatureObject(pPlayer):getFactionRank() == 13) then
-			screenObject:addOption("@conversation/faction_recruiter_rebel:s_522", "choose_promotion")
-		elseif (CreatureObject(pPlayer):getFactionRank() >= 0 and CreatureObject(pPlayer):getFactionRank() < 13) then
-			screenObject:addOption("@conversation/faction_recruiter_rebel:s_522", "choose_promotion")
-		end
-	end
-end
-
-function isHighestRank(rank)
-	return rank == 13
-end
-
-function getRankCost(rank)
-	return 15000 * math.pow(2, (rank - 1))
-end
-
-function RecruiterConvoHandler:addRankReviewOption(faction, screenObject)
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
 	local rank = CreatureObject(pPlayer):getFactionRank()
-
-	if rank < 0 or isHighestRank(rank) == true then
-		return
-	end
-
-	local requiredPoints = getRankCost(rank + 1)
 	local currentPoints = PlayerObject(pGhost):getFactionStanding(faction)
 
-	if (currentPoints < requiredPoints + recruiterScreenplay:getMinimumFactionStanding()) then
-		return
+	if (recruiterScreenplay:canReviewRank(pPlayer, rank + 1) and currentPoints >= getRankCost(rank + 1) + recruiterScreenplay:getMinimumFactionStanding()) then
+		screenObject:addOption("@conversation/faction_recruiter_imperial:s_398", "confirm_promotion")
 	end
-
-	self:addRankReviewOption(faction, screenObject)
 end
