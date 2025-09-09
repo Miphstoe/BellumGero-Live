@@ -2,33 +2,31 @@ local ObjectManager = require("managers.object.object_manager")
 
 RecruiterConvoHandler = conv_handler:new {}
 
--- ===== GCW Ambush opt-in/out (per-faction) =====
-local AMBUSH_OPT_TAG = { rebel = "GCW_Ambush_Rebels", imperial = "GCW_Ambush_Imperials" }
-
-function RecruiterConvoHandler:isAmbushOptedIn(pPlayer, factionStr)
-	if factionStr ~= "rebel" and factionStr ~= "imperial" then return false end
-	return CreatureObject(pPlayer):hasScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
+-- ===== ADDITIONS: GCW Ambush Opt-In/Out helpers (non-invasive) =====
+local function getAmbushTagForRecruiter(pNpc)
+	local fac = recruiterScreenplay:getRecruiterFaction(pNpc) -- "rebel" | "imperial"
+	if fac == "imperial" then
+		return "FMGCWAttack_OptIn_Imperial"
+	else
+		return "FMGCWAttack_OptIn_Rebel"
+	end
 end
 
-function RecruiterConvoHandler:setAmbushOpt(pPlayer, factionStr, enabled)
-	if factionStr ~= "rebel" and factionStr ~= "imperial" then return end
+local function isAmbushEnabledForPlayer(pPlayer, pNpc)
+	return CreatureObject(pPlayer):hasScreenPlayState(1, getAmbushTagForRecruiter(pNpc))
+end
+
+local function setAmbushEnabledForPlayer(pPlayer, pNpc, enabled)
+	local tag = getAmbushTagForRecruiter(pNpc)
 	if enabled then
-		CreatureObject(pPlayer):setScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
+		CreatureObject(pPlayer):setScreenPlayState(1, tag)
+		CreatureObject(pPlayer):sendSystemMessage("GCW Ambush Encounters: ENABLED.")
 	else
-		CreatureObject(pPlayer):removeScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
-	end
-	CreatureObject(pPlayer):sendSystemMessage(enabled and "Ambush Encounters: ENABLED." or "Ambush Encounters: DISABLED.")
-end
-
-function RecruiterConvoHandler:addAmbushToggleOption(pPlayer, pNpc, screen)
-	local fac = recruiterScreenplay:getRecruiterFaction(pNpc) -- "rebel" or "imperial"
-	if fac ~= "rebel" and fac ~= "imperial" then return end
-	if self:isAmbushOptedIn(pPlayer, fac) then
-		screen:addOption("Disable GCW Ambush Encounters", "ambush_disable")
-	else
-		screen:addOption("Enable GCW Ambush Encounters", "ambush_enable")
+		CreatureObject(pPlayer):removeScreenPlayState(1, tag)
+		CreatureObject(pPlayer):sendSystemMessage("GCW Ambush Encounters: DISABLED.")
 	end
 end
+-- ===== END ADDITIONS =====
 
 function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
@@ -40,18 +38,10 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
 
+	local pConvScreen = screen:cloneScreen()
 	local clonedConversation = LuaConversationScreen(pConvScreen)
 
-	if (screenID == "greet_neutral_start") then
-		if (recruiterScreenplay:isEligibleForJoin(pPlayer, pNpc)) then
-			if (recruiterScreenplay:getRecruiterFaction(pNpc) == "imperial") then
-				clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_306", "accept_join")
-			else
-				clonedConversation:addOption("@conversation/faction_recruiter_rebel:s_462", "accept_join")
-			end
-		end
-
-	elseif (screenID == "greet_member_start_covert" or screenID == "stay_covert" or screenID == "dont_resign_covert") then
+	if (screenID == "greet_member_start_covert" or screenID == "stay_covert" or screenID == "dont_resign_covert") then
 		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 
 		if (recruiterScreenplay:getFactionFromHashCode(CreatureObject(pPlayer):getFaction()) == "rebel") then
@@ -59,10 +49,15 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		else
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
-		-- Add Ambush toggle on covert member screens
-		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
-	elseif (screenID == "greet_member_start_overt" or screenID == "stay_overt" or screenID == "dont_resign_overt") then
+		-- ADDITION: Ambush toggle on covert member screen
+		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
+			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
+		else
+			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
+		end
+
+	elseif (screenID == "greet_member_start_overt" or screenID == "stay_special_forces" or screenID == "stay_overt" or screenID == "dont_resign_overt") then
 		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 		self:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 
@@ -71,8 +66,13 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		else
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
-		-- Add Ambush toggle on overt member screens
-		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
+
+		-- ADDITION: Ambush toggle on overt member screen
+		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
+			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
+		else
+			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
+		end
 
 	elseif (screenID == "accept_join") then
 		CreatureObject(pPlayer):setFaction(recruiterScreenplay:getRecruiterFactionHashCode(pNpc))
@@ -80,6 +80,26 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 
 	elseif (screenID == "accepted_go_overt") then
 		CreatureObject(pPlayer):setFutureFactionStatus(2)
+		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
+		createEvent(30000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
+	elseif (screenID == "accepted_go_covert") then
+		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
+			return
+		end
+
+		CreatureObject(pPlayer):setFutureFactionStatus(1)
+		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
+		createEvent(300000, "recruiterScreenplay", "handleGoCovert", pPlayer, "")
+	elseif (screenID == "accepted_go_on_leave") then
+		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
+			return
+		end
+
+		CreatureObject(pPlayer):setFutureFactionStatus(0)
+		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
+		createEvent(300000, "recruiterScreenplay", "handleGoOnLeave", pPlayer, "")
 
 	elseif (screenID == "accepted_resign") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
@@ -99,32 +119,145 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 
 	elseif (screenID == "confirm_promotion") then
 		local rank = CreatureObject(pPlayer):getFactionRank() + 1
+		clonedConversation:setDialogTextTO("faction_recruiter", getRankName(rank))
 
-		if rank > 12 or recruiterScreenplay:getBonusFactionPoints(pPlayer, rank) <= 0 then
+	elseif (screenID == "accepted_promotion") then
+		local rank = CreatureObject(pPlayer):getFactionRank() + 1
+		local requiredPoints = getRankCost(rank)
+
+		if (PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) < (requiredPoints + recruiterScreenplay:getMinimumFactionStanding())) then
+			local convoTemplate = LuaConversationTemplate(pConvTemplate)
+			local notEnoughScreen = convoTemplate:getScreen("not_enough_points")
+			local screenObject = LuaConversationScreen(notEnoughScreen)
+
+			pConvScreen = screenObject:cloneScreen()
+
+			screenObject = LuaConversationScreen(pConvScreen)
+			screenObject:setDialogTextTO("faction_recruiter", getRankName(rank))
+			screenObject:setDialogTextDI(requiredPoints)
+		else
+			PlayerObject(pGhost):decreaseFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc), requiredPoints)
+			CreatureObject(pPlayer):setFactionRank(rank)
+		end
+
+	elseif screenID == "confirm_bribe" and CreatureObject(pPlayer):hasSkill("combat_smuggler_underworld_04") and (CreatureObject(pPlayer):getCashCredits() >= 100000)
+		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) + 1250) then
+		self:add100kBribeOption(pNpc, clonedConversation)
+
+	elseif (screenID == "accepted_bribe_20k") and CreatureObject(pPlayer):hasSkill("combat_smuggler_underworld_04") and (CreatureObject(pPlayer):getCashCredits() >= 20000)
+		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) + 250) then
+		recruiterScreenplay:grantBribe(pNpc, pPlayer, 20000, 250)
+
+	elseif (screenID == "accepted_bribe_100k") and CreatureObject(pPlayer):hasSkill("combat_smuggler_underworld_04") and (CreatureObject(pPlayer):getCashCredits() >= 100000)
+		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) + 1250) then
+		recruiterScreenplay:grantBribe(pNpc, pPlayer, 100000, 1250)
+
+	elseif (screenID == "fp_furniture" or screenID == "fp_weapons_armor" or screenID == "fp_installations" or screenID == "fp_uniforms" or screenID == "fp_hirelings" or screenID == "fp_schematics" or screenID == "fp_loot_schematics" or screenID == "fp_vehicle_deeds") then
+		recruiterScreenplay:sendPurchaseSui(pNpc, pPlayer, screenID, getGCWDiscount(pPlayer))
+
+	elseif (screenID == "greet_neutral_start") then
+		self:addJoinMilitaryOption(recruiterScreenplay:getRecruiterFaction(pNpc), clonedConversation, PlayerObject(pGhost), pNpc)
+
+	elseif (screenID == "show_gcw_score") then
+		local zoneName = SceneObject(pNpc):getZoneName()
+		clonedConversation:setDialogTextDI(getImperialScore(zoneName))
+		clonedConversation:setDialogTextTO(getRebelScore(zoneName))
+
+	-- Covert/Overt System
+	elseif (screenID == "accept_join2") then
+		local recruiterFaction = recruiterScreenplay:getRecruiterFaction(pNpc)
+		local convoTemplate = LuaConversationTemplate(pConvTemplate)
+
+		if (PlayerObject(pGhost):getFactionStanding(recruiterFaction) < recruiterScreenplay.minimumFactionStanding) then
+			local notEnoughScreen = convoTemplate:getScreen("neutral_need_more_points2")
+			local screenObject = LuaConversationScreen(notEnoughScreen)
+
+			pConvScreen = screenObject:cloneScreen()
+
+			screenObject = LuaConversationScreen(pConvScreen)
+			screenObject:setDialogTextTO(recruiterFaction)
+			screenObject:setDialogTextDI(recruiterScreenplay.minimumFactionStanding)
+
+			return pConvScreen
+		else
+			recruiterFaction = recruiterFaction:gsub("^%l", string.upper)
+			clonedConversation:setDialogTextTO(recruiterFaction)
+
+			CreatureObject(pPlayer):setFaction(recruiterScreenplay:getRecruiterFactionHashCode(pNpc))
+			CreatureObject(pPlayer):setFactionStatus(1)
+		end
+	elseif (screenID == "neutral_need_more_points2") then
+		clonedConversation:setDialogTextDI(recruiterScreenplay.minimumFactionStanding)
+		clonedConversation:setDialogTextTO(recruiterScreenplay:getRecruiterFaction(pNpc))
+	elseif (screenID == "resign_faction") then
+		clonedConversation:setDialogTextTU(CreatureObject(pPlayer):getFirstName())
+		clonedConversation:setDialogTextDI(recruiterScreenplay.covertOvertResignTime)
+	elseif (screenID == "confirm_resign") then
+		local convoTemplate = LuaConversationTemplate(pConvTemplate)
+
+		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_resign")
 			return
 		end
 
-		SceneObject(pPlayer):addPendingTask(10000, "recruiterScreenplay", "handlePromotion", tonumber(rank))
-		writeData(CreatureObject(pPlayer):getObjectID() .. ":confirm_promotion", rank)
-		return pConvScreen
+		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 
-	elseif (screenID == "confirm_overt") then
-		writeData(CreatureObject(pPlayer):getObjectID() .. ":confirm_overt", 1)
-		return pConvScreen
+		if (SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleResign")) then
+			SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
+		end
 
-	elseif (screenID == "confirm_resign") then
-		writeData(CreatureObject(pPlayer):getObjectID() .. ":confirm_resign", 1)
-		return pConvScreen
+		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
 
-	elseif (screenID == "cancel_resign") then
+		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleResign")
+
+		return pConvScreen
+	elseif (screenID == "greet_member_start_covert2" or screenID == "greet_member_start_overt2" or screenID == "dont_resign") then
+		if (screenID == "dont_resign") then
+			clonedConversation:setDialogTextStringId("@faction_recruiter:resign_faction_no")
+		else
+			clonedConversation:setDialogTextTO(CreatureObject(pPlayer):getFirstName())
+		end
+
+		-- Cancel current resignation
+		if (SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleResign")) then
+			clonedConversation:addOption("@faction_recruiter:option_recind_resignation", "cancel_resignation")
+		else
+			if (screenID == "greet_member_start_covert2") then
+				clonedConversation:addOption("@faction_recruiter:option_go_declared", "confirm_declare")
+			elseif (screenID == "greet_member_start_overt2") then
+				clonedConversation:addOption("@faction_recruiter:option_go_covert", "confirm_covert")
+			end
+
+			clonedConversation:addOption("@faction_recruiter:option_resign_from_faction", "resign_faction")
+		end
+
+		if (recruiterScreenplay:getRecruiterFaction(pNpc) == "imperial") then
+			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_410", "show_gcw_score")
+		else
+			clonedConversation:addOption("@conversation/faction_recruiter_rebel:s_562", "show_gcw_score")
+		end
+
+		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
+
+		if (screenID == "greet_member_start_overt2") then
+			self:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
+		end
+
+		-- ADDITION: Ambush toggle on Covert/Overt v2 member screens
+		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
+			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
+		else
+			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
+		end
+
+		clonedConversation:addOption("@faction_recruiter:option_purchase_items", "faction_purchase")
+	elseif (screenID == "cancel_resignation") then
 		deleteData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus")
 		SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
-
 	elseif (screenID == "declare_complete") then
 		CreatureObject(pPlayer):setFutureFactionStatus(2)
 		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 		createEvent(1000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
-
 	elseif (screenID == "covert_complete") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
@@ -139,11 +272,14 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleGoCovert")
 
+	-- ===== ADDITIONS: handle toggle clicks (stay on same screen) =====
 	elseif (screenID == "ambush_enable") then
-		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), true)
-
+		setAmbushEnabledForPlayer(pPlayer, pNpc, true)
+		return pConvScreen
 	elseif (screenID == "ambush_disable") then
-		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
+		setAmbushEnabledForPlayer(pPlayer, pNpc, false)
+		return pConvScreen
+	-- ===== END ADDITIONS =====
 	end
 
 	return pConvScreen
@@ -157,73 +293,121 @@ function RecruiterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 		return convoTemplate:getScreen("greet_neutral_start")
 	end
 
-	local changingStatus = readData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus")
-	local rank = CreatureObject(pPlayer):getFactionRank()
 	local faction = CreatureObject(pPlayer):getFaction()
+	local factionStanding = PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc))
 
-	-- getFutureFactionStatus() isn't bound in Lua on this core; synthesize it using pending tasks + current status
-	local futureFactionStatus = -1
-	local factionStatus = CreatureObject(pPlayer):getFactionStatus()
-	if CreatureObject(pPlayer):isChangingFactionStatus() then
-		if SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleResign") then
-			futureFactionStatus = 0
-		elseif SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleGoCovert") then
-			futureFactionStatus = 1
-		elseif SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleGoOvert") then
-			futureFactionStatus = 2
+	if (CreatureObject(pPlayer):isChangingFactionStatus() and readData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus") ~= 1) then
+		recruiterScreenplay:handleGoCovert(pPlayer)
+	end
+
+	local covertOvert = useCovertOvert()
+
+	if (faction == recruiterScreenplay:getRecruiterEnemyFactionHashCode(pNpc)) then
+		return convoTemplate:getScreen("greet_enemy")
+	elseif factionStanding < -200 and PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterEnemyFaction(pNpc)) > 0 then
+		return convoTemplate:getScreen("greet_hated")
+	elseif (CreatureObject(pPlayer):isChangingFactionStatus() and not covertOvert) then
+		return convoTemplate:getScreen("greet_changing_status")
+	elseif (faction == recruiterScreenplay:getRecruiterFactionHashCode(pNpc)) then
+		if (CreatureObject(pPlayer):isOnLeave()) then
+			return convoTemplate:getScreen("greet_onleave_start")
+		elseif (CreatureObject(pPlayer):isCovert()) then
+			if (covertOvert) then
+				return convoTemplate:getScreen("greet_member_start_covert2")
+			else
+				return convoTemplate:getScreen("greet_member_start_covert")
+			end
 		else
-			-- infer by current status if no task has been queued yet
-			if (factionStatus == 1) then
-				futureFactionStatus = 2 -- currently covert -> going overt
-			elseif (factionStatus == 2) then
-				futureFactionStatus = 1 -- currently overt -> going covert
+			if (covertOvert) then
+				return convoTemplate:getScreen("greet_member_start_overt2")
+			else
+				return convoTemplate:getScreen("greet_member_start_overt")
 			end
 		end
-	end
-	-- factionStatus already set above
-
-	if (futureFactionStatus == 0) then
-		return convoTemplate:getScreen("resign_complete")
-	end
-
-	if (futureFactionStatus == 1 and factionStatus == 2) then
-		return convoTemplate:getScreen("covert_complete")
-	end
-
-	if (futureFactionStatus == 2 and factionStatus == 1) then
-		return convoTemplate:getScreen("declare_complete")
-	end
-
-	if (changingStatus ~= 0) then
-		local conv
-		if (factionStatus == 1) then
-			conv = "greet_member_start_covert"
-		elseif (factionStatus == 2) then
-			conv = "greet_member_start_overt"
-		else
-			conv = "greet_neutral_start"
-		end
-
-		return convoTemplate:getScreen(conv)
-	end
-
-	if (faction == 0) then
-		return convoTemplate:getScreen("greet_neutral_start")
-	elseif (factionStatus == 2) then
-		return convoTemplate:getScreen("greet_member_start_overt")
 	else
-		return convoTemplate:getScreen("greet_member_start_covert")
+		if (covertOvert) then
+			return convoTemplate:getScreen("greet_neutral_start2")
+		else
+			return convoTemplate:getScreen("greet_neutral_start")
+		end
+	end
+	return nil
+end
+
+function RecruiterConvoHandler:addRankReviewOption(faction, screen)
+	if (faction == "rebel") then
+		screen:addOption("@conversation/faction_recruiter_rebel:s_468", "confirm_promotion")
+	elseif (faction == "imperial") then
+		screen:addOption("@conversation/faction_recruiter_imperial:s_312", "confirm_promotion")
 	end
 end
 
-function RecruiterConvoHandler:addRankReviewOption(faction, screenObject)
-	local pGhost = CreatureObject(screenObject:getPlayer()):getPlayerObject()
+function RecruiterConvoHandler:addJoinMilitaryOption(faction, screen, playerObject, pNpc)
+	if (faction == "rebel") then
+		if (playerObject:getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) < recruiterScreenplay.minimumFactionStanding) then
+			screen:addOption("@conversation/faction_recruiter_rebel:s_580", "neutral_need_more_points")
+		else
+			screen:addOption("@conversation/faction_recruiter_rebel:s_580", "join_military")
+		end
+	elseif (faction == "imperial") then
+		if (playerObject:getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc)) < recruiterScreenplay.minimumFactionStanding) then
+			screen:addOption("@conversation/faction_recruiter_imperial:s_428", "neutral_need_more_points")
+		else
+			screen:addOption("@conversation/faction_recruiter_imperial:s_428", "join_military")
+		end
+	end
+end
+
+function RecruiterConvoHandler:getRejectPromotionString(faction)
+	if (faction == "rebel") then
+		return "@conversation/faction_recruiter_rebel:s_476"
+	elseif (faction == "imperial") then
+		return "@conversation/faction_recruiter_imperial:s_320"
+	end
+end
+
+function RecruiterConvoHandler:addBribeOption(pNpc, screen)
+	local faction = recruiterScreenplay:getRecruiterFaction(pNpc)
+	if (faction == "rebel") then
+		screen:addOption("@conversation/faction_recruiter_rebel:s_568", "confirm_bribe")
+	elseif (faction == "imperial") then
+		screen:addOption("@conversation/faction_recruiter_imperial:s_398", "confirm_bribe")
+	end
+end
+
+function RecruiterConvoHandler:add100kBribeOption(pNpc, screen)
+	local faction = recruiterScreenplay:getRecruiterFaction(pNpc)
+	if (faction == "rebel") then
+		screen:addOption("@conversation/faction_recruiter_rebel:s_576", "accepted_bribe_100k")
+	elseif (faction == "imperial") then
+		screen:addOption("@conversation/faction_recruiter_imperial:s_406", "accepted_bribe_100k")
+	end
+end
+
+function RecruiterConvoHandler:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, faction)
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
 	if (pGhost == nil) then
 		return
 	end
 
-	local rank = CreatureObject(screenObject:getPlayer()):getFactionRank()
+	local screenObject = LuaConversationScreen(pConvScreen)
+
+	if (CreatureObject(pPlayer):hasSkill("combat_smuggler_underworld_04") and (CreatureObject(pPlayer):getCashCredits() >= 20000)
+		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(faction) + 250)) then
+		self:addBribeOption(pNpc, screenObject)
+	end
+end
+
+function RecruiterConvoHandler:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, faction)
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
+	local screenObject = LuaConversationScreen(pConvScreen)
+	local rank = CreatureObject(pPlayer):getFactionRank()
 
 	if rank < 0 or isHighestRank(rank) == true then
 		return
@@ -237,42 +421,4 @@ function RecruiterConvoHandler:addRankReviewOption(faction, screenObject)
 	end
 
 	self:addRankReviewOption(faction, screenObject)
-end
-
-function RecruiterConvoHandler:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, faction)
-	local screenObject = LuaConversationScreen(pConvScreen)
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	if (recruiterScreenplay:getFactionFromHashCode(CreatureObject(pPlayer):getFaction()) == faction) then
-		local currentStanding = PlayerObject(pGhost):getFactionStanding(faction)
-		local maxStanding = 200000
-
-		if (currentStanding >= recruiterScreenplay:getMinimumFactionStanding() and currentStanding < maxStanding) then
-			if (faction == "imperial") then
-				screenObject:addOption("@conversation/faction_recruiter_imperial:s_395", "bribe")
-			else
-				screenObject:addOption("@conversation/faction_recruiter_rebel:s_695", "bribe")
-			end
-		end
-	end
-end
-
-function RecruiterConvoHandler:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, faction)
-	local screenObject = LuaConversationScreen(pConvScreen)
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	local rank = CreatureObject(pPlayer):getFactionRank()
-	local currentPoints = PlayerObject(pGhost):getFactionStanding(faction)
-
-	if (recruiterScreenplay:canReviewRank(pPlayer, rank + 1) and currentPoints >= getRankCost(rank + 1) + recruiterScreenplay:getMinimumFactionStanding()) then
-		screenObject:addOption("@conversation/faction_recruiter_imperial:s_398", "confirm_promotion")
-	end
 end
