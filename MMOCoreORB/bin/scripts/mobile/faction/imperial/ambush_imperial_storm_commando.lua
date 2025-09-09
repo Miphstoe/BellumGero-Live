@@ -5,15 +5,15 @@ ambush_imperial_storm_commando = Creature:new {
 	mobType = MOB_NPC,
 	socialGroup = "imperial",
 	faction = "imperial",
-	level = 150,
+	level = 100,
 	chanceHit = 0.38,
-	damageMin = 300,
-	damageMax = 500,
-	baseXp = 45,
-	baseHAM = 50000,
-	baseHAMmax = 80000,
+	damageMin = 250,
+	damageMax = 400,
+	baseXp = 3300,
+	baseHAM = 25000,
+	baseHAMmax = 30000,
 	armor = 0,
-	resists = {40,40,40,40,-1,40,-1,-1,-1},
+	resists = {20,20,20,20,-1,20,-1,-1,-1},
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -36,14 +36,13 @@ ambush_imperial_storm_commando = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "color_crystals", chance = 100000},
-				{group = "junk", chance = 7650000},
-				{group = "rifles", chance = 550000},
-				{group = "pistols", chance = 550000},
-                {group = "melee_weapons", chance = 550000},
-                {group = "carbines", chance = 550000},
-				{group = "clothing_attachments", chance = 25000},
-				{group = "armor_attachments", chance = 25000}
+				{group = "color_crystals", chance = 1000000},
+				{group = "power_crystals", chance = 1750000},
+                {group = "coa_encoded_disk_fragments", chance = 2000000},
+				{group = "weapon_component_advanced", chance = 2000000},
+                {group = "coa3_alderaan_flora", chance = 1000000},
+				{group = "clothing_attachments", chance = 1025000},
+				{group = "armor_attachments", chance = 1025000}
 			},
 			lootChance = 3500000
 		}

@@ -1,7 +1,7 @@
 -- ==========================================================
--- GCW Ranked Ambush — Imperials target (spawns REBEL squad)
--- Mirrors crackdown timing: 34s descend, 19s ramp, 2s buffer, then deploy.
--- Uses core's X,Z,Y order for mobiles: spawnMobile(..., x, yCoord, height, headingDeg, ...)
+-- GCW Ranked Ambush — Imperials target (spawns REBEL custom squad)
+-- Uses OBJECTDESTRUCTION death observers and awards +2500 Imperial FP on full wipe.
+-- Now shows only: "Ambush Squad Eliminated." (no FP amount) to avoid duplicate messaging.
 -- ==========================================================
 
 GCWRankedAmbushImperials = ScreenPlay:new {
@@ -11,34 +11,23 @@ GCWRankedAmbushImperials = ScreenPlay:new {
     debug = {
         enabled        = true,
         notifyPlayer   = true,
-        fastTimings    = true,    -- cadence only
+        fastTimings    = false,
         spawnMarkers   = false,
         verboseSpawns  = true,
     },
 
     trigger = {
-        autoForImperials = true,  -- target Imperial players
+        autoForImperials = true,
         requireOvert      = false,
-        firstDelayMin     = 60,
-        firstDelayMax     = 180,
-        cooldownMin       = 2700, -- 45m
-        cooldownMax       = 7200, -- 120m
+        firstDelayMin     = 20,
+        firstDelayMax     = 30,
+        cooldownMin       = 2700,
+        cooldownMax       = 7200,
         retryIfNotReady   = 120,
     },
 
-    shuttleTemplate = "object/creature/npc/theme_park/lambda_shuttle.iff", -- swap to Alliance shuttle if desired
-
-    -- Rebel squad fallback lists per slot
-    squadCandidates = {
-        { "rebel_squad_leader", "rebel_commando", "rebel_trooper" },
-        { "rebel_trooper", "rebel_rifleman", "rebel_scout" },
-        { "rebel_rifleman", "rebel_trooper", "rebel_scout" },
-        { "rebel_medic", "rebel_trooper" },
-        { "rebel_marksman", "rebel_rifleman", "rebel_trooper" },
-        { "rebel_trooper", "rebel_rifleman", "rebel_scout" },
-        { "rebel_commando", "rebel_heavy_trooper", "rebel_trooper" },
-        { "rebel_trooper", "rebel_rifleman", "rebel_scout" },
-    },
+    shuttleTemplate   = "object/creature/npc/theme_park/lambda_shuttle.iff",
+    rebelTrooper      = "ambush_rebel_commando",
 
     t_descend     = 34,
     t_ramp        = 19,
@@ -52,56 +41,77 @@ GCWRankedAmbushImperials = ScreenPlay:new {
     rampForward    = 7.5,
 
     markerTemplate = "object/tangible/poi/poi_marker_large.iff",
-    fileTag        = "[GCW Ambush — vs Imperials]"
+    fileTag        = "[GCW Ambush — vs Imperials]",
+
+    FP_REWARD      = 2500,
+    FP_SIDE        = "imperial",
+    FP_RANGE       = 80
 }
 
 -- ===== Utilities =====
-
 local function msg(self, pPlayer, text)
-    if not self.debug.enabled or not self.debug.notifyPlayer then return end
-    if pPlayer ~= nil then CreatureObject(pPlayer):sendSystemMessage(self.fileTag .. " " .. text) end
+    if not self.debug.enabled or not self.debug.notifyPlayer or pPlayer == nil then return end
+    CreatureObject(pPlayer):sendSystemMessage(self.fileTag .. " " .. text)
 end
-
+local function notify(pPlayer, text)
+    if pPlayer ~= nil then CreatureObject(pPlayer):sendSystemMessage(text) end
+end
 local function groundYAt(planet, x, yCoord, fallbackY)
     local fn = rawget(_G, "getTerrainHeight")
     if type(fn) == "function" then
-        local ok, h = pcall(fn, planet, x, yCoord)
-        if ok and type(h) == "number" then return h end
-        ok, h = pcall(fn, x, yCoord)
-        if ok and type(h) == "number" then return h end
+        local ok, h = pcall(fn, planet, x, yCoord); if ok and type(h) == "number" then return h end
+        ok, h = pcall(fn, x, yCoord);      if ok and type(h) == "number" then return h end
     end
     return fallbackY or 0
 end
-
 local function basis(hdgDeg)
-    local c = math.cos(math.rad(hdgDeg))
-    local s = math.sin(math.rad(hdgDeg))
+    local c = math.cos(math.rad(hdgDeg)); local s = math.sin(math.rad(hdgDeg))
     return function(f) return c*f, s*f end, function(r) return -s*r, c*r end
 end
-
 local function validPlayer(p) return p ~= nil and SceneObject(p):isPlayerCreature() end
 local function randBetween(a,b) if b<=a then return a end return a + getRandomNumber(0, b-a) end
 
+local function forceAggroToTarget(pMobile, pTarget)
+    if pMobile == nil or pTarget == nil then return end
+    pcall(function() AiAgent(pMobile):clearHateList() end)
+    pcall(function() AiAgent(pMobile):addHate(pTarget, 10000) end)
+    pcall(function() CreatureObject(pMobile):engageCombat(pTarget) end)
+    pcall(function() AiAgent(pMobile):setFollowObject(pTarget) end)
+    pcall(function() AiAgent(pMobile):setFollowTarget(pTarget) end)
+end
+
+local function awardFactionPointsNearby(self, pPlayer, side, amount, range)
+    if pPlayer == nil then return end
+    local function grant(pTgt)
+        if pTgt == nil or not SceneObject(pTgt):isPlayerCreature() then return end
+        if not SceneObject(pTgt):isInRangeWithObject(pPlayer, range) then return end
+        local ghost = CreatureObject(pTgt):getPlayerObject()
+        if ghost ~= nil then PlayerObject(ghost):increaseFactionStanding(side, amount) end
+    end
+    local co = CreatureObject(pPlayer)
+    if co.isGrouped and co:isGrouped() then
+        for i = 0, co:getGroupSize() - 1 do grant(co:getGroupMember(i)) end
+    else
+        grant(pPlayer)
+    end
+    notify(pPlayer, "Ambush Squad Eliminated.")
+end
+
+-- ===== Landing pad selection =====
 function GCWRankedAmbushImperials:pickLandingAround(pPlayer)
     local co = CreatureObject(pPlayer)
     local px, py, pz = co:getPositionX(), co:getPositionY(), co:getPositionZ()
     local r   = getRandomNumber(self.spawnRadiusMin, self.spawnRadiusMax)
     local ang = getRandomNumber(0, 359)
     local sx  = px + r * math.cos(math.rad(ang))
-    local sz  = pz + r * math.sin(math.rad(ang)) -- YCoord
+    local sz  = pz + r * math.sin(math.rad(ang))
     local hdg = (ang + 180) % 360
-    local sy  = groundYAt(SceneObject(pPlayer):getZoneName(), sx, sz, py) -- HEIGHT
+    local sy  = groundYAt(SceneObject(pPlayer):getZoneName(), sx, sz, py)
     return sx, sy, sz, hdg
 end
 
+-- ===== Lifecycle =====
 function GCWRankedAmbushImperials:start()
-    if self.debug.fastTimings then
-        self.trigger.firstDelayMin   = 3
-        self.trigger.firstDelayMax   = 5
-        self.trigger.cooldownMin     = 30
-        self.trigger.cooldownMax     = 45
-        self.trigger.retryIfNotReady = 10
-    end
     registerScreenPlay(self.screenplayName, true)
 end
 
@@ -111,10 +121,7 @@ function GCWRankedAmbushImperials:startHere(pPlayer)
     local sx, sy, sz, hdg = self:pickLandingAround(pPlayer)
 
     local pShuttle = spawnSceneObject(planet, self.shuttleTemplate, sx, sz, sy, 0, math.rad(hdg))
-    if pShuttle == nil then
-        msg(self, pPlayer, "Failed to spawn Rebel shuttle.")
-        return
-    end
+    if pShuttle == nil then msg(self, pPlayer, "Failed to spawn Rebel shuttle."); return end
 
     local shuttleID = SceneObject(pShuttle):getObjectID()
     writeData(shuttleID .. ":gcwAmbushImperials:active", 1)
@@ -123,14 +130,15 @@ function GCWRankedAmbushImperials:startHere(pPlayer)
     CreatureObject(pShuttle):setCustomObjectName("Alliance Shuttle")
     CreatureObject(pShuttle):setPosture(UPRIGHT)
 
+    local eta = self.t_descend + self.t_ramp + self.t_buffer + self.t_deployExtra
+    notify(pPlayer, string.format("Rebel shuttle inbound on your position (ETA %ds).", eta))
     msg(self, pPlayer, string.format("Rebel shuttle inbound (%.1fm, heading %d°).", SceneObject(pShuttle):getDistanceTo(pPlayer), hdg))
 
     createEvent(self.t_descend * 1000, self.screenplayName, "handleShuttlePosture", pShuttle, "")
-    local deployAtMs = (self.t_descend + self.t_ramp + self.t_buffer + self.t_deployExtra) * 1000
-    createEvent(deployAtMs, self.screenplayName, "deploySquad", pShuttle, tostring(SceneObject(pPlayer):getObjectID()))
+    local deployAtMs  = (self.t_descend + self.t_ramp + self.t_buffer + self.t_deployExtra) * 1000
     local despawnAtMs = deployAtMs + (self.t_linger * 1000)
+    createEvent(deployAtMs,  self.screenplayName, "deploySquad",     pShuttle, tostring(SceneObject(pPlayer):getObjectID()))
     createEvent(despawnAtMs, self.screenplayName, "despawnSequence", pShuttle, "")
-
     createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, "")
 end
 
@@ -139,21 +147,9 @@ function GCWRankedAmbushImperials:handleShuttlePosture(pShuttle)
     CreatureObject(pShuttle):setPosture(PRONE)
 end
 
-local function spawnSlotXZY(self, planet, list, x, yHeight, zCoord, hdg, cell, mood)
-    for _, name in ipairs(list) do
-        local p = spawnMobile(planet, name, 0, x, zCoord, yHeight, hdg, cell, mood)
-        if p ~= nil then
-            if self.debug.verboseSpawns then
-                print(string.format("GCW-Ambush-Imperials: spawned %s at (X=%d, YCoord=%d, Height=%d) hdg %d",
-                    name, math.floor(x), math.floor(zCoord), math.floor(yHeight), hdg))
-            end
-            return p
-        end
-    end
-    if self.debug.verboseSpawns then
-        print(string.format("GCW-Ambush-Imperials: all fallbacks failed at (X=%d, YCoord=%d, Height=%d)", math.floor(x), math.floor(zCoord), math.floor(yHeight)))
-    end
-    return nil
+local function spawnSingleXZY(self, planet, template, x, height, yCoord, hdg, cell, mood)
+    if self.debug.verboseSpawns then print("GCW-Ambush-Imperials: spawn " .. template) end
+    return spawnMobile(planet, template, 0, x, yCoord, height, hdg, cell, mood)
 end
 
 function GCWRankedAmbushImperials:deploySquad(pShuttle, callerIdStr)
@@ -167,6 +163,11 @@ function GCWRankedAmbushImperials:deploySquad(pShuttle, callerIdStr)
     local sz = SceneObject(pShuttle):getPositionZ()
     local hdg = readData(shuttleID .. ":gcwAmbushImperials:hdg")
 
+    local pCaller = nil
+    if callerIdStr and callerIdStr ~= "" then pCaller = getSceneObject(tonumber(callerIdStr)) end
+    if pCaller ~= nil then writeData(shuttleID .. ":gcwAmbushImperials:caller", tonumber(callerIdStr)) end
+    writeData(shuttleID .. ":gcwAmbushImperials:rewarded", 0)
+
     local fwd, right = basis(hdg)
     local baseX, baseYCoord = fwd(self.rampForward + 2.5); baseX, baseYCoord = sx + baseX, sz + baseYCoord
 
@@ -178,40 +179,60 @@ function GCWRankedAmbushImperials:deploySquad(pShuttle, callerIdStr)
     }
 
     local spawned = 0
-    for i=1, #self.squadCandidates do
-        local dxF, dyF = fwd(slots[i][2])
-        local dxR, dyR = right(slots[i][1])
-        local x       = baseX + dxF + dxR
-        local yCoord  = baseYCoord + dyF + dyR
-        local height  = groundYAt(planet, x, yCoord, sy)
+    for i=1, #slots do
+        local dxF, dyF = fwd(slots[i][2]); local dxR, dyR = right(slots[i][1])
+        local x = baseX + dxF + dxR
+        local yCoord = baseYCoord + dyF + dyR
+        local height = groundYAt(planet, x, yCoord, sy)
 
         if self.debug.spawnMarkers then pcall(function() spawnSceneObject(planet, self.markerTemplate, x, yCoord, height, 0, 0) end) end
 
-        local pMobile = spawnSlotXZY(self, planet, self.squadCandidates[i], x, height, yCoord, hdg, 0, "")
+        local pMobile = spawnSingleXZY(self, planet, self.rebelTrooper, x, height, yCoord, hdg, 0, "")
         if pMobile ~= nil then
             spawned = spawned + 1
             if CreatureObject ~= nil and CreatureObject(pMobile) ~= nil then
-                local co = CreatureObject(pMobile)
-                if co.setPvpStatusBitmask ~= nil then co:setPvpStatusBitmask(1) end
+                local co = CreatureObject(pMobile); if co.setPvpStatusBitmask ~= nil then co:setPvpStatusBitmask(1) end
             end
-            if AiAgent ~= nil and AiAgent(pMobile) ~= nil and AiAgent(pMobile).setMovementState ~= nil then
-                AiAgent(pMobile):setMovementState(AI_PATROLLING)
-            end
-            writeData(SceneObject(pMobile):getObjectID() .. ":gcwAmbushImperials:parent", shuttleID)
-            createObserver(CREATUREDESPAWNED, self.screenplayName, "onSquadDespawn", pMobile)
+            if pCaller ~= nil then forceAggroToTarget(pMobile, pCaller) end
+
+            local mobOID = SceneObject(pMobile):getObjectID()
+            writeData(mobOID .. ":gcwAmbushImperials:parent", shuttleID)
+            createObserver(OBJECTDESTRUCTION, self.screenplayName, "onSquadMemberDied", pMobile)
         end
     end
 
-    if callerIdStr and callerIdStr ~= "" then
-        local pCaller = getSceneObject(tonumber(callerIdStr))
-        msg(self, pCaller, string.format("Rebel squad deployed (%d/%d).", spawned, #self.squadCandidates))
-        if spawned == 0 then msg(self, pCaller, "No mobiles spawned; verify Rebel template names present in this fork.") end
+    writeData(shuttleID .. ":gcwAmbushImperials:alive", spawned)
+    if pCaller ~= nil then
+        msg(self, pCaller, string.format("Rebel squad deployed (%d/%d).", spawned, #slots))
+        if spawned == 0 then msg(self, pCaller, "No mobiles spawned; verify template ‘" .. self.rebelTrooper .. "’ exists.") end
     end
 end
 
-function GCWRankedAmbushImperials:onSquadDespawn(pMobile)
-    if pMobile == nil then return 0 end
-    deleteData(SceneObject(pMobile):getObjectID() .. ":gcwAmbushImperials:parent")
+function GCWRankedAmbushImperials:onSquadMemberDied(pMob, pKiller)
+    if pMob == nil then return 1 end
+    local mobOID   = SceneObject(pMob):getObjectID()
+    local parentID = readData(mobOID .. ":gcwAmbushImperials:parent")
+    deleteData(mobOID .. ":gcwAmbushImperials:parent")
+    if parentID == nil or parentID == 0 then return 1 end
+
+    local aliveKey   = parentID .. ":gcwAmbushImperials:alive"
+    local rewardKey  = parentID .. ":gcwAmbushImperials:rewarded"
+    local callerKey  = parentID .. ":gcwAmbushImperials:caller"
+
+    local alive = (readData(aliveKey) or 0) - 1
+    if alive < 0 then alive = 0 end
+    writeData(aliveKey, alive)
+
+    if alive == 0 and readData(rewardKey) ~= 1 then
+        writeData(rewardKey, 1)
+        local callerId = readData(callerKey)
+        if callerId ~= nil and callerId ~= 0 then
+            local pCaller = getSceneObject(tonumber(callerId))
+            if pCaller ~= nil then
+                awardFactionPointsNearby(self, pCaller, self.FP_SIDE, self.FP_REWARD, self.FP_RANGE)
+            end
+        end
+    end
     return 1
 end
 
@@ -219,7 +240,6 @@ function GCWRankedAmbushImperials:despawnSequence(pShuttle)
     if pShuttle == nil then return end
     local shuttleID = SceneObject(pShuttle):getObjectID()
     if readData(shuttleID .. ":gcwAmbushImperials:active") ~= 1 then return end
-
     CreatureObject(pShuttle):setPosture(UPRIGHT)
     createEvent(6 * 1000, self.screenplayName, "cleanShuttleOnly", pShuttle, "")
 end
@@ -230,6 +250,9 @@ function GCWRankedAmbushImperials:cleanShuttleOnly(pShuttle)
     SceneObject(pShuttle):destroyObjectFromWorld()
     deleteData(shuttleID .. ":gcwAmbushImperials:active")
     deleteData(shuttleID .. ":gcwAmbushImperials:hdg")
+    deleteData(shuttleID .. ":gcwAmbushImperials:alive")
+    deleteData(shuttleID .. ":gcwAmbushImperials:rewarded")
+    deleteData(shuttleID .. ":gcwAmbushImperials:caller")
 end
 
 function GCWRankedAmbushImperials:failsafeCleanup(pShuttle)
@@ -237,27 +260,20 @@ function GCWRankedAmbushImperials:failsafeCleanup(pShuttle)
     self:cleanShuttleOnly(pShuttle)
 end
 
--- ===== Imperial Auto-Start (per-player cadence) =====
-
+-- ===== Imperial Auto-Start =====
 local function playerKey(pPlayer) return tostring(SceneObject(pPlayer):getObjectID()) end
 local function timerKey(pid) return pid .. ":gcwAmbushImperials:timer" end
-
 local function isOvert(pPlayer)
     local pGhost = CreatureObject(pPlayer):getPlayerObject()
-    if pGhost ~= nil and PlayerObject(pGhost).isOvert ~= nil then
-        return PlayerObject(pGhost):isOvert()
-    end
+    if pGhost ~= nil and PlayerObject(pGhost).isOvert ~= nil then return PlayerObject(pGhost):isOvert() end
     return true
 end
 
 function GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer)
     if not self.trigger.autoForImperials or not validPlayer(pPlayer) then return end
-    local pid = playerKey(pPlayer)
-    if readData(timerKey(pid)) == 1 then return end
+    local pid = playerKey(pPlayer); if readData(timerKey(pid)) == 1 then return end
     writeData(timerKey(pid), 1)
-
     local delay = randBetween(self.trigger.firstDelayMin, self.trigger.firstDelayMax)
-    if self.debug.fastTimings then delay = randBetween(3,5) end
     createEvent(delay * 1000, self.screenplayName, "ambushTick", pPlayer, "")
 end
 
@@ -275,11 +291,9 @@ function GCWRankedAmbushImperials:ambushTick(pPlayer)
     if ready then
         self:startHere(pPlayer)
         local nextDelay = randBetween(self.trigger.cooldownMin, self.trigger.cooldownMax)
-        if self.debug.fastTimings then nextDelay = randBetween(30,45) end
         createEvent(nextDelay * 1000, self.screenplayName, "ambushTick", pPlayer, "")
     else
         local retry = self.trigger.retryIfNotReady or 120
-        if self.debug.fastTimings then retry = 10 end
         createEvent(retry * 1000, self.screenplayName, "ambushTick", pPlayer, "")
     end
 end
