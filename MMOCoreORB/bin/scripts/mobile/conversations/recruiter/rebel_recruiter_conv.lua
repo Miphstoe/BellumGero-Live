@@ -617,6 +617,22 @@ covert_complete = ConvoScreen:new {
 }
 rebelRecruiterConvoTemplate:addScreen(covert_complete);
 
+ambush_enable = ConvoScreen:new {
+	id = "ambush_enable",
+	leftDialog = "Ambush Encounters: ENABLED.",
+	stopConversation = "true",
+	options = {}
+}
+rebelRecruiterConvoTemplate:addScreen(ambush_enable)
+
+ambush_disable = ConvoScreen:new {
+	id = "ambush_disable",
+	leftDialog = "Ambush Encounters: DISABLED.",
+	stopConversation = "true",
+	options = {}
+}
+rebelRecruiterConvoTemplate:addScreen(ambush_disable)
+
 
 -- Resign Faction
 
