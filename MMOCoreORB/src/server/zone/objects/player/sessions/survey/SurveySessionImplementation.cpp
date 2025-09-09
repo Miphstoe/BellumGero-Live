@@ -80,6 +80,8 @@ void SurveySessionImplementation::startSurvey(const String& resname) {
 		return;
 	}
 
+	bool isAll = activeSurveyTool->getSurveyType().toLowerCase() == "all";
+
 	if (surveyer->getParent() != nullptr && surveyer->getParent().get()->isCellObject()) {
 		surveyer->sendSystemMessage("@error_message:survey_in_structure"); //You cannot perform survey-related actions inside a structure.
 		return;
@@ -116,7 +118,7 @@ void SurveySessionImplementation::startSurvey(const String& resname) {
 		return;
 	}
 
-	if (spawn->getSurveyToolType() != activeSurveyTool->getToolType() && !(activeSurveyTool->getToolType() == SurveyTool::INORGANIC && spawn->isType("inorganic"))) {
+	if (!isAll && (spawn->getSurveyToolType() != activeSurveyTool->getToolType() && !(activeSurveyTool->getToolType() == SurveyTool::INORGANIC && spawn->isType("inorganic")))) {
 		StringIdChatParameter message("@survey:wrong_tool"); // %TO resources cannot be located with this tool
 		message.setTO(spawn->getFinalClass());
 		surveyer->sendSystemMessage(message);
@@ -165,6 +167,16 @@ void SurveySessionImplementation::startSample(const String& resname) {
 		return;
 	}
 
+	// All-tool support: identify “creature” resources to block sampling
+	bool isAll = activeSurveyTool->getSurveyType().toLowerCase() == "all";
+	bool isCreature =
+		resourceSpawn->isType("hide")
+	 || resourceSpawn->isType("meat")
+	 || resourceSpawn->isType("bone")
+	 || resourceSpawn->isType("horn")
+	 || resourceSpawn->isType("seafood")
+	 || resourceSpawn->isType("milk");
+
 	if (surveyer->isInCombat()) {
 		surveyer->sendSystemMessage("@survey:sample_cancel_attack"); //You can't take samples while under attack!
 		return;
@@ -200,7 +212,9 @@ void SurveySessionImplementation::startSample(const String& resname) {
 		return;
 	}
 
-	if (resourceSpawn->getSurveyToolType() != activeSurveyTool->getToolType() && !(activeSurveyTool->getToolType() == SurveyTool::INORGANIC && resourceSpawn->isType("inorganic"))) {
+	if ( (!isAll && (resourceSpawn->getSurveyToolType() != activeSurveyTool->getToolType()
+			&& !(activeSurveyTool->getToolType() == SurveyTool::INORGANIC && resourceSpawn->isType("inorganic"))))
+	  || ( isAll && isCreature ) ) {
 		StringIdChatParameter message("@survey:wrong_tool"); // %TO resources cannot be located with this tool
 		message.setTO(resourceSpawn->getFinalClass());
 		surveyer->sendSystemMessage(message);

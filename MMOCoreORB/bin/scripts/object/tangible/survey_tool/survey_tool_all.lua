@@ -42,7 +42,17 @@
 
 
 object_tangible_survey_tool_survey_tool_all = object_tangible_survey_tool_shared_survey_tool_all:new {
+	templateType    = SURVEYTOOL,
+	-- Pick a toolType that doesn't collide with existing survey tools.
+	-- Existing used: 0,1,2,3,4,6,7,8,10. We'll use 11.
+	toolType        = 11,
 
+	-- Reuse a neutral, working effect. You can change these if you prefer another look.
+	toolAnimation   = "clienteffect/survey_tool_lumber.cef",
+	sampleAnimation = "clienteffect/survey_sample_lumber.cef",
+
+	-- This is the key for the C++ “isAll” checks we added.
+	surveyType      = "all",
 }
 
 ObjectTemplates:addTemplate(object_tangible_survey_tool_survey_tool_all, "object/tangible/survey_tool/survey_tool_all.iff")
