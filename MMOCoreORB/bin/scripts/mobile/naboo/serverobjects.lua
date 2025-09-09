@@ -231,3 +231,7 @@ includeFile("naboo/vine_rawl.lua")
 includeFile("naboo/vrir_unglan.lua")
 includeFile("naboo/ysnide_omewror.lua")
 includeFile("naboo/zogor_storm.lua")
+print("[PEKO] include: mobile/naboo/serverobjects.lua")
+includeFile("naboo/peko_peko_infernomaw.lua")   -- <- correct path relative to scripts/mobile/
+
+

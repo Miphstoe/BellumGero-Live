@@ -734,3 +734,9 @@ includeFile("groups/wearables/wearables_common.lua")
 includeFile("groups/wearables/wearables_rare.lua")
 includeFile("groups/wearables/wearables_scarce.lua")
 includeFile("groups/wearables/wearables_uncommon.lua")
+
+--world boss
+-- ...existing includes...
+--includeFile("groups/worldboss/egspider_boss_sea_tool.lua")
+includeFile("groups/worldboss/sea_removal_tool_1x.lua")
+
