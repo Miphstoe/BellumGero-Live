@@ -1,5 +1,6 @@
 includeFile("faction/rebel/alliance_intelligence_case.lua")
 includeFile("faction/rebel/alliance_intelligence_case_officer.lua")
+includeFile("faction/rebel/ambush_rebel_commando.lua")
 includeFile("faction/rebel/apprentice_creature_handler.lua")
 includeFile("faction/rebel/area_coordinator.lua")
 includeFile("faction/rebel/crackdown_rebel_command_security_guard.lua")
