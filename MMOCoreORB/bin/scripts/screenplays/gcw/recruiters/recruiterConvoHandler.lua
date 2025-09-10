@@ -2,31 +2,33 @@ local ObjectManager = require("managers.object.object_manager")
 
 RecruiterConvoHandler = conv_handler:new {}
 
--- ===== ADDITIONS: GCW Ambush Opt-In/Out helpers (non-invasive) =====
-local function getAmbushTagForRecruiter(pNpc)
-	local fac = recruiterScreenplay:getRecruiterFaction(pNpc) -- "rebel" | "imperial"
-	if fac == "imperial" then
-		return "FMGCWAttack_OptIn_Imperial"
-	else
-		return "FMGCWAttack_OptIn_Rebel"
-	end
+-- ===== GCW Ambush opt-in/out (per-faction) =====
+local AMBUSH_OPT_TAG = { rebel = "GCW_Ambush_Rebels", imperial = "GCW_Ambush_Imperials" }
+
+function RecruiterConvoHandler:isAmbushOptedIn(pPlayer, factionStr)
+	if factionStr ~= "rebel" and factionStr ~= "imperial" then return false end
+	return CreatureObject(pPlayer):hasScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
 end
 
-local function isAmbushEnabledForPlayer(pPlayer, pNpc)
-	return CreatureObject(pPlayer):hasScreenPlayState(1, getAmbushTagForRecruiter(pNpc))
-end
-
-local function setAmbushEnabledForPlayer(pPlayer, pNpc, enabled)
-	local tag = getAmbushTagForRecruiter(pNpc)
+function RecruiterConvoHandler:setAmbushOpt(pPlayer, factionStr, enabled)
+	if factionStr ~= "rebel" and factionStr ~= "imperial" then return end
 	if enabled then
-		CreatureObject(pPlayer):setScreenPlayState(1, tag)
-		CreatureObject(pPlayer):sendSystemMessage("GCW Ambush Encounters: ENABLED.")
+		CreatureObject(pPlayer):setScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
 	else
-		CreatureObject(pPlayer):removeScreenPlayState(1, tag)
-		CreatureObject(pPlayer):sendSystemMessage("GCW Ambush Encounters: DISABLED.")
+		CreatureObject(pPlayer):removeScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
+	end
+	CreatureObject(pPlayer):sendSystemMessage(enabled and "Ambush Encounters: ENABLED." or "Ambush Encounters: DISABLED.")
+end
+
+function RecruiterConvoHandler:addAmbushToggleOption(pPlayer, pNpc, screen)
+	local fac = recruiterScreenplay:getRecruiterFaction(pNpc) -- "rebel" or "imperial"
+	if fac ~= "rebel" and fac ~= "imperial" then return end
+	if self:isAmbushOptedIn(pPlayer, fac) then
+		screen:addOption("Disable GCW Ambush Encounters", "ambush_disable")
+	else
+		screen:addOption("Enable GCW Ambush Encounters", "ambush_enable")
 	end
 end
--- ===== END ADDITIONS =====
 
 function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
@@ -50,12 +52,8 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
 
-		-- ADDITION: Ambush toggle on covert member screen
-		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
-			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
-		else
-			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
-		end
+		-- Ambush toggle on covert member screen
+		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
 	elseif (screenID == "greet_member_start_overt" or screenID == "stay_special_forces" or screenID == "stay_overt" or screenID == "dont_resign_overt") then
 		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
@@ -67,12 +65,8 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
 
-		-- ADDITION: Ambush toggle on overt member screen
-		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
-			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
-		else
-			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
-		end
+		-- Ambush toggle on overt member screen
+		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
 	elseif (screenID == "accept_join") then
 		CreatureObject(pPlayer):setFaction(recruiterScreenplay:getRecruiterFactionHashCode(pNpc))
@@ -243,12 +237,8 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			self:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 		end
 
-		-- ADDITION: Ambush toggle on Covert/Overt v2 member screens
-		if isAmbushEnabledForPlayer(pPlayer, pNpc) then
-			clonedConversation:addOption("Disable GCW Ambush Encounters", "ambush_disable")
-		else
-			clonedConversation:addOption("Enable GCW Ambush Encounters", "ambush_enable")
-		end
+		-- Ambush toggle on Covert/Overt v2 member screens
+		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
 		clonedConversation:addOption("@faction_recruiter:option_purchase_items", "faction_purchase")
 	elseif (screenID == "cancel_resignation") then
@@ -272,14 +262,24 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleGoCovert")
 
-	-- ===== ADDITIONS: handle toggle clicks (stay on same screen) =====
+	-- ===== Ambush toggle clicks (stay on same screen) =====
 	elseif (screenID == "ambush_enable") then
-		setAmbushEnabledForPlayer(pPlayer, pNpc, true)
-		return pConvScreen
+		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), true)
+
+        -- Kick the ambush loop now so players don't have to relog
+        local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
+        if fac == "imperial" then
+            if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
+                pcall(function() GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer) end)
+            end
+        elseif fac == "rebel" then
+            if GCWRankedAmbushRebels and GCWRankedAmbushRebels.onPlayerLoggedIn then
+                pcall(function() GCWRankedAmbushRebels:onPlayerLoggedIn(pPlayer) end)
+            end
+        end
+
 	elseif (screenID == "ambush_disable") then
-		setAmbushEnabledForPlayer(pPlayer, pNpc, false)
-		return pConvScreen
-	-- ===== END ADDITIONS =====
+		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
 	end
 
 	return pConvScreen
