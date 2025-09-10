@@ -14,16 +14,18 @@ GCWRankedAmbushRebels = ScreenPlay:new {
         fastTimings    = false,
         spawnMarkers   = false,
         verboseSpawns  = true,
+        markerCleanup  = true,
     },
 
     trigger = {
-        autoForRebels   = true,
-        requireOvert    = false,
-        firstDelayMin   = 20,
-        firstDelayMax   = 30,
-        cooldownMin     = 30,
-        cooldownMax     = 40,
-        retryIfNotReady = 30,
+        autoForRebels     = true,
+        autoForImperials  = false,
+
+        firstDelayMin     = 45*60,
+        firstDelayMax     = 120*60,
+        cooldownMin       = 45*60,
+        cooldownMax       = 120*60,
+        retryIfNotReady   = 30,
     },
 
     shuttleTemplate = "object/creature/npc/theme_park/lambda_shuttle.iff",
@@ -34,7 +36,7 @@ GCWRankedAmbushRebels = ScreenPlay:new {
     t_buffer      = 2,
     t_deployExtra = 0,
     t_linger      = 30,
-    t_cleanup     = 8*60*60,
+    t_cleanup     = 5*60,
 
     spawnRadiusMin = 25,
     spawnRadiusMax = 40,
@@ -53,7 +55,7 @@ GCWRankedAmbushRebels = ScreenPlay:new {
     FP_RANGE       = 80
 }
 
--- ========= Utilities =========
+-- utilities
 local function nowHHMMSS() if os and os.date then return os.date("%H:%M:%S") end return "" end
 function GCWRankedAmbushRebels:_log(msg)
     if self.debug and self.debug.enabled then
@@ -102,6 +104,8 @@ local function awardFactionPointsNearby(self, pPlayer, side, amount, range)
     else grant(pPlayer) end
     notify(pPlayer, "Ambush Squad Eliminated.")
 end
+
+-- Always pass the player's OID as the event param and use it to recover if the pointer is lost.
 local function pidOf(pPlayer) return tostring(SceneObject(pPlayer):getObjectID()) end
 
 function GCWRankedAmbushRebels:_sched(pPlayer, seconds, reason)
@@ -111,7 +115,6 @@ function GCWRankedAmbushRebels:_sched(pPlayer, seconds, reason)
     createEvent(s * 1000, self.screenplayName, "ambushTick", pPlayer, tostring(oid))
 end
 
--- ========= Landing selection =========
 function GCWRankedAmbushRebels:pickLandingAround(pPlayer)
     local co = CreatureObject(pPlayer)
     local px, py, pz = co:getPositionX(), co:getPositionY(), co:getPositionZ()
@@ -122,15 +125,6 @@ function GCWRankedAmbushRebels:pickLandingAround(pPlayer)
     local hdg = (ang + 180) % 360
     local sy  = groundYAt(SceneObject(pPlayer):getZoneName(), sx, sz, py)
     return sx, sy, sz, hdg
-end
-
--- ========= Lifecycle =========
-function GCWRankedAmbushRebels:start()
-    self:_log("start(): screenplay registered & idle.")
-end
-
-function GCWRankedAmbushRebels:isOptedIn(pPlayer)
-    return CreatureObject(pPlayer):hasScreenPlayState(1, self.optTag)
 end
 
 function GCWRankedAmbushRebels:startHere(pPlayer)
@@ -160,11 +154,11 @@ function GCWRankedAmbushRebels:startHere(pPlayer)
         tostring(shuttleID), sx, sz, hdg, eta))
 
     createEvent(self.t_descend * 1000, self.screenplayName, "handleShuttlePosture", pShuttle, "")
-    local deployAtMs  = eta * 1000
+    local deployAtMs  = (self.t_descend + self.t_ramp + self.t_buffer + self.t_deployExtra) * 1000
     local despawnAtMs = deployAtMs + (self.t_linger * 1000)
     createEvent(deployAtMs,  self.screenplayName, "deploySquad",     pShuttle, tostring(SceneObject(pPlayer):getObjectID()))
     createEvent(despawnAtMs, self.screenplayName, "despawnSequence", pShuttle, "")
-    createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, "")
+    createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, tostring(shuttleID))
 end
 
 function GCWRankedAmbushRebels:handleShuttlePosture(pShuttle)
@@ -206,6 +200,7 @@ function GCWRankedAmbushRebels:deploySquad(pShuttle, callerIdStr)
     local EVT_CREATUREDEATH = rawget(_G, "CREATUREDEATH")
 
     local spawned = 0
+    local childIdx = readData(shuttleID .. ":gcwAmbushRebels:childCount") or 0
     for i=1,#slots do
         local dxF, dyF = fwd(slots[i][2]); local dxR, dyR = right(slots[i][1])
         local x = baseX + dxF + dxR
@@ -221,6 +216,8 @@ function GCWRankedAmbushRebels:deploySquad(pShuttle, callerIdStr)
 
             local mobOID = SceneObject(pMobile):getObjectID()
             writeData(mobOID .. ":gcwAmbushRebels:parent", shuttleID)
+            childIdx = childIdx + 1
+            writeData(shuttleID .. ":gcwAmbushRebels:child:" .. childIdx, mobOID)
 
             if EVT_CREATUREDEATH ~= nil then
                 createObserver(EVT_CREATUREDEATH, self.screenplayName, "onSquadMemberDied", pMobile)
@@ -229,6 +226,7 @@ function GCWRankedAmbushRebels:deploySquad(pShuttle, callerIdStr)
         end
     end
 
+        writeData(shuttleID .. ":gcwAmbushRebels:childCount", childIdx)
     writeData(shuttleID .. ":gcwAmbushRebels:alive", spawned)
     self:_log(string.format("deploySquad: spawned=%d setAlive=%d (planet=%s) at %.1f,%.1f",
         spawned, spawned, tostring(planet), sx, sz))
@@ -251,8 +249,6 @@ function GCWRankedAmbushRebels:onSquadMemberDied(pMob, pKiller)
     local before = readData(aliveKey) or 0
     local after  = before - 1; if after < 0 then after = 0 end
     writeData(aliveKey, after)
-
-    self:_log(string.format("onSquadMemberDied: mob=%s parent=%s alive %d->%d", tostring(mobId), tostring(parentID), before, after))
 
     if after == 0 and readData(rewardKey) ~= 1 then
         writeData(rewardKey, 1)
@@ -286,8 +282,44 @@ function GCWRankedAmbushRebels:cleanShuttleOnly(pShuttle)
     self:_log("cleanShuttleOnly: shuttle removed")
 end
 
-function GCWRankedAmbushRebels:failsafeCleanup(pShuttle)
-    if pShuttle ~= nil then self:cleanShuttleOnly(pShuttle) end
+function GCWRankedAmbushRebels:failsafeCleanup(pShuttle, shuttleIdStr)
+    local sid = 0
+    if pShuttle ~= nil then
+        sid = SceneObject(pShuttle):getObjectID()
+    end
+    if (sid == nil or sid == 0) and shuttleIdStr ~= nil and shuttleIdStr ~= "" then
+        sid = tonumber(shuttleIdStr) or 0
+    end
+    if sid == nil or sid == 0 then
+        self:_log("failsafeCleanup: no shuttle id; nothing to do")
+        return
+    end
+
+    local count = readData(sid .. ":gcwAmbushRebels:childCount") or 0
+    for i = 1, count do
+        local mid = readData(sid .. ":gcwAmbushRebels:child:" .. i)
+        if mid and mid ~= 0 then
+            local pm = getSceneObject(tonumber(mid))
+            if pm ~= nil then
+                pcall(function() SceneObject(pm):destroyObjectFromWorld() end)
+                pcall(function() SceneObject(pm):destroyObjectFromDatabase() end)
+            end
+            deleteData(sid .. ":gcwAmbushRebels:child:" .. i)
+        end
+    end
+    deleteData(sid .. ":gcwAmbushRebels:childCount")
+
+    local pS = pShuttle
+    if pS == nil then pS = getSceneObject(sid) end
+    if pS ~= nil then
+        self:cleanShuttleOnly(pS)
+    else
+        deleteData(sid .. ":gcwAmbushRebels:active")
+        deleteData(sid .. ":gcwAmbushRebels:caller")
+        deleteData(sid .. ":gcwAmbushRebels:alive")
+        deleteData(sid .. ":gcwAmbushRebels:rewarded")
+    end
+    self:_log("failsafeCleanup: encounter despawned after timeout")
 end
 
 -- ========= Per-player loop =========
@@ -367,7 +399,7 @@ function GCWRankedAmbushRebels:ambushTick(pPlayer, pParam)
         return
     end
 
-    -- Eligibility
+    -- Eligibility (side + opt-in + overt if required)
     local opted   = self:isOptedIn(pPlayer)
     local sideOK  = co:isRebel()
     local overtOK = (not self.trigger.requireOvert) or isOvert(pPlayer)
@@ -375,17 +407,34 @@ function GCWRankedAmbushRebels:ambushTick(pPlayer, pParam)
 
     self:_log(string.format("eligibility: opted=%s sideOK=%s overtOK=%s => %s",
         tostring(opted), tostring(sideOK), tostring(overtOK), tostring(eligible)))
+    if not opted then
+        deleteData(armKey(pidOf(pPlayer)))
+        self:_log("ambushTick: opted-out -> stopping loop")
+        return
+    end
 
     if not eligible then
         self:_sched(pPlayer, self.trigger.retryIfNotReady, "not_eligible")
         return
     end
 
-    -- Fire encounter
     self:startHere(pPlayer)
-
     local nextDelay = randBetween(self.trigger.cooldownMin, self.trigger.cooldownMax)
     self:_sched(pPlayer, nextDelay, "cooldown")
+end
+
+function GCWRankedAmbushRebels:isOptedIn(pPlayer)
+    return CreatureObject(pPlayer):hasScreenPlayState(1, self.optTag)
+end
+
+function GCWRankedAmbushRebels:stopForPlayer(pPlayer)
+    if not validPlayer(pPlayer) then return end
+    deleteData(armKey(pidOf(pPlayer)))
+    msg(self, pPlayer, "GCW Ambush encounters disabled. Loop stopped.")
+end
+
+function GCWRankedAmbushRebels:start()
+    self:_log("start(): screenplay registered & idle.")
 end
 
 registerScreenPlay("GCWRankedAmbushRebels", true)

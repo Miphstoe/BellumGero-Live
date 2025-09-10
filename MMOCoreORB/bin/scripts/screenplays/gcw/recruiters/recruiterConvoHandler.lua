@@ -279,7 +279,18 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
         end
 
 	elseif (screenID == "ambush_disable") then
-		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
+    	self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
+    	-- Stop the per-player ambush loop immediately so no silent retries continue
+    	local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
+    	if fac == "imperial" then
+        	if GCWRankedAmbushImperials and GCWRankedAmbushImperials.stopForPlayer then
+            	pcall(function() GCWRankedAmbushImperials:stopForPlayer(pPlayer) end)
+        	end
+    	elseif fac == "rebel" then
+        	if GCWRankedAmbushRebels and GCWRankedAmbushRebels.stopForPlayer then
+            	pcall(function() GCWRankedAmbushRebels:stopForPlayer(pPlayer) end)
+        	end
+    	end
 	end
 
 	return pConvScreen
