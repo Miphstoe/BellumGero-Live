@@ -10,29 +10,46 @@ function RecruiterConvoHandler:isAmbushOptedIn(pPlayer, factionStr)
 	return CreatureObject(pPlayer):hasScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
 end
 
+-- Immersive text-only; logic unchanged
 function RecruiterConvoHandler:setAmbushOpt(pPlayer, factionStr, enabled)
 	if factionStr ~= "rebel" and factionStr ~= "imperial" then return end
 	if enabled then
 		CreatureObject(pPlayer):setScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
+		if factionStr == "imperial" then
+			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Imperial dispatches. Be careful of Rebel intercept squads.")
+		else
+			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Rebel documents. Be careful of Imperial strike teams.")
+		end
 	else
+		-- use the same API your tree already uses
 		CreatureObject(pPlayer):removeScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
+		if factionStr == "imperial" then
+			CreatureObject(pPlayer):sendSystemMessage("You request time off courier duty to lay low from Rebel heat. Intercepts will cease.")
+		else
+			CreatureObject(pPlayer):sendSystemMessage("You request time off courier duty to lay low from Imperial heat. Intercepts will cease.")
+		end
 	end
-	CreatureObject(pPlayer):sendSystemMessage(enabled and "Ambush Encounters: ENABLED." or "Ambush Encounters: DISABLED.")
 end
 
+-- Toggle label text only (destinations unchanged)
 function RecruiterConvoHandler:addAmbushToggleOption(pPlayer, pNpc, screen)
 	local fac = recruiterScreenplay:getRecruiterFaction(pNpc) -- "rebel" or "imperial"
 	if fac ~= "rebel" and fac ~= "imperial" then return end
-	if self:isAmbushOptedIn(pPlayer, fac) then
-		screen:addOption("Disable GCW Ambush Encounters", "ambush_disable")
+
+	local opted = self:isAmbushOptedIn(pPlayer, fac)
+	if fac == "imperial" then
+		screen:addOption(opted and "Stand down from escorting Imperial dispatches"
+		                        or  "Protect important documents for the Empire",
+		                 opted and "ambush_disable" or "ambush_enable")
 	else
-		screen:addOption("Enable GCW Ambush Encounters", "ambush_enable")
+		screen:addOption(opted and "Stand down from carrying Rebel documents"
+		                        or  "Protect important documents for the Rebellion",
+		                 opted and "ambush_disable" or "ambush_enable")
 	end
 end
 
 function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
 	if (pGhost == nil) then
 		return pConvScreen
 	end
@@ -201,9 +218,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		end
 
 		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
-
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleResign")
-
 		return pConvScreen
 	elseif (screenID == "greet_member_start_covert2" or screenID == "greet_member_start_overt2" or screenID == "dont_resign") then
 		if (screenID == "dont_resign") then
@@ -259,38 +274,56 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		end
 
 		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
-
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleGoCovert")
 
-	-- ===== Ambush toggle clicks (stay on same screen) =====
+	-- ===== Ambush toggle clicks =====
 	elseif (screenID == "ambush_enable") then
 		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), true)
 
-        -- Kick the ambush loop now so players don't have to relog
-        local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
-        if fac == "imperial" then
-            if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
-                pcall(function() GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer) end)
-            end
-        elseif fac == "rebel" then
-            if GCWRankedAmbushRebels and GCWRankedAmbushRebels.onPlayerLoggedIn then
-                pcall(function() GCWRankedAmbushRebels:onPlayerLoggedIn(pPlayer) end)
-            end
-        end
+		-- Speak a line (no empty []:)
+		local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
+		local say = (fac == "imperial")
+			and "Orders confirmed. You will carry sensitive Imperial dispatches. Expect Rebel intercept squads."
+			or  "You are assigned to carry critical Rebel documents. Be careful of Imperial strike teams."
+		pcall(function() spatialChat(pNpc, say) end)
+
+		-- Kick the ambush loop now so players don't have to relog
+		if fac == "imperial" then
+			if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
+				pcall(function() GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer) end)
+			end
+		elseif fac == "rebel" then
+			if GCWRankedAmbushRebels and GCWRankedAmbushRebels.onPlayerLoggedIn then
+				pcall(function() GCWRankedAmbushRebels:onPlayerLoggedIn(pPlayer) end)
+			end
+		end
+
+		-- Return to the normal member screen so the convo has text
+		return self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 
 	elseif (screenID == "ambush_disable") then
-    	self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
-    	-- Stop the per-player ambush loop immediately so no silent retries continue
-    	local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
-    	if fac == "imperial" then
-        	if GCWRankedAmbushImperials and GCWRankedAmbushImperials.stopForPlayer then
-            	pcall(function() GCWRankedAmbushImperials:stopForPlayer(pPlayer) end)
-        	end
-    	elseif fac == "rebel" then
-        	if GCWRankedAmbushRebels and GCWRankedAmbushRebels.stopForPlayer then
-            	pcall(function() GCWRankedAmbushRebels:stopForPlayer(pPlayer) end)
-        	end
-    	end
+		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
+
+		-- Speak a line (no empty []:)
+		local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
+		local say = (fac == "imperial")
+			and "Understood. We’ll assign another courier while you lay low from Rebel heat."
+			or  "Understood. We’ll assign another courier while you lay low from Imperial heat."
+		pcall(function() spatialChat(pNpc, say) end)
+
+		-- Stop the per-player ambush loop immediately so no silent retries continue
+		if fac == "imperial" then
+			if GCWRankedAmbushImperials and GCWRankedAmbushImperials.stopForPlayer then
+				pcall(function() GCWRankedAmbushImperials:stopForPlayer(pPlayer) end)
+			end
+		elseif fac == "rebel" then
+			if GCWRankedAmbushRebels and GCWRankedAmbushRebels.stopForPlayer then
+				pcall(function() GCWRankedAmbushRebels:stopForPlayer(pPlayer) end)
+			end
+		end
+
+		-- Return to the normal member screen so the convo has text
+		return self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	end
 
 	return pConvScreen
@@ -397,13 +430,9 @@ end
 
 function RecruiterConvoHandler:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, faction)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
+	if (pGhost == nil) then return end
 
 	local screenObject = LuaConversationScreen(pConvScreen)
-
 	if (CreatureObject(pPlayer):hasSkill("combat_smuggler_underworld_04") and (CreatureObject(pPlayer):getCashCredits() >= 20000)
 		and (getFactionPointsCap(CreatureObject(pPlayer):getFactionRank()) >= PlayerObject(pGhost):getFactionStanding(faction) + 250)) then
 		self:addBribeOption(pNpc, screenObject)
@@ -412,24 +441,15 @@ end
 
 function RecruiterConvoHandler:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, faction)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
+	if (pGhost == nil) then return end
 
 	local screenObject = LuaConversationScreen(pConvScreen)
 	local rank = CreatureObject(pPlayer):getFactionRank()
-
-	if rank < 0 or isHighestRank(rank) == true then
-		return
-	end
+	if rank < 0 or isHighestRank(rank) == true then return end
 
 	local requiredPoints = getRankCost(rank + 1)
 	local currentPoints = PlayerObject(pGhost):getFactionStanding(faction)
-
-	if (currentPoints < requiredPoints + recruiterScreenplay:getMinimumFactionStanding()) then
-		return
-	end
+	if (currentPoints < requiredPoints + recruiterScreenplay:getMinimumFactionStanding()) then return end
 
 	self:addRankReviewOption(faction, screenObject)
 end
