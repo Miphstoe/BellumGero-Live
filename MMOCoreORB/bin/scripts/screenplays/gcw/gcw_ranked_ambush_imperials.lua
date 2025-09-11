@@ -1,5 +1,5 @@
 -- ==========================================================
--- GCW Ranked Ambush — Imperials target (spawns REBEL custom squad)
+-- GCW Ranked Ambush — Imperials (targets Imperials; spawns Rebel squad)
 -- ==========================================================
 
 GCWRankedAmbushImperials = ScreenPlay:new {
@@ -19,20 +19,19 @@ GCWRankedAmbushImperials = ScreenPlay:new {
         autoForImperials = true,
         autoForRebels    = false,
 
-        -- unified test timings (match Rebels file)
         firstDelayMin     = 20,
         firstDelayMax     = 30,
         cooldownMin       = 30,
         cooldownMax       = 40,
         retryIfNotReady   = 30,
-        -- requireOvert   = true, -- optional; leave nil to allow both
+        -- requireOvert   = true,
     },
 
     -- Keep your working spawn method (scene object path)
     shuttleTemplate   = "object/creature/npc/theme_park/lambda_shuttle.iff",
     rebelTrooper      = "ambush_rebel_commando",
 
-    -- Cinematic
+    -- Cinematic timings
     t_descend     = 34,
     t_ramp        = 19,
     t_buffer      = 2,
@@ -52,7 +51,7 @@ GCWRankedAmbushImperials = ScreenPlay:new {
     rampForward    = 7.5,
 
     markerTemplate = "object/tangible/poi/poi_marker_large.iff",
-    fileTag        = "[GCW Ambush — vs Imperials]",
+    fileTag        = "[GCW Ambush - vs Imperials]",
 
     optTag         = "GCW_Ambush_Imperials",
 
@@ -61,10 +60,9 @@ GCWRankedAmbushImperials = ScreenPlay:new {
     FP_RANGE       = 80
 }
 
--- Immersion: landing barks (REBEL commandos shouting about Imperial docs)
 GCWRankedAmbushImperials.barks = {
-    "Eyes on the courier—secure those Imperial dispatches!",
-    "Grab the data case! The Alliance needs that intel!",
+    "Eyes on the courier, secure those Imperial dispatches!",
+    "Grab the data case, the Alliance needs that intel!",
     "Those documents belong to the Rebellion now!",
     "Box them in and take the intel!"
 }
@@ -140,7 +138,7 @@ function GCWRankedAmbushImperials:pickLandingAround(pPlayer)
     local r   = getRandomNumber(self.spawnRadiusMin, self.spawnRadiusMax)
     local ang = getRandomNumber(0, 359)
     local sx  = px + r * math.cos(math.rad(ang))
-    local sz  = pz + r * math.sin(math.rad(ang)) -- world YCoord
+    local sz  = pz + r * math.sin(math.rad(ang))
     local hdg = (ang + 180) % 360
     local sy  = groundYAt(SceneObject(pPlayer):getZoneName(), sx, sz, py)
     return sx, sy, sz, hdg
@@ -182,7 +180,7 @@ function GCWRankedAmbushImperials:startHere(pPlayer)
     local despawnAtMs = deployAtMs + (self.t_linger * 1000)
     createEvent(deployAtMs,  self.screenplayName, "deploySquad",     pShuttle, tostring(SceneObject(pPlayer):getObjectID()))
     createEvent(despawnAtMs, self.screenplayName, "despawnSequence", pShuttle, "")
-    -- Robust failsafe (works even if shuttle is gone later)
+    -- Robust failsafe (also cleans children)
     createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, tostring(shuttleID))
 end
 
@@ -261,7 +259,6 @@ function GCWRankedAmbushImperials:deploySquad(pShuttle, callerIdStr)
         msg(self, pCaller, string.format("Rebel squad deployed (%d/%d).", spawned, #slots))
     end
 
-    -- Immersion: a couple of troopers shout about seizing the documents
     createEvent(1500, self.screenplayName, "landingBarks", pShuttle, "")
 end
 
@@ -409,7 +406,7 @@ function GCWRankedAmbushImperials:ambushTick(pPlayer, pParam)
         return
     end
 
-    -- STOP outright if opted-out (do not reschedule)
+    -- Hard stop if opted-out: do NOT reschedule
     if not self:isOptedIn(pPlayer) then
         deleteData(armKey(pidOf(pPlayer)))
         self:_log("ambushTick: opted-out -> stopping loop")
@@ -420,6 +417,7 @@ function GCWRankedAmbushImperials:ambushTick(pPlayer, pParam)
     local zone = SceneObject(pPlayer):getZoneName()
     local x, y = SceneObject(pPlayer):getPositionX(), SceneObject(pPlayer):getPositionZ()
 
+    -- Defer in NPC cities
     local inCity = false
     local okCity, pCity = pcall(getCityRegionAt, zone, x, y)
     if okCity and pCity then

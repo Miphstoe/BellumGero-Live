@@ -1,6 +1,6 @@
 -- ==========================================================
--- GCW Ranked Ambush — Rebels target (spawns IMPERIAL custom squad)
--- (Unified structure with Imperials file)
+-- GCW Ranked Ambush — Rebels (targets Rebels; spawns Imperial squad)
+-- (Unified with the Imperials file)
 -- ==========================================================
 
 GCWRankedAmbushRebels = ScreenPlay:new {
@@ -20,7 +20,6 @@ GCWRankedAmbushRebels = ScreenPlay:new {
         autoForRebels     = true,
         autoForImperials  = false,
 
-        -- unified test timings (match Imperials file)
         firstDelayMin     = 20,
         firstDelayMax     = 30,
         cooldownMin       = 30,
@@ -48,7 +47,7 @@ GCWRankedAmbushRebels = ScreenPlay:new {
     rampForward    = 7.5,
 
     markerTemplate = "object/tangible/poi/poi_marker_large.iff",
-    fileTag        = "[GCW Ambush — vs Rebels]",
+    fileTag        = "[GCW Ambush - vs Rebels]",
     optTag         = "GCW_Ambush_Rebels",
 
     FP_REWARD      = 2500,
@@ -56,15 +55,14 @@ GCWRankedAmbushRebels = ScreenPlay:new {
     FP_RANGE       = 80
 }
 
--- Immersion: landing barks (IMPERIAL commandos shouting about Rebel docs)
 GCWRankedAmbushRebels.barks = {
-    "Seize those Rebel plans—now!",
-    "Confiscate the documents! For the Empire!",
+    "Seize those Rebel plans now!",
+    "Confiscate the documents, for the Empire!",
     "By order of the Emperor, surrender that intelligence!",
-    "Secure the data case—move!"
+    "Secure the data case, move!"
 }
 
--- ========= Utilities (identical to Imperials) =========
+-- ========= Utilities (identical) =========
 local function nowHHMMSS() return (os and os.date) and os.date("%H:%M:%S") or "" end
 function GCWRankedAmbushRebels:_log(msg)
     if self.debug and self.debug.enabled then
@@ -115,7 +113,7 @@ local function awardFactionPointsNearby(self, pPlayer, side, amount, range)
 end
 local function pidOf(pPlayer) return tostring(SceneObject(pPlayer):getObjectID()) end
 
--- ========= Opt-in helper (present in both files) =========
+-- ========= Opt-in helper =========
 function GCWRankedAmbushRebels:isOptedIn(pPlayer)
     if pPlayer == nil then return false end
     return CreatureObject(pPlayer):hasScreenPlayState(1, self.optTag)
@@ -355,7 +353,7 @@ function GCWRankedAmbushRebels:failsafeCleanup(pShuttle, shuttleIdStr)
     self:_log("failsafeCleanup: encounter despawned after timeout")
 end
 
--- ========= Per-player loop (identical structure) =========
+-- ========= Per-player loop =========
 local function isOvert(pPlayer)
     local pGhost = CreatureObject(pPlayer):getPlayerObject()
     if pGhost ~= nil and PlayerObject(pGhost).isOvert ~= nil then return PlayerObject(pGhost):isOvert() end
@@ -395,6 +393,7 @@ function GCWRankedAmbushRebels:ambushTick(pPlayer, pParam)
         return
     end
 
+    -- Hard stop if opted-out: do NOT reschedule
     if not self:isOptedIn(pPlayer) then
         deleteData(armKey(pidOf(pPlayer)))
         self:_log("ambushTick: opted-out -> stopping loop")

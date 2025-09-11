@@ -1,5 +1,4 @@
 local ObjectManager = require("managers.object.object_manager")
-
 RecruiterConvoHandler = conv_handler:new {}
 
 -- ===== GCW Ambush opt-in/out (per-faction) =====
@@ -16,12 +15,11 @@ function RecruiterConvoHandler:setAmbushOpt(pPlayer, factionStr, enabled)
 	if enabled then
 		CreatureObject(pPlayer):setScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
 		if factionStr == "imperial" then
-			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Imperial dispatches. Be careful of Rebel intercept squads.")
+			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Imperial dispatches. Expect Rebel intercept squads.")
 		else
-			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Rebel documents. Be careful of Imperial strike teams.")
+			CreatureObject(pPlayer):sendSystemMessage("You volunteer to safeguard sensitive Rebel documents. Expect Imperial strike teams.")
 		end
 	else
-		-- use the same API your tree already uses
 		CreatureObject(pPlayer):removeScreenPlayState(1, AMBUSH_OPT_TAG[factionStr])
 		if factionStr == "imperial" then
 			CreatureObject(pPlayer):sendSystemMessage("You request time off courier duty to lay low from Rebel heat. Intercepts will cease.")
@@ -50,9 +48,7 @@ end
 
 function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-	if (pGhost == nil) then
-		return pConvScreen
-	end
+	if (pGhost == nil) then return pConvScreen end
 
 	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
@@ -69,7 +65,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
 
-		-- Ambush toggle on covert member screen
 		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
 	elseif (screenID == "greet_member_start_overt" or screenID == "stay_special_forces" or screenID == "stay_overt" or screenID == "dont_resign_overt") then
@@ -82,7 +77,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			clonedConversation:addOption("@conversation/faction_recruiter_imperial:s_324", "faction_purchase")
 		end
 
-		-- Ambush toggle on overt member screen
 		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
 
 	elseif (screenID == "accept_join") then
@@ -93,6 +87,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		CreatureObject(pPlayer):setFutureFactionStatus(2)
 		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 		createEvent(30000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
+
 	elseif (screenID == "accepted_go_covert") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
@@ -102,6 +97,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		CreatureObject(pPlayer):setFutureFactionStatus(1)
 		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 		createEvent(300000, "recruiterScreenplay", "handleGoCovert", pPlayer, "")
+
 	elseif (screenID == "accepted_go_on_leave") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
@@ -142,7 +138,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			local screenObject = LuaConversationScreen(notEnoughScreen)
 
 			pConvScreen = screenObject:cloneScreen()
-
 			screenObject = LuaConversationScreen(pConvScreen)
 			screenObject:setDialogTextTO("faction_recruiter", getRankName(rank))
 			screenObject:setDialogTextDI(requiredPoints)
@@ -184,25 +179,25 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			local screenObject = LuaConversationScreen(notEnoughScreen)
 
 			pConvScreen = screenObject:cloneScreen()
-
 			screenObject = LuaConversationScreen(pConvScreen)
 			screenObject:setDialogTextTO(recruiterFaction)
 			screenObject:setDialogTextDI(recruiterScreenplay.minimumFactionStanding)
-
 			return pConvScreen
 		else
 			recruiterFaction = recruiterFaction:gsub("^%l", string.upper)
 			clonedConversation:setDialogTextTO(recruiterFaction)
-
 			CreatureObject(pPlayer):setFaction(recruiterScreenplay:getRecruiterFactionHashCode(pNpc))
 			CreatureObject(pPlayer):setFactionStatus(1)
 		end
+
 	elseif (screenID == "neutral_need_more_points2") then
 		clonedConversation:setDialogTextDI(recruiterScreenplay.minimumFactionStanding)
 		clonedConversation:setDialogTextTO(recruiterScreenplay:getRecruiterFaction(pNpc))
+
 	elseif (screenID == "resign_faction") then
 		clonedConversation:setDialogTextTU(CreatureObject(pPlayer):getFirstName())
 		clonedConversation:setDialogTextDI(recruiterScreenplay.covertOvertResignTime)
+
 	elseif (screenID == "confirm_resign") then
 		local convoTemplate = LuaConversationTemplate(pConvTemplate)
 
@@ -217,9 +212,10 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
 		end
 
-		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
+		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleResign")
 		return pConvScreen
+
 	elseif (screenID == "greet_member_start_covert2" or screenID == "greet_member_start_overt2" or screenID == "dont_resign") then
 		if (screenID == "dont_resign") then
 			clonedConversation:setDialogTextStringId("@faction_recruiter:resign_faction_no")
@@ -227,7 +223,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			clonedConversation:setDialogTextTO(CreatureObject(pPlayer):getFirstName())
 		end
 
-		-- Cancel current resignation
 		if (SceneObject(pPlayer):hasPendingTask("recruiterScreenplay", "handleResign")) then
 			clonedConversation:addOption("@faction_recruiter:option_recind_resignation", "cancel_resignation")
 		else
@@ -236,7 +231,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			elseif (screenID == "greet_member_start_overt2") then
 				clonedConversation:addOption("@faction_recruiter:option_go_covert", "confirm_covert")
 			end
-
 			clonedConversation:addOption("@faction_recruiter:option_resign_from_faction", "resign_faction")
 		end
 
@@ -247,22 +241,22 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		end
 
 		self:updateScreenWithPromotions(pPlayer, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
-
 		if (screenID == "greet_member_start_overt2") then
 			self:updateScreenWithBribe(pPlayer, pNpc, pConvTemplate, pConvScreen, recruiterScreenplay:getRecruiterFaction(pNpc))
 		end
 
-		-- Ambush toggle on Covert/Overt v2 member screens
 		self:addAmbushToggleOption(pPlayer, pNpc, clonedConversation)
-
 		clonedConversation:addOption("@faction_recruiter:option_purchase_items", "faction_purchase")
+
 	elseif (screenID == "cancel_resignation") then
 		deleteData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus")
-		SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
+        SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleResign")
+
 	elseif (screenID == "declare_complete") then
 		CreatureObject(pPlayer):setFutureFactionStatus(2)
 		writeData(CreatureObject(pPlayer):getObjectID() .. ":changingFactionStatus", 1)
 		createEvent(1000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
+
 	elseif (screenID == "covert_complete") then
 		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
@@ -273,21 +267,19 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			SceneObject(pPlayer):cancelPendingTask("recruiterScreenplay", "handleGoCovert")
 		end
 
-		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000 -- Minutes
+		local timer = recruiterScreenplay.covertOvertResignTime * 60 * 1000
 		SceneObject(pPlayer):addPendingTask(timer, "recruiterScreenplay", "handleGoCovert")
 
 	-- ===== Ambush toggle clicks =====
 	elseif (screenID == "ambush_enable") then
 		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), true)
 
-		-- Speak a line (no empty []:)
 		local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
 		local say = (fac == "imperial")
-			and "Orders confirmed. You will carry sensitive Imperial dispatches. Expect Rebel intercept squads."
-			or  "You are assigned to carry critical Rebel documents. Be careful of Imperial strike teams."
+			and "Orders confirmed. You will courier sensitive Imperial dispatches. Expect Rebel intercept squads."
+			or  "Assignment confirmed. You will courier critical Rebel documents. Expect Imperial strike teams."
 		pcall(function() spatialChat(pNpc, say) end)
 
-		-- Kick the ambush loop now so players don't have to relog
 		if fac == "imperial" then
 			if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
 				pcall(function() GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer) end)
@@ -298,20 +290,17 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			end
 		end
 
-		-- Return to the normal member screen so the convo has text
 		return self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 
 	elseif (screenID == "ambush_disable") then
 		self:setAmbushOpt(pPlayer, recruiterScreenplay:getRecruiterFaction(pNpc), false)
 
-		-- Speak a line (no empty []:)
 		local fac = recruiterScreenplay:getRecruiterFaction(pNpc)
 		local say = (fac == "imperial")
-			and "Understood. We’ll assign another courier while you lay low from Rebel heat."
-			or  "Understood. We’ll assign another courier while you lay low from Imperial heat."
+			and "Understood. We will assign another courier while you lay low from Rebel heat."
+			or  "Understood. We will assign another courier while you lay low from Imperial heat."
 		pcall(function() spatialChat(pNpc, say) end)
 
-		-- Stop the per-player ambush loop immediately so no silent retries continue
 		if fac == "imperial" then
 			if GCWRankedAmbushImperials and GCWRankedAmbushImperials.stopForPlayer then
 				pcall(function() GCWRankedAmbushImperials:stopForPlayer(pPlayer) end)
@@ -322,7 +311,6 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 			end
 		end
 
-		-- Return to the normal member screen so the convo has text
 		return self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	end
 
@@ -332,10 +320,7 @@ end
 function RecruiterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return convoTemplate:getScreen("greet_neutral_start")
-	end
+	if (pGhost == nil) then return convoTemplate:getScreen("greet_neutral_start") end
 
 	local faction = CreatureObject(pPlayer):getFaction()
 	local factionStanding = PlayerObject(pGhost):getFactionStanding(recruiterScreenplay:getRecruiterFaction(pNpc))
@@ -375,7 +360,6 @@ function RecruiterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 			return convoTemplate:getScreen("greet_neutral_start")
 		end
 	end
-	return nil
 end
 
 function RecruiterConvoHandler:addRankReviewOption(faction, screen)
