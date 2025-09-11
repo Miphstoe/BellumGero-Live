@@ -14,6 +14,8 @@
 #include "server/zone/objects/player/sessions/vendor/VendorAdBarkingSession.h"
 #include "server/zone/managers/vendor/VendorManager.h"
 #include "server/zone/ZoneProcessServer.h"
+#include "server/zone/managers/auction/AuctionManager.h"
+
 
 void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	if (sceneObject == nullptr || !sceneObject->isVendor() || player == nullptr) {
@@ -22,24 +24,20 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 
 	if (sceneObject->isASubChildOf(player)) {
 		menuResponse->addRadialMenuItem(14, 3, "@ui:destroy");
-
 		return;
 	}
 
 	auto ghost = player->getPlayerObject();
-
 	if (ghost == nullptr) {
 		return;
 	}
 
 	DataObjectComponentReference* data = sceneObject->getDataObjectComponent();
-
 	if (data == nullptr || data->get() == nullptr || !data->get()->isVendorData()) {
 		return;
 	}
 
 	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
-
 	if (vendorData == nullptr) {
 		return;
 	}
@@ -50,19 +48,19 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 		return;
 	}
 
+	// Root "Vendor Control" node
 	menuResponse->addRadialMenuItem(70, 3, "@player_structure:vendor_control");
 
-	// Privileged access
+	// Privileged access (non-owner)
 	if (!playerIsOwner) {
 		if (vendorData->isInitialized()) {
 			menuResponse->addRadialMenuItemToRadialID(70, 71, 3, "@player_structure:vendor_status");
 			menuResponse->addRadialMenuItemToRadialID(70, 72, 3, "@player_structure:change_name");
 		}
-
 		return;
 	}
 
-	// Vendor owner control
+	// Owner controls
 	if (!vendorData->isInitialized()) {
 		menuResponse->addRadialMenuItemToRadialID(70, 79, 3, "@player_structure:vendor_init");
 
@@ -74,7 +72,6 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 
 	} else {
 		menuResponse->addRadialMenuItemToRadialID(70, 71, 3, "@player_structure:vendor_status");
-
 		menuResponse->addRadialMenuItemToRadialID(70, 73, 3, "@player_structure:pay_vendor_t");
 		menuResponse->addRadialMenuItemToRadialID(70, 74, 3, "@player_structure:withdraw_vendor_t");
 
@@ -99,34 +96,35 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 				menuResponse->addRadialMenuItemToRadialID(70, 77, 3, "@player_structure:vendor_areabarks_off");
 			}
 		}
+
+		// NEW: Relist expired at previous price (owner only, initialized vendors)
+		menuResponse->addRadialMenuItemToRadialID(70, 80, 3, "Relist expired (previous price)");
 	}
 
 	menuResponse->addRadialMenuItemToRadialID(70, 78, 3, "@player_structure:remove_vendor");
 }
 
-int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
-		CreatureObject* player, byte selectedID) const {
-
+int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isVendor())
 		return 0;
 
 	DataObjectComponentReference* data = sceneObject->getDataObjectComponent();
-	if(data == nullptr || data->get() == nullptr || !data->get()->isVendorData()) {
+	if (data == nullptr || data->get() == nullptr || !data->get()->isVendorData()) {
 		return 0;
 	}
 
 	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
-	if(vendorData == nullptr) {
+	if (vendorData == nullptr) {
 		return 0;
 	}
 
 	ManagedReference<TangibleObject*> vendor = cast<TangibleObject*>(sceneObject);
-	if(vendor == nullptr)
+	if (vendor == nullptr)
 		return 0;
 
 	bool owner = vendorData->getOwnerId() == player->getObjectID();
 
-	if(!owner) {
+	if (!owner) {
 		if (player->getPlayerObject()->isPrivileged()) {
 			if (selectedID == 71) {
 				VendorManager::instance()->handleDisplayStatus(player, vendor);
@@ -136,7 +134,6 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 				return 0;
 			}
 		}
-
 		return TangibleObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
 	}
 
@@ -145,17 +142,14 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		VendorManager::instance()->handleDisplayStatus(player, vendor);
 		return 0;
 	}
-
 	case 73: {
 		vendorData->payMaintanence();
 		return 0;
 	}
-
 	case 74: {
 		vendorData->withdrawMaintanence();
 		return 0;
 	}
-
 	case 75: {
 		if (vendorData->isVendorSearchEnabled()) {
 			vendorData->setVendorSearchEnabled(false);
@@ -164,12 +158,10 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 			vendorData->setVendorSearchEnabled(true);
 			player->sendSystemMessage("@player_structure:vendor_search_enabled");
 		}
-
 		return 0;
 	}
-
 	case 76: {
-		if(player->hasSkill("crafting_merchant_advertising_03")) {
+		if (player->hasSkill("crafting_merchant_advertising_03")) {
 			if (vendorData->isRegistered())
 				VendorManager::instance()->handleUnregisterVendor(player, vendor);
 			else if (!vendorData->isOnStrike())
@@ -177,18 +169,14 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		}
 		return 0;
 	}
-
 	case 77: {
-		if(player->hasSkill("crafting_merchant_advertising_01") && vendor->isCreatureObject()) {
+		if (player->hasSkill("crafting_merchant_advertising_01") && vendor->isCreatureObject()) {
 			if (!vendorData->isAdBarkingEnabled()) {
-
 				if (player->containsActiveSession(SessionFacadeType::VENDORADBARKING)) {
 					return 0;
 				}
-
 				ManagedReference<VendorAdBarkingSession*> session = new VendorAdBarkingSession(player, sceneObject->asTangibleObject());
 				session->initializeSession();
-
 			} else {
 				vendorData->setAdBarking(false);
 				player->sendSystemMessage("@player_structure:areabarks_disabled");
@@ -196,28 +184,39 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		}
 		return 0;
 	}
-
 	case 78: {
 		VendorManager::instance()->promptDestroyVendor(player, vendor);
 		return 0;
 	}
-
-
 	case 79: {
 		if (player->getRootParent() != vendor->getRootParent()) {
 			player->sendSystemMessage("@player_structure:vendor_not_in_same_building");
 			return 0;
 		}
-
 		if (vendorData->isInitialized()) {
 			player->sendSystemMessage("@player_structure:vendor_already_initialized");
 			return 0;
 		}
-
 		player->sendSystemMessage("@player_structure:vendor_initialized");
 		vendorData->setInitialized(true);
 		vendorData->setEmpty();
 		vendorData->scheduleVendorCheckTask(VendorDataComponent::VENDORCHECKINTERVAL);
+		return 0;
+	}
+
+	// NEW: Relist expired (previous price)
+	case 80: {
+		AuctionManager* market = player->getZoneServer()->getAuctionManager();
+		if (!market) return 0;
+
+		int relisted = market->relistExpiredAtPreviousPrice(player, vendor, /*limit*/ 100);
+		if (relisted > 0) {
+			StringBuffer msg;
+			msg << "Relisted " << relisted << " expired item(s) at previous price.";
+			player->sendSystemMessage(msg.toString());
+		} else {
+			player->sendSystemMessage("No expired items found with a remembered price.");
+		}
 		return 0;
 	}
 
@@ -227,3 +226,4 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 
 	return 0;
 }
+
