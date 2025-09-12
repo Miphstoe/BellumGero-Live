@@ -1,3 +1,4 @@
+includeFile("faction/imperial/ambush_imperial_storm_commando.lua")
 includeFile("faction/imperial/assault_trooper.lua")
 includeFile("faction/imperial/assault_trooper_squad_leader.lua")
 includeFile("faction/imperial/at_at.lua")
