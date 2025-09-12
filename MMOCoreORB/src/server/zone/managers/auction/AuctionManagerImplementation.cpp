@@ -35,6 +35,7 @@
 #include "AuctionSearchTask.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
 
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
@@ -261,6 +262,7 @@ void AuctionManagerImplementation::initialize() {
 			}
 		}
 	}
+
 
 	for(int i = 0; i < pendingUIDUpdates.size(); ++i) {
 		ManagedReference<SceneObject*> vendor = pendingUIDUpdates.elementAt(i).getKey();
@@ -519,65 +521,39 @@ void AuctionManagerImplementation::doAuctionMaint(TerminalListVector* items, con
 void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 objectid, SceneObject* vendor, const UnicodeString& description, int price, uint32 duration, bool auction, bool premium) {
 	if (vendor == nullptr || (!vendor->isVendor() && !vendor->isBazaarTerminal())) {
 		error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Not valid vendor object.";
-
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::VENDORNOTWORKING);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
 	if (player->isDead() || player->isIncapacitated()) {
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::UNKNOWNERROR);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
 	ManagedReference<Zone*> zone = vendor->getZone();
-
 	if (zone == nullptr) {
 		error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Vendor has null zone.";
-
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::UNKNOWNERROR);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
 	ManagedReference<TradeSession*> tradeContainer = player->getActiveSession(SessionFacadeType::TRADE).castTo<TradeSession*>();
-
 	if (tradeContainer != nullptr) {
 		auto playerManager = zoneServer->getPlayerManager();
-
-		if (playerManager != nullptr) {
-			playerManager->handleAbortTradeMessage(player);
-		}
+		if (playerManager != nullptr) playerManager->handleAbortTradeMessage(player);
 	}
 
 	bool stockroomSale = false;
 
 	ManagedReference<SceneObject*> objectToSell = zoneServer->getObject(objectid);
-
 	if (objectToSell == nullptr || objectToSell->isNoTrade() || objectToSell->containsNoTradeObjectRecursive()) {
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
-		if (objectToSell != nullptr) {
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
+		if (objectToSell != nullptr)
 			player->sendSystemMessage("@container_error_message:container26"); // This item could not be transferred.
-		}
-
 		return;
 	}
 
@@ -585,84 +561,53 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 
 	if (oldItem == nullptr) {
 		if (objectToSell == nullptr || !objectToSell->isASubChildOf(player)) {
-			if (objectToSell != nullptr) {
+			if (objectToSell != nullptr)
 				error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Selling invalid object.";
-			}
-
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
-
-			if (soldMessage != nullptr) {
-				player->sendMessage(soldMessage);
-			}
-
+			if (soldMessage != nullptr) player->sendMessage(soldMessage);
 			return;
 		}
 	} else {
 		if (oldItem->getStatus() == AuctionItem::DELETED) {
 			error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Attempt to sell a DELETED item, auctionItem: " << *oldItem;
-
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
-
-			if (soldMessage != nullptr) {
-				player->sendMessage(soldMessage);
-			}
-
+			if (soldMessage != nullptr) player->sendMessage(soldMessage);
 			return;
 		}
 
 		if (oldItem->getStatus() == AuctionItem::RETRIEVED) {
 			error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Attempt to sell a RETRIEVED item, auctionItem: " << *oldItem;
-
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
-
-			if (soldMessage != nullptr) {
-				player->sendMessage(soldMessage);
-			}
-
+			if (soldMessage != nullptr) player->sendMessage(soldMessage);
 			return;
 		}
 
 		if (oldItem->getStatus() == AuctionItem::FORSALE) {
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::ALREADYFORSALE);
-
-			if (soldMessage != nullptr) {
-				player->sendMessage(soldMessage);
-			}
-
+			if (soldMessage != nullptr) player->sendMessage(soldMessage);
 			return;
 		}
 
-		/// Is it being sold from the stockroom
+		// Is it being sold from the stockroom?
 		if (oldItem->getOwnerID() != player->getObjectID()) {
 			error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Selling object owned by another player: " << oldItem->getOwnerID();
-
 			ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::INVALIDITEM);
-
-			if (soldMessage != nullptr) {
-				player->sendMessage(soldMessage);
-			}
-
+			if (soldMessage != nullptr) player->sendMessage(soldMessage);
 			return;
 		}
 
 		stockroomSale = true;
 
 		ManagedReference<SceneObject*> oldVendor = zoneServer->getObject(oldItem->getVendorID());
-
 		if (oldVendor != nullptr && oldVendor->isVendor()) {
 			vendor = oldVendor;
 		}
 	}
 
 	int res = checkSaleItem(player, objectToSell, vendor, price, premium, stockroomSale);
-
 	if (res != 0) {
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, res);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
@@ -671,35 +616,24 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 		auctionMap->deleteItem(vendor, oldItem);
 	}
 
-	// Check to ensure item was removed from the auction map
+	// Ensure item was removed from the auction map
 	if (auctionMap->containsItem(objectToSell->getObjectID())) {
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::ALREADYFORSALE);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
-	// add city tax to the price
+	// Add city tax to the price
 	ManagedReference<CityRegion*> city = vendor->getCityRegion().get();
-
 	if (city != nullptr) {
 		price *= (1.0f + (city->getSalesTax() / 100.0f));
 	}
 
 	ManagedReference<AuctionItem*> item = createVendorItem(player, objectToSell.get(), vendor, description, price, duration, auction, premium);
-
 	if (item == nullptr) {
 		error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): createVendorItem failed.";
-
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::UNKNOWNERROR);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
-
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 		return;
 	}
 
@@ -711,72 +645,54 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 	Locker locker(item);
 
 	int result = auctionMap->addItem(player, vendor, item);
-
 	if (result != ItemSoldMessage::SUCCESS) {
 		trx.abort() << "failed to add to auctionMap, result=" << ItemSoldMessage::statusToString(result);
-
 		info() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): " << trx.getErrorMessage() << ", auctionItem: " << *item;
 
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, result);
-
-		if (soldMessage != nullptr) {
-			player->sendMessage(soldMessage);
-		}
+		if (soldMessage != nullptr) player->sendMessage(soldMessage);
 
 		auctionMap->removeFromCommodityLimit(item);
-
 		return;
 	}
 
-	Locker objectToSellLocker(objectToSell);
-
-	objectToSell->destroyObjectFromWorld(true);
-
-	objectToSellLocker.release();
+	// Remove the object from the world now that it's listed
+	{
+		Locker objectToSellLocker(objectToSell);
+		objectToSell->destroyObjectFromWorld(true);
+	}
 
 	trx.commit();
 
 	if (vendor->isBazaarTerminal()) {
 		StringIdChatParameter str("@base_player:sale_fee"); // The fee for your listing is %DI credits.
 
-		float costReduction = 1;
-
-		if (player->hasSkill("crafting_merchant_sales_01")) {
-			costReduction = .80f;
-		}
-
-		if (player->hasSkill("crafting_merchant_sales_03")) {
-			costReduction = .60f;
-		}
+		float costReduction = 1.0f;
+		if (player->hasSkill("crafting_merchant_sales_01")) costReduction = .80f;
+		if (player->hasSkill("crafting_merchant_sales_03")) costReduction = .60f;
 
 		if (item->isPremiumAuction()) {
 			TransactionLog trx(player, TrxCode::BAZAARSYSTEM, costReduction * (SALESFEE * 5), false);
 			player->subtractBankCredits(costReduction * (SALESFEE * 5));
 			str.setDI(costReduction * (SALESFEE * 5));
-
 		} else {
 			TransactionLog trx(player, TrxCode::BAZAARSYSTEM, costReduction * SALESFEE, false);
 			player->subtractBankCredits(costReduction * SALESFEE);
 			str.setDI(costReduction * SALESFEE);
 		}
-
 		player->sendSystemMessage(str);
 	}
 
 	if (item->getStatus() == AuctionItem::OFFERED) {
 		VendorDataComponent* vendorData = nullptr;
 		DataObjectComponentReference* data = vendor->getDataObjectComponent();
-
-		if (data != nullptr && data->get() != nullptr && data->get()->isVendorData()) {
+		if (data != nullptr && data->get() != nullptr && data->get()->isVendorData())
 			vendorData = cast<VendorDataComponent*>(data->get());
-		}
 
 		if (vendorData != nullptr) {
 			ManagedReference<SceneObject*> strongRef = zoneServer->getObject(vendorData->getOwnerId());
-
 			if (strongRef != nullptr && strongRef->isPlayerCreature()) {
 				ManagedReference<CreatureObject*> strongOwnerRef = cast<CreatureObject*>(strongRef.get());
-
 				if (strongOwnerRef->isOnline()) {
 					strongOwnerRef->sendSystemMessage(player->getFirstName() + " has offered an item to " + vendor->getDisplayedName());
 				}
@@ -790,7 +706,7 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 		Reference<Task*> newTask = new ExpireAuctionTask(_this.getReferenceUnsafeStaticCast(), item);
 		newTask->schedule((item->getExpireTime() - time(0)) * 1000);
 
-		Locker locker(&auctionEvents);
+		Locker locker2(&auctionEvents);
 		auctionEvents.put(item->getAuctionedItemObjectID(), newTask);
 	}
 
@@ -818,6 +734,80 @@ String AuctionManagerImplementation::getVendorUID(SceneObject* vendor) {
 
 	return uid;
 }
+int AuctionManagerImplementation::relistExpiredAtPreviousPrice(CreatureObject* player, SceneObject* vendorSo, int limit) {
+	if (player == nullptr || vendorSo == nullptr || !vendorSo->isVendor())
+		return 0;
+
+	// Determine sales tax rate for this vendor (0..100 -> 0.0..1.0)
+	float salesTaxRate = 0.0f;
+	if (auto city = vendorSo->getCityRegion().get()) {
+		salesTaxRate = city->getSalesTax() / 100.0f;
+	}
+
+	// Build a stable list of candidates (avoid mutating while iterating)
+	Vector<uint64>          ids;
+	Vector<int>             basePrices;
+	Vector<UnicodeString>   descriptions;
+
+	TerminalListVector term = auctionMap->getVendorTerminalData("", "", vendorSo);
+	for (int j = 0; j < term.size(); ++j) {
+		auto& items = term.get(j);
+		if (items == nullptr) continue;
+
+		try {
+			items->rlock();
+			for (int i = 0; i < items->size(); ++i) {
+				ManagedReference<AuctionItem*> it = items->get(i);
+				if (it == nullptr) continue;
+
+				// Only expired items owned by this player on THIS vendor
+				if (it->getStatus() == AuctionItem::EXPIRED &&
+				    it->getOwnerID() == player->getObjectID() &&
+				    it->getVendorID() == vendorSo->getObjectID()) {
+
+					// Old price is the displayed price (tax already applied). Remove tax to get base.
+					const int oldFinal = it->getPrice();
+					int base = oldFinal;
+					if (salesTaxRate > 0.0f) {
+						// Back out tax; round to nearest int
+						base = (int)((oldFinal / (1.0f + salesTaxRate)) + 0.5f);
+						if (base < 1) base = 1;
+					}
+
+					ids.add(it->getAuctionedItemObjectID());
+					basePrices.add(base);
+					descriptions.add(UnicodeString(it->getItemDescription()));
+
+					if (limit > 0 && ids.size() >= limit)
+						break;
+				}
+			}
+			items->runlock();
+		} catch (Exception& e) {
+			error() << "relistExpiredAtPreviousPrice: " << e.getMessage();
+			items->runlock();
+		}
+
+		if (limit > 0 && ids.size() >= limit)
+			break;
+	}
+
+	int relisted = 0;
+
+	// Relist each candidate via the standard pipeline (this will remove the old EXPIRED entry)
+	for (int k = 0; k < ids.size(); ++k) {
+		const uint64 oid = ids.get(k);
+		const int    base = basePrices.get(k);
+		const UnicodeString& desc = descriptions.get(k);
+
+		// Use auction=false, premium=false; duration is ignored in vendor path
+		addSaleItem(player, oid, vendorSo, desc, base, /*duration*/ 0u, /*auction*/ false, /*premium*/ false);
+		relisted++;
+	}
+
+	return relisted;
+}
+
 
 int AuctionManagerImplementation::checkSaleItem(CreatureObject* player, SceneObject* object, SceneObject* vendor, int price, bool premium, bool stockroomSale) {
 	if (vendor == nullptr) {

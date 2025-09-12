@@ -77,10 +77,19 @@ class AuctionManager extends ManagedService implements Logger {
 	public native void initialize();
 
 	@local
-	public native void addSaleItem(CreatureObject player, unsigned long objectid, SceneObject vendor, final unicode description, int price, unsigned int duration, boolean auction, boolean premium);
+	// existing
+	public native void addSaleItem(CreatureObject player, unsigned long objectid, SceneObject vendor,
+                               final unicode description, int price, unsigned int duration,
+                               boolean auction, boolean premium);
 
+	// NEW: relist expired stock using the last stored price/duration
+	public native int relistExpiredAtPreviousPrice(CreatureObject player, SceneObject vendor, int limit);
+
+	// existing
 	@local
-	public native AuctionItem createVendorItem(CreatureObject player, SceneObject objectToSell, SceneObject vendor, final unicode description, int price, unsigned int duration, boolean auction, boolean premium);
+	public native AuctionItem createVendorItem(CreatureObject player, SceneObject objectToSell, SceneObject vendor,
+                                           final unicode description, int price, unsigned int duration,
+                                           boolean auction, boolean premium);
 
 	@local
 	public native int checkSaleItem(CreatureObject player, SceneObject object, SceneObject vendor, int price, boolean premium, boolean stockroomSale);
