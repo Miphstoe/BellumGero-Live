@@ -7,11 +7,11 @@ GCWRankedAmbushImperials = ScreenPlay:new {
     screenplayName = "GCWRankedAmbushImperials",
 
     debug = {
-        enabled        = true,
-        notifyPlayer   = true,
+        enabled        = false,
+        notifyPlayer   = false,
         fastTimings    = false,
         spawnMarkers   = false,
-        verboseSpawns  = true,
+        verboseSpawns  = false,
         markerCleanup  = true,
     },
 
@@ -19,10 +19,10 @@ GCWRankedAmbushImperials = ScreenPlay:new {
         autoForImperials = true,
         autoForRebels    = false,
 
-        firstDelayMin     = 20,
-        firstDelayMax     = 30,
-        cooldownMin       = 30,
-        cooldownMax       = 40,
+        firstDelayMin     = 1800,
+        firstDelayMax     = 3600,
+        cooldownMin       = 1800,
+        cooldownMax       = 3600,
         retryIfNotReady   = 30,
         -- requireOvert   = true,
     },
@@ -415,11 +415,19 @@ function GCWRankedAmbushImperials:ambushTick(pPlayer, pParam)
 
     local co   = CreatureObject(pPlayer)
     local zone = SceneObject(pPlayer):getZoneName()
-    local x, y = SceneObject(pPlayer):getPositionX(), SceneObject(pPlayer):getPositionZ()
 
-    -- Defer in NPC cities
+    -- ===== JK-style location gate: block indoors & in NPC cities (Encounter pre-check). :contentReference[oaicite:2]{index=2}
+    -- Block while inside a building/interior cell
+    local okParent, parentId = pcall(function() return SceneObject(pPlayer):getParentID() end)
+    if okParent and parentId ~= 0 then
+        self:_log("tick: deferred while in building")
+        self:_sched(pPlayer, self.trigger.retryIfNotReady, "building")
+        return
+    end
+    -- Block inside NPC cities (use WORLD coords for region lookup)
+    local wx, wy = SceneObject(pPlayer):getWorldPositionX(), SceneObject(pPlayer):getWorldPositionY()
     local inCity = false
-    local okCity, pCity = pcall(getCityRegionAt, zone, x, y)
+    local okCity, pCity = pcall(getCityRegionAt, zone, wx, wy)
     if okCity and pCity then
         local cr = CityRegion(pCity)
         local okClient, isClient = pcall(function() return cr:isClientRegion() end)
@@ -430,6 +438,7 @@ function GCWRankedAmbushImperials:ambushTick(pPlayer, pParam)
         self:_sched(pPlayer, self.trigger.retryIfNotReady, "npc_city")
         return
     end
+    -- ===== end gate =====
 
     local sideOK  = co:isImperial()
     local overtOK = (not self.trigger.requireOvert) or isOvert(pPlayer)
