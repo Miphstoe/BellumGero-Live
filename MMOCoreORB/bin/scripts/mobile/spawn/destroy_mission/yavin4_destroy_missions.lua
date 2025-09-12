@@ -94,7 +94,7 @@ yavin4_destroy_missions = {
 		},
 		{
 			lairTemplateName = "yavin4_crazed_geonosian_guard_lair_neutral_medium",
-			minDifficulty = 1,
+			minDifficulty = 60,
 			maxDifficulty = 70,
 			size = 25,
 		},
