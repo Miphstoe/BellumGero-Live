@@ -594,4 +594,4 @@ includeFile("lair/creature_lair/yavin4/yavin4_tybis_male_neutral_medium_boss_01.
 includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_lair2_neutral_medium.lua")
 includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_male_neutral_medium_boss_01.lua")
-
+includeFile("lair/creature_lair/yavin4/yavin4_crazed_geonosian_guard_lair_neutral_medium.lua")
