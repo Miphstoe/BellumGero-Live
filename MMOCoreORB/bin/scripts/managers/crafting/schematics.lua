@@ -840,6 +840,7 @@ schematics = {
 	{path="object/draft_schematic/furniture/furniture_tree_potted.iff"},
 	{path="object/draft_schematic/furniture/furniture_tiki_torch.iff"},
 	{path="object/draft_schematic/furniture/furniture_plants_potted_large.iff"},
+	{path="object/draft_schematic/furniture/furniture_plants_potted_small_s02.iff"},
 	{path="object/draft_schematic/furniture/furniture_plants_potted_small.iff"},
 	{path="object/draft_schematic/furniture/furniture_armoire_cheap.iff"},
 	{path="object/draft_schematic/furniture/furniture_chair_loveseat_cheap.iff"},

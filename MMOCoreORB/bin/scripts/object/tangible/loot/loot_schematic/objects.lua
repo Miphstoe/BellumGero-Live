@@ -5068,6 +5068,12 @@ object_tangible_loot_loot_schematic_shared_pitcher_full_schematic = SharedTangib
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_pitcher_full_schematic, "object/tangible/loot/loot_schematic/shared_pitcher_full_schematic.iff")
 
+object_tangible_loot_loot_schematic_shared_potted_plants_sml_s02_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_potted_plants_sml_s02_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_potted_plants_sml_s02_schematic, "object/tangible/loot/loot_schematic/shared_potted_plants_sml_s02_schematic.iff")
+
 object_tangible_loot_loot_schematic_shared_professors_desk_schematic = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_professors_desk_schematic.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

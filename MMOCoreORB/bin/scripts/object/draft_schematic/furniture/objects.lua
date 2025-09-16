@@ -4108,6 +4108,12 @@ object_draft_schematic_furniture_shared_furniture_plants_potted_large = SharedDr
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_plants_potted_large, "object/draft_schematic/furniture/shared_furniture_plants_potted_large.iff")
 
+object_draft_schematic_furniture_shared_furniture_plants_potted_small_s02 = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_plants_potted_small_s02.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_plants_potted_small_s02, "object/draft_schematic/furniture/shared_furniture_plants_potted_small_s02.iff")
+
 object_draft_schematic_furniture_shared_furniture_plants_potted_small = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_plants_potted_small.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
