@@ -1,6 +1,6 @@
 -- Simple pool you can maintain by hand (or auto-generate later)
 BOSS_PLAYER_NAME_POOL = {
-  "Humdinger", "Hellguard", "Slug", "Mafo", "Adan", "Pastorius", "Udon", "Vinzent", "Valmor", "Cas-Wan", "GrumpyOptimism", "Chyna", "EnderWookie","Chuckertons",
+  "Humdinger", "Hellguard", "Slug", "Mafo", "Adan", "Pastorius", "Udon", "Vinzent", "Valmor", "Cas-Wan", "GrumpyOptimism", "Chyna", "EnderWookie","Chuckertons","Xydren",
   -- add as many as you like...
 }
 
