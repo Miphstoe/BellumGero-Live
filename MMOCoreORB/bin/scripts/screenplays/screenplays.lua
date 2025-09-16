@@ -737,7 +737,7 @@ includeFile("tests/ai_test.lua")
 includeFile("events/ServerEventAutomation.lua")
 
 -- Custom content - Loads last to allow for overrides
-includeFile("../custom_scripts/screenplays/screenplays.lua")
+--includeFile("../custom_scripts/screenplays/screenplays.lua")
 includeFile("tasks/naboo/myswg_vendor.lua")
 includeFile("tools/mission_direction_choice.lua")
 includeFile("tools/mission_level_choice.lua")
@@ -748,5 +748,6 @@ printLuaError("[WBOSS-SC] loader end")
 includeFile("world/gorax_nw_endor.lua")
 includeFile("yavin4/egspider_worldboss.lua")
 includeFile("world/infernomaw_boss.lua")
-
+-- then load the boss screenplay
+includeFile("boss/djm_random_name_boss.lua")
 
