@@ -55,6 +55,12 @@ imperial_inquisitor_boss = Creature:new {
 		},
 		lootChance = 2000000, -- 20.00% total chance
 	},
+    {
+        groups = {
+			{group = "clonetrooper_armor_schematics", chance = 10000000}
+		},
+		lootChance = 2000000, -- 20.00% total chance
+	},
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
