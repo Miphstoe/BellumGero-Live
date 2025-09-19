@@ -1,9 +1,10 @@
 nightsister_hex_weaver = Creature:new {
-	objectName = "@mob/creature_names:nightsister_hex_weaver",
+	objectName = "@mob/creature_names:nightsister_spell_weaver",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,
 	socialGroup = "nightsister",
+    faction = "nightsister",
 	faction = "",
 	level = 281,
 	chanceHit = 23.5,

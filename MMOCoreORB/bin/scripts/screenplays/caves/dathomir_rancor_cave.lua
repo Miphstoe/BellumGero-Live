@@ -42,11 +42,15 @@ function RancorCaveScreenPlay:spawnMobiles()
     -- Mirrors ForceCrystalCaveScreenPlay pattern: single spawnPoints table + loop + observer
     local spawnPoints = {
         { "nightsister_shaman",      -23.6, -27.5,   -8.1,   87, 4335463 },
+        { "nightsister_shaman",      13.7, -5.2,   -9.8,   12, 4335463 },
 
         { "nightsister_hex_weaver",  -23.8, -42.4,  -64.0,    0, 4335464 },
-        { "nightsister_hex_weaver",  -50.6, -48.9,  -61.7,  127, 4335464 },
-        { "nightsister_hex_weaver",  -49.1, -47.4,  -12.0,  177, 4335464 },
-        { "nightsister_hex_weaver",  -54.4, -68.3,  -40.0,  -82, 4335464 },
+        { "nightsister_hex_weaver",  -20.9, -40,  -63.7,    -16, 4335464 },
+        { "nightsister_shaman",  -50.6, -48.9,  -61.7,  127, 4335464 },
+        { "nightsister_shaman",  -49.1, -47.4,  -12.0,  177, 4335464 },
+        { "nightsister_shaman",  -54.4, -68.3,  -40.0,  -82, 4335464 },
+
+        { "nightsister_shaman",      -49.8, -48.8, -102.8,    -5, 4335472 },
 
         { "nightsister_shaman",      -93.4, -46.6, -128.6,    3, 4335473 },
         { "nightsister_hex_weaver",  -81.3, -46.2, -137.8,  152, 4335473 },
@@ -54,16 +58,27 @@ function RancorCaveScreenPlay:spawnMobiles()
         { "nightsister_hex_weaver",  -77.6, -45.8, -148.0,  -19, 4335473 },
 
         { "nightsister_hex_weaver",  -87.1, -62.2,  -14.9, -178, 4335465 },
+        { "nightsister_hex_weaver",  -90.5, -62.2,  -17.9, -161, 4335465 },
 
-        { "nightsister_hex_weaver",  -79.0, -76.7,  -89.2,    4, 4335466 },
+        { "nightsister_shaman",  -79.0, -76.7,  -89.2,    4, 4335466 },
+        { "nightsister_shaman",  -78.7, -76,  -62.6,    -1, 4335466 },
 
+        { "nightsister_hex_weaver",  -93.8, -45.7, -99.7,  124, 4335467 },
         { "nightsister_hex_weaver",  -95.4, -66.3, -109.3,  172, 4335467 },
+        { "nightsister_hex_weaver",  -93.6, -66.7, -109,  172, 4335467 },
+
+        { "nightsister_shaman",  -53.4, -73.4, -108.5,  -3, 4335468 },
+
+        { "nightsister_shaman",  -78.2, -65.6, -139.3,  87, 4335469 },
 
         { "nightsister_shaman",     -130.4, -66.8, -107.7,   91, 4335470 },
         { "nightsister_hex_weaver", -151.6, -66.5, -125.0,   69, 4335470 },
         { "nightsister_hex_weaver", -132.8, -66.6, -121.8,  -82, 4335470 },
+        { "nightsister_shaman",     -141.4, -66.7, -88.2,   134, 4335470 },
 
         { "nightsister_shaman",     -189.9, -66.5, -102.1,   87, 4335471 },
+        { "nightsister_shaman",     -194.9, -66.4, -96.8,   94, 4335471 },
+        { "nightsister_shaman",     -191.8, -66.3, -108.6,   56, 4335471 },
 
         -- Surface sentinel near entrance (cell 0)
         { "nightsister_shaman",    -4224.2,  25.3, -2091.7, 132,     0 },

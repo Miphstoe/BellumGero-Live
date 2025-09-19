@@ -1,9 +1,10 @@
 nightsister_shaman = Creature:new {
-	objectName = "@mob/creature_names:nightsister_shaman",
+	objectName = "@mob/creature_names:nightsister_elder",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,
 	socialGroup = "nightsister",
+    faction = "nightsister",
 	faction = "",
 	level = 300,
 	chanceHit = 27.25,
