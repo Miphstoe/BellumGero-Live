@@ -35,7 +35,53 @@
 #include "AuctionSearchTask.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
-#include "server/zone/objects/tangible/TangibleObject.h"
+// Strip \#xx color codes
+static inline String stripColorCodes(String s) {
+    while (true) {
+        int pos = s.indexOf("\\#");
+        if (pos < 0 || pos + 2 >= s.length())
+            break;
+        String sub = "\\" + s.subString(pos, pos + 2); // end index (pos+2) like existing codebase
+        s = s.replaceFirst(sub, "");
+    }
+    return s;
+}
+
+// Robust parser for "for:(Name)" anywhere in the text, case-insensitive.
+// Returns "" if no reservation is present.
+static inline String extractReserveeFromText(const String& src) {
+    if (src.isEmpty()) return "";
+
+    String low = src;
+    low.toLowerCase();
+
+    int key = low.indexOf("for:(");
+    if (key < 0) return "";
+
+    // Find matching '(' and ')'
+    int l = low.indexOf('(', key);
+    if (l < 0) return "";
+
+    int r = low.indexOf(')', l + 1);
+    if (r < 0 || r <= l + 1) return "";
+
+    // Core3 String::subString(start, endIndex) — end index, not length
+    String pretty = src.subString(l + 1, r);
+    pretty.trim();
+    return pretty;
+}
+
+// Returns empty if not reserved; otherwise the pretty reservee string.
+static inline String reservedForPrettyName(AuctionItem* item) {
+    if (item == nullptr) return "";
+    // We read-only access; lock not strictly required like elsewhere in codebase.
+    String nm = stripColorCodes(item->getItemName());
+    String pretty = extractReserveeFromText(nm);
+    if (!pretty.isEmpty()) return pretty;
+
+    String desc = stripColorCodes(item->getItemDescription());
+    return extractReserveeFromText(desc);
+}
 
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
@@ -996,207 +1042,191 @@ int AuctionManagerImplementation::checkBidAuction(CreatureObject* player, Auctio
 }
 
 void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionItem* item) {
-	ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
+    ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
+    if (vendor == nullptr) {
+        // Stop the spinner on failure too.
+        player->sendMessage(new BidAuctionResponseMessage(item->getAuctionedItemObjectID(),
+                                                          BidAuctionResponseMessage::INVALIDITEM));
+        return;
+    }
 
-	if (vendor == nullptr)
-		return;
+    // Location info for mail
+    ManagedReference<CityRegion*> city = vendor->getCityRegion().get();
+    String vendorPlanetName("@planet_n:" + vendor->getZone()->getZoneName());
+    String vendorRegionName = vendorPlanetName;
+    if (city != nullptr)
+        vendorRegionName = city->getCityRegionName();
 
-	int tax = 0;
-	ManagedReference<CityRegion*> city = nullptr;
-	String vendorPlanetName("@planet_n:" + vendor->getZone()->getZoneName());
-	String vendorRegionName = vendorPlanetName;
+    ManagedReference<ChatManager*> cman = zoneServer->getChatManager();
+    ManagedReference<PlayerManager*> pman = zoneServer->getPlayerManager();
 
-	city = vendor->getCityRegion().get();
+    // Capture seller BEFORE we update ownership on the item
+    String sellerName = item->getOwnerName();
+    ManagedReference<CreatureObject*> seller = pman->getPlayer(sellerName);
 
-	if( city != nullptr) {
-		tax = item->getPrice() - ( item->getPrice() / ( 1.0f + (city->getSalesTax() / 100.f)));
-		vendorRegionName = city->getCityRegionName();
-	}
+    Time now;
+    uint64 currentTime = now.getMiliTime() / 1000;
+    uint64 availableTime = 0;
 
-	String playername = player->getFirstName().toLowerCase();
+    int finalPrice = 0;
+    uint64 auctionedOid = 0;
 
-	ManagedReference<ChatManager*> cman = zoneServer->getChatManager();
-	ManagedReference<PlayerManager*> pman = zoneServer->getPlayerManager();
-	ManagedReference<CreatureObject*> seller = pman->getPlayer(item->getOwnerName());
+    // --- Mutate the item quickly under lock ---
+    {
+        Locker locker(item);
 
-	String sender = "auctioner";
-	String sellerName = item->getOwnerName();
+        if (item->isOnBazaar() || item->getStatus() == AuctionItem::OFFERED)
+            availableTime = currentTime + AuctionManager::COMMODITYEXPIREPERIOD;
+        else
+            availableTime = currentTime + AuctionManager::VENDOREXPIREPERIOD;
 
-	Time expireTime;
-	uint64 currentTime = expireTime.getMiliTime() / 1000;
-	uint64 availableTime = 0;
+        updateAuctionOwner(item, player);
+        item->setStatus(AuctionItem::SOLD);
+        item->setExpireTime(availableTime);
+        item->setBuyerID(player->getObjectID());
+        item->setBidderName(player->getFirstName().toLowerCase());
+        item->clearAuctionWithdraw();
 
+        finalPrice   = item->getPrice();
+        auctionedOid = item->getAuctionedItemObjectID();
+    }
+    // --- Item lock released ---
 
-	Locker locker(item);
+    // ✅ Clear the client spinner immediately
+    player->sendMessage(new BidAuctionResponseMessage(auctionedOid, BidAuctionResponseMessage::SUCCEDED));
 
-	if(item->isOnBazaar() || item->getStatus() == AuctionItem::OFFERED)
-		availableTime = currentTime + AuctionManager::COMMODITYEXPIREPERIOD;
-	else
-		availableTime = currentTime + AuctionManager::VENDOREXPIREPERIOD;
+    // Compute city sales tax from the final price
+    int tax = 0;
+    if (city != nullptr) {
+        tax = finalPrice - ( finalPrice / ( 1.0f + (city->getSalesTax() / 100.f)));
+    }
 
-	updateAuctionOwner(item, player);
+    // Debit buyer (no item lock held)
+    {
+        TransactionLog trx(player, seller, TrxCode::INSTANTBUY, finalPrice, false);
+        trx.setAutoCommit(false);
+        trx.addRelatedObject(auctionedOid, true);
+        trx.setExportRelatedObjects(true);
+        player->subtractBankCredits(finalPrice);
+    }
 
-	item->setStatus(AuctionItem::SOLD);
-	item->setExpireTime(availableTime);
-	item->setBuyerID(player->getObjectID());
-	item->setBidderName(playername);
-	item->clearAuctionWithdraw();
+    // Build and send mails (same content as original)
+    const String sender = "auctioner";
+    const String itemName = removeColorCodes(item->getItemName());
 
-	TransactionLog trx(player, seller, TrxCode::INSTANTBUY, item->getPrice(), false);
-	trx.setAutoCommit(false);
-	trx.addRelatedObject(item->getAuctionedItemObjectID(), true);
-	trx.setExportRelatedObjects(true);
-	player->subtractBankCredits(item->getPrice());
+    float waypointX = vendor->getWorldPositionX();
+    float waypointY = vendor->getWorldPositionY();
+    WaypointChatParameter waypointParam;
+    waypointParam.set(vendor->getDisplayedName(), waypointX, 0, waypointY, vendor->getPlanetCRC());
 
-	BaseMessage* msg = new BidAuctionResponseMessage(item->getAuctionedItemObjectID(), 0);
-	player->sendMessage(msg);
+    if (!item->isOnBazaar()) {
+        // ---- Vendor purchase ----
+        StringIdChatParameterVector sellerBodyVector;
+        WaypointChatParameterVector sellerWaypointVector;
 
-	// Waypoint to Vendor / bazaar
-	float waypointX = vendor->getWorldPositionX();
-	float waypointY = vendor->getWorldPositionY();
+        UnicodeString sellerSubject("@auction:subject_vendor_seller");
+        StringIdChatParameter sellerBodySale("@auction:seller_success_vendor");
+        sellerBodySale.setTU(vendor->getDisplayedName());
+        sellerBodySale.setTO(itemName);
+        sellerBodySale.setTT(item->getBidderName());
+        sellerBodySale.setDI(finalPrice);
 
-	WaypointChatParameter waypointParam;
-	waypointParam.set(vendor->getDisplayedName(), waypointX, 0, waypointY, vendor->getPlanetCRC());
+        StringIdChatParameter sellerBodyLoc("@auction:seller_success_location");
+        sellerBodyLoc.setTO(vendorPlanetName);
+        sellerBodyLoc.setTT(vendorRegionName);
 
-	String itemName = removeColorCodes(item->getItemName());
+        sellerBodyVector.add(sellerBodySale);
+        sellerBodyVector.add(sellerBodyLoc);
+        sellerWaypointVector.add(waypointParam);
 
-	if (!item->isOnBazaar()) {
-		//Setup the mail to the vendor owner
+        // Buyer mail
+        StringIdChatParameterVector buyerBodyVector;
+        WaypointChatParameterVector buyerWaypointVector;
 
-		PlayerManager* pman = zoneServer->getPlayerManager();
-		/*ManagedReference<CreatureObject*> seller = pman->getPlayer(item->getOwnerName());
+        UnicodeString buyerSubject("@auction:subject_vendor_buyer");
+        StringIdChatParameter buyerBodySale("@auction:buyer_success");
+        buyerBodySale.setTO(itemName);
+        buyerBodySale.setTT(sellerName);
+        buyerBodySale.setDI(finalPrice);
 
-		Locker _locker(seller);*/
+        StringIdChatParameter buyerBodyLoc("@auction:buyer_success_location");
+        buyerBodyLoc.setTO(vendorPlanetName);
+        buyerBodyLoc.setTT(vendorRegionName);
 
-		StringIdChatParameterVector sellerBodyVector;
-		WaypointChatParameterVector sellerWaypointVector;
+        buyerBodyVector.add(buyerBodySale);
+        buyerBodyVector.add(buyerBodyLoc);
+        buyerWaypointVector.add(waypointParam);
 
-		UnicodeString sellerSubject("@auction:subject_vendor_seller"); // Vendor Sale Complete
-		StringIdChatParameter sellerBodySale("@auction:seller_success_vendor"); // %TU has sold %TO to %TT for %DI credits.
-		sellerBodySale.setTU(vendor->getDisplayedName());
-		sellerBodySale.setTO(itemName);
-		sellerBodySale.setTT(item->getBidderName());
-		sellerBodySale.setDI(item->getPrice());
+        UnicodeString blankBody;
+        cman->sendMail(sender, sellerSubject, blankBody, sellerName, &sellerBodyVector, &sellerWaypointVector);
+        cman->sendMail(sender, buyerSubject, blankBody, item->getBidderName(), &buyerBodyVector, &buyerWaypointVector);
 
-		StringIdChatParameter sellerBodyLoc("@auction:seller_success_location"); // The sale took place at %TT, on %TO.
-		sellerBodyLoc.setTO(vendorPlanetName);
-		sellerBodyLoc.setTT(vendorRegionName);
+        if (auctionMap->getVendorItemCount(vendor, true) == 0)
+            sendVendorUpdateMail(vendor, true);
 
-		sellerBodyVector.add(sellerBodySale);
-		sellerBodyVector.add(sellerBodyLoc);
+    } else {
+        // ---- Bazaar purchase ----
+        StringIdChatParameterVector sellerBodyVector;
+        WaypointChatParameterVector sellerWaypointVector;
 
-		sellerWaypointVector.add(waypointParam);
+        UnicodeString sellerSubject("@auction:subject_instant_seller");
+        StringIdChatParameter sellerBodySale("@auction:seller_success");
+        sellerBodySale.setTO(itemName);
+        sellerBodySale.setTT(item->getBidderName());
+        sellerBodySale.setDI(finalPrice);
 
-		//Setup the mail to the buyer
-		/*ManagedReference<CreatureObject*> buyer = pman->getPlayer(item->getBidderName());
+        StringIdChatParameter sellerBodyLoc("@auction:seller_success_location");
+        sellerBodyLoc.setTO(vendorPlanetName);
+        sellerBodyLoc.setTT(vendorRegionName);
 
-		Locker _locker2(buyer);*/
+        sellerBodyVector.add(sellerBodySale);
+        sellerBodyVector.add(sellerBodyLoc);
+        sellerWaypointVector.add(waypointParam);
 
-		StringIdChatParameterVector buyerBodyVector;
-		WaypointChatParameterVector buyerWaypointVector;
+        StringIdChatParameterVector buyerBodyVector;
+        WaypointChatParameterVector buyerWaypointVector;
 
-		UnicodeString buyerSubject("@auction:subject_vendor_buyer"); // Vendor Item Purchased
-		StringIdChatParameter buyerBodySale("@auction:buyer_success"); // You have won the auction of "%TO" from "%TT" for %DI credits. See the attached waypoint for location.
-		buyerBodySale.setTO(itemName);
-		buyerBodySale.setTT(sellerName);
-		buyerBodySale.setDI(item->getPrice());
+        UnicodeString buyerSubject("@auction:subject_instant_buyer");
+        StringIdChatParameter buyerBodySale("@auction:buyer_success");
+        buyerBodySale.setTO(itemName);
+        buyerBodySale.setTT(sellerName);
+        buyerBodySale.setDI(finalPrice);
 
-		StringIdChatParameter buyerBodyLoc("@auction:buyer_success_location"); // The sale took place at %TT, on %TO.
-		buyerBodyLoc.setTO(vendorPlanetName);
-		buyerBodyLoc.setTT(vendorRegionName);
+        StringIdChatParameter buyerBodyLoc("@auction:buyer_success_location");
+        buyerBodyLoc.setTO(vendorPlanetName);
+        buyerBodyLoc.setTT(vendorRegionName);
 
-		buyerBodyVector.add(buyerBodySale);
-		buyerBodyVector.add(buyerBodyLoc);
+        buyerBodyVector.add(buyerBodySale);
+        buyerBodyVector.add(buyerBodyLoc);
+        buyerWaypointVector.add(waypointParam);
 
-		buyerWaypointVector.add(waypointParam);
+        UnicodeString blankBody;
+        cman->sendMail(sender, sellerSubject, blankBody, sellerName, &sellerBodyVector, &sellerWaypointVector);
+        cman->sendMail(sender, buyerSubject, blankBody, item->getBidderName(), &buyerBodyVector, &buyerWaypointVector);
+    }
 
-		//Send the Mail
-		locker.release();
-		UnicodeString blankBody;
-		cman->sendMail(sender, sellerSubject, blankBody, sellerName, &sellerBodyVector, &sellerWaypointVector);
-		cman->sendMail(sender, buyerSubject, blankBody, item->getBidderName(), &buyerBodyVector, &buyerWaypointVector);
+    // Credit seller and apply city tax
+    if (seller == nullptr) {
+        error("seller null for name " + sellerName);
+        error() << "doInstantBuy(player=" << player->getObjectID() << ", item=" << item->getObjectID()
+                << "): Seller not found [" << sellerName << "], auctionItem: " << *item;
+    } else {
+        Locker slocker(seller);
+        seller->addBankCredits(finalPrice);
+    }
 
-		if(auctionMap->getVendorItemCount(vendor, true) == 0)
-			sendVendorUpdateMail(vendor, true);
-
-	} else {
-
-		StringIdChatParameterVector sellerBodyVector;
-		WaypointChatParameterVector sellerWaypointVector;
-
-		// Setup the mail to the seller
-		UnicodeString sellerSubject("@auction:subject_instant_seller"); // Instant Sale Complete
-		StringIdChatParameter sellerBodySale("@auction:seller_success"); // Your auction of %TO has been sold to %TT for %DI credits
-		sellerBodySale.setTO(itemName);
-		sellerBodySale.setTT(item->getBidderName());
-		sellerBodySale.setDI(item->getPrice());
-
-		StringIdChatParameter sellerBodyLoc("@auction:seller_success_location"); // The sale took place at %TT, on %TO.
-		sellerBodyLoc.setTO(vendorPlanetName);
-		sellerBodyLoc.setTT(vendorRegionName);
-
-		sellerBodyVector.add(sellerBodySale);
-		sellerBodyVector.add(sellerBodyLoc);
-
-		sellerWaypointVector.add(waypointParam);
-
-		// Setup the mail to the buyer
-		StringIdChatParameterVector buyerBodyVector;
-		WaypointChatParameterVector buyerWaypointVector;
-
-		UnicodeString buyerSubject("@auction:subject_instant_buyer"); // Instant Sale Item Purchased
-		StringIdChatParameter buyerBodySale("@auction:buyer_success"); // You have won the auction of "%TO" from "%TT" for %DI credits. See the attached waypoint for location.
-		buyerBodySale.setTO(itemName);
-		buyerBodySale.setTT(sellerName);
-		buyerBodySale.setDI(item->getPrice());
-
-		StringIdChatParameter buyerBodyLoc("@auction:buyer_success_location"); // The sale took place at %TT, on %TO.
-		buyerBodyLoc.setTO(vendorPlanetName);
-		buyerBodyLoc.setTT(vendorRegionName);
-
-		buyerBodyVector.add(buyerBodySale);
-		buyerBodyVector.add(buyerBodyLoc);
-
-		locker.release();
-
-		buyerWaypointVector.add(waypointParam);
-
-		//Send the Mail
-		UnicodeString blankBody;
-		cman->sendMail(sender, sellerSubject, blankBody, sellerName, &sellerBodyVector, &sellerWaypointVector);
-		cman->sendMail(sender, buyerSubject, blankBody, item->getBidderName(), &buyerBodyVector, &buyerWaypointVector);
-
-	}
-
-	if (seller == nullptr) {
-		// doInstantBuy(CreatureObject* player, AuctionItem* item)
-		trx.errorMessage() << "Null Seller: " + item->getOwnerName();
-		trx.commit();
-		error("seller null for name " + item->getOwnerName());
-
-		error() << "doInstantBuy(player=" << player->getObjectID() << ", item=" << item->getObjectID() << "): Seller not found [" << item->getOwnerName() << "], auctionItem: " << *item;
-		return;
-	}
-
-	locker.release();
-
-	Locker slocker(seller);
-	seller->addBankCredits(item->getPrice());
-	trx.commit();
-
-	if (city != nullptr && tax > 0) {
-		TransactionLog trxFee(seller, TrxCode::CITYSALESTAX, tax, false);
-		trxFee.groupWith(trx);
-		trxFee.addState("cityRegionID", city->getObjectID());
-		seller->subtractBankCredits(tax);
-	}
-	slocker.release();
-
-	if(city != nullptr && !city->isClientRegion() && tax){
-		Locker clock(city);
-		city->addToCityTreasury(tax);
-	}
-
+    if (city != nullptr && tax > 0) {
+        TransactionLog trxFee(seller, TrxCode::CITYSALESTAX, tax, false);
+        trxFee.addState("cityRegionID", city->getObjectID());
+        if (seller != nullptr) {
+            Locker slocker(seller);
+            seller->subtractBankCredits(tax);
+        }
+        if (!city->isClientRegion()) {
+            Locker clock(city);
+            city->addToCityTreasury(tax);
+        }
+    }
 }
 
 void AuctionManagerImplementation::doAuctionBid(CreatureObject* player, AuctionItem* item, int price1, int proxyBid) {
@@ -1315,53 +1345,84 @@ void AuctionManagerImplementation::doAuctionBid(CreatureObject* player, AuctionI
 	player->sendMessage(msg);
 }
 
+// ======================= helper (place above buyItem) =================
+static inline String toLowerCopy(const String& s) {
+	String t = s;
+	t.toLowerCase();
+	return t;
+}
 void AuctionManagerImplementation::buyItem(CreatureObject* player, uint64 objectid, int price1, int price2) {
-	ManagedReference<AuctionItem*> item = auctionMap->getItem(objectid);
+    ManagedReference<AuctionItem*> item = auctionMap->getItem(objectid);
+    if (item == nullptr) {
+        player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDITEM));
+        return;
+    }
 
-	if (item == nullptr) {
-		BaseMessage* msg = new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDITEM);
-		player->sendMessage(msg);
-		return;
-	}
+    ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
+    if (vendor == nullptr || item->getStatus() == AuctionItem::SOLD) {
+        player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDITEM));
+        return;
+    }
 
-	ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
+    if (item->getOwnerID() == player->getObjectID()) {
+        player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::PURCHASEFAILED));
+        return;
+    }
 
-	if (vendor == nullptr || item->getStatus() == AuctionItem::SOLD) {
-		BaseMessage* msg = new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDITEM);
-		player->sendMessage(msg);
-		return;
-	}
+    // --- Reservation guard (closes spinner on deny) ---
+    {
+        String pretty = reservedForPrettyName(item);
+        if (!pretty.isEmpty()) {
+            auto norm = [](String s){ s.toLowerCase(); s.trim(); return s; };
+            String allowed = norm(pretty);
 
-	if (item->getOwnerID() == player->getObjectID()) {
-		BaseMessage* msg = new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::PURCHASEFAILED);
-		player->sendMessage(msg);
-		return;
-	}
+            String first = norm(player->getFirstName());
 
-	ManagedReference<CityRegion*> city = vendor->getCityRegion().get();
+            UnicodeString u = player->getDisplayedName();
+            String full; const_cast<UnicodeString&>(u).toString(full);
+            String fullName = norm(full);
 
-	int totalPrice = item->getPrice();
+            if (allowed != first && allowed != fullName) {
+                player->sendSystemMessage("This item is reserved for " + pretty + ".");
+                player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::PURCHASEFAILED));
+                return;
+            }
+        }
+    }
+    // --- end reservation guard ---
 
-	int res = checkBidAuction(player, item, totalPrice , price2);
+    // Non-auction path: do NOT run checkBidAuction; just ensure buyer has funds.
+    if (!item->isAuction()) {
+        int cost = 0;
+        {   // read under lock
+            Locker locker(item);
+            cost = item->getPrice();
+        }
 
-	if (res != 0) {
-		BaseMessage* msg = new BidAuctionResponseMessage(objectid, res);
-		player->sendMessage(msg);
-		return;
-	}
+        if (player->getBankCredits() < cost) {
+            player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::NOTENOUGHCREDITS));
+            return;
+        }
 
-	if (!item->isAuction()) { // Instant buy
-		doInstantBuy(player, item);
-	} else { // For Auction Bids
-		if (price1 < 1) {
-			BaseMessage* msg = new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDPRICE);
-			player->sendMessage(msg);
+        // Sends SUCCEDED immediately, then finishes mail/credits/tax.
+        doInstantBuy(player, item);
+        return;
+    }
 
-			return;
-		}
+    // Auction path (unchanged logic)
+    if (price2 < 1) price2 = price1; // tolerate clients that send 0 for proxy on first bid
+    const int res = checkBidAuction(player, item, price1, price2);
+    if (res != 0) {
+        player->sendMessage(new BidAuctionResponseMessage(objectid, res));
+        return;
+    }
 
-		doAuctionBid(player, item, price1, price2);
-	}
+    if (price1 < 1) {
+        player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDPRICE));
+        return;
+    }
+
+    doAuctionBid(player, item, price1, price2);
 }
 
 int AuctionManagerImplementation::checkRetrieve(CreatureObject* player, uint64 objectIdToRetrieve, SceneObject* vendor) {
