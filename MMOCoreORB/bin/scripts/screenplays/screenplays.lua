@@ -351,6 +351,7 @@ includeFile("events/eventPromoter.lua")
 includeFile("events/lifeDay.lua")
 includeFile("events/buffTerminalMenuComponent.lua")
 includeFile("events/race_droid.lua")
+--includeFile("events/scheduled_event.lua")
 
 -- Hero of Tatooine
 includeFile("tasks/hero_of_tatooine/conversations/hermitConvoHandler.lua")
@@ -748,6 +749,8 @@ printLuaError("[WBOSS-SC] loader end")
 includeFile("world/gorax_nw_endor.lua")
 includeFile("yavin4/egspider_worldboss.lua")
 includeFile("world/infernomaw_boss.lua")
+--includeFile("world/jarjar_worldboss.lua")
+includeFile("world/jarjar_worldboss_simple.lua")
 -- then load the boss screenplay
 includeFile("boss/djm_random_name_boss.lua")
 

@@ -233,5 +233,7 @@ includeFile("naboo/ysnide_omewror.lua")
 includeFile("naboo/zogor_storm.lua")
 print("[PEKO] include: mobile/naboo/serverobjects.lua")
 includeFile("naboo/peko_peko_infernomaw.lua")   -- <- correct path relative to scripts/mobile/
-
+print("[JARJAR] about to include naboo/jarjar_boss.lua")
+includeFile("naboo/jarjar_boss.lua")
+print("[JARJAR] finished include naboo/jarjar_boss.lua")
 
