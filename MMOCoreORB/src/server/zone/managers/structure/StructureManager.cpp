@@ -1228,38 +1228,39 @@ void StructureManager::promptPayMaintenance(StructureObject* structure, Creature
 }
 
 void StructureManager::promptWithdrawMaintenance(StructureObject* structure, CreatureObject* creature) {
-	if (!structure->isGuildHall()) {
-		return;
-	}
+    // NEW: allow guild halls, non-civic buildings (houses), and any installations
+    if (!(structure->isGuildHall()
+          || (structure->isBuildingObject() && !structure->isCivicStructure())
+          || structure->isInstallationObject())) {
+        return;
+    }
 
-	if (!structure->isOnAdminList(creature)) {
-		creature->sendSystemMessage("@player_structure:withdraw_admin_only"); // You must be an administrator to remove credits from the treasury.
-		return;
-	}
+    if (!structure->isOnAdminList(creature)) {
+        creature->sendSystemMessage("@player_structure:withdraw_admin_only"); // You must be an administrator to remove credits from the treasury.
+        return;
+    }
 
-	// Get the most up to date maintenance count.
-	structure->updateStructureStatus();
+    // Get the most up to date maintenance count.
+    structure->updateStructureStatus();
 
-	int surplusMaintenance = structure->getSurplusMaintenance();
+    int surplusMaintenance = structure->getSurplusMaintenance();
+    if (surplusMaintenance <= 0) {
+        creature->sendSystemMessage("@player_structure:insufficient_funds_withdrawal"); // Insufficient funds for withdrawal.
+        return;
+    }
 
-	if (surplusMaintenance <= 0) {
-		creature->sendSystemMessage("@player_structure:insufficient_funds_withdrawal"); // Insufficent funds for withdrawal.
-		return;
-	}
+    ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+    if (ghost == nullptr)
+        return;
 
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+    ManagedReference<SuiInputBox*> sui = new SuiInputBox(creature, SuiWindowType::STRUCTURE_MANAGE_MAINTENANCE);
+    sui->setCallback(new StructureWithdrawMaintenanceSuiCallback(server));
+    sui->setPromptTitle("@player_structure:withdraw_maintenance"); // Withdraw From Treasury
+    sui->setUsingObject(structure);
+    sui->setPromptText("@player_structure:treasury_prompt " + String::valueOf(surplusMaintenance)); // Treasury:
 
-	if (ghost == nullptr)
-		return;
-
-	ManagedReference<SuiInputBox*> sui = new SuiInputBox(creature, SuiWindowType::STRUCTURE_MANAGE_MAINTENANCE);
-	sui->setCallback(new StructureWithdrawMaintenanceSuiCallback(server));
-	sui->setPromptTitle("@player_structure:withdraw_maintenance"); // Withdraw From Treasury
-	sui->setUsingObject(structure);
-	sui->setPromptText("@player_structure:treasury_prompt " + String::valueOf(surplusMaintenance)); // Treasury:
-
-	ghost->addSuiBox(sui);
-	creature->sendMessage(sui->generateMessage());
+    ghost->addSuiBox(sui);
+    creature->sendMessage(sui->generateMessage());
 }
 
 void StructureManager::promptSelectSign(StructureObject* structure, CreatureObject* player) {
@@ -1395,35 +1396,36 @@ void StructureManager::payMaintenance(StructureObject* structure, CreatureObject
 }
 
 void StructureManager::withdrawMaintenance(StructureObject* structure, CreatureObject* creature, int amount) {
-	if (!structure->isGuildHall()) {
-		return;
-	}
+    // NEW: allow guild halls, non-civic buildings (houses), and any installations
+    if (!(structure->isGuildHall()
+          || (structure->isBuildingObject() && !structure->isCivicStructure())
+          || structure->isInstallationObject())) {
+        return;
+    }
 
-	if (!structure->isOnAdminList(creature)) {
-		creature->sendSystemMessage("@player_structure:withdraw_admin_only"); // You must be an administrator to remove credits from the treasury.
-		return;
-	}
+    if (!structure->isOnAdminList(creature)) {
+        creature->sendSystemMessage("@player_structure:withdraw_admin_only"); // You must be an administrator to remove credits from the treasury.
+        return;
+    }
 
-	if (amount < 0)
-		return;
+    if (amount < 0)
+        return;
 
-	int currentMaint = structure->getSurplusMaintenance();
+    int currentMaint = structure->getSurplusMaintenance();
+    if (currentMaint - amount < 0 || currentMaint - amount > currentMaint) {
+        creature->sendSystemMessage("@player_structure:insufficient_funds_withdrawal");
+        return;
+    }
 
-	if (currentMaint - amount < 0 || currentMaint - amount > currentMaint) {
-		creature->sendSystemMessage("@player_structure:insufficient_funds_withdrawal"); // Insufficent funds for withdrawal.
-		return;
-	}
+    StringIdChatParameter params("player_structure", "withdraw_credits"); // You withdraw %DI credits from the treasury.
+    params.setDI(amount);
+    creature->sendSystemMessage(params);
 
-	StringIdChatParameter params("player_structure", "withdraw_credits"); // You withdraw %DI credits from the treasury.
-	params.setDI(amount);
-
-	creature->sendSystemMessage(params);
-
-	{
-		TransactionLog trx(structure, creature, TrxCode::STRUCTUREMAINTANENCE, amount, true);
-		creature->addCashCredits(amount);
-		structure->subtractMaintenance(amount);
-	}
+    {
+        TransactionLog trx(structure, creature, TrxCode::STRUCTUREMAINTANENCE, amount, true);
+        creature->addCashCredits(amount);          // pays to CASH (matches vendor/city pattern)
+        structure->subtractMaintenance(amount);    // reduces surplusMaintenance
+    }
 }
 
 bool StructureManager::isInStructureFootprint(StructureObject* structure, float positionX, float positionY, int extraFootprintMargin) {
