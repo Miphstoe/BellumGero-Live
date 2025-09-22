@@ -1,5 +1,5 @@
 nightsister_hex_weaver = Creature:new {
-	objectName = "@mob/creature_names:nightsister_spell_weaver",
+	objectName = "@mob/creature_names:nightsister_hex_weaver",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,
