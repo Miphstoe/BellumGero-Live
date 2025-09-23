@@ -48,6 +48,7 @@ includeFile("lair/npc_dynamic/dathomir/dathomir_nightsister_rancor_tamer_neutral
 includeFile("lair/npc_dynamic/dathomir/dathomir_nightsister_rangers_neutral_none.lua")
 includeFile("lair/npc_dynamic/dathomir/dathomir_nightsister_spell_weaver_escort_neutral_none.lua")
 includeFile("lair/npc_dynamic/dathomir/dathomir_nightsister_stalker_neutral_none.lua")
+includeFile("lair/npc_dynamic/dathomir/dathomir_sith_shadow_outlaw_neutral_none.lua")
 
 includeFile("lair/npc_dynamic/endor/endor_donkuwah_haggard_battlelord_neutral_none.lua")
 includeFile("lair/npc_dynamic/endor/endor_donkuwah_scout_neutral_none.lua")
