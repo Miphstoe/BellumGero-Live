@@ -1,5 +1,5 @@
 nightsister_shaman = Creature:new {
-	objectName = "@mob/creature_names:nightsister_elder",
+	objectName = "@mob/creature_names:nightsister_shaman",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,

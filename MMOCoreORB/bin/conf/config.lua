@@ -203,6 +203,11 @@ Core3 = {
 		"bottom.tre"
 	},
 
+	------TreManager Config------
+	TreManager = {
+    	ReloadStrings = true,
+	},
+
 	------Status Server Config------
 	StatusPort = 44455,
 	StatusAllowedConnections = 500,
