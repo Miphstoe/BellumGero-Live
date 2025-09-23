@@ -67,8 +67,10 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 		menuResponse->addRadialMenuItemToRadialID(118, 124, 3, "@player_structure:management_status"); //Status
 		menuResponse->addRadialMenuItemToRadialID(118, 129, 3, "@player_structure:management_pay"); //Pay Maintenance
 
-		if (structureObject->isGuildHall()) {
-			menuResponse->addRadialMenuItemToRadialID(118, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
+		// Allow withdraw for houses (non-civic buildings) and guild halls
+		if (structureObject->isGuildHall()
+    		|| (structureObject->isBuildingObject() && !structureObject->isCivicStructure())) {
+    		menuResponse->addRadialMenuItemToRadialID(118, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
 		}
 
 		menuResponse->addRadialMenuItemToRadialID(118, 50, 3, "@player_structure:management_name_structure"); //Name Structure

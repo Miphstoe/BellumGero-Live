@@ -28,6 +28,8 @@ void InstallationObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneO
 	menuResponse->addRadialMenuItemToRadialID(118, 128, 3, "@player_structure:permission_destroy"); //Destroy Structure
 	menuResponse->addRadialMenuItemToRadialID(118, 124, 3, "@player_structure:management_status"); //Status
 	menuResponse->addRadialMenuItemToRadialID(118, 129, 3, "@player_structure:management_pay"); //Pay Maintenance
+	// NEW:
+	menuResponse->addRadialMenuItemToRadialID(118, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
 	ManagedReference<SceneObject*> datapad = player->getSlottedObject("datapad");
 	if(datapad != nullptr) {
 		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
@@ -79,6 +81,10 @@ int InstallationObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneOb
 	case 129:
 		player->executeObjectControllerAction(0xE7E35B30, installation->getObjectID(), ""); //payMaintenance
 		break;
+
+	case 70:
+    	structureManager->promptWithdrawMaintenance(installation, player);
+    	break;	
 
 	case 128:
 		player->executeObjectControllerAction(0x18FC1726, installation->getObjectID(), ""); //destroyStructure command
