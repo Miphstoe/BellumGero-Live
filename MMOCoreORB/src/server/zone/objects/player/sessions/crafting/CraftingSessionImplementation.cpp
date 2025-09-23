@@ -16,6 +16,7 @@
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
+#include "server/zone/managers/skill/SkillModManager.h"
 
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
@@ -131,6 +132,17 @@ int CraftingSessionImplementation::startSession() {
 	if (craftingStation != nullptr)
 		complexityLevel = craftingStation->getComplexityLevel();
 
+
+	// Apply Private Station Functionality as temporary skill mod bonuses (assembly/experimentation)
+	if (craftingStation != nullptr) {
+		int stationBonus = static_cast<int>(craftingStation->getEffectiveness());
+		if (stationBonus < 0) stationBonus = 0; // don't penalize for low functionality
+		if (stationBonus != 0) {
+			crafter->addSkillMod(SkillModManager::STRUCTURE, "private_spec_assembly", stationBonus);
+			crafter->addSkillMod(SkillModManager::STRUCTURE, "private_spec_experimentation", stationBonus);
+		}
+	}
+
 	/// Get filtered schematic list based on tool type and complexity
 	currentSchematicList.removeAll();
 
@@ -204,7 +216,21 @@ int CraftingSessionImplementation::cancelSession() {
 		crafter->sendSystemMessage("*** Canceling crafting session ***");
 	}
 
-	return clearSession();
+	
+
+	// Remove any station-based bonuses that were added at session start
+	{
+		ManagedReference<CraftingStation*> stationRef = this->craftingStation.get();
+		if (stationRef != nullptr) {
+			int stationBonus = static_cast<int>(stationRef->getEffectiveness());
+			if (stationBonus < 0) stationBonus = 0;
+			if (stationBonus != 0 && crafter != nullptr) {
+				crafter->removeSkillMod(SkillModManager::STRUCTURE, "private_spec_assembly", stationBonus);
+				crafter->removeSkillMod(SkillModManager::STRUCTURE, "private_spec_experimentation", stationBonus);
+			}
+		}
+	}
+return clearSession();
 }
 
 int CraftingSessionImplementation::cancelSessionCommand() {
