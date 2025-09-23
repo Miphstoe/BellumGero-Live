@@ -38,6 +38,152 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
 
+#include <unordered_map>
+#include <map>
+
+namespace {
+
+    // Returns "\#RRGGBB" if present at start; else empty.
+    inline String getLeadingColorTag(const String& s) {
+        if (s.length() >= 8 && s.charAt(0) == '\\' && s.charAt(1) == '#')
+            return s.subString(0, 8);
+        return String();
+    }
+
+    // Strips a single leading "\#RRGGBB" tag if present.
+    inline String stripLeadingColor(const String& s) {
+        if (s.length() >= 8 && s.charAt(0) == '\\' && s.charAt(1) == '#')
+            return s.subString(8);
+        return s;
+    }
+
+    // Remove a leading "[nn%] " or "[nn] " (after color already stripped).
+    inline String stripLeadingBracketPct(String s) {
+        if (s.length() >= 3 && s.charAt(0) == '[') {
+            int i = 1, digits = 0;
+            // 1–3 digits
+            while (i < s.length() && s.charAt(i) >= '0' && s.charAt(i) <= '9' && digits < 3) {
+                ++i; ++digits;
+            }
+            // optional '%'
+            if (i < s.length() && s.charAt(i) == '%') ++i;
+            // expect ']'
+            if (digits > 0 && i < s.length() && s.charAt(i) == ']') {
+                ++i; // skip ']'
+                // optional space after badge
+                if (i < s.length() && s.charAt(i) == ' ') ++i;
+                return s.subString(i);
+            }
+        }
+        return s;
+    }
+
+    // Remove any trailing " [nn%]" or " [nn]" badge, with or without a color tag in front.
+    // Handles:
+    //   "Name [100%]" / "Name [85]" / "Name \#00FF00[100%]" / "Name  \#00FF00[30]  "
+    inline String stripTrailingBracketPct(String s) {
+        while (true) {
+            int end = s.length() - 1;
+            if (end < 0) return s;
+
+            // Trim trailing spaces
+            while (end >= 0 && s.charAt(end) == ' ') --end;
+            if (end < 0 || s.charAt(end) != ']') return s;
+
+            int i = end - 1;
+
+            // optional '%'
+            if (i >= 0 && s.charAt(i) == '%') --i;
+
+            // 1–3 digits
+            int digits = 0;
+            while (i >= 0 && s.charAt(i) >= '0' && s.charAt(i) <= '9' && digits < 3) {
+                --i; ++digits;
+            }
+            if (digits == 0) return s; // not a badge
+
+            // expect '['
+            if (i < 0 || s.charAt(i) != '[') return s;
+
+            int cut = i; // beginning of "[..]"
+            // optional space before '['
+            if (cut > 0 && s.charAt(cut - 1) == ' ') --cut;
+
+            // optional color tag immediately before badge: "\#RRGGBB"
+            if (cut >= 8 && s.charAt(cut - 8) == '\\' && s.charAt(cut - 7) == '#') {
+                cut -= 8;
+                if (cut > 0 && s.charAt(cut - 1) == ' ') --cut; // also drop preceding space
+            }
+
+            s = s.subString(0, cut); // drop the badge (and optional color tag)
+            // loop again in case there are multiple badges
+        }
+    }
+
+    // === Main helper: badge BEFORE name; hide for green (>=40%); compute vs template original max ===
+    inline void applyConditionBadgeTo(TangibleObjectImplementation* self, bool sendNow = true) {
+        if (!self) return;
+
+        // Get template original max condition
+        int originalMax = 0;
+        SharedObjectTemplate* baseTmpl = self->getObjectTemplate();
+        if (baseTmpl != nullptr) {
+            SharedTangibleObjectTemplate* tanoTmpl = dynamic_cast<SharedTangibleObjectTemplate*>(baseTmpl);
+            if (tanoTmpl != nullptr)
+                originalMax = tanoTmpl->getMaxCondition();
+        }
+
+        const int curMax = self->getMaxCondition();
+        if (originalMax <= 0) originalMax = curMax;  // fallback
+        if (curMax <= 0 || originalMax <= 0) return;
+
+        // current = max - damage
+        float dmgf = self->getConditionDamage();
+        if (dmgf < 0.f) dmgf = 0.f;
+        if (dmgf > (float)curMax) dmgf = (float)curMax;
+
+        const int current = (int)((float)curMax - dmgf + 0.5f);
+
+        // % vs ORIGINAL max from template
+        int pct = (int)((current * 100LL) / (long long)originalMax);
+        if (pct < 0)   pct = 0;
+        if (pct > 100) pct = 100;
+
+        // Show badge only when ≤39% (your yellow threshold; red ≤19 handled in color below)
+        const bool showBadge = (pct <= 39);
+
+        // Current visible name (custom preferred), then clean old badges and extract rarity tag
+        String shown = self->getCustomObjectName().toString();
+        if (shown.isEmpty())
+            shown = self->getDisplayedName();
+
+        String tmp = stripLeadingColor(shown);
+        tmp = stripLeadingBracketPct(tmp);
+
+        String rarityTag   = getLeadingColorTag(tmp);
+        String baseVisible = stripLeadingColor(tmp);
+        baseVisible = stripTrailingBracketPct(baseVisible); // <— nukes any trailing [100] / [100%], colored or not
+
+        if (baseVisible.isEmpty())
+            return;
+
+        if (!showBadge) {
+            // Keep name with original rarity color, no badge.
+            self->setCustomObjectName(UnicodeString(rarityTag + baseVisible), sendNow);
+            return;
+        }
+
+        // Color with your thresholds
+        const String badgeColor = (pct <= 19) ? "\\#FF0000" : "\\#FFFF00"; // red <=19, yellow 20–39
+
+        // Compose final: <badgeColor>[xx%] </rarityTag><baseVisible>
+        String finalName = badgeColor + "[" + String::valueOf(pct) + "%] " + rarityTag + baseVisible;
+
+        self->setCustomObjectName(UnicodeString(finalName), sendNow);
+    }
+
+} // namespace
+
 void TangibleObjectImplementation::initializeTransientMembers() {
 	SceneObjectImplementation::initializeTransientMembers();
 
@@ -85,57 +231,61 @@ void TangibleObjectImplementation::loadTemplateData(SharedObjectTemplate* templa
 }
 
 void TangibleObjectImplementation::notifyLoadFromDatabase() {
-	SceneObjectImplementation::notifyLoadFromDatabase();
+    SceneObjectImplementation::notifyLoadFromDatabase();
 
-	if (activeAreas.size() > 0) {
-		Reference<TangibleObject*> refTano = asTangibleObject();
+    if (activeAreas.size() > 0) {
+        Reference<TangibleObject*> refTano = asTangibleObject();
 
-		for (int i = activeAreas.size() - 1; i >= 0; i--) {
-			auto& area = activeAreas.get(i);
+        for (int i = activeAreas.size() - 1; i >= 0; i--) {
+            auto& area = activeAreas.get(i);
 
-			if (area == nullptr || area->isNavArea()) {
-				continue;
-			}
+            if (area == nullptr || area->isNavArea()) {
+                continue;
+            }
 
-			activeAreas.remove(i);
+            activeAreas.remove(i);
 
-			Core::getTaskManager()->scheduleTask([refTano, area] () {
-				if (refTano == nullptr || area == nullptr) {
-					return;
-				}
+            Core::getTaskManager()->scheduleTask([refTano, area] () {
+                if (refTano == nullptr || area == nullptr) {
+                    return;
+                }
 
-				Locker lock(area);
-				Locker clock(refTano, area);
+                Locker lock(area);
+                Locker clock(refTano, area);
 
-				area->notifyExit(refTano);
-			}, "notifyLoadAAExitLambda", 200);
-		}
-	}
+                area->notifyExit(refTano);
+            }, "notifyLoadAAExitLambda", 200);
+        }
+    }
 
-	if (hasAntiDecayKit()) {
-		AntiDecayKit* adk = antiDecayKitObject.castTo<AntiDecayKit*>();
+    if (hasAntiDecayKit()) {
+        AntiDecayKit* adk = antiDecayKitObject.castTo<AntiDecayKit*>();
 
-		if (adk != nullptr) {
-			if (!adk->isUsed()) {
-				Locker locker(adk);
-				adk->setUsed(true);
-			}
+        if (adk != nullptr) {
+            if (!adk->isUsed()) {
+                Locker locker(adk);
+                adk->setUsed(true);
+            }
 
-			auto strongAdkParent = adk->getParent().get();
+            auto strongAdkParent = adk->getParent().get();
 
-			if (strongAdkParent != nullptr) {
-				error()
-					<< "oid: " << getObjectID()
-					<< " has AntiDecayKit(" << adk->getObjectID()
-					<< ") with parent: " << strongAdkParent->getObjectID()
-					<< ", removing from world."
-					;
-				Locker lock(adk);
-				adk->destroyObjectFromWorld(true);
-			}
-		}
-	}
+            if (strongAdkParent != nullptr) {
+                error()
+                    << "oid: " << getObjectID()
+                    << " has AntiDecayKit(" << adk->getObjectID()
+                    << ") with parent: " << strongAdkParent->getObjectID()
+                    << ", removing from world.";
+                Locker lock(adk);
+                adk->destroyObjectFromWorld(true);
+            }
+        }
+    }
+
+    // ✅ After all load-time mutations are done, recolor the name.
+    //    sendNow = false so we don't spam an extra update during load.
+    applyConditionBadgeTo(this, /*sendNow=*/false);
 }
+
 
 void TangibleObjectImplementation::destroyObjectFromDatabase(bool destroyContainedObjects) {
 	if (hasAntiDecayKit()) {
@@ -159,18 +309,21 @@ void TangibleObjectImplementation::destroyObjectFromDatabase(bool destroyContain
 }
 
 void TangibleObjectImplementation::sendBaselinesTo(SceneObject* player) {
-	TangibleObject* thisPointer = asTangibleObject();
+    TangibleObject* thisPointer = asTangibleObject();
 
-	BaseMessage* tano3 = new TangibleObjectMessage3(thisPointer);
-	player->sendMessage(tano3);
+    BaseMessage* tano3 = new TangibleObjectMessage3(thisPointer);
+    player->sendMessage(tano3);
 
-	BaseMessage* tano6 = new TangibleObjectMessage6(thisPointer);
-	player->sendMessage(tano6);
+    BaseMessage* tano6 = new TangibleObjectMessage6(thisPointer);
+    player->sendMessage(tano6);
 
-	ManagedReference<SceneObject*> parent = getParentRecursively(SceneObjectType::PLAYERCREATURE);
+    ManagedReference<SceneObject*> parent = getParentRecursively(SceneObjectType::PLAYERCREATURE);
 
-	if (player->isPlayerCreature() && parent == nullptr)
-		sendPvpStatusTo(player->asCreatureObject());
+    if (player->isPlayerCreature() && parent == nullptr)
+        sendPvpStatusTo(player->asCreatureObject());
+
+    // ✅ Ensure the name/badge matches current condition whenever baselines go out
+    applyConditionBadgeTo(this, /*sendNow=*/false);
 }
 
 void TangibleObjectImplementation::setFactionStatus(int status) {
@@ -797,7 +950,10 @@ void TangibleObjectImplementation::removeDefender(SceneObject* defender) {
 }
 
 void TangibleObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
-	SceneObjectImplementation::fillAttributeList(alm, object);
+    // ✅ Refresh the badge right before building the Examine panel
+    applyConditionBadgeTo(this, /*sendNow=*/false);
+
+    SceneObjectImplementation::fillAttributeList(alm, object);
 
 	if (maxCondition > 0) {
 		StringBuffer cond;
@@ -930,104 +1086,147 @@ void TangibleObjectImplementation::decreaseUseCount(unsigned int decrementAmount
 }
 
 void TangibleObjectImplementation::setMaxCondition(int maxCond, bool notifyClient) {
-	if (maxCondition == maxCond)
-		return;
+    if (maxCondition == maxCond)
+        return;
 
-	maxCondition = maxCond;
+    maxCondition = maxCond;
 
-	if (!notifyClient)
-		return;
+    // Recompute badge regardless; only broadcast if notifyClient
+    applyConditionBadgeTo(this, /*sendNow=*/notifyClient);
 
-	TangibleObjectDeltaMessage3* dtano3 = new TangibleObjectDeltaMessage3(asTangibleObject());
-	dtano3->updateMaxCondition();
-	dtano3->close();
+    if (!notifyClient)
+        return;
 
-	broadcastMessage(dtano3, true);
+    TangibleObjectDeltaMessage3* dtano3 = new TangibleObjectDeltaMessage3(asTangibleObject());
+    dtano3->updateMaxCondition();
+    dtano3->close();
+    broadcastMessage(dtano3, true);
 }
 
 void TangibleObjectImplementation::setConditionDamage(float condDamage, bool notifyClient) {
-	if (conditionDamage == condDamage)
-		return;
+    // Clamp to sane bounds
+    const int maxCond = getMaxCondition();
+    if (condDamage < 0.f)                    condDamage = 0.f;
+    if (maxCond > 0 && condDamage > maxCond) condDamage = (float)maxCond;
 
-	conditionDamage = condDamage;
+    if (conditionDamage == condDamage)
+        return;
 
-	if (!notifyClient)
-		return;
+    conditionDamage = condDamage;
 
-	TangibleObjectDeltaMessage3* dtano3 = new TangibleObjectDeltaMessage3(asTangibleObject());
-	dtano3->updateConditionDamage();
-	dtano3->close();
+    // Update the condition badge no matter what; only send immediately if notifyClient is true
+    applyConditionBadgeTo(this, /*sendNow=*/notifyClient);
 
-	broadcastMessage(dtano3, true);
+    if (!notifyClient)
+        return;
+
+    TangibleObjectDeltaMessage3* dtano3 = new TangibleObjectDeltaMessage3(asTangibleObject());
+    dtano3->updateConditionDamage();
+    dtano3->close();
+    broadcastMessage(dtano3, true);
 }
 
-int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, bool notifyClient, bool isCombatAction) {
-	if (hasAntiDecayKit())
-		return 0;
 
-	float newConditionDamage = conditionDamage + damage;
+int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage,
+                                                bool destroy, bool notifyClient, bool isCombatAction) {
+    // Anti-decay items ignore condition damage
+    if (hasAntiDecayKit())
+        return 0;
 
-	if (!destroy && newConditionDamage >= maxCondition)
-		newConditionDamage = maxCondition - 1;
-	else if (newConditionDamage >= maxCondition)
-		newConditionDamage = maxCondition;
+    if (damage <= 0.f)
+        return 0;
 
-	setConditionDamage(newConditionDamage, notifyClient);
+    const int maxCond = getMaxCondition();
+    if (maxCond <= 0)
+        return 0;
 
-	if (attacker->isCreatureObject()) {
-		CreatureObject* creature = attacker->asCreatureObject();
+    // Accumulate damage and clamp
+    float newDamage = conditionDamage + damage;
 
-		if (damage > 0 && attacker != asTangibleObject())
-			getThreatMap()->addDamage(creature, (uint32)damage);
-	}
+    if (!destroy && newDamage >= (float)maxCond) {
+        // Keep at least 1 point of condition if not destroying
+        newDamage = (float)maxCond - 1.f;
+    } else if (newDamage > (float)maxCond) {
+        newDamage = (float)maxCond;
+    } else if (newDamage < 0.f) {
+        newDamage = 0.f;
+    }
 
-	if (newConditionDamage >= maxCondition) {
-		notifyObjectDestructionObservers(attacker, newConditionDamage, isCombatAction);
-		notifyObservers(ObserverEventType::OBJECTDISABLED, attacker);
-		setDisabled(true);
-	}
+    // This updates the badge and, if notifyClient==true, sends the delta
+    setConditionDamage(newDamage, notifyClient);
 
-	return 0;
+    // Threat bookkeeping
+    if (attacker != nullptr && attacker->isCreatureObject() && attacker != asTangibleObject()) {
+        if (damage > 0.f)
+            getThreatMap()->addDamage(attacker->asCreatureObject(), (uint32)damage);
+    }
+
+    // Handle break/disable
+    const bool nowBroken = (newDamage >= (float)maxCond);
+    if (nowBroken) {
+        notifyObjectDestructionObservers(attacker, newDamage, isCombatAction);
+        notifyObservers(ObserverEventType::OBJECTDISABLED, attacker);
+        setDisabled(true);
+    }
+
+    return 0;
 }
 
-int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient, bool isCombatAction) {
-	if (hasAntiDecayKit())
-		return 0;
 
-	float newConditionDamage = conditionDamage + damage;
+int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage,
+                                                bool destroy, const String& xp, bool notifyClient, bool isCombatAction) {
+    // Ignore condition damage if protected
+    if (hasAntiDecayKit())
+        return 0;
 
-	if (!destroy && newConditionDamage >= maxCondition)
-		newConditionDamage = maxCondition - 1;
+    // No-op if non-positive damage or missing max condition
+    if (damage <= 0.f)
+        return 0;
 
-	setConditionDamage(newConditionDamage, notifyClient);
+    const int maxCond = getMaxCondition();
+    if (maxCond <= 0)
+        return 0;
 
-	if (attacker->isCreatureObject()) {
-		CreatureObject* creature = attacker->asCreatureObject();
+    // Accumulate and clamp damage
+    float newDamage = conditionDamage + damage;
 
-		if (damage > 0 && attacker != asTangibleObject())
-			getThreatMap()->addDamage(creature, (uint32)damage, xp);
-	}
+    if (!destroy && newDamage >= (float)maxCond) {
+        // keep at least 1 point of condition if not destroying
+        newDamage = (float)maxCond - 1.f;
+    } else if (newDamage > (float)maxCond) {
+        newDamage = (float)maxCond;
+    } else if (newDamage < 0.f) {
+        newDamage = 0.f;
+    }
 
-	if (newConditionDamage >= maxCondition) {
-		notifyObservers(ObserverEventType::OBJECTDISABLED, attacker);
-		setDisabled(true);
+    // This will also update your condition badge (prefix) and optionally send deltas
+    setConditionDamage(newDamage, notifyClient);
 
-		Reference<TangibleObject*> refTano = asTangibleObject();
-		Reference<TangibleObject*> attackerRef = attacker;
+    // Threat bookkeeping (with XP string)
+    if (attacker != nullptr && attacker->isCreatureObject() && attacker != asTangibleObject()) {
+        if (damage > 0.f)
+            getThreatMap()->addDamage(attacker->asCreatureObject(), (uint32)damage, xp);
+    }
 
-		Core::getTaskManager()->scheduleTask([refTano, attackerRef, newConditionDamage, isCombatAction] () {
-			if (refTano == nullptr || attackerRef == nullptr)
-				return;
+    // Handle break/disable + delayed destruction observers
+    const bool nowBroken = (newDamage >= (float)maxCond);
+    if (nowBroken) {
+        notifyObservers(ObserverEventType::OBJECTDISABLED, attacker);
+        setDisabled(true);
 
-			Locker lock(refTano);
-			Locker clocker(attackerRef, refTano);
+        Reference<TangibleObject*> refTano = asTangibleObject();
+        Reference<TangibleObject*> attackerRef = attacker;
 
-			refTano->notifyObjectDestructionObservers(attackerRef, newConditionDamage, isCombatAction);
+        Core::getTaskManager()->scheduleTask([refTano, attackerRef, newDamage, isCombatAction]() {
+            if (refTano == nullptr || attackerRef == nullptr)
+                return;
+            Locker lock(refTano);
+            Locker clocker(attackerRef, refTano);
+            refTano->notifyObjectDestructionObservers(attackerRef, newDamage, isCombatAction);
+        }, "notifyDestroyLambda", 200);
+    }
 
-		}, "notifyDestroyLambda", 200);
-	}
-
-	return 0;
+    return 0;
 }
 
 int TangibleObjectImplementation::notifyObjectDestructionObservers(TangibleObject* attacker, int condition, bool isCombatAction) {
