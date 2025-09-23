@@ -135,6 +135,12 @@ dathomir_destroy_missions = {
 			size = 35,
 		},
 		{
+			lairTemplateName = "dathomir_sith_shadow_outlaw_neutral_none",
+			minDifficulty = 50,
+			maxDifficulty = 50,
+			size = 25,
+		},
+		{
 			lairTemplateName = "dathomir_rancor_lair_neutral_large",
 			minDifficulty = 48,
 			maxDifficulty = 52,
