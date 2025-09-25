@@ -988,45 +988,35 @@ Vector<uint64> FrsManagerImplementation::getPlayerListByCouncil(int councilType)
 }
 
 void FrsManagerImplementation::deductMaintenanceXp(CreatureObject* player) {
-	PlayerObject* ghost = player->getPlayerObject();
-
-	if (ghost == nullptr)
-		return;
-
-	FrsData* playerData = ghost->getFrsData();
-	int rank = playerData->getRank();
-
-	if (rank == 0)
-		return;
-
-	int maintXp = baseMaintCost * rank;
-
-	auto zoneServer = this->zoneServer.get();
-	ChatManager* chatManager = zoneServer->getChatManager();
-
-	StringIdChatParameter mailBody("@force_rank:xp_maintenance_body"); // You have lost %DI Force Rank experience. All members of Rank 1 or higher must pay experience each day to remain in their current positions. (Note: This loss may not take effect until your next login.)
-
-	if (ConfigManager::instance()->getBool("Core3.FrsManager.ImmediateMaintXpDeduction", false)) {
-		Locker clocker(managerData, player);
-		uint64 playerID = player->getObjectID();
-		int curDebt = managerData->getExperienceDebt(playerID);
-
-		String msg = "You have lost " + String::valueOf(maintXp) + " Force Rank experience. All members of Rank 1 or higher must pay experience each day to remain in their current positions.";
-
-		if (curDebt > 0) {
-			maintXp += curDebt;
-			msg = "You have lost " + String::valueOf(maintXp) + " Force Rank experience. This includes " + String::valueOf(curDebt) + " previously banked experience debt. All members of Rank 1 or higher must pay experience each day to remain in their current positions.";
-			managerData->removeExperienceDebt(playerID);
-		}
-		chatManager->sendMail("Enclave Records", "@force_rank:xp_maintenace_sub", msg, player->getFirstName());
-		adjustFrsExperience(player, maintXp * -1);
-	} else {
-		addExperienceDebt(player, maintXp);
-		StringIdChatParameter mailBody("@force_rank:xp_maintenance_body"); // You have lost %DI Force Rank experience. All members of Rank 1 or higher must pay experience each day to remain in their current positions. (Note: This loss may not take effect until your next login.)
-		mailBody.setDI(maintXp);
-
-		chatManager->sendMail("Enclave Records", "@force_rank:xp_maintenace_sub", mailBody, player->getFirstName(), nullptr);
-	}
+    PlayerObject* ghost = player->getPlayerObject();
+    if (ghost == nullptr)
+        return;
+    FrsData* playerData = ghost->getFrsData();
+    int rank = playerData->getRank();
+    if (rank == 0)
+        return;
+    int maintXp = baseMaintCost * rank;
+    auto zoneServer = this->zoneServer.get();
+    ChatManager* chatManager = zoneServer->getChatManager();
+    StringIdChatParameter mailBody("@force_rank:xp_maintenance_body");
+    if (ConfigManager::instance()->getBool("Core3.FrsManager.ImmediateMaintXpDeduction", false)) {
+        Locker clocker(managerData, player);
+        uint64 playerID = player->getObjectID();
+        int curDebt = managerData->getExperienceDebt(playerID);
+        String msg = "You have lost " + String::valueOf(maintXp) + " Force Rank experience. All members of Rank 1 or higher must pay experience each day to remain in their current positions.";
+        if (curDebt > 0) {
+            maintXp += curDebt;
+            msg = "You have lost " + String::valueOf(maintXp) + " Force Rank experience. This includes " + String::valueOf(curDebt) + " previously banked experience debt. All members of Rank 1 or higher must pay experience each day to remain in their current positions.";
+            managerData->removeExperienceDebt(playerID);
+        }
+        // chatManager->sendMail("Enclave Records", "@force_rank:xp_maintenace_sub", msg, player->getFirstName());
+        adjustFrsExperience(player, maintXp * -1);
+    } else {
+        addExperienceDebt(player, maintXp);
+        StringIdChatParameter mailBody("@force_rank:xp_maintenance_body");
+        mailBody.setDI(maintXp);
+        // chatManager->sendMail("Enclave Records", "@force_rank:xp_maintenace_sub", mailBody, player->getFirstName(), nullptr);
+    }
 }
 
 void FrsManagerImplementation::addExperienceDebt(CreatureObject* player, int amount) {
