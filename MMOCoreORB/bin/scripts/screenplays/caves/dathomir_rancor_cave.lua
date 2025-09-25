@@ -76,7 +76,7 @@ function RancorCaveScreenPlay:spawnMobiles()
         { "nightsister_hex_weaver", -132.8, -66.6, -121.8,  -82, 4335470 },
         { "nightsister_shaman",     -141.4, -66.7, -88.2,   134, 4335470 },
 
-        { "nightsister_shaman",     -189.9, -66.5, -102.1,   87, 4335471 },
+        { "nightsister_boss",     -189.9, -66.5, -102.1,   87, 4335471 },
         { "nightsister_shaman",     -194.9, -66.4, -96.8,   94, 4335471 },
         { "nightsister_shaman",     -191.8, -66.3, -108.6,   56, 4335471 },
 
