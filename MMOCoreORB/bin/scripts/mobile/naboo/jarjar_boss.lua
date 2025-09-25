@@ -61,7 +61,13 @@ jarjar_boss = Creature:new {
         {group = "sea_removal_tool", chance = 2000000}
       },
       lootChance = 1250000
-    }
+    },
+    {
+            groups = {
+                {group = "house_deeds", chance = 10000000}
+            },
+            lootChance = 600000, -- 6.00% total chance
+        }
   },
 
   -- keep it ultra-safe for now:

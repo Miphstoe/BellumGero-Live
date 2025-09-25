@@ -83,7 +83,13 @@ acklay_worldboss = Creature:new {
 			{group = "power_crystals", chance = 10000000},             -- 100.00% of group, 10.00% total
 		},
 		lootChance = 2500000, -- 25.00% total chance
-	}
+	},
+    {
+            groups = {
+                {group = "house_deeds", chance = 10000000}
+            },
+            lootChance = 2000000, -- 20.00% total chance
+        }
 },
 
     primaryWeapon = "unarmed",

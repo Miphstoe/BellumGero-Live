@@ -9,3 +9,7 @@ includeFile("event/life_day/tebeurra.lua")
 includeFile("event/city_control_landing/darth_vader_city_control.lua")
 includeFile("event/city_control_landing/leia_organa_city_control.lua")
 includeFile("event/city_control_landing/luke_skywalker_city_control.lua")
+
+--eventmobs
+includeFile("event/r2_d2_event.lua")
+includeFile("event/c3po_event.lua")
