@@ -173,6 +173,7 @@ includeFile("items/bestine_election/sea_removal_tool.lua")
 --building sub-folder
 includeFile("items/building/bespin_house_deed.lua")
 includeFile("items/building/commando_house_deed.lua")
+includeFile("items/building/diner_house_deed.lua")
 includeFile("items/building/emperors_house_deed.lua")
 includeFile("items/building/jedi_house_deed.lua")
 includeFile("items/building/musty_house_deed.lua")

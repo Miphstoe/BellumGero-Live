@@ -2305,3 +2305,8 @@ object_building_player_shared_rebel_house = SharedBuildingObjectTemplate:new {
 	clientTemplateFileName = "object/building/player/shared_rebel_house.iff"
 }
 ObjectTemplates:addClientTemplate(object_building_player_shared_rebel_house, "object/building/player/shared_rebel_house.iff")
+
+object_building_player_shared_diner_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_diner_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_diner_house, "object/building/player/shared_diner_house.iff")
