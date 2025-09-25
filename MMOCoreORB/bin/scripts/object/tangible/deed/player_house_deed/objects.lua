@@ -1692,3 +1692,48 @@ object_tangible_deed_player_house_deed_shared_tatooine_house_small_style_02_deed
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_tatooine_house_small_style_02_deed, "object/tangible/deed/player_house_deed/shared_tatooine_house_small_style_02_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_musty_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_musty_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_musty_house_deed, "object/tangible/deed/player_house_deed/shared_musty_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_vipbunker_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_vipbunker_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_vipbunker_house_deed, "object/tangible/deed/player_house_deed/shared_vipbunker_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_vehicle_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_vehicle_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_vehicle_house_deed, "object/tangible/deed/player_house_deed/shared_vehicle_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_commando_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_commando_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_commando_house_deed, "object/tangible/deed/player_house_deed/shared_commando_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_sith_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_sith_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_sith_house_deed, "object/tangible/deed/player_house_deed/shared_sith_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_jedi_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_jedi_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_jedi_house_deed, "object/tangible/deed/player_house_deed/shared_jedi_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_bespin_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_bespin_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_bespin_house_deed, "object/tangible/deed/player_house_deed/shared_bespin_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_emperors_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_emperors_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_emperors_house_deed, "object/tangible/deed/player_house_deed/shared_emperors_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_rebel_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_rebel_house_deed.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_rebel_house_deed, "object/tangible/deed/player_house_deed/shared_rebel_house_deed.iff")
