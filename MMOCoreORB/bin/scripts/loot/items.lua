@@ -170,6 +170,17 @@ includeFile("items/bestine_election/tusken_head.lua")
 includeFile("items/bestine_election/victor_baton_gaderiffi.lua")
 includeFile("items/bestine_election/sea_removal_tool.lua")
 
+--building sub-folder
+includeFile("items/building/bespin_house_deed.lua")
+includeFile("items/building/commando_house_deed.lua")
+includeFile("items/building/emperors_house_deed.lua")
+includeFile("items/building/jedi_house_deed.lua")
+includeFile("items/building/musty_house_deed.lua")
+includeFile("items/building/rebel_house_deed.lua")
+includeFile("items/building/sith_house_deed.lua")
+includeFile("items/building/vehicle_house_deed.lua")
+includeFile("items/building/vipbunker_house_deed.lua")
+
 
 
 --coa sub-folder
