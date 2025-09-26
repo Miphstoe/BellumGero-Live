@@ -84,7 +84,13 @@ enhanced_gaping_spider_boss = Creature:new {
         { group = "armor_attachments",    chance = 3750000 }  -- 37.5%
       },
       lootChance = 10000000
-    }
+    },
+	{
+            groups = {
+                {group = "house_deeds", chance = 10000000}
+            },
+            lootChance = 2000000, -- 20.00% total chance
+        }
     },    
 	-- Keep the fearsome flame spit; melee as secondary
 	primaryWeapon = "object/weapon/ranged/creature/creature_spit_heavy_flame.iff",

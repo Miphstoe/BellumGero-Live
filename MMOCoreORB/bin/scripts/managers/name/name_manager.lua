@@ -632,5 +632,11 @@ reservedNames = {
 	{ "guild", DECLINED_RESERVED },
 	{ "tip", DECLINED_RESERVED },
 	{ "citizens", DECLINED_RESERVED },
+	{ "area", DECLINED_RESERVED },
+	{ "areainvite", DECLINED_RESERVED },
+	{ "areacommand", DECLINED_RESERVED },
+	{ "areacmd", DECLINED_RESERVED },
+	{ "areagroup", DECLINED_RESERVED },
+	{ "arealeader", DECLINED_RESERVED },
 	{ "self", DECLINED_RESERVED }
 }
