@@ -2825,63 +2825,84 @@ short FrsManagerImplementation::getEnclaveType(BuildingObject* enclave) {
 }
 
 void FrsManagerImplementation::recoverJediItems(CreatureObject* player) {
-	if (player == nullptr)
-		return;
+    if (player == nullptr)
+        return;
 
-	PlayerObject* ghost = player->getPlayerObject();
+    PlayerObject* ghost = player->getPlayerObject();
+    if (ghost == nullptr)
+        return;
 
-	if (ghost == nullptr)
-		return;
+    FrsData* playerData = ghost->getFrsData();
+    if (playerData == nullptr) {
+        player->sendSystemMessage("@force_rank:insufficient_rank_vote"); // Fallback message
+        return;
+    }
 
-	FrsData* playerData = ghost->getFrsData();
-	int councilType = playerData->getCouncilType();
-	int curPlayerRank = playerData->getRank();
+    int councilType = playerData->getCouncilType();
+    int curPlayerRank = playerData->getRank();
 
-	Reference<FrsRankingData*> rankingData = nullptr;
+    Reference<FrsRankingData*> rankingData = nullptr;
+    if (councilType == COUNCIL_LIGHT)
+        rankingData = lightRankingData.get(curPlayerRank);
+    else if (councilType == COUNCIL_DARK)
+        rankingData = darkRankingData.get(curPlayerRank);
 
-	if (councilType == COUNCIL_LIGHT)
-		rankingData = lightRankingData.get(curPlayerRank);
-	else if (councilType == COUNCIL_DARK)
-		rankingData = darkRankingData.get(curPlayerRank);
+    if (rankingData == nullptr) {
+        player->sendSystemMessage("@force_rank:insufficient_rank_vote"); // Not in council / bad rank
+        return;
+    }
 
-	if (rankingData == nullptr)
-		return;
+    String robeTemplate = rankingData->getRobeTemplate();
+    uint32 robeCRC = robeTemplate.hashCode();
 
-	String robeTemplate = rankingData->getRobeTemplate();
-	uint32 robeCRC = robeTemplate.hashCode();
+    ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+    if (inventory == nullptr)
+        return;
 
-	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+    // Already has the robe in top-level inventory?
+    for (int i = 0; i < inventory->getContainerObjectsSize(); i++) {
+        ManagedReference<SceneObject*> invObj = inventory->getContainerObject(i);
+        if (invObj != nullptr && invObj->getServerObjectCRC() == robeCRC) {
+            player->sendSystemMessage("@force_rank:items_recovered"); // Reuse STF so the player gets feedback
+            return;
+        }
+    }
 
-	if (inventory == nullptr)
-		return;
+    // Already wearing it?
+    ManagedReference<SceneObject*> equipped = player->getSlottedObject("cloak");
+    if (equipped != nullptr && equipped->getServerObjectCRC() == robeCRC) {
+        player->sendSystemMessage("@force_rank:items_recovered");
+        return;
+    }
 
-	for (int i=0; i < inventory->getContainerObjectsSize(); i++) {
-		ManagedReference<SceneObject*> invObj = inventory->getContainerObject(i);
+    auto zoneServer = this->zoneServer.get();
+    ManagedReference<SceneObject*> robeObj = zoneServer->createObject(robeCRC, 1);
+    if (robeObj == nullptr) {
+        player->sendSystemMessage("Internal error: failed to create robe.");
+        return;
+    }
 
-		if (invObj == nullptr)
-			continue;
+    // Give it sockets like the shrine does
+    if (WearableObject* wearable = cast<WearableObject*>(robeObj.get())) {
+        wearable->setMaxSockets(4);
+    }
 
-		if (invObj->getServerObjectCRC() == robeCRC)
-			return;
-	}
+    // Pre-check capacity. If canAddObject is available, prefer it for clearer errors.
+    String err;
+    if (inventory->canAddObject(robeObj, -1, err) != 0) {
+        robeObj->destroyObjectFromDatabase(true);
+        // Generic inventory-full string used elsewhere in scripts; if your STF differs, change this ID.
+        player->sendSystemMessage("@error_message:inv_full");
+        return;
+    }
 
-	ManagedReference<SceneObject*> slot = player->getSlottedObject("cloak");
-
-	if (slot != nullptr and slot->getServerObjectCRC() == robeCRC)
-		return;
-
-	auto zoneServer = this->zoneServer.get();
-	ManagedReference<SceneObject*> robeObj = zoneServer->createObject(robeCRC, 1);
-
-	if (robeObj == nullptr)
-		return;
-
-	if (inventory->transferObject(robeObj, -1, true)) {
-		robeObj->sendTo(player, true);
-		player->sendSystemMessage("@force_rank:items_recovered"); // You have been issued a new set of Jedi rank items from the terminal.
-	} else {
-		robeObj->destroyObjectFromDatabase(true);
-	}
+    if (inventory->transferObject(robeObj, -1, true)) {
+        robeObj->sendTo(player, true);
+        player->sendSystemMessage("@force_rank:items_recovered");
+    } else {
+        robeObj->destroyObjectFromDatabase(true);
+        player->sendSystemMessage("@error_message:inv_full");
+    }
 }
 
 bool FrsManagerImplementation::isPlayerInEnclave(CreatureObject* player) {
