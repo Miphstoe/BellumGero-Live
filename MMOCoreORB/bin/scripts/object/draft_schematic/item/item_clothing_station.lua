@@ -49,7 +49,7 @@ object_draft_schematic_item_item_clothing_station = object_draft_schematic_item_
 
    craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
    complexity = 15, 
-   size = 5, 
+   size = 1, 
    factoryCrateType = "object/factory/factory_crate_electronics.iff",
    
    xpType = "crafting_structure_general", 

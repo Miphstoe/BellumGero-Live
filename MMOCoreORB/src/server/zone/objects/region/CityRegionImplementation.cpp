@@ -464,9 +464,16 @@ void CityRegionImplementation::addZoningRights(uint64 objectid, uint32 duration)
 }
 
 bool CityRegionImplementation::hasZoningRights(uint64 objectid) {
-	if(getMayorID() != 0 && objectid == getMayorID())
+	// Preserve existing mayor behavior exactly
+	if (getMayorID() != 0 && objectid == getMayorID())
 		return true;
 
+	// New: militia always have zoning rights while they are militia
+	// (Order matters only to be crystal clear that the mayor path above remains unchanged.)
+	if (isMilitiaMember(objectid))
+		return true;
+
+	// Original time-boxed zoning token logic (unchanged)
 	uint32 timestamp = zoningRights.get(objectid);
 
 	if (timestamp == 0)
