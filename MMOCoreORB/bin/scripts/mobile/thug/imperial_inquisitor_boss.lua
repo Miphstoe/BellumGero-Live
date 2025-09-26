@@ -30,7 +30,6 @@ imperial_inquisitor_boss = Creature:new {
     templates = { "object/mobile/dressed_imperial_inquisitor_human_male_01.iff" },
 
     lootGroups = {
-        -- TODO: tune to your server’s groups
 	{
         groups = {
 			{group = "dark_jedi_tier_5", chance = 10000000}
@@ -58,6 +57,12 @@ imperial_inquisitor_boss = Creature:new {
     {
         groups = {
 			{group = "clonetrooper_armor_schematics", chance = 10000000}
+		},
+		lootChance = 2000000, -- 20.00% total chance
+	},
+    {
+        groups = {
+			{group = "jedi_house_deeds", chance = 10000000}
 		},
 		lootChance = 2000000, -- 20.00% total chance
 	},
