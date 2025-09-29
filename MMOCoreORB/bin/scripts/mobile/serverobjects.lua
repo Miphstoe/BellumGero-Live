@@ -53,7 +53,7 @@ includeFile("enhanced_gaping_spider_boss.lua")
 
 -- SEA Vendor
 -- mobile (creature) template FIRST so spawnMobile can find it
-includeFile("   vendors/attachment_exchange_vendor.lua")
+includeFile("vendors/attachment_exchange_vendor.lua")
 
 
 

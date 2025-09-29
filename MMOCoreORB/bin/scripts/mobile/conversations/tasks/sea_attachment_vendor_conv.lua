@@ -464,6 +464,7 @@ give_t1_12 = ConvoScreen:new {
 }
 sea_attachment_vendor_conv:addScreen(give_t1_12);
 
+-- TIER 2 TRADE CONFIRMATION SCREENS (13 items)
 trade_t2_01 = ConvoScreen:new {    
     id = "trade_t2_01",
     leftDialog = "",
@@ -488,34 +489,56 @@ sea_attachment_vendor_conv:addScreen(give_t2_01);
 trade_t2_02 = ConvoScreen:new {    
     id = "trade_t2_02",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 50 attachments for Dark Banner?",
+    customDialogText = "Confirm: Trade 50 attachments for Light Banner?",
     stopConversation = "false",
     options = {
-        {"Yes, make the trade", "give_t2_01"},
+        {"Yes, make the trade", "give_t2_02"},
         {"No, go back", "tier_2_menu"}
     }
 }
-sea_attachment_vendor_conv:addScreen(trade_t2_01);
+sea_attachment_vendor_conv:addScreen(trade_t2_02);
 
-give_t2_03 = ConvoScreen:new {    
+give_t2_02 = ConvoScreen:new {    
     id = "give_t2_02",
     leftDialog = "",
     customDialogText = "Processing trade...",
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_02);
 
 trade_t2_03 = ConvoScreen:new {    
-    id = "trade_t2_02",
+    id = "trade_t2_03",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Dark Chair (Style 1)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_03"},
+        {"No, go back", "tier_2_menu"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_03);
+
+give_t2_03 = ConvoScreen:new {    
+    id = "give_t2_03",
+    leftDialog = "",
+    customDialogText = "Processing trade...",
+    stopConversation = "true",
+    options = { }
+}
+sea_attachment_vendor_conv:addScreen(give_t2_03);
+
+trade_t2_04 = ConvoScreen:new {    
+    id = "trade_t2_04",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 50 attachments for Dark Chair (Style 2)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_t2_04"},
+        {"No, go back", "tier_2_menu"}
+    }
+}
+sea_attachment_vendor_conv:addScreen(trade_t2_04);
 
 give_t2_04 = ConvoScreen:new {    
     id = "give_t2_04",
@@ -524,18 +547,19 @@ give_t2_04 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_04);
 
-trade_t2_04 = ConvoScreen:new {    
-    id = "trade_t2_04",
+trade_t2_05 = ConvoScreen:new {    
+    id = "trade_t2_05",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Dark Throne?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_05"},
+        {"No, go back", "tier_2_menu_2"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_05);
 
 give_t2_05 = ConvoScreen:new {    
     id = "give_t2_05",
@@ -544,18 +568,19 @@ give_t2_05 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_05);
 
-trade_t2_05 = ConvoScreen:new {    
-    id = "trade_t2_05",
+trade_t2_06 = ConvoScreen:new {    
+    id = "trade_t2_06",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Light Chair (Style 1)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_06"},
+        {"No, go back", "tier_2_menu_2"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_06);
 
 give_t2_06 = ConvoScreen:new {    
     id = "give_t2_06",
@@ -564,18 +589,19 @@ give_t2_06 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_06);
 
-trade_t2_06 = ConvoScreen:new {    
-    id = "trade_t2_06",
+trade_t2_07 = ConvoScreen:new {    
+    id = "trade_t2_07",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Light Chair (Style 2)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_07"},
+        {"No, go back", "tier_2_menu_2"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_07);
 
 give_t2_07 = ConvoScreen:new {    
     id = "give_t2_07",
@@ -584,18 +610,19 @@ give_t2_07 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_07);
 
-trade_t2_07 = ConvoScreen:new {    
-    id = "trade_t2_07",
+trade_t2_08 = ConvoScreen:new {    
+    id = "trade_t2_08",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Light Throne?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_08"},
+        {"No, go back", "tier_2_menu_2"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_08);
 
 give_t2_08 = ConvoScreen:new {    
     id = "give_t2_08",
@@ -604,18 +631,19 @@ give_t2_08 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_08);
 
-trade_t2_08 = ConvoScreen:new {    
-    id = "trade_t2_08",
+trade_t2_09 = ConvoScreen:new {    
+    id = "trade_t2_09",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Dark Table (Style 1)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_09"},
+        {"No, go back", "tier_2_menu_3"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_09);
 
 give_t2_09 = ConvoScreen:new {    
     id = "give_t2_09",
@@ -624,18 +652,19 @@ give_t2_09 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_09);
 
-trade_t2_09 = ConvoScreen:new {    
-    id = "trade_t2_09",
+trade_t2_10 = ConvoScreen:new {    
+    id = "trade_t2_10",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Dark Table (Style 2)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_10"},
+        {"No, go back", "tier_2_menu_3"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_10);
 
 give_t2_10 = ConvoScreen:new {    
     id = "give_t2_10",
@@ -644,18 +673,19 @@ give_t2_10 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_10);
 
-trade_t2_10 = ConvoScreen:new {    
-    id = "trade_t2_10",
+trade_t2_11 = ConvoScreen:new {    
+    id = "trade_t2_11",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Light Table (Style 1)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_11"},
+        {"No, go back", "tier_2_menu_3"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_11);
 
 give_t2_11 = ConvoScreen:new {    
     id = "give_t2_11",
@@ -664,18 +694,19 @@ give_t2_11 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_11);
 
-trade_t2_11 = ConvoScreen:new {    
-    id = "trade_t2_11",
+trade_t2_12 = ConvoScreen:new {    
+    id = "trade_t2_12",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Light Table (Style 2)?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_12"},
+        {"No, go back", "tier_2_menu_3"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_12);
 
 give_t2_12 = ConvoScreen:new {    
     id = "give_t2_12",
@@ -684,18 +715,19 @@ give_t2_12 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
+sea_attachment_vendor_conv:addScreen(give_t2_12);
 
-trade_t2_12 = ConvoScreen:new {    
-    id = "trade_t2_12",
+trade_t2_13 = ConvoScreen:new {    
+    id = "trade_t2_13",
     leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
+    customDialogText = "Confirm: Trade 50 attachments for Jedi Council Seat?",
     stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
+    options = {
+        {"Yes, make the trade", "give_t2_13"},
+        {"No, go back", "tier_2_menu_3"}
     }
 }
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(trade_t2_13);
 
 give_t2_13 = ConvoScreen:new {    
     id = "give_t2_13",
@@ -704,18 +736,7 @@ give_t2_13 = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-sea_attachment_vendor_conv:addScreen(give_t2_01);
-
-trade_t2_13 = ConvoScreen:new {    
-    id = "trade_t2_13",
-    leftDialog = "",
-    customDialogText = "I accept:\n\n- Clothing Attachments (CA)\n- Armor Attachments (AA)\n- Any item with 'attachment' in the name\n\nCheck your inventory!",
-    stopConversation = "false",
-    options = { 
-        {"Back", "first_screen"},
-    }
-}
-sea_attachment_vendor_conv:addScreen(info1);
+sea_attachment_vendor_conv:addScreen(give_t2_13);
 
 -- TIER 3 TRADE CONFIRMATION SCREENS (15 items)
 trade_t3_01 = ConvoScreen:new {    
