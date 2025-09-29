@@ -753,4 +753,6 @@ includeFile("world/infernomaw_boss.lua")
 includeFile("world/jarjar_worldboss_simple.lua")
 -- then load the boss screenplay
 includeFile("boss/djm_random_name_boss.lua")
+-- screenplay LAST so it can spawn after the above are loaded
+includeFile("vendors/attachment_exchange_vendor.lua")
 
