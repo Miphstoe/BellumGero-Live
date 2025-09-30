@@ -15,8 +15,8 @@ ScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in second
 ScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEvent.START_TIME = { year = 2025, month = 9, day = 28, hour = 18, min = 00, sec = 0 }
-ScheduledEvent.END_TIME   = { year = 2025, month = 9, day = 28, hour = 19, min = 00, sec = 0 }
+ScheduledEvent.START_TIME = { year = 2025, month = 10, day = 05, hour = 18, min = 00, sec = 0 }
+ScheduledEvent.END_TIME   = { year = 2025, month = 10, day = 05, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -30,8 +30,8 @@ ScheduledEvent.CATCH_UP_IF_MISSED = true
 
 -- NPCs
 ScheduledEvent.NPCS = {
-  { planet = "corellia", template = "dark_jedi_master", x = -172, y = -4723, heading = 0 },
-  { planet = "corellia", template = "dark_jedi_knight", x = -156, y = -4735, heading = 20 },
+  { planet = "corellia", template = "c3po_event", x = -172, y = -4723, heading = 0 },
+  { planet = "corellia", template = "r2_d2_event", x = -174, y = -4725, heading = 0 },
 }
 
 -- Messages
