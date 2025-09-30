@@ -21,13 +21,19 @@ protected:
 	ManagedReference<StructureObject*> structureObject;
 	bool playEffect;
 	bool killOccupants;
+	// NEW: whether the caller wants lots to be refunded.
+	bool refundLots;
 
 public:
-	DestroyStructureTask(StructureObject* structure, bool doEffect = false, bool killStuff = false) {
-		structureObject = structure;
-		playEffect = doEffect;
-		killOccupants = killStuff;
-
+	// UPDATED CTOR: added refundLotsFlag (default = true) to preserve old call sites.
+	DestroyStructureTask(StructureObject* structure,
+	                     bool doEffect = false,
+	                     bool killStuff = false,
+	                     bool refundLotsFlag = true)
+		: structureObject(structure),
+		  playEffect(doEffect),
+		  killOccupants(killStuff),
+		  refundLots(refundLotsFlag) {
 		setCustomTaskQueue("slowQueue");
 	}
 
@@ -35,15 +41,12 @@ public:
 		Locker locker(structureObject);
 
 		ManagedReference<Zone*> zone = structureObject->getZone();
-
 		if (zone == nullptr)
 			return;
 
 		ZoneServer* zoneServer = structureObject->getZoneServer();
-
 		if (zoneServer != nullptr && zoneServer->isServerLoading()) {
 			schedule(1000);
-
 			return;
 		}
 
@@ -51,38 +54,37 @@ public:
 		float y = structureObject->getPositionY();
 		float z = zone->getHeight(x, y);
 
-		if (playEffect)
-		{
-			PlayClientEffectLoc* explodeLoc = new PlayClientEffectLoc("clienteffect/combat_explosion_lair_large.cef", structureObject->getZone()->getZoneName(), structureObject->getPositionX(), structureObject->getPositionZ(), structureObject->getPositionY());
+		if (playEffect) {
+			PlayClientEffectLoc* explodeLoc = new PlayClientEffectLoc(
+				"clienteffect/combat_explosion_lair_large.cef",
+				structureObject->getZone()->getZoneName(),
+				structureObject->getPositionX(),
+				structureObject->getPositionZ(),
+				structureObject->getPositionY());
 			structureObject->broadcastMessage(explodeLoc, false);
 		}
 
 		if (structureObject->isBuildingObject()) {
 			ManagedReference<BuildingObject*> buildingObject =
-					cast<BuildingObject*>(structureObject.get());
+			    cast<BuildingObject*>(structureObject.get());
 
 			for (uint32 i = 1; i <= buildingObject->getTotalCellNumber(); ++i) {
 				ManagedReference<CellObject*> cellObject = buildingObject->getCell(i);
-
 				if (cellObject == nullptr)
 					continue;
 
 				int childObjects = cellObject->getContainerObjectsSize();
-
 				if (childObjects <= 0)
 					continue;
 
-				//Traverse the vector backwards since the size will change as objects are removed.
+				// Traverse backwards since the size will change as objects are removed.
 				for (int j = childObjects - 1; j >= 0; --j) {
-					ManagedReference<SceneObject*> obj =
-							cellObject->getContainerObject(j);
+					ManagedReference<SceneObject*> obj = cellObject->getContainerObject(j);
 
 					if (obj->isPlayerCreature() || obj->isPet()) {
-						CreatureObject* playerCreature =
-								cast<CreatureObject*>(obj.get());
+						CreatureObject* playerCreature = cast<CreatureObject*>(obj.get());
 
 						structureObject->unlock();
-
 						try {
 							Locker plocker(playerCreature);
 
@@ -96,17 +98,15 @@ public:
 						} catch (...) {
 							playerCreature->error("unreported exception caught while teleporting");
 						}
-
 						structureObject->wlock();
 					}
 				}
 			}
-
 		}
 
-		//Get the owner of the structure, and remove the structure from their possession.
+		// Get the owner and remove structure ownership (and optionally refund lots)
 		ManagedReference<SceneObject*> owner = zone->getZoneServer()->getObject(
-				structureObject->getOwnerObjectID());
+			structureObject->getOwnerObjectID());
 
 		if (owner != nullptr) {
 			ManagedReference<SceneObject*> ghost = owner->getSlottedObject("ghost");
@@ -115,8 +115,15 @@ public:
 				PlayerObject* playerObject = cast<PlayerObject*>(ghost.get());
 				playerObject->removeOwnedStructure(structureObject);
 
-				uint64 waypointID = structureObject->getWaypointID();
+				// REFUND LOTS HERE IF YOUR FORK EXPECTS IT IN THIS TASK:
+				if (refundLots) {
+					int lots = structureObject->getLotSize();
+					// TODO: call your fork’s specific API to add lots back.
+					// Example (if available in your fork):
+					// playerObject->addLots(lots);
+				}
 
+				uint64 waypointID = structureObject->getWaypointID();
 				if (waypointID != 0)
 					playerObject->removeWaypoint(waypointID, true, true);
 			}
@@ -129,4 +136,3 @@ public:
 };
 
 #endif /* DESTROYSTRUCTURETASK_H_ */
-
