@@ -336,3 +336,7 @@ includeFile("conversations/junk_dealer/junk_dealer_sneg_conv.lua")
 
 -- MY SWG VENDOR
 includeFile("conversations/tasks/myswg_vendor_conv.lua")
+-- Add this line to your conversations.lua BEFORE the conversation template
+print("Loading conversations.lua - checking sea vendor...")
+includeFile("conversations/tasks/sea_attachment_vendor_conv.lua")
+print("Finished loading sea vendor")
