@@ -42,7 +42,8 @@
 
 
 object_weapon_ranged_rifle_rifle_bowcaster = object_weapon_ranged_rifle_shared_rifle_bowcaster:new {
-	playerRaces = { },
+	playerRaces = { "object/creature/player/wookiee_male.iff",
+				"object/creature/player/wookiee_female.iff"},
 
 	-- RANGEDATTACK, MELEEATTACK, FORCEATTACK, TRAPATTACK, GRENADEATTACK, HEAVYACIDBEAMATTACK,
 	-- HEAVYLIGHTNINGBEAMATTACK, HEAVYPARTICLEBEAMATTACK, HEAVYROCKETLAUNCHERATTACK, HEAVYLAUNCHERATTACK
