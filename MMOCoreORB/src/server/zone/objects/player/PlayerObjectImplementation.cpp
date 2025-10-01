@@ -3073,14 +3073,13 @@ int PlayerObjectImplementation::getLotsRemaining() {
     // Subtract lots consumed by placed structures
     for (int i = 0; i < ownedStructures.size(); ++i) {
         auto oid = ownedStructures.get(i);
-
         Reference<StructureObject*> structure = getZoneServer()->getObject(oid).castTo<StructureObject*>();
-
         if (structure != nullptr) {
             lotsRemaining = lotsRemaining - structure->getLotSize();
         }
     }
 
+    /* COMMENTED OUT - Let Core3 handle lots normally
     // Subtract lots consumed by packed deeds in inventory
     CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
     if (creature != nullptr) {
@@ -3089,11 +3088,9 @@ int PlayerObjectImplementation::getLotsRemaining() {
             for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
                 SceneObject* item = inventory->getContainerObject(i);
                 if (item != nullptr && item->isDeedObject()) {
-                    // Check if this deed has packed contents
                     if (HousePackupManager::instance()->hasSavedPayloadForDeed(item->getObjectID())) {
                         StructureDeed* deed = cast<StructureDeed*>(item);
                         if (deed != nullptr) {
-                            // Get lot size from deed template
                             String templatePath = deed->getGeneratedObjectTemplate();
                             Reference<SharedStructureObjectTemplate*> tmpl = dynamic_cast<SharedStructureObjectTemplate*>(
                                 TemplateManager::instance()->getTemplate(templatePath.hashCode()));
@@ -3106,6 +3103,7 @@ int PlayerObjectImplementation::getLotsRemaining() {
             }
         }
     }
+    */
 
     return lotsRemaining;
 }

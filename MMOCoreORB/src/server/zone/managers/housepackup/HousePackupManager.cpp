@@ -405,17 +405,22 @@ uint64 HousePackupManager::createLotsPlaceholderFor(
     uint64 deedOID,
     const String& structureTemplatePath
 ) {
+    // COMMENTED OUT - letting Core3 handle lots normally
+    /*
     if (!owner || deedOID == 0) return 0;
-
     // Don't create a physical structure - just record that this deed "holds" lots
     // The lots are already consumed by the existing building being packed
     recordLotHold(deedOID, deedOID); // Use deed OID as the "placeholder" ID
-    
+   
     if (owner) {
         owner->sendSystemMessage("Lot hold recorded for packed house (no additional lot consumption).");
     }
-    
+   
     return deedOID;
+    */
+    
+    // Do nothing - let Core3's normal lot system handle refunding/consuming lots
+    return 0;
 }
 
 void HousePackupManager::releaseLotsPlaceholder(uint64 deedOID, CreatureObject* owner) {
@@ -569,62 +574,33 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         (wrote ? String(" [OK]") : String(" [FAILED]"))
     );
 
-    // Create lot placeholder to hold the lots during pack-up
-    // This prevents lot duplication when the structure is redeeded
-    uint64 deedOID = building->getDeedObjectID();
-    if (deedOID != 0 && !gLotHoldByDeed.containsKey(deedOID)) {
-        SharedStructureObjectTemplate* tmpl = dynamic_cast<SharedStructureObjectTemplate*>(building->getObjectTemplate());
-        String templatePath = tmpl ? tmpl->getFullTemplateString() : "";
-        int lotSize = tmpl ? tmpl->getLotSize() : building->getLotSize();
-        
-        uint64 placeholderOID = createLotsPlaceholderFor(requester, lotSize, deedOID, templatePath);
-if (placeholderOID != 0) {
-    requester->sendSystemMessage("Created lot placeholder OID: " + String::valueOf((int64)placeholderOID) + 
-                                " for " + String::valueOf(lotSize) + " lots");
-    // Check player's lots after placeholder creation
-    ManagedReference<PlayerObject*> ghost = requester->getPlayerObject();
-    if (ghost) {
-        requester->sendSystemMessage("Player lots after placeholder: " + String::valueOf(ghost->getLotsRemaining()));
-    }
-} else {
-    warning("Failed to create lot placeholder for deed OID " + String::valueOf((int64)deedOID));
-}
-    }
-
-    // Now empty the interior so the core will allow redeed/destruction.
-    if (building && building->getZone() != nullptr) {
-        Vector< ManagedReference<CellObject*> > cellsToDelete;
-        listCells(building, cellsToDelete);
-
-        for (int ci = 0; ci < cellsToDelete.size(); ++ci) {
-            ManagedReference<CellObject*> cell = cellsToDelete.get(ci);
-            if (cell == nullptr) continue;
-
-            Vector< ManagedReference<SceneObject*> > children;
-            listCellContents(cell, children);
-
-            for (int i = 0; i < children.size(); ++i) {
-                ManagedReference<SceneObject*> obj = children.get(i);
-                if (obj == nullptr) continue;
-
-                // DO NOT delete players or terminals (e.g., the structure terminal)
-                if (obj->isCreatureObject() || obj->isTerminal())
-                    continue;
-
-                // Delete everything else we packed
-                obj->destroyObjectFromWorld(true);
-                obj->destroyObjectFromDatabase(true);
-            }
+// Now empty the interior so the core will allow redeed/destruction.
+if (building && building->getZone() != nullptr) {
+    Vector< ManagedReference<CellObject*> > cellsToDelete;
+    listCells(building, cellsToDelete);
+    for (int ci = 0; ci < cellsToDelete.size(); ++ci) {
+        ManagedReference<CellObject*> cell = cellsToDelete.get(ci);
+        if (cell == nullptr) continue;
+        Vector< ManagedReference<SceneObject*> > children;
+        listCellContents(cell, children);
+        for (int i = 0; i < children.size(); ++i) {
+            ManagedReference<SceneObject*> obj = children.get(i);
+            if (obj == nullptr) continue;
+            // DO NOT delete players or terminals (e.g., the structure terminal)
+            if (obj->isCreatureObject() || obj->isTerminal())
+                continue;
+            // Delete everything else we packed
+            obj->destroyObjectFromWorld(true);
+            obj->destroyObjectFromDatabase(true);
         }
     }
-
-    requester->sendSystemMessage(
-        "Packed " + String::valueOf(count) +
-        " items. Use 'Destroy Structure' to reclaim the deed. "
-        "When the deed is granted, contents will be attached automatically."
-    );
-
-    return true;
+}
+requester->sendSystemMessage(
+    "Packed " + String::valueOf(count) +
+    " items. Use 'Destroy Structure' to reclaim the deed. "
+    "When the deed is granted, contents will be attached automatically."
+);
+return true;
 }
 
 bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleObject* deed, CreatureObject* placer) {

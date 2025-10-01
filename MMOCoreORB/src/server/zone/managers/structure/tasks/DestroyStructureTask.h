@@ -21,11 +21,9 @@ protected:
 	ManagedReference<StructureObject*> structureObject;
 	bool playEffect;
 	bool killOccupants;
-	// NEW: whether the caller wants lots to be refunded.
 	bool refundLots;
 
 public:
-	// UPDATED CTOR: added refundLotsFlag (default = true) to preserve old call sites.
 	DestroyStructureTask(StructureObject* structure,
 	                     bool doEffect = false,
 	                     bool killStuff = false,
@@ -104,34 +102,27 @@ public:
 			}
 		}
 
-		// Get the owner and remove structure ownership (and optionally refund lots)
-		ManagedReference<SceneObject*> owner = zone->getZoneServer()->getObject(
-			structureObject->getOwnerObjectID());
+		// Get the owner and handle lot refunding
+		// Get the owner and handle lot refunding
+ManagedReference<SceneObject*> owner = zone->getZoneServer()->getObject(
+	structureObject->getOwnerObjectID());
 
-		if (owner != nullptr) {
-			ManagedReference<SceneObject*> ghost = owner->getSlottedObject("ghost");
+if (owner != nullptr) {
+	ManagedReference<SceneObject*> ghost = owner->getSlottedObject("ghost");
 
-			if (ghost != nullptr && ghost->isPlayerObject()) {
-				PlayerObject* playerObject = cast<PlayerObject*>(ghost.get());
-				playerObject->removeOwnedStructure(structureObject);
+	if (ghost != nullptr && ghost->isPlayerObject()) {
+    PlayerObject* playerObject = cast<PlayerObject*>(ghost.get());
+    playerObject->removeOwnedStructure(structureObject);
+    
+    uint64 waypointID = structureObject->getWaypointID();
+    if (waypointID != 0)
+        playerObject->removeWaypoint(waypointID, true, true);
+}
+}
 
-				// REFUND LOTS HERE IF YOUR FORK EXPECTS IT IN THIS TASK:
-				if (refundLots) {
-					int lots = structureObject->getLotSize();
-					// TODO: call your fork’s specific API to add lots back.
-					// Example (if available in your fork):
-					// playerObject->addLots(lots);
-				}
-
-				uint64 waypointID = structureObject->getWaypointID();
-				if (waypointID != 0)
-					playerObject->removeWaypoint(waypointID, true, true);
-			}
-		}
-
-		structureObject->destroyObjectFromWorld(true);
-		structureObject->notifyObservers(ObserverEventType::OBJECTDESTRUCTION, structureObject, 0);
-		structureObject->destroyObjectFromDatabase(true);
+structureObject->destroyObjectFromWorld(true);
+structureObject->notifyObservers(ObserverEventType::OBJECTDESTRUCTION, structureObject, 0);
+structureObject->destroyObjectFromDatabase(true);
 	}
 };
 
