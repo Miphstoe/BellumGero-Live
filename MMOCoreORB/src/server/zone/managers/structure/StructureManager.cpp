@@ -393,171 +393,128 @@ int StructureManager::getStructureFootprint(SharedStructureObjectTemplate* objec
             return 1;
         }
 
-        if (rankRequired != 0 && city->getCityRank() < rankRequired) {
-            StringIdChatParameter param("city/city", "rank_req");
-            param.setDI(rankRequired);
-            param.setTO("city/city", "rank" + String::valueOf(rankRequired));
-            creature->sendSystemMessage(param);
-            return 1;
-        }
-
-        if (serverTemplate->isCivicStructure() && !city->isMayor(creature->getObjectID())) {
-            creature->sendSystemMessage("@player_structure:cant_place_civic");
-            return 1;
-        }
-
+        
         if (serverTemplate->isUniqueStructure() && city->hasUniqueStructure(serverTemplate->getServerObjectCRC())) {
             creature->sendSystemMessage("@player_structure:cant_place_unique");
             return 1;
         }
     }
-
+    
     Locker _lock(deed, creature);
-
     if (!deed->isASubChildOf(creature)) {
         creature->sendSystemMessage("@player_structure:no_possession");
         return 1;
     }
-
     ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-    if (ghost != nullptr) {
-        String abilityRequired = serverTemplate->getAbilityRequired();
-        if (!abilityRequired.isEmpty() && !ghost->hasAbility(abilityRequired)) {
-            creature->sendSystemMessage("@player_structure:" + abilityRequired);
-            return 1;
-        }
-
-        int lots = serverTemplate->getLotSize();
-
-// Check if this deed is from a packed house
-bool isPackedDeed = HousePackupManager::instance()->hasSavedPayloadForDeed(deed->getObjectID());
-
-if (!isPackedDeed) {
-    // Normal deed - check and consume lots normally
+if (ghost != nullptr) {
+    String abilityRequired = serverTemplate->getAbilityRequired();
+    if (!abilityRequired.isEmpty() && !ghost->hasAbility(abilityRequired)) {
+        creature->sendSystemMessage("@player_structure:" + abilityRequired);
+        return 1;
+    }
+    
+    int lots = serverTemplate->getLotSize();
+    
     if (!ghost->hasLotsRemaining(lots)) {
         StringIdChatParameter param("@player_structure:not_enough_lots");
         param.setDI(lots);
         creature->sendSystemMessage(param);
         return 1;
     }
-} else {
-    // Packed deed - lots already consumed, no additional check needed
-    creature->sendSystemMessage("Placing packed house - lots already allocated to this deed.");
-}
-        
-        // If there IS a placeholder, we assume it has the right amount of lots
-        // and will be released before the new structure consumes lots
-    }
-
-    // Release lot placeholder BEFORE creating the new structure
-    // This frees up the lots that will be consumed by the new structure
-    HousePackupManager::instance()->releaseLotsPlaceholder(deed->getObjectID(), creature);
-
+}    
+    // For packed deeds, skip the lot check entirely since the deed already consumes the lots
     ManagedReference<PlaceStructureSession*> session = new PlaceStructureSession(creature, deed);
     creature->addActiveSession(SessionFacadeType::PLACESTRUCTURE, session);
-
     session->constructStructure(x, y, angle);
-
     deed->destroyObjectFromWorld(true);
-
     return 0;
 }
 
 StructureObject* StructureManager::placeStructure(CreatureObject* creature, const String& structureTemplatePath, float x, float y, int angle, int persistenceLevel) {
-	ManagedReference<Zone*> zone = creature->getZone();
+    ManagedReference<Zone*> zone = creature->getZone();
+    
+    if (zone == nullptr)
+        return nullptr;
+    
+    TerrainManager* terrainManager = zone->getPlanetManager()->getTerrainManager();
+    SharedStructureObjectTemplate* serverTemplate = dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(structureTemplatePath.hashCode()));
+    if (serverTemplate == nullptr) {
+        info("server template is null");
+        return nullptr;
+    }
+    
+    float z = zone->getHeight(x, y);
+    float floraRadius = serverTemplate->getClearFloraRadius();
+    bool snapToTerrain = serverTemplate->getSnapToTerrain();
+    Reference<const StructureFootprint*> structureFootprint = serverTemplate->getStructureFootprint();
+    
+    float w0 = -5; // Along the x axis.
+    float l0 = -5; // Along the y axis.
+    float l1 = 5;
+    float w1 = 5;
+    float zIncreaseWhenNoAvailableFootprint = 0.f;
+    
+    if (structureFootprint != nullptr) {
+        getStructureFootprint(serverTemplate, angle, l0, w0, l1, w1);
+    } else {
+        if (!serverTemplate->isCampStructureTemplate())
+            warning("Structure with template '" + structureTemplatePath + "' has no structure footprint.");
+        zIncreaseWhenNoAvailableFootprint = 5.f;
+    }
+    
+    if (floraRadius > 0 && !snapToTerrain)
+        z = terrainManager->getHighestHeight(x + w0, y + l0, x + w1, y + l1, 1) + zIncreaseWhenNoAvailableFootprint;
+    
+    String strDatabase = "playerstructures";
+    bool bIsFactionBuilding = (serverTemplate->getGameObjectType() == SceneObjectType::FACTIONBUILDING);
+    
+    if (bIsFactionBuilding || serverTemplate->getGameObjectType() == SceneObjectType::DESTRUCTIBLE) {
+        strDatabase = "playerstructures";
+    }
+    
+    ManagedReference<SceneObject*> obj = ObjectManager::instance()->createObject(structureTemplatePath.hashCode(), persistenceLevel, strDatabase);
+    
+    if (obj == nullptr || !obj->isStructureObject()) {
+        if (obj != nullptr) {
+            Locker locker(obj);
+            obj->destroyObjectFromDatabase(true);
+        }
+        error("Failed to create structure with template: " + structureTemplatePath);
+        return nullptr;
+    }
+    
+  StructureObject* structureObject = cast<StructureObject*>(obj.get());
+Locker sLocker(structureObject);
 
-	if (zone == nullptr)
-		return nullptr;
+structureObject->grantPermission("ADMIN", creature->getObjectID());
+structureObject->setOwner(creature->getObjectID());
 
-	TerrainManager* terrainManager = zone->getPlanetManager()->getTerrainManager();
-	SharedStructureObjectTemplate* serverTemplate = dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(structureTemplatePath.hashCode()));
+ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+if (ghost != nullptr) {
+    ghost->addOwnedStructure(structureObject);
+}
 
-	if (serverTemplate == nullptr) {
-		info("server template is null");
-		return nullptr;
-	}
-	float z = zone->getHeight(x, y);
+if (structureObject->isTurret() || structureObject->isMinefield() || structureObject->isScanner()) {
+    structureObject->setFaction(creature->getFaction());
+}
 
-	float floraRadius = serverTemplate->getClearFloraRadius();
-	bool snapToTerrain = serverTemplate->getSnapToTerrain();
+BuildingObject* buildingObject = nullptr;
+if (structureObject->isBuildingObject()) {
+    buildingObject = cast<BuildingObject*>(structureObject);
+    if (buildingObject != nullptr)
+        buildingObject->createCellObjects();
+}
 
-	Reference<const StructureFootprint*> structureFootprint = serverTemplate->getStructureFootprint();
+structureObject->setPublicStructure(serverTemplate->isPublicStructure());
+structureObject->initializePosition(x, z, y);
+structureObject->rotate(angle);
 
-	float w0 = -5; // Along the x axis.
-	float l0 = -5; // Along the y axis.
+TransactionLog trx(TrxCode::STRUCTUREDEED, creature, structureObject);
+zone->transferObject(structureObject, -1, true);
+structureObject->createChildObjects();
+structureObject->notifyStructurePlaced(creature);
 
-	float l1 = 5;
-	float w1 = 5;
-	float zIncreaseWhenNoAvailableFootprint = 0.f; // TODO: remove this when it has been verified that all buildings have astructure footprint.
-
-	if (structureFootprint != nullptr) {
-		// If the angle is odd, then swap them.
-		getStructureFootprint(serverTemplate, angle, l0, w0, l1, w1);
-	} else {
-		if (!serverTemplate->isCampStructureTemplate())
-			warning("Structure with template '" + structureTemplatePath + "' has no structure footprint.");
-		zIncreaseWhenNoAvailableFootprint = 5.f;
-	}
-
-	if (floraRadius > 0 && !snapToTerrain)
-		z = terrainManager->getHighestHeight(x + w0, y + l0, x + w1, y + l1, 1) + zIncreaseWhenNoAvailableFootprint;
-
-	String strDatabase = "playerstructures";
-
-	bool bIsFactionBuilding = (serverTemplate->getGameObjectType() == SceneObjectType::FACTIONBUILDING);
-
-	if (bIsFactionBuilding || serverTemplate->getGameObjectType() == SceneObjectType::DESTRUCTIBLE) {
-		strDatabase = "playerstructures";
-	}
-
-	ManagedReference<SceneObject*> obj = ObjectManager::instance()->createObject(structureTemplatePath.hashCode(), persistenceLevel, strDatabase);
-
-	if (obj == nullptr || !obj->isStructureObject()) {
-		if (obj != nullptr) {
-			Locker locker(obj);
-			obj->destroyObjectFromDatabase(true);
-		}
-
-		error("Failed to create structure with template: " + structureTemplatePath);
-		return nullptr;
-	}
-
-	StructureObject* structureObject = cast<StructureObject*>(obj.get());
-
-	Locker sLocker(structureObject);
-
-	structureObject->grantPermission("ADMIN", creature->getObjectID());
-	structureObject->setOwner(creature->getObjectID());
-
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-	if (ghost != nullptr) {
-		ghost->addOwnedStructure(structureObject);
-	}
-
-	if (structureObject->isTurret() || structureObject->isMinefield() || structureObject->isScanner()) {
-		structureObject->setFaction(creature->getFaction());
-	}
-
-	BuildingObject* buildingObject = nullptr;
-	if (structureObject->isBuildingObject()) {
-		buildingObject = cast<BuildingObject*>(structureObject);
-		if (buildingObject != nullptr)
-			buildingObject->createCellObjects();
-	}
-
-	structureObject->setPublicStructure(serverTemplate->isPublicStructure());
-	structureObject->initializePosition(x, z, y);
-	structureObject->rotate(angle);
-
-	TransactionLog trx(TrxCode::STRUCTUREDEED, creature, structureObject);
-
-	zone->transferObject(structureObject, -1, true);
-
-	structureObject->createChildObjects();
-
-	structureObject->notifyStructurePlaced(creature);
-
-	return structureObject;
+return structureObject;
 }
 
 StructureObject* StructureManager::placeCamp(CreatureObject* player, CustomizationVariables* customVars, const String& campTemplatePath, float x, float y, int angle, int persistenceLevel) {
@@ -870,8 +827,11 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
             deed->setSurplusPower(structureObject->getSurplusPower());
 
             // move packed payload from building -> deed BEFORE destroying the structure
-            HousePackupManager::instance()->attachPayloadToDeedFromBuilding(
-                structureObject->getObjectID(), deed->getObjectID());
+            // move packed payload from building -> deed BEFORE destroying the structure
+info(true) << "Attaching payload: building ID=" << structureObject->getObjectID() << " deed ID=" << deed->getObjectID();
+HousePackupManager::instance()->attachPayloadToDeedFromBuilding(
+    structureObject->getObjectID(), deed->getObjectID());
+info(true) << "Payload attached successfully";
 
             // make sure the deed itself won't be deleted with the structure
             structureObject->setDeedObjectID(0);
@@ -880,7 +840,7 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
             // If your destroyStructure signature is (StructureObject*, bool),
             // call: destroyStructure(structureObject, /*playEffect*/false);
             // If it's (StructureObject*, bool, bool refundLots), pass true:
-            destroyStructure(structureObject, /*playEffect*/false, /*refundLots*/false);
+            destroyStructure(structureObject, /*playEffect*/false, /*refundLots*/true);
 
             // hand deed back to player
             if (!inventory->transferObject(deed, -1, true)) {
@@ -909,12 +869,7 @@ void StructureManager::promptDeleteAllItems(CreatureObject* creature, StructureO
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
-	if (ghost != nullptr) {
-		ghost->addSuiBox(sui);
-		creature->sendMessage(sui->generateMessage());
-	}
 }
-
 void StructureManager::promptFindLostItems(CreatureObject* creature, StructureObject* structure) {
 	ManagedReference<SuiMessageBox*> sui = new SuiMessageBox(creature, 0x00);
 	sui->setUsingObject(structure);
