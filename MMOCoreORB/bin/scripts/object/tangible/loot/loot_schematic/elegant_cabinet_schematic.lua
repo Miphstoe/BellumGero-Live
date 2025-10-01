@@ -47,7 +47,7 @@ object_tangible_loot_loot_schematic_elegant_cabinet_schematic = object_tangible_
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_architect_production_04",
 	targetDraftSchematic = "object/draft_schematic/furniture/furniture_cabinet_elegant.iff",
-	targetUseCount = 1,
+	targetUseCount = 25,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_elegant_cabinet_schematic, "object/tangible/loot/loot_schematic/elegant_cabinet_schematic.iff")
