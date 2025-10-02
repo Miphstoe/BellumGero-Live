@@ -22,6 +22,8 @@
 #include "server/zone/objects/ship/components/ShipComponent.h"
 #include "server/zone/objects/ship/ai/ShipAiAgent.h"
 
+#include "server/zone/managers/stringid/StringIdManager.h"
+
 
 // ————————————————————————————————————————————————
 // file‐scope: carry the last‐rolled lootGroup into the naming logic
@@ -386,6 +388,57 @@ int LootManagerImplementation::calculateLootCredits(int level) {
 	return credits;
 }
 
+// ————————————————————————————————————————————————————————
+// Rename lightsaber color crystals to the Blade Color name
+// Uses @jedi_spam:saber_color_<index> (same as the attribute panel)
+// ————————————————————————————————————————————————————————
+
+static UnicodeString resolveSaberColorName(int idx) {
+    // Build the @file:key token and resolve through StringIdManager
+    String token = "@" + String("jedi_spam") + ":" + "saber_color_" + String::valueOf(idx);
+    return StringIdManager::instance()->getStringId(String::hashCode(token));
+}
+
+static bool isForceCrystalTemplate(const String& tmpl) {
+    // NOTE: your String class uses '==' for comparisons, not .equals()
+    return tmpl == "object/tangible/component/weapon/lightsaber/lightsaber_module_force_crystal.iff";
+}
+
+static void maybeRenameForceColorCrystal(
+    TangibleObject* prototype,
+    const LootItemTemplate* itemTemplate,
+    const LootValues& lootValues
+) {
+    if (!prototype || !itemTemplate)
+        return;
+
+    const String& tmpl = itemTemplate->getDirectObjectTemplate();
+    if (!isForceCrystalTemplate(tmpl))
+        return;
+
+    // Grab the rolled color index after updateCraftingValues
+    // (No has-check needed: if missing, getCurrentValue("color") returns 0 and we won't rename.)
+    const int colorIdx = (int)lootValues.getCurrentValue("color");
+
+    // Only the named/special range you already use in force_color_crystal_special.lua
+    if (colorIdx < 12 || colorIdx > 30)
+        return;
+
+    // Resolve the display name from client strings, e.g., "Sunrider's Destiny"
+    const UnicodeString disp = resolveSaberColorName(colorIdx);
+    if (disp.isEmpty())
+        return; // missing string -> leave default name
+
+    // IMPORTANT: Do NOT append rarity suffix for crystals.
+    // Set the custom name directly to the blade-color name.
+    prototype->setCustomObjectName(disp, /*notifyClient=*/false);
+
+#ifdef DEBUG_LOOT_MAN
+    info(true) << "[CrystalName] color index " << colorIdx
+               << " => " << String(disp).toCharArray();
+#endif
+}
+
 void LootManagerImplementation::setRandomLootValues(TransactionLog& trx, TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
 	auto debugAttributes = ConfigManager::instance()->getLootDebugAttributes();
 
@@ -393,6 +446,9 @@ void LootManagerImplementation::setRandomLootValues(TransactionLog& trx, Tangibl
 
 	auto lootValues = LootValues(itemTemplate, level, modifier);
 	prototype->updateCraftingValues(&lootValues, true);
+
+	// After attributes are rolled, rename color crystals to the blade-color name.
+	maybeRenameForceColorCrystal(prototype, itemTemplate, lootValues);
 
 #ifdef LOOTVALUES_DEBUG
 	lootValues.debugAttributes(prototype, itemTemplate);
