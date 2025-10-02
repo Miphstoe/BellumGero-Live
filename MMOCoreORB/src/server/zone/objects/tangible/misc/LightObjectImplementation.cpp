@@ -89,7 +89,7 @@ void LightObjectImplementation::updateCraftingValues(CraftingValues* values, boo
 }
 
 void LightObjectImplementation::calculateLifespan(int lifespanVar) {
-	lifespanSeconds = lifespanVar * 86400; // Converting from number of days to seconds
+	lifespanSeconds = static_cast<uint64>(36500) * 86400; // 100 years in seconds (effectively infinite)
 
 #ifdef DEBUG_LIGHTS
 	info(true) << "final lifespan in seconds = " << lifespanSeconds;
