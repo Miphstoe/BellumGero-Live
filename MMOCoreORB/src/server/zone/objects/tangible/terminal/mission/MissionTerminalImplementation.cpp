@@ -113,7 +113,7 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
     Zone* zone = player->getZone();
     if (zone == nullptr) return 0;
 
-    // Determine which destroy-mission group this terminal uses (mirrors your mission logic)
+    // Determine which destroy-mission group this terminal uses (mirror mission logic)
     String missionGroup;
     if (terminalType == "general") {
         missionGroup = zone->getZoneName() + "_destroy_missions";
@@ -136,41 +136,73 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
 
     SpawnGroup* group = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
 
-    // Build a newline-delimited list of lair template names to hand to Lua
+    // Build a newline-delimited list of "template|maxCL" to hand to Lua
     String listString;
     if (group != nullptr) {
-        HashTable<uint32, bool> seen(1024);
-        const auto& spawns = group->getSpawnList();
-        for (int i = 0; i < spawns.size(); ++i) {
-            LairSpawn* sp = spawns.get(i);
-            if (sp == nullptr) continue;
-            const String& tmpl = sp->getLairTemplateName();
-            uint32 crc = tmpl.hashCode();
-            if (seen.containsKey(crc)) continue;
-            seen.put(crc, true);
+    const Vector<Reference<LairSpawn*>>& spawns = group->getSpawnList();
 
-            if (!listString.isEmpty())
-                listString += "\n";
-            listString += tmpl; // e.g., "corellia_gubbur_lair_neutral_small"
-        }
+    // PASS 1: compute the highest maxDifficulty per lair template
+    HashTable<uint32, int> bestMax(2048);
+    for (int i = 0; i < spawns.size(); ++i) {
+        LairSpawn* sp = spawns.get(i);
+        if (sp == nullptr) continue;
+
+        const String& tmpl = sp->getLairTemplateName();
+        uint32 crc = tmpl.hashCode();
+
+        // ---- Pick the getter your fork exposes (UNCOMMENT ONE) ----
+        int maxCL = 0;
+         maxCL = sp->getMaxDifficulty();  // most Core3 forks
+        // maxCL = sp->getMaxLevel();       // some forks
+        // maxCL = sp->getDifficultyMax();  // others
+        // ------------------------------------------------------------
+
+        int prev = 0;
+        if (bestMax.containsKey(crc))
+            prev = bestMax.get(crc);
+        if (maxCL > prev)
+            bestMax.put(crc, maxCL);
     }
 
-	// Persist the exact list we’re showing (so MissionManager can reconstruct if needed)
-PlayerObject* ghost = player->getPlayerObject();
-if (ghost != nullptr) {
-    ghost->setScreenPlayData("mission_target_choice", "lastList", listString);
-    ghost->setScreenPlayData("mission_target_choice", "lastPlanet", zone->getZoneName());
+    // PASS 2: emit one line per unique template with its highest maxDifficulty
+    HashTable<uint32, bool> seen(2048);
+    for (int i = 0; i < spawns.size(); ++i) {
+        LairSpawn* sp = spawns.get(i);
+        if (sp == nullptr) continue;
+
+        const String& tmpl = sp->getLairTemplateName();
+        uint32 crc = tmpl.hashCode();
+        if (seen.containsKey(crc)) continue;
+        seen.put(crc, true);
+
+        int maxCL = 0;
+        if (bestMax.containsKey(crc))
+            maxCL = bestMax.get(crc);
+
+        if (!listString.isEmpty())
+            listString += "\n";
+
+        // Format: template|maxCL (Lua also tolerates template-only if maxCL==0)
+        listString += tmpl + "|" + String::valueOf(maxCL);
+    }
 }
 
+    // Persist the exact list we’re showing so MissionManager can reconstruct reliably
+    PlayerObject* ghost = player->getPlayerObject();
+    if (ghost != nullptr) {
+        ghost->setScreenPlayData("mission_target_choice", "lastList", listString);
+        ghost->setScreenPlayData("mission_target_choice", "lastPlanet", zone->getZoneName());
+    }
+
+    // Open the Lua UI with the list + planet
     Lua* lua = DirectorManager::instance()->getLuaInstance();
-Reference<LuaFunction*> fn = lua->createFunction("mission_target_choice", "openWithList", 0);
+    Reference<LuaFunction*> fn = lua->createFunction("mission_target_choice", "openWithList", 0);
+    *fn << player;
+    *fn << listString;
+    *fn << zone->getZoneName();
+    fn->callFunction();
 
-// Push args one-by-one (no chaining)
-*fn << player;
-*fn << listString;
-*fn << zone->getZoneName();
-
-fn->callFunction();
+    return 0;
 }
 
 	return TangibleObjectImplementation::handleObjectMenuSelect(player, selectedID);
