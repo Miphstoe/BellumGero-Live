@@ -1,5 +1,5 @@
 --frequency of sanity check in seconds
-gcwCheckTimer = 3600
+gcwCheckTimer = 86400
 
 --Amount of time in seconds that a base will be vulnerable
 vulnerabilityDuration = 10800
@@ -97,7 +97,7 @@ spawnDefenses = 1
 -- Amount of time to delay vulnerability in seconds afer placing base
 initialVulnerabilityDelay = 0
 
-racialPenaltyEnabled = 1
+racialPenaltyEnabled = 0
 
 -- assign points to each type of base
 -- s01=Forward Outpost, s02 = Field Hospital , s03 = Tactical Center, s04 = Detach HQ
@@ -128,7 +128,7 @@ HQValues = {
 
 }
 
--imperial_racial_penalty = {
+imperial_racial_penalty = {
   {0, 1},   -- human
   {1, 1},   -- rodian
   {2, 1},   -- trandoshan
