@@ -89,7 +89,7 @@ void LightObjectImplementation::updateCraftingValues(CraftingValues* values, boo
 }
 
 void LightObjectImplementation::calculateLifespan(int lifespanVar) {
-	lifespanSeconds = lifespanVar * 86400; // Converting from number of days to seconds
+	lifespanSeconds = 0; // Infinite lifespan - candles never burn out
 
 #ifdef DEBUG_LIGHTS
 	info(true) << "final lifespan in seconds = " << lifespanSeconds;
