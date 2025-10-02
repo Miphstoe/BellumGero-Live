@@ -15,6 +15,12 @@
 #include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
 
+#include "server/zone/managers/creature/CreatureTemplateManager.h"
+#include "server/zone/managers/creature/SpawnGroup.h"
+#include "server/zone/Zone.h"
+#include "server/zone/objects/player/FactionStatus.h"
+#include "templates/faction/Factions.h"
+
 void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
 	TerminalImplementation::fillObjectMenuResponse(menuResponse, player);
 
@@ -33,6 +39,7 @@ void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* m
 		if (terminalType == "general" || terminalType == "imperial" || terminalType == "rebel") {
         menuResponse->addRadialMenuItem(112, 3, "Choose Mission Level");
         menuResponse->addRadialMenuItem(113, 3, "Choose Mission Direction");
+		menuResponse->addRadialMenuItem(114, 3, "Choose Mission Target");
     }
 }
 
@@ -102,7 +109,69 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
         
         mission_direction_choice->callFunction();
         return 0;
-	}
+	} else if (selectedID == 114) {
+    Zone* zone = player->getZone();
+    if (zone == nullptr) return 0;
+
+    // Determine which destroy-mission group this terminal uses (mirrors your mission logic)
+    String missionGroup;
+    if (terminalType == "general") {
+        missionGroup = zone->getZoneName() + "_destroy_missions";
+    } else {
+        bool neutralMission = true;
+        uint32 termFaction = (terminalType == "imperial") ? Factions::FACTIONIMPERIAL : Factions::FACTIONREBEL;
+
+        if (player->getFaction() != 0 && player->getFaction() == termFaction) {
+            if (player->getFactionStatus() == FactionStatus::OVERT || player->getFactionStatus() == FactionStatus::COVERT)
+                neutralMission = false;
+        }
+
+        if (neutralMission)
+            missionGroup = "factional_neutral_destroy_missions";
+        else if (termFaction == Factions::FACTIONIMPERIAL)
+            missionGroup = "factional_imperial_destroy_missions";
+        else
+            missionGroup = "factional_rebel_destroy_missions";
+    }
+
+    SpawnGroup* group = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
+
+    // Build a newline-delimited list of lair template names to hand to Lua
+    String listString;
+    if (group != nullptr) {
+        HashTable<uint32, bool> seen(1024);
+        const auto& spawns = group->getSpawnList();
+        for (int i = 0; i < spawns.size(); ++i) {
+            LairSpawn* sp = spawns.get(i);
+            if (sp == nullptr) continue;
+            const String& tmpl = sp->getLairTemplateName();
+            uint32 crc = tmpl.hashCode();
+            if (seen.containsKey(crc)) continue;
+            seen.put(crc, true);
+
+            if (!listString.isEmpty())
+                listString += "\n";
+            listString += tmpl; // e.g., "corellia_gubbur_lair_neutral_small"
+        }
+    }
+
+	// Persist the exact list we’re showing (so MissionManager can reconstruct if needed)
+PlayerObject* ghost = player->getPlayerObject();
+if (ghost != nullptr) {
+    ghost->setScreenPlayData("mission_target_choice", "lastList", listString);
+    ghost->setScreenPlayData("mission_target_choice", "lastPlanet", zone->getZoneName());
+}
+
+    Lua* lua = DirectorManager::instance()->getLuaInstance();
+Reference<LuaFunction*> fn = lua->createFunction("mission_target_choice", "openWithList", 0);
+
+// Push args one-by-one (no chaining)
+*fn << player;
+*fn << listString;
+*fn << zone->getZoneName();
+
+fn->callFunction();
+}
 
 	return TangibleObjectImplementation::handleObjectMenuSelect(player, selectedID);
 }

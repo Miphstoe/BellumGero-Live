@@ -36,6 +36,9 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 
+#include "server/zone/managers/creature/SpawnGroup.h"
+#include "templates/faction/Factions.h"
+
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
 		Lua* lua = new Lua();
@@ -1902,6 +1905,123 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 			playerLevel = group->getGroupLevel(includeFactionPets);
 		}
 	}*/
+
+	// --- BEGIN: Mission Target Lock (Bellum Gero) ---
+// Robust version: trims/normalizes, uses saved list to reconstruct,
+// searches filtered list first, then full groups, and never clears on a miss.
+if (type == MissionTypes::DESTROY && player != nullptr) {
+    PlayerObject* ghost = player->getPlayerObject();
+    if (ghost != nullptr) {
+        // Read what Lua saved
+        String chosenName   = ghost->getScreenPlayData("mission_target_choice", "lairSelect").trim();
+        String chosenCRCStr = ghost->getScreenPlayData("mission_target_choice", "lairSelectCRC").trim();
+        String chosenIdxStr = ghost->getScreenPlayData("mission_target_choice", "lairSelectIndex").trim();
+        String lastList     = ghost->getScreenPlayData("mission_target_choice", "lastList"); // newline-delimited templates
+
+        // If name is missing but we have index + lastList, reconstruct the template name.
+        if (chosenName.isEmpty() && !chosenIdxStr.isEmpty() && !lastList.isEmpty()) {
+            int idx0 = Integer::valueOf(chosenIdxStr); // 0-based
+            // Manual split of lastList on '\n' (Core3 String has no split())
+            Vector<String> lines;
+            int start = 0;
+            while (true) {
+                int nl = lastList.indexOf('\n', start);
+                if (nl < 0) {
+                    String seg = lastList.subString(start);
+                    if (!seg.isEmpty())
+                        lines.add(seg);
+                    break;
+                } else {
+                    lines.add(lastList.subString(start, nl - start));
+                    start = nl + 1;
+                }
+            }
+            if (idx0 >= 0 && idx0 < lines.size())
+                chosenName = lines.get(idx0).trim();
+        }
+
+        // Compute desired CRCs (exact and normalized)
+        uint32 desiredExact = 0;
+        if (!chosenName.isEmpty())
+            desiredExact = chosenName.hashCode();
+        else if (!chosenCRCStr.isEmpty())
+            desiredExact = (uint32)Integer::valueOf(chosenCRCStr);
+
+        // Build normalized desired CRC if we have a name
+        uint32 desiredNorm = 0;
+        if (!chosenName.isEmpty()) {
+            String tmp = chosenName;
+            int p = tmp.indexOf("_neutral_"); if (p >= 0) tmp = tmp.subString(0, p);
+            tmp = tmp.replaceAll("_large_boss_01", "");
+            tmp = tmp.replaceAll("_medium_boss_01", "");
+            tmp = tmp.replaceAll("_boss_01", "");
+            tmp = tmp.trim();
+            if (!tmp.isEmpty())
+                desiredNorm = tmp.hashCode();
+        }
+
+        if (desiredExact != 0) {
+            // PASS 1: try filtered list (respects difficulty)
+            if (availableLairList != nullptr && availableLairList->size() > 0) {
+                for (int i = 0; i < availableLairList->size(); ++i) {
+                    LairSpawn* ls = availableLairList->get(i);
+                    if (ls == nullptr) continue;
+
+                    const String& nm = ls->getLairTemplateName();
+                    if (nm.hashCode() == desiredExact) return ls;
+
+                    if (desiredNorm != 0) {
+                        String nmNorm = nm;
+                        int p2 = nmNorm.indexOf("_neutral_"); if (p2 >= 0) nmNorm = nmNorm.subString(0, p2);
+                        nmNorm = nmNorm.replaceAll("_large_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_medium_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_boss_01", "");
+                        nmNorm = nmNorm.trim();
+                        if (!nmNorm.isEmpty() && nmNorm.hashCode() == desiredNorm) return ls;
+                    }
+                }
+            }
+
+            // PASS 2: try full groups (override difficulty if needed)
+            Zone* zone = player->getZone();
+            String planet = zone ? zone->getZoneName() : "";
+
+            Vector<String> groups;
+            if (!planet.isEmpty()) groups.add(planet + "_destroy_missions");
+            groups.add("factional_neutral_destroy_missions");
+            groups.add("factional_imperial_destroy_missions");
+            groups.add("factional_rebel_destroy_missions");
+
+            for (int gi = 0; gi < groups.size(); ++gi) {
+                SpawnGroup* g = CreatureTemplateManager::instance()->getDestroyMissionGroup(groups.get(gi).hashCode());
+                if (g == nullptr) continue;
+
+                const Vector<Reference<LairSpawn*>>& all = g->getSpawnList();
+                for (int i = 0; i < all.size(); ++i) {
+                    LairSpawn* ls = all.get(i);
+                    if (ls == nullptr) continue;
+
+                    const String& nm = ls->getLairTemplateName();
+                    if (nm.hashCode() == desiredExact) return ls;
+
+                    if (desiredNorm != 0) {
+                        String nmNorm = nm;
+                        int p2 = nmNorm.indexOf("_neutral_"); if (p2 >= 0) nmNorm = nmNorm.subString(0, p2);
+                        nmNorm = nmNorm.replaceAll("_large_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_medium_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_boss_01", "");
+                        nmNorm = nmNorm.trim();
+                        if (!nmNorm.isEmpty() && nmNorm.hashCode() == desiredNorm) return ls;
+                    }
+                }
+            }
+
+            // Do NOT clear the saved choice on a miss; just fall back silently.
+            // Keeping the choice means it will be honored on the next roll without re-selecting.
+        }
+    }
+}
+// --- END: Mission Target Lock (Bellum Gero) ---
 
 	LairSpawn* lairSpawn = nullptr;
 
