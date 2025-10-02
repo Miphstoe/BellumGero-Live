@@ -513,8 +513,7 @@ tatooine = {
 		{name = "Mos Entha Starport", x = 1266.0996, z = 7, y = 3065.1392, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle B", x = 1395.447, z = 7, y = 3467.0117, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle A", x = 1730.8828, z = 7, y = 3184.6135, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
-		{name = "Wayfar Shuttleport", x = -5043, z = 75, y = -6549, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Mos Taike Shuttleport", x = 3959, z = 9, y = 2417, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Wayfair Shuttleport", x = -5043, z = 75, y = -6549, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Jabba's Palace", x = -6171.6, z = 90.0, y = -6381.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 0, landingRange = 3}
 	},
 
