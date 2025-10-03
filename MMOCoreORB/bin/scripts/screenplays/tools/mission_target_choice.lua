@@ -1,12 +1,12 @@
--- Mission Target picker UI for Destroy missions — uses TARGET names with [CLxxx].
--- Order: preserved from C++ lastList (planet file order), or switch to difficulty sort via SORT_MODE.
+-- Mission Target picker UI for Destroy missions — shows FINAL CL (base + your level),
+-- so it will match what the mission browser displays after missions are generated.
 
 mission_target_choice = ScreenPlay:new { numberOfActs = 1 }
 
--- Change this if you ever want a different sort:
---   "fileOrder"          -> keep the order from lastList (planet file order)  [DEFAULT]
---   "byDifficultyDesc"   -> highest CL first
---   "byDifficultyAsc"    -> lowest CL first
+-- Optional sort:
+--   "fileOrder"          -> keep incoming order (default)
+--   "byDifficultyDesc"   -> highest base CL first
+--   "byDifficultyAsc"    -> lowest base CL first
 local SORT_MODE = "fileOrder"
 
 -- Target name overrides for special/global entries.
@@ -76,8 +76,38 @@ local function targetLabel(planet, tmpl)
   return label
 end
 
+-- Mirror MissionManager’s minimum: difficultyLevel < 5 -> 4
+local function normalizeBaseCL(cl)
+  cl = tonumber(cl or 0) or 0
+  if cl > 0 and cl < 5 then return 4 end
+  return cl
+end
+
+-- Returns the effective level MissionManager will use.
+-- Uses player level; if group APIs exist, tries to use group level.
+local function effectiveMissionLevel(pPlayer)
+  local lvl = 0
+  local pCreature = CreatureObject(pPlayer)
+  if pCreature ~= nil then
+    -- getLevel (guarded)
+    local ok1, levelVal = pcall(function() return pCreature:getLevel() end)
+    if ok1 and type(levelVal) == "number" then
+      lvl = levelVal
+    end
+
+    -- If grouped APIs exist, try to use group level
+    local okG, group = pcall(function() return pCreature:getGroup() end)
+    if okG and group ~= nil then
+      local ok2, glvl = pcall(function() return group:getGroupLevel(false) end)
+      if ok2 and type(glvl) == "number" then
+        lvl = glvl
+      end
+    end
+  end
+  return lvl
+end
+
 -- Build choices from lastList.
--- We preserve the incoming order by default; can optionally sort by CL.
 local function rebuildChoices(pPlayer)
   local planet = trim(readScreenPlayData(pPlayer, "mission_target_choice", "lastPlanet"))
   if planet == "" then planet = string.lower(SceneObject(pPlayer):getZoneName() or "tatooine")
@@ -86,9 +116,7 @@ local function rebuildChoices(pPlayer)
   local listString = readScreenPlayData(pPlayer, "mission_target_choice", "lastList") or ""
   local lines = splitLines(listString)
 
-  -- Convert lines to entries preserving order
-  local entries = {}  -- { tmpl=..., cl=number, label=... }
-  local seen = {}     -- guard against any accidental dupes
+  local entries, seen = {}, {}
   for _, line in ipairs(lines) do
     local tmpl, maxCL = parseLine(line)
     if tmpl ~= "" and not seen[tmpl] then
@@ -98,7 +126,6 @@ local function rebuildChoices(pPlayer)
     end
   end
 
-  -- Optional sorting
   if SORT_MODE == "byDifficultyDesc" then
     table.sort(entries, function(a, b)
       if a.cl ~= b.cl then return (a.cl or 0) > (b.cl or 0) end
@@ -109,16 +136,19 @@ local function rebuildChoices(pPlayer)
       if a.cl ~= b.cl then return (a.cl or 0) < (b.cl or 0) end
       return (a.label or "") < (b.label or "")
     end)
-  else
-    -- fileOrder: do nothing; 'entries' are already in planet file order
   end
 
-  -- Build SUI choices with CL tag if present
-  local choices = { { label = "Reset Target", template = "" } } -- row 1
+  local eff = effectiveMissionLevel(pPlayer)
+  local choices = { { label = "Reset Target", template = "" } }
+
   for _, e in ipairs(entries) do
+    local base = normalizeBaseCL(e.cl or 0)
+    local finalCL = base > 0 and (base + eff) or 0
+    finalCL = math.floor(finalCL)
+
     local lbl = e.label
-    if (e.cl or 0) > 0 then
-      lbl = string.format("%s [CL%d]", lbl, e.cl)
+    if finalCL > 0 then
+      lbl = string.format("%s [CL%d]", lbl, finalCL)
     end
     table.insert(choices, { label = lbl, template = e.tmpl })
   end
@@ -131,6 +161,14 @@ function mission_target_choice:start() end
 -- Called from C++: openWithList(player, listString, planetName)
 function mission_target_choice:openWithList(pPlayer, listString, planet)
   if pPlayer == nil then return end
+
+  if type(listString) == "string" and listString ~= "" then
+    writeScreenPlayData(pPlayer, "mission_target_choice", "lastList", listString)
+  end
+  if type(planet) == "string" and planet ~= "" then
+    writeScreenPlayData(pPlayer, "mission_target_choice", "lastPlanet", string.lower(planet))
+  end
+
   local choices = rebuildChoices(pPlayer)
 
   local sui = SuiListBox.new("mission_target_choice", "targetSelection")
@@ -150,7 +188,6 @@ function mission_target_choice:targetSelection(pPlayer, pSui, eventIndex, args)
 
   local choices = rebuildChoices(pPlayer)
 
-  -- Resolve selection from ANY payload shape
   local idx1, tpl = nil, nil
   if type(args) == "number" then
     idx1 = args + 1

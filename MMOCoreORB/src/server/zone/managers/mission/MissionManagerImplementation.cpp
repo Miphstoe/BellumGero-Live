@@ -799,32 +799,23 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 
 	int diffDisplay = difficultyLevel < 5 ? 4 : difficultyLevel;
 
-	PlayerObject* targetGhost = player->getPlayerObject();
-    
-    String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
-    
-    int levelChoice = Integer::valueOf(level);
-    
-	if(levelChoice > 0){
-		diffDisplay += levelChoice;
-	}else{
-		if (player->isGrouped()) {
-			bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
-			Reference<GroupObject*> group = player->getGroup();
-
-			if (group != nullptr) {
-				Locker locker(group);
-				diffDisplay += group->getGroupLevel(includeFactionPets);
-			}
-		} else {
-			diffDisplay += playerLevel;
-		}
+	if (player->isGrouped()) {
+    	bool includeFactionPets = faction != Factions::FACTIONNEUTRAL && ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
+    	Reference<GroupObject*> group = player->getGroup();
+    	if (group != nullptr) {
+        	Locker locker(group);
+        	diffDisplay += group->getGroupLevel(includeFactionPets);
+    	}
+	} else {
+    	diffDisplay += playerLevel;
 	}
+	
 
 	//info(true) << "playerLevel: " << String::valueOf(playerLevel) << " maxDiff: " << String::valueOf(maxDiff) << " minDiff: " << String::valueOf(minDiff) << " difficultyLevel: " << String::valueOf(difficultyLevel) << " difficulty: " << String::valueOf(difficulty) << " levelChoice: " << String::valueOf(levelChoice);
 
+	PlayerObject* targetGhost = player->getPlayerObject();
 	String dir = targetGhost->getScreenPlayData("mission_direction_choice", "directionChoice");
-    float dirChoise = Float::valueOf(dir);
+	float dirChoise = Float::valueOf(dir);
 	String building = lairTemplateObject->getMissionBuilding(difficulty);
 
 	if (building.isEmpty()) {
@@ -1887,24 +1878,15 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 	bool foundLair = false;
 	int counter = availableLairList->size();
 	int playerLevel = server->getPlayerManager()->calculatePlayerLevel(player);
-	PlayerObject* targetGhost = player->getPlayerObject();
 
-	String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
-
-	int levelChoice = Integer::valueOf(level);
-
-	if (levelChoice > 0)
-		playerLevel = levelChoice;
-
-/*	if (player->isGrouped()) {
-		bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
-		Reference<GroupObject*> group = player->getGroup();
-
-		if (group != nullptr) {
-			Locker locker(group);
-			playerLevel = group->getGroupLevel(includeFactionPets);
-		}
-	}*/
+	if (player->isGrouped()) {
+    	bool includeFactionPets = faction != Factions::FACTIONNEUTRAL && ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
+    	Reference<GroupObject*> group = player->getGroup();
+    	if (group != nullptr) {
+        	Locker locker(group);
+        	playerLevel = group->getGroupLevel(includeFactionPets);
+    	}
+	}
 
 	// --- BEGIN: Mission Target Lock (Bellum Gero) ---
 // Robust version: trims/normalizes, uses saved list to reconstruct,
