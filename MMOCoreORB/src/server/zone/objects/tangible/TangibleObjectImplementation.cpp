@@ -43,50 +43,62 @@
 
 namespace {
 
-    // Returns "\#RRGGBB" if present at start; else empty.
+    // ---------- Small string helpers ----------
+
     inline String getLeadingColorTag(const String& s) {
         if (s.length() >= 8 && s.charAt(0) == '\\' && s.charAt(1) == '#')
             return s.subString(0, 8);
         return String();
     }
 
-    // Strips a single leading "\#RRGGBB" tag if present.
     inline String stripLeadingColor(const String& s) {
         if (s.length() >= 8 && s.charAt(0) == '\\' && s.charAt(1) == '#')
             return s.subString(8);
         return s;
     }
 
-    // Remove a leading "[nn%] " or "[nn] " (after color already stripped).
-    inline String stripLeadingBracketPct(String s) {
-        if (s.length() >= 3 && s.charAt(0) == '[') {
-            int i = 1, digits = 0;
-            // 1–3 digits
-            while (i < s.length() && s.charAt(i) >= '0' && s.charAt(i) <= '9' && digits < 3) {
-                ++i; ++digits;
-            }
-            // optional '%'
-            if (i < s.length() && s.charAt(i) == '%') ++i;
-            // expect ']'
-            if (digits > 0 && i < s.length() && s.charAt(i) == ']') {
-                ++i; // skip ']'
-                // optional space after badge
-                if (i < s.length() && s.charAt(i) == ' ') ++i;
-                return s.subString(i);
-            }
+    // Remove one *colored or uncolored* prefix badge: [nn] or [nn%], optional color tag in front, optional following space.
+    // Examples removed:
+    //   "\#FF0000[30%] Name"
+    //   "[12]  \#AABBCCName"
+    inline String stripLeadingColoredBadge(String s) {
+        int pos = 0;
+
+        // Optional color tag *for the badge itself*
+        if (s.length() >= 8 && s.charAt(0) == '\\' && s.charAt(1) == '#')
+            pos = 8;
+
+        // Must have '['
+        if (pos >= s.length() || s.charAt(pos) != '[') return s;
+
+        int i = pos + 1, digits = 0;
+        // 1–3 digits
+        while (i < s.length() && s.charAt(i) >= '0' && s.charAt(i) <= '9' && digits < 3) {
+            ++i; ++digits;
         }
-        return s;
+        if (digits == 0) return s;
+
+        // optional '%'
+        if (i < s.length() && s.charAt(i) == '%') ++i;
+
+        // expect ']'
+        if (i >= s.length() || s.charAt(i) != ']') return s;
+        ++i; // skip ']'
+
+        // optional single space after the badge
+        if (i < s.length() && s.charAt(i) == ' ') ++i;
+
+        return s.subString(i);
     }
 
-    // Remove any trailing " [nn%]" or " [nn]" badge, with or without a color tag in front.
-    // Handles:
-    //   "Name [100%]" / "Name [85]" / "Name \#00FF00[100%]" / "Name  \#00FF00[30]  "
+    // Remove any trailing " [nn]" or " [nn%]" badge, with optional color tag immediately before.
+    // Handles: "Name [100%]", "Name \#00FF00[85]", "Name  \#00FF00[30]  "
     inline String stripTrailingBracketPct(String s) {
         while (true) {
             int end = s.length() - 1;
             if (end < 0) return s;
 
-            // Trim trailing spaces
+            // trim trailing spaces
             while (end >= 0 && s.charAt(end) == ' ') --end;
             if (end < 0 || s.charAt(end) != ']') return s;
 
@@ -105,34 +117,63 @@ namespace {
             // expect '['
             if (i < 0 || s.charAt(i) != '[') return s;
 
-            int cut = i; // beginning of "[..]"
+            int cut = i; // start of "[..]"
             // optional space before '['
             if (cut > 0 && s.charAt(cut - 1) == ' ') --cut;
 
-            // optional color tag immediately before badge: "\#RRGGBB"
+            // optional color tag immediately before: "\#RRGGBB"
             if (cut >= 8 && s.charAt(cut - 8) == '\\' && s.charAt(cut - 7) == '#') {
                 cut -= 8;
-                if (cut > 0 && s.charAt(cut - 1) == ' ') --cut; // also drop preceding space
+                if (cut > 0 && s.charAt(cut - 1) == ' ') --cut;
             }
 
-            s = s.subString(0, cut); // drop the badge (and optional color tag)
-            // loop again in case there are multiple badges
+            s = s.subString(0, cut); // drop badge (and color tag if present)
+            // loop again in case multiple badges were appended
         }
     }
 
-    // === Main helper: badge BEFORE name; hide for green (>=40%); compute vs template original max ===
+    // ---------- Should we touch this object's name at all? ----------
+    // ---------- Should we touch this object's name at all? ----------
+inline bool shouldApplyBadgeTo(TangibleObjectImplementation* self) {
+    if (!self) return false;
+
+    // Must have condition mechanics
+    if (self->getMaxCondition() <= 0) return false;
+
+    // Template path (used for light filtering like "sign")
+    SharedObjectTemplate* tmpl = self->getObjectTemplate();
+    String path = tmpl ? tmpl->getFullTemplateString() : String();
+
+    // Type flags we *do* have
+    uint32 type = self->getGameObjectType();
+
+    // Exclude structures/installations/signs; exclude general containers/bags/crates
+    bool isStructure   = self->isStructureObject() || ((type & SceneObjectType::INSTALLATION) != 0);
+    bool looksLikeSign = (!path.isEmpty() && (path.contains("sign") || path.contains("house_sign")));
+    bool isContainerish = self->isContainerObject() && ((type & SceneObjectType::WEAPON) == 0); // keep weapons
+
+    if (isStructure || looksLikeSign || isContainerish) return false;
+
+    // Prefer classic decay targets
+    bool isWearable = self->isWearableObject();
+    bool isWeapon   = ((type & SceneObjectType::WEAPON) != 0);
+    bool isTool     = (!path.isEmpty() && (path.contains("tool/") || path.contains("/tool_")));
+
+    return (isWearable || isWeapon || isTool);
+}
+
+    // ---------- Main helper ----------
+    // Badge BEFORE name; hide for green (>=40%); compute vs template original max; preserve user/rarity color.
     inline void applyConditionBadgeTo(TangibleObjectImplementation* self, bool sendNow = true) {
         if (!self) return;
+        if (!shouldApplyBadgeTo(self)) return;
 
-        // Get template original max condition
+        // Baseline: template original max
         int originalMax = 0;
-        SharedObjectTemplate* baseTmpl = self->getObjectTemplate();
-        if (baseTmpl != nullptr) {
-            SharedTangibleObjectTemplate* tanoTmpl = dynamic_cast<SharedTangibleObjectTemplate*>(baseTmpl);
-            if (tanoTmpl != nullptr)
+        if (SharedObjectTemplate* baseTmpl = self->getObjectTemplate()) {
+            if (SharedTangibleObjectTemplate* tanoTmpl = dynamic_cast<SharedTangibleObjectTemplate*>(baseTmpl))
                 originalMax = tanoTmpl->getMaxCondition();
         }
-
         const int curMax = self->getMaxCondition();
         if (originalMax <= 0) originalMax = curMax;  // fallback
         if (curMax <= 0 || originalMax <= 0) return;
@@ -141,43 +182,38 @@ namespace {
         float dmgf = self->getConditionDamage();
         if (dmgf < 0.f) dmgf = 0.f;
         if (dmgf > (float)curMax) dmgf = (float)curMax;
-
         const int current = (int)((float)curMax - dmgf + 0.5f);
 
-        // % vs ORIGINAL max from template
+        // % vs ORIGINAL max
         int pct = (int)((current * 100LL) / (long long)originalMax);
         if (pct < 0)   pct = 0;
         if (pct > 100) pct = 100;
 
-        // Show badge only when ≤39% (your yellow threshold; red ≤19 handled in color below)
+        // Show badge only when ≤39% (yellow threshold). (Change to "true" to always show.)
         const bool showBadge = (pct <= 39);
 
-        // Current visible name (custom preferred), then clean old badges and extract rarity tag
+        // Start with current visible name (custom preferred)
         String shown = self->getCustomObjectName().toString();
         if (shown.isEmpty())
             shown = self->getDisplayedName();
 
-        String tmp = stripLeadingColor(shown);
-        tmp = stripLeadingBracketPct(tmp);
+        // 1) Drop any *prefix* badge we may have added earlier (with or without color)
+        String nameAfterBadge = stripLeadingColoredBadge(shown);
 
-        String rarityTag   = getLeadingColorTag(tmp);
-        String baseVisible = stripLeadingColor(tmp);
-        baseVisible = stripTrailingBracketPct(baseVisible); // <— nukes any trailing [100] / [100%], colored or not
+        // 2) Drop any *trailing* badge UI might add / old code left behind
+        nameAfterBadge = stripTrailingBracketPct(nameAfterBadge);
 
-        if (baseVisible.isEmpty())
-            return;
-
+        // 3) DO NOT touch the name’s own color — preserve user/rarity color as-is
         if (!showBadge) {
-            // Keep name with original rarity color, no badge.
-            self->setCustomObjectName(UnicodeString(rarityTag + baseVisible), sendNow);
+            self->setCustomObjectName(UnicodeString(nameAfterBadge), sendNow);
             return;
         }
 
-        // Color with your thresholds
-        const String badgeColor = (pct <= 19) ? "\\#FF0000" : "\\#FFFF00"; // red <=19, yellow 20–39
+        // 4) Compute badge color with your thresholds
+        const String badgeColor = (pct <= 19) ? "\\#FF0000" : "\\#FFFF00"; // red ≤19, yellow 20–39
 
-        // Compose final: <badgeColor>[xx%] </rarityTag><baseVisible>
-        String finalName = badgeColor + "[" + String::valueOf(pct) + "%] " + rarityTag + baseVisible;
+        // 5) Prefix badge and keep the rest untouched (including the name’s existing color tag)
+        String finalName = badgeColor + "[" + String::valueOf(pct) + "%] " + nameAfterBadge;
 
         self->setCustomObjectName(UnicodeString(finalName), sendNow);
     }
