@@ -29,12 +29,12 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 	lootContainerRespawn = 1800,
 
 	-- === GCW award tuning ===
-	gcwPointsPerKill = 150,   -- per-kill standing awarded to the killer's own side
+	gcwPointsPerKill = 150,   -- per-kill standing awarded (now fan-out to group)
 }
 
 registerScreenPlay("TalusLostAqualishScreenPlay", true)
 
--- === GCW award helpers (killer's own faction) =========================
+-- === GCW award helpers (group-aware; each player gets points to their own side) =========
 local function _validPlayer(p)
 	return p ~= nil and SceneObject(p):isPlayerCreature()
 end
@@ -47,27 +47,41 @@ local function _killerOrMaster(pAttacker)
 	return nil
 end
 
+local function _playerSideString(pPlayer)
+	if pPlayer == nil then return nil end
+	local co = CreatureObject(pPlayer)
+	if co:isRebel() then return "rebel" end
+	if co:isImperial() then return "imperial" end
+	return nil
+end
+
+-- Award to killer or group members within range of the victim.
+-- Each recipient is awarded to THEIR OWN side (rebel/imperial). Unaffiliated players are skipped.
+local function _awardFactionNearby(self, pSource, pVictim, amount, range)
+	if pSource == nil or pVictim == nil then return end
+	local function grant(pTgt)
+		if not _validPlayer(pTgt) then return end
+		if not SceneObject(pTgt):isInRangeWithObject(pVictim, range or 64) then return end
+		local side = _playerSideString(pTgt)
+		if side == nil then return end
+		local ghost = CreatureObject(pTgt):getPlayerObject()
+		if ghost ~= nil then PlayerObject(ghost):increaseFactionStanding(side, amount) end
+	end
+	local co = CreatureObject(pSource)
+	if co.isGrouped and co:isGrouped() then
+		for i = 0, co:getGroupSize() - 1 do grant(co:getGroupMember(i)) end
+	else
+		grant(pSource)
+	end
+end
+
 function TalusLostAqualishScreenPlay:onMobDead(pVictim, pAttacker)
 	local pKiller = _killerOrMaster(pAttacker)
 	if not _validPlayer(pKiller) then return 0 end
 
-	local side = nil
-	if CreatureObject(pKiller):isRebel() then
-		side = "rebel"
-	elseif CreatureObject(pKiller):isImperial() then
-		side = "imperial"
-	else
-		return 0 -- unaffiliated player: no award
-	end
-
-	local ghost = CreatureObject(pKiller):getPlayerObject()
-	if ghost == nil then return 0 end
-
 	local pts = self.gcwPointsPerKill or 15
-	PlayerObject(ghost):increaseFactionStanding(side, pts)
-
-	-- Optional toast:
-	-- CreatureObject(pKiller):sendSystemMessage(string.format("+%d %s faction points (GCW Cave)", pts, side))
+	_awardFactionNearby(self, pKiller, pVictim, pts, 64)
+	-- Optional toast per recipient can be added inside _awardFactionNearby if desired.
 	return 0
 end
 -- =====================================================================
@@ -99,23 +113,32 @@ function TalusLostAqualishScreenPlay:spawnMobiles()
 	spawnMobile("talus", "defector_storm_commando",   300, -72.1, -98.0, -150.8, 149, 4255647)  -- captain
 	spawnMobile("talus", "defector_stormtrooper",     300, -64.2, -94.4, -153.2, -94, 4255647)  -- infiltrator
 	spawnMobile("talus", "defector_stormtrooper",     300, -70.9, -97.3, -145.3, -160, 4255647) -- infiltrator
+	spawnMobile("talus", "defector_stormtrooper",     300, -78.2, -99.6, -132.2, 177, 4255647)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -77.2, -99.6, -143.4, -4, 4255647)   -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -86.2, -102.8, -133.3, 60, 4255647)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -89.8, -104.8, -131.2, 21, 4255647)  -- outrider
+	spawnMobile("talus", "defector_storm_commando",   300, -77.5, -97.0, -145.9, -160, 4255647) -- commando
+	spawnMobile("talus", "defector_stormtrooper",     300, -83.0, -94.6, -149.0, -90, 4255647)  -- scout
 
 	-- Cell 4255649 (Rebel defectors)
-	spawnMobile("talus", "defector_rebel_commando",   300, -27.5, -80.0, -149.6, 31, 4255649)   -- captain
-	spawnMobile("talus", "defector_rebel_trooper",    300, -19.9, -79.8, -147.5, -35, 4255649)  -- marksman
-	spawnMobile("talus", "defector_rebel_trooper",    300, -28.9, -79.8, -141.8, 167, 4255649)  -- marksman
+	spawnMobile("talus", "defector_rebel_commando",   300, -103.0, -94.9, -110.6, 152, 4255649) -- commando
+	spawnMobile("talus", "defector_rebel_commando",   300, -108.7, -94.1, -120.4, -146, 4255649) -- commando
+	spawnMobile("talus", "defector_rebel_trooper",    300, -102.7, -92.5, -128.7, -154, 4255649) -- outrider
+	spawnMobile("talus", "defector_rebel_trooper",    300, -93.6, -91.0, -125.2, 89, 4255649)    -- outrider
+	spawnMobile("talus", "defector_rebel_commando",   300, -103.1, -92.4, -126.7, -68, 4255649)  -- captain
 
-	-- Cell 4255648 (Storm defectors)
-	spawnMobile("talus", "defector_storm_commando",   300, -29.9, -70.5, -83.9, -87, 4255648)   -- commando
-	spawnMobile("talus", "defector_storm_commando",   300, -37.2, -70.8, -87.8, -19, 4255648)   -- commando
-	spawnMobile("talus", "defector_stormtrooper",     300, -43.2, -70.2, -83.2, 70, 4255648)    -- marksman
-	spawnMobile("talus", "defector_storm_commando",   300, -54.7, -68.5, -110.3, -78, 4255648)  -- commando
-	spawnMobile("talus", "defector_stormtrooper",     300, -60.1, -68.2, -105.2, 159, 4255648)  -- marksman
+	-- Cell 4255648 (Rebel defectors)
+	spawnMobile("talus", "defector_rebel_trooper",    300, -120.2, -76.2, -130.9, -142, 4255648) -- outrider
+	spawnMobile("talus", "defector_rebel_trooper",    300, -107.4, -74.7, -119.2, 46, 4255648)   -- outrider
+	spawnMobile("talus", "defector_rebel_commando",   300, -99.5, -75.4, -119.4, -54, 4255648)   -- commando
+	spawnMobile("talus", "defector_rebel_commando",   300, -112.6, -77.3, -136.0, -36, 4255648)  -- captain
+	spawnMobile("talus", "defector_rebel_trooper",    300, -106.0, -72.3, -149.9, -141, 4255648) -- outrider
+	spawnMobile("talus", "defector_rebel_trooper",    300, -101.0, -71.7, -153.2, -114, 4255648) -- outrider
+	spawnMobile("talus", "defector_rebel_commando",   300, -94.5, -71.2, -154.7, -77, 4255648)   -- commando
 
-	-- Cell 4255647 (Storm defectors – second cluster)
-	spawnMobile("talus", "defector_storm_commando",   300, -98.5, -70.1, -112.5, 174, 4255647)  -- captain
-	spawnMobile("talus", "defector_storm_commando",   300, -91.2, -70.4, -124.9, -157, 4255647) -- commando
-	spawnMobile("talus", "defector_storm_commando",   300, -118.5, -69.3, -121.0, -100, 4255647) -- commando
+	-- Cell 4255647 (Storm defectors)
+	spawnMobile("talus", "defector_stormtrooper",     300, -98.1, -70.1, -152.9, -88, 4255647)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -106.1, -69.8, -151.8, 53, 4255647)  -- outrider
 	spawnMobile("talus", "defector_storm_commando",   300, -119.5, -69.6, -125.7, 33, 4255647)  -- commando
 	spawnMobile("talus", "defector_stormtrooper",     300, -116.8, -69.5, -123.9, -55, 4255647) -- marksman
 	spawnMobile("talus", "defector_storm_commando",   300, -123.4, -69.2, -170.0, 98, 4255647)  -- captain
@@ -146,13 +169,21 @@ function TalusLostAqualishScreenPlay:spawnMobiles()
 	spawnMobile("talus", "defector_storm_commando",     300, 46.8, -47.9, -121.3, 132, 4255644)     -- scout
 
 	-- Cell 4255643 (Storm defectors)
-	spawnMobile("talus", "defector_stormtrooper",     300, 46.4, -46.2, -94.8, -14, 4255643)    -- lookout
-	spawnMobile("talus", "defector_stormtrooper",     300, 41.2, -46.2, -56.1, -102, 4255643)   -- lookout
-	spawnMobile("talus", "defector_stormtrooper",     300, 36.5, -45.5, -48.2, -115, 4255643)   -- scout
-	spawnMobile("talus", "defector_stormtrooper",     300, 51.5, -46, -93.7, -40, 4255643)   -- scout
+	spawnMobile("talus", "defector_stormtrooper",     300, 62.0, -49.9, -110.3, -157, 4255643)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 55.8, -48.6, -116.3, -28, 4255643)   -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 64.8, -49.7, -100.1, 138, 4255643)   -- scout
+	spawnMobile("talus", "defector_stormtrooper",     300, 57.9, -48.0, -94.4, 92, 4255643)     -- scout
+	spawnMobile("talus", "defector_stormtrooper",     300, 73.5, -51.7, -97.7, -42, 4255643)    -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 49.7, -47.4, -101.3, -173, 4255643)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 44.2, -45.7, -99.8, 142, 4255643)    -- scout
+	spawnMobile("talus", "defector_stormtrooper",     300, 36.7, -44.7, -93.9, -150, 4255643)   -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 40.6, -44.9, -102.1, -124, 4255643)  -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, 30.5, -42.8, -104.7, -12, 4255643)   -- outrider
 
 	-- Cell 4255642 (Storm defectors)
-	spawnMobile("talus", "defector_stormtrooper",     300, 9.8, -40.5, -75.7, -140, 4255642)    -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -8.7, -41.1, -92.5, -48, 4255642)    -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -8.1, -40.6, -86.1, -129, 4255642)   -- outrider
+	spawnMobile("talus", "defector_stormtrooper",     300, -1.0, -39.9, -80.8, -57, 4255642)    -- outrider
 	spawnMobile("talus", "defector_stormtrooper",     300, 3.4, -40.4, -65.0, -44, 4255642)     -- lookout
 	spawnMobile("talus", "defector_stormtrooper",     300, -9.8, -40.9, -66.7, -12, 4255642)    -- lookout
 	spawnMobile("talus", "defector_storm_commando",     300, -8.8, -40.4, -81.3, 15, 4255642)    -- lookout
