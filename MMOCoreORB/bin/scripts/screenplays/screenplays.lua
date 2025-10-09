@@ -587,6 +587,7 @@ includeFile("caves/tatooine_hutt_hideout.lua")
 includeFile("caves/tatooine_sennex_cave.lua")
 includeFile("caves/tatooine_squill_cave.lua")
 includeFile("caves/tatooine_tusken_bunker.lua")
+includeFile("caves/conversations/gcw_cave_daily_conv_handler.lua")
 
 -- Cantinas
 includeFile("cities/cantinas/bartenders.lua")
