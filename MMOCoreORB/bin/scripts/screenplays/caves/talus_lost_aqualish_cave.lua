@@ -47,7 +47,10 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 	--   { template = "object/tangible/loot/collection/krayt_pearls_generic.iff",          weight = 15 },
 	--   { template = "object/tangible/loot/generic_usable/armband_s01.iff",                weight = 80 },
 	-- },
-	dailyLootPool   = {},
+	dailyLootPool   = {
+		{ template = "object/tangible/furniture/all/frn_all_banner_rebel.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_banner_imperial.iff", weight = 5 },
+	},
 	dailyLootCount  = 1,     -- how many rolls from the pool to award
 	dailyLootMsg    = "You received a reward item from the cave assignment.",
 }
