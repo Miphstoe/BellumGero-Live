@@ -31,7 +31,20 @@ defector_stormtrooper = Creature:new {
     "object/mobile/dressed_stormtrooper_m.iff"
   },
 
-  lootGroups = { },
+  lootGroups = {  
+    {
+        groups = {
+			      {group = "defector_cave", chance = 10000000}
+		  },
+		  lootChance = 4000000, -- 40.00% total chance
+	  },
+    {
+        groups = {
+			      {group = "defector_cave", chance = 10000000}
+		  },
+		  lootChance = 2000000, -- 20.00% total chance
+	  },
+  },
 
 
     -- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

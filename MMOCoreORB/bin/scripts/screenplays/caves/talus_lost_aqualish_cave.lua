@@ -16,11 +16,7 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "color_crystals", chance = 160000},
-				{group = "junk", chance = 8240000},
-				{group = "weapons_all", chance = 1000000},
-				{group = "clothing_attachments", chance = 300000},
-				{group = "armor_attachments", chance = 300000}
+				{group = "defector_cave", chance = 10000000},
 			},
 			lootChance = 8000000
 		}
@@ -54,6 +50,18 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 		{ template = "object/tangible/furniture/gcw/gcw_rebel_rug_01.iff", weight = 5 },
 		{ template = "object/tangible/furniture/gcw/gcw_imperial_rug_01.iff", weight = 5 },
 		{ template = "object/tangible/furniture/all/frn_all_jedi_council_seat.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_gaming_kiosk_s01.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_professor_desk.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_desk_map_table.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_command_console.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_light_chair_s01.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_dark_chair_s01.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_table_dark_01.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_table_dark_02.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_table_light_01.iff", weight = 5 },
+		{ template = "object/tangible/furniture/jedi/frn_all_table_light_02.iff", weight = 5 },
+		{ template = "object/tangible/loot/loot_schematic/technical_console_s01_schematic.iff", weight = 5 },
+		{ template = "object/tangible/loot/loot_schematic/technical_console_s02_schematic.iff", weight = 5 },
 	},
 	dailyLootCount  = 1,     -- how many rolls from the pool to award
 	dailyLootMsg    = "You received a reward item from the cave assignment.",
