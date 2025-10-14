@@ -98,7 +98,20 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                 local optionLink = luaLastConversationScreen:getOptionLink(selectedOption)
                 nextConversationScreen = conversation:getScreen(optionLink)
                 -- Get some information about the player.
-                local credits = creature:getCashCredits()
+                -- Wallet helpers: allow spending bank if cash is short
+local function canAfford(cost)
+  return (creature:getCashCredits() + creature:getBankCredits()) >= cost
+end
+
+local function charge(cost)
+  local cash = creature:getCashCredits()
+  if cash >= cost then
+    creature:subtractCashCredits(cost)
+  else
+    if cash > 0 then creature:subtractCashCredits(cash) end
+    creature:subtractBankCredits(cost - cash)
+  end
+end
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
                 -- Take action when the player makes a purchase.
@@ -109,28 +122,28 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     nextConversationScreen = conversation:getScreen("insufficient_space")
                     creature:sendSystemMessage("You do not have enough inventory space")
                     
---                if (optionLink == "buff1" and credits < 5000) then
+--                if (optionLink == "buff1" and not canAfford(5000)) then
 --                    -- Bail if the player doesn’t have enough cash on hand.  
 --                    -- Plays a chat box message from the NPC as well as a system message.
 --                      nextConversationScreen = conversation:getScreen("insufficient_funds")
 --                      creature:sendSystemMessage("You have insufficient funds") 
---                elseif (optionLink == "buff1" and credits >= 5000) then
+--                elseif (optionLink == "buff1" and canAfford(5000)) then
 --                    -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
---                    creature:subtractCashCredits(5000)
+--                    charge(5000)
 --                    local pItem = 
 --										CreatureObject(conversingPlayer):enhanceCharacter()
 										--buffTerminalMenuComponent:logUsage(conversingPlayer, "enhanceCharacter")
                     --giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
                     --createLoot(pInventory, "junk", 1, false)
                     
---                elseif (optionLink == "buff2" and credits < 10000000) then
+--                elseif (optionLink == "buff2" and not canAfford(10000000)) then
 --                    -- Bail if the player doesn’t have enough cash on hand.  
 --                    -- Plays a chat box message from the NPC as well as a system message.
 --                      nextConversationScreen = conversation:getScreen("insufficient_funds")
 --                      creature:sendSystemMessage("You have insufficient funds") 
---                elseif (optionLink == "buff2" and credits >= 10000000) then
+--                elseif (optionLink == "buff2" and canAfford(10000000)) then
 --                    -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
---                    creature:subtractCashCredits(10000000)
+--                    charge(10000000)
 --                    local pItem = 
 --										CreatureObject(conversingPlayer):enhanceCharacter()
 --                    --giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
@@ -138,691 +151,691 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
 
 
 --WEAPONS
-                elseif (optionLink == "option1" and credits < 25000) then
+                elseif (optionLink == "option1" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option1" and credits >= 25000) then
+                elseif (optionLink == "option1" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/weapon/ranged/carbine/carbine_dh17_snubnose.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option2" and credits < 25000) then
+                elseif (optionLink == "option2" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option2" and credits >= 25000) then
+                elseif (optionLink == "option2" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/weapon/ranged/rifle/rifle_dlt20a.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option3" and credits < 25000) then
+                elseif (optionLink == "option3" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option3" and credits >= 25000) then
+                elseif (optionLink == "option3" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/weapon/ranged/pistol/pistol_dl44.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option4" and credits < 25000) then
+                elseif (optionLink == "option4" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option4" and credits >= 25000) then
+                elseif (optionLink == "option4" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/melee/sword/sword_01.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option5" and credits < 25000) then
+                elseif (optionLink == "option5" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option5" and credits >= 25000) then
+                elseif (optionLink == "option5" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/melee/2h_sword/2h_sword_battleaxe.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option6" and credits < 25000) then
+                elseif (optionLink == "option6" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option6" and credits >= 25000) then
+                elseif (optionLink == "option6" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/melee/polearm/lance_staff_wood_s2.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option7" and credits < 25000) then
+                elseif (optionLink == "option7" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option7" and credits >= 25000) then
+                elseif (optionLink == "option7" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/melee/special/vibroknuckler.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option8" and credits < 25000) then
+                elseif (optionLink == "option8" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option8" and credits >= 25000) then
+                elseif (optionLink == "option8" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/ranged/rifle/rifle_lightning.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option9" and credits < 25000) then
+                elseif (optionLink == "option9" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option9" and credits >= 25000) then
+                elseif (optionLink == "option9" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/ranged/rifle/rifle_flame_thrower.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option10" and credits < 25000) then
+                elseif (optionLink == "option10" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option10" and credits >= 25000) then
+                elseif (optionLink == "option10" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/ranged/rifle/rifle_acid_beam.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option11" and credits < 25000) then
+                elseif (optionLink == "option11" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option11" and credits >= 25000) then
+                elseif (optionLink == "option11" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/ranged/grenade/grenade_proton.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option55" and credits < 25000) then
+                elseif (optionLink == "option55" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option55" and credits >= 25000) then
+                elseif (optionLink == "option55" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/weapon/ranged/heavy/heavy_rocket_launcher.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
 --ARMORRRRRR
-                elseif (optionLink == "option12" and credits < 100000) then
+                elseif (optionLink == "option12" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option12" and credits >= 100000) then
+                elseif (optionLink == "option12" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
 										
                     giveItem(pInventory, "object/tangible/wearables/armor/ubese/armor_ubese_pants.iff", -1)
                     --createLoot(pInventory, "composite_armor", 50, false)
                     
-                elseif (optionLink == "option13" and credits < 100000) then
+                elseif (optionLink == "option13" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option13" and credits >= 100000) then
+                elseif (optionLink == "option13" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/wearables/armor/ubese/armor_ubese_jacket.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option14" and credits < 100000) then
+                elseif (optionLink == "option14" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option14" and credits >= 100000) then
+                elseif (optionLink == "option14" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/wearables/armor/ubese/armor_ubese_helmet.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option15" and credits < 100000) then
+                elseif (optionLink == "option15" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option15" and credits >= 100000) then
+                elseif (optionLink == "option15" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/ubese/armor_ubese_bracer_l.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option16" and credits < 25000) then
+                elseif (optionLink == "option16" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option16" and credits >= 25000) then
+                elseif (optionLink == "option16" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
 										
                     giveItem(pInventory, "object/tangible/wearables/armor/chitin/armor_chitin_s01_leggings.iff", -1)
                     --createLoot(pInventory, "kashyyykian_hunting_armor", 50, false)
                     
-                elseif (optionLink == "option17" and credits < 25000) then
+                elseif (optionLink == "option17" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option17" and credits >= 25000) then
+                elseif (optionLink == "option17" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/chitin/armor_chitin_s01_chest_plate.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option18" and credits < 25000) then
+                elseif (optionLink == "option18" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option18" and credits >= 25000) then
+                elseif (optionLink == "option18" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/chitin/armor_chitin_s01_helmet.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option19" and credits < 25000) then
+                elseif (optionLink == "option19" and not canAfford(25000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option19" and credits >= 25000) then
+                elseif (optionLink == "option19" and canAfford(25000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(25000)
+                    charge(25000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/chitin/armor_chitin_s01_bracer_l.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option20" and credits < 250000) then
+                elseif (optionLink == "option20" and not canAfford(250000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option20" and credits >= 250000) then
+                elseif (optionLink == "option20" and canAfford(250000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(250000)
+                    charge(250000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
 										
                     giveItem(pInventory, "object/tangible/wearables/armor/composite/armor_composite_leggings.iff", -1)
                     --createLoot(pInventory, "ithorian_sentinel_armor", 50, false)
                     
-                elseif (optionLink == "option21" and credits < 250000) then
+                elseif (optionLink == "option21" and not canAfford(250000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option21" and credits >= 250000) then
+                elseif (optionLink == "option21" and canAfford(250000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(250000)
+                    charge(250000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/composite/armor_composite_chest_plate.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option22" and credits < 250000) then
+                elseif (optionLink == "option22" and not canAfford(250000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option22" and credits >= 250000) then
+                elseif (optionLink == "option22" and canAfford(250000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(250000)
+                    charge(250000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/composite/armor_composite_helmet.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option23" and credits < 250000) then
+                elseif (optionLink == "option23" and not canAfford(250000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option23" and credits >= 250000) then
+                elseif (optionLink == "option23" and canAfford(250000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(250000)
+                    charge(250000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/composite/armor_composite_gloves.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
 
-		 elseif (optionLink == "option24" and credits < 250000) then
+		 elseif (optionLink == "option24" and not canAfford(250000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option24" and credits >= 250000) then
+                elseif (optionLink == "option24" and canAfford(250000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(250000)
+                    charge(250000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/wearables/armor/composite/armor_composite_bracer_l.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                                        
 --ARTISAN
-                elseif (optionLink == "option28" and credits < 10000) then
+                elseif (optionLink == "option28" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option28" and credits >= 10000) then
+                elseif (optionLink == "option28" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option26" and credits < 1000) then
+                elseif (optionLink == "option26" and not canAfford(1000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option26" and credits >= 1000) then
+                elseif (optionLink == "option26" and canAfford(1000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(1000)
+                    charge(1000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/crafting/station/generic_tool.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option27" and credits < 5000) then
+                elseif (optionLink == "option27" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option27" and credits >= 5000) then
+                elseif (optionLink == "option27" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/wearables/backpack/backpack_s01.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option29" and credits < 50000) then
+                elseif (optionLink == "option29" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option29" and credits >= 50000) then
+                elseif (optionLink == "option29" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/harvester_deed/harvester_ore_s2_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option30" and credits < 50000) then
+                elseif (optionLink == "option30" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option30" and credits >= 50000) then
+                elseif (optionLink == "option30" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/harvester_deed/harvester_flora_deed_medium.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option31" and credits < 50000) then
+                elseif (optionLink == "option31" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option31" and credits >= 50000) then
+                elseif (optionLink == "option31" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/harvester_deed/harvester_gas_deed_medium.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option32" and credits < 50000) then
+                elseif (optionLink == "option32" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option32" and credits >= 50000) then
+                elseif (optionLink == "option32" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/harvester_deed/harvester_liquid_deed_medium.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option33" and credits < 50000) then
+                elseif (optionLink == "option33" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option33" and credits >= 50000) then
+                elseif (optionLink == "option33" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/harvester_deed/harvester_moisture_deed_medium.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option88" and credits < 500) then
+                elseif (optionLink == "option88" and not canAfford(500)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option88" and credits >= 500) then
+                elseif (optionLink == "option88" and canAfford(500)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(500)
+                    charge(500)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/survey_tool/survey_tool_mineral.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option25" and credits < 500) then
+                elseif (optionLink == "option25" and not canAfford(500)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option25" and credits >= 500) then
+                elseif (optionLink == "option25" and canAfford(500)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(500)
+                    charge(500)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/survey_tool/survey_tool_liquid.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
 
-                elseif (optionLink == "option89" and credits < 100000) then
+                elseif (optionLink == "option89" and not canAfford(100000)) then
                     nextConversationScreen = conversation:getScreen("insufficient_funds")
                     creature:sendSystemMessage("You have insufficient funds")
-                elseif (optionLink == "option89" and credits >= 100000) then
-                    creature:subtractCashCredits(100000)
+                elseif (optionLink == "option89" and canAfford(100000)) then
+                    charge(100000)
                     local pItem = giveItem(pInventory, "object/tangible/survey_tool/survey_tool_all.iff", -1)    
 
-                elseif (optionLink == "option66" and credits < 10000) then
+                elseif (optionLink == "option66" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option66" and credits >= 10000) then
+                elseif (optionLink == "option66" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/weapon_repair.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option67" and credits < 10000) then
+                elseif (optionLink == "option67" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option67" and credits >= 10000) then
+                elseif (optionLink == "option67" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/armor_repair.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)        
                     
-                elseif (optionLink == "option68" and credits < 10000) then
+                elseif (optionLink == "option68" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option68" and credits >= 10000) then
+                elseif (optionLink == "option68" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/slicing/slicing_weapon_upgrade_kit.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option69" and credits < 10000) then
+                elseif (optionLink == "option69" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option69" and credits >= 10000) then
+                elseif (optionLink == "option69" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/slicing/slicing_armor_upgrade_kit.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)        
                     
 --TAILOR-------------------
-                elseif (optionLink == "option70" and credits < 5000) then
+                elseif (optionLink == "option70" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option70" and credits >= 5000) then
+                elseif (optionLink == "option70" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/component/clothing/reinforced_fiber_panels.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option71" and credits < 5000) then
+                elseif (optionLink == "option71" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option71" and credits >= 5000) then
+                elseif (optionLink == "option71" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/component/clothing/synthetic_cloth.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)    
                     
-                elseif (optionLink == "option76" and credits < 5000) then
+                elseif (optionLink == "option76" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option76" and credits >= 5000) then
+                elseif (optionLink == "option76" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/component/clothing/fiberplast_panel.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
 --ARCHITECT
-                elseif (optionLink == "option34" and credits < 200000) then
+                elseif (optionLink == "option34" and not canAfford(200000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option34" and credits >= 200000) then
+                elseif (optionLink == "option34" and canAfford(200000)) then
                     -- Take 200,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(200000)
+                    charge(200000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/deed/player_house_deed/generic_house_small_style_02_floor_02_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option35" and credits < 100000) then
+                elseif (optionLink == "option35" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option35" and credits >= 100000) then
+                elseif (optionLink == "option35" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/deed/player_house_deed/generic_house_medium_style_02_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option36" and credits < 100000) then
+                elseif (optionLink == "option36" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option36" and credits >= 100000) then
+                elseif (optionLink == "option36" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/deed/factory_deed/factory_clothing_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option37" and credits < 100000) then
+                elseif (optionLink == "option37" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option37" and credits >= 100000) then
+                elseif (optionLink == "option37" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/factory_deed/factory_food_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option38" and credits < 100000) then
+                elseif (optionLink == "option38" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option38" and credits >= 100000) then
+                elseif (optionLink == "option38" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/factory_deed/factory_item_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option39" and credits < 100000) then
+                elseif (optionLink == "option39" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option39" and credits >= 100000) then
+                elseif (optionLink == "option39" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/deed/factory_deed/factory_structure_deed.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option72" and credits < 50000) then
+                elseif (optionLink == "option72" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option72" and credits >= 50000) then
+                elseif (optionLink == "option72" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/clothing_station.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option73" and credits < 50000) then
+                elseif (optionLink == "option73" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option73" and credits >= 50000) then
+                elseif (optionLink == "option73" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/food_station.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)   
                     
-                elseif (optionLink == "option74" and credits < 50000) then
+                elseif (optionLink == "option74" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option74" and credits >= 50000) then
+                elseif (optionLink == "option74" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/weapon_station.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option75" and credits < 50000) then
+                elseif (optionLink == "option75" and not canAfford(50000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option75" and credits >= 50000) then
+                elseif (optionLink == "option75" and canAfford(50000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(50000)
+                    charge(50000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/crafting/station/structure_station.iff", -1)
@@ -830,79 +843,79 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                     
 --cheffff
 
-                elseif (optionLink == "option40" and credits < 10000) then
+                elseif (optionLink == "option40" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option40" and credits >= 10000) then
+                elseif (optionLink == "option40" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/food/crafted/dessert_air_cake.iff", -1)
                     --createLoot(pInventory, "food2", 300, false)--food2
                     
-                elseif (optionLink == "option41" and credits < 10000) then
+                elseif (optionLink == "option41" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option41" and credits >= 10000) then
+                elseif (optionLink == "option41" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/food/crafted/dish_crispic.iff", -1)
                     --createLoot(pInventory, "food1", 300, false)
                     
-                elseif (optionLink == "option42" and credits < 10000) then
+                elseif (optionLink == "option42" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option42" and credits >= 10000) then
+                elseif (optionLink == "option42" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacter()
                     giveItem(pInventory, "object/tangible/food/crafted/drink_vasarian_brandy.iff", -1)
                     --createLoot(pInventory, "food5", 300, false)
                     
-                elseif (optionLink == "option43" and credits < 10000) then
+                elseif (optionLink == "option43" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option43" and credits >= 10000) then
+                elseif (optionLink == "option43" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/food/crafted/drink_garrmorl.iff", -1)
                     --createLoot(pInventory, "food4", 300, false)
                     
-                elseif (optionLink == "option44" and credits < 10000) then
+                elseif (optionLink == "option44" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option44" and credits >= 10000) then
+                elseif (optionLink == "option44" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/food/crafted/drink_accarragm.iff", -1)
                     --createLoot(pInventory, "food3", 300, false)
                     
-                elseif (optionLink == "option45" and credits < 10000) then
+                elseif (optionLink == "option45" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option45" and credits >= 10000) then
+                elseif (optionLink == "option45" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/food/crafted/drink_blue_milk.iff", -1)
@@ -910,264 +923,264 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
 
 
 --LOOT
-                elseif (optionLink == "option56" and credits < 15000) then
+                elseif (optionLink == "option56" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option56" and credits >= 15000) then
+                elseif (optionLink == "option56" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "pistols", 20, false)
-                elseif (optionLink == "option57" and credits < 15000) then
+                elseif (optionLink == "option57" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option57" and credits >= 15000) then
+                elseif (optionLink == "option57" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "carbines", 20, false)  
-                elseif (optionLink == "option58" and credits < 15000) then
+                elseif (optionLink == "option58" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option58" and credits >= 15000) then
+                elseif (optionLink == "option58" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "rifles", 20, false)
-                elseif (optionLink == "option59" and credits < 15000) then
+                elseif (optionLink == "option59" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option59" and credits >= 15000) then
+                elseif (optionLink == "option59" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "melee_knife", 20, false)   
-                 elseif (optionLink == "option60" and credits < 15000) then
+                 elseif (optionLink == "option60" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option60" and credits >= 15000) then
+                elseif (optionLink == "option60" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "melee_two_handed", 20, false)    
-                 elseif (optionLink == "option61" and credits < 15000) then
+                 elseif (optionLink == "option61" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option61" and credits >= 15000) then
+                elseif (optionLink == "option61" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "melee_polearm", 20, false)                                    
-                 elseif (optionLink == "option62" and credits < 15000) then
+                 elseif (optionLink == "option62" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option62" and credits >= 15000) then
+                elseif (optionLink == "option62" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "melee_unarmed", 20, false)
-                 elseif (optionLink == "option63" and credits < 15000) then
+                 elseif (optionLink == "option63" and not canAfford(15000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option63" and credits >= 15000) then
+                elseif (optionLink == "option63" and canAfford(15000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(15000)
+                    charge(15000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "heavy_weapons_rifle", 20, false)    
 
 
 
-                elseif (optionLink == "option46" and credits < 500000) then
+                elseif (optionLink == "option46" and not canAfford(500000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option46" and credits >= 500000) then
+                elseif (optionLink == "option46" and canAfford(500000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(200000)
+                    charge(200000)
                     local pItem = 
                     giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option49" and credits < 100000) then
+                elseif (optionLink == "option49" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option49" and credits >= 100000) then
+                elseif (optionLink == "option49" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "weapons_all", 300, false)
                     
-                elseif (optionLink == "option48" and credits < 100000) then
+                elseif (optionLink == "option48" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option48" and credits >= 100000) then
+                elseif (optionLink == "option48" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "armor_all", 300, false)
                     
-                elseif (optionLink == "option47" and credits < 100000) then
+                elseif (optionLink == "option47" and not canAfford(100000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option47" and credits >= 100000) then
+                elseif (optionLink == "option47" and canAfford(100000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(100000)
+                    charge(100000)
                     local pItem = 
                     --giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     createLoot(pInventory, "wearables_all", 300, false)
                     
 --DOCTOR
                     
-                elseif (optionLink == "buff1" and credits < 10000) then
+                elseif (optionLink == "buff1" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "buff1" and credits >= 10000) then
+                elseif (optionLink == "buff1" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                    
 										CreatureObject(conversingPlayer):enhanceCharacter()
 										--buffTerminalMenuComponent:logUsage(conversingPlayer, "enhanceCharacter")
                     --giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
                     --createLoot(pInventory, "junk", 1, false)
                     
-                elseif (optionLink == "reset_buffs" and credits < 2000) then
+                elseif (optionLink == "reset_buffs" and not canAfford(2000)) then
                     nextConversationScreen = conversation:getScreen("insufficient_funds")
                     creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "reset_buffs" and credits >= 2000) then
-                    creature:subtractCashCredits(2000)
+                elseif (optionLink == "reset_buffs" and canAfford(2000)) then
+                    charge(2000)
                     CreatureObject(conversingPlayer):reset_buffs()
 
-               -- elseif (optionLink == "buff3" and credits < 30000) then
+               -- elseif (optionLink == "buff3" and not canAfford(30000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                    --   nextConversationScreen = conversation:getScreen("insufficient_funds")
                    --   creature:sendSystemMessage("You have insufficient funds") 
-               -- elseif (optionLink == "buff3" and credits >= 30000) then
+               -- elseif (optionLink == "buff3" and canAfford(30000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                 --   creature:subtractCashCredits(30000)
+                 --   charge(30000)
 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuffTHREE()
 
-               -- elseif (optionLink == "buff4" and credits < 10000) then
+               -- elseif (optionLink == "buff4" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                 --      nextConversationScreen = conversation:getScreen("insufficient_funds")
                 --      creature:sendSystemMessage("You have insufficient funds") 
-               -- elseif (optionLink == "buff4" and credits >= 10000) then
+               -- elseif (optionLink == "buff4" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
                     
-	               --   creature:subtractCashCredits(10000)
+	               --   charge(10000)
 	                  
 									--	CreatureObject(conversingPlayer):enhanceCharacterEntBuffONE()
 
-               -- elseif (optionLink == "buff5" and credits < 20000) then
+               -- elseif (optionLink == "buff5" and not canAfford(20000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                   --    nextConversationScreen = conversation:getScreen("insufficient_funds")
                  --     creature:sendSystemMessage("You have insufficient funds") 
-               -- elseif (optionLink == "buff5" and credits >= 20000) then
+               -- elseif (optionLink == "buff5" and canAfford(20000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
                     
-	               --   creature:subtractCashCredits(20000)
+	               --   charge(20000)
 
 										--CreatureObject(conversingPlayer):enhanceCharacterEntBuffTWO()
 
 
-                elseif (optionLink == "option50" and credits < 500) then
+                elseif (optionLink == "option50" and not canAfford(500)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option50" and credits >= 500) then
+                elseif (optionLink == "option50" and canAfford(500)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(500)
+                    charge(500)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_a.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option51" and credits < 1000) then
+                elseif (optionLink == "option51" and not canAfford(1000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option51" and credits >= 1000) then
+                elseif (optionLink == "option51" and canAfford(1000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(1000)
+                    charge(1000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_b.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option52" and credits < 2000) then
+                elseif (optionLink == "option52" and not canAfford(2000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option52" and credits >= 2000) then
+                elseif (optionLink == "option52" and canAfford(2000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(2000)
+                    charge(2000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_c.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option53" and credits < 5000) then
+                elseif (optionLink == "option53" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option53" and credits >= 5000) then
+                elseif (optionLink == "option53" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_d.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
                     
-                elseif (optionLink == "option54" and credits < 10000) then
+                elseif (optionLink == "option54" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option54" and credits >= 10000) then
+                elseif (optionLink == "option54" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_e.iff", -1)
@@ -1175,40 +1188,40 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                        
 --DROIDS  
                     
-                elseif (optionLink == "option64" and credits < 5000) then
+                elseif (optionLink == "option64" and not canAfford(5000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option64" and credits >= 5000) then
+                elseif (optionLink == "option64" and canAfford(5000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(5000)
+                    charge(5000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/mission/mission_bounty_droid_seeker.iff", -1)
                     --createLoot(pInventory, "junk", 300, false) 
                     
-                elseif (optionLink == "option65" and credits < 10000) then
+                elseif (optionLink == "option65" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
                       creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "option65" and credits >= 10000) then
+                elseif (optionLink == "option65" and canAfford(10000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    creature:subtractCashCredits(10000)
+                    charge(10000)
                     local pItem = 
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/mission/mission_bounty_droid_probot.iff", -1)
                     --createLoot(pInventory, "junk", 300, false) 
                   -- Add this new option for Politician Master
                 
-               -- elseif (optionLink == "option300" and credits < 50000) then
+               -- elseif (optionLink == "option300" and not canAfford(50000)) then
                     -- Bail if the player doesn't have enough cash on hand.  
                --     nextConversationScreen = conversation:getScreen("insufficient_funds")
                --     creature:sendSystemMessage("You have insufficient funds") 
-               -- elseif (optionLink == "option300" and credits >= 50000) then
+               -- elseif (optionLink == "option300" and canAfford(50000)) then
                     -- Take 50,000 credits from the player's cash on hand and grant politician master
-               --     creature:subtractCashCredits(50000)
+               --     charge(50000)
     
                     -- Grant politician master access (you can customize what this does)
                 -- Grant politician skills (you'll need to find the correct skill names)
