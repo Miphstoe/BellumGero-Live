@@ -13,7 +13,7 @@ r2_d2_event = Creature:new {
     mobType = MOB_DROID,
 
     -- Tuning: “somewhat strong” elite add, not a boss
-    level = 85,
+    level = 200,
     chanceHit = 0.62,
     damageMin = 350,
     damageMax = 520,

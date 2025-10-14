@@ -13,7 +13,7 @@ c3po_event = Creature:new {
     mobType = MOB_DROID,
 
     -- Tuning: “somewhat strong” like your R2 template
-    level = 85,
+    level = 200,
     chanceHit = 0.62,
     damageMin = 350,
     damageMax = 520,
