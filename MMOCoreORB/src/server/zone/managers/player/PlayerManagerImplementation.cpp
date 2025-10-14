@@ -2117,7 +2117,14 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 				float xpAmount = baseXp;
 				int playerLevel = calculatePlayerLevel(attackerCreo, xpType);
 
-				xpAmount *= (float) damage / totalDamage;
+				// MODIFIED: Only split XP if player is solo
+				if (group != nullptr) {
+					// Group members get full XP (no splitting)
+					xpAmount = baseXp;
+				} else {
+					// Solo players get XP based on their damage contribution
+					xpAmount *= (float) damage / totalDamage;
+				}
 
 				//Cap xp based on level
 				xpAmount = Math::min(xpAmount, playerLevel * 300.f);
