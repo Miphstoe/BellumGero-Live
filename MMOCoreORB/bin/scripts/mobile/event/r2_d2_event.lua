@@ -20,8 +20,8 @@ r2_d2_event = Creature:new {
     baseXp = 8500,
 
     -- HAM / Armor / Resists (droid-leaning, generally high; LS kept modest)
-    baseHAM = 46000,
-    baseHAMmax = 52000,
+    baseHAM = 210000,
+    baseHAMmax = 250000,
     armor = 1,  -- 0=none, 1=light, 2=medium, 3=heavy (keep light to let resists do the work)
     -- Resist order: kinetic, energy, blast, heat, cold, electricity, acid, stun, lightsaber
     resists = {65, 65, 55, 60, 55, 70, 45, 35, 25},
