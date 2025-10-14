@@ -188,3 +188,5 @@ includeFile("tangible/loot/loot_schematic/technical_console_s02_schematic.lua")
 includeFile("tangible/loot/loot_schematic/throwpillow_schematic.lua")
 includeFile("tangible/loot/loot_schematic/tumble_blender_schematic.lua")
 includeFile("tangible/loot/loot_schematic/utensils_schematic.lua")
+
+includeFile("tangible/loot/loot_schematic/sword_wookiee_schematic.lua")

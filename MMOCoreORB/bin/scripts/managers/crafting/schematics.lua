@@ -1239,6 +1239,7 @@ schematics = {
 	{path="object/draft_schematic/weapon/component/reinforcement_core_advanced.iff"},
 	{path="object/draft_schematic/weapon/knife_vibroblade.iff"},
 	{path="object/draft_schematic/weapon/sword_ryyk_blade.iff"},
+	{path="object/draft_schematic/weapon/sword_wookiee.iff"},
 	{path="object/draft_schematic/weapon/katana.iff"},
 	{path="object/draft_schematic/weapon/component/blade_vibro_unit_advanced.iff"},
 	{path="object/draft_schematic/weapon/baton_stun.iff"},
