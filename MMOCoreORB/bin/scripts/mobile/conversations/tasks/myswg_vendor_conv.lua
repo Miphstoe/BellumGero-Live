@@ -825,7 +825,7 @@ myswg_vendor_conv:addScreen(myswg_vendor_deny_quest);
 myswg_vendor_insufficient_funds = ConvoScreen:new {
     id = "insufficient_funds",  
     leftDialog = "", 
-    customDialogText = "Sorry, but you don't have enough cash credits with you to purchase that. Head on over to the bank. I'll be here when ya get back!",
+    customDialogText = "Sorry, but you don't have enough credits credits with you to purchase that. Head on over to the bank. I'll be here when ya get back!",
     stopConversation = "true",
     options = { }
 }
