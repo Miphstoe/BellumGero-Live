@@ -97,26 +97,6 @@ object_tangible_wearables_armor_marine_armor_marine_backpack = object_tangible_w
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 	
-	-- Damage types in WeaponObject
-	vulnerability = ELECTRICITY + ACID + STUN + LIGHTSABER,
-
-	-- These are default Blue Frog stats
-	healthEncumbrance = 1,
-	actionEncumbrance = 1,
-	mindEncumbrance = 1,
-
-	-- LIGHT, MEDIUM, HEAVY
-	rating = LIGHT,
-
-	kinetic = 15,
-	energy = 15,
-	electricity = 15,
-	stun = 15,
-	blast = 15,
-	heat = 15,
-	cold = 15,
-	acid = 15,
-	lightSaber = 0
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_marine_armor_marine_backpack, "object/tangible/wearables/armor/marine/armor_marine_backpack.iff")
