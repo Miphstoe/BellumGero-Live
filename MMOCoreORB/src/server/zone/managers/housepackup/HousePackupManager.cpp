@@ -156,6 +156,23 @@ static void removeFileIfExists(const String& p) {
     // std::remove returns 0 on success, non-zero on failure; ignore result.
     std::remove(p.toCharArray());
 }
+// Map stable portal/cell number -> CellObject*
+static void mapCellsByNumber(BuildingObject* building,
+                             HashTable<uint16, ManagedReference<CellObject*>>& out) {
+    out.removeAll(); // HashTable has removeAll(), not clear()
+    if (!building) return;
+
+    Vector< ManagedReference<CellObject*> > cells;
+    listCells(building, cells);
+
+    for (int i = 0; i < cells.size(); ++i) {
+        ManagedReference<CellObject*> c = cells.get(i);
+        if (!c) continue;
+        uint16 num = (uint16)c->getCellNumber(); // stable id in Core3
+        out.put(num, c);
+    }
+}
+
 void HousePackupManager::sweepDanglingLotHolds(CreatureObject* player) {
     if (!player) return;
 
@@ -277,14 +294,25 @@ static void listCells(BuildingObject* building, Vector< ManagedReference<CellObj
 
     Locker _lock(building);
 
-    const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* cont = building->getContainerObjects();
-    if (!cont) return;
+    // Method 1: Use building's built-in cell enumeration
+    for (uint32 i = 1; i <= building->getTotalCellNumber(); ++i) {
+        ManagedReference<CellObject*> cell = building->getCell(i);
+        if (cell != nullptr) {
+            cellsOut.add(cell);
+        }
+    }
 
-    for (int i = 0; i < cont->size(); ++i) {
-        ManagedReference<SceneObject*> child = cont->elementAt(i).getValue();
-        if (child != nullptr && child->isCellObject()) {
-            ManagedReference<CellObject*> cell = cast<CellObject*>(child.get());
-            if (cell != nullptr) cellsOut.add(cell);
+    // Method 2: If no cells found via method 1, fall back to container traversal
+    if (cellsOut.size() == 0) {
+        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* cont = building->getContainerObjects();
+        if (!cont) return;
+
+        for (int i = 0; i < cont->size(); ++i) {
+            ManagedReference<SceneObject*> child = cont->elementAt(i).getValue();
+            if (child != nullptr && child->isCellObject()) {
+                ManagedReference<CellObject*> cell = cast<CellObject*>(child.get());
+                if (cell != nullptr) cellsOut.add(cell);
+            }
         }
     }
 }
@@ -333,7 +361,36 @@ static inline float rF32(const Vector<uint8>& b, int& off) {
     cvt.u = u;
     return cvt.f;
 }
+// Add this new function to HousePackupManager.cpp
+static void listAllBuildingContents(BuildingObject* building, Vector< ManagedReference<SceneObject*> >& out) {
+    out.removeAll();
+    if (!building) return;
 
+    Locker _lock(building);
+
+    // Recursively scan the entire building hierarchy
+    std::function<void(SceneObject*)> scanObject = [&](SceneObject* obj) {
+        if (!obj) return;
+        
+        // Add this object if it's not a cell and not a creature/terminal
+        if (!obj->isCellObject() && !obj->isCreatureObject() && !obj->isTerminal()) {
+            out.add(obj);
+        }
+
+        // Recursively scan children
+        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* cont = obj->getContainerObjects();
+        if (cont) {
+            for (int i = 0; i < cont->size(); ++i) {
+                ManagedReference<SceneObject*> child = cont->elementAt(i).getValue();
+                if (child != nullptr) {
+                    scanObject(child.get());
+                }
+            }
+        }
+    };
+
+    scanObject(building);
+}
 
 // -----------------------------
 // Exposed helpers (header API)
@@ -477,24 +534,66 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     Vector< ManagedReference<CellObject*> > cells;
     listCells(building, cells);
 
-    // Build payload blob v2: [u8 ver=2][u32 count][per-item...]
-    // Per item v2: u32 tpl, u16 cellIndex, u16 parentIndex(0xFFFF=no parent),
-    //              f32 px,py,pz, f32 qw,qx,qy,qz
+    // Debug: Show what cells and items were found
+    requester->sendSystemMessage("Total cells found: " + String::valueOf((int)cells.size()));
+
+    // Debug: Try to find items using alternative methods
+    for (int ci = 0; ci < cells.size(); ++ci) {
+        ManagedReference<CellObject*> cell = cells.get(ci);
+        if (!cell) continue;
+
+        // Check if cell has ANY children at all
+        if (cell->getContainerObjectsSize() > 0) {
+            requester->sendSystemMessage("Cell " + String::valueOf(ci + 1) +
+                                         " reports " + String::valueOf(cell->getContainerObjectsSize()) +
+                                         " container objects");
+        }
+
+        Vector< ManagedReference<SceneObject*> > contents;
+        listCellContents(cell, contents);
+
+        // Debug: Show cell info
+        requester->sendSystemMessage("Cell " + String::valueOf(ci + 1) + ": " +
+                                     String::valueOf(contents.size()) + " items");
+    }
+
+    // Build payload blob v3: [u8 ver=3][u32 count][per-item...]
+    // Per item v3: u32 tpl, u16 cellIndex, u16 parentIndex(0xFFFF=no parent),
+    //              u16 cellNumber, f32 px,py,pz, f32 qw,qx,qy,qz
     Vector<uint8> blob;
-    blob.add((uint8)2); // version 2
+    blob.add((uint8)3); // version 3: stable cellNumber + cell-local coords
 
     // Pre-order list so we know parent indices
     Vector< ManagedReference<SceneObject*> > ordered;
     Vector<uint16> orderedCellIndex;
     Vector<uint16> orderedParentIndex;
 
+    // Store all cell contents for reuse in deletion phase
+    Vector< Vector< ManagedReference<SceneObject*> > > allCellContents;
+
     // Seed with top-level objects in each cell
     for (int ci = 0; ci < cells.size(); ++ci) {
         ManagedReference<CellObject*> cell = cells.get(ci);
-        if (!cell) continue;
 
         Vector< ManagedReference<SceneObject*> > contents;
-        listCellContents(cell, contents);
+        if (cell != nullptr) {
+            listCellContents(cell, contents);
+        }
+
+        // Store contents for later reuse during deletion
+        allCellContents.add(contents);
+
+        // Debug: Show exactly what items are found in each cell with coordinates
+        for (int i = 0; i < contents.size(); ++i) {
+            SceneObject* obj = contents.get(i);
+            if (obj != nullptr && !obj->isCreatureObject() && !obj->isTerminal()) {
+                requester->sendSystemMessage("  Found item: " + obj->getDisplayedName() +
+                                             " in cell " + String::valueOf(ci + 1) +
+                                             " at X=" + String::valueOf(obj->getPositionX()) +
+                                             " Y=" + String::valueOf(obj->getPositionY()) +
+                                             " Z=" + String::valueOf(obj->getPositionZ()));
+            }
+        }
 
         for (int i = 0; i < contents.size(); ++i) {
             collectDeep(contents.get(i), (uint16)ci, (uint16)0xFFFF,
@@ -504,12 +603,40 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
 
     uint32 count = (uint32)ordered.size();
 
+    requester->sendSystemMessage("Items found via cell scanning: " + String::valueOf(count));
+
+    // If no items found via cell scanning, try building-wide scan
+    if (count == 0) {
+        requester->sendSystemMessage("No items found via cell scanning, trying building-wide scan...");
+
+        Vector< ManagedReference<SceneObject*> > allBuildingItems;
+        listAllBuildingContents(building, allBuildingItems);
+
+        requester->sendSystemMessage("Building-wide scan found " +
+                                     String::valueOf(allBuildingItems.size()) + " items");
+
+        for (int i = 0; i < allBuildingItems.size(); ++i) {
+            SceneObject* obj = allBuildingItems.get(i);
+            if (obj != nullptr) {
+                requester->sendSystemMessage("  Found: " + obj->getDisplayedName());
+                collectDeep(obj, 0, (uint16)0xFFFF, ordered, orderedCellIndex, orderedParentIndex);
+            }
+        }
+
+        count = (uint32)ordered.size();
+        requester->sendSystemMessage("After building-wide scan: " + String::valueOf(count) + " items");
+
+        // Store building items for deletion
+        allCellContents.removeAll();
+        allCellContents.add(allBuildingItems);
+    }
+
     requester->sendSystemMessage(
         "Pack scan: " + String::valueOf((int)cells.size()) + " cells, " +
         String::valueOf((int)count) + " candidate items."
     );
 
-    // write count (big-endian u32)
+    // Write count (big-endian u32)
     blob.add((uint8)((count >> 24) & 0xFF));
     blob.add((uint8)((count >> 16) & 0xFF));
     blob.add((uint8)((count >>  8) & 0xFF));
@@ -524,30 +651,40 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         blob.add((uint8)((u.u      ) & 0xFF));
     };
 
-    // write per-item
+    // write per-item (v3 layout)
     for (uint32 idx = 0; idx < count; ++idx) {
         SceneObject* obj = ordered.get(idx);
         uint16 cellIdx   = orderedCellIndex.get(idx);
         uint16 parentIdx = orderedParentIndex.get(idx);
         uint32 tpl       = obj->getServerObjectCRC();
 
-        // tpl u32
+        // u32 tpl
         blob.add((uint8)((tpl >> 24) & 0xFF));
         blob.add((uint8)((tpl >> 16) & 0xFF));
         blob.add((uint8)((tpl >>  8) & 0xFF));
         blob.add((uint8)((tpl      ) & 0xFF));
 
-        // cellIndex u16
+        // u16 cellIdx (kept for backward-compat layout)
         blob.add((uint8)((cellIdx >> 8) & 0xFF));
         blob.add((uint8)((cellIdx     ) & 0xFF));
 
-        // parentIndex u16 (0xFFFF = top-level)
+        // u16 parentIdx
         blob.add((uint8)((parentIdx >> 8) & 0xFF));
         blob.add((uint8)((parentIdx     ) & 0xFF));
 
-        // positions/orientations: only meaningful for top-level items
+        // u16 cellNumber (stable)
+        uint16 cellNumber = 0;
+        {
+            ManagedReference<CellObject*> objCell =
+                (cellIdx < cells.size()) ? cells.get(cellIdx) : nullptr;
+            if (objCell != nullptr)
+                cellNumber = (uint16)objCell->getCellNumber();
+        }
+        blob.add((uint8)((cellNumber >> 8) & 0xFF));
+        blob.add((uint8)((cellNumber     ) & 0xFF));
+
+        // For top-level items, store cell-local pos & rot; children get identity
         if (parentIdx == (uint16)0xFFFF) {
-            // Store current object transform. In this fork Z is up.
             wf32(obj->getPositionX());
             wf32(obj->getPositionY());
             wf32(obj->getPositionZ());
@@ -556,7 +693,6 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
             wf32(obj->getDirectionY());
             wf32(obj->getDirectionZ());
         } else {
-            // Children will be inserted into their parent's container; no transform needed.
             wf32(0.f); wf32(0.f); wf32(0.f);
             wf32(1.f); wf32(0.f); wf32(0.f); wf32(0.f);
         }
@@ -574,34 +710,49 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         (wrote ? String(" [OK]") : String(" [FAILED]"))
     );
 
-// Now empty the interior so the core will allow redeed/destruction.
-if (building && building->getZone() != nullptr) {
-    Vector< ManagedReference<CellObject*> > cellsToDelete;
-    listCells(building, cellsToDelete);
-    for (int ci = 0; ci < cellsToDelete.size(); ++ci) {
-        ManagedReference<CellObject*> cell = cellsToDelete.get(ci);
-        if (cell == nullptr) continue;
-        Vector< ManagedReference<SceneObject*> > children;
-        listCellContents(cell, children);
-        for (int i = 0; i < children.size(); ++i) {
-            ManagedReference<SceneObject*> obj = children.get(i);
-            if (obj == nullptr) continue;
-            // DO NOT delete players or terminals (e.g., the structure terminal)
-            if (obj->isCreatureObject() || obj->isTerminal())
-                continue;
-            // Delete everything else we packed
-            obj->destroyObjectFromWorld(true);
-            obj->destroyObjectFromDatabase(true);
+    // Now empty the interior so the core will allow redeed/destruction.
+    if (building && building->getZone() != nullptr) {
+        requester->sendSystemMessage("Deleting items from stored contents");
+
+        for (int ci = 0; ci < allCellContents.size(); ++ci) {
+            Vector< ManagedReference<SceneObject*> > children = allCellContents.get(ci);
+
+            int deletedCount = 0;
+            for (int i = 0; i < children.size(); ++i) {
+                ManagedReference<SceneObject*> sobj = children.get(i);
+                if (sobj == nullptr) continue;
+
+                // DO NOT delete players or terminals (e.g., the structure terminal)
+                if (sobj->isCreatureObject() || sobj->isTerminal())
+                    continue;
+
+                requester->sendSystemMessage("  Deleting: " + sobj->getDisplayedName() +
+                    " at X=" + String::valueOf(sobj->getPositionX()) +
+                    " Y=" + String::valueOf(sobj->getPositionY()) +
+                    " Z=" + String::valueOf(sobj->getPositionZ()));
+
+                // Delete everything else we packed
+                sobj->destroyObjectFromWorld(true);
+                sobj->destroyObjectFromDatabase(true);
+                deletedCount++;
+            }
+
+            if (deletedCount > 0) {
+                requester->sendSystemMessage("Content group " + String::valueOf(ci + 1) +
+                                             ": deleted " + String::valueOf(deletedCount) + " items");
+            }
         }
     }
+
+    requester->sendSystemMessage(
+        "Packed " + String::valueOf(count) +
+        " items. Use 'Destroy Structure' to reclaim the deed. "
+        "When the deed is granted, contents will be attached automatically."
+    );
+
+    return true;
 }
-requester->sendSystemMessage(
-    "Packed " + String::valueOf(count) +
-    " items. Use 'Destroy Structure' to reclaim the deed. "
-    "When the deed is granted, contents will be attached automatically."
-);
-return true;
-}
+
 
 bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleObject* deed, CreatureObject* placer) {
     if (!newBuilding || !deed) return false;
@@ -609,49 +760,40 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
     const uint64 deedOID = deed->getObjectID();
     Vector<uint8> blob;
 
-    // -------- STEP 1: Try RAM by deed OID --------
+    // -------- Locate payload (RAM, then disk; migrate from building if found) --------
     if (gDeedPayloads.containsKey(deedOID)) {
         blob = gDeedPayloads.get(deedOID);
-
     } else {
-        // -------- STEP 2: Try deed files (current, then legacy) --------
-        const String dpath = pathForDeed(deedOID);
+        const String dpath       = pathForDeed(deedOID);
         const String dpathLegacy = pathForDeedLegacy(deedOID);
 
         if (!readBlobFromFile(dpath, blob)) {
-            (void)readBlobFromFile(dpathLegacy, blob); // try legacy; ignore return here
+            (void)readBlobFromFile(dpathLegacy, blob);
         }
 
-        // -------- STEP 3: If still not found, try building OID (RAM/disk/legacy) and MIGRATE --------
         if (blob.isEmpty()) {
-            const uint64 bOID = newBuilding->getObjectID();
+            const uint64 bOID      = newBuilding->getObjectID();
+            const String bpath     = pathForBuilding(bOID);
+            const String bpathLeg  = pathForBuildingLegacy(bOID);
 
-            // 3a) RAM by building
             if (gBuildingPayloads.containsKey(bOID)) {
                 blob = gBuildingPayloads.get(bOID);
                 gBuildingPayloads.remove(bOID);
-
             } else {
-                // 3b) Disk by building (current, then legacy)
-                const String bpath = pathForBuilding(bOID);
-                const String bpathLegacy = pathForBuildingLegacy(bOID);
-
                 if (!readBlobFromFile(bpath, blob)) {
-                    (void)readBlobFromFile(bpathLegacy, blob);
-                    if (!blob.isEmpty()) removeFile(bpathLegacy);
+                    (void)readBlobFromFile(bpathLeg, blob);
+                    if (!blob.isEmpty()) removeFile(bpathLeg);
                 }
                 if (!blob.isEmpty()) removeFile(bpath);
             }
 
-            // If we recovered from a building payload, migrate it into deed RAM+disk for future
             if (!blob.isEmpty()) {
                 gDeedPayloads.put(deedOID, blob);
-                (void)writeBlobToFile(pathForDeed(deedOID), blob);
+                (void)writeBlobToFile(dpath, blob);
             }
         }
     }
 
-    // Nothing found anywhere
     if (blob.isEmpty()) {
         if (placer) placer->sendSystemMessage("No packed contents found for this deed.");
         return false;
@@ -659,8 +801,8 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
 
     // -------- Readers (big-endian) --------
     auto rU8   = [&](int& o)->uint8  { return blob.get(o++); };
-    auto rU16B = [&](int& o)->uint16 { uint16 v = ((uint16)blob.get(o)<<8) | ((uint16)blob.get(o+1)); o+=2; return v; };
-    auto rU32B = [&](int& o)->uint32 { uint32 v = ((uint32)blob.get(o)<<24)|((uint32)blob.get(o+1)<<16)|((uint32)blob.get(o+2)<<8)|((uint32)blob.get(o+3)); o+=4; return v; };
+    auto rU16B = [&](int& o)->uint16 { uint16 v = ((uint16)blob.get(o) << 8) | ((uint16)blob.get(o+1)); o += 2; return v; };
+    auto rU32B = [&](int& o)->uint32 { uint32 v = ((uint32)blob.get(o) << 24) | ((uint32)blob.get(o+1) << 16) | ((uint32)blob.get(o+2) << 8) | ((uint32)blob.get(o+3)); o += 4; return v; };
     auto rF32B = [&](int& o)->float  { union { uint32 u; float f; } u; u.u = rU32B(o); return u.f; };
 
     int off = 0;
@@ -672,12 +814,17 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         return false;
     }
 
-    uint8  ver   = rU8(off);            // 1 = flat, 2 = hierarchical
+    uint8  ver   = rU8(off);   // 1 = flat, 2 = hierarchical, 3 = hierarchical + stable cellNumber
     uint32 count = rU32B(off);
 
-    // -------- Collect new building cells --------
+    if (placer) {
+        placer->sendSystemMessage("Restore: Found " + String::valueOf(count) + " items to restore");
+    }
+
+    // -------- Collect new building cells + stable number map --------
     Vector< ManagedReference<CellObject*> > cells;
     listCells(newBuilding, cells);
+
     if (cells.isEmpty()) {
         gDeedPayloads.remove(deedOID);
         removeFile(pathForDeed(deedOID));
@@ -686,65 +833,83 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         return false;
     }
 
-    // Keep created objects so children can attach to parents
+    HashTable<uint16, ManagedReference<CellObject*> > cellsByNumber;
+    cellsByNumber.removeAll(); // NOTE: HashTable uses removeAll, not clear()
+
+    for (int i = 0; i < cells.size(); ++i) {
+        ManagedReference<CellObject*> c = cells.get(i);
+        if (!c) continue;
+        uint16 num = (uint16)c->getCellNumber();  // stable portal/cell id
+        cellsByNumber.put(num, c);
+        if (placer) placer->sendSystemMessage("  Cell " + String::valueOf(i + 1) + " => cellNumber " + String::valueOf((int)num));
+    }
+
+    // -------- First pass: create objects; place top-level only --------
     Vector< ManagedReference<SceneObject*> > created;
     Vector<uint16> parentIndex;  // 0xFFFF = no parent (top-level)
-    Vector<uint16> cellIndex;
 
     uint32 restored = 0, failedCreate = 0, failedTransfer = 0;
 
-    // -------- First pass: create objects; place top-level only --------
     for (uint32 k = 0; k < count; ++k) {
-        // v1: u32 tpl, u16 cell, 7*f32; v2 adds u16 parent -> 34 vs 36 bytes
-        int need = (ver >= 2 ? 4+2+2 + 7*4 : 4+2 + 7*4);
+        // Layout sizes:
+        // v1: tpl(4) + cIdx(2)              + 7*f32
+        // v2: tpl(4) + cIdx(2) + pIdx(2)    + 7*f32
+        // v3: tpl(4) + cIdx(2) + pIdx(2) + cellNumber(2) + 7*f32
+        int need = 4 + 2 + ((ver >= 2) ? 2 : 0) + ((ver >= 3) ? 2 : 0) + 7 * 4;
         if (((int)blob.size() - off) < need) break;
 
         uint32 tpl   = rU32B(off);
         uint16 cIdx  = rU16B(off);
         uint16 pIdx  = (ver >= 2) ? rU16B(off) : (uint16)0xFFFF;
+        uint16 cellNumber = 0;
+        if (ver >= 3) {
+            cellNumber = rU16B(off);
+        }
 
         float px = rF32B(off), py = rF32B(off), pz = rF32B(off);
         float qw = rF32B(off), qx = rF32B(off), qy = rF32B(off), qz = rF32B(off);
 
-        ManagedReference<CellObject*> cell =
-            (cIdx < (uint16)cells.size()) ? cells.get((int)cIdx) : cells.get(0);
+        // Choose the destination cell:
+        ManagedReference<CellObject*> cell = nullptr;
+        if (ver >= 3) {
+            if (cellsByNumber.containsKey(cellNumber))
+                cell = cellsByNumber.get(cellNumber);
+        }
+        // Fallback for v1/v2 (or if number missing): best-effort by vector index
+        if (!cell) {
+            cell = (cIdx < (uint16)cells.size()) ? cells.get((int)cIdx) : cells.get(0);
+        }
 
-        // Use persistence=1 so restored items survive restarts
+        // Create object (persistence=1 so it survives restarts)
         SceneObject* raw = ObjectManager::instance()->createObject(tpl, /*persistenceLevel*/1, /*db*/"sceneobjects");
         if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "objects");
         if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "object");
 
         created.add(raw);
         parentIndex.add(pIdx);
-        cellIndex.add(cIdx);
 
-        if (!raw || !cell) { failedCreate += (!raw); failedTransfer += (!!raw && !cell); continue; }
+        if (!raw) { failedCreate++; continue; }
+        if (!cell) { failedTransfer++; raw->destroyObjectFromWorld(true); raw->destroyObjectFromDatabase(true); created.set(k, nullptr); continue; }
 
         if (pIdx == (uint16)0xFFFF) {
-            // Top-level placement: positions were stored with Z up — place as-is.
-            float z = pz;
-
-            // Gentle clamp above floor to prevent sinking on some shells.
-            float floorZ = cell->getPositionZ();
-            if (z < floorZ + 0.01f) z = floorZ + 0.02f;
-
-            raw->setPosition(px, /*world Y*/ py, /*world Z*/ z);
-            raw->setDirection(qw, qx, qy, qz);
-
+            // TOP-LEVEL: put into the cell first, then set local transform (no world Z hacks).
             bool ok = cell->transferObject(raw, /*containmentType*/-1, /*notifyClient*/false, /*allowOverflow*/false, /*notifyRoot*/true);
             if (!ok) ok = cell->transferObject(raw, 0, false, false, true);
+
             if (!ok) {
                 failedTransfer++;
                 raw->destroyObjectFromWorld(true);
                 raw->destroyObjectFromDatabase(true);
                 created.set(k, nullptr);
+                if (placer) placer->sendSystemMessage("  FAILED to place item in its cell.");
             } else {
-                // tiny lift to avoid z-fighting
-                raw->setPosition(raw->getPositionX(), raw->getPositionY(), raw->getPositionZ() + 0.02f);
+                raw->setPosition(px, py, pz);          // cell-local
+                raw->setDirection(qw, qx, qy, qz);     // cell-local
+                raw->setPosition(raw->getPositionX(), raw->getPositionY(), raw->getPositionZ() + 0.02f); // tiny lift
                 restored++;
             }
         }
-        // Children attached in second pass.
+        // Children will be attached in the second pass.
     }
 
     // -------- Second pass: attach children into their parent containers --------
@@ -770,7 +935,7 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         }
     }
 
-    // -------- Cleanup: don’t double-restore --------
+    // -------- Cleanup: don't double-restore --------
     gDeedPayloads.remove(deedOID);
     removeFile(pathForDeed(deedOID));
     removeFile(pathForDeedLegacy(deedOID));
@@ -783,9 +948,9 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             String::valueOf(failedTransfer) + " transfer fails."
         );
     }
-    // Free the lot placeholder now that the house has been placed and contents restored.
-    releaseLotsPlaceholder(deedOID);
 
+    // Free any lot placeholder now that contents are restored.
+    releaseLotsPlaceholder(deedOID);
 
     return restored > 0;
 }
