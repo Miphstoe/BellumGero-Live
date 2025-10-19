@@ -15,6 +15,10 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
         GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer)
     end
+    -- Register player bounty system observer
+    if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedIn then
+        PlayerBountySystem:onPlayerLoggedIn(pPlayer)
+    end
 end
 
 function PlayerTriggers:playerLoggedOut(pPlayer)

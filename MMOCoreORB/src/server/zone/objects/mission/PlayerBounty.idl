@@ -21,9 +21,12 @@ class PlayerBounty extends ManagedObject {
 
 	@dereferenced
 	protected SortedVector<unsigned long> bountyHunterIDs;
-	
+
 	@dereferenced
 	protected VectorMap<unsigned long, unsigned long> missionCooldownList;
+
+	@dereferenced
+	protected VectorMap<unsigned long, int> bountyPlacers;
 
 	public PlayerBounty(unsigned long targetID, int payout) {
 		targetPlayerID = targetID;
@@ -31,6 +34,7 @@ class PlayerBounty extends ManagedObject {
 		online = true;
 		bountyHunterIDs.setNoDuplicateInsertPlan();
 		missionCooldownList.setNoDuplicateInsertPlan();
+		bountyPlacers.setNoDuplicateInsertPlan();
 		lastBountyKill = 0;
 		lastBountyDebuff = 0;
 	}
@@ -103,5 +107,39 @@ class PlayerBounty extends ManagedObject {
 	public native boolean canTakeMission(unsigned long enemyID, unsigned long cooldownTime);
 	public void addMissionCooldown(unsigned long enemyID, unsigned long newTime) {
 		missionCooldownList.put(enemyID, newTime);
+	}
+
+	public void addBountyPlacer(unsigned long placerID, int amount) {
+		if (bountyPlacers.contains(placerID)) {
+			int currentAmount = bountyPlacers.get(placerID);
+			bountyPlacers.put(placerID, currentAmount + amount);
+		} else {
+			bountyPlacers.put(placerID, amount);
+		}
+		reward = reward + amount;
+	}
+
+	@read
+	public boolean hasBountyPlacer(unsigned long placerID) {
+		return bountyPlacers.contains(placerID);
+	}
+
+	@read
+	public int getBountyPlacerAmount(unsigned long placerID) {
+		if (bountyPlacers.contains(placerID)) {
+			return bountyPlacers.get(placerID);
+		}
+		return 0;
+	}
+
+	@local
+	@read
+	public final VectorMap<unsigned long, int> getBountyPlacers() {
+		return bountyPlacers;
+	}
+
+	@read
+	public int getNumberOfBountyPlacers() {
+		return bountyPlacers.size();
 	}
 }

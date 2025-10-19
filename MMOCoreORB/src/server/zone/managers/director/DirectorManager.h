@@ -157,6 +157,8 @@ namespace server {
 		static int deleteStringVectorSharedMemory(lua_State* L);
 		static int getSceneObject(lua_State* L);
 		static int getCreatureObject(lua_State* L);
+		static int placePlayerBounty(lua_State* L);
+		static int checkPlayerBountyExists(lua_State* L);
 		static int addStartingItemsInto(lua_State* L);
 		static int addStartingWeaponsInto(lua_State* L);
 		static int setAuthorizationState(lua_State* L);

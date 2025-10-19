@@ -249,11 +249,18 @@ Core3 = {
 
 	------Server Config------
 	CharacterBuilderEnabled = "true",
-	AutoReg = 0,
+	AutoReg = 1,
 
 	------TOS Config------
 	TermsOfServiceVersion = 0,
 	TermsOfService = "",
+
+	------Mission Manager Config------
+	MissionManager = {
+		PlayerBountyCooldown = false, -- Set to true to enable cooldown between bounty missions on same target
+		PlayerBountyCooldownTime = 86400000, -- Cooldown time in milliseconds (default 24 hours)
+		MaxBountiesPerJedi = 5, -- Maximum number of concurrent bounty missions per target
+	},
 }
 
 -- NOTE: conf/config-local.lua is parsed after this file if it exists
