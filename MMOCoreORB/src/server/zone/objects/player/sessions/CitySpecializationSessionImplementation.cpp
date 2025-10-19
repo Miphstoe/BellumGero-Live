@@ -34,36 +34,26 @@ int CitySpecializationSessionImplementation::initializeSession() {
 	sui->setUsingObject(terminalObject);
 	sui->setForceCloseDistance(16.f);
 
-	// Figure out whose ability list to show (mayor's)
-	const AbilityList* abilityList = nullptr;
-	if (cityRegion->isMayor(creatureObject->getObjectID())) {
-		abilityList = ghost->getAbilityList();
-	} else {
-		ManagedReference<CreatureObject*> mayor =
-			creatureObject->getZoneServer()->getObject(cityRegion->getMayorID()).castTo<CreatureObject*>();
-		if (mayor != nullptr) {
-			PlayerObject* mayorGhost = mayor->getPlayerObject();
-			if (mayorGhost != nullptr)
-				abilityList = mayorGhost->getAbilityList();
-		}
-	}
+	// Get current city rank and city manager
+	int cityRank = cityRegion->getCityRank();
+	CityManager* cityManager = creatureObject->getZoneServer()->getCityManager();
 
-	// Populate list from abilities (legacy behavior), but skip the disabled multi-spec items
-	if (abilityList != nullptr) {
-		for (int i = 0; i < abilityList->size(); ++i) {
-			Reference<const Ability*> ability = abilityList->getSafe(i);
-			if (ability == nullptr) continue;
+	if (cityManager != nullptr) {
+		// Get all available specializations for this city's rank
+		Vector<String> specNames;
+		cityManager->getAvailableSpecializations(cityRank, specNames);
 
-			const String& abilityName = ability->getAbilityName();
-			if (!abilityName.beginsWith("city_spec"))
-				continue;
+		// Add each specialization to the menu
+		for (int i = 0; i < specNames.size(); ++i) {
+			const String& specName = specNames.get(i);
+			const CitySpecialization* spec = cityManager->getCitySpecialization(specName);
 
-			// Hide the multi-spec entries (we're reverting them)
-			if (abilityName == "city_spec_enhancement_district" ||
-			    abilityName == "city_spec_industrial_district")
-				continue;
-
-			sui->addMenuItem("@city/city:" + abilityName);
+			// Use displayName if available, otherwise use the string ID name
+			if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+				sui->addMenuItem(spec->getDisplayName());
+			} else {
+				sui->addMenuItem(specName);
+			}
 		}
 	}
 
@@ -109,8 +99,15 @@ int CitySpecializationSessionImplementation::sendConfirmationBox(const String& c
 		confirm->setPromptText(choice + "_d");
 		specialization = "";
 	} else {
+		// Convert displayName back to actual specialization name (string ID)
+		CityManager* cityManager = creatureObject->getZoneServer()->getCityManager();
+		String actualName = choice;
+		if (cityManager != nullptr) {
+			actualName = cityManager->getCitySpecializationNameByDisplay(choice);
+		}
+
 		confirm->setPromptText(choice + "_d\n\n@city/city:confirm_spec_d");
-		specialization = choice;
+		specialization = actualName;
 	}
 
 	confirm->setOkButton(true, "@yes");

@@ -250,34 +250,32 @@ CitySpecializations = {
     skillMods = {
       {"private_defense", 90}
     }
+  },
+
+  { -- Enhancement District (Metropolis only)
+    name = "@city/city:city_spec_enhancement_district",
+    displayName = "Enhancement District",
+    cost = 160000,
+    minRank = 5, -- Requires Metropolis rank
+    skillMods = {
+      {"private_spec_entertainer", 10},
+      {"private_medical_rating", 10},
+      {"private_spec_missions", 15}
+    }
+  },
+
+  { -- Industrial District (Metropolis only)
+    name = "@city/city:city_spec_industrial_district",
+    displayName = "Industrial District",
+    cost = 175000,
+    minRank = 5, -- Requires Metropolis rank
+    skillMods = {
+      {"private_spec_assembly", 10},
+      {"private_spec_experimentation", 15},
+      {"private_spec_manufacturing", 10},
+      {"private_spec_samplerate", 10},
+      {"private_spec_samplesize", 20}
+    }
   }
 }
-
---[[  TEMP: multi-spec entries disabled
-
-{ -- Enhancement District
-  name = "@city/city:city_spec_enhancement_district",
-  cost = 160000,
-  --minRank = 5,
-  skillMods = {
-    {"private_spec_entertainer", 10},
-    {"private_medical_rating", 10},
-    {"private_spec_missions", 15}
-  }
-},
-
-{ -- Industrial District
-  name = "@city/city:city_spec_industrial_district",
-  cost = 175000,
-  --minRank = 5,
-  skillMods = {
-    {"private_spec_assembly", 10},
-    {"private_spec_experimentation", 15},
-    {"private_spec_manufacturing", 10},
-    {"private_spec_samplerate", 10},
-    {"private_spec_samplesize", 20}
-  }
-},
-
---]]
 

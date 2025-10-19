@@ -401,27 +401,23 @@ void CityManagerImplementation::promptCitySpecialization(CityRegion* city, Creat
 	mayor->addActiveSession(SessionFacadeType::CITYSPEC, session);
 	session->initializeSession();
 }
-// Add this BEFORE the changeCitySpecialization function
-static bool isMetropolisOnlySpecialization(const String& spec) {
-    if (spec == "@city/city:city_spec_enhancement_district" || 
-        spec == "@city/city:city_spec_industrial_district") {
-        return true;
-    }
-    return false;
-}
-
 void CityManagerImplementation::changeCitySpecialization(CityRegion* city, CreatureObject* mayor, const String& spec) {
     Locker _clock(city, mayor);
-    
-    // Add rank validation for metropolis-only specializations
-    int cityRank = city->getCityRank();
-    
-    // Check if this is a metropolis-only specialization
-    if (isMetropolisOnlySpecialization(spec) && cityRank < METROPOLIS) {
-        mayor->sendSystemMessage("This specialization requires Metropolis rank.");
-        return;
+
+    // Validate city rank against specialization requirements
+    if (!spec.isEmpty()) {
+        const CitySpecialization* citySpec = getCitySpecialization(spec);
+        if (citySpec != nullptr) {
+            int minRank = citySpec->getMinRank();
+            int cityRank = city->getCityRank();
+
+            if (minRank > 0 && cityRank < minRank) {
+                mayor->sendSystemMessage("This specialization requires a higher city rank.");
+                return;
+            }
+        }
     }
-    
+
     city->setCitySpecialization(spec);
     PlayerObject* ghost = mayor->getPlayerObject().get();
     if (ghost != nullptr && !ghost->isPrivileged())
@@ -468,10 +464,17 @@ void CityManagerImplementation::sendStatusReport(CityRegion* city, CreatureObjec
 	list->addMenuItem("@city/city:citizen_prompt " + String::valueOf(city->getCitizenCount())); //Citizenship:
 	list->addMenuItem("@city/city:structures_prompt " + String::valueOf(city->getAllStructuresCount())); //Structures:
 
-	if (city->getCitySpecialization().isEmpty())
+	if (city->getCitySpecialization().isEmpty()) {
 		list->addMenuItem("@city/city:specialization_prompt @city/city:null"); //Specialization: None
-	else
-		list->addMenuItem("@city/city:specialization_prompt " + city->getCitySpecialization()); //Specialization:
+	} else {
+		// Get the display name if available, otherwise use string ID
+		String specDisplay = city->getCitySpecialization();
+		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
+		if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+			specDisplay = spec->getDisplayName();
+		}
+		list->addMenuItem("@city/city:specialization_prompt " + specDisplay); //Specialization:
+	}
 
 	list->addMenuItem("@city/city:current_trainers " + String::valueOf(city->getSkillTrainerCount())); // Current Trainer Count:
 	list->addMenuItem("@city/city:current_mt " + String::valueOf(city->getMissionTerminalCount())); // Current Terminal Count:
@@ -2303,6 +2306,44 @@ const CitySpecialization* CityManagerImplementation::getCitySpecialization(const
 		return nullptr;
 
 	return &citySpecializations.get(name);
+}
+
+String CityManagerImplementation::getCitySpecializationNameByDisplay(const String& displayName) {
+	// First try exact match on name (in case it's a string ID)
+	if (citySpecializations.containsKey(displayName))
+		return displayName;
+
+	// Search for a specialization with matching displayName
+	HashTableIterator<String, CitySpecialization> iter = citySpecializations.iterator();
+
+	while (iter.hasNext()) {
+		const String& key = iter.getNextKey();
+		const CitySpecialization& spec = citySpecializations.get(key);
+
+		if (spec.getDisplayName() == displayName)
+			return key;
+	}
+
+	// If not found, return the input (might be a string ID)
+	return displayName;
+}
+
+void CityManagerImplementation::getAvailableSpecializations(int cityRank, Vector<String>& specNames) {
+	// Iterate through all loaded specializations using HashTableIterator
+	HashTableIterator<String, CitySpecialization> iter = citySpecializations.iterator();
+
+	while (iter.hasNext()) {
+		const String& key = iter.getNextKey();
+		const CitySpecialization& spec = citySpecializations.get(key);
+
+		// Check if city meets minimum rank requirement
+		int minRank = spec.getMinRank();
+		if (minRank > 0 && cityRank < minRank)
+			continue;
+
+		// Add this specialization name to the list
+		specNames.add(key);
+	}
 }
 
 const CityTax* CityManagerImplementation::getCityTax(int idx) {

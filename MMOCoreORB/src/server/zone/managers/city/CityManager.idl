@@ -253,6 +253,12 @@ class CityManager extends ManagedService implements Logger {
 	public native final CitySpecialization getCitySpecialization(final string cityspec);
 
 	@local
+	public native string getCitySpecializationNameByDisplay(final string displayName);
+
+	@local
+	public native void getAvailableSpecializations(int cityRank, @dereferenced Vector<string> specNames);
+
+	@local
 	public native final CityTax getCityTax(int idx);
 
 	public native void sendChangeCityName(CityRegion city, CreatureObject mayor);

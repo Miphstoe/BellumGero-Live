@@ -217,21 +217,29 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
         StringIdChatParameter params("city/city", "city_enter_city"); //You have entered %TT (%TO).
         params.setTT(getCityRegionName());
         UnicodeString strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
-        		
-		if (citySpecialization.isEmpty()) {
+
+        if (citySpecialization.isEmpty()) {
             params.setTO(strRank);
         }
         else {
+            // Try to get displayName first, fall back to string ID
             UnicodeString citySpec;
-            // Handle custom metropolis specializations
-           // Handle custom metropolis specializations
-		if (citySpecialization == "Enhancement District") {
-    			citySpec = "Enhancement District";
-} 			else if (citySpecialization == "Industrial District") {
-    			citySpec = "Industrial District";
-} 		else {
-    		citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
-}
+            auto zs = getZone()->getZoneServer();
+            if (zs != nullptr) {
+                CityManager* cityManager = zs->getCityManager();
+                if (cityManager != nullptr) {
+                    const CitySpecialization* spec = cityManager->getCitySpecialization(citySpecialization);
+                    if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+                        citySpec = spec->getDisplayName();
+                    } else {
+                        citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+                    }
+                } else {
+                    citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+                }
+            } else {
+                citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+            }
             params.setTO(strRank + ", " + citySpec);
         }
         creature->sendSystemMessage(params);
