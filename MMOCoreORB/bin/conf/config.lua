@@ -249,7 +249,7 @@ Core3 = {
 
 	------Server Config------
 	CharacterBuilderEnabled = "true",
-	AutoReg = 1,
+	AutoReg = 0,
 
 	------TOS Config------
 	TermsOfServiceVersion = 0,
