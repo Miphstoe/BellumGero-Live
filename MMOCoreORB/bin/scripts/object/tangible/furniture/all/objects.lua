@@ -7067,3 +7067,21 @@ object_tangible_furniture_all_shared_frn_all_banner_imperial = SharedTangibleObj
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_banner_imperial, "object/tangible/furniture/all/shared_frn_all_banner_imperial.iff")
+
+object_tangible_furniture_all_shared_frn_all_scrolling_screen = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_scrolling_screen.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_scrolling_screen, "object/tangible/furniture/all/shared_frn_all_scrolling_screen.iff")
+
+object_tangible_furniture_all_shared_frn_all_banner_rebel_wall = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_banner_rebel_wall.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_banner_rebel_wall, "object/tangible/furniture/all/shared_frn_all_banner_rebel_wall.iff")
+
+object_tangible_furniture_all_shared_frn_all_banner_rebel_lg = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_banner_rebel_lg.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_banner_rebel_lg, "object/tangible/furniture/all/shared_frn_all_banner_rebel_lg.iff")

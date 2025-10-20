@@ -62,6 +62,9 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 		{ template = "object/tangible/furniture/jedi/frn_all_table_light_02.iff", weight = 5 },
 		{ template = "object/tangible/loot/loot_schematic/technical_console_s01_schematic.iff", weight = 5 },
 		{ template = "object/tangible/loot/loot_schematic/technical_console_s02_schematic.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_banner_rebel_lg.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_banner_rebel_wall.iff", weight = 5 },
+		{ template = "object/tangible/furniture/all/frn_all_scrolling_screen.iff", weight = 5 },
 	},
 	dailyLootCount  = 1,     -- how many rolls from the pool to award
 	dailyLootMsg    = "You received a reward item from the cave assignment.",
