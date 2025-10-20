@@ -475,6 +475,7 @@ includeFile("lair/creature_lair/talus/talus_wolf_kima_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/talus/talus_woodland_kima_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/talus/talus_wrix_lair_neutral_medium.lua")
 
+includeFile("lair/creature_lair/tatooine/tatooine_adolescent_krayt_dragon_lair_neutral_large.lua")
 includeFile("lair/creature_lair/tatooine/tatooine_bantha_dune_bantha_neutral_medium_boss_01.lua")
 includeFile("lair/creature_lair/tatooine/tatooine_bocatt_bocatt_neutral_medium_boss_01.lua")
 includeFile("lair/creature_lair/tatooine/tatooine_bocatt_lair_neutral_medium.lua")
