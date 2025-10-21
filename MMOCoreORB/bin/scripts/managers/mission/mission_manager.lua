@@ -70,11 +70,23 @@ enable_factional_recon_missions = "true"
 
 enable_factional_entertainer_missions = "true"
 
-enable_same_account_bounty_missions = "false"
+enable_same_account_bounty_missions = "true"  -- Changed to true for testing
 
 playerBountyKillBuffer = 30 * 60 * 1000 -- Buffer before player bounty can be put back on terminal after target is killed, set 0 to disable
 
 playerBountyDebuffLength = 3 * 24 * 60 * 60 * 1000 -- Time before their bounty resets from the minimum amount
+
+-- Player Placed Bounty System Configuration
+playerPlacedBounties = {
+	enabled = true,                          -- Enable/disable player-placed bounties
+	minimumBounty = 1000,                    -- Minimum bounty amount (1,000 credits)
+	maximumBounty = 1000000,                 -- Maximum bounty amount (1,000,000 credits)
+	pvpOnly = true,                          -- Only allow bounties on PvP kills (not NPC kills)
+	cooldownPerKiller = 3600000,             -- 1 hour cooldown per specific killer (prevents spam)
+	notifyTarget = true,                     -- Notify player when a bounty is placed on them
+	preventDuelBounties = true,              -- Prevent bounties from duel kills
+	preventSameGuild = false,                -- Prevent guild members from placing bounties on each other
+}
 
 -- Destroy Mission Configuration
 -- Distance calculated as: 

@@ -26,6 +26,7 @@
 #include "server/zone/managers/faction/FactionManager.h"
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/collision/PathFinderManager.h"
+#include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
 #include "templates/manager/TemplateManager.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
@@ -469,6 +470,8 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("destroyBuilding", destroyBuilding);
 	luaEngine->registerFunction("getSceneObject", getSceneObject);
 	luaEngine->registerFunction("getCreatureObject", getCreatureObject);
+	luaEngine->registerFunction("placePlayerBounty", placePlayerBounty);
+	luaEngine->registerFunction("checkPlayerBountyExists", checkPlayerBountyExists);
 	luaEngine->registerFunction("addStartingItemsInto", addStartingItemsInto);
 	luaEngine->registerFunction("addStartingWeaponsInto", addStartingWeaponsInto);
 	luaEngine->registerFunction("setAuthorizationState", setAuthorizationState);
@@ -2037,6 +2040,85 @@ int DirectorManager::getSceneObject(lua_State* L) {
 		object->_setUpdated(true); //mark updated so the GC doesnt delete it while in LUA
 	}
 
+	return 1;
+}
+
+int DirectorManager::placePlayerBounty(lua_State* L) {
+	if (checkArgumentCount(L, 3) == 1) {
+		String err = "incorrect number of arguments passed to DirectorManager::placePlayerBounty (expected: targetID, placerID, amount)";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	uint64 targetID = lua_tointeger(L, -3);
+	uint64 placerID = lua_tointeger(L, -2);
+	int amount = lua_tointeger(L, -1);
+
+	if (targetID == 0 || placerID == 0 || amount <= 0) {
+		String err = "invalid arguments passed to DirectorManager::placePlayerBounty";
+		printTraceError(L, err);
+		return 0;
+	}
+
+	ZoneServer* zoneServer = ServerCore::getZoneServer();
+	if (zoneServer == nullptr) {
+		String err = "ZoneServer is null in DirectorManager::placePlayerBounty";
+		printTraceError(L, err);
+		return 0;
+	}
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr) {
+		String err = "MissionManager is null in DirectorManager::placePlayerBounty";
+		printTraceError(L, err);
+		return 0;
+	}
+
+	// Place the bounty
+	missionManager->addPlayerPlacedBounty(targetID, placerID, amount);
+
+	return 0;
+}
+
+int DirectorManager::checkPlayerBountyExists(lua_State* L) {
+	if (checkArgumentCount(L, 1) == 1) {
+		String err = "incorrect number of arguments passed to DirectorManager::checkPlayerBountyExists (expected: targetID)";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	uint64 targetID = lua_tointeger(L, -1);
+
+	if (targetID == 0) {
+		String err = "invalid targetID passed to DirectorManager::checkPlayerBountyExists";
+		printTraceError(L, err);
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	ZoneServer* zoneServer = ServerCore::getZoneServer();
+	if (zoneServer == nullptr) {
+		String err = "ZoneServer is null in DirectorManager::checkPlayerBountyExists";
+		printTraceError(L, err);
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr) {
+		String err = "MissionManager is null in DirectorManager::checkPlayerBountyExists";
+		printTraceError(L, err);
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	// Check if bounty exists
+	bool hasBounty = missionManager->hasPlayerBountyTargetInList(targetID);
+
+	lua_pushboolean(L, hasBounty);
 	return 1;
 }
 

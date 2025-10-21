@@ -1779,6 +1779,14 @@ void PlayerObjectImplementation::notifyOnline() {
 		}
 	}
 
+	// Update online status for player-placed bounties (non-Jedi players)
+	if (missionManager != nullptr) {
+		uint64 id = playerCreature->getObjectID();
+		if (missionManager->hasPlayerBountyTargetInList(id)) {
+			missionManager->updatePlayerBountyOnlineStatus(id, true);
+		}
+	}
+
 	playerCreature->schedulePersonalEnemyFlagTasks();
 
 	if (ConfigManager::instance()->isPvpBroadcastChannelEnabled() && playerCreature->getFactionStatus() == FactionStatus::OVERT) {
@@ -1838,6 +1846,14 @@ void PlayerObjectImplementation::notifyOffline() {
 
 	if (missionManager != nullptr && playerCreature->hasSkill("force_title_jedi_rank_02")) {
 		missionManager->updatePlayerBountyOnlineStatus(playerCreature->getObjectID(), false);
+	}
+
+	// Update offline status for player-placed bounties (non-Jedi players)
+	if (missionManager != nullptr) {
+		uint64 id = playerCreature->getObjectID();
+		if (missionManager->hasPlayerBountyTargetInList(id)) {
+			missionManager->updatePlayerBountyOnlineStatus(id, false);
+		}
 	}
 
 	ManagedReference<SurveySession*> session = playerCreature->getActiveSession(SessionFacadeType::SURVEY).castTo<SurveySession*>();

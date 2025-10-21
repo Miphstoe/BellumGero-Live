@@ -757,3 +757,6 @@ includeFile("boss/djm_random_name_boss.lua")
 -- screenplay LAST so it can spawn after the above are loaded
 includeFile("vendors/attachment_exchange_vendor.lua")
 
+-- Player Bounty System
+includeFile("player_bounty/player_bounty_system.lua")
+

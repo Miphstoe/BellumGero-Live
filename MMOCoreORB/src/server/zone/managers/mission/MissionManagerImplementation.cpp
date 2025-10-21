@@ -1077,7 +1077,9 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 	int size = potentialTargets->size();
 
 	if (level == 3 && size > 0) {
-		int compareValue = size > 25 ? 25 : size < 5 ? 5 : size;
+		// TESTING: Force 100% player bounty display
+		// Production: int compareValue = size > 25 ? 25 : size < 5 ? 5 : size;
+		int compareValue = 100;  // Always show player bounties for testing
 		if (System::random(100) < compareValue) {
 			playerTarget = true;
 			randomTexts = 6;
@@ -2126,6 +2128,36 @@ void MissionManagerImplementation::addPlayerToBountyList(uint64 targetId, int re
 	}
 }
 
+void MissionManagerImplementation::addPlayerPlacedBounty(uint64 targetId, uint64 placerId, int amount) {
+	Locker listLocker(&playerBountyListMutex);
+
+	if (playerBountyList.contains(targetId)) {
+		// Add to existing bounty
+		PlayerBounty* bounty = playerBountyList.get(targetId);
+		bounty->addBountyPlacer(placerId, amount);
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
+
+		info("Player " + String::valueOf(placerId) + " added " + String::valueOf(amount) + " credits to bounty on player " + String::valueOf(targetId) + ". New total: " + String::valueOf(bounty->getReward()), true);
+	} else {
+		// Create new bounty with this placer
+		PlayerBounty* bounty = new PlayerBounty(targetId, amount);
+		bounty->addBountyPlacer(placerId, amount);
+
+		// Set online status if target is online
+		ManagedReference<CreatureObject*> target = server->getObject(targetId).castTo<CreatureObject*>();
+		if (target != nullptr && target->isPlayerCreature()) {
+			bounty->setOnline(true);
+			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (ONLINE)", true);
+		} else {
+			bounty->setOnline(false);
+			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (OFFLINE)", true);
+		}
+
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
+		playerBountyList.put(targetId, bounty);
+	}
+}
+
 void MissionManagerImplementation::removePlayerFromBountyList(uint64 targetId) {
 	Locker listLocker(&playerBountyListMutex);
 
@@ -2239,10 +2271,19 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 		return false;
 
 	auto targetGhost = creature->getPlayerObject();
-	float terminalVisibilityThreshold = VisibilityManager::instance()->getTerminalVisThreshold();
 
-	if (targetGhost == nullptr || targetGhost->getVisibility() < terminalVisibilityThreshold)
+	if (targetGhost == nullptr)
 		return false;
+
+	// Only apply visibility requirement to Jedi bounties (not player-placed bounties)
+	// Player-placed bounties have at least one placer, Jedi bounties have none
+	bool isPlayerPlacedBounty = bounty->getNumberOfBountyPlacers() > 0;
+
+	if (!isPlayerPlacedBounty) {
+		float terminalVisibilityThreshold = VisibilityManager::instance()->getTerminalVisThreshold();
+		if (targetGhost->getVisibility() < terminalVisibilityThreshold)
+			return false;
+	}
 
 	auto playerGhost = player->getPlayerObject();
 
@@ -2261,16 +2302,19 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 			return false;
 	}
 
-	auto hunters = bounty->getBountyHunters();
+	// Only check for same-account hunters if same-account bounties are disabled
+	if (!enableSameAccountBountyMissions) {
+		auto hunters = bounty->getBountyHunters();
 
-	for (int j = 0; j < hunters->size(); j++) {
-		ManagedReference<CreatureObject*> hunter = server->getObject(hunters->get(j)).castTo<CreatureObject*>();
+		for (int j = 0; j < hunters->size(); j++) {
+			ManagedReference<CreatureObject*> hunter = server->getObject(hunters->get(j)).castTo<CreatureObject*>();
 
-		if (hunter != nullptr) {
-			auto hunterGhost = hunter->getPlayerObject();
+			if (hunter != nullptr) {
+				auto hunterGhost = hunter->getPlayerObject();
 
-			if (hunterGhost != nullptr && hunterGhost->getAccountID() == accountId)
-				return false;
+				if (hunterGhost != nullptr && hunterGhost->getAccountID() == accountId)
+					return false;
+			}
 		}
 	}
 
