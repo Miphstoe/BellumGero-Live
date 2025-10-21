@@ -863,6 +863,9 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 	Locker _lock(city);
 
+	// Cosmopolis gets 75% discount, all other ranks get 50% discount
+	float rankDiscount = (city->getCityRank() == COSMOPOLIS) ? 0.25f : maintenanceDiscount;
+
 	// pay city hall maintenanance first
 	ManagedReference<StructureObject*> ch = city->getCityHall();
 
@@ -874,7 +877,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 	if (structureTemplate == nullptr)
 		return;
 
-	int thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+	int thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 	totalPaid +=  collectCivicStructureMaintenance(ch, city, thisCost);
 
 	for(int i = 0; i < city->getStructuresCount(); i++) {
@@ -882,7 +885,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 		if(str != nullptr && str != ch) {
 			structureTemplate = cast<SharedStructureObjectTemplate*> (str->getObjectTemplate());
-			thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+			thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 			totalPaid += collectCivicStructureMaintenance(str, city, thisCost);
 		}
 	}
@@ -898,27 +901,27 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 			if(structure != nullptr) {
 				structureTemplate = cast<SharedStructureObjectTemplate*>(structure->getObjectTemplate());
-				thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+				thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 				totalPaid += collectCivicStructureMaintenance(structure, city, thisCost);
 			}
 		} else {
-			thisCost = maintenanceDiscount * 1500;
+			thisCost = rankDiscount * 1500;
 			totalPaid += collectNonStructureMaintenance(decoration, city, thisCost);
 		}
 	}
 
 	for(int i = city->getMissionTerminalCount() - 1; i >= 0; i--) {
-		thisCost = maintenanceDiscount * 1500;
+		thisCost = rankDiscount * 1500;
 		totalPaid += collectNonStructureMaintenance(city->getCityMissionTerminal(i), city, thisCost);
 	}
 
 	for(int i = city->getSkillTrainerCount() -1; i >=0; i--) {
-		thisCost = maintenanceDiscount * 1500;
+		thisCost = rankDiscount * 1500;
 		totalPaid += collectNonStructureMaintenance(city->getCitySkillTrainer(i), city, thisCost);
 	}
 
 	if(city->isRegistered()) {
-		thisCost = maintenanceDiscount * 5000;
+		thisCost = rankDiscount * 5000;
 
 		if(city->getCityTreasury() >= thisCost) {
 			city->subtractFromCityTreasury(thisCost);
@@ -933,7 +936,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
 
 		if (spec != nullptr) {
-			thisCost = maintenanceDiscount * spec->getCost();
+			thisCost = rankDiscount * spec->getCost();
 
 			if(city->getCityTreasury() >= thisCost) {
 				city->subtractFromCityTreasury(thisCost);
@@ -1331,7 +1334,7 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 void CityManagerImplementation::expandCity(CityRegion* city) {
 	uint8 currentRank = city->getCityRank();
 
-	if (currentRank == METROPOLIS) //City doesn't expand if it's metropolis.
+	if (currentRank == COSMOPOLIS) //City doesn't expand if it's cosmopolis (max rank).
 		return;
 
 	uint8 newRank = currentRank + 1;
@@ -1620,13 +1623,13 @@ void CityManagerImplementation::sendCityAdvancement(CityRegion* city, CreatureOb
 		return;
 
 	int currentRank = citizensPerRank.get(rank - 1);
-	int nextRank = citizensPerRank.get(rank == METROPOLIS ? rank - 1 : rank);
+	int nextRank = citizensPerRank.get(rank == COSMOPOLIS ? rank - 1 : rank);
 
 	listbox->addMenuItem("@city/city:city_rank_prompt @city/city:rank" + String::valueOf(rank)); // City Rank:
 	listbox->addMenuItem("@city/city:city_pop_prompt " + String::valueOf(city->getCitizenCount()) + " @city/city:citizens"); // City Population: citizens
 	listbox->addMenuItem("@city/city:pop_req_current_rank " + String::valueOf(currentRank) + " @city/city:citizens"); // Pop. Req. for Current Rank: citizens
 
-	if (rank < CityRegion::RANK_METROPOLIS)
+	if (rank < CityRegion::RANK_COSMOPOLIS)
 		listbox->addMenuItem("@city/city:pop_req_next_rank " + String::valueOf(nextRank) + " @city/city:citizens"); // Pop. Req. for Next Rank: citizens
 	else
 		listbox->addMenuItem("@city/city:pop_req_next_rank @city/city:max_rank_achieved"); // Pop. Req. for Next Rank: Maximum City Rank Achieved
@@ -1966,6 +1969,9 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 	if (ghost == nullptr)
 		return;
 
+	// Cosmopolis gets 75% discount, all other ranks get 50% discount
+	float rankDiscount = (city->getCityRank() == COSMOPOLIS) ? 0.25f : maintenanceDiscount;
+
 	int totalcost = 0;
 
 	ManagedReference<SuiListBox*> maintList = new SuiListBox(creature, SuiWindowType::CITY_TREASURY_REPORT);
@@ -1981,7 +1987,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (cityHall->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int thiscost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int thiscost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 
 				totalcost += thiscost;
 
@@ -2004,7 +2010,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
 
 		if (spec != nullptr) {
-			int speccost = maintenanceDiscount * spec->getCost();
+			int speccost = rankDiscount * spec->getCost();
 			totalcost += speccost;
 			maintList->addMenuItem("@city/city:specialization " + String::valueOf(speccost) + " @city/city:credits");
 		}
@@ -2030,7 +2036,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (structure->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int thiscost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int thiscost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 
 				totalcost += thiscost;
 
@@ -2057,13 +2063,13 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (structure->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int decCost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int decCost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 				totalcost += decCost;
 				maintString += structure->getObjectName()->getFullPath() + " : " + String::valueOf(decCost) + " @city/city:credits";
 			}
 
 		} else if ( sceno != nullptr) {
-			int decCost = maintenanceDiscount * 1500;
+			int decCost = rankDiscount * 1500;
 			totalcost += decCost;
 			maintString += sceno->getObjectName()->getFullPath() + " : " + String::valueOf(decCost) + " @city/city:credits";
 		}
@@ -2077,7 +2083,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		ManagedReference<SceneObject*> trainer = city->getCitySkillTrainer(i);
 
 		if (trainer != nullptr) {
-			int trainerCost = maintenanceDiscount * 1500;
+			int trainerCost = rankDiscount * 1500;
 			totalcost += trainerCost;
 			maintList->addMenuItem("@city/city:default \t" + trainer->getObjectName()->getFullPath() + " : " + String::valueOf(trainerCost) + " @city/city:credits");
 		}
@@ -2087,7 +2093,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		ManagedReference<SceneObject*> term = city->getCityMissionTerminal(i);
 
 		if (term != nullptr) {
-			int terminalCost = maintenanceDiscount * 1500;
+			int terminalCost = rankDiscount * 1500;
 			totalcost += terminalCost;
 			maintList->addMenuItem("@city/city:default \t" + term->getObjectName()->getFullPath() + " : " + String::valueOf(terminalCost) + " @city/city:credits");
 		}

@@ -216,7 +216,14 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
         CreatureObject* creature = cast<CreatureObject*>(object);
         StringIdChatParameter params("city/city", "city_enter_city"); //You have entered %TT (%TO).
         params.setTT(getCityRegionName());
-        UnicodeString strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
+
+        // Handle custom rank name for Cosmopolis (rank 6)
+        UnicodeString strRank;
+        if (cityRank == 6) {
+            strRank = "Cosmopolis";
+        } else {
+            strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
+        }
 
         if (citySpecialization.isEmpty()) {
             params.setTO(strRank);
