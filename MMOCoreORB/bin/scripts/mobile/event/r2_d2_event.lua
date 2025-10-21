@@ -50,7 +50,7 @@ r2_d2_event = Creature:new {
     --   "object/mobile/r2.iff"
     --   "object/mobile/droid_r2.iff"
     --   "object/mobile/astromech_r2.iff"
-    templates = {"object/mobile/r2.iff"},
+    templates = {"object/mobile/r2d2.iff"},
 
     lootGroups = {
 		{
