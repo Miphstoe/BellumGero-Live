@@ -72,14 +72,14 @@ OldCityGracePeriod = 4320
 --Whether or not to allow the use of the command, /cityWarn to give players a TEF while in the city limits.
 EnableCityWarn = false
 
---The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis)
-CitizensPerRank = {2, 4, 6, 8, 10}
---CitizensPerRank = {10, 20, 35, 55, 85}
+--The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis, Cosmopolis)
+CitizensPerRank = {2, 4, 6, 8, 10, 15}
+--CitizensPerRank = {10, 20, 35, 55, 85, 120}
 
---The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis)
-RadiusPerRank = {150, 200, 300, 400, 450}
+--The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis, Cosmopolis)
+RadiusPerRank = {150, 200, 300, 400, 450, 600}
 
--- Maximum for each rank.  ex. rank 1 = DecorationsPerRank * 1, rank 5 = DecorationsPerRank * 5
+-- Maximum for each rank.  ex. rank 1 = DecorationsPerRank * 1, rank 6 = DecorationsPerRank * 6
 DecorationsPerRank = 10
 TrainersPerRank = 10
 MissionTerminalsPerRank = 10
@@ -90,21 +90,21 @@ maintenanceDiscount = 0.5
 --[[
 	CITIES ALLOWED PER PLANET
 	-------------------------
-	
-	This is the number of cities allowed per planet, per rank. (Outpost, Village, Township, City, Metropolis)
+
+	This is the number of cities allowed per planet, per rank. (Outpost, Village, Township, City, Metropolis, Cosmopolis)
 	The maximum amount of cities per rank is 255.
 --]]
 CitiesAllowed = {
-	{"corellia", {20, 20, 15, 10, 10}},
-	{"dantooine", {50, 50, 30, 20, 20}},
-	{"dathomir", {0, 0, 0, 0, 0}},
-	{"endor", {0, 0, 0, 0, 0}},
-	{"lok", {50, 50, 30, 20, 20}},
-	{"naboo", {20, 20, 15, 10, 10}},
-	{"rori", {50, 50, 30, 20, 20}},
-	{"talus", {50, 50, 30, 20, 20}},
-	{"tatooine", {20, 20, 15, 10, 10}},
-	{"yavin4", {0, 0, 0, 0, 0}}
+	{"corellia", {20, 20, 15, 10, 10, 5}},
+	{"dantooine", {50, 50, 30, 20, 20, 5}},
+	{"dathomir", {0, 0, 0, 0, 0, 0}},
+	{"endor", {0, 0, 0, 0, 0, 0}},
+	{"lok", {50, 50, 30, 20, 20, 5}},
+	{"naboo", {20, 20, 15, 10, 10, 5}},
+	{"rori", {50, 50, 30, 20, 20, 5}},
+	{"talus", {50, 50, 30, 20, 20, 5}},
+	{"tatooine", {20, 20, 15, 10, 10, 5}},
+	{"yavin4", {0, 0, 0, 0, 0, 0}}
 }
 
 
@@ -250,34 +250,51 @@ CitySpecializations = {
     skillMods = {
       {"private_defense", 90}
     }
+  },
+
+  { -- Enhancement District (Metropolis only)
+    name = "@city/city:city_spec_enhancement_district",
+    displayName = "Enhancement District",
+    cost = 160000,
+    minRank = 5, -- Requires Metropolis rank
+    skillMods = {
+      {"private_spec_entertainer", 10},
+      {"private_medical_rating", 10},
+      {"private_spec_missions", 15}
+    }
+  },
+
+  { -- Industrial District (Metropolis only)
+    name = "@city/city:city_spec_industrial_district",
+    displayName = "Industrial District",
+    cost = 175000,
+    minRank = 5, -- Requires Metropolis rank
+    skillMods = {
+      {"private_spec_assembly", 10},
+      {"private_spec_experimentation", 15},
+      {"private_spec_manufacturing", 10},
+      {"private_spec_samplerate", 10},
+      {"private_spec_samplesize", 20}
+    }
+  },
+
+  { -- Echelon District (Cosmopolis only)
+    name = "@city/city:city_spec_echelon_district",
+    displayName = "Echelon District",
+    cost = 250000,
+    minRank = 6, -- Requires Cosmopolis rank
+    skillMods = {
+      {"private_spec_samplerate", 20},
+      {"private_spec_samplesize", 40},
+      {"private_spec_assembly", 20},
+      {"private_spec_experimentation", 55},
+      {"private_spec_manufacturing", 20},
+      {"private_medical_rating", 20},
+      {"private_spec_cloning", 20},
+      {"private_spec_missions", 30},
+      {"private_spec_entertainer", 20},
+      {"private_defense", 90}
+    }
   }
 }
-
---[[  TEMP: multi-spec entries disabled
-
-{ -- Enhancement District
-  name = "@city/city:city_spec_enhancement_district",
-  cost = 160000,
-  --minRank = 5,
-  skillMods = {
-    {"private_spec_entertainer", 10},
-    {"private_medical_rating", 10},
-    {"private_spec_missions", 15}
-  }
-},
-
-{ -- Industrial District
-  name = "@city/city:city_spec_industrial_district",
-  cost = 175000,
-  --minRank = 5,
-  skillMods = {
-    {"private_spec_assembly", 10},
-    {"private_spec_experimentation", 15},
-    {"private_spec_manufacturing", 10},
-    {"private_spec_samplerate", 10},
-    {"private_spec_samplesize", 20}
-  }
-},
-
---]]
 

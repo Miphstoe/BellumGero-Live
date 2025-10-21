@@ -10,12 +10,15 @@
 
 class CitySpecialization : public Object {
 	String name;
+	String displayName;
 	int cost;
+	int minRank;
 	VectorMap<String, int> skillMods;
 
 public:
 	CitySpecialization() {
 		cost = 0;
+		minRank = 0; // Default: no rank requirement
 		skillMods.setNoDuplicateInsertPlan();
 		skillMods.setNullValue(0);
 	}
@@ -23,11 +26,14 @@ public:
 	CitySpecialization(const String& name, int cost) {
 		this->name = name;
 		this->cost = cost;
+		this->minRank = 0;
 	}
 
 	CitySpecialization(const CitySpecialization& spec) : Object() {
 		name = spec.name;
+		displayName = spec.displayName;
 		cost = spec.cost;
+		minRank = spec.minRank;
 		skillMods = spec.skillMods;
 	}
 
@@ -36,7 +42,9 @@ public:
 			return *this;
 
 		name = spec.name;
+		displayName = spec.displayName;
 		cost = spec.cost;
+		minRank = spec.minRank;
 		skillMods = spec.skillMods;
 
 		return *this;
@@ -44,7 +52,9 @@ public:
 
 	void readObject(LuaObject* luaObject) {
 		name = luaObject->getStringField("name");
+		displayName = luaObject->getStringField("displayName"); // Optional custom display name
 		cost = luaObject->getIntField("cost");
+		minRank = luaObject->getIntField("minRank"); // Read minRank from Lua (defaults to 0 if not present)
 
 		LuaObject smods = luaObject->getObjectField("skillMods");
 
@@ -68,8 +78,16 @@ public:
 		return name;
 	}
 
+	inline const String& getDisplayName() const {
+		return displayName;
+	}
+
 	inline int getCost() const {
 		return cost;
+	}
+
+	inline int getMinRank() const {
+		return minRank;
 	}
 
 	inline const VectorMap<String, int>* getSkillMods() const {

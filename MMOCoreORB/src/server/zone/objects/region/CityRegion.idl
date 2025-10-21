@@ -137,6 +137,7 @@ class CityRegion extends ManagedObject implements Logger {
 	public static final byte RANK_TOWNSHIP = 3;
 	public static final byte RANK_CITY = 4;
 	public static final byte RANK_METROPOLIS = 5;
+	public static final byte RANK_COSMOPOLIS = 6;
 
 	public static final byte TAX_INCOME = 0;
 	public static final byte TAX_PROPERTY = 1;

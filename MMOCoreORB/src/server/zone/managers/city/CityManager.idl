@@ -64,6 +64,7 @@ class CityManager extends ManagedService implements Logger {
 	public static final byte TOWNSHIP = 3;
 	public static final byte CITY = 4;
 	public static final byte METROPOLIS = 5;
+	public static final byte COSMOPOLIS = 6;
 
 	public CityManager(ZoneServer zserv) {
 		Logger.setLoggingName("CityManager");
@@ -251,6 +252,12 @@ class CityManager extends ManagedService implements Logger {
 
 	@local
 	public native final CitySpecialization getCitySpecialization(final string cityspec);
+
+	@local
+	public native string getCitySpecializationNameByDisplay(final string displayName);
+
+	@local
+	public native void getAvailableSpecializations(int cityRank, @dereferenced Vector<string> specNames);
 
 	@local
 	public native final CityTax getCityTax(int idx);
