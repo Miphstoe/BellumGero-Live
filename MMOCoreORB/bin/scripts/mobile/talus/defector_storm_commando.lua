@@ -4,9 +4,9 @@ defector_storm_commando = Creature:new {
   faction = "",
 
   level = 150,
-  chanceHit = 15,
-  damageMin = 500,
-  damageMax = 740,
+  chanceHit = .6,
+  damageMin = 300,
+  damageMax = 350,
   baseXp = 9200,
   baseHAM = 30000,
   baseHAMmax = 40000,
