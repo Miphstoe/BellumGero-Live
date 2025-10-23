@@ -172,9 +172,8 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 	TangibleObjectImplementation::notifyInsertToZone(zone);
 
 	if (isCivicStructure()) {
-		if (structurePermissionList.containsList("ADMIN"))
-			structurePermissionList.dropList("ADMIN");
-
+		// Drop permission lists that civic structures don't use
+		// Keep ADMIN and VENDOR lists for city halls
 		if (structurePermissionList.containsList("ENTRY"))
 			structurePermissionList.dropList("ENTRY");
 
@@ -183,9 +182,6 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 
 		if (structurePermissionList.containsList("BAN"))
 			structurePermissionList.dropList("BAN");
-
-		if (structurePermissionList.containsList("VENDOR"))
-			structurePermissionList.dropList("VENDOR");
 	}
 
 	if (!staticObject && getBaseMaintenanceRate() != 0 && !isTurret() && !isMinefield() && !isScanner()) {
@@ -910,4 +906,44 @@ bool StructureObjectImplementation::isOnPermissionList(const String& listName, C
 	}
 
 	return false;
+}
+
+void StructureObjectImplementation::sendPermissionListTo(CreatureObject* creature, const String& listName) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	structurePermissionList.sendTo(creature, listName);
+}
+
+int StructureObjectImplementation::togglePermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.togglePermission(listName, objectID);
+}
+
+int StructureObjectImplementation::grantPermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.grantPermission(listName, objectID);
+}
+
+int StructureObjectImplementation::revokePermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.revokePermission(listName, objectID);
+}
+
+int StructureObjectImplementation::revokeAllPermissions(uint64 objectID) {
+	return structurePermissionList.revokeAllPermissions(objectID);
+}
+
+void StructureObjectImplementation::revokeAllPermissions() {
+	structurePermissionList.revokeAllPermissions();
 }
