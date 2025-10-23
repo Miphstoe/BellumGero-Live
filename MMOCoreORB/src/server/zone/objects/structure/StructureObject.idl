@@ -246,6 +246,10 @@ class StructureObject extends TangibleObject {
 
 	@dirty
 	public void sendPermissionListTo(CreatureObject creature, final string listName) {
+		// Ensure the permission list exists (for civic structures that may not have them initialized)
+		if (!structurePermissionList.containsList(listName)) {
+			structurePermissionList.addList(listName);
+		}
 		structurePermissionList.sendTo(creature, listName);
 	}
 
@@ -260,14 +264,26 @@ class StructureObject extends TangibleObject {
 	}
 
 	public int togglePermission(final string listName, final unsigned long objectID) {
+		// Ensure the permission list exists (for civic structures that may not have them initialized)
+		if (!structurePermissionList.containsList(listName)) {
+			structurePermissionList.addList(listName);
+		}
 		return structurePermissionList.togglePermission(listName, objectID);
 	}
 
 	public int grantPermission(final string listName, final unsigned long objectID) {
+		// Ensure the permission list exists (for civic structures that may not have them initialized)
+		if (!structurePermissionList.containsList(listName)) {
+			structurePermissionList.addList(listName);
+		}
 		return structurePermissionList.grantPermission(listName, objectID);
 	}
 
 	public int revokePermission(final string listName, final unsigned long objectID) {
+		// Ensure the permission list exists (for civic structures that may not have them initialized)
+		if (!structurePermissionList.containsList(listName)) {
+			structurePermissionList.addList(listName);
+		}
 		return structurePermissionList.revokePermission(listName, objectID);
 	}
 

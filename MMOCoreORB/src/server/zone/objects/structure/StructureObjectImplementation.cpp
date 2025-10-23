@@ -14,6 +14,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/tangible/terminal/guild/GuildTerminal.h"
+#include "server/zone/objects/region/CityRegion.h"
 
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/managers/city/PayPropertyTaxTask.h"
@@ -814,7 +815,15 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 
 	if (ghost != nullptr && ghost->isPrivileged())
 		return true;
-	else if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
+
+	// Check if this is a civic structure and the player is the mayor
+	if (isCivicStructure()) {
+		ManagedReference<CityRegion*> city = const_cast<ManagedWeakReference<CityRegion*>&>(cityRegion).get();
+		if (city != nullptr && city->isMayor(player->getObjectID()))
+			return true;
+	}
+
+	if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
 		return true;
 	} else {
 		ManagedReference<GuildObject*> guild = player->getGuildObject().get();

@@ -67,6 +67,15 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 				if (building != nullptr && building->getSignObject() != nullptr)
 					menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 69, 3, "@player_structure:management_change_sign"); // Change Sign
 			}
+
+			// Permissions submenu for civic structures (city halls)
+			menuResponse->addRadialMenuItem(RADIAL_ROOT_PERMISSIONS, 3, "@player_structure:permissions"); // Structure Permissions
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 121, 3, "@player_structure:permission_admin");  // Administrator List
+
+			if (structureObject->isBuildingObject()) {
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 122, 3, "@player_structure:permission_vendor"); // Vendor List
+				// Note: Entry list (119) and Ban list (120) intentionally omitted for civic structures
+			}
 		}
 		return;
 	}
@@ -190,6 +199,12 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 					break;
 				case 69:
 					structureManager->promptSelectSign(structureObject, creature);
+					break;
+				case 121:
+					structureObject->sendPermissionListTo(creature, "ADMIN");
+					break;
+				case 122:
+					structureObject->sendPermissionListTo(creature, "VENDOR");
 					break;
 				default:
 					break;
