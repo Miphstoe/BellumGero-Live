@@ -803,7 +803,7 @@ void CityManagerImplementation::processCityUpdate(CityRegion* city) {
 
 		if (citizens < maintainCitizens) {
 			contractCity(city);
-		} else if (cityRank < METROPOLIS) {
+		} else if (cityRank < COSMOPOLIS) {
 			int advanceCitizens = citizensPerRank.get(cityRank);
 
 			if (citizens >= advanceCitizens) {
@@ -1276,6 +1276,8 @@ void CityManagerImplementation::updateCityVoting(CityRegion* city, bool override
 void CityManagerImplementation::contractCity(CityRegion* city) {
 	uint8 newRank = city->getCityRank() - 1;
 	bool startedAssessment = false;
+	bool specializationRemoved = false;
+	String removedSpecName = "";
 
 	if (city->getCitizenCount() < citizensPerRank.get(0)) {
 		newRank = OUTPOST;
@@ -1285,10 +1287,41 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 	}
 
 	if (newRank < TOWNSHIP) {
+		String currentSpec = city->getCitySpecialization();
+		if (!currentSpec.isEmpty()) {
+			const CitySpecialization* spec = getCitySpecialization(currentSpec);
+			if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+				removedSpecName = spec->getDisplayName();
+			} else {
+				removedSpecName = currentSpec;
+			}
+			specializationRemoved = true;
+		}
 		city->setCitySpecialization("");
 
 		if (city->isRegistered())
 			unregisterCity(city, nullptr);
+	} else {
+		// Check if current specialization requires a higher rank than the new rank
+		String currentSpec = city->getCitySpecialization();
+		if (!currentSpec.isEmpty()) {
+			const CitySpecialization* spec = getCitySpecialization(currentSpec);
+			if (spec != nullptr) {
+				int minRank = spec->getMinRank();
+				if (minRank > newRank) {
+					// Specialization requires higher rank than city now has, remove it
+					if (!spec->getDisplayName().isEmpty()) {
+						removedSpecName = spec->getDisplayName();
+					} else {
+						removedSpecName = currentSpec;
+					}
+					specializationRemoved = true;
+					city->setCitySpecialization("");
+					// Reset the region to remove specialization modifiers from players
+					city->setRadius(city->getRadius());
+				}
+			}
+		}
 	}
 
 	ManagedReference<SceneObject*> obj = zoneServer->getObject(city->getMayorID());
@@ -1317,6 +1350,17 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 			chatManager->sendMail("@city/city:new_city_from", subject, params, mayor->getFirstName(), nullptr);
 		} else {
 			return;
+		}
+
+		// Notify mayor if specialization was removed due to rank demotion
+		if (specializationRemoved) {
+			StringIdChatParameter specParams;
+			specParams.setStringId("Your city's specialization (" + removedSpecName + ") has been removed because the city rank is now too low.");
+			specParams.setTO(city->getCityRegionName());
+
+			UnicodeString specSubject = "City Specialization Removed";
+
+			chatManager->sendMail("@city/city:new_city_from", specSubject, specParams, mayor->getFirstName(), nullptr);
 		}
 	}
 
@@ -1393,7 +1437,7 @@ void CityManagerImplementation::destroyCity(CityRegion* city) {
 
 	city->destroyNavMesh();
 
-	for (int i = CityManager::METROPOLIS; i > 0; i--) {
+	for (int i = CityManager::COSMOPOLIS; i > 0; i--) {
 		city->destroyAllStructuresForRank(uint8(i), false);
 	}
 
