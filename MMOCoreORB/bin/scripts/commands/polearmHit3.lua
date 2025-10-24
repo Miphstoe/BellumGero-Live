@@ -53,12 +53,12 @@ PolearmHit3Command = {
 	areaRange = 16,
 
 	stateEffects = {
-	  StateEffect( 
+      StateEffect( 
 		BLIND_EFFECT, 
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -76,11 +76,11 @@ PolearmHit3Command = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		50, 
+		65, 
 		0, 
 		30 
 	  ),
-	},
+    },
 
 	animation = "combo_5a", 
 	animType = GENERATE_INTENSITY,

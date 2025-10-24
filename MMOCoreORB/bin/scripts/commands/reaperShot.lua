@@ -20,7 +20,7 @@ ReaperShotCommand = {
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -38,7 +38,7 @@ ReaperShotCommand = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		50, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -47,7 +47,7 @@ ReaperShotCommand = {
     animation = "fire_area",
     animType  = GENERATE_INTENSITY,
 
-    combatSpam = "reaper_shot",
+    combatSpam = "reapershot",
 
     weaponType = RIFLEWEAPON,
     range = -1

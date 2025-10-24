@@ -20,7 +20,7 @@ ReaperBlastCommand = {
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -38,7 +38,7 @@ ReaperBlastCommand = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		50, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -47,7 +47,7 @@ ReaperBlastCommand = {
     animation = "fire_area",
     animType  = GENERATE_INTENSITY,
 
-    combatSpam = "reaper_blast",
+    combatSpam = "reaperblast",
 
     weaponType = CARBINEWEAPON,
     range = -1

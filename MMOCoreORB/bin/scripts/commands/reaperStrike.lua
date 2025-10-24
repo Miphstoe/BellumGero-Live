@@ -22,7 +22,7 @@ ReaperStrikeCommand = {
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -40,7 +40,7 @@ ReaperStrikeCommand = {
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		50, 
+		65, 
 		0, 
 		30 
 	  ),
@@ -49,7 +49,7 @@ ReaperStrikeCommand = {
     animation = "fire_area",
     animType  = GENERATE_INTENSITY,
 
-    combatSpam = "reaper_strike",
+    combatSpam = "reaperstrike",
 
     weaponType = PISTOLWEAPON,
     range = -1 -- use weapon range
