@@ -45,7 +45,7 @@ object_building_player_player_house_generic_medium_style_02 = object_building_pl
 	lotSize = 2,
 	storageLimit = 400,
 	baseMaintenanceRate = 34,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

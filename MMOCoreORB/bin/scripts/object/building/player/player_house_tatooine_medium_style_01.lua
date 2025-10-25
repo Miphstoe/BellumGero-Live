@@ -45,7 +45,7 @@ object_building_player_player_house_tatooine_medium_style_01 = object_building_p
 	lotSize = 2,
 	storageLimit = 400,
 	baseMaintenanceRate = 34,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	childObjects = {
 		{templateFile = "object/tangible/sign/player/house_address_tatooine.iff", x = -2, z = 2.25, y = 12.5, ox = 0, oy = -1, oz = 0, ow = 0, cellid = -1, containmentType = -1},
 		{templateFile = "object/tangible/terminal/terminal_player_structure.iff", x = 6.94, z = 0.489743, y = 7.98, ox = 0, oy = 1, oz = 0, ow = 0, cellid = 2, containmentType = -1},

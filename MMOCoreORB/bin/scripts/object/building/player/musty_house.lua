@@ -5,7 +5,7 @@ object_building_player_player_house_mustafar_lg = object_building_player_shared_
 	length = 5,
 	width = 7,
 	baseMaintenanceRate = 50,
-	allowedZones = {"dantooine", "lok", "tatooine", "naboo", "rori", "corellia", "talus"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},
