@@ -4,7 +4,7 @@ object_tangible_loot_loot_schematic_marine_chest_plate_crafted_schematic = objec
 	objectMenuComponent = "LootSchematicMenuComponent",
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_armorsmith_master",
-	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_marine_chest.iff",
+	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_marine_chest_plate.iff",
 	targetUseCount = 3,
 }
 
