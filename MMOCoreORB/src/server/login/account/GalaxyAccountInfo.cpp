@@ -84,7 +84,14 @@ bool GalaxyAccountInfo::parseFromBinaryStream(ObjectInputStream* stream) {
 		return false;
 
 	// Read bank credits from stream
-	bankCredits = stream->readInt();
+	// For backward compatibility with old serialized data that doesn't have bankCredits,
+	// we check if there's data available before reading
+	try {
+		bankCredits = stream->readInt();
+	} catch (...) {
+		// Old format without bankCredits - default to 0
+		bankCredits = 0;
+	}
 
 	return true;
 }
