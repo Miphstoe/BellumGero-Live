@@ -8,6 +8,35 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/login/account/Account.h"
 #include "server/login/account/GalaxyAccountInfo.h"
+#include "server/zone/Zone.h"
+
+// Forward declaration and static helper to get the account's galaxy info for shared bank
+static GalaxyAccountInfo* getAccountGalaxyInfoHelper(CreditObjectImplementation* creditObj) {
+	Reference<CreatureObject*> creo = creditObj->getOwner().get();
+	if (creo == nullptr || !creo->isPlayerCreature())
+		return nullptr;
+
+	ManagedReference<PlayerObject*> playerObject = creo->getPlayerObject();
+	if (playerObject == nullptr)
+		return nullptr;
+
+	ManagedReference<Account*> account = playerObject->getAccount();
+	if (account == nullptr)
+		return nullptr;
+
+	// Get the galaxy name from the zone server
+	auto zone = creo->getZone();
+	if (zone == nullptr)
+		return nullptr;
+
+	auto zoneServer = zone->getZoneServer();
+	if (zoneServer == nullptr)
+		return nullptr;
+
+	String galaxyName = zoneServer->getGalaxyName();
+
+	return account->getGalaxyAccountInfo(galaxyName);
+}
 
 void CreditObjectImplementation::setCashCredits(int credits, bool notifyClient) {
 	if (cashCredits == credits)
@@ -43,33 +72,6 @@ uint64 CreditObjectImplementation::getOwnerObjectID() const {
 	return ownerObjectID;
 }
 
-// Helper method to get the account's galaxy info for shared bank
-GalaxyAccountInfo* CreditObjectImplementation::getAccountGalaxyInfo() {
-	Reference<CreatureObject*> creo = owner.get();
-	if (creo == nullptr || !creo->isPlayerCreature())
-		return nullptr;
-
-	ManagedReference<PlayerObject*> playerObject = creo->getPlayerObject();
-	if (playerObject == nullptr)
-		return nullptr;
-
-	ManagedReference<Account*> account = playerObject->getAccount();
-	if (account == nullptr)
-		return nullptr;
-
-	// Get the galaxy name from the zone server
-	auto zone = creo->getZone();
-	if (zone == nullptr)
-		return nullptr;
-
-	auto zoneServer = zone->getZoneServer();
-	if (zoneServer == nullptr)
-		return nullptr;
-
-	String galaxyName = zoneServer->getGalaxyName();
-
-	return account->getGalaxyAccountInfo(galaxyName);
-}
 
 int CreditObjectImplementation::getBankCredits() const {
 	// For NPCs and creatures without accounts, use the old system
@@ -78,7 +80,7 @@ int CreditObjectImplementation::getBankCredits() const {
 		return bankCredits;
 
 	// For players, get bank credits from the account (shared across all characters)
-	GalaxyAccountInfo* galaxyInfo = const_cast<CreditObjectImplementation*>(this)->getAccountGalaxyInfo();
+	GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfoHelper(const_cast<CreditObjectImplementation*>(this));
 	if (galaxyInfo == nullptr) {
 		// Fallback to character-specific bank if account info unavailable
 		return bankCredits;
@@ -91,7 +93,7 @@ void CreditObjectImplementation::setBankCredits(int credits, bool notifyClient) 
 	E3_ASSERT(credits >= 0);
 
 	// For players, set the account's shared bank
-	GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfo();
+	GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfoHelper(this);
 	if (galaxyInfo != nullptr) {
 		int currentBankCredits = galaxyInfo->getBankCredits();
 		if (currentBankCredits == credits)
@@ -290,7 +292,7 @@ void CreditObjectImplementation::notifyLoadFromDatabase() {
 
 	// For players, migrate old character-specific bank to account bank if needed
 	if (bankCredits > 0) {
-		GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfo();
+		GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfoHelper(this);
 		if (galaxyInfo != nullptr && galaxyInfo->getBankCredits() == 0) {
 			info() << "Migrating character-specific bank credits (" << bankCredits << ") to account-wide bank for objectID: " << ownerObjectID;
 			galaxyInfo->setBankCredits(bankCredits);
