@@ -83,14 +83,36 @@ bool GalaxyAccountInfo::parseFromBinaryStream(ObjectInputStream* stream) {
 	if (!chosenVeteranRewards.parseFromBinaryStream(stream))
 		return false;
 
-	// Read bank credits from stream
-	// For backward compatibility with old serialized data that doesn't have bankCredits,
-	// we check if there's data available before reading
+	// For backward compatibility: try to read length of bank data section
+	// Old format: no more data (exception on read) -> length = 0 -> bankCredits = 0
+	// New format: length prefix indicates bankCredits data follows
+	uint32 bankDataLength = 0;
+	bankCredits = 0; // Default for old format
+
 	try {
-		bankCredits = stream->readInt();
+		// Try to read the length prefix for new format bank data
+		bankDataLength = stream->readInt();
+
+		// Sanity check: bankDataLength should be sizeof(int) or 0
+		if (bankDataLength == (uint32)sizeof(int)) {
+			// New format with bankCredits
+			bankCredits = stream->readInt();
+		} else if (bankDataLength > 0) {
+			// Unknown format with unexpected length - skip it safely
+			for (uint32 i = 0; i < bankDataLength; ++i) {
+				try {
+					stream->readByte();
+				} catch (...) {
+					// Error reading data, but continue
+					break;
+				}
+			}
+			// Leave bankCredits at 0
+		}
+		// If bankDataLength == 0, it's old format end marker or new format with no bank
 	} catch (...) {
-		// Old format without bankCredits - default to 0
-		bankCredits = 0;
+		// End of stream reached - old format without bankCredits
+		// bankCredits stays at 0
 	}
 
 	return true;
@@ -100,6 +122,11 @@ bool GalaxyAccountInfo::parseFromBinaryStream(ObjectInputStream* stream) {
 bool GalaxyAccountInfo::toBinaryStream(ObjectOutputStream* stream) {
 	if (!chosenVeteranRewards.toBinaryStream(stream))
 		return false;
+
+	// Write length prefix for bank data section (for backward compatibility)
+	// This allows us to detect and skip unknown format versions
+	uint32 bankDataLength = sizeof(int);  // Length of bankCredits field
+	stream->writeInt(bankDataLength);
 
 	// Write bank credits to stream
 	stream->writeInt(bankCredits);
