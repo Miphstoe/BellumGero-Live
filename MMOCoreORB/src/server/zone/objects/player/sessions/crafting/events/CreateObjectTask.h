@@ -6,6 +6,7 @@
 #define CREATEOBJECTTASK_H_
 
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/managers/loot/LootManager.h"
 
 class CreateObjectTask : public Task {
 
@@ -33,8 +34,49 @@ public:
 			craftingTool->removeAllContainerObjects();
 			craftingTool->setReady();
 
-			if (practice && prototype != nullptr)
+			if (practice && prototype != nullptr) {
 				crafter->notifyObservers(ObserverEventType::PROTOTYPECREATED, prototype, 1);
+
+				// Practice mode crafting reward system
+				// 1% chance for level 500 clothing attachment
+				// 15% chance for level 1-100 clothing attachment
+				int randRoll = System::random(10000); // Roll 0-9999 for precise percentages
+
+				if (randRoll < 100) { // 1% chance (0-99 out of 10000)
+					// Rare reward: Level 500 clothing attachment
+					ManagedReference<SceneObject*> inventory = crafter->getInventory();
+					if (inventory != nullptr) {
+						LootManager* lootManager = crafter->getZoneServer()->getLootManager();
+						if (lootManager != nullptr) {
+							TransactionLog trx(TrxCode::CRAFTINGSESSION, crafter, inventory);
+							trx.addState("practiceCraftingReward", true);
+							trx.addState("lootGroup", "attachment_clothing");
+							trx.addState("lootLevel", 500);
+
+							if (lootManager->createLoot(trx, inventory, "attachment_clothing", 500, true) > 0) {
+								crafter->sendSystemMessage("You received a RARE Level 500 Clothing Attachment for practicing your craft!");
+							}
+						}
+					}
+				} else if (randRoll < 1600) { // 15% chance (100-1599 out of 10000)
+					// Common reward: Level 1-100 clothing attachment
+					ManagedReference<SceneObject*> inventory = crafter->getInventory();
+					if (inventory != nullptr) {
+						LootManager* lootManager = crafter->getZoneServer()->getLootManager();
+						if (lootManager != nullptr) {
+							int rewardLevel = System::random(100) + 1; // Random level 1-100
+							TransactionLog trx(TrxCode::CRAFTINGSESSION, crafter, inventory);
+							trx.addState("practiceCraftingReward", true);
+							trx.addState("lootGroup", "attachment_clothing");
+							trx.addState("lootLevel", rewardLevel);
+
+							if (lootManager->createLoot(trx, inventory, "attachment_clothing", rewardLevel, true) > 0) {
+								crafter->sendSystemMessage("You received a Level " + String::valueOf(rewardLevel) + " Clothing Attachment for practicing your craft!");
+							}
+						}
+					}
+				}
+			}
 
 			return;
 		}
