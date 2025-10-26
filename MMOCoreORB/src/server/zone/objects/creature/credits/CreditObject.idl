@@ -38,9 +38,7 @@ class CreditObject extends ManagedObject {
 	public native void setCashCredits(int credits, boolean notifyClient = true);
 
 	@read
-	public int getBankCredits() {
-		return bankCredits;
-	}
+	public native int getBankCredits();
 
 	@read
 	public int getCashCredits() {

@@ -5,6 +5,9 @@
 #include "server/zone/packets/DeltaMessage.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/managers/credit/CreditManager.h"
+#include "server/zone/objects/player/PlayerObject.h"
+#include "server/login/account/Account.h"
+#include "server/login/account/GalaxyAccountInfo.h"
 
 void CreditObjectImplementation::setCashCredits(int credits, bool notifyClient) {
 	if (cashCredits == credits)
@@ -40,13 +43,68 @@ uint64 CreditObjectImplementation::getOwnerObjectID() const {
 	return ownerObjectID;
 }
 
-void CreditObjectImplementation::setBankCredits(int credits, bool notifyClient) {
-	if (bankCredits == credits)
-		return;
+// Helper method to get the account's galaxy info for shared bank
+GalaxyAccountInfo* CreditObjectImplementation::getAccountGalaxyInfo() {
+	Reference<CreatureObject*> creo = owner.get();
+	if (creo == nullptr || !creo->isPlayerCreature())
+		return nullptr;
 
+	ManagedReference<PlayerObject*> playerObject = creo->getPlayerObject();
+	if (playerObject == nullptr)
+		return nullptr;
+
+	ManagedReference<Account*> account = playerObject->getAccount();
+	if (account == nullptr)
+		return nullptr;
+
+	// Get the galaxy name from the zone server
+	auto zone = creo->getZone();
+	if (zone == nullptr)
+		return nullptr;
+
+	auto zoneServer = zone->getZoneServer();
+	if (zoneServer == nullptr)
+		return nullptr;
+
+	String galaxyName = zoneServer->getGalaxyName();
+
+	return account->getGalaxyAccountInfo(galaxyName);
+}
+
+int CreditObjectImplementation::getBankCredits() const {
+	// For NPCs and creatures without accounts, use the old system
+	Reference<CreatureObject*> creo = owner.get();
+	if (creo == nullptr || !creo->isPlayerCreature())
+		return bankCredits;
+
+	// For players, get bank credits from the account (shared across all characters)
+	GalaxyAccountInfo* galaxyInfo = const_cast<CreditObjectImplementation*>(this)->getAccountGalaxyInfo();
+	if (galaxyInfo == nullptr) {
+		// Fallback to character-specific bank if account info unavailable
+		return bankCredits;
+	}
+
+	return galaxyInfo->getBankCredits();
+}
+
+void CreditObjectImplementation::setBankCredits(int credits, bool notifyClient) {
 	E3_ASSERT(credits >= 0);
 
-	bankCredits = credits;
+	// For players, set the account's shared bank
+	GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfo();
+	if (galaxyInfo != nullptr) {
+		int currentBankCredits = galaxyInfo->getBankCredits();
+		if (currentBankCredits == credits)
+			return;
+
+		galaxyInfo->setBankCredits(credits);
+	} else {
+		// For NPCs or if account unavailable, use character-specific bank
+		if (bankCredits == credits)
+			return;
+
+		bankCredits = credits;
+	}
 
 	if (notifyClient) {
 		Reference<CreatureObject*> creo = owner.get();
@@ -55,7 +113,7 @@ void CreditObjectImplementation::setBankCredits(int credits, bool notifyClient) 
 
 		DeltaMessage *msg = new DeltaMessage(creo->getObjectID(), 'CREO', 1);
 		msg->startUpdate(0x00);
-		msg->insertInt(bankCredits);
+		msg->insertInt(credits);
 		msg->close();
 		creo->sendMessage(msg);
 	}
@@ -67,7 +125,9 @@ void CreditObjectImplementation::transferCredits(int cash, int bank, bool notify
 		return;
 	}
 
-	if ((uint32) cashCredits + (uint32) bankCredits != (uint32) cash + (uint32) bank) {
+	int currentBankCredits = getBankCredits();
+
+	if ((uint32) cashCredits + (uint32) currentBankCredits != (uint32) cash + (uint32) bank) {
 		error() << "WARNING: unbalanced call to transferCredits(cash=" << cash << ", bank=" << bank << "), current: " << *this;
 		return;
 	}
@@ -82,9 +142,11 @@ void CreditObjectImplementation::subtractBankCredits(int credits, bool notifyCli
 		return;
 	}
 
-	if (credits > bankCredits) {
+	int currentBankCredits = getBankCredits();
+
+	if (credits > currentBankCredits) {
 		error() << "WARNING: Overdraft subtractBankCredits(credits=" << credits << "), current: " << *this;
-		credits -= bankCredits;
+		credits -= currentBankCredits;
 		clearBankCredits(notifyClient);
 
 		if (credits > cashCredits) {
@@ -97,7 +159,7 @@ void CreditObjectImplementation::subtractBankCredits(int credits, bool notifyCli
 		return;
 	}
 
-	setBankCredits(bankCredits - credits, notifyClient);
+	setBankCredits(currentBankCredits - credits, notifyClient);
 }
 
 void CreditObjectImplementation::subtractCashCredits(int credits, bool notifyClient) {
@@ -130,15 +192,17 @@ bool CreditObjectImplementation::subtractCredits(int credits, bool notifyClient,
 		return false;
 	}
 
-	if (credits > cashCredits + bankCredits) {
+	int currentBankCredits = getBankCredits();
+
+	if (credits > cashCredits + currentBankCredits) {
 		return false;
 	}
 
 	if (bankFirst) {
-		if (bankCredits > credits) {
+		if (currentBankCredits > credits) {
 			subtractBankCredits(credits, notifyClient);
 		} else {
-			credits -= bankCredits;
+			credits -= currentBankCredits;
 			clearBankCredits(notifyClient);
 			subtractCashCredits(credits, notifyClient);
 		}
@@ -161,7 +225,8 @@ void CreditObjectImplementation::addBankCredits(int credits, bool notifyClient) 
 		return;
 	}
 
-	uint64 newBalance = (uint64)bankCredits + (uint64)credits;
+	int currentBankCredits = getBankCredits();
+	uint64 newBalance = (uint64)currentBankCredits + (uint64)credits;
 
 	if (newBalance > CreditObject::CREDITCAP) {
 		error() << "WARNING: Overflow addBankCredits(credits=" << credits << "), current: " << *this;
@@ -178,7 +243,7 @@ void CreditObjectImplementation::addBankCredits(int credits, bool notifyClient) 
 		return;
 	}
 
-	setBankCredits(bankCredits + credits, notifyClient);
+	setBankCredits(currentBankCredits + credits, notifyClient);
 }
 
 void CreditObjectImplementation::addCashCredits(int credits, bool notifyClient) {
@@ -194,7 +259,9 @@ void CreditObjectImplementation::addCashCredits(int credits, bool notifyClient) 
 		setCashCredits(CreditObject::CREDITCAP, notifyClient);
 		newBalance -= CreditObject::CREDITCAP;
 
-		if (newBalance + (uint64)bankCredits > CreditObject::CREDITCAP) {
+		int currentBankCredits = getBankCredits();
+
+		if (newBalance + (uint64)currentBankCredits > CreditObject::CREDITCAP) {
 			setBankCredits(CreditObject::CREDITCAP, notifyClient);
 			error() << "WARNING: Player is at CREDITCAP both for Cash and Bank, current: " << *this;
 		} else {
@@ -215,9 +282,20 @@ void CreditObjectImplementation::notifyLoadFromDatabase() {
 		cashCredits = 0;
 	}
 
-	if (bankCredits < 0) {
+	int currentBankCredits = getBankCredits();
+	if (currentBankCredits < 0) {
 		error() << "Fixing negative bankCredits on load, current: " << *this;
-		bankCredits = 0;
+		setBankCredits(0, false);
+	}
+
+	// For players, migrate old character-specific bank to account bank if needed
+	if (bankCredits > 0) {
+		GalaxyAccountInfo* galaxyInfo = getAccountGalaxyInfo();
+		if (galaxyInfo != nullptr && galaxyInfo->getBankCredits() == 0) {
+			info() << "Migrating character-specific bank credits (" << bankCredits << ") to account-wide bank for objectID: " << ownerObjectID;
+			galaxyInfo->setBankCredits(bankCredits);
+			bankCredits = 0; // Clear the old character-specific bank
+		}
 	}
 }
 
@@ -244,7 +322,7 @@ LoggerHelper CreditObjectImplementation::debug() const {
 String CreditObjectImplementation::toStringData() const {
 	JSONSerializationType jsonData;
 	jsonData["ownerObjectID"] = getOwnerObjectID();
-	jsonData["bankCredits"] = bankCredits;
+	jsonData["bankCredits"] = getBankCredits();
 	jsonData["cashCredits"] = cashCredits;
 	jsonData["objectID"] = _this.getReferenceUnsafeStaticCast()->_getObjectID();
 	return jsonData.dump();

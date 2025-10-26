@@ -3,7 +3,7 @@
 #include "engine/util/json_utils.h"
 
 GalaxyAccountInfo::GalaxyAccountInfo() {
-
+	bankCredits = 0;
 }
 
 void GalaxyAccountInfo::updateVetRewardsFromPlayer(const VectorMap<unsigned int, String>& newRewards) {
@@ -36,17 +36,73 @@ String GalaxyAccountInfo::getChosenVeteranReward(uint32 milestone) const {
 	return chosenVeteranRewards.get(milestone);
 }
 
+// Shared bank credits methods
+int GalaxyAccountInfo::getBankCredits() const {
+	return bankCredits;
+}
+
+void GalaxyAccountInfo::setBankCredits(int credits) {
+	// Cap at 2 billion (credit limit)
+	if (credits > 2000000000)
+		credits = 2000000000;
+
+	if (credits < 0)
+		credits = 0;
+
+	bankCredits = credits;
+}
+
+void GalaxyAccountInfo::addBankCredits(int credits) {
+	long long newTotal = (long long)bankCredits + (long long)credits;
+
+	// Cap at 2 billion
+	if (newTotal > 2000000000)
+		newTotal = 2000000000;
+
+	bankCredits = (int)newTotal;
+}
+
+void GalaxyAccountInfo::subtractBankCredits(int credits) {
+	bankCredits -= credits;
+
+	if (bankCredits < 0)
+		bankCredits = 0;
+}
+
+bool GalaxyAccountInfo::verifyBankCredits(int credits) const {
+	if (credits < 0)
+		return false;
+
+	if (bankCredits < credits)
+		return false;
+
+	return true;
+}
+
 bool GalaxyAccountInfo::parseFromBinaryStream(ObjectInputStream* stream) {
-	return chosenVeteranRewards.parseFromBinaryStream(stream);
+	if (!chosenVeteranRewards.parseFromBinaryStream(stream))
+		return false;
+
+	// Read bank credits from stream
+	bankCredits = stream->readInt();
+
+	return true;
 }
 
 
 bool GalaxyAccountInfo::toBinaryStream(ObjectOutputStream* stream) {
-	return chosenVeteranRewards.toBinaryStream(stream);
+	if (!chosenVeteranRewards.toBinaryStream(stream))
+		return false;
+
+	// Write bank credits to stream
+	stream->writeInt(bankCredits);
+
+	return true;
 }
 
 void to_json(nlohmann::json& j, const GalaxyAccountInfo& p) {
 	j["chosenVeteranRewards"] = p.chosenVeteranRewards.getMapUnsafe();
+	j["bankCredits"] = p.bankCredits;
 }
 
 

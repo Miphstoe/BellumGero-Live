@@ -15,6 +15,7 @@
 class GalaxyAccountInfo : public Object {
 protected:
 	SynchronizedVectorMap<uint32_t, String> chosenVeteranRewards; // milestone, templateFile
+	int bankCredits; // Shared bank credits across all characters on this account for this galaxy
 
 public:
 	GalaxyAccountInfo();
@@ -28,6 +29,13 @@ public:
 	bool hasChosenVeteranReward(const String& rewardTemplate) const;
 
 	void clearVeteranReward(uint32 milestone);
+
+	// Shared bank credits methods
+	int getBankCredits() const;
+	void setBankCredits(int credits);
+	void addBankCredits(int credits);
+	void subtractBankCredits(int credits);
+	bool verifyBankCredits(int credits) const;
 
 	bool toBinaryStream(ObjectOutputStream* stream);
 	bool parseFromBinaryStream(ObjectInputStream* stream);
