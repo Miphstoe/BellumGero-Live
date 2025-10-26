@@ -46,7 +46,8 @@ event = {
     { itemTemplate = "bestine_quest_painting",          weight = 50000 },  -- RARE (moved)
 
     -- ===================== Epic (1) @ 25,000 =====================
-    { itemTemplate = "house_deeds",                     weight = 25000 },   -- EPIC
+    { itemTemplate = "house_deeds",                     weight = 25000 }, -- EPIC
+    { itemTemplate = "scrolling_screen",              weight = 25000 }, -- EPIC
   }
 }
 
