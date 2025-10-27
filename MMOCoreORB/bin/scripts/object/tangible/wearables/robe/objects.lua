@@ -808,6 +808,67 @@ object_tangible_wearables_robe_shared_robe_jedi_padawan = SharedTangibleObjectTe
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_padawan, "object/tangible/wearables/robe/shared_robe_jedi_padawan.iff")
 
+-- Add this to your objects.lua file with the other robe shared templates
+
+object_tangible_wearables_robe_shared_robe_jedi_padawan_dark = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_padawan_dark.iff",
+	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
+--[[
+	appearanceFilename = "",
+	arrangementDescriptorFilename = "abstract/slot/arrangement/wearables/cloak.iff",
+
+	certificationsRequired = {},
+	clearFloraRadius = 0,
+	clientDataFile = "",
+	clientGameObjectType = 16777221,
+	collisionActionBlockFlags = 0,
+	collisionActionFlags = 51,
+	collisionActionPassFlags = 1,
+	collisionMaterialBlockFlags = 0,
+	collisionMaterialFlags = 1,
+	collisionMaterialPassFlags = 0,
+	containerType = 0,
+	containerVolumeLimit = 1,
+	customizationVariableMapping = {},
+
+	detailedDescription = "@wearables_detail:robe_jedi_padawan_dark",
+
+	gameObjectType = 16777221,
+
+	locationReservationRadius = 0,
+	lookAtText = "@wearables_lookat:robe_jedi_dark",
+
+	noBuildRadius = 0,
+
+	objectName = "@wearables_name:robe_jedi_padawan_dark",
+	onlyVisibleInTools = 0,
+
+	paletteColorCustomizationVariables = {},
+	portalLayoutFilename = "",
+
+	rangedIntCustomizationVariables = {},
+
+	scale = 1,
+	scaleThresholdBeforeExtentTest = 0.5,
+	sendToClient = 1,
+	slotDescriptorFilename = "abstract/slot/descriptor/tangible.iff",
+	snapToTerrain = 1,
+	socketDestinations = {},
+	structureFootprintFileName = "",
+	surfaceType = 0,
+
+	targetable = 1,
+	totalCellNumber = 0,
+
+	useStructureFootprintOutline = 0,
+
+	clientObjectCRC = 0,
+	derivedFromTemplates = {"object/object/base/shared_base_object.iff", "object/tangible/base/shared_tangible_base.iff", "object/tangible/base/shared_tangible_craftable.iff", "object/tangible/wearables/base/shared_wearables_base.iff", "object/tangible/wearables/base/shared_base_cloak.iff"}
+]]
+}
+
+ObjectTemplates:addTemplate(object_tangible_wearables_robe_shared_robe_jedi_padawan_dark, "object/tangible/wearables/robe/shared_robe_jedi_padawan_dark.iff")
+
 object_tangible_wearables_robe_shared_robe_jedi_test = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_test.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
