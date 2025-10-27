@@ -157,6 +157,7 @@
 #include "server/zone/objects/creature/commands/DefaultDroidAttackCommand.h"
 #include "server/zone/objects/creature/commands/DefuseMinefieldCommand.h"
 #include "server/zone/objects/creature/commands/DelegateFactionPointsCommand.h"
+#include "server/zone/objects/creature/commands/DelegateJediXpCommand.h"
 #include "server/zone/objects/creature/commands/DenyServiceCommand.h"
 #include "server/zone/objects/creature/commands/DeployTrapCommand.h"
 #include "server/zone/objects/creature/commands/DestroyCommand.h"
@@ -562,6 +563,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<DefaultDroidAttackCommand>(String("defaultDroidAttack").toLowerCase());
 	commandFactory.registerCommand<DefuseMinefieldCommand>(String("defuseMinefield").toLowerCase());
 	commandFactory.registerCommand<DelegateFactionPointsCommand>(String("delegateFactionPoints").toLowerCase());
+	commandFactory.registerCommand<DelegateJediXpCommand>(String("delegatejedixp").toLowerCase());
 	commandFactory.registerCommand<DenyServiceCommand>(String("denyService").toLowerCase());
 	commandFactory.registerCommand<DeployTrapCommand>(String("deployTrap").toLowerCase());
 	commandFactory.registerCommand<DestroyCommand>(String("destroy").toLowerCase());
