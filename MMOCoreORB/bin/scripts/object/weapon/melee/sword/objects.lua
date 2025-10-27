@@ -1432,3 +1432,9 @@ object_weapon_melee_sword_shared_sword_wookiee = SharedWeaponObjectTemplate:new 
 }
 
 ObjectTemplates:addClientTemplate(object_weapon_melee_sword_shared_sword_wookiee, "object/weapon/melee/sword/shared_sword_wookiee.iff")
+
+object_weapon_melee_sword_shared_sword_obsidian = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/melee/sword/shared_sword_obsidian.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_melee_sword_shared_sword_obsidian, "object/weapon/melee/sword/shared_sword_obsidian.iff")

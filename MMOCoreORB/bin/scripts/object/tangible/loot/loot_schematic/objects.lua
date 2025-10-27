@@ -6364,3 +6364,57 @@ object_tangible_loot_loot_schematic_shared_sword_wookiee_schematic = SharedTangi
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_sword_wookiee_schematic, "object/tangible/loot/loot_schematic/shared_sword_wookiee_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rifle_dc15_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rifle_dc15_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rifle_dc15_schematic, "object/tangible/loot/loot_schematic/shared_rifle_dc15_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_carbine_e5_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_carbine_e5_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_carbine_e5_schematic, "object/tangible/loot/loot_schematic/shared_carbine_e5_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_pistol_blackfalcon_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_pistol_blackfalcon_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_pistol_blackfalcon_schematic, "object/tangible/loot/loot_schematic/shared_pistol_blackfalcon_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_punchknuckler_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_punchknuckler_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_punchknuckler_schematic, "object/tangible/loot/loot_schematic/shared_punchknuckler_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_lance_obsidian_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_lance_obsidian_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_lance_obsidian_schematic, "object/tangible/loot/loot_schematic/shared_lance_obsidian_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_2h_sword_obsidian_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_2h_sword_obsidian_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_2h_sword_obsidian_schematic, "object/tangible/loot/loot_schematic/shared_2h_sword_obsidian_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_sword_obsidian_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_sword_obsidian_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_sword_obsidian_schematic, "object/tangible/loot/loot_schematic/shared_sword_obsidian_schematic.iff")
