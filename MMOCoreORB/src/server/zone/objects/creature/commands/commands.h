@@ -843,6 +843,9 @@
 #include "AreaLootCommand.h"
 #include "HarvestAreaCommand.h"
 #include "UpdateSkillsCommand.h"
+#include "ReaperStrikeCommand.h"
+#include "ReaperBlastCommand.h"
+#include "ReaperShotCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */
