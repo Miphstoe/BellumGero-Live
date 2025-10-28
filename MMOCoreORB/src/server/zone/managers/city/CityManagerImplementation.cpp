@@ -1529,7 +1529,7 @@ void CityManagerImplementation::sendManageMilitia(CityRegion* city, CreatureObje
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(creature->getObjectID()) && !ghost->isAdmin()) {
+	if (!city->isMayor(creature->getObjectID()) && !city->isMilitiaMember(creature->getObjectID()) && !ghost->isAdmin()) {
 		return;
 	}
 
@@ -1585,7 +1585,7 @@ void CityManagerImplementation::addMilitiaMember(CityRegion* city, CreatureObjec
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+	if (!city->isMayor(mayor->getObjectID()) && !city->isMilitiaMember(mayor->getObjectID()) && !ghost->isAdmin())
 		return;
 
 	PlayerManager* playerManager = zoneServer->getPlayerManager();
@@ -1627,7 +1627,7 @@ void CityManagerImplementation::removeMilitiaMember(CityRegion* city, CreatureOb
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+	if (!city->isMayor(mayor->getObjectID()) && !city->isMilitiaMember(mayor->getObjectID()) && !ghost->isAdmin())
 		return;
 
 	ManagedReference<SceneObject*> obj = zoneServer->getObject(militiaid);
