@@ -134,6 +134,19 @@ void FactoryObjectImplementation::createChildObjects() {
 void FactoryObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
 	InstallationObjectImplementation::fillAttributeList(alm, object);
 
+	// Show maintenance and power to admins
+	if (object != nullptr && isOnAdminList(object)) {
+		alm->insertAttribute("examine_maintenance_rate", String::valueOf((int)getMaintenanceRate()) + " / hour");
+		alm->insertAttribute("examine_maintenance", String::valueOf((int)surplusMaintenance));
+
+		int basePowerRate = getBasePowerRate();
+		if (basePowerRate > 0) {
+			alm->insertAttribute("examine_power", String::valueOf((int)surplusPower) + " (Rate: " + String::valueOf(basePowerRate) + " / hour)");
+		} else {
+			alm->insertAttribute("examine_power", String::valueOf((int)surplusPower));
+		}
+	}
+
 	if (isActive() && object != nullptr && isOnAdminList(object)) {
 		if (getContainerObjectsSize() == 0)
 			return;
