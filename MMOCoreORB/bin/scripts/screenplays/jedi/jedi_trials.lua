@@ -149,7 +149,13 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
 	else
 		local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+		-- Give both the light and dark padawan robes to allow player choice
 		local pItem = give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan.iff", 4)
+
+		-- Check if inventory has room for second robe
+		if (not SceneObject(pInventory):isContainerFullRecursive()) then
+			local pItem = give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff", 4)
+		end
 	end
 
 	sendMail("system", "@jedi_spam:welcome_subject", "@jedi_spam:welcome_body", CreatureObject(pPlayer):getFirstName())

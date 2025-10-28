@@ -99,19 +99,27 @@ function ForceShrineMenuComponent:recoverRobe(pPlayer)
 		return
 	end
 
-	local robeTemplate
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+		-- Rank 3+: Give Council-specific robe (light or dark jedi master robes)
 		local councilType = JediTrials:getJediCouncil(pPlayer)
+		local robeTemplate
 
 		if (councilType == JediTrials.COUNCIL_LIGHT) then
 			robeTemplate = "object/tangible/wearables/robe/robe_jedi_light_s01.iff"
 		else
 			robeTemplate = "object/tangible/wearables/robe/robe_jedi_dark_s01.iff"
 		end
+
+		local pItem = give_socketed(pInventory, robeTemplate, 4)
 	else
-		robeTemplate = "object/tangible/wearables/robe/robe_jedi_padawan.iff"
+		-- Rank 2 (Padawan): Give BOTH light and dark padawan robes
+		give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan.iff", 4)
+
+		-- Check if inventory has room for second robe
+		if (not SceneObject(pInventory):isContainerFullRecursive()) then
+			give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff", 4)
+		end
 	end
 
-	local pItem = give_socketed(pInventory, robeTemplate, 4)
 	CreatureObject(pPlayer):sendSystemMessage("@force_rank:items_recovered")
 end

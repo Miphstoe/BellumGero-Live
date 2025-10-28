@@ -41,7 +41,7 @@
 --this exception also makes it possible to release a modified version
 
 
-object_tangible_wearables_robe_robe_jedi_dark_s01 = object_tangible_wearables_robe_shared_robe_jedi_dark_s01:new {
+object_tangible_wearables_robe_robe_jedi_padawan_dark = object_tangible_wearables_robe_shared_robe_jedi_padawan_dark:new {
 	playerRaces = { "object/creature/player/bothan_male.iff",
 		"object/creature/player/bothan_female.iff",
 		"object/creature/player/human_male.iff",
@@ -75,8 +75,8 @@ object_tangible_wearables_robe_robe_jedi_dark_s01 = object_tangible_wearables_ro
 	noTrade = 1,
 
 	objectMenuComponent = "RobeObjectMenuComponent",
-	certificationsRequired = {"force_rank_dark_novice"},
+	certificationsRequired = {"force_title_jedi_rank_02"},
 	attributeListComponent = "JediRobeAttributeListComponent",
 }
 
-ObjectTemplates:addTemplate(object_tangible_wearables_robe_robe_jedi_dark_s01, "object/tangible/wearables/robe/robe_jedi_dark_s01.iff")
+ObjectTemplates:addTemplate(object_tangible_wearables_robe_robe_jedi_padawan_dark, "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff")
