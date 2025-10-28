@@ -139,6 +139,7 @@
 #include "DefaultDroidAttackCommand.h"
 #include "DefuseMinefieldCommand.h"
 #include "DelegateFactionPointsCommand.h"
+#include "DelegateJediXpCommand.h"
 #include "DenyServiceCommand.h"
 #include "DeployTrapCommand.h"
 #include "DestroyCommand.h"
