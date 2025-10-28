@@ -82,7 +82,13 @@ krayt_dragon_ancient = Creature:new {
 			{group = "krayt_pearls", chance = 10000000},             -- 100.00% of group, 10.00% total
 		},
 		lootChance = 1000000, -- 10.00% total chance
-	}
+	},
+	{
+        groups = {
+		    {group = "endgame_weapon_schematics", chance = 10000000}
+	    },
+	    lootChance = 1500000, -- 15.00% total chance
+	},
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

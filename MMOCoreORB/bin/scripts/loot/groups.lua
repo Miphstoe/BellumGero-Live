@@ -747,3 +747,5 @@ includeFile("groups/wearables/wearables_uncommon.lua")
 includeFile("groups/worldboss/sea_removal_tool_1x.lua")
 -- events sub-folder
 includeFile("groups/events/event.lua")
+
+includeFile("groups/endgame_weapon_schematics.lua")

@@ -73,7 +73,13 @@ peko_peko_infernomaw = Creature:new {
         { group = "armor_attachments",    chance = 3750000 }  -- 37.5%
       },
       lootChance = 10000000
-    }
+    },
+    {
+        groups = {
+            {group = "endgame_weapon_schematics", chance = 10000000}
+        },
+        lootChance = 1500000, -- 15.00% total chance
+    },
   },
 
   -- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

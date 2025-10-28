@@ -70,3 +70,5 @@ includeFile("weapon/ranged/pistol/pistol_srcombat.lua")
 includeFile("weapon/ranged/pistol/pistol_striker.lua")
 includeFile("weapon/ranged/pistol/pistol_striker_noob.lua")
 includeFile("weapon/ranged/pistol/pistol_tangle.lua")
+
+includeFile("weapon/ranged/pistol/pistol_blackfalcon.lua")

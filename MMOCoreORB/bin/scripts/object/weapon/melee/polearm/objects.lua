@@ -796,3 +796,10 @@ object_weapon_melee_polearm_shared_polearm_vibro_axe = SharedWeaponObjectTemplat
 }
 
 ObjectTemplates:addClientTemplate(object_weapon_melee_polearm_shared_polearm_vibro_axe, "object/weapon/melee/polearm/shared_polearm_vibro_axe.iff")
+
+
+object_weapon_melee_polearm_shared_lance_obsidian = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/melee/polearm/shared_lance_obsidian.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_melee_polearm_shared_lance_obsidian, "object/weapon/melee/polearm/shared_lance_obsidian.iff")
