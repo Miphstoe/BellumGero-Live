@@ -768,7 +768,16 @@ void CommandConfigManager::parseVariableData(String varName, LuaObject &command,
 			jediCommand->setFrsLightForcePowerModifier(Lua::getFloatParameter(L));
 		else if (varName == "frsDarkForcePowerModifier")
 			jediCommand->setFrsDarkForcePowerModifier(Lua::getFloatParameter(L));
-		else if (jediCommand->isForceHealCommand()) {
+		else if (varName == "toggle") {
+			// Custom variable for force run commands - skip it (handled at Lua level)
+			lua_pop(L, 1);
+		} else if (varName == "drPercent") {
+			// Custom variable for force run commands - skip it (handled at Lua level)
+			lua_pop(L, 1);
+		} else if (varName == "onStart" || varName == "onStop") {
+			// Custom Lua functions - skip them (called directly from Lua)
+			lua_pop(L, 1);
+		} else if (jediCommand->isForceHealCommand()) {
 			ForceHealQueueCommand* healCommand = cast<ForceHealQueueCommand*>(jediCommand);
 			if (varName == "healAmount")
 				healCommand->setHealAmount(Lua::getIntParameter(L));
