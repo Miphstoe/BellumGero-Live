@@ -1301,8 +1301,18 @@ void CraftingSessionImplementation::customization(const String& name, byte templ
 
 	prototype->setCustomObjectName(customName, false);
 
-	if (schematicCount < 0 || schematicCount > 1000) {
-		schematicCount = 1000;
+	// Use factoryCrateSize as the manufacture limit cap
+	Reference<DraftSchematic*> draftSchematic = manufactureSchematic->getDraftSchematic();
+	int maxLimit = 1000; // Default cap
+	if (draftSchematic != nullptr) {
+		int crateSize = draftSchematic->getFactoryCrateSize();
+		if (crateSize > 0) {
+			maxLimit = crateSize;
+		}
+	}
+
+	if (schematicCount < 0 || schematicCount > maxLimit) {
+		schematicCount = maxLimit;
 	}
 
 	manufactureSchematic->setManufactureLimit(schematicCount);

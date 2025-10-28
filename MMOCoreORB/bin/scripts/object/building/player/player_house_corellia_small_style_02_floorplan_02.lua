@@ -45,7 +45,7 @@ object_building_player_player_house_corellia_small_style_02_floorplan_02 = objec
 	lotSize = 2,
 	storageLimit = 400,
 	baseMaintenanceRate = 16,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},
