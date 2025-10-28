@@ -9,7 +9,6 @@ includeFile("groups/coa2_rebel_message.lua")
 includeFile("groups/coa3_caravan_disk.lua")
 includeFile("groups/coa3_alderaan_flora.lua")
 includeFile("groups/color_crystals.lua")
-includeFile("groups/endgame_weapon_schematics.lua")
 includeFile("groups/power_crystals.lua")
 includeFile("groups/component_enhancement.lua")
 includeFile("groups/data_storage_unit_parts.lua")
@@ -748,3 +747,5 @@ includeFile("groups/wearables/wearables_uncommon.lua")
 includeFile("groups/worldboss/sea_removal_tool_1x.lua")
 -- events sub-folder
 includeFile("groups/events/event.lua")
+
+includeFile("groups/endgame_weapon_schematics.lua")

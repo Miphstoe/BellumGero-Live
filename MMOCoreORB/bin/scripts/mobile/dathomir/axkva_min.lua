@@ -52,7 +52,13 @@ axkva_min = Creature:new {
 				{group = "axkva_min", chance = 10000000},
 			},
 			lootChance = 500000 --5%
-		}
+		},
+		{
+        	groups = {
+		    	{group = "endgame_weapon_schematics", chance = 10000000}
+	    	},
+			lootChance = 500000, -- 5.00% total chance
+		},
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
