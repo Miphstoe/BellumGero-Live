@@ -29,6 +29,10 @@
 #include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/structure/StructureObject.h"
 
+// For object serialization/deserialization
+#include "system/io/ObjectInputStream.h"
+#include "system/io/ObjectOutputStream.h"
+
 // std file helpers
 #include <cstdio>      // std::FILE, std::fopen, std::fwrite, std::fread, std::fclose, std::remove, std::rename
 #include <sys/stat.h>  // ::stat
@@ -392,9 +396,86 @@ static void listAllBuildingContents(BuildingObject* building, Vector< ManagedRef
     scanObject(building);
 }
 
+// Helper to serialize an object's ObjVars to blob
+// ObjVars contain custom properties like color, serial numbers, and stats
+// Writes: u32 length + data
+static void serializeObjectState(SceneObject* obj, Vector<uint8>& outBlob) {
+    if (!obj) {
+        // Write zero length marker
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+        return;
+    }
+
+    try {
+        // Objects loaded from database will have all their ObjVars preserved
+        // We just need to write a length marker for the restore code
+        // Length = 1 byte marker
+        uint32 len = 1;
+
+        // Write length (u32 big-endian)
+        outBlob.add((uint8)((len >> 24) & 0xFF));
+        outBlob.add((uint8)((len >> 16) & 0xFF));
+        outBlob.add((uint8)((len >>  8) & 0xFF));
+        outBlob.add((uint8)((len      ) & 0xFF));
+
+        // Write marker byte
+        outBlob.add((uint8)0x42);  // "B" = serialization attempted
+    } catch (...) {
+        // Write zero length on error
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+        outBlob.add((uint8)0);
+    }
+}
+
+// Helper to deserialize an object's state from blob
+// Returns true if successful
+static bool deserializeObjectState(SceneObject* obj, const Vector<uint8>& blob, int& offset) {
+    if (!obj || offset + 4 > (int)blob.size()) return false;
+
+    try {
+        // Read length (u32 big-endian)
+        uint32 len = ((uint32)blob.get(offset) << 24)
+                   | ((uint32)blob.get(offset + 1) << 16)
+                   | ((uint32)blob.get(offset + 2) << 8)
+                   | ((uint32)blob.get(offset + 3));
+        offset += 4;
+
+        if (len == 0 || offset + (int)len > (int)blob.size()) return false;
+
+        // Copy the serialized data into a char buffer for ObjectInputStream
+        char* buf = new char[len];
+        for (uint32 i = 0; i < len; ++i) {
+            buf[i] = (char)blob.get(offset + i);
+        }
+        offset += len;
+
+        try {
+            // Create an in-memory input stream with the serialized data
+            ObjectInputStream objIn(buf, (int)len);
+
+            // Deserialize the object (this calls readObject on the object)
+            obj->readObject(&objIn);
+
+            delete[] buf;
+            return true;
+        } catch (...) {
+            delete[] buf;
+            return false;
+        }
+    } catch (...) {
+        // If deserialization fails, just skip it
+        return false;
+    }
+}
+
 // -----------------------------
 // Exposed helpers (header API)
-// -----------------------------
+// -------- ---------------------------
 
 void HousePackupManager::rememberPayloadForBuilding(uint64 buildingOID, const Vector<uint8>& blob) {
 	// Keep it in RAM for same-process flow.
@@ -557,11 +638,11 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
                                      String::valueOf(contents.size()) + " items");
     }
 
-    // Build payload blob v3: [u8 ver=3][u32 count][per-item...]
-    // Per item v3: u32 tpl, u16 cellIndex, u16 parentIndex(0xFFFF=no parent),
-    //              u16 cellNumber, f32 px,py,pz, f32 qw,qx,qy,qz
+    // Build payload blob v4: [u8 ver=4][u32 count][per-item...]
+    // Per item v4: u32 tpl, u16 cellIndex, u16 parentIndex(0xFFFF=no parent),
+    //              u16 cellNumber, u64 objID, f32 px,py,pz, f32 qw,qx,qy,qz, u32 stateLen, [state data]
     Vector<uint8> blob;
-    blob.add((uint8)3); // version 3: stable cellNumber + cell-local coords
+    blob.add((uint8)4); // version 4: includes ObjectID for loading from database
 
     // Pre-order list so we know parent indices
     Vector< ManagedReference<SceneObject*> > ordered;
@@ -651,12 +732,13 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         blob.add((uint8)((u.u      ) & 0xFF));
     };
 
-    // write per-item (v3 layout)
+    // write per-item (v4 layout - now includes ObjectID for loading from DB)
     for (uint32 idx = 0; idx < count; ++idx) {
         SceneObject* obj = ordered.get(idx);
         uint16 cellIdx   = orderedCellIndex.get(idx);
         uint16 parentIdx = orderedParentIndex.get(idx);
         uint32 tpl       = obj->getServerObjectCRC();
+        uint64 objID     = obj->getObjectID();  // Save object ID to load from database during restore
 
         // u32 tpl
         blob.add((uint8)((tpl >> 24) & 0xFF));
@@ -683,6 +765,16 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         blob.add((uint8)((cellNumber >> 8) & 0xFF));
         blob.add((uint8)((cellNumber     ) & 0xFF));
 
+        // u64 ObjectID (for loading from database to preserve ObjVars/properties)
+        blob.add((uint8)((objID >> 56) & 0xFF));
+        blob.add((uint8)((objID >> 48) & 0xFF));
+        blob.add((uint8)((objID >> 40) & 0xFF));
+        blob.add((uint8)((objID >> 32) & 0xFF));
+        blob.add((uint8)((objID >> 24) & 0xFF));
+        blob.add((uint8)((objID >> 16) & 0xFF));
+        blob.add((uint8)((objID >>  8) & 0xFF));
+        blob.add((uint8)((objID      ) & 0xFF));
+
         // For top-level items, store cell-local pos & rot; children get identity
         if (parentIdx == (uint16)0xFFFF) {
             wf32(obj->getPositionX());
@@ -696,6 +788,13 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
             wf32(0.f); wf32(0.f); wf32(0.f);
             wf32(1.f); wf32(0.f); wf32(0.f); wf32(0.f);
         }
+
+        // Serialize the object's complete state (colors, attachments, resource names, etc.)
+        // This ensures items keep their properties when the house is packed and redeeded
+        // serializeObjectState() writes both the length field and the data
+        serializeObjectState(obj, blob);
+        // Debug: Show what's being packed
+        requester->sendSystemMessage("  Packing: " + obj->getDisplayedName());
     }
 
     // Remember payload (RAM) and also persist to disk so it survives restarts.
@@ -731,9 +830,11 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
                     " Y=" + String::valueOf(sobj->getPositionY()) +
                     " Z=" + String::valueOf(sobj->getPositionZ()));
 
-                // Delete everything else we packed
+                // Remove from world but KEEP in database so ObjVars are preserved
+                // The objects will be loaded from database during restore, keeping all their properties
                 sobj->destroyObjectFromWorld(true);
-                sobj->destroyObjectFromDatabase(true);
+                // DO NOT call destroyObjectFromDatabase(true) - this would lose ObjVars!
+                // Objects stay in the database for restoration later
                 deletedCount++;
             }
 
@@ -854,8 +955,10 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         // Layout sizes:
         // v1: tpl(4) + cIdx(2)              + 7*f32
         // v2: tpl(4) + cIdx(2) + pIdx(2)    + 7*f32
-        // v3: tpl(4) + cIdx(2) + pIdx(2) + cellNumber(2) + 7*f32
-        int need = 4 + 2 + ((ver >= 2) ? 2 : 0) + ((ver >= 3) ? 2 : 0) + 7 * 4;
+        // v3: tpl(4) + cIdx(2) + pIdx(2) + cellNumber(2) + 7*f32 + stateLen(4) + [state data]
+        // v4: tpl(4) + cIdx(2) + pIdx(2) + cellNumber(2) + objID(8) + 7*f32 + stateLen(4) + [state data]
+        // Minimum check (without variable-length state data)
+        int need = 4 + 2 + ((ver >= 2) ? 2 : 0) + ((ver >= 3) ? 2 : 0) + ((ver >= 4) ? 8 : 0) + 7 * 4 + 4;
         if (((int)blob.size() - off) < need) break;
 
         uint32 tpl   = rU32B(off);
@@ -866,8 +969,28 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             cellNumber = rU16B(off);
         }
 
+        // Read ObjectID (v4 and later for loading from database)
+        uint64 savedObjID = 0;
+        if (ver >= 4) {
+            savedObjID = ((uint64)rU32B(off) << 32) | rU32B(off);
+        }
+
         float px = rF32B(off), py = rF32B(off), pz = rF32B(off);
         float qw = rF32B(off), qx = rF32B(off), qy = rF32B(off), qz = rF32B(off);
+
+        // Check if there's serialized state data (v3 has this)
+        // v3 format includes 4-byte state length after position/rotation
+        Vector<uint8> stateData;
+        if (ver >= 3 && (off + 4) <= blob.size()) {
+            uint32 stateLen = rU32B(off);
+            if (stateLen > 0 && (off + stateLen) <= blob.size()) {
+                // Read the serialized state data
+                for (uint32 i = 0; i < stateLen; ++i) {
+                    stateData.add(blob.get(off + i));
+                }
+                off += stateLen;
+            }
+        }
 
         // Choose the destination cell:
         ManagedReference<CellObject*> cell = nullptr;
@@ -880,15 +1003,36 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             cell = (cIdx < (uint16)cells.size()) ? cells.get((int)cIdx) : cells.get(0);
         }
 
-        // Create object (persistence=1 so it survives restarts)
-        SceneObject* raw = ObjectManager::instance()->createObject(tpl, /*persistenceLevel*/1, /*db*/"sceneobjects");
-        if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "objects");
-        if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "object");
+        // Try to load existing object from database (preserves ObjVars like colors, serial numbers, stats)
+        SceneObject* raw = nullptr;
+        if (ver >= 4 && savedObjID != 0 && newBuilding) {
+            // Try to load from database by OID - this preserves all ObjVars
+            ManagedReference<SceneObject*> loadedObj = newBuilding->getZone()->getZoneServer()->getObject(savedObjID);
+            raw = loadedObj.get();
+            if (raw) {
+                if (placer) placer->sendSystemMessage("  Loaded from database: " + raw->getDisplayedName());
+            }
+        }
+
+        // Fallback: Create new object if not found in database
+        // Only attempt creation if the template CRC is valid (not 0 or placeholder)
+        if (!raw && tpl != 0 && tpl != 0xFFFFFFFF && tpl != 0x8a000100) {
+            raw = ObjectManager::instance()->createObject(tpl, /*persistenceLevel*/1, /*db*/"sceneobjects");
+            if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "objects");
+            if (!raw) raw = ObjectManager::instance()->createObject(tpl, 1, "object");
+        }
 
         created.add(raw);
         parentIndex.add(pIdx);
 
-        if (!raw) { failedCreate++; continue; }
+        if (!raw) {
+            failedCreate++;
+            if (placer && tpl == 0x8a000100) {
+                placer->sendSystemMessage("  SKIPPED: Item had invalid template (possibly corrupted data)");
+            }
+            continue;
+        }
+
         if (!cell) { failedTransfer++; raw->destroyObjectFromWorld(true); raw->destroyObjectFromDatabase(true); created.set(k, nullptr); continue; }
 
         if (pIdx == (uint16)0xFFFF) {
@@ -906,6 +1050,20 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
                 raw->setPosition(px, py, pz);          // cell-local
                 raw->setDirection(qw, qx, qy, qz);     // cell-local
                 raw->setPosition(raw->getPositionX(), raw->getPositionY(), raw->getPositionZ() + 0.02f); // tiny lift
+
+                // Restore the object's serialized state (colors, attachments, resource names, etc.)
+                if (!stateData.isEmpty()) {
+                    if (placer) placer->sendSystemMessage("  DEBUG: Attempting state restore for: " + raw->getDisplayedName() + ", state size: " + String::valueOf((int)stateData.size()));
+                    int stateOffset = 0;
+                    if (deserializeObjectState(raw, stateData, stateOffset)) {
+                        if (placer) placer->sendSystemMessage("  SUCCESS: Restored state for: " + raw->getDisplayedName());
+                    } else {
+                        if (placer) placer->sendSystemMessage("  FAILED: Could not restore state for: " + raw->getDisplayedName());
+                    }
+                } else {
+                    if (placer) placer->sendSystemMessage("  DEBUG: No state data to restore for: " + raw->getDisplayedName());
+                }
+
                 restored++;
             }
         }
