@@ -74,44 +74,44 @@ public:
 				return GENERALERROR;
 			}
 
-			// Check daily limit for source player
-			uint64 playerID = creature->getObjectID();
-			String todayDate = String::format("%lu", (unsigned long)time(nullptr) / 86400); // Days since epoch
-			String lastLimitKey = String::format("%llu:delegateXP_lastDate", (unsigned long long)playerID);
-			String delegatedTodayKey = String::format("%llu:delegateXP_today", (unsigned long long)playerID);
-
-			// Get current daily limit (using simple in-memory tracking - you could use database instead)
-			static std::map<uint64, std::pair<String, int> > dailyLimits; // playerID -> (date, amount)
-
-			int delegatedToday = 0;
-			const int DAILY_LIMIT = 200000;
-
-			// Check if we need to reset daily limit
-			if (dailyLimits.find(playerID) != dailyLimits.end()) {
-				if (dailyLimits[playerID].first != todayDate) {
-					// New day, reset limit
-					delegatedToday = 0;
-					dailyLimits[playerID].first = todayDate;
-					dailyLimits[playerID].second = 0;
-				} else {
-					delegatedToday = dailyLimits[playerID].second;
-				}
-			} else {
-				// First time tracking this player
-				dailyLimits[playerID].first = todayDate;
-				dailyLimits[playerID].second = 0;
-			}
-
-			// Check if transfer would exceed daily limit
-			if ((delegatedToday + xpAmount) > DAILY_LIMIT) {
-				int remaining = DAILY_LIMIT - delegatedToday;
-				creature->sendSystemMessage(String::format("Daily XP delegation limit reached. You can delegate %d more XP today.", remaining));
+			// Check if target player was found first
+			if (targetPlayer == nullptr) {
+				creature->sendSystemMessage("Target player not found online.");
 				return GENERALERROR;
 			}
 
-			// Check if target player was found
-			if (targetPlayer == nullptr) {
-				creature->sendSystemMessage("Target player not found online.");
+			// Check daily limit for recipient (target) player
+			uint64 recipientID = targetPlayer->getObjectID();
+			String todayDate = String::format("%lu", (unsigned long)time(nullptr) / 86400); // Days since epoch
+			String lastLimitKey = String::format("%llu:delegateXP_lastDate", (unsigned long long)recipientID);
+			String delegatedTodayKey = String::format("%llu:delegateXP_today", (unsigned long long)recipientID);
+
+			// Get current daily limit (using simple in-memory tracking - you could use database instead)
+			static std::map<uint64, std::pair<String, int> > dailyLimits; // recipientID -> (date, amount)
+
+			int receivedToday = 0;
+			const int DAILY_LIMIT = 200000;
+
+			// Check if we need to reset daily limit
+			if (dailyLimits.find(recipientID) != dailyLimits.end()) {
+				if (dailyLimits[recipientID].first != todayDate) {
+					// New day, reset limit
+					receivedToday = 0;
+					dailyLimits[recipientID].first = todayDate;
+					dailyLimits[recipientID].second = 0;
+				} else {
+					receivedToday = dailyLimits[recipientID].second;
+				}
+			} else {
+				// First time tracking this player
+				dailyLimits[recipientID].first = todayDate;
+				dailyLimits[recipientID].second = 0;
+			}
+
+			// Check if transfer would exceed daily limit for recipient
+			if ((receivedToday + xpAmount) > DAILY_LIMIT) {
+				int remaining = DAILY_LIMIT - receivedToday;
+				creature->sendSystemMessage(String::format("Target player has reached daily XP reception limit. They can receive %d more XP today.", remaining));
 				return GENERALERROR;
 			}
 
@@ -150,12 +150,12 @@ public:
 				}
 
 				// Update daily limit
-				delegatedToday += xpAmount;
-				dailyLimits[playerID].second = delegatedToday;
+				receivedToday += xpAmount;
+				dailyLimits[recipientID].second = receivedToday;
 
 				// Send success messages
-				creature->sendSystemMessage(String::format("Successfully delegated %d jedi_general to %s. Daily limit: %d/%d",
-					xpAmount, targetPlayer->getFirstName().toCharArray(), delegatedToday, DAILY_LIMIT));
+				creature->sendSystemMessage(String::format("Successfully delegated %d jedi_general to %s. Recipient daily limit: %d/%d",
+					xpAmount, targetPlayer->getFirstName().toCharArray(), receivedToday, DAILY_LIMIT));
 
 				targetPlayer->sendSystemMessage(String::format("Received %d jedi_general delegated from %s.",
 					xpAmount, creature->getFirstName().toCharArray()));
