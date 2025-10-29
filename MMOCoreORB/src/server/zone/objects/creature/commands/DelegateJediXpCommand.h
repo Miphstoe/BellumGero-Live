@@ -140,13 +140,13 @@ public:
 				// Remove XP from source and give to target
 				PlayerObject* targetGhost = targetPlayer->getPlayerObject();
 				if (targetGhost != nullptr) {
-					// Add XP to target player (negative amount adds XP)
+					// Add XP to target player (positive amount adds XP)
 					TransactionLog trxTarget(creature, targetPlayer, TrxCode::UNKNOWN);
-					targetGhost->addExperience(trxTarget, "jedi_general", -xpAmount, true);
+					targetGhost->addExperience(trxTarget, "jedi_general", xpAmount, true);
 
-					// Remove XP from source player (positive amount removes XP)
+					// Remove XP from source player (negative amount removes XP)
 					TransactionLog trxSource(creature, targetPlayer, TrxCode::UNKNOWN);
-					sourceGhost->addExperience(trxSource, "jedi_general", xpAmount, true);
+					sourceGhost->addExperience(trxSource, "jedi_general", -xpAmount, true);
 				}
 
 				// Update daily limit
