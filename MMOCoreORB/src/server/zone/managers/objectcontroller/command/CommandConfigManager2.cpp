@@ -199,9 +199,11 @@
 #include "server/zone/objects/creature/commands/FeignDeathCommand.h"
 #include "server/zone/objects/creature/commands/FindCommand.h"
 #include "server/zone/objects/creature/commands/FindFriendCommand.h"
+#include "server/zone/objects/creature/commands/FindMyStructureCommand.h"
 #include "server/zone/objects/creature/commands/FindMyTrainerCommand.h"
 #include "server/zone/objects/creature/commands/FindObjectCommand.h"
 #include "server/zone/objects/creature/commands/FindPlayerCommand.h"
+#include "server/zone/objects/creature/commands/FindPlayerStructureCommand.h"
 #include "server/zone/objects/creature/commands/FireAcidCone1Command.h"
 #include "server/zone/objects/creature/commands/FireAcidCone2Command.h"
 #include "server/zone/objects/creature/commands/FireAcidSingle1Command.h"
@@ -606,9 +608,11 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<FindCommand>(String("find").toLowerCase());
 	commandFactory.registerCommand<FindFriendCommand>(String("findFriend").toLowerCase());
 	commandFactory.registerCommand<FindFriendCommand>(String("findFriend").toLowerCase());
+	commandFactory.registerCommand<FindMyStructureCommand>(String("findmystructure").toLowerCase());
 	commandFactory.registerCommand<FindMyTrainerCommand>(String("findMyTrainer").toLowerCase());
 	commandFactory.registerCommand<FindObjectCommand>(String("findObject").toLowerCase());
 	commandFactory.registerCommand<FindPlayerCommand>(String("findPlayer").toLowerCase());
+	commandFactory.registerCommand<FindPlayerStructureCommand>(String("findplayerstructure").toLowerCase());
 	commandFactory.registerCommand<FireAcidCone1Command>(String("fireAcidCone1").toLowerCase());
 	commandFactory.registerCommand<FireAcidCone2Command>(String("fireAcidCone2").toLowerCase());
 	commandFactory.registerCommand<FireAcidSingle1Command>(String("fireAcidSingle1").toLowerCase());
