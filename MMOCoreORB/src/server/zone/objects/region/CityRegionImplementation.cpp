@@ -250,7 +250,7 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
             } else {
                 citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
             }
-            cityInfo += ", " + citySpec;
+            cityInfo = cityInfo + ", " + citySpec;
         }
 
         // Add faction alignment if present
@@ -262,7 +262,7 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
             } else if (factionDisplay == "imperial") {
                 factionDisplay = "Imperial";
             }
-            cityInfo += ", " + factionDisplay;
+            cityInfo = cityInfo + ", " + factionDisplay;
         }
 
         params.setTO(cityInfo);
