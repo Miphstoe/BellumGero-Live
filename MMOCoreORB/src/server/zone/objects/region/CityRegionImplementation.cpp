@@ -84,6 +84,8 @@ void CityRegionImplementation::initialize() {
 
 	assessmentPending = false;
 
+	cityFactionAlignment = "neutral"; // Default to neutral faction
+
 	zoningRights.setAllowOverwriteInsertPlan();
 	zoningRights.setNullValue(0);
 
@@ -225,10 +227,11 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
             strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
         }
 
-        if (citySpecialization.isEmpty()) {
-            params.setTO(strRank);
-        }
-        else {
+        // Build city info string with rank, specialization, and faction alignment
+        UnicodeString cityInfo = strRank;
+
+        // Add specialization if present
+        if (!citySpecialization.isEmpty()) {
             // Try to get displayName first, fall back to string ID
             UnicodeString citySpec;
             auto zs = getZone()->getZoneServer();
@@ -247,8 +250,22 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
             } else {
                 citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
             }
-            params.setTO(strRank + ", " + citySpec);
+            cityInfo += ", " + citySpec;
         }
+
+        // Add faction alignment if present
+        if (!cityFactionAlignment.isEmpty() && cityFactionAlignment != "neutral") {
+            // Capitalize faction name for display
+            UnicodeString factionDisplay = cityFactionAlignment;
+            if (factionDisplay == "rebel") {
+                factionDisplay = "Rebel";
+            } else if (factionDisplay == "imperial") {
+                factionDisplay = "Imperial";
+            }
+            cityInfo += ", " + factionDisplay;
+        }
+
+        params.setTO(cityInfo);
         creature->sendSystemMessage(params);
         applySpecializationModifiers(creature);
     }
@@ -1355,6 +1372,20 @@ void CityRegionImplementation::cleanupMissionTerminals(int limit) {
 			cityMissionTerminals.removeElementAt(0);
 		}
 	}
+}
+
+void CityRegionImplementation::setCityFactionAlignment(const String& alignment) {
+	// Only allow faction alignment changes for cities at Metropolis rank or higher
+	if (cityRank < RANK_METROPOLIS) {
+		return;
+	}
+
+	// Validate alignment value
+	if (alignment != "rebel" && alignment != "imperial" && alignment != "neutral") {
+		return;
+	}
+
+	cityFactionAlignment = alignment;
 }
 
 uint64 CityRegionImplementation::getObjectID() const {

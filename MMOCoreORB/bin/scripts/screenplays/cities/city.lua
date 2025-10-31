@@ -18,37 +18,14 @@ CityScreenPlay = ScreenPlay:new {
 }
 
 --[[
-	Hook into the base CityScreenPlay spawnPatrolMobiles() to automatically spawn faction patrols
-	This is called by every city screenplay that inherits from CityScreenPlay
+	City Faction Alignment System
+
+	Cities can now have faction alignments (Rebel, Imperial, or Neutral).
+	The faction alignment is stored in the database and can be viewed/modified
+	via the Structure Management Terminal radial menu (available at Metropolis rank+).
+
+	The faction alignment persists and will be displayed in the city UI/interface.
 ]]--
-local originalSpawnPatrolMobiles = CityScreenPlay.spawnPatrolMobiles
-
-function CityScreenPlay:spawnPatrolMobiles()
-	print("DEBUG CityScreenPlay:spawnPatrolMobiles() called for screenplay: " .. (self.screenplayName or "unknown") .. " (planet: " .. (self.planet or "nil") .. ")")
-
-	-- Call the original spawnPatrolMobiles if it exists
-	if originalSpawnPatrolMobiles then
-		print("DEBUG CityScreenPlay: Calling originalSpawnPatrolMobiles")
-		originalSpawnPatrolMobiles(self)
-	else
-		print("DEBUG CityScreenPlay: originalSpawnPatrolMobiles is nil, calling base implementation")
-		-- Call base implementation
-		if (isZoneEnabled(self.planet)) then
-			for i = 1, #self.patrolMobiles do
-				self:spawnPatrol(i)
-			end
-		end
-	end
-
-	-- Automatically spawn faction patrols for this city's planet
-	-- This will check all cities on the planet and spawn patrols for any that have faction alignment
-	if self.planet and self.planet ~= "" then
-		print("DEBUG CityScreenPlay: Auto-spawning faction patrols for planet: " .. self.planet)
-		spawnCityFactionPatrols(self.planet)
-	else
-		print("DEBUG CityScreenPlay: No planet set (planet='" .. (self.planet or "nil") .. "')")
-	end
-end
 
 function CityScreenPlay:spawnGcwMobiles()
 	if (isZoneEnabled(self.planet)) then
