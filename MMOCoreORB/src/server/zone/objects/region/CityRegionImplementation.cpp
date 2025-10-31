@@ -258,9 +258,9 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
             // Capitalize faction name for display
             UnicodeString factionDisplay = cityFactionAlignment;
             if (factionDisplay == "rebel") {
-                factionDisplay = "Rebel";
+                factionDisplay = "Rebel Aligned";
             } else if (factionDisplay == "imperial") {
-                factionDisplay = "Imperial";
+                factionDisplay = "Imperial Aligned";
             }
             cityInfo = cityInfo + ", " + factionDisplay;
         }
