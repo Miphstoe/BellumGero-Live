@@ -27,6 +27,8 @@ static const int RADIAL_ROOT_PERMISSIONS = 117;
 
 // New action ID for Pack Up House
 static const int RADIAL_PACK_UP_HOUSE = 240;
+// New action ID for View House Storage
+static const int RADIAL_VIEW_HOUSE_STORAGE = 241;
 
 void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
@@ -129,6 +131,7 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 69, 3, "@player_structure:management_change_sign"); // Change Sign
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");       // Delete all items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
 			// NEW: Pack Up House (non-civic only)
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up House");
@@ -287,6 +290,12 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				break;
 			case 131: // Assign Droid
 				structureManager->promptMaintenanceDroid(structureObject, creature);
+				break;
+
+			case RADIAL_VIEW_HOUSE_STORAGE: // View House Storage
+				if (structureObject->isBuildingObject()) {
+					structureManager->promptViewHouseStorage(creature, structureObject);
+				}
 				break;
 
 			// NEW: Pack Up House (non-civic only)

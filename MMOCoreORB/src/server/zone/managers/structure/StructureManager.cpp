@@ -38,6 +38,7 @@
 #include "server/zone/objects/player/sui/callbacks/NameStructureSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructurePayMaintenanceSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureWithdrawMaintenanceSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/ViewHouseStorageSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureSelectSignSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "terrain/layer/boundaries/BoundaryRectangle.h"
@@ -913,6 +914,107 @@ void StructureManager::moveFirstItemTo(CreatureObject* creature, StructureObject
 			}
 		}
 	}
+}
+
+void StructureManager::promptViewHouseStorage(CreatureObject* creature, StructureObject* structure) {
+	if (creature == nullptr || structure == nullptr)
+		return;
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	if (!structure->isBuildingObject())
+		return;
+
+	BuildingObject* building = cast<BuildingObject*>(structure);
+	if (building == nullptr)
+		return;
+
+	// Collect all items from the building
+	VectorMap<String, Vector<ManagedReference<SceneObject*>>> itemsByName; // Item name -> list of instances
+	int totalItems = 0;
+
+	// Lock the building to safely access its contents
+	Locker buildingLocker(building);
+
+	// Iterate through all container objects in the building (cells and items)
+	for (int i = 0; i < building->getContainerObjectsSize(); ++i) {
+		ManagedReference<SceneObject*> containerObj = building->getContainerObject(i);
+		if (containerObj == nullptr || !containerObj->isCellObject())
+			continue;
+
+		CellObject* cell = cast<CellObject*>(containerObj.get());
+		if (cell == nullptr)
+			continue;
+
+		String cellLocation = "Cell " + String::valueOf(cell->getCellNumber());
+
+		// Get all items in this cell
+		for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
+			ManagedReference<SceneObject*> childObject = cell->getContainerObject(j);
+			if (childObject == nullptr)
+				continue;
+
+			// Skip non-items (vendors, terminals, creatures, cells, etc.)
+			if (childObject->isVendor() || childObject->isTerminal() || childObject->isCreatureObject() || childObject->isCellObject())
+				continue;
+
+			// Get item name
+			String itemName = childObject->getDisplayedName();
+			if (itemName.isEmpty())
+				itemName = "Unknown Item";
+
+			// Add to map
+			if (!itemsByName.contains(itemName)) {
+				itemsByName.put(itemName, Vector<ManagedReference<SceneObject*>>());
+			}
+			itemsByName.get(itemName).add(childObject);
+			totalItems++;
+		}
+	}
+
+	// Create the SUI ListBox
+	ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::STRUCTURE_STATUS);
+	box->setPromptTitle("@player_structure:structure_status_t - House Storage");
+
+	StringBuffer promptText;
+	promptText << "Total Items: " << totalItems << "\n";
+	promptText << "Unique Item Types: " << itemsByName.size() << "\n\n";
+	promptText << "Select an item type to see details and move items.";
+	box->setPromptText(promptText.toString());
+
+	box->setUsingObject(structure);
+	box->setForceCloseDisabled();
+
+	// Add each unique item type to the list with quantity
+	for (int i = 0; i < itemsByName.size(); ++i) {
+		String itemName = itemsByName.elementAt(i).getKey();
+		Vector<ManagedReference<SceneObject*>>& itemInstances = itemsByName.elementAt(i).getValue();
+
+		StringBuffer displayString;
+		displayString << itemName << " x" << itemInstances.size();
+
+		box->addMenuItem(displayString.toString());
+	}
+
+	// Set callback to handle item selection
+	ViewHouseStorageSuiCallback* callback = new ViewHouseStorageSuiCallback(server, building);
+
+	// Convert collected items to a flat vector for the callback
+	Vector<ManagedReference<SceneObject*>> allItems;
+	for (int i = 0; i < itemsByName.size(); ++i) {
+		Vector<ManagedReference<SceneObject*>>& items = itemsByName.elementAt(i).getValue();
+		for (int j = 0; j < items.size(); ++j) {
+			allItems.add(items.elementAt(j));
+		}
+	}
+	callback->setStoredItems(allItems);
+
+	box->setCallback(callback);
+
+	ghost->addSuiBox(box);
+	creature->sendMessage(box->generateMessage());
 }
 
 void StructureManager::reportStructureStatus(CreatureObject* creature, StructureObject* structure, SceneObject* terminal) {
