@@ -22,11 +22,18 @@
 // NEW: House pack-up manager
 #include "server/zone/managers/housepackup/HousePackupManager.h"
 
+// NEW: City faction alignment
+#include "server/zone/objects/player/sessions/CityFactionAlignmentSession.h"
+#include "server/zone/objects/region/CityRegion.h"
+
 static const int RADIAL_ROOT_MANAGEMENT = 118;
 static const int RADIAL_ROOT_PERMISSIONS = 117;
 
 // New action ID for Pack Up House
 static const int RADIAL_PACK_UP_HOUSE = 240;
+
+// New action ID for Set Faction Alignment
+static const int RADIAL_SET_FACTION_ALIGNMENT = 241;
 
 void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
@@ -75,6 +82,15 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			if (structureObject->isBuildingObject()) {
 				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 122, 3, "@player_structure:permission_vendor"); // Vendor List
 				// Note: Entry list (119) and Ban list (120) intentionally omitted for civic structures
+
+				// NEW: City Faction Alignment option (for cities at Metropolis rank or higher)
+				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+				if (building != nullptr) {
+					ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
+					if (cityRegion != nullptr && cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_SET_FACTION_ALIGNMENT, 3, "Set Faction Alignment");
+					}
+				}
 			}
 		}
 		return;
@@ -206,7 +222,37 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				case 122:
 					structureObject->sendPermissionListTo(creature, "VENDOR");
 					break;
-				default:
+			case RADIAL_SET_FACTION_ALIGNMENT: { // Set Faction Alignment
+
+				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+
+				if (building != nullptr) {
+					ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
+
+					if (cityRegion != nullptr) {
+
+						if (cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+							ManagedReference<CityFactionAlignmentSession*> session = new CityFactionAlignmentSession(creature, cityRegion, sceneObject);
+
+							int initResult = session->initializeSession();
+
+							if (initResult == 1) {
+								creature->addActiveSession(SessionFacadeType::CITYFACTION, session);
+							} else {
+								creature->sendSystemMessage("ERROR: initializeSession returned " + String::valueOf(initResult));
+							}
+						} else {
+							creature->sendSystemMessage("City must be Metropolis rank or higher to set faction alignment.");
+						}
+					} else {
+						creature->sendSystemMessage("ERROR: CityRegion is nullptr");
+					}
+				} else {
+					creature->sendSystemMessage("ERROR: Building is nullptr");
+				}
+				break;
+			}
+					default:
 					break;
 			}
 		}
