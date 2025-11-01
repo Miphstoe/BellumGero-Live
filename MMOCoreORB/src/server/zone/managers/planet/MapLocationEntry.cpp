@@ -117,18 +117,18 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 	// Add faction alignment to city map markers
 	if (object->isRegion()) {
 		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();
-		printf("DEBUG MapLocation: Object is a region, cityRegion=%d, displayName was: %s\n",
-		       cityRegion != nullptr ? 1 : 0, newName.get().c_str());
+		printf("DEBUG MapLocation: Object is a region, cityRegion=%d\n",
+		       cityRegion != nullptr ? 1 : 0);
 		if (cityRegion != nullptr) {
 			String factionAlignment = cityRegion->getCityFactionAlignment();
-			printf("DEBUG MapLocation: City faction alignment = %s\n", factionAlignment.get().c_str());
+			printf("DEBUG MapLocation: City name=%s, faction=%s\n", newName.toString().c_str(), factionAlignment.toString().c_str());
 			if (!factionAlignment.isEmpty() && factionAlignment != "neutral") {
 				if (factionAlignment == "rebel") {
 					newName = newName + " (Rebel Aligned)";
 				} else if (factionAlignment == "imperial") {
 					newName = newName + " (Imperial Aligned)";
 				}
-				printf("DEBUG MapLocation: Updated displayName to: %s\n", newName.get().c_str());
+				printf("DEBUG MapLocation: Updated displayName to: %s\n", newName.toString().c_str());
 			}
 		}
 	}
