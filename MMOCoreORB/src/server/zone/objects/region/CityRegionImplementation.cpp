@@ -44,9 +44,6 @@ void CityRegionImplementation::initializeTransientMembers() {
 void CityRegionImplementation::notifyLoadFromDatabase() {
 	ManagedObjectImplementation::notifyLoadFromDatabase();
 
-	printf("DEBUG notifyLoadFromDatabase: City loaded with faction alignment: %s (OID: %lu)\n",
-		cityFactionAlignment.get().c_str(), getObjectID());
-
 	if (cityRank == CityManager::CLIENT)
 		return;
 
@@ -1380,23 +1377,15 @@ void CityRegionImplementation::cleanupMissionTerminals(int limit) {
 void CityRegionImplementation::setCityFactionAlignment(const String& alignment) {
 	// Only allow faction alignment changes for cities at Metropolis rank or higher
 	if (cityRank < RANK_METROPOLIS) {
-		printf("DEBUG setCityFactionAlignment: City rank %d is below Metropolis (%d)\n", cityRank, RANK_METROPOLIS);
 		return;
 	}
 
 	// Validate alignment value
 	if (alignment != "rebel" && alignment != "imperial" && alignment != "neutral") {
-		printf("DEBUG setCityFactionAlignment: Invalid alignment value: %s\n", alignment.get().c_str());
 		return;
 	}
 
-	printf("DEBUG setCityFactionAlignment: Setting alignment to %s (OID: %lu)\n",
-		alignment.get().c_str(), getObjectID());
-
 	cityFactionAlignment = alignment;
-
-	printf("DEBUG setCityFactionAlignment: After assignment, cityFactionAlignment = %s\n",
-		cityFactionAlignment.get().c_str());
 }
 
 uint64 CityRegionImplementation::getObjectID() const {
