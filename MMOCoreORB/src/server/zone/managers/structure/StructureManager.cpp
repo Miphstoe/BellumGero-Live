@@ -388,12 +388,18 @@ int StructureManager::getStructureFootprint(SharedStructureObjectTemplate* objec
     }
 
     if (city != nullptr) {
+        // Check if the city's rank meets the structure's rank requirement
+        if (rankRequired > 0 && city->getCityRank() < rankRequired) {
+            creature->sendSystemMessage("@player_structure:not_permitted");
+            return 1;
+        }
+
         if (city->isZoningEnabled() && !city->hasZoningRights(creature->getObjectID())) {
             creature->sendSystemMessage("@player_structure:no_rights");
             return 1;
         }
 
-        
+
         if (serverTemplate->isUniqueStructure() && city->hasUniqueStructure(serverTemplate->getServerObjectCRC())) {
             creature->sendSystemMessage("@player_structure:cant_place_unique");
             return 1;
