@@ -111,24 +111,29 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 
 		if (cityRegion != nullptr) {
 			newName = cityRegion->getCityRegionName();
-		}
-	}
-
-	// Add faction alignment to city map markers
-	if (object->isRegion()) {
-		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();
-		printf("DEBUG MapLocation: Object is a region, cityRegion=%d\n",
-		       cityRegion != nullptr ? 1 : 0);
-		if (cityRegion != nullptr) {
+			// Add faction alignment for objects within faction-aligned cities
 			String factionAlignment = cityRegion->getCityFactionAlignment();
-			printf("DEBUG MapLocation: City name=%s, faction=%s\n", newName.toString().c_str(), factionAlignment.toString().c_str());
 			if (!factionAlignment.isEmpty() && factionAlignment != "neutral") {
 				if (factionAlignment == "rebel") {
 					newName = newName + " (Rebel Aligned)";
 				} else if (factionAlignment == "imperial") {
 					newName = newName + " (Imperial Aligned)";
 				}
-				printf("DEBUG MapLocation: Updated displayName to: %s\n", newName.toString().c_str());
+			}
+		}
+	}
+
+	// Add faction alignment to city region markers themselves
+	if (object->isRegion()) {
+		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();
+		if (cityRegion != nullptr) {
+			String factionAlignment = cityRegion->getCityFactionAlignment();
+			if (!factionAlignment.isEmpty() && factionAlignment != "neutral") {
+				if (factionAlignment == "rebel") {
+					newName = newName + " (Rebel Aligned)";
+				} else if (factionAlignment == "imperial") {
+					newName = newName + " (Imperial Aligned)";
+				}
 			}
 		}
 	}
