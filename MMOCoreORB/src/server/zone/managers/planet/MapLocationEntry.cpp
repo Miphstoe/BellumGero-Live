@@ -115,7 +115,7 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 	}
 
 	// Add faction alignment to city map markers
-	if (object->isRegionObject()) {
+	if (object->isRegion()) {
 		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();
 		if (cityRegion != nullptr) {
 			String factionAlignment = cityRegion->getCityFactionAlignment();
