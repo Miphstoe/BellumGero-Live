@@ -117,14 +117,17 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 	// Add faction alignment to city map markers
 	if (object->isRegion()) {
 		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();
+		info("DEBUG MapLocation: Object is a region, cityRegion=" + String::valueOf(cityRegion != nullptr ? 1 : 0) + ", displayName was: " + newName);
 		if (cityRegion != nullptr) {
 			String factionAlignment = cityRegion->getCityFactionAlignment();
+			info("DEBUG MapLocation: City faction alignment = " + factionAlignment);
 			if (!factionAlignment.isEmpty() && factionAlignment != "neutral") {
 				if (factionAlignment == "rebel") {
 					newName = newName + " (Rebel Aligned)";
 				} else if (factionAlignment == "imperial") {
 					newName = newName + " (Imperial Aligned)";
 				}
+				info("DEBUG MapLocation: Updated displayName to: " + newName);
 			}
 		}
 	}
