@@ -44,8 +44,8 @@ void CityRegionImplementation::initializeTransientMembers() {
 void CityRegionImplementation::notifyLoadFromDatabase() {
 	ManagedObjectImplementation::notifyLoadFromDatabase();
 
-	printf("DEBUG notifyLoadFromDatabase: City %s loaded with faction alignment: %s (OID: %lu)\n",
-		getCityRegionName().toString().c_str(), cityFactionAlignment.toString().c_str(), getObjectID());
+	printf("DEBUG notifyLoadFromDatabase: City loaded with faction alignment: %s (OID: %lu)\n",
+		cityFactionAlignment.get().c_str(), getObjectID());
 
 	if (cityRank == CityManager::CLIENT)
 		return;
@@ -1386,17 +1386,17 @@ void CityRegionImplementation::setCityFactionAlignment(const String& alignment) 
 
 	// Validate alignment value
 	if (alignment != "rebel" && alignment != "imperial" && alignment != "neutral") {
-		printf("DEBUG setCityFactionAlignment: Invalid alignment value: %s\n", alignment.toString().c_str());
+		printf("DEBUG setCityFactionAlignment: Invalid alignment value: %s\n", alignment.get().c_str());
 		return;
 	}
 
-	printf("DEBUG setCityFactionAlignment: Setting alignment to %s for city %s (OID: %lu)\n",
-		alignment.toString().c_str(), getCityRegionName().toString().c_str(), getObjectID());
+	printf("DEBUG setCityFactionAlignment: Setting alignment to %s (OID: %lu)\n",
+		alignment.get().c_str(), getObjectID());
 
 	cityFactionAlignment = alignment;
 
 	printf("DEBUG setCityFactionAlignment: After assignment, cityFactionAlignment = %s\n",
-		cityFactionAlignment.toString().c_str());
+		cityFactionAlignment.get().c_str());
 }
 
 uint64 CityRegionImplementation::getObjectID() const {
