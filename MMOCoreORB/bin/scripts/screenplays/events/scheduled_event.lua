@@ -15,8 +15,8 @@ ScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in second
 ScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEvent.START_TIME = { year = 2025, month = 11, day = 09, hour = 19, min = 00, sec = 0 }
-ScheduledEvent.END_TIME   = { year = 2025, month = 11, day = 09, hour = 20, min = 00, sec = 0 }
+ScheduledEvent.START_TIME = { year = 2025, month = 11, day = 16, hour = 19, min = 00, sec = 0 }
+ScheduledEvent.END_TIME   = { year = 2025, month = 11, day = 16, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
