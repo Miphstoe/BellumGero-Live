@@ -192,6 +192,7 @@
 #include "server/zone/objects/creature/commands/RestartConversionCommand.h"
 #include "server/zone/objects/creature/commands/RestartCraftingSessionCommand.h"
 #include "server/zone/objects/creature/commands/RetreatCommand.h"
+#include "server/zone/objects/creature/commands/ReturnTicketCommand.h"
 #include "server/zone/objects/creature/commands/RevivePlayerCommand.h"
 #include "server/zone/objects/creature/commands/RevokeBadgeCommand.h"
 #include "server/zone/objects/creature/commands/RevokeSkillCommand.h"
@@ -496,6 +497,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<RestartConversionCommand>(String("restartConversion").toLowerCase());
 	commandFactory.registerCommand<RestartCraftingSessionCommand>(String("restartCraftingSession").toLowerCase());
 	commandFactory.registerCommand<RetreatCommand>(String("retreat").toLowerCase());
+	commandFactory.registerCommand<UseReturnTicketCommand>(String("useReturnTicket").toLowerCase());
 	commandFactory.registerCommand<RevivePlayerCommand>(String("revivePlayer").toLowerCase());
 	commandFactory.registerCommand<RevokeBadgeCommand>(String("revokeBadge").toLowerCase());
 	commandFactory.registerCommand<RevokeSkillCommand>(String("revokeSkill").toLowerCase());
