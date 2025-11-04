@@ -14,7 +14,7 @@ int ForceRun3Command::doQueueCommand(CreatureObject* creature, const uint64& tar
     // Toggle OFF if already active
     if (creature->hasBuff(buffCRC)) {
         creature->removeBuff(buffCRC);
-        creature->sendSystemMessage("@jedi_spam:force_run_off");
+        creature->sendSystemMessage("@jedi_spam:remove_forcerun3");
         return SUCCESS;
     }
 
