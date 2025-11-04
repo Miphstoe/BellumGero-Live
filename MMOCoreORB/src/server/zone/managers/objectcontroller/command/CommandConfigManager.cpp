@@ -395,6 +395,10 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("petPatrol").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("petClearPatrolPoints").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("petGetPatrolPoint").toLowerCase())->setCommandGroup(0xe1c9a54a);
+
+	// Structure location commands
+	createCommand(String("findmystructure").toLowerCase());
+	createCommand(String("findplayerstructure").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {
