@@ -20,6 +20,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Medic", "doc1"},
         {"Droids", "droid1"},
         {"Tailor", "tailor1"},
+        {"Travel", "travel1"}, 
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
@@ -245,6 +246,18 @@ newbuff1 = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(newbuff1);
+
+travel1 = ConvoScreen:new {
+    id = "travel1",
+    leftDialog = "",
+    customDialogText = "Where are you heading?",
+    stopConversation = "false",
+    options = {
+        {"Return Ticket (Coronet) - 25k", "option301"},   -- ← NEW item
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(travel1)
 
 myswg_vendor_accept_quest = ConvoScreen:new {    
     id = "buff1",
@@ -808,6 +821,13 @@ myswg_vendor_accept_quest = ConvoScreen:new {
 }
 myswg_vendor_accept_quest = ConvoScreen:new {    
     id = "option79",
+    leftDialog = "",
+    customDialogText = "Enjoy!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_accept_quest = ConvoScreen:new {    
+    id = "option301",
     leftDialog = "",
     customDialogText = "Enjoy!",
     stopConversation = "true",

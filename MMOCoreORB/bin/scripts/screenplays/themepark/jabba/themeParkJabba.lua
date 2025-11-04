@@ -507,7 +507,11 @@ g5po_missions =
 			},
 			rewards =
 			{
-				{ rewardType = "credits", amount = 1950 }
+				{ rewardType = "loot", lootGroup = "jabba_theme_park_g5p0"},
+				{ rewardType = "badge", badge = THEME_PARK_JABBA_BADGE },
+				{ rewardType = "faction", faction = "jabba", amount = 200 },
+				{ rewardType = "permission", permissionGroup = "@tatooine_region_names:jabba_palace5" },
+				{ rewardType = "credits", amount = 2000 }
 			}
 		},
 		{
@@ -528,10 +532,6 @@ g5po_missions =
 			},
 			rewards =
 			{
-				{ rewardType = "loot", lootGroup = "jabba_theme_park_g5p0"},
-				{ rewardType = "badge", badge = THEME_PARK_JABBA_BADGE },
-				{ rewardType = "faction", faction = "jabba", amount = 200 },
-				{ rewardType = "permission", permissionGroup = "@tatooine_region_names:jabba_palace5" },
 				{ rewardType = "credits", amount = 2000 }
 			}
 		},

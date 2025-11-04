@@ -17,6 +17,16 @@ CityScreenPlay = ScreenPlay:new {
 	stationaryMobiles = {},
 }
 
+--[[
+	City Faction Alignment System
+
+	Cities can now have faction alignments (Rebel, Imperial, or Neutral).
+	The faction alignment is stored in the database and can be viewed/modified
+	via the Structure Management Terminal radial menu (available at Metropolis rank+).
+
+	The faction alignment persists and will be displayed in the city UI/interface.
+]]--
+
 function CityScreenPlay:spawnGcwMobiles()
 	if (isZoneEnabled(self.planet)) then
 		local controllingFaction = getControllingFaction(self.planet)

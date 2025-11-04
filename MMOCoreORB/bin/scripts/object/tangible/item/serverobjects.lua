@@ -54,3 +54,5 @@ includeFile("tangible/item/loot_credit_chip.lua")
 includeFile("tangible/item/lytus_family_artefact.lua")
 includeFile("tangible/item/vehicle_customization.lua")
 includeFile("tangible/item/sea_removal_tool.lua")
+
+includeFile("tangible/item/return_ticket.lua")
