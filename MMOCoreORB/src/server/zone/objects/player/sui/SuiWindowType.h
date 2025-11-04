@@ -94,6 +94,8 @@ public:
 		CITY_ADMIN_FORCE_RANK              = 132,
 		CITY_ADMIN_FORCE_UPDATE            = 133,
 		CITY_ADMIN_CONFIRM_UPDATE_TYPE     = 134,
+		CITY_FACTION                       = 135,
+		CITY_FACTION_CONFIRM               = 136,
 
 		//Structure 141 - 170
 		STRUCTURE_STATUS                   = 141,
