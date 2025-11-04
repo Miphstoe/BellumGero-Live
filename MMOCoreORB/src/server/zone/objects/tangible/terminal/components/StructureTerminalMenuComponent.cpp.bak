@@ -146,6 +146,9 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");       // Delete all items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
 
+			// NEW: Pack Up House (non-civic only)
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up House");
+			// If you localize, replace with: @player_structure:pack_up_house
 		}
 
 		// Permissions submenu
@@ -219,36 +222,26 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				case 122:
 					structureObject->sendPermissionListTo(creature, "VENDOR");
 					break;
-			case RADIAL_SET_FACTION_ALIGNMENT: { // Set Faction Alignment
-
-				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-
-				if (building != nullptr) {
-					ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
-
-					if (cityRegion != nullptr) {
-
-						if (cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
-							ManagedReference<CityFactionAlignmentSession*> session = new CityFactionAlignmentSession(creature, cityRegion, sceneObject);
-
-							int initResult = session->initializeSession();
-
-							if (initResult == 1) {
-								creature->addActiveSession(SessionFacadeType::CITYFACTION, session);
+				case RADIAL_SET_FACTION_ALIGNMENT: { // Set Faction Alignment
+				creature->sendSystemMessage("DEBUG: Faction alignment handler triggered");
+						BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+				creature->sendSystemMessage("DEBUG: Building cast result: " + String::valueOf(building != nullptr ? 1 : 0));
+						if (building != nullptr) {
+							ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
+				creature->sendSystemMessage("DEBUG: CityRegion exists: " + String::valueOf(cityRegion != nullptr ? 1 : 0));
+							if (cityRegion != nullptr && cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+								ManagedReference<CityFactionAlignmentSession*> session =
+				creature->sendSystemMessage("DEBUG: City rank is " + String::valueOf(cityRegion->getCityRank()) + " (Metropolis=" + String::valueOf(CityRegion::RANK_METROPOLIS) + ")");
+									new CityFactionAlignmentSession(creature, cityRegion, sceneObject);
+								if (session->initializeSession() == 1) {
+									creature->addActiveSession(SessionFacadeType::CITYFACTION, session);
+								}
 							} else {
-								creature->sendSystemMessage("ERROR: initializeSession returned " + String::valueOf(initResult));
+								creature->sendSystemMessage("City must be Metropolis rank or higher to set faction alignment.");
 							}
-						} else {
-							creature->sendSystemMessage("City must be Metropolis rank or higher to set faction alignment.");
 						}
-					} else {
-						creature->sendSystemMessage("ERROR: CityRegion is nullptr");
+						break;
 					}
-				} else {
-					creature->sendSystemMessage("ERROR: Building is nullptr");
-				}
-				break;
-			}
 					default:
 					break;
 			}
@@ -332,6 +325,18 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				structureManager->promptMaintenanceDroid(structureObject, creature);
 				break;
 
+			// NEW: Pack Up House (non-civic only)
+			case RADIAL_PACK_UP_HOUSE: {
+				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
+					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+					if (building != nullptr) {
+						if (!HousePackupManager::instance()->packUpHouse(building, creature)) {
+							creature->sendSystemMessage("Pack up failed.");
+						}
+					}
+				}
+				break;
+			}
 
 			default:
 				break;
