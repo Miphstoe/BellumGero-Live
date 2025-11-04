@@ -17,7 +17,7 @@ int ForceRun1Command::doQueueCommand(CreatureObject* creature, const uint64& tar
 
         // Prefer string-id if available; otherwise replace with a literal.
         // creature->sendSystemMessage("You stop force running.");
-        creature->sendSystemMessage("@jedi_spam:force_run_off");
+        creature->sendSystemMessage("@jedi_spam:remove_forcerun1");
         return SUCCESS;
     }
 
