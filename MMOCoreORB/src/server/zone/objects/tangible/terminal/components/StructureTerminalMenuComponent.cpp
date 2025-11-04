@@ -146,9 +146,6 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");       // Delete all items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
 
-			// NEW: Pack Up House (non-civic only)
-			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up House");
-			// If you localize, replace with: @player_structure:pack_up_house
 		}
 
 		// Permissions submenu
@@ -335,18 +332,6 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				structureManager->promptMaintenanceDroid(structureObject, creature);
 				break;
 
-			// NEW: Pack Up House (non-civic only)
-			case RADIAL_PACK_UP_HOUSE: {
-				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
-					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-					if (building != nullptr) {
-						if (!HousePackupManager::instance()->packUpHouse(building, creature)) {
-							creature->sendSystemMessage("Pack up failed.");
-						}
-					}
-				}
-				break;
-			}
 
 			default:
 				break;

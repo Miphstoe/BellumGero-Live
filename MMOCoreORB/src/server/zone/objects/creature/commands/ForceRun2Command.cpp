@@ -15,7 +15,7 @@ int ForceRun2Command::doQueueCommand(CreatureObject* creature, const uint64& tar
     if (creature->hasBuff(buffCRC)) {
         creature->removeBuff(buffCRC);
         // creature->sendSystemMessage("You stop force running.");
-        creature->sendSystemMessage("@jedi_spam:force_run_off");
+        creature->sendSystemMessage("@jedi_spam:remove_forcerun2");
         return SUCCESS;
     }
 

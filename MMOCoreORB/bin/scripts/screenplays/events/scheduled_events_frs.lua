@@ -16,8 +16,8 @@ ScheduledEventFRS.EVENT_RESPAWN_DELAY = 5      -- our event respawn delay in sec
 ScheduledEventFRS.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEventFRS.START_TIME = { year = 2025, month = 11, day = 02, hour = 18, min = 00, sec = 0 }
-ScheduledEventFRS.END_TIME   = { year = 2025, month = 11, day = 02, hour = 19, min = 00, sec = 0 }
+ScheduledEventFRS.START_TIME = { year = 2025, month = 11, day = 09, hour = 19, min = 00, sec = 0 }
+ScheduledEventFRS.END_TIME   = { year = 2025, month = 11, day = 09, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEventFRS.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -201,47 +201,54 @@ end
 -- ============================= FRS REWARD SYSTEM =============================
 
 function ScheduledEventFRS:onEventMobDied(pMob, pKiller)
-  -- resolve the *player* responsible (handle pets)
-  if pKiller == nil then return 0 end
+  -- Wrap entire function in pcall to prevent silent failures
+  local ok, err = pcall(function()
+    -- resolve the *player* responsible (handle pets)
+    if pKiller == nil then return 0 end
 
-  local pPlayer = nil
-  if SceneObject(pKiller):isPlayerCreature() then
-    pPlayer = pKiller
-  else
-    -- if the killer is a pet/vehicle/etc, try to credit the owner
-    local ko = CreatureObject(pKiller)
-    if ko and ko.getOwner then
-      local pOwner = ko:getOwner()
-      if pOwner ~= nil and SceneObject(pOwner):isPlayerCreature() then
-        pPlayer = pOwner
+    local pPlayer = nil
+    if SceneObject(pKiller):isPlayerCreature() then
+      pPlayer = pKiller
+    else
+      -- if the killer is a pet/vehicle/etc, try to credit the owner
+      local ko = CreatureObject(pKiller)
+      if ko and ko.getOwner then
+        local pOwner = ko:getOwner()
+        if pOwner ~= nil and SceneObject(pOwner):isPlayerCreature() then
+          pPlayer = pOwner
+        end
       end
     end
-  end
-  if pPlayer == nil then return 0 end
+    if pPlayer == nil then return 0 end
 
-  local mobSO = SceneObject(pMob)
+    local mobSO = SceneObject(pMob)
 
-  local function grantIfEligible(pTarget)
-    if pTarget == nil or not SceneObject(pTarget):isPlayerCreature() then return end
-    -- must be within range of the mob that died
-    if mobSO and not SceneObject(pTarget):isInRangeWithObject(pMob, self.FRS_RANGE_METERS) then return end
+    local function grantIfEligible(pTarget)
+      if pTarget == nil or not SceneObject(pTarget):isPlayerCreature() then return end
+      -- must be within range of the mob that died
+      if mobSO and pMob and not SceneObject(pTarget):isInRangeWithObject(pMob, self.FRS_RANGE_METERS) then return end
 
-    local c = CreatureObject(pTarget)
-    if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
-      c:awardExperience("force_rank_xp", self.FRS_XP_AMOUNT, true)
+      local c = CreatureObject(pTarget)
+      if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
+        c:awardExperience("force_rank_xp", self.FRS_XP_AMOUNT, true)
+      end
     end
-  end
 
-  local killerCO = CreatureObject(pPlayer)
-  if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
-    local size = killerCO:getGroupSize()
-    for i = 0, size - 1 do
-      local pMember = killerCO:getGroupMember(i)
-      grantIfEligible(pMember)
+    local killerCO = CreatureObject(pPlayer)
+    if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
+      local size = killerCO:getGroupSize()
+      for i = 0, size - 1 do
+        local pMember = killerCO:getGroupMember(i)
+        grantIfEligible(pMember)
+      end
+    else
+      -- not grouped: just grant to the solo killer if eligible
+      grantIfEligible(pPlayer)
     end
-  else
-    -- not grouped: just grant to the solo killer if eligible
-    grantIfEligible(pPlayer)
+  end)
+
+  if not ok then
+    -- Log the error instead of silent failure
   end
 
   return 0
