@@ -136,6 +136,13 @@ public:
 	void moveFirstItemTo(CreatureObject* creature, StructureObject* structure);
 
 	/**
+	 * Displays a SUI list showing all items in the house with filtering options.
+	 * @param creature The creature to show the storage list to.
+	 * @param structure The structure/building to display contents from.
+	 */
+	void promptViewHouseStorage(CreatureObject* creature, StructureObject* structure);
+
+	/**
 	 * Sends a Sui prompt to the player asking if they want to pay the
 	 * required maintenance and fee to un-condemn the structure.
 	 * @param creature The creature who owns the structure.

@@ -31,6 +31,8 @@ static const int RADIAL_ROOT_PERMISSIONS = 117;
 
 // New action ID for Pack Up House
 static const int RADIAL_PACK_UP_HOUSE = 240;
+// New action ID for View House Storage
+static const int RADIAL_VIEW_HOUSE_STORAGE = 241;
 
 // New action ID for Set Faction Alignment
 static const int RADIAL_SET_FACTION_ALIGNMENT = 241;
@@ -145,6 +147,7 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 69, 3, "@player_structure:management_change_sign"); // Change Sign
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");       // Delete all items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
 		}
 
@@ -332,6 +335,24 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				structureManager->promptMaintenanceDroid(structureObject, creature);
 				break;
 
+			case RADIAL_VIEW_HOUSE_STORAGE: // View House Storage
+				if (structureObject->isBuildingObject()) {
+					structureManager->promptViewHouseStorage(creature, structureObject);
+				}
+				break;
+
+			// NEW: Pack Up House (non-civic only)
+			case RADIAL_PACK_UP_HOUSE: {
+				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
+					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+					if (building != nullptr) {
+						if (!HousePackupManager::instance()->packUpHouse(building, creature)) {
+							creature->sendSystemMessage("Pack up failed.");
+						}
+					}
+				}
+				break;
+			}
 
 			default:
 				break;
