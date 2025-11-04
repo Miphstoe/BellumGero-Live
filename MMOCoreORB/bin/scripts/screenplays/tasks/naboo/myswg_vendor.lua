@@ -112,6 +112,26 @@ local function charge(cost)
     creature:subtractBankCredits(cost - cash)
   end
 end
+
+-- Top-level inventory scan only (no recursion)
+local function playerHasTemplateTopLevel(creatureObj, templatePath)
+    if creatureObj == nil then return false end
+    local pInv = creatureObj:getSlottedObject("inventory")
+    if pInv == nil then return false end
+
+    local invSO = SceneObject(pInv)
+    local n = invSO:getContainerObjectsSize()
+    for i = 0, n - 1 do
+        local pChild = invSO:getContainerObject(i)
+        if pChild ~= nil then
+            local child = LuaSceneObject(pChild)
+            if child:getTemplateObjectPath() == templatePath then
+                return true
+            end
+        end
+    end
+    return false
+end
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
                 -- Take action when the player makes a purchase.
@@ -1185,7 +1205,55 @@ end
 										--CreatureObject(conversingPlayer):enhanceCharacterDocBuff()
                     giveItem(pInventory, "object/tangible/medicine/crafted/crafted_stimpack_sm_s1_e.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
-                       
+
+--TRAVEL
+elseif (optionLink == "option301") then
+  local PRICE    = 25000
+  local TEMPLATE = "object/tangible/item/return_ticket.iff"
+
+  -- Resolve inventory first
+  local pInventory = creature:getSlottedObject("inventory")
+  if pInventory == nil then
+    nextConversationScreen = conversation:getScreen("insufficient_space")
+    return nextConversationScreen
+  end
+
+  -- Space gate
+  if SceneObject(pInventory):isContainerFullRecursive() then
+    nextConversationScreen = conversation:getScreen("insufficient_space")
+    creature:sendSystemMessage("You do not have enough inventory space")
+    return nextConversationScreen
+  end
+
+  -- Unique-ownership (TOP-LEVEL ONLY)
+  if playerHasTemplateTopLevel(creature, TEMPLATE) then
+    nextConversationScreen = conversation:getScreen("first_screen")
+    creature:sendSystemMessage("You already have a Return Ticket. Use or discard it before buying another.")
+    return nextConversationScreen
+  end
+
+  -- Funds
+  if not canAfford(PRICE) then
+    nextConversationScreen = conversation:getScreen("insufficient_funds")
+    creature:sendSystemMessage("You have insufficient funds")
+    return nextConversationScreen
+  end
+
+  -- Charge and deliver
+  charge(PRICE)
+  local pItem = giveItem(pInventory, TEMPLATE, -1)
+  if pItem == nil then
+    creature:addBankCredits(PRICE)                  -- refund on failure
+    nextConversationScreen = conversation:getScreen("insufficient_space")
+    creature:sendSystemMessage("Purchase failed. Please free inventory space and try again.")
+    return nextConversationScreen
+  end
+
+  creature:sendSystemMessage("Purchased: Return Ticket (Coronet) for 25,000 credits.")
+  nextConversationScreen = conversation:getScreen("first_screen")
+  return nextConversationScreen
+
+                   
 --DROIDS  
                     
                 elseif (optionLink == "option64" and not canAfford(5000)) then
