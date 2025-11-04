@@ -145,6 +145,15 @@ end
 
 function GCWRankedAmbushRebels:startHere(pPlayer)
     if not validPlayer(pPlayer) or not self:isOptedIn(pPlayer) then return end
+
+    -- Prevent concurrent encounters for the same player
+    local playerId = SceneObject(pPlayer):getObjectID()
+    local concurrentKey = playerId .. ":gcwAmbushRebels:encounter_active"
+    if readData(concurrentKey) == 1 then
+        self:_log("startHere: encounter already active for this player, aborting")
+        return
+    end
+
     local planet = SceneObject(pPlayer):getZoneName()
     local sx, sy, sz, hdg = self:pickLandingAround(pPlayer)
 
@@ -159,6 +168,7 @@ function GCWRankedAmbushRebels:startHere(pPlayer)
     local shuttleID = SceneObject(pShuttle):getObjectID()
     writeData(shuttleID .. ":gcwAmbushRebels:active", 1)
     writeData(shuttleID .. ":gcwAmbushRebels:hdg", hdg)
+    writeData(playerId .. ":gcwAmbushRebels:encounter_active", 1)
 
     CreatureObject(pShuttle):setCustomObjectName("Lambda Shuttle")
     CreatureObject(pShuttle):setPosture(UPRIGHT)
@@ -173,7 +183,8 @@ function GCWRankedAmbushRebels:startHere(pPlayer)
     local despawnAtMs = deployAtMs + (self.t_linger * 1000)
     createEvent(deployAtMs,  self.screenplayName, "deploySquad",     pShuttle, tostring(SceneObject(pPlayer):getObjectID()))
     createEvent(despawnAtMs, self.screenplayName, "despawnSequence", pShuttle, "")
-    createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, tostring(shuttleID))
+    -- Robust failsafe (also cleans children). Format: "shuttleID,playerID"
+    createEvent(self.t_cleanup * 1000, self.screenplayName, "failsafeCleanup", pShuttle, tostring(shuttleID) .. "," .. tostring(playerId))
 end
 
 function GCWRankedAmbushRebels:handleShuttlePosture(pShuttle)
@@ -289,6 +300,8 @@ function GCWRankedAmbushRebels:onSquadMemberDied(pMob, pKiller)
     local after  = before - 1; if after < 0 then after = 0 end
     writeData(aliveKey, after)
 
+    self:_log(string.format("onSquadMemberDied: mob=%s parent=%s alive %d->%d", tostring(mobId), tostring(parentID), before, after))
+
     if after == 0 and readData(rewardKey) ~= 1 then
         writeData(rewardKey, 1)
         local callerId = readData(callerKey)
@@ -306,25 +319,45 @@ function GCWRankedAmbushRebels:despawnSequence(pShuttle)
     local shuttleID = SceneObject(pShuttle):getObjectID()
     if readData(shuttleID .. ":gcwAmbushRebels:active") ~= 1 then return end
     CreatureObject(pShuttle):setPosture(UPRIGHT)
-    createEvent(6 * 1000, self.screenplayName, "cleanShuttleOnly", pShuttle, "")
+    -- Pass player ID to cleanShuttleOnly so it can clear the encounter_active flag
+    local playerId = readData(shuttleID .. ":gcwAmbushRebels:caller") or 0
+    createEvent(6 * 1000, self.screenplayName, "cleanShuttleOnly", pShuttle, tostring(playerId))
 end
 
-function GCWRankedAmbushRebels:cleanShuttleOnly(pShuttle)
+function GCWRankedAmbushRebels:cleanShuttleOnly(pShuttle, playerIdStr)
     if pShuttle == nil then return end
     local shuttleID = SceneObject(pShuttle):getObjectID()
     deleteData(shuttleID .. ":gcwAmbushRebels:active")
     deleteData(shuttleID .. ":gcwAmbushRebels:caller")
     deleteData(shuttleID .. ":gcwAmbushRebels:alive")
     deleteData(shuttleID .. ":gcwAmbushRebels:rewarded")
+    deleteData(shuttleID .. ":gcwAmbushRebels:hdg")
+
+    -- Clear the encounter_active flag
+    if playerIdStr and playerIdStr ~= "" and playerIdStr ~= "0" then
+        local pid = tonumber(playerIdStr) or 0
+        if pid ~= 0 then
+            deleteData(pid .. ":gcwAmbushRebels:encounter_active")
+        end
+    end
+
     SceneObject(pShuttle):destroyObjectFromWorld()
     SceneObject(pShuttle):destroyObjectFromDatabase()
     self:_log("cleanShuttleOnly: shuttle removed")
 end
 
 function GCWRankedAmbushRebels:failsafeCleanup(pShuttle, shuttleIdStr)
+    -- Robust cleanup: work even if shuttle object was already removed.
+    -- shuttleIdStr format: "shuttleID" or "shuttleID,playerID"
     local sid = 0
+    local pid = 0
     if pShuttle ~= nil then sid = SceneObject(pShuttle):getObjectID() end
-    if (sid == nil or sid == 0) and shuttleIdStr and shuttleIdStr ~= "" then sid = tonumber(shuttleIdStr) or 0 end
+    if (sid == nil or sid == 0) and shuttleIdStr and shuttleIdStr ~= "" then
+        -- Parse shuttleID and optional playerID
+        local parts = string.split(shuttleIdStr, ",")
+        if parts and parts[1] then sid = tonumber(parts[1]) or 0 end
+        if parts and parts[2] then pid = tonumber(parts[2]) or 0 end
+    end
     if sid == nil or sid == 0 then self:_log("failsafeCleanup: no shuttle id; nothing to do"); return end
 
     local count = readData(sid .. ":gcwAmbushRebels:childCount") or 0
@@ -343,13 +376,20 @@ function GCWRankedAmbushRebels:failsafeCleanup(pShuttle, shuttleIdStr)
 
     local pS = pShuttle; if pS == nil then pS = getSceneObject(sid) end
     if pS ~= nil then
-        self:cleanShuttleOnly(pS)
+        self:cleanShuttleOnly(pS, tostring(pid))
     else
         deleteData(sid .. ":gcwAmbushRebels:active")
         deleteData(sid .. ":gcwAmbushRebels:caller")
         deleteData(sid .. ":gcwAmbushRebels:alive")
         deleteData(sid .. ":gcwAmbushRebels:rewarded")
+        deleteData(sid .. ":gcwAmbushRebels:hdg")
     end
+
+    -- Clear the encounter_active flag if we have the player ID
+    if pid ~= 0 then
+        deleteData(pid .. ":gcwAmbushRebels:encounter_active")
+    end
+
     self:_log("failsafeCleanup: encounter despawned after timeout")
 end
 
