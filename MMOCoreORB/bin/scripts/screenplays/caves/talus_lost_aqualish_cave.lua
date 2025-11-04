@@ -65,6 +65,7 @@ TalusLostAqualishScreenPlay = ScreenPlay:new {
 		{ template = "object/tangible/furniture/all/frn_all_banner_rebel_lg.iff", weight = 5 },
 		{ template = "object/tangible/furniture/all/frn_all_banner_rebel_wall.iff", weight = 5 },
 		{ template = "object/tangible/furniture/all/frn_all_scrolling_screen.iff", weight = 5 },
+		{ template = "object/tangible/furniture/tatooine/frn_tato_table_small_style_03.iff", weight = 5 },
 	},
 	dailyLootCount  = 1,     -- how many rolls from the pool to award
 	dailyLootMsg    = "You received a reward item from the cave assignment.",
