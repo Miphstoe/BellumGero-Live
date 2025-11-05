@@ -124,6 +124,48 @@ function GCWRankedAmbushImperials:isOptedIn(pPlayer)
     return CreatureObject(pPlayer):hasScreenPlayState(1, self.optTag)
 end
 
+-- ========= Global concurrency lock (prevents both screenplays triggering simultaneously) =========
+local GLOBAL_AMBUSH_LOCK = "gcwAmbush:globalLock"
+local ACTIVE_AMBUSH_COUNT = "gcwAmbush:activeCount"
+local MAX_CONCURRENT_AMBUSHES = 2  -- Prevent server overload
+local LOCK_TIMEOUT = 120 * 1000    -- 2 minute timeout to prevent deadlock
+
+function GCWRankedAmbushImperials:acquireGlobalLock()
+    local now = os.time() * 1000  -- Current time in ms
+    local lockData = readData(GLOBAL_AMBUSH_LOCK) or "0:0"
+    local lockTime, lockOwner = string.match(lockData, "(%d+):(%d+)")
+    lockTime = tonumber(lockTime) or 0
+
+    -- Check if lock is stale (timeout)
+    if now - lockTime > LOCK_TIMEOUT then
+        writeData(GLOBAL_AMBUSH_LOCK, now .. ":1")
+        return true
+    end
+
+    return false
+end
+
+function GCWRankedAmbushImperials:releaseGlobalLock()
+    deleteData(GLOBAL_AMBUSH_LOCK)
+end
+
+function GCWRankedAmbushImperials:checkAmbushCap()
+    local count = tonumber(readData(ACTIVE_AMBUSH_COUNT) or "0")
+    return count < MAX_CONCURRENT_AMBUSHES
+end
+
+function GCWRankedAmbushImperials:incrementAmbushCount()
+    local count = tonumber(readData(ACTIVE_AMBUSH_COUNT) or "0")
+    writeData(ACTIVE_AMBUSH_COUNT, count + 1)
+end
+
+function GCWRankedAmbushImperials:decrementAmbushCount()
+    local count = tonumber(readData(ACTIVE_AMBUSH_COUNT) or "0")
+    if count > 0 then
+        writeData(ACTIVE_AMBUSH_COUNT, count - 1)
+    end
+end
+
 -- ========= Scheduling =========
 function GCWRankedAmbushImperials:_sched(pPlayer, seconds, reason)
     local s = seconds or self.trigger.retryIfNotReady or 120
@@ -160,6 +202,14 @@ function GCWRankedAmbushImperials:startHere(pPlayer)
         return
     end
 
+    -- Check global ambush cap to prevent server overload from concurrent encounters
+    if not self:checkAmbushCap() then
+        self:_log("startHere: ambush cap reached, deferring encounter")
+        msg(self, pPlayer, "Too many ambushes active. Retrying soon.")
+        self:_sched(pPlayer, 30, "ambush_cap_reached")
+        return
+    end
+
     local planet = SceneObject(pPlayer):getZoneName()
     local sx, sy, sz, hdg = self:pickLandingAround(pPlayer)
 
@@ -176,6 +226,9 @@ function GCWRankedAmbushImperials:startHere(pPlayer)
     writeData(shuttleID .. ":gcwAmbushImperials:active", 1)
     writeData(shuttleID .. ":gcwAmbushImperials:hdg", hdg)
     writeData(playerId .. ":gcwAmbushImperials:encounter_active", 1)
+
+    -- Increment global ambush counter
+    self:incrementAmbushCount()
 
     CreatureObject(pShuttle):setCustomObjectName("Lambda Shuttle")
     CreatureObject(pShuttle):setPosture(UPRIGHT)
@@ -349,6 +402,9 @@ function GCWRankedAmbushImperials:cleanShuttleOnly(pShuttle, playerIdStr)
         end
     end
 
+    -- Decrement global ambush counter
+    self:decrementAmbushCount()
+
     SceneObject(pShuttle):destroyObjectFromWorld()
     SceneObject(pShuttle):destroyObjectFromDatabase()
     self:_log("cleanShuttleOnly: shuttle removed")
@@ -397,6 +453,9 @@ function GCWRankedAmbushImperials:failsafeCleanup(pShuttle, shuttleIdStr)
     if pid ~= 0 then
         deleteData(pid .. ":gcwAmbushImperials:encounter_active")
     end
+
+    -- Decrement global ambush counter on failsafe cleanup
+    self:decrementAmbushCount()
 
     self:_log("failsafeCleanup: encounter despawned after timeout")
 end
