@@ -19,10 +19,10 @@ GCWRankedAmbushImperials = ScreenPlay:new {
         autoForImperials = true,
         autoForRebels    = false,
 
-        firstDelayMin     = 1800,
-        firstDelayMax     = 3600,
-        cooldownMin       = 1800,
-        cooldownMax       = 3600,
+        firstDelayMin     = 3600,  -- 1 hour minimum before first ambush
+        firstDelayMax     = 5400,  -- 1.5 hours maximum before first ambush
+        cooldownMin       = 3600,  -- 1 hour minimum between ambushes
+        cooldownMax       = 7200,  -- 2 hours maximum between ambushes
         retryIfNotReady   = 30,
         -- requireOvert   = true,
     },
