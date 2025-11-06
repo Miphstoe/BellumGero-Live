@@ -5,13 +5,14 @@ dark_jedi_tier_5 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 1700000},
-		{groupTemplate = "clothing_attachments", weight = 1700000},
-		{groupTemplate = "color_crystals", weight = 500000},
+		{groupTemplate = "armor_attachments", weight = 1500000},
+		{groupTemplate = "clothing_attachments", weight = 1500000},
+		{groupTemplate = "color_crystals", weight = 1100000},
 		{groupTemplate = "holocron_dark", weight = 400000},
 		{groupTemplate = "holocron_light", weight = 400000},
-		{groupTemplate = "power_crystals", weight = 2100000},
-		{groupTemplate = "weapon_component_advanced", weight = 3200000},
+		{groupTemplate = "power_crystals", weight = 1500000},
+		{groupTemplate = "weapon_component_advanced", weight = 2000000},
+		{groupTemplate = "chemistry_component_advanced", weight = 1600000},
 	}
 }
 
