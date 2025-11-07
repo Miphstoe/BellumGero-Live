@@ -1077,9 +1077,7 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 	int size = potentialTargets->size();
 
 	if (level == 3 && size > 0) {
-		// TESTING: Force 100% player bounty display
-		// Production: int compareValue = size > 25 ? 25 : size < 5 ? 5 : size;
-		int compareValue = 100;  // Always show player bounties for testing
+		int compareValue = size > 25 ? 25 : size < 5 ? 5 : size;
 		if (System::random(100) < compareValue) {
 			playerTarget = true;
 			randomTexts = 6;
