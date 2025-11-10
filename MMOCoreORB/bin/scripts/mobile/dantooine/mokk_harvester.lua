@@ -36,6 +36,12 @@ mokk_harvester = Creature:new {
 			groups = {
 				{group = "mokk_tribe_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 2500000
 		}
 	},
 

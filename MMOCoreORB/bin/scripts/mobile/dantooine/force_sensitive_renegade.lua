@@ -34,6 +34,12 @@ force_sensitive_renegade = Creature:new {
 			groups = {
 				{group = "force_tier_3", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 2500000
 		}
 	},
 

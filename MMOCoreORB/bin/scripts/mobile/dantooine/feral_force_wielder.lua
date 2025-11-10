@@ -34,6 +34,12 @@ feral_force_wielder = Creature:new {
 			groups = {
 				{group = "force_tier_4", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 3500000
 		}
 	},
 
