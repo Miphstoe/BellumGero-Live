@@ -37,6 +37,12 @@ tainted_donkuwah_dark_shaman = Creature:new {
 				{group = "donkuwah_tribe_tier_2", chance = 10000000}
 			},
 			lootChance = 1900000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

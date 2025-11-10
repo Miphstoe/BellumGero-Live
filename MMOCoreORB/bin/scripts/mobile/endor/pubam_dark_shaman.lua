@@ -37,6 +37,12 @@ pubam_dark_shaman = Creature:new {
 				{group = "pubam_tier_2", chance = 10000000}
 			},
 			lootChance = 1960000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

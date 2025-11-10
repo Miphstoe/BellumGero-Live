@@ -46,6 +46,12 @@ proficient_panshee_worker = Creature:new {
 				{group = "panshee_tribe_tier_1", chance = 10000000}
 			},
 			lootChance = 1660000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

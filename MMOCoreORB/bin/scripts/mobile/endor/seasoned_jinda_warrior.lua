@@ -39,6 +39,12 @@ seasoned_jinda_warrior = Creature:new {
 				{group = "jinda_tribe_tier_1", chance = 10000000}
 			},
 			lootChance = 1700000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 
