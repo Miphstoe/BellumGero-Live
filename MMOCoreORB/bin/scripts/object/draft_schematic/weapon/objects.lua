@@ -4179,3 +4179,11 @@ object_draft_schematic_weapon_shared_sword_obsidian = SharedDraftSchematicObject
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_sword_obsidian, "object/draft_schematic/weapon/shared_sword_obsidian.iff")
+
+--------------------------------------------------------------------
+
+object_draft_schematic_weapon_shared_rifle_lightning_heavy = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_rifle_lightning_heavy.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_rifle_lightning_heavy, "object/draft_schematic/weapon/shared_rifle_lightning_heavy.iff")

@@ -6418,3 +6418,11 @@ object_tangible_loot_loot_schematic_shared_sword_obsidian_schematic = SharedTang
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_sword_obsidian_schematic, "object/tangible/loot/loot_schematic/shared_sword_obsidian_schematic.iff")
+
+--------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_rifle_lightning_heavy_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rifle_lightning_heavy_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rifle_lightning_heavy_schematic, "object/tangible/loot/loot_schematic/shared_rifle_lightning_heavy_schematic.iff")

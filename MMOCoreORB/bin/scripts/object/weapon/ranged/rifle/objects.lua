@@ -1307,3 +1307,10 @@ object_weapon_ranged_rifle_shared_rifle_dc15 = SharedWeaponObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_dc15, "object/weapon/ranged/rifle/shared_rifle_dc15.iff")
+
+
+object_weapon_ranged_rifle_shared_rifle_lightning_heavy = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_lightning_heavy.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_lightning_heavy, "object/weapon/ranged/rifle/shared_rifle_lightning_heavy.iff")

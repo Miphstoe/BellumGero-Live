@@ -1312,6 +1312,7 @@ schematics = {
 	{path="object/draft_schematic/weapon/lance_obsidian.iff"},
 	{path="object/draft_schematic/weapon/2h_sword_obsidian.iff"},
 	{path="object/draft_schematic/weapon/sword_obsidian.iff"},
+	{path="object/draft_schematic/weapon/rifle_lightning_heavy.iff"},
 	{path="object/draft_schematic/scout/item_camp_basic.iff"},
 	{path="object/draft_schematic/scout/item_camp_multi.iff"},
 	{path="object/draft_schematic/scout/item_camp_improved.iff"},
