@@ -34,6 +34,12 @@ singing_mountain_clan_initiate = Creature:new {
 			groups = {
 				{group = "mtn_clan_tier_2", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

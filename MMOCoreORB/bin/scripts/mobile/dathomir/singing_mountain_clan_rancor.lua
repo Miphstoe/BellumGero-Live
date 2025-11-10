@@ -38,6 +38,12 @@ singing_mountain_clan_rancor = Creature:new {
 				{group = "wearables_all", chance = 1500000}
 			},
 			lootChance = 2100000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

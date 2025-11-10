@@ -39,7 +39,7 @@ janta_clan_leader = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 2500000
+			lootChance = 250000
 		}
 	},
 

@@ -39,7 +39,7 @@ drall_chieftain = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 1500000 -- 1.5% overall chance
+			lootChance = 150000 -- 1.5% overall chance
 		}
 	},
 

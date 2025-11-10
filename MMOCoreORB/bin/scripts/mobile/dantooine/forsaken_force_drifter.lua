@@ -39,7 +39,7 @@ forsaken_force_drifter = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 2500000
+			lootChance = 250000
 		}
 	},
 

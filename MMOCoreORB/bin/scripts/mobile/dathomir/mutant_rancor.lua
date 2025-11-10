@@ -37,7 +37,7 @@ mutant_rancor = Creature:new {
 				{group = "weapons_all", chance = 2500000},
 				{group = "wearables_all", chance = 1500000}
 			},
-			lootChance = 2500000
+			lootChance = 250000
 		}
 	},
 

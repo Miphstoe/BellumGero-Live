@@ -38,7 +38,7 @@ meatlump_oaf = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 1500000
+			lootChance = 150000
 		}
 	},
 
