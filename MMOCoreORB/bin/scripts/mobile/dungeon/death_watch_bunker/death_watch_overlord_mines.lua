@@ -36,6 +36,12 @@ death_watch_overlord_mines = Creature:new {
 				{group = "death_watch_bunker_overlord_shared", chance =  10000000}
 			},
 			lootChance = 10000000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

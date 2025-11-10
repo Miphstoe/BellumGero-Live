@@ -44,6 +44,12 @@ imperial_observer = Creature:new {
 				{group = "geonosian_common", chance = 4200000},
 				{group = "geonosian_relic", chance = 4200000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

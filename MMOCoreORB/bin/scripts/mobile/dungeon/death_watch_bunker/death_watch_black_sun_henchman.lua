@@ -49,6 +49,12 @@ death_watch_black_sun_henchman = Creature:new {
 			},
 			lootChance = 350000, -- 3.50% total chance
 		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
+		}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

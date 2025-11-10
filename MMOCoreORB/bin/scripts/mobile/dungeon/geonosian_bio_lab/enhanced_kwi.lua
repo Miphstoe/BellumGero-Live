@@ -34,6 +34,12 @@ enhanced_kwi = Creature:new {
 				{group = "enhanced_kwi", chance = 10000000}
 			},
 			lootChance = 3120000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

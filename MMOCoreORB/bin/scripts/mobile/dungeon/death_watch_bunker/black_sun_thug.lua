@@ -42,6 +42,12 @@ black_sun_thug = Creature:new {
 				{group = "power_crystals", chance = 500000},
 			},
 			lootChance = 3500000, -- 35.00% total chance
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

@@ -39,6 +39,12 @@ corsec_soldier = Creature:new {
 				{group = "wearables_uncommon", chance = 2000000},
 				{group = "tailor_components", chance = 1500000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 
