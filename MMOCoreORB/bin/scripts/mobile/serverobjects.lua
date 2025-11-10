@@ -55,5 +55,8 @@ includeFile("enhanced_gaping_spider_boss.lua")
 -- mobile (creature) template FIRST so spawnMobile can find it
 includeFile("vendors/attachment_exchange_vendor.lua")
 
+-- BG Token Vendor
+includeFile("vendors/bg_token_vendor.lua")
+
 
 

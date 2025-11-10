@@ -30,15 +30,21 @@ end
 function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
     local screen = LuaConversationScreen(pConvScreen)
     local screenId = screen:getScreenID()
-    
+
     print("[DEBUG] runScreenHandlers called with screenId: " .. tostring(screenId))
-    
+
     -- Check if this is an attachment vendor trade screen (give_ screens are where we process)
     if string.find(screenId, "give_t1_") or string.find(screenId, "give_t2_") or string.find(screenId, "give_t3_") then
         print("[DEBUG] Detected attachment trade screen, calling handleAttachmentTrade")
         return self:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
     end
-    
+
+    -- Check if this is a bg_token vendor trade screen
+    if string.find(screenId, "give_item_") then
+        print("[DEBUG] Detected bg_token vendor trade screen, calling handleBGTokenTrade")
+        return self:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    end
+
     print("[DEBUG] Not a trade screen, returning pConvScreen")
     return pConvScreen
 end
@@ -367,4 +373,255 @@ function conv_handler:giveReward(pPlayer, template, rewardName, quantity)
     else
         return false
     end
+end
+
+-- ============================= BG TOKEN VENDOR HANDLER =============================
+
+function conv_handler:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    print("[BG-TOKEN] === ENTERED handleBGTokenTrade ===")
+    print("[BG-TOKEN] screenId: " .. tostring(screenId))
+
+    local screen = LuaConversationScreen(pConvScreen)
+    local requiredTokens = 50
+
+    -- Get reward info for this item
+    local rewardInfo = self:getBGTokenReward(screenId)
+
+    if not rewardInfo then
+        print("[BG-TOKEN] ERROR: No reward info found for screenId: " .. screenId)
+        screen:setCustomDialogText("Error: Invalid item selection.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN] === STARTING " .. rewardInfo.name .. " TRADE ===")
+    print("[BG-TOKEN] Required tokens: " .. requiredTokens)
+
+    -- Count bg_tokens
+    print("[BG-TOKEN] About to count tokens...")
+    local success, tokenCount = pcall(function()
+        return self:countBGTokens(pPlayer)
+    end)
+
+    if not success then
+        print("[BG-TOKEN] Error counting tokens: " .. tostring(tokenCount))
+        screen:setCustomDialogText("Error reading your inventory. Please try again later.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN] Found " .. tokenCount .. " tokens")
+
+    if tokenCount < requiredTokens then
+        screen:setCustomDialogText("You only have " .. tokenCount .. " Bellum Gero Tokens, but need " .. requiredTokens .. ". Please collect more!")
+        return pConvScreen
+    end
+
+    -- Remove tokens
+    print("[BG-TOKEN] About to remove tokens...")
+    local removeSuccess, removedCount = pcall(function()
+        return self:removeBGTokens(pPlayer, requiredTokens)
+    end)
+
+    if not removeSuccess or removedCount < requiredTokens then
+        print("[BG-TOKEN] Error removing tokens. Removed: " .. (removedCount or 0))
+        screen:setCustomDialogText("Error removing tokens. Trade cancelled.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN] Successfully removed " .. removedCount .. " tokens")
+
+    -- Give reward
+    print("[BG-TOKEN] About to give reward...")
+    local rewardSuccess = self:giveReward(pPlayer, rewardInfo.template, rewardInfo.name)
+
+    if rewardSuccess then
+        screen:setCustomDialogText("Trade successful!\n\n" .. removedCount .. " Bellum Gero Tokens removed.\n\nYou received: " .. rewardInfo.name .. "\n\nCheck your inventory!")
+        print("[BG-TOKEN] Successfully gave " .. rewardInfo.name .. " to player")
+    else
+        screen:setCustomDialogText("Tokens removed but error giving reward. Contact an admin.")
+        print("[BG-TOKEN] Failed to give " .. rewardInfo.name)
+    end
+
+    return pConvScreen
+end
+
+function conv_handler:getBGTokenReward(screenId)
+    -- Template mapping for 20 items - EDIT THE TEMPLATES AND NAMES BELOW
+    local rewards = {
+        ["give_item_01"] = {name = "LCD Screen", template = "object/tangible/furniture/all/frn_all_scrolling_screen.iff"},
+        ["give_item_02"] = {name = "Imperial Banner on Pole", template = "object/tangible/gcw/flip_banner_onpole_imperial.iff"},
+        ["give_item_03"] = {name = "Rebel Banner on Pole", template = "object/tangible/gcw/flip_banner_onpole_rebel.iff"},
+        ["give_item_04"] = {name = "All in One Survey Tool", template = "object/tangible/survey_tool/survey_tool_all.iff"},
+        ["give_item_05"] = {name = "Resource Deed", template = "object/tangible/veteran_reward/resource.iff"},
+        ["give_item_06"] = {name = "2h Obsidian Sword Schematic", template = "object/tangible/loot/loot_schematic/2h_sword_obsidian_schematic.iff"},
+        ["give_item_07"] = {name = "Blasterfist Schematic", template = "object/tangible/loot/loot_schematic/blasterfist_schematic.iff"},
+        ["give_item_08"] = {name = "Obsidian Lance Schematic", template = "object/tangible/loot/loot_schematic/lance_obsidian_schematic.iff"},
+        ["give_item_09"] = {name = "1h Obsidian Sword Schematic", template = "object/tangible/loot/loot_schematic/sword_obsidian_schematic.iff"},
+        ["give_item_10"] = {name = "Spy Fang Schematic", template = "object/draft_schematic/weapon/punchknuckler.iff"},
+        ["give_item_11"] = {name = "DC-15 Rifle Schematic", template = "object/draft_schematic/weapon/rifle_dc15.iff"},
+        ["give_item_12"] = {name = "Black Falcon Pistol Schematic", template = "object/draft_schematic/weapon/pistol_blackfalcon.iff"},
+        ["give_item_13"] = {name = "E-5 Carbine Schematic", template = "object/draft_schematic/weapon/carbine_e5.iff"},
+        ["give_item_14"] = {name = "SMC Shirt", template = "object/tangible/wearables/shirt/singing_mountain_clan_shirt_s02.iff"},
+        ["give_item_15"] = {name = "Rare Bestine Painting", template = "object/tangible/painting/bestine_quest_painting.iff"},
+        ["give_item_16"] = {name = "Chemical Recycler", template = "object/tangible/recycler/chemical_recycler.iff"},
+        ["give_item_17"] = {name = "Creature Recycler", template = "object/tangible/recycler/creature_recycler.iff"},
+        ["give_item_18"] = {name = "Flora Recycler", template = "object/tangible/recycler/flora_recycler.iff"},
+        ["give_item_19"] = {name = "Metal Recycler", template = "object/tangible/recycler/metal_recycler.iff"},
+        ["give_item_20"] = {name = "Ore Recycler", template = "object/tangible/recycler/ore_recycler.iff"},
+    }
+    return rewards[screenId]
+end
+
+function conv_handler:countBGTokensInContainer(container)
+    local tokenCount = 0
+    if not container then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    print("[BG-TOKEN] Searching container with " .. size .. " items")
+
+    for i = 0, size - 1 do
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                if success and displayedName then
+                    print("[BG-TOKEN] Found object: " .. displayedName)
+                    if string.find(string.lower(displayedName), "bellum gero token") or
+                       string.find(string.lower(displayedName), "bg_token") then
+                        -- Try to get count, default to 1 if not countable
+                        local countSuccess, count = pcall(function() return object:getCount() end)
+                        if countSuccess and count and count > 0 then
+                            print("[BG-TOKEN] Found " .. count .. " tokens in stack")
+                            tokenCount = tokenCount + count
+                        else
+                            print("[BG-TOKEN] Found 1 token")
+                            tokenCount = tokenCount + 1
+                        end
+                    else
+                        -- Try to recursively search this object as a container
+                        print("[BG-TOKEN] Checking if " .. displayedName .. " is a container...")
+                        tokenCount = tokenCount + self:countBGTokensInContainer(pObject)
+                    end
+                end
+            end
+        end
+    end
+
+    return tokenCount
+end
+
+function conv_handler:countBGTokens(pPlayer)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[BG-TOKEN] Could not get LuaCreatureObject")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[BG-TOKEN] Could not get inventory")
+        return 0
+    end
+
+    local tokenCount = self:countBGTokensInContainer(pInventory)
+
+    print("[BG-TOKEN] Counted " .. tokenCount .. " tokens in inventory and containers")
+    return tokenCount
+end
+
+function conv_handler:removeBGTokensFromContainer(container, count)
+    local removed = 0
+    if not container then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    print("[BG-TOKEN] Searching container for removal with " .. size .. " items")
+
+    for i = size - 1, 0, -1 do
+        if removed >= count then break end
+
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                if success and displayedName then
+                    if string.find(string.lower(displayedName), "bellum gero token") or
+                       string.find(string.lower(displayedName), "bg_token") then
+
+                        print("[BG-TOKEN] Found token to remove: " .. displayedName)
+                        -- Try to get count
+                        local countSuccess, itemCount = pcall(function() return object:getCount() end)
+                        if countSuccess and itemCount and itemCount > 0 then
+                            -- Item is countable (stackable)
+                            local needToRemove = count - removed
+
+                            if itemCount <= needToRemove then
+                                -- Remove entire stack by destroying the object
+                                pcall(function() object:destroyObjectFromWorld(true) end)
+                                pcall(function() object:destroyObjectFromDatabase(true) end)
+                                removed = removed + itemCount
+                                print("[BG-TOKEN] Removed stack of " .. itemCount .. " tokens")
+                            else
+                                -- Remove partial stack
+                                local setSuccess = pcall(function() object:setCount(itemCount - needToRemove) end)
+                                if setSuccess then
+                                    removed = count
+                                    print("[BG-TOKEN] Removed " .. needToRemove .. " tokens from stack")
+                                else
+                                    -- If setCount fails, remove the entire item
+                                    pcall(function() object:destroyObjectFromWorld(true) end)
+                                    pcall(function() object:destroyObjectFromDatabase(true) end)
+                                    removed = removed + itemCount
+                                    print("[BG-TOKEN] Removed full stack due to setCount failure")
+                                end
+                            end
+                        else
+                            -- Single item (not countable)
+                            pcall(function() object:destroyObjectFromWorld(true) end)
+                            pcall(function() object:destroyObjectFromDatabase(true) end)
+                            removed = removed + 1
+                            print("[BG-TOKEN] Removed single token")
+                        end
+                    else
+                        -- Try to recursively search this object as a container
+                        if removed < count then
+                            print("[BG-TOKEN] Checking if " .. displayedName .. " is a container for removal...")
+                            removed = removed + self:removeBGTokensFromContainer(pObject, count - removed)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return removed
+end
+
+function conv_handler:removeBGTokens(pPlayer, count)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[BG-TOKEN] Could not get LuaCreatureObject for removal")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[BG-TOKEN] Could not get inventory for removal")
+        return 0
+    end
+
+    local removed = self:removeBGTokensFromContainer(pInventory, count)
+
+    print("[BG-TOKEN] Successfully removed " .. removed .. " tokens from inventory and containers")
+    return removed
 end

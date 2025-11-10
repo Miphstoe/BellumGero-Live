@@ -40,6 +40,12 @@ corsec_traitor = Creature:new {
 			groups = {
 				{group = "rogue_corsec_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 1500000
 		}
 	},
 

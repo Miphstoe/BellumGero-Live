@@ -600,6 +600,7 @@ includeFile("items/loot_schematic/technical_console_schematic_2.lua")
 includeFile("items/loot_schematic/throw_pillow_schematic.lua")
 
 --misc sub-folder
+includeFile("items/misc/bg_token.lua")
 includeFile("items/misc/casual_rug.lua")
 includeFile("items/misc/majestic_rug.lua")
 
