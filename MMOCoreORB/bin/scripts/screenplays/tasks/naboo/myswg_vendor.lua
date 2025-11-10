@@ -49,7 +49,7 @@ function myswg_vendor:start()
 
      
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -265, 35.0, 4897, 35, 0 )--mining
-    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4053, 17.0, -6217, 35, 0 )--imp
+    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4052, 17.0, -6220, 37, 0 )--imp
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -6922, 73.0, -5730, 35, 0 )--labor
     
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
