@@ -36,6 +36,12 @@ kliknik_shredder_guardian = Creature:new {
 				{group = "kliknik_common", chance = 10000000}
 			},
 			lootChance = 1600000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 
