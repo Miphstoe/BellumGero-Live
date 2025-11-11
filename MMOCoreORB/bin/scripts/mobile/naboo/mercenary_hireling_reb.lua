@@ -39,6 +39,12 @@ mercenary_hireling_reb = Creature:new {
 				{group = "junk", chance = 10000000},
 			},
 			lootChance = 5000000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 
