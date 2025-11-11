@@ -115,7 +115,7 @@ function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
 
         local c = CreatureObject(pTarget)
         if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
-            c:awardExperience("force_rank_xp", 100, true)
+            c:awardExperience("force_rank_xp", 150, true)
         end
     end
 
