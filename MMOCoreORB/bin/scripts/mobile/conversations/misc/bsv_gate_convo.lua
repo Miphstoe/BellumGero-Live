@@ -1,35 +1,35 @@
 bsv_gate_convo_template = ConvoTemplate:new {
-    initialScreen = "intro",
-    templateType = "Lua",
+    initialScreen   = "intro",
+    templateType    = "Lua",
     luaClassHandler = "bsv_gate_convo_handler",
-    screens = {}
+    screens         = {}
 }
 
-local intro = ConvoScreen:new {
+local intro = ConvoScreen:new{
     id = "intro",
     leftDialog = "",
     customDialogText = "Halt. State your clearance.",
     stopConversation = "false",
     options = {
-        {"I was sent to investigate the Blue Shadow Virus bunker, to ensure it is not once again developing the deadly virus.", "claim_clearance"},
+        {"I was sent to investigate the Blue Shadow Virus bunker. Intelligence suggests they may be developing the pathogen again.", "claim_clearance"},
         {"Nevermind.", "bye"}
     }
 }
 bsv_gate_convo_template:addScreen(intro)
 
-local claim = ConvoScreen:new {
+local claim = ConvoScreen:new{
     id = "claim_clearance",
     leftDialog = "",
-    customDialogText = "This place has been overrun by Droids and worse since the last outbreak. Are you sure you're prepared to enter?,
+    customDialogText = "This facility has been overrun by droids and sealed since the last outbreak. Are you prepared to enter?",
     stopConversation = "false",
     options = {
-        {"I am well prepared.", "grant"},
-        {"Actually I think I better not.", "deny"}
+        {"I am prepared.", "grant"},
+        {"On second thought, not yet.", "deny"}
     }
 }
 bsv_gate_convo_template:addScreen(claim)
 
-local grant = ConvoScreen:new {
+local grant = ConvoScreen:new{
     id = "grant",
     leftDialog = "",
     customDialogText = "Proceed with caution. Good luck.",
@@ -38,16 +38,16 @@ local grant = ConvoScreen:new {
 }
 bsv_gate_convo_template:addScreen(grant)
 
-local deny = ConvoScreen:new {
+local deny = ConvoScreen:new{
     id = "deny",
     leftDialog = "",
-    customDialogText = "That's probably for the best.",
+    customDialogText = "Very well. Return when you are ready.",
     stopConversation = "true",
     options = {}
 }
 bsv_gate_convo_template:addScreen(deny)
 
-local bye = ConvoScreen:new {
+local bye = ConvoScreen:new{
     id = "bye",
     leftDialog = "",
     customDialogText = "Move along.",

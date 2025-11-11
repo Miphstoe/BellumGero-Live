@@ -1,96 +1,38 @@
 --=====================================================================
--- Blue Shadow Virus Bunker
--- Location: Naboo (-3630, 31, 760)
--- Building: object/building/general/bunker_imperial_weapons_research_facility_01.iff
--- Facing: East (90 degrees)
--- Gating: player must have Blue Shadow Clearance item to enter
+-- Blue Shadow Virus Bunker (STATIC snapshot building version)
+-- Bare-minimum: ONLY static props; no tangibles, no observers/events
 --=====================================================================
 
 BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
     numberOfActs = 1,
     planet = "naboo",
+    buildingID = 9895361, -- static building from snapshot
 
-    -- Keep a handle to the building for observers/cell ops
-    pBunker = nil,
+    -- Gas (static particle)
+    GAS_TEMPLATE = "object/static/particle/pt_green_hanging_smoke.iff",
+    GAS_CELL     = 9895365,
+    GAS_POS      = { x = 3.6, z = -12.0, y = 22.7, heading = 0.0 },
 
-    headingDeg = 90,
-
-    -- Use your own custom key item once you add it. For now we can reuse a quest passkey.
-    clearanceTemplate = "object/tangible/mission/quest_item/warren_passkey_s01.iff"  -- TODO: swap to your own template later
-
-    -- Option B if you prefer a flag instead of an item:
-    -- clearanceFlag = "bsv:clearance" -- writeData/hasData on player
+    -- Three STATIC crate meshes (no scripts attached)
+    crates = {
+        { template = "object/static/structure/general/cargo_crate_s01.iff", cell = 9895372, pos = { x = -76.9, z = -20.0, y =  88.4, heading = 0.0 } },
+        { template = "object/static/structure/general/cargo_crate_s02.iff", cell = 9895381, pos = { x = -16.5, z = -20.0, y =  -5.2, heading = 0.0 } },
+        { template = "object/static/structure/general/cargo_crate_s03.iff", cell = 9895384, pos = { x = -38.7, z = -20.0, y = 117.1, heading = 0.0 } },
+    },
 }
 
 registerScreenPlay("BlueShadowVirusBunkerScreenPlay", true)
 
 function BlueShadowVirusBunkerScreenPlay:start()
     if not isZoneEnabled(self.planet) then return end
-    self:spawnSceneObjects()
-    self:spawnMobiles()
-    self:attachBuildingObservers()
-end
+    if getSceneObject(self.buildingID) == nil then return end
 
---========================
--- Building / SceneObjects
---========================
-function BlueShadowVirusBunkerScreenPlay:spawnSceneObjects()
-    local x, z, y = -3630, 31, 760
-    self.pBunker = spawnSceneObject(
-        self.planet,
-        "object/building/general/bunker_imperial_weapons_research_facility_01.iff",
-        x, z, y, 0, math.rad(self.headingDeg)
-    )
-end
+    -- Gas
+    local g = self.GAS_POS
+    spawnSceneObject(self.planet, self.GAS_TEMPLATE, g.x, g.z, g.y, self.GAS_CELL, g.heading or 0)
 
-function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
-    -- Spawn your gate NPC outside the entrance (example placement)
-    -- NOTE: Adjust coords after you stand there and /loc
-    -- spawnMobile("naboo", "bsv_gate_officer", 0, -3622, 31, 760, 90, 0)
-    spawnMobile("naboo", "bsv_gate_officer", 0, -3614, 30, 764, 90, 0)
-end
-
---========================
--- Entry Gate (Warren-style)
---========================
-function BlueShadowVirusBunkerScreenPlay:attachBuildingObservers()
-    if self.pBunker == nil then return end
-    createObserver(ENTEREDBUILDING, "BlueShadowVirusBunkerScreenPlay", "onEnteredBunker", self.pBunker)
-    createObserver(EXITEDBUILDING,  "BlueShadowVirusBunkerScreenPlay", "onExitedBunker",  self.pBunker)
-end
-
-function BlueShadowVirusBunkerScreenPlay:onEnteredBunker(pBuilding, pPlayer)
-    if pBuilding == nil or pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() then
-        return 0
+    -- Static crates (no scripts)
+    for _, c in ipairs(self.crates) do
+        spawnSceneObject(self.planet, c.template, c.pos.x, c.pos.z, c.pos.y, c.cell, c.pos.heading or 0)
     end
-
-    -- GM bypass
-    local pGhost = CreatureObject(pPlayer):getPlayerObject()
-    if pGhost ~= nil and PlayerObject(pGhost):isPrivileged() then
-        return 0
-    end
-
-    -- Item gate (same as Warren)
-    local pInv = CreatureObject(pPlayer):getSlottedObject("inventory")
-    local hasClearance = (pInv ~= nil) and (getContainerObjectByTemplate(pInv, self.clearanceTemplate, true) ~= nil)
-
-    -- Alt: flag gate
-    -- local hasClearance = (readData(SceneObject(pPlayer):getObjectID() .. ":" .. (self.clearanceFlag or "")) == 1)
-
-    if not hasClearance then
-        CreatureObject(pPlayer):sendSystemMessage("ACCESS DENIED: You lack the required Blue Shadow clearance.")
-        -- Kick them just outside the front (east-facing => +X direction)
-        local wx = -3630 + 12
-        local wz = 31
-        local wy = 760
-        SceneObject(pPlayer):teleport(wx, wz, wy, 0)
-        return 0
-    end
-
-    -- (Optional) set up additional observers like Warren does, e.g. PARENTCHANGED
-    return 0
-end
-
-function BlueShadowVirusBunkerScreenPlay:onExitedBunker(pBuilding, pPlayer)
-    return 0
 end

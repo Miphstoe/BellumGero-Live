@@ -1,6 +1,6 @@
 bsv_gate_officer = Creature:new {
     objectName = "@mob/creature_names:imperial_officer",
-    customName = "Imperial Gate Officer",
+    customName = "Imperial Bunker Officer",
     socialGroup = "imperial",
     pvpFaction = "imperial",
     faction = "imperial",
@@ -16,6 +16,8 @@ bsv_gate_officer = Creature:new {
     templates = {"object/mobile/dressed_imperial_officer_m.iff"},
     conversationTemplate = "bsv_gate_convo",
     optionsBitmask = AIENABLED + CONVERSABLE,
+    pvpBitmask = NONE,
+    creatureBitmask = NONE,
     lootGroups = {},
     weapons = {},
     attacks = {}

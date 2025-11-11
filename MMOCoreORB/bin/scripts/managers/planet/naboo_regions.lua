@@ -88,6 +88,8 @@ naboo_regions = {
 	{"naboo_force_shrine_03", 2378, -474, {CIRCLE, 199}, NOSPAWNAREA + NOBUILDZONEAREA},
 	{"naboo_force_shrine_04", -2583, -6185, {CIRCLE, 199}, NOSPAWNAREA + NOBUILDZONEAREA},
 
+	{"blue_shadow_virus_bunker_nospawn", -3630, 760, {CIRCLE, 180}, NOSPAWNAREA + NOBUILDZONEAREA},
+
 	-- Cities
 	{"@naboo_region_names:deeja_peak", 5048, -1528, {CIRCLE, 616}, CITY + NOSPAWNAREA},
 	{"@naboo_region_names:kaadara", 5168, 6704, {CIRCLE, 320}, CITY + NOSPAWNAREA},
