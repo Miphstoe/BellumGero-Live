@@ -1,26 +1,38 @@
 ----------------------------------------
 --  ForceCrystalCaveScreenPlay
 --  Rewards Force-Rank XP on cave mob kills
+--  + Adds server-spawned loot containers that use the same loot groups/level/respawn
 ----------------------------------------
 ForceCrystalCaveScreenPlay = ScreenPlay:new {
     numberOfActs       = 1,
     screenplayName     = "ForceCrystalCaveScreenPlay",
 
+    -- Client-placed containers (static IDs baked in the TREs)
     lootContainers     = { 200335, 200336, 8535511 },
-    lootLevel          = 100,
+
+    -- Loot config used by BOTH static containers and the new server-spawned ones
+    lootLevel          = 325,
     lootGroups         = {
         {
             groups = {
-                { group = "color_crystals",       			   chance = 3500000 },
-                { group = "power_crystals",                    chance = 3500000 },
-                { group = "weapon_component_advanced",         chance = 2000000 },
-                { group = "clothing_attachments",              chance =  500000 },
-                { group = "armor_attachments",                 chance =  500000 }
+                { group = "color_crystals", chance = 10000000 },
             },
-            lootChance = 8000000
+            lootChance = 10000000
         }
     },
-    lootContainerRespawn = 1800  -- 30 minutes
+
+    -- Respawn window (seconds). Used by both static- and server-spawned containers.
+    lootContainerRespawn = 1800,  -- 30 minutes
+
+    -- NEW: Server-spawned extra loot crate placements (planet, x, z, y, cellId, rotDeg)
+    -- Fill these in with your real positions. Use cellId 0 for exterior; interior needs a valid cell object ID.
+    extraLootSpawns = {
+        -- { "dantooine", X,     Z,     Y,     CELL_ID, ROT_DEG }
+        { "dantooine",  77.0,   -45.7,   -147.6,   8535493,   0 },   -- TODO: replace with real coords/cell/rot
+        { "dantooine",  92.8,   -76.2,   -83.9,   8535486,   0 },   -- TODO: replace with real coords/cell/rot
+        { "dantooine",  195.5,   -66.6,   -99.9,   8535491,   0 },   -- TODO: replace with real coords/cell/rot
+        { "dantooine",  195.1,   -66.9,   -103.6,   8535491,   0 },   -- TODO: replace with real coords/cell/rot
+    },
 }
 
 registerScreenPlay("ForceCrystalCaveScreenPlay", true)
@@ -28,36 +40,100 @@ registerScreenPlay("ForceCrystalCaveScreenPlay", true)
 function ForceCrystalCaveScreenPlay:start()
     if isZoneEnabled("dantooine") then
         self:spawnMobiles()
+
+        -- Keep original static-ID containers working
         self:initializeLootContainers()
+
+        -- NEW: Add three server-spawned loot containers that share the same loot config/respawn
+        self:setupExtraLootContainers()
     end
 end
 
+-- ============================================================
+-- NEW: Server-spawned loot containers (share lootGroups/level)
+-- ============================================================
+
+-- Spawns the extra crates and seeds loot from self.lootGroups/self.lootLevel
+function ForceCrystalCaveScreenPlay:setupExtraLootContainers()
+    local respawnSec = self.lootContainerRespawn or 1800
+    local spawns = self.extraLootSpawns or {}
+
+    for i = 1, #spawns do
+        local P = spawns[i]
+        local planet, x, z, y, cell, rotDeg =
+            P[1], P[2], P[3], P[4], P[5], P[6]
+
+        -- Use standard dungeon loot crate template
+        local pCont = spawnSceneObject(
+            planet,
+            "object/tangible/container/loot/placable_loot_crate.iff",
+            x, z, y, cell, math.rad(rotDeg or 0)
+        )
+
+        if pCont ~= nil then
+            local oid = SceneObject(pCont):getObjectID()
+
+            -- Tag with respawn for refill scheduling
+            writeData(oid .. ":extraLootRespawnSec", respawnSec)
+
+            -- Seed loot using SAME groups/level as static containers
+            createLootFromCollection(pCont, self.lootGroups, self.lootLevel)
+
+            -- When emptied, schedule a refill using same timing
+            createObserver(CONTAINERCONTENTSCHANGED, self.screenplayName, "onExtraContainerLooted", pCont)
+        end
+    end
+end
+
+-- When a spawned crate is looted empty, schedule a refill
+function ForceCrystalCaveScreenPlay:onExtraContainerLooted(pContainer, pWho)
+    if pContainer == nil then return 1 end
+    local oid = SceneObject(pContainer):getObjectID()
+    local respawnSec = readData(oid .. ":extraLootRespawnSec")
+    if respawnSec == 0 then respawnSec = 1800 end
+
+    createEvent(respawnSec * 1000, self.screenplayName, "refillExtraContainer", pContainer, "")
+    return 1
+end
+
+-- Refill (re-roll) the container if it’s empty
+function ForceCrystalCaveScreenPlay:refillExtraContainer(pContainer)
+    if pContainer == nil then return end
+    if SceneObject(pContainer):getContainerObjectCount() == 0 then
+        createLootFromCollection(pContainer, self.lootGroups, self.lootLevel)
+    end
+end
+
+-- ============================================================
+-- Existing mobile spawns & FRS XP logic (unchanged)
+-- ============================================================
+
 function ForceCrystalCaveScreenPlay:spawnMobiles()
     local spawnPoints = {
-        { "dark_jedi_master",  89, -62,   -13.4, -139, 8535485 },
+        { "dark_jedi_master",  89,   -62,   -13.4, -139, 8535485 },
         { "dark_jedi_knight",  52.5, -67.9, -42.9,   32, 8535484 },
         { "dark_jedi_knight",  76.3, -77,   -89.3,  -81, 8535486 },
         { "dark_jedi_knight",  26.1, -43,   -68.3,   84, 8535484 },
         { "dark_jedi_knight",  64.1, -68.9, -36.8,   86, 8535485 },
         { "dark_jedi_knight",  85.3, -77.2, -62.9,  -57, 8535486 },
         { "dark_jedi_knight",  69.3, -75.7, -65.4,   30, 8535486 },
-        { "dark_jedi_master",  0.7,  -13.6,  -6.9,  -82, 8535483 },
-        { "dark_jedi_knight", 65.6, -77,   -78.4,  -10, 8535486 },
-        { "dark_jedi_master", 23.8, -38.4, -32.8,   -2, 8535484 },
-        { "dark_jedi_knight", 22.4, -42.1, -64.1,   38, 8535484 },
-        { "dark_jedi_master", 49.8, -48.5, -65.6,  -51, 8535484 },
-        { "dark_jedi_master", 49.7, -48,   -17.7,  167, 8535484 },
-        { "dark_jedi_master", 52.1, -48.7, -104.0,  -7, 8535492 },
-        { "dark_jedi_master", 91.1, -46.6, -110.8,  -80, 8535487 },
-        { "dark_jedi_knight", 75.6, -46.5, -141.9,  50, 8535493 },
-        { "dark_jedi_knight", 84.3, -46.9, -145.7,  21, 8535493 },
-        { "dark_jedi_knight", 54, -73.5, -108.5,  -2, 8535488 },
-        { "dark_jedi_knight", 62.9, -66.4, -136.5,  18, 8535488 },
-        { "dark_jedi_master", 92.8, -66.2, -126.4,  -150, 8535489 },
-        { "dark_jedi_knight", 117.4, -66, -107.8,  -89, 8535490 },
-        { "dark_jedi_knight", 141.3, -66.6, -87.5,  -138, 8535490 },
-        { "dark_jedi_knight", 150.1, -66.6, -126,  -50, 8535490 },
-        { "imperial_inquisitor_boss", 191.7, -66.8, -102,  -84, 8535491 },
+        { "dark_jedi_master",   0.7, -13.6,  -6.9,  -82, 8535483 },
+        { "dark_jedi_knight",  65.6, -77,   -78.4,  -10, 8535486 },
+        { "dark_jedi_master",  23.8, -38.4, -32.8,   -2, 8535484 },
+        { "dark_jedi_knight",  22.4, -42.1, -64.1,   38, 8535484 },
+        { "dark_jedi_master",  49.8, -48.5, -65.6,  -51, 8535484 },
+        { "dark_jedi_master",  49.7, -48,   -17.7,  167, 8535484 },
+        { "dark_jedi_master",  52.1, -48.7, -104.0,  -7, 8535492 },
+        { "dark_jedi_master",  91.1, -46.6, -110.8,  -80, 8535487 },
+        { "dark_jedi_knight",  75.6, -46.5, -141.9,  50, 8535493 },
+        { "dark_jedi_knight",  84.3, -46.9, -145.7,  21, 8535493 },
+        { "dark_jedi_knight",  54,   -73.5, -108.5,  -2, 8535488 },
+        { "dark_jedi_knight",  62.9, -66.4, -136.5,  18, 8535488 },
+        { "dark_jedi_master",  92.8, -66.2, -126.4, -150, 8535489 },
+        { "dark_jedi_knight", 117.4, -66,   -107.8,  -89, 8535490 },
+        { "dark_jedi_knight", 141.3, -66.6,  -87.5, -138, 8535490 },
+        { "dark_jedi_knight", 150.1, -66.6, -126,    -50, 8535490 },
+        { "imperial_inquisitor_boss", 191.7, -66.8, -102, -84, 8535491 },
     }
 
     for i, data in ipairs(spawnPoints) do
@@ -115,7 +191,7 @@ function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
 
         local c = CreatureObject(pTarget)
         if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
-            c:awardExperience("force_rank_xp", 100, true)
+            c:awardExperience("force_rank_xp", 150, true)
         end
     end
 
