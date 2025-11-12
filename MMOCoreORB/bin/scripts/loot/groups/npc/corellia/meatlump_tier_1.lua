@@ -5,7 +5,7 @@ meatlump_tier_1 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "junk", weight = 2100000},
+		{groupTemplate = "junk", weight = 1500000},
 		{groupTemplate = "loot_kit_parts", weight = 1000000},
 		{groupTemplate = "meatlump_common", weight = 3500000},
 		{groupTemplate = "tailor_components", weight = 300000},
@@ -15,6 +15,7 @@ meatlump_tier_1 = {
 		{groupTemplate = "color_crystals", weight = 200000},
 		{groupTemplate = "melee_weapons_common", weight = 1000000},
 		{groupTemplate = "ranged_weapons_common", weight = 1000000},
+		{itemTemplate = "tato_small_table_style_03", weight = 600000}
 	}
 }
 

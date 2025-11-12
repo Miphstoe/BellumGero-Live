@@ -604,6 +604,7 @@ includeFile("items/loot_schematic/throw_pillow_schematic.lua")
 includeFile("items/misc/bg_token.lua")
 includeFile("items/misc/casual_rug.lua")
 includeFile("items/misc/majestic_rug.lua")
+includeFile("items/misc/tato_small_table_style_03.lua")
 
 --npc sub-folder
 includeFile("items/npc/aakuan_belt.lua")
