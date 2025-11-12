@@ -34,6 +34,12 @@ dark_adept = Creature:new {
 			groups = {
 				{group = "dark_jedi_tier_4", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

@@ -36,6 +36,12 @@ giant_dune_kimogila = Creature:new {
 				{group = "kimogila_common", chance = 6500000},
 			},
 			lootChance = 4060000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 350000
 		}
 	},
 

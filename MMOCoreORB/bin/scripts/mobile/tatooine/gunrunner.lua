@@ -35,6 +35,12 @@ gunrunner = Creature:new {
 				{group = "mercenary_tier_1", chance = 10000000}
 			},
 			lootChance = 2200000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

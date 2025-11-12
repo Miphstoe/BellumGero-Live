@@ -37,6 +37,12 @@ archaic_panshee_ritualist = Creature:new {
 				{group = "panshee_tribe_tier_2", chance = 10000000}
 			},
 			lootChance = 2200000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

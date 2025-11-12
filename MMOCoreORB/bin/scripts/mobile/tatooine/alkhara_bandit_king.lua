@@ -34,6 +34,12 @@ alkhara_bandit_king = Creature:new {
 			groups = {
 				{group = "alkhara_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

@@ -41,6 +41,12 @@ blood_razor_officer = Creature:new {
 			groups = {
 				{group = "bloodrazor_tier_2", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

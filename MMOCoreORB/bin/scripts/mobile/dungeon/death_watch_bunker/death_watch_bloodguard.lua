@@ -48,6 +48,12 @@ death_watch_bloodguard = Creature:new {
 				{group = "death_watch_bunker_ingredient_binary",  chance = 100000}
 			},
 			lootChance = 500000, -- 5.00% total chance
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

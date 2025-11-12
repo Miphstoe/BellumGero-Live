@@ -96,6 +96,12 @@ acklay_worldboss = Creature:new {
         },
         lootChance = 1500000, -- 15.00% total chance
     },
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 350000
+		}
 },
 
     primaryWeapon = "unarmed",

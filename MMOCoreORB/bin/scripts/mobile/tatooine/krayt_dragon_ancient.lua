@@ -89,6 +89,12 @@ krayt_dragon_ancient = Creature:new {
 	    },
 	    lootChance = 1500000, -- 15.00% total chance
 	},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 350000
+		}
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

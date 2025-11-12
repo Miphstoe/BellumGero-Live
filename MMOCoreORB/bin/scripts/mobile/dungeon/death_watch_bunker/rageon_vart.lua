@@ -35,7 +35,13 @@ rageon_vart = Creature:new {
 				{group = "rageon_vart_drop", chance = 10000000}
 			},
 			lootChance = 10000000
-		} 
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
+		}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

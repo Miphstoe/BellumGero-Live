@@ -341,3 +341,8 @@ includeFile("conversations/tasks/myswg_vendor_conv.lua")
 print("Loading conversations.lua - checking sea vendor...")
 includeFile("conversations/tasks/sea_attachment_vendor_conv.lua")
 print("Finished loading sea vendor")
+
+-- BG TOKEN VENDOR
+print("Loading conversations.lua - checking bg_token vendor...")
+includeFile("conversations/vendors/bg_token_vendor_conv.lua")
+print("Finished loading bg_token vendor")

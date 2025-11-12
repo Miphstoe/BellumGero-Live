@@ -34,6 +34,12 @@ janta_clan_leader = Creature:new {
 			groups = {
 				{group = "janta_tribe_tier_3", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

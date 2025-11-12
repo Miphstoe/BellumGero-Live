@@ -36,6 +36,12 @@ seasoned_panshee_warrior = Creature:new {
 				{group = "panshee_tribe_tier_2", chance = 10000000}
 			},
 			lootChance = 1840000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

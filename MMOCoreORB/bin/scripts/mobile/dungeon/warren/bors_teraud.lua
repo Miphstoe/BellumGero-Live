@@ -36,6 +36,12 @@ bors_teraud = Creature:new {
 				{group = "clothing_attachments", chance = 500000},
 				{group = "wearables_common", chance = 2500000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

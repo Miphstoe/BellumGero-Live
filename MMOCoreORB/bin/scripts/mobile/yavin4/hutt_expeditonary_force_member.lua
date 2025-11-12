@@ -34,6 +34,12 @@ hutt_expeditonary_force_member = Creature:new {
 			groups = {
 				{group = "hutt_exp_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

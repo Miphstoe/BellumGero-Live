@@ -35,6 +35,12 @@ kliknik_queen = Creature:new {
 				{group = "kliknik_common", chance = 10000000}
 			},
 			lootChance = 1740000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

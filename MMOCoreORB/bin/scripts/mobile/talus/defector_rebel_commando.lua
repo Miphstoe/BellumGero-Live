@@ -48,6 +48,12 @@ defector_rebel_commando = Creature:new {
 		  },
 		  lootChance = 2000000, -- 20.00% total chance
 	  },
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
+		}
   },
 
 

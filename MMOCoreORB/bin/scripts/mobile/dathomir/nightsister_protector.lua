@@ -35,6 +35,12 @@ nightsister_protector = Creature:new {
 				{group = "nightsister_tier_4", chance = 10000000}
 			},
 			lootChance = 8000000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

@@ -36,6 +36,12 @@ visionary_of_lord_nyax = Creature:new {
 			groups = {
 				{group = "followers_of_lord_nyax_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

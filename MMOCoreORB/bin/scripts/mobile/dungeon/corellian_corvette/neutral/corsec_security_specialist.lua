@@ -43,6 +43,12 @@ corsec_security_specialist = Creature:new {
 				{group = "rebel_officer_common", chance = 400000},
 				{group = "wearables_all", chance = 1000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

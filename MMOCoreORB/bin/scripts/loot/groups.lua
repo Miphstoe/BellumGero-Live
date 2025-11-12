@@ -749,3 +749,4 @@ includeFile("groups/worldboss/sea_removal_tool_1x.lua")
 includeFile("groups/events/event.lua")
 
 includeFile("groups/endgame_weapon_schematics.lua")
+includeFile("groups/bg_token_group.lua")

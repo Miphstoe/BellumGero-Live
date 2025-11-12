@@ -42,6 +42,12 @@ corvette_imperial_inquisitor = Creature:new {
 				{group = "armor_attachments", chance = 25000},
 				{group = "wearables_all", chance = 1000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

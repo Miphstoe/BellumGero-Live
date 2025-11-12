@@ -37,6 +37,12 @@ mercenary_sentry = Creature:new {
 				{group = "geonosian_common", chance = 4500000},
 				{group = "geonosian_relic", chance = 4500000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

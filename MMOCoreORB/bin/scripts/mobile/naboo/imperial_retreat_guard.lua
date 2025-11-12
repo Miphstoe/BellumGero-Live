@@ -31,6 +31,12 @@ imperial_retreat_guard = Creature:new {
 			groups = {
 				{group = "imperial_tier_3", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 
