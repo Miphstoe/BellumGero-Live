@@ -23,6 +23,7 @@
 #include "server/zone/objects/tangible/powerup/PowerupObject.h"
 
 #include "server/zone/objects/player/sessions/sui/SlicingSessionSuiCallback.h"
+#include "server/zone/objects/group/GroupObject.h"
 
 #include "server/zone/ZoneServer.h"
 
@@ -535,6 +536,21 @@ void SlicingSessionImplementation::handleSlice(SuiListBox* suiBox) {
 		MissionTerminal* term = cast<MissionTerminal*>( tangibleObject.get());
 		playerManager->awardExperience(player, "slicing", 100, true); // Terminal Slice XP
 		term->addSlicer(player);
+
+		// Add all group members to slicer list so they also get the mission reward benefit
+		if (player->isGrouped()) {
+			ManagedReference<GroupObject*> group = player->getGroup();
+			if (group != nullptr) {
+				int groupSize = group->getGroupSize();
+				for (int i = 0; i < groupSize; i++) {
+					ManagedReference<CreatureObject*> groupMember = group->getGroupMember(i);
+					if (groupMember != nullptr && groupMember != player) {
+						term->addSlicer(groupMember);
+					}
+				}
+			}
+		}
+
 		player->sendSystemMessage("@slicing/slicing:terminal_success");
 	}
     else if (tangibleObject->isWeaponObject()) {
