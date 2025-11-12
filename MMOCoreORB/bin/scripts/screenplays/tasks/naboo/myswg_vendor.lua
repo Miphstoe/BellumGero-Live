@@ -25,6 +25,8 @@ function myswg_vendor:start()
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -2914, 5.0, 2129, 35, 0 )--espa
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 1293, 7.0, 3140, 35, 0 )--entha
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 48.33,52.00,-5340.53, 35, 0 )--anc 
+	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 3746.6,6.8,2300.5, -90, 0 )--taike
+	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -5032.8,75.0,6572.5, -37, 0 )--wayfar
         
     local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, -2193, 20.0, 2313, 35, 0 )--talus imp
     local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 4447, 2.0, 5271, 35, 0 )--nashal
@@ -47,7 +49,7 @@ function myswg_vendor:start()
 
      
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -265, 35.0, 4897, 35, 0 )--mining
-    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4053, 17.0, -6217, 35, 0 )--imp
+    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4052, 17.0, -6220, 37, 0 )--imp
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -6922, 73.0, -5730, 35, 0 )--labor
     
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
