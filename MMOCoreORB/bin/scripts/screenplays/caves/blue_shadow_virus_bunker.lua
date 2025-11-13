@@ -90,12 +90,12 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   labCell = 9895377,
 
   -- Active area on the hallway side of the lab door (between 9895374 and 9895377)
-  -- NOTE: x/z/y here are LOCAL TO CELL 9895374 — replace with the real door coords.
+  -- NOTE: x/z/y here are LOCAL TO CELL 9895374 — adjust to match your door.
   labDoorArea = {
     cell   = 9895374,
-    x      = 35.4,   -- TODO: adjust to your actual door X
-    z      = -12.0,  -- TODO: adjust to your actual door Z
-    y      = 90.0,  -- TODO: adjust to your actual door Y
+    x      = 35.4,   -- tweak to your actual door X
+    z      = -12.0,  -- tweak to your actual door Z
+    y      = 90.0,   -- tweak to your actual door Y
     radius = 4.0,
   },
 
@@ -105,6 +105,9 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   -- Template for the lab passkey item that drops from your droid (100% drop)
   -- Create this .iff and update the path if needed.
   labKeyTemplate = "object/tangible/mission/quest_item/bsv_lab_passkey_s01.iff",
+
+  -- Template for the medical droid in the lab
+  medDroidTemplate = "surgical_droid_21b",
 }
 
 registerScreenPlay("BlueShadowVirusBunkerScreenPlay", true)
@@ -117,11 +120,16 @@ local function resolveTemplate(self, keyOrPath)
 end
 
 -- Per-player flags
-local function oid(p) return tostring(SceneObject(p):getObjectID()) end
-local function keyInfected(p) return oid(p) .. ":bsv:infected" end
-local function keyImmune(p)   return oid(p) .. ":bsv:immune" end
+local function oid(p)          return tostring(SceneObject(p):getObjectID()) end
+local function keyInfected(p)  return oid(p) .. ":bsv:infected" end
+local function keyImmune(p)    return oid(p) .. ":bsv:immune" end
 -- per-character auth cache for bunker entry
-local function keyAuthed(p)   return oid(p) .. ":bsv:authed" end
+local function keyAuthed(p)    return oid(p) .. ":bsv:authed" end
+-- infection heartbeat flag
+local function keyHeartbeat(p) return oid(p) .. ":bsv:hb" end
+
+-- global key for lab medical droid OID
+local MED_DROID_KEY = "bsv:med_droid_oid"
 
 --==================================================
 -- Startup
@@ -144,7 +152,7 @@ function BlueShadowVirusBunkerScreenPlay:start()
   self:setupLabPermissionGroup()
   self:setupLabDoorArea()
 
-  -- Gate Officer (mobile .lua handles its own behavior)
+  -- Gate Officer + Medical Droid (mobiles)
   self:spawnMobiles()
 end
 
@@ -273,11 +281,77 @@ function BlueShadowVirusBunkerScreenPlay:onEnterInfectionArea(pArea, pMoving)
 
   writeData(keyInfected(pMoving), 1)
   CreatureObject(pMoving):sendSystemMessage("\\#FF5555You have been infected with the Blue Shadow Virus! Seek the cure in the medical lab.")
+
+  -- Start heartbeat enforcing that normal cures don’t permanently remove it
+  self:startInfectionHeartbeat(pMoving)
+
   return 0
 end
 
 --==================================================
--- Cure (clear BOTH states; grant immunity flag)
+-- Infection heartbeat — re-applies states if cured by normal means
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:startInfectionHeartbeat(pPlayer)
+  if pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() then return end
+
+  -- Avoid double-scheduling for the same player
+  if readData(keyHeartbeat(pPlayer)) == 1 then
+    return
+  end
+
+  writeData(keyHeartbeat(pPlayer), 1)
+  -- 5 seconds is a nice balance; tweak as desired
+  createEvent(5 * 1000, "BlueShadowVirusBunkerScreenPlay", "infectionHeartbeat", pPlayer, "")
+end
+
+function BlueShadowVirusBunkerScreenPlay:infectionHeartbeat(pPlayer, args)
+  if pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() then
+    return 0
+  end
+
+  -- If they are no longer infected or have become immune, stop enforcing.
+  if readData(keyInfected(pPlayer)) ~= 1 or readData(keyImmune(pPlayer)) == 1 then
+    deleteData(keyHeartbeat(pPlayer))
+    return 0
+  end
+
+  local cfg = self.infection
+
+  -- If DISEASED/POISONED were cleared by normal means, reapply them.
+  if CreatureObject(pPlayer):hasState(DISEASED) ~= 1 then
+    CreatureObject(pPlayer):addDotState(
+      pPlayer,
+      DISEASED,
+      cfg.disease_strength,
+      cfg.disease_pool,
+      cfg.disease_duration,
+      cfg.disease_potency,
+      SceneObject(pPlayer):getObjectID(),
+      cfg.disease_defense
+    )
+  end
+
+  if CreatureObject(pPlayer):hasState(POISONED) ~= 1 then
+    CreatureObject(pPlayer):addDotState(
+      pPlayer,
+      POISONED,
+      cfg.poison_strength,
+      cfg.poison_pool,
+      cfg.poison_duration,
+      cfg.poison_potency,
+      SceneObject(pPlayer):getObjectID(),
+      cfg.poison_defense
+    )
+  end
+
+  -- Reschedule as long as they’re marked infected
+  createEvent(5 * 1000, "BlueShadowVirusBunkerScreenPlay", "infectionHeartbeat", pPlayer, "")
+
+  return 0
+end
+
+--==================================================
+-- Cure (clear BOTH states; grant immunity flag, stop heartbeat)
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:onEnterCureArea(pArea, pMoving)
   if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
@@ -292,8 +366,19 @@ function BlueShadowVirusBunkerScreenPlay:onEnterCureArea(pArea, pMoving)
   CreatureObject(pMoving):clearState(POISONED)
   deleteData(keyInfected(pMoving))
   writeData(keyImmune(pMoving), 1)
+  deleteData(keyHeartbeat(pMoving)) -- stop the infection heartbeat
 
   CreatureObject(pMoving):sendSystemMessage("\\#55FF55You have been cured of the Blue Shadow Virus.")
+
+  -- Have the medical droid announce the cure in a chat bubble
+  local medID = readData(MED_DROID_KEY)
+  if medID ~= nil then
+    local pMed = getSceneObject(medID)
+    if pMed ~= nil then
+      spatialChat(pMed, "Patient stabilized. Blue Shadow Virus neutralized. You are no longer contagious.")
+    end
+  end
+
   return 0
 end
 
@@ -318,6 +403,7 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
   -- Clear infection/immune flags once they're actually outside.
   deleteData(keyInfected(pMoving))
   deleteData(keyImmune(pMoving))
+  deleteData(keyHeartbeat(pMoving)) -- just in case; ensure heartbeat stops
 
   return 0
 end
@@ -365,8 +451,16 @@ function BlueShadowVirusBunkerScreenPlay:setupLabDoorArea()
   local a = self.labDoorArea
   if not a then return end
 
-  -- Active area is parented to the hallway cell; coords are local to that cell.
-  local pArea = spawnActiveArea(self.planet, "object/active_area.iff", a.x, a.z, a.y, a.radius or 4.0, a.cell or 0)
+  -- NEW: use local cell coords -> world coords helper
+  local pArea = spawnAreaFromLocalCoords(
+    self.planet,
+    a.cell,
+    a.x,
+    a.z,
+    a.y,
+    a.radius or 4.0
+  )
+
   if pArea ~= nil then
     createObserver(ENTEREDAREA, "BlueShadowVirusBunkerScreenPlay", "onEnterLabDoorArea", pArea)
     print("BSV: Lab door active area armed (cell " .. tostring(a.cell) .. ").")
@@ -403,12 +497,21 @@ function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
 end
 
 --==================================================
--- Mobiles (minimal; let mobile .lua handle convo/flags)
+-- Mobiles (Gate Officer + Medical Droid)
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
+  -- Gate officer outside bunker
   local pNpc = spawnMobile(self.planet, "bsv_gate_officer", 0, -3614, 30, 764, 90, 0)
   if pNpc == nil then
     printLuaError("BSV: failed to spawn gate officer at (-3614,30,764).")
+  end
+
+  -- Medical droid inside the lab (coords are local to lab cell 9895377)
+  local pMed = spawnMobile(self.planet, self.medDroidTemplate, 0, 33.0, -20.0, 145.0, 180, 9895377)
+  if pMed ~= nil then
+    writeData(MED_DROID_KEY, SceneObject(pMed):getObjectID())
+  else
+    printLuaError("BSV: failed to spawn medical droid in lab (cell 9895377).")
   end
 end
 
