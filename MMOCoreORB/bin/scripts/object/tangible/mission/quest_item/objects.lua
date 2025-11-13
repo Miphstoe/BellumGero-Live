@@ -16855,3 +16855,10 @@ object_tangible_mission_quest_item_shared_zogor_sturm_q3_needed = SharedTangible
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_mission_quest_item_shared_zogor_sturm_q3_needed, "object/tangible/mission/quest_item/shared_zogor_sturm_q3_needed.iff")
+
+
+object_tangible_mission_quest_item_shared_bsv_lab_passkey_s01 = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/mission/quest_item/shared_bsv_lab_passkey_s01.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_mission_quest_item_shared_bsv_lab_passkey_s01, "object/tangible/mission/quest_item/shared_bsv_lab_passkey_s01.iff")
