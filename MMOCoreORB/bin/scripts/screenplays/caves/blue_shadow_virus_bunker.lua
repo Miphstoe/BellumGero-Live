@@ -36,9 +36,9 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
 
   -- Exit clear trigger (just outside the bunker door, world coords)
   exitClearArea = {
-    x      = -3614.0,  -- match outside.x
-    z      = 30.3,     -- match outside.z
-    y      = 760.2,    -- match outside.y
+    x      = -3601.7,  -- match outside.x
+    z      = 29.5,     -- match outside.z
+    y      = 761.2,    -- match outside.y
     radius = 12.0,     -- adjust as needed
   },
 
@@ -64,7 +64,7 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   P_BLUE = "object/static/particle/pt_survey_liquid_sample.iff",
   P_GRAY = "object/static/particle/pt_miasma_of_fog_gray.iff",
 
-  -- Your GAS SPAWNS (coords are x, z, y; z = vertical)
+  -- GAS SPAWNS (coords are x, z, y; z = vertical)
   gasSpawns = {
     { cell=9895365, x= 3.6,  z=-12.0, y=22.7, template="P_BLUE" },
     { cell=9895366, x=-18.8, z=-12.0, y=47.0, template="P_GRAY" },
@@ -81,6 +81,30 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
     { cell=9895375, x=60.7,  z=-12.0, y=82.8, template="P_BLUE" },
     { cell=9895375, x=60.7,  z=-12.0, y=58.7, template="P_BLUE" },
   },
+
+  -- ============================
+  -- Lab door locking (Geo-style)
+  -- ============================
+
+  -- Lab cell that should be locked behind a passkey
+  labCell = 9895377,
+
+  -- Active area on the hallway side of the lab door (between 9895374 and 9895377)
+  -- NOTE: x/z/y here are LOCAL TO CELL 9895374 — replace with the real door coords.
+  labDoorArea = {
+    cell   = 9895374,
+    x      = 35.4,   -- TODO: adjust to your actual door X
+    z      = -12.0,  -- TODO: adjust to your actual door Z
+    y      = 90.0,  -- TODO: adjust to your actual door Y
+    radius = 4.0,
+  },
+
+  -- Permission group name used to allow WALKIN into the lab cell
+  labPermissionGroup = "BSV_LAB_ACCESS",
+
+  -- Template for the lab passkey item that drops from your droid (100% drop)
+  -- Create this .iff and update the path if needed.
+  labKeyTemplate = "object/tangible/mission/quest_item/bsv_lab_passkey_s01.iff",
 }
 
 registerScreenPlay("BlueShadowVirusBunkerScreenPlay", true)
@@ -92,11 +116,11 @@ local function resolveTemplate(self, keyOrPath)
   return keyOrPath
 end
 
--- Per-player visit flags
+-- Per-player flags
 local function oid(p) return tostring(SceneObject(p):getObjectID()) end
 local function keyInfected(p) return oid(p) .. ":bsv:infected" end
 local function keyImmune(p)   return oid(p) .. ":bsv:immune" end
--- per-character auth cache
+-- per-character auth cache for bunker entry
 local function keyAuthed(p)   return oid(p) .. ":bsv:authed" end
 
 --==================================================
@@ -116,12 +140,16 @@ function BlueShadowVirusBunkerScreenPlay:start()
   self:setupAuthorizationGate()
   self:setupExitClearArea()
 
+  -- Lab door lock (Geo-like permission group)
+  self:setupLabPermissionGroup()
+  self:setupLabDoorArea()
+
   -- Gate Officer (mobile .lua handles its own behavior)
   self:spawnMobiles()
 end
 
 --==================================================
--- Authorization Gate (Warren pattern) + auth cache
+-- Authorization Gate (Warren-ish) + auth cache
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:setupAuthorizationGate()
   local id = self.buildingID
@@ -138,13 +166,13 @@ function BlueShadowVirusBunkerScreenPlay:notifyEnteredBsv(pBuilding, pPlayer)
   end
 
   -- If this player has already been authorized on this character,
-  -- don't re-run the gate logic (prevents rubberbanding / spam on exit).
+  -- don't re-run the gate logic (helps avoid rubberband spam).
   local authKey = keyAuthed(pPlayer)
   if readData(authKey) == 1 then
     return 0
   end
 
-  -- Admin bypass for AUTH ONLY (infection does not bypass)
+  -- Admin bypass for AUTH ONLY
   local pGhost = CreatureObject(pPlayer):getPlayerObject()
   local isAdmin = (pGhost ~= nil and PlayerObject(pGhost):isPrivileged())
 
@@ -178,7 +206,8 @@ local function spawnAreaFromLocalCoords(planet, cell, x, z, y, radius)
   local sy = SceneObject(pMarker):getWorldPositionY()
   local parent = SceneObject(pMarker):getParentID()
   local pArea = spawnActiveArea(planet, "object/active_area.iff", sx, sz, sy, radius or 5.0, parent)
-  SceneObject(pMarker):destroyObjectFromWorld(); SceneObject(pMarker):destroyObjectFromDatabase()
+  SceneObject(pMarker):destroyObjectFromWorld()
+  SceneObject(pMarker):destroyObjectFromDatabase()
   return pArea
 end
 
@@ -218,10 +247,29 @@ function BlueShadowVirusBunkerScreenPlay:onEnterInfectionArea(pArea, pMoving)
   local cfg = self.infection
   local src = SceneObject(pArea):getObjectID()
 
-  -- Apply POISONED for ticking damage (Geo Lab proven)
-  CreatureObject(pMoving):addDotState(pMoving, POISONED, cfg.poison_strength, cfg.poison_pool, cfg.poison_duration, cfg.poison_potency, src, cfg.poison_defense)
+  -- Apply POISONED for ticking damage (Geo Lab style)
+  CreatureObject(pMoving):addDotState(
+    pMoving,
+    POISONED,
+    cfg.poison_strength,
+    cfg.poison_pool,
+    cfg.poison_duration,
+    cfg.poison_potency,
+    src,
+    cfg.poison_defense
+  )
+
   -- Apply DISEASED for the infection state/icon
-  CreatureObject(pMoving):addDotState(pMoving, DISEASED, cfg.disease_strength, cfg.disease_pool, cfg.disease_duration, cfg.disease_potency, src, cfg.disease_defense)
+  CreatureObject(pMoving):addDotState(
+    pMoving,
+    DISEASED,
+    cfg.disease_strength,
+    cfg.disease_pool,
+    cfg.disease_duration,
+    cfg.disease_potency,
+    src,
+    cfg.disease_defense
+  )
 
   writeData(keyInfected(pMoving), 1)
   CreatureObject(pMoving):sendSystemMessage("\\#FF5555You have been infected with the Blue Shadow Virus! Seek the cure in the medical lab.")
@@ -270,6 +318,86 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
   -- Clear infection/immune flags once they're actually outside.
   deleteData(keyInfected(pMoving))
   deleteData(keyImmune(pMoving))
+
+  return 0
+end
+
+--==================================================
+-- Lab door permission groups (Geo-style) + door AA
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:setupLabPermissionGroup()
+  local labCellId = self.labCell
+  if not labCellId or labCellId == 0 then return end
+
+  local pCell = getSceneObject(labCellId)
+  if pCell == nil then
+    printLuaError("BSV: Failed to find lab cell " .. tostring(labCellId) .. " for permission group.")
+    return
+  end
+
+  -- Lock this cell so only the labPermissionGroup can WALKIN
+  SceneObject(pCell):setContainerInheritPermissionsFromParent(false)
+  SceneObject(pCell):clearContainerDefaultDenyPermission(WALKIN)
+  SceneObject(pCell):clearContainerDefaultAllowPermission(WALKIN)
+  SceneObject(pCell):setContainerAllowPermission(self.labPermissionGroup, WALKIN)
+  SceneObject(pCell):setContainerDenyPermission(self.labPermissionGroup, MOVEIN)
+end
+
+function BlueShadowVirusBunkerScreenPlay:giveLabAccess(pPlayer)
+  if pPlayer == nil then return end
+  local pGhost = CreatureObject(pPlayer):getPlayerObject()
+  if pGhost == nil then return end
+
+  if not PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup) then
+    PlayerObject(pGhost):addPermissionGroup(self.labPermissionGroup, true)
+  end
+end
+
+function BlueShadowVirusBunkerScreenPlay:hasLabAccess(pPlayer)
+  local pGhost = CreatureObject(pPlayer):getPlayerObject()
+  if pGhost == nil then
+    return false
+  end
+  return PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup)
+end
+
+function BlueShadowVirusBunkerScreenPlay:setupLabDoorArea()
+  local a = self.labDoorArea
+  if not a then return end
+
+  -- Active area is parented to the hallway cell; coords are local to that cell.
+  local pArea = spawnActiveArea(self.planet, "object/active_area.iff", a.x, a.z, a.y, a.radius or 4.0, a.cell or 0)
+  if pArea ~= nil then
+    createObserver(ENTEREDAREA, "BlueShadowVirusBunkerScreenPlay", "onEnterLabDoorArea", pArea)
+    print("BSV: Lab door active area armed (cell " .. tostring(a.cell) .. ").")
+  else
+    printLuaError("BSV: Failed to spawn lab door active area.")
+  end
+end
+
+function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
+  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
+
+  -- If they already have permission, nothing to do.
+  if self:hasLabAccess(pMoving) then
+    return 0
+  end
+
+  -- Check for the lab passkey in inventory
+  local hasKey = false
+  local pInventory = CreatureObject(pMoving):getSlottedObject("inventory")
+  if pInventory ~= nil then
+    local pKey = getContainerObjectByTemplate(pInventory, self.labKeyTemplate, true)
+    hasKey = (pKey ~= nil)
+  end
+
+  if hasKey then
+    -- Grant permanent lab access (permission group), Geo-style
+    self:giveLabAccess(pMoving)
+    CreatureObject(pMoving):sendSystemMessage("Your lab passkey unlocks the medical lab door.")
+  else
+    CreatureObject(pMoving):sendSystemMessage("The medical lab door is sealed. You need a lab passkey to enter.")
+  end
 
   return 0
 end
