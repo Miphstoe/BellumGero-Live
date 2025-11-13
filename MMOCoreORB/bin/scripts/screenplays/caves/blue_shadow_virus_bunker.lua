@@ -7,7 +7,7 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   numberOfActs = 1,
   planet = "naboo",
 
-  -- Building objectID (used for exit observer)
+  -- Building objectID (used for auth observer)
   buildingID = 9895361,
 
   -- TEMP clearance item (swap when your BSV key .iff is ready)
@@ -32,6 +32,14 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
     z      = -20.0,
     y      = 142.5,
     radius = 6.0,
+  },
+
+  -- Exit clear trigger (just outside the bunker door, world coords)
+  exitClearArea = {
+    x      = -3614.0,  -- match outside.x
+    z      = 30.3,     -- match outside.z
+    y      = 760.2,    -- match outside.y
+    radius = 12.0,     -- adjust as needed
   },
 
   -- Engine DoT parameters (Geonosian Lab pattern)
@@ -88,6 +96,8 @@ end
 local function oid(p) return tostring(SceneObject(p):getObjectID()) end
 local function keyInfected(p) return oid(p) .. ":bsv:infected" end
 local function keyImmune(p)   return oid(p) .. ":bsv:immune" end
+-- per-character auth cache
+local function keyAuthed(p)   return oid(p) .. ":bsv:authed" end
 
 --==================================================
 -- Startup
@@ -100,18 +110,18 @@ function BlueShadowVirusBunkerScreenPlay:start()
     spawnSceneObject(self.planet, resolveTemplate(self, g.template), g.x, g.z, g.y, g.cell, g.heading or 0)
   end
 
-  -- Infection/Cure areas + exit reset + auth gate
+  -- Infection/Cure areas + auth gate + exit clear area
   self:setupInfectionArea()
   self:setupCureArea()
-  self:setupExitObserver()
   self:setupAuthorizationGate()
+  self:setupExitClearArea()
 
   -- Gate Officer (mobile .lua handles its own behavior)
   self:spawnMobiles()
 end
 
 --==================================================
--- Authorization Gate (Warren pattern)
+-- Authorization Gate (Warren pattern) + auth cache
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:setupAuthorizationGate()
   local id = self.buildingID
@@ -127,6 +137,13 @@ function BlueShadowVirusBunkerScreenPlay:notifyEnteredBsv(pBuilding, pPlayer)
     return 0
   end
 
+  -- If this player has already been authorized on this character,
+  -- don't re-run the gate logic (prevents rubberbanding / spam on exit).
+  local authKey = keyAuthed(pPlayer)
+  if readData(authKey) == 1 then
+    return 0
+  end
+
   -- Admin bypass for AUTH ONLY (infection does not bypass)
   local pGhost = CreatureObject(pPlayer):getPlayerObject()
   local isAdmin = (pGhost ~= nil and PlayerObject(pGhost):isPrivileged())
@@ -139,6 +156,8 @@ function BlueShadowVirusBunkerScreenPlay:notifyEnteredBsv(pBuilding, pPlayer)
   end
 
   if isAdmin or hasClearance then
+    -- Mark this character as authorized so we don't re-check on exits / bouncing
+    writeData(authKey, 1)
     CreatureObject(pPlayer):sendSystemMessage("Authorization accepted. Welcome to the Blue Shadow Facility.")
   else
     CreatureObject(pPlayer):sendSystemMessage("ACCESS DENIED: You do not have the proper authorization to enter.")
@@ -210,12 +229,14 @@ function BlueShadowVirusBunkerScreenPlay:onEnterInfectionArea(pArea, pMoving)
 end
 
 --==================================================
--- Cure (clear BOTH states; grant visit immunity)
+-- Cure (clear BOTH states; grant immunity flag)
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:onEnterCureArea(pArea, pMoving)
   if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
 
-  if readData(keyInfected(pMoving)) ~= 1 and CreatureObject(pMoving):hasState(DISEASED) ~= 1 and CreatureObject(pMoving):hasState(POISONED) ~= 1 then
+  if readData(keyInfected(pMoving)) ~= 1
+    and CreatureObject(pMoving):hasState(DISEASED) ~= 1
+    and CreatureObject(pMoving):hasState(POISONED) ~= 1 then
     return 0
   end
 
@@ -229,22 +250,27 @@ function BlueShadowVirusBunkerScreenPlay:onEnterCureArea(pArea, pMoving)
 end
 
 --==================================================
--- Reset flags on bunker exit so next visit can re-infect
+-- Exit clear area (worldspace) — clears infection/immune when safely outside
 --==================================================
-function BlueShadowVirusBunkerScreenPlay:setupExitObserver()
-  local id = self.buildingID
-  if not id or id == 0 then return end
-  local pBunker = getSceneObject(id)
-  if pBunker ~= nil then
-    createObserver(EXITEDBUILDING, "BlueShadowVirusBunkerScreenPlay", "onExitBunker", pBunker)
+function BlueShadowVirusBunkerScreenPlay:setupExitClearArea()
+  local e = self.exitClearArea
+  if not e then return end
+  local pArea = spawnActiveArea(self.planet, "object/active_area.iff", e.x, e.z, e.y, e.radius or 10.0, 0)
+  if pArea ~= nil then
+    createObserver(ENTEREDAREA, "BlueShadowVirusBunkerScreenPlay", "onEnterExitClearArea", pArea)
+    print("BSV: Exit clear area armed (world)")
+  else
+    printLuaError("BSV: Failed to spawn exit clear active area.")
   end
 end
 
-function BlueShadowVirusBunkerScreenPlay:onExitBunker(pBuilding, pPlayer)
-  if pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() then return 0 end
-  deleteData(keyInfected(pPlayer))
-  deleteData(keyImmune(pPlayer))
-  print("BSV: Cleared visit flags for " .. oid(pPlayer))
+function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
+  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
+
+  -- Clear infection/immune flags once they're actually outside.
+  deleteData(keyInfected(pMoving))
+  deleteData(keyImmune(pMoving))
+
   return 0
 end
 
