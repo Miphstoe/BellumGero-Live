@@ -194,7 +194,7 @@ function BlueShadowVirusBunkerScreenPlay:notifyEnteredBsv(pBuilding, pPlayer)
   if isAdmin or hasClearance then
     -- Mark this character as authorized so we don't re-check on exits / bouncing
     writeData(authKey, 1)
-    CreatureObject(pPlayer):sendSystemMessage("Authorization accepted. Welcome to the Blue Shadow Facility.")
+    CreatureObject(pPlayer):sendSystemMessage("Authorization accepted. Welcome to the Blue Shadow Virus Facility.")
   else
     CreatureObject(pPlayer):sendSystemMessage("ACCESS DENIED: You do not have the proper authorization to enter.")
     SceneObject(pPlayer):teleport(self.outside.x, self.outside.z, self.outside.y, self.outside.cell)
@@ -420,7 +420,7 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
   -- 4) Optional flavor message, mirroring DWB/Geo "systems reset"
   --    (You can swap this to an STF entry later.)
   CreatureObject(pMoving):sendSystemMessage(
-    "Security and containment systems in the Blue Shadow Facility have been cycled and reset."
+    "Security and containment systems in the Blue Shadow Virus Facility have been cycled and reset."
   )
 
   return 0
@@ -517,7 +517,7 @@ function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
       SceneObject(pKey):destroyObjectFromDatabase()
     end
 
-    CreatureObject(pMoving):sendSystemMessage("Your lab passkey unlocks the medical lab door.")
+    CreatureObject(pMoving):sendSystemMessage("Your lab passkey unlocks the medical lab door. The passkey has been destroyed in the process.")
   else
     CreatureObject(pMoving):sendSystemMessage("The medical lab door is sealed. You need a lab passkey to enter.")
   end
