@@ -11,7 +11,7 @@ local intro = ConvoScreen:new{
     customDialogText = "Halt. State your clearance.",
     stopConversation = "false",
     options = {
-        {"I was sent to investigate the Blue Shadow Virus bunker. Intelligence suggests they may be developing the pathogen again.", "claim_clearance"},
+        {"I am here to investigate the Blue Shadow Virus Facility.", "claim_clearance"},
         {"Nevermind.", "bye"}
     }
 }
