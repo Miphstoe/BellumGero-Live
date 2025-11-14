@@ -8,7 +8,7 @@ function bsv_gate_convo_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, 
         local pInv = CreatureObject(pPlayer):getSlottedObject("inventory")
         if pInv ~= nil then
             -- Give the clearance item (match the screenplay’s clearanceTemplate)
-            giveItem(pInv, "object/tangible/mission/quest_item/warren_passkey_s01.iff", -1)
+            giveItem(pInv, "object/tangible/mission/quest_item/bsv_entry_passkey.iff", -1)
             CreatureObject(pPlayer):sendSystemMessage("You received: Blue Shadow Clearance.")
         end
 

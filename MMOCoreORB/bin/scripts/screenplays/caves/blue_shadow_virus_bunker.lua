@@ -11,7 +11,7 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   buildingID = 9895361,
 
   -- TEMP clearance item (swap when your BSV key .iff is ready)
-  clearanceTemplate = "object/tangible/mission/quest_item/warren_passkey_s01.iff",
+  clearanceTemplate = "object/tangible/mission/quest_item/bsv_entry_passkey.iff",
 
   -- Where to punt unauthorized players (worldcell = 0).  NOTE: (x, z, y, cell)
   outside = { x = -3601.7, z = 29.5, y = 761.2, cell = 0 },

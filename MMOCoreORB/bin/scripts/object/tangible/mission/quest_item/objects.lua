@@ -16862,3 +16862,10 @@ object_tangible_mission_quest_item_shared_bsv_lab_passkey_s01 = SharedTangibleOb
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_mission_quest_item_shared_bsv_lab_passkey_s01, "object/tangible/mission/quest_item/shared_bsv_lab_passkey_s01.iff")
+
+
+object_tangible_mission_quest_item_shared_bsv_entry_passkey = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/mission/quest_item/shared_bsv_entry_passkey.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_mission_quest_item_shared_bsv_entry_passkey, "object/tangible/mission/quest_item/shared_bsv_entry_passkey.iff")
