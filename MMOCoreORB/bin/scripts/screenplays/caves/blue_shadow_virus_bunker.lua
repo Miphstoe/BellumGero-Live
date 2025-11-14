@@ -36,9 +36,9 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
 
   -- Exit clear trigger (just outside the bunker door, world coords)
   exitClearArea = {
-    x      = -3601.7,  -- match outside.x
-    z      = 29.5,     -- match outside.z
-    y      = 761.2,    -- match outside.y
+    x      = -3610.7,  -- match outside.x
+    z      = 30.1,     -- match outside.z
+    y      = 760.5,    -- match outside.y
     radius = 12.0,     -- adjust as needed
   },
 
@@ -398,15 +398,34 @@ function BlueShadowVirusBunkerScreenPlay:setupExitClearArea()
 end
 
 function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
-  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
+  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then
+    return 0
+  end
 
-  -- Clear infection/immune flags once they're actually outside.
+  -- 1) Clear infection-related flags (what you already had)
   deleteData(keyInfected(pMoving))
   deleteData(keyImmune(pMoving))
-  deleteData(keyHeartbeat(pMoving)) -- just in case; ensure heartbeat stops
+  deleteData(keyHeartbeat(pMoving)) -- ensure heartbeat stops
+
+  -- 2) Clear bunker auth cache so the gate behaves like "fresh" again
+  --    (they still need the physical key item, just like now)
+  deleteData(keyAuthed(pMoving))
+
+  -- 3) Remove lab access permission group so the lab door relocks
+  local pGhost = CreatureObject(pMoving):getPlayerObject()
+  if pGhost ~= nil and PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup) then
+    PlayerObject(pGhost):removePermissionGroup(self.labPermissionGroup, true)
+  end
+
+  -- 4) Optional flavor message, mirroring DWB/Geo "systems reset"
+  --    (You can swap this to an STF entry later.)
+  CreatureObject(pMoving):sendSystemMessage(
+    "Security and containment systems in the Blue Shadow Facility have been cycled and reset."
+  )
 
   return 0
 end
+
 
 --==================================================
 -- Lab door permission groups (Geo-style) + door AA
@@ -470,7 +489,9 @@ function BlueShadowVirusBunkerScreenPlay:setupLabDoorArea()
 end
 
 function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
-  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then return 0 end
+  if pArea == nil or pMoving == nil or not SceneObject(pMoving):isPlayerCreature() then
+    return 0
+  end
 
   -- If they already have permission, nothing to do.
   if self:hasLabAccess(pMoving) then
@@ -479,15 +500,23 @@ function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
 
   -- Check for the lab passkey in inventory
   local hasKey = false
+  local pKey = nil
   local pInventory = CreatureObject(pMoving):getSlottedObject("inventory")
   if pInventory ~= nil then
-    local pKey = getContainerObjectByTemplate(pInventory, self.labKeyTemplate, true)
+    pKey = getContainerObjectByTemplate(pInventory, self.labKeyTemplate, true)
     hasKey = (pKey ~= nil)
   end
 
   if hasKey then
     -- Grant permanent lab access (permission group), Geo-style
     self:giveLabAccess(pMoving)
+
+    -- Consume the lab passkey item (one-time use)
+    if pKey ~= nil then
+      SceneObject(pKey):destroyObjectFromWorld()
+      SceneObject(pKey):destroyObjectFromDatabase()
+    end
+
     CreatureObject(pMoving):sendSystemMessage("Your lab passkey unlocks the medical lab door.")
   else
     CreatureObject(pMoving):sendSystemMessage("The medical lab door is sealed. You need a lab passkey to enter.")
@@ -495,6 +524,7 @@ function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
 
   return 0
 end
+
 
 --==================================================
 -- Mobiles (Gate Officer + Medical Droid)
