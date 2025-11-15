@@ -36,10 +36,10 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
 
   -- Exit clear trigger (just outside the bunker door, world coords)
   exitClearArea = {
-    x      = -3610.7,  -- match outside.x
-    z      = 30.1,     -- match outside.z
-    y      = 760.5,    -- match outside.y
-    radius = 12.0,     -- adjust as needed
+    x      = -3615.5,  -- match outside.x
+    z      = 30.4,     -- match outside.z
+    y      = 759.8,    -- match outside.y
+    radius = 2.0,     -- adjust as needed
   },
 
   -- Engine DoT parameters (Geonosian Lab pattern)
@@ -58,6 +58,27 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
     disease_duration = 7200,
     disease_potency  = 0,
     disease_defense  = 0,
+  },
+
+  -- Quiz droid template (MSE)
+  quizDroidTemplate = "bsv_mse_quiz_droid",
+  quizDroidDummyTemplate = "bsv_mse_quiz_dummy",   -- looks the same but no convo
+
+  -- Spawn points for potential quiz MSE droids (FILL THESE IN)
+  -- Each entry: {cell = <cellId>, x = <x>, z = <z>, y = <y>, heading = <h>}
+  quizDroidSpawns = {
+    -- Examples / placeholders:
+    {cell = 9895366, x = 3.6, z = -12.0, y = 70.3, heading = 113},
+    {cell = 9895369, x = -75.3, z = -20.0, y = 41.1, heading = 54},
+    {cell = 9895369, x = -57.0, z = -20.0, y = 23.9, heading = 49},
+    {cell = 9895369, x = -61.1, z = -20.0, y = 37.9, heading = 105},
+    {cell = 9895370, x = -49.8, z = -20.0, y = 13.3, heading = -37},
+    {cell = 9895379, x = 59.2, z = -12.0, y = 6.5, heading = -1},
+    {cell = 9895384, x = -27.4, z = -20.0, y = 122, heading = -130},
+    {cell = 9895387, x = -9.2, z = -20.0, y = 63.9, heading = 34},
+    {cell = 9895377, x = 18.2, z = -20.0, y = 122.0, heading = 17},
+    {cell = 9895377, x = 39.6, z = -20.0, y = 126.3, heading = -36},
+    {cell = 9895372, x = -60.8, z = -20.0, y = 86.2, heading = -136},
   },
 
   -- Particle templates
@@ -527,7 +548,7 @@ end
 
 
 --==================================================
--- Mobiles (Gate Officer + Medical Droid)
+-- Mobiles (Gate Officer + Medical Droid + Quiz MSEs)
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
   -- Gate officer outside bunker
@@ -543,7 +564,39 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
   else
     printLuaError("BSV: failed to spawn medical droid in lab (cell 9895377).")
   end
+
+  ------------------------------------------------------------------
+  -- MSE QUIZ DROIDS
+  -- Randomly choose ONE spawn index to be the real quiz droid
+  -- (with convo), spawn the rest as dummy MSEs.
+  ------------------------------------------------------------------
+  if self.quizDroidSpawns ~= nil and #self.quizDroidSpawns > 0 then
+    local quizIndex = getRandomNumber(1, #self.quizDroidSpawns)
+    printLuaError("BSV: quiz MSE index " .. quizIndex ..
+      " of " .. #self.quizDroidSpawns .. " chosen for conversation.")
+
+    for i, data in ipairs(self.quizDroidSpawns) do
+      local cell    = data.cell or 0
+      local x       = data.x or 0
+      local z       = data.z or 0
+      local y       = data.y or 0
+      local heading = data.heading or 0
+
+      local template = (i == quizIndex) and self.quizDroidTemplate or self.quizDroidDummyTemplate
+
+      local pMse = spawnMobile(self.planet, template, 0, x, z, y, heading, cell)
+      if pMse == nil then
+        printLuaError("BSV: failed to spawn MSE droid at index " .. i ..
+          " (quizIndex=" .. quizIndex .. ")")
+      end
+    end
+  else
+    printLuaError("BSV: quizDroidSpawns not configured; no MSE quiz droids spawned.")
+  end
 end
+
+
+
 
 -- ---------------------------------------------------------------
 -- Optional: live particle preview helper

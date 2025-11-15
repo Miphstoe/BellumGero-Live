@@ -591,6 +591,7 @@ includeFile("caves/tatooine_squill_cave.lua")
 includeFile("caves/tatooine_tusken_bunker.lua")
 includeFile("caves/conversations/gcw_cave_daily_conv_handler.lua")
 includeFile("caves/conversations/bsv_gate_convo_handler.lua")
+includeFile("caves/conversations/bsv_quiz_convo_handler.lua")
 
 -- Cantinas
 includeFile("cities/cantinas/bartenders.lua")
