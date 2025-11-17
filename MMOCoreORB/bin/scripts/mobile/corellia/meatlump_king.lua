@@ -1,7 +1,7 @@
 meatlump_king = Creature:new {
-    objectName = "Meatlump King",
+    customName = "Meatlump King",
     randomNameType = NAME_GENERIC,
-    randomNameTag = false,
+    randomNameTag = true,
     mobType = MOB_NPC,
     socialGroup = "meatlump",
     faction = "meatlump",
