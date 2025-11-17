@@ -15,8 +15,8 @@ ScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in second
 ScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEvent.START_TIME = { year = 2025, month = 11, day = 16, hour = 19, min = 00, sec = 0 }
-ScheduledEvent.END_TIME   = { year = 2025, month = 11, day = 16, hour = 20, min = 00, sec = 0 }
+ScheduledEvent.START_TIME = { year = 2025, month = 11, day = 23, hour = 19, min = 00, sec = 0 }
+ScheduledEvent.END_TIME   = { year = 2025, month = 11, day = 23, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -30,8 +30,11 @@ ScheduledEvent.CATCH_UP_IF_MISSED = true
 
 -- NPCs
 ScheduledEvent.NPCS = {
-  { planet = "corellia", template = "giant_ewok_warchief", x = -172, y = -4723, heading = 0 },
-  --{ planet = "corellia", template = "r2_d2_event", x = -174, y = -4725, heading = 0 },
+  { planet = "corellia", template = "meatlump_king", x = -172, y = -4723, z = 28, heading = 0 },
+  { planet = "corellia", template = "meatlump_cretin", x = -165, y = -4720, z = 28, heading = 0 },
+  { planet = "corellia", template = "meatlump_cretin", x = -180, y = -4725, z = 28, heading = 0 },
+  { planet = "corellia", template = "meatlump_cretin", x = -172, y = -4735, z = 28, heading = 0 },
+  { planet = "corellia", template = "meatlump_cretin", x = -160, y = -4730, z = 28, heading = 0 },
 }
 
 -- Messages
@@ -195,9 +198,9 @@ end
 
 function ScheduledEvent:spawnAll()
   print("[SCHEDULED] Spawning all NPCs with NO engine respawn - full script control")
-  
+
   for i, spec in ipairs(self.NPCS) do
-    local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+    local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
     local hdg = spec.heading or 0
     local cell = spec.cell or 0
 
@@ -270,10 +273,10 @@ function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
       if not obj then
         -- NPC is dead, respawn it
         print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") is dead, respawning...")
-        local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+        local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
         local hdg = spec.heading or 0
         local cell = spec.cell or 0
-        
+
         -- Spawn with 0 respawn timer - we control everything
         local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
         if pMob ~= nil then
@@ -290,22 +293,26 @@ function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
           print("[SCHEDULED] [RESPAWN] FAILED to spawn " .. spec.template)
         end
       else
-        -- Check if the NPC is actually alive (has health > 0)
+        -- Check if the NPC is actually alive (has health > 0) or is a corpse
         local so = LuaSceneObject(obj)
         if so then
           local creature = LuaCreatureObject(obj)
           if creature then
             local health = creature:getHAM(0)  -- Get health
-            if health <= 0 then
-              print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") has no health, respawning...")
+            local isDead = creature:isDead()  -- Check if marked as dead
+
+            print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") health=" .. health .. ", isDead=" .. tostring(isDead))
+
+            if health <= 0 or isDead then
+              print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") is dead or corpse, respawning...")
               -- Destroy the corpse first
               so:destroyObjectFromWorld()
-              
+
               -- Respawn
-              local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+              local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
               local hdg = spec.heading or 0
               local cell = spec.cell or 0
-              
+
               local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
               if pMob ~= nil then
                 local newSo = LuaSceneObject(pMob)
@@ -321,10 +328,44 @@ function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
               print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") is still alive with health=" .. health)
             end
           else
-            print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") is not a creature object")
+            print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") is not a creature object, destroying and respawning...")
+            -- If it's not a creature object (maybe corrupted), destroy it and respawn
+            pcall(function() so:destroyObjectFromWorld() end)
+
+            local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
+            local hdg = spec.heading or 0
+            local cell = spec.cell or 0
+
+            local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
+            if pMob ~= nil then
+              local newSo = LuaSceneObject(pMob)
+              if newSo ~= nil then
+                local newOid = newSo:getObjectID()
+                spec.oid = newOid
+                writeData("ScheduledEvent:npc_" .. i .. "_oid", tostring(newOid))
+                print("[SCHEDULED] [RESPAWN] Respawned corrupted " .. spec.template .. " (new oid=" .. newOid .. ")")
+                respawnedAny = true
+              end
+            end
           end
         else
-          print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") could not be converted to SceneObject")
+          print("[SCHEDULED] [RESPAWN] " .. spec.template .. " (oid=" .. storedOid .. ") could not be converted to SceneObject, destroying and respawning...")
+
+          local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
+          local hdg = spec.heading or 0
+          local cell = spec.cell or 0
+
+          local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
+          if pMob ~= nil then
+            local newSo = LuaSceneObject(pMob)
+            if newSo ~= nil then
+              local newOid = newSo:getObjectID()
+              spec.oid = newOid
+              writeData("ScheduledEvent:npc_" .. i .. "_oid", tostring(newOid))
+              print("[SCHEDULED] [RESPAWN] Respawned missing " .. spec.template .. " (new oid=" .. newOid .. ")")
+              respawnedAny = true
+            end
+          end
         end
         -- Make sure spec.oid is in sync with stored OID
         spec.oid = storedOid
@@ -332,10 +373,10 @@ function ScheduledEvent:checkEventRespawns(pCreatureObject, pPlayer)
     else
       print("[SCHEDULED] [RESPAWN] " .. spec.template .. " has no stored OID - spawning new one")
       -- No stored OID, spawn a new one
-      local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+      local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
       local hdg = spec.heading or 0
       local cell = spec.cell or 0
-      
+
       local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
       if pMob ~= nil then
         local so = LuaSceneObject(pMob)
