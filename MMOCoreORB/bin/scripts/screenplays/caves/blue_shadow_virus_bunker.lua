@@ -627,6 +627,42 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     printLuaError("BSV: failed to spawn medical droid in lab (cell 9895377).")
   end
 
+  -- Lab key guard droid: random spawn from multiple possible locations
+  -- Format: { cellId, x, z, y, heading, respawnSeconds }
+  local labKeySpawns = {
+    -- EXAMPLES – replace/expand with the real spots you want:
+    { 9895372,   -62.7,  -20.0,  87.6,  180, 1800 },
+    { 9895370, -62.4,  -20.0,  7.5,  0, 1800 },
+    { 9895379, -39.1,  -12.0,  -4.7, -36, 1800 },
+    { 9895384, -37.4,  -20.0,  123.7, 131, 1800 },
+  }
+
+  if #labKeySpawns > 0 then
+    local idx = getRandomNumber(#labKeySpawns - 1) + 1
+    local s   = labKeySpawns[idx]
+
+    local tpl     = "bsv_lab_guard_droid"
+    local cell    = s[1]
+    local x       = s[2]
+    local z       = s[3]
+    local y       = s[4]
+    local heading = s[5] or 0
+    local respawn = s[6] or 1800
+
+    local pKeyMob = spawnMobile(self.planet, tpl, respawn, x, z, y, heading, cell)
+    if pKeyMob ~= nil then
+      -- Also grant FRS XP from this guy using the same handler as other bunker mobs
+      createObserver(
+        OBJECTDESTRUCTION,
+        "BlueShadowVirusBunkerScreenPlay",
+        "onCaveMobDied",
+        pKeyMob
+      )
+    else
+      printLuaError("BSV: failed to spawn lab guard droid at random location index " .. idx .. ".")
+    end
+  end
+
   ------------------------------------------------------------------
   -- COMBAT DROIDS (FRS XP enabled) — ONE-LINE CLEAN FORMAT
   --
