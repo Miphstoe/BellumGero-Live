@@ -1,0 +1,5 @@
+object_tangible_furniture_all_frn_all_medic_bacta_tank = object_tangible_furniture_all_shared_frn_all_medic_bacta_tank:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_all_frn_all_medic_bacta_tank, "object/tangible/furniture/all/frn_all_medic_bacta_tank.iff")

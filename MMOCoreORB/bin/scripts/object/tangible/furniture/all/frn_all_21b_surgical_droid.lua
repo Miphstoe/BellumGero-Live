@@ -1,0 +1,5 @@
+object_tangible_furniture_all_frn_all_21b_surgical_droid = object_tangible_furniture_all_shared_frn_all_21b_surgical_droid:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_all_frn_all_21b_surgical_droid, "object/tangible/furniture/all/frn_all_21b_surgical_droid.iff")
