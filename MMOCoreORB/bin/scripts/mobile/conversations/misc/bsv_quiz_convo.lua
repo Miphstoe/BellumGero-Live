@@ -528,9 +528,9 @@ q032 = ConvoScreen:new {
     customDialogText = "What is the preferred lightsaber form of Mace Windu?",
     stopConversation = "false",
     options = {
-        {"Form VII – Vaapad", "q_correct"}, -- correct (top)
-        {"Form IV – Ataru", "q_failed"},
-        {"Form II – Makashi", "q_failed"}
+        {"Form VII Vaapad", "q_correct"}, -- correct (top)
+        {"Form IV Ataru", "q_failed"},
+        {"Form II Makashi", "q_failed"}
     }
 }
 bsv_quiz_convo:addScreen(q032)

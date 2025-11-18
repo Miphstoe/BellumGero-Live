@@ -39,7 +39,7 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
     x      = -3615.5,  -- match outside.x
     z      = 30.4,     -- match outside.z
     y      = 759.8,    -- match outside.y
-    radius = 2.0,     -- adjust as needed
+    radius = 2.0,      -- adjust as needed
   },
 
   -- Engine DoT parameters (Geonosian Lab pattern)
@@ -61,28 +61,27 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   },
 
   -- Which template to use for each quiz droid type
-quizDroidTypes = {
+  quizDroidTypes = {
     ["3po"] = { real = "bsv_quiz_3po",  dummy = "bsv_quiz_3po_dummy"  },
     ["21b"] = { real = "bsv_quiz_21b",  dummy = "bsv_quiz_21b_dummy"  },
     ["ra7"] = { real = "bsv_quiz_ra7",  dummy = "bsv_quiz_ra7_dummy"  }
-},
-
+  },
 
   -- Spawn points for potential quiz MSE droids (FILL THESE IN)
   -- Each entry: {cell = <cellId>, x = <x>, z = <z>, y = <y>, heading = <h>}
   quizDroidSpawns = {
     -- Examples / placeholders:
-    {cell = 9895366, x = 5.0, z = -12.0, y = 52.7, heading = -36, droidType = "3po"},
+    {cell = 9895366, x = 5.0,   z = -12.0, y = 52.7, heading = -36, droidType = "3po"},
     {cell = 9895369, x = -75.9, z = -20.0, y = 47.0, heading = 85,  droidType = "ra7"},
     {cell = 9895369, x = -57.0, z = -20.0, y = 23.9, heading = 49,  droidType = "ra7"},
-    {cell = 9895369, x = -61.1, z = -20.0, y = 37.9, heading = 105,  droidType = "ra7"},
+    {cell = 9895369, x = -61.1, z = -20.0, y = 37.9, heading = 105, droidType = "ra7"},
     {cell = 9895370, x = -74.8, z = -20.0, y = 13.0, heading = 86,  droidType = "ra7"},
-    {cell = 9895379, x = 16.7, z = -12.0, y = 15.2, heading = 85, droidType = "3po"},
-    {cell = 9895384, x = -22.5, z = -20.0, y = 124, heading = 177, droidType = "ra7"},
-    {cell = 9895387, x = -9.2, z = -20.0, y = 63.9, heading = 34,  droidType = "ra7"},
-    {cell = 9895377, x = 19.5, z = -20.0, y = 115.9, heading = 175, droidType = "21b"},
-    {cell = 9895377, x = 40.9, z = -20.0, y = 126.6, heading = -42, droidType = "21b"},
-    {cell = 9895372, x = -53.1, z = -20.0, y = 88.5, heading = -142, droidType = "3po"},
+    {cell = 9895379, x = 16.7,  z = -12.0, y = 15.2, heading = 85,  droidType = "3po"},
+    {cell = 9895384, x = -22.5, z = -20.0, y = 124,  heading = 177, droidType = "ra7"},
+    {cell = 9895387, x = -9.2,  z = -20.0, y = 63.9, heading = 34,  droidType = "ra7"},
+    {cell = 9895377, x = 19.5,  z = -20.0, y = 115.9,heading = 175, droidType = "21b"},
+    {cell = 9895377, x = 40.9,  z = -20.0, y = 126.6,heading = -42,droidType = "21b"},
+    {cell = 9895372, x = -53.1, z = -20.0, y = 88.5, heading = -142,droidType = "3po"},
   },
 
   -- Particle templates
@@ -96,7 +95,7 @@ quizDroidTypes = {
     { cell=9895374, x=35.4,  z=-12.0, y=47.0, template="P_GRAY" },
     { cell=9895374, x=35.4,  z=-12.0, y=86.8, template="P_BLUE" },
     { cell=9895387, x=-2.7,  z=-20.0, y=71.1, template="P_GRAY" },
-    { cell=9895384, x=-22.5, z=-20.0, y=105.2, template="P_BLUE" },
+    { cell=9895384, x=-22.5, z=-20.0, y=105.2,template="P_BLUE" },
     { cell=9895383, x=-30.1, z=-20.0, y=47.5, template="P_GRAY" },
     { cell=9895381, x=-16.6, z=-20.0, y= 3.1, template="P_BLUE" },
     { cell=9895369, x=-63.8, z=-20.0, y=47.0, template="P_BLUE" },
@@ -177,7 +176,7 @@ function BlueShadowVirusBunkerScreenPlay:start()
   self:setupLabPermissionGroup()
   self:setupLabDoorArea()
 
-  -- Gate Officer + Medical Droid (mobiles)
+  -- Gate Officer + Medical Droid + Combat Droids + Quiz Droids
   self:spawnMobiles()
 end
 
@@ -451,7 +450,6 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
   return 0
 end
 
-
 --==================================================
 -- Lab door permission groups (Geo-style) + door AA
 --==================================================
@@ -550,9 +548,69 @@ function BlueShadowVirusBunkerScreenPlay:onEnterLabDoorArea(pArea, pMoving)
   return 0
 end
 
+--==================================================
+-- FRS XP on bunker droid kills (Jedi Knights only, +50 FRS XP)
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:onCaveMobDied(pVictim, pKiller)
+  if pVictim == nil or pKiller == nil then
+    return 0
+  end
+
+  -- Resolve actual player (handles pet/vehicle killers too)
+  local pPlayer = nil
+
+  if SceneObject(pKiller):isPlayerCreature() then
+    pPlayer = pKiller
+  else
+    local ko = CreatureObject(pKiller)
+    if ko and ko.getOwner then
+      local pOwner = ko:getOwner()
+      if pOwner ~= nil and SceneObject(pOwner):isPlayerCreature() then
+        pPlayer = pOwner
+      end
+    end
+  end
+
+  if pPlayer == nil then
+    return 0
+  end
+
+  local RANGE_METERS = 80
+  local victimSO = SceneObject(pVictim)
+
+  local function grantIfEligible(pTarget)
+    if pTarget == nil or not SceneObject(pTarget):isPlayerCreature() then
+      return
+    end
+
+    -- Must be within range of the mob that died
+    if victimSO and not SceneObject(pTarget):isInRangeWithObject(pVictim, RANGE_METERS) then
+      return
+    end
+
+    local c = CreatureObject(pTarget)
+    if c and c.hasSkill and c:hasSkill("force_title_jedi_rank_03") then
+      -- Easier mobs than Force Crystal / Nightsister caves, so only +50
+      c:awardExperience("force_rank_xp", 50, true)
+    end
+  end
+
+  local killerCO = CreatureObject(pPlayer)
+  if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
+    local size = killerCO:getGroupSize()
+    for i = 0, size - 1 do
+      local pMember = killerCO:getGroupMember(i)
+      grantIfEligible(pMember)
+    end
+  else
+    grantIfEligible(pPlayer)
+  end
+
+  return 0
+end
 
 --==================================================
--- Mobiles (Gate Officer + Medical Droid + Quiz Droids)
+-- Mobiles (Gate Officer + Medical Droid + COMBAT DROIDS + Quiz Droids)
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
   -- Gate officer outside bunker
@@ -568,6 +626,106 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
   else
     printLuaError("BSV: failed to spawn medical droid in lab (cell 9895377).")
   end
+
+  ------------------------------------------------------------------
+  -- COMBAT DROIDS (FRS XP enabled) — ONE-LINE CLEAN FORMAT
+  --
+  -- Format for each entry:
+  -- { "templateName", cellId, x, z, y, heading, respawnSeconds }
+  --
+  -- Example:
+  -- { "bsv_battle_droid", 9895366, 5.0, -12.0, 45.0, 0, 1800 },
+  --
+  ------------------------------------------------------------------
+  local combatSpawns = {
+    -- Add your spawns here on ONE LINE each, ex:
+    { "bsv_battle_droid",       9895363,  -4.0,  0.3,  3.3,  84,   1800 },
+    { "bsv_battle_droid",       9895363,  -3.7,  0.3,  -4.0,  0,   1800 },
+    { "bsv_battle_droid",       9895364,  3.7,  0.3,  -4.2,  -90,   1800 },
+    { "bsv_super_battle_droid", 9895366, 3.4, -12.0,  33.1, -180, 1800 },
+    { "bsv_battle_droid",       9895366,  1.8,  -12.0,  33.8,  -180,   1800 },
+    { "bsv_battle_droid",       9895366,  5.2,  -12.0,  33.8,  -180,   1800 },
+    { "bsv_battle_droid",       9895366,  3.6,  -12.0,  65.6,  180,   1800 },
+    { "bsv_battle_droid",       9895366,  2.1,  -12.0,  64.9,  137,   1800 },
+    { "bsv_battle_droid",       9895366,  5.0,  -12.0,  64.9,  -134,   1800 },
+    { "bsv_battle_droid",       9895366,  19.5,  -12.0,  51.2,  180,   1800 },
+    { "bsv_battle_droid",       9895366,  23.4,  -12.0,  42.0,  -90,   1800 },
+    { "bsv_super_battle_droid", 9895366, 25.3, -12.0,  47.1, -90, 1800 },
+    { "bsv_battle_droid",       9895366,  -12.5,  -12.0,  51.3,  -180,   1800 },
+    { "bsv_battle_droid",       9895366,  -18.5,  -12.0,  40.8,  45,   1800 },
+    { "bsv_super_battle_droid", 9895366, -19.3, -12.0,  46.8, 90, 1800 },
+    { "bsv_battle_droid",       9895368,  -42.5,  -20.0,  46.9,  90,   1800 },
+    { "bsv_droideka",           9895370, -50.6, -20.0,  9.3,   -65, 1800 },
+    { "bsv_droideka",           9895370, -50.6, -20.0,  17.0,   -135, 1800 },
+    { "bsv_battle_droid",       9895370,  -56.6,  -20.0,  12.9,  -90,   1800 },
+    { "bsv_battle_droid",       9895370,  -74.3,  -20.0,  8.9,  55,   1800 },
+    { "bsv_battle_droid",       9895370,  -74.3,  -20.0,  16.5,  120,   1800 },
+    { "bsv_super_battle_droid", 9895370, -64.4, -20.0,  12.9, 90, 1800 },
+    { "bsv_droideka",           9895372, -49.5, -20.0,  84.5,   -120, 1800 },
+    { "bsv_droideka",           9895372, -49.5, -20.0,  77.6,   -60, 1800 },
+    { "bsv_battle_droid",       9895372,  -71.3,  -20.0,  82.4,  90,   1800 },
+    { "bsv_battle_droid",       9895372,  -71.3,  -20.0,  80.9,  90,   1800 },
+    { "bsv_battle_droid",       9895372,  -71.3,  -20.0,  79.4,  90,   1800 },
+    { "bsv_super_battle_droid", 9895369, -61.8, -12.0,  47.1, 90, 1800 },
+    { "bsv_battle_droid",       9895369,  -59.6,  -20.0,  44.8,  90,   1800 },
+    { "bsv_battle_droid",       9895369,  -59.6,  -20.0,  49.0,  90,   1800 },
+    { "bsv_super_battle_droid", 9895369, -73.3, -12.0,  30.5, 45, 1800 },
+    { "bsv_battle_droid",       9895369,  -73.6,  -20.0,  28.2,  45,   1800 },
+    { "bsv_battle_droid",       9895369,  -75.8,  -20.0,  31.4,  45,   1800 },
+    { "bsv_super_battle_droid", 9895369, -58.9, -12.0,  64.6, -140, 1800 },
+    { "bsv_battle_droid",       9895369,  -59.4,  -20.0,  66.5,  -140,   1800 },
+    { "bsv_battle_droid",       9895369,  -57.0,  -20.0,  64.2,  -140,   1800 },
+    { "bsv_droideka",           9895374, 35.5, -12.0,  83.4,   180, 1800 },
+    { "bsv_battle_droid",       9895375,  45.2,  -12.0,  76.3,  0,   1800 },
+    { "bsv_battle_droid",       9895375,  45.2,  -12.0,  89.0,  180,   1800 },
+    { "bsv_super_battle_droid", 9895375, 72.7, -12.0,  82.9, 90, 1800 },
+    { "bsv_battle_droid",       9895376,  45.2,  -12.0,  52.6,  0,   1800 },
+    { "bsv_battle_droid",       9895376,  45.2,  -12.0,  65.0,  180,   1800 },
+    { "bsv_super_battle_droid", 9895376, 72.7, -12.0,  58.6, 90, 1800 },
+    { "bsv_battle_droid",       9895374,  35.5,  -12.0,  47.0,  -90,   1800 },
+    { "bsv_battle_droid",       9895374,  35.5,  -12.0,  35.3,  0,   1800 },
+    { "bsv_super_battle_droid", 9895379, 23.5, -12.0,  15.2, 0, 1800 },
+    { "bsv_battle_droid",       9895379,  25.3,  -12.0,  12.9,  0,   1800 },
+    { "bsv_battle_droid",       9895379,  21.4,  -12.0,  12.9,  0,   1800 },
+    { "bsv_droideka",           9895379, 60.6, -12.0,  21.1,   -90, 1800 },
+    { "bsv_droideka",           9895379, 60.6, -12.0,  11.3,   -90, 1800 },
+    { "bsv_droideka",           9895379, 60.6, -12.0,  1.2,   -90, 1800 },
+    { "bsv_battle_droid",       9895380,  -6.9,  -20.0,  2.9, 90,   1800 },
+    { "bsv_battle_droid",       9895381,  -21.2,  -20.0,  8.4, 90,   1800 },
+    { "bsv_battle_droid",       9895381,  -11.8,  -20.0,  8.4, -90,   1800 },
+    { "bsv_battle_droid",       9895381,  -11.8,  -20.0,  -2.4, -90,   1800 },
+    { "bsv_battle_droid",       9895381,  -21.2,  -20.0,  -2.4, 90,   1800 },
+    { "bsv_super_battle_droid", 9895383, -30.6, -20.0,  33.1, 180, 1800 },
+    { "bsv_super_battle_droid", 9895383, -30.6, -20.0,  73.0, 0, 1800 },
+    { "bsv_droideka",           9895384, -27.6, -20.0,  115.7,   180, 1800 },
+    { "bsv_droideka",           9895384, -17.6, -20.0,  115.7,   180, 1800 },
+    { "bsv_battle_droid",       9895384,  -8.1,  -20.0,  102.7, -145,   1800 },
+    { "bsv_battle_droid",       9895384,  -37.4,  -20.0,  102.7, 115,   1800 },
+    { "bsv_battle_droid",       9895386,  -14.7,  -20.0,  85.0, 90,   1800 },
+    { "bsv_battle_droid",       9895386,  -2.5,  -20.0,  85.0, -90,   1800 },
+    { "bsv_super_battle_droid", 9895387, -8.2, -20.0,  76.2, 130, 1800 },
+    { "bsv_super_battle_droid", 9895387, -7.5, -20.0,  65.9, 35, 1800 },
+    { "bsv_super_battle_droid", 9895377, 41.2, -20.0,  140.0, -145, 1800 },
+    { "bsv_super_battle_droid", 9895377, 23.0, -20.0,  144.6, 90, 1800 },
+    { "bsv_super_battle_droid", 9895377, 23.0, -20.0,  131.3, 90, 1800 },
+    { "bsv_super_battle_droid", 9895377, 23.0, -20.0,  118.1, 90, 1800 },
+  }
+
+  for i, data in ipairs(combatSpawns) do
+    local tpl, cell, x, z, y, hdg, respawn = data[1], data[2], data[3], data[4], data[5], data[6], data[7] or 1800
+
+    if tpl and cell and x and z and y then
+      local pMob = spawnMobile(self.planet, tpl, respawn, x, z, y, hdg or 0, cell)
+      if pMob ~= nil then
+        createObserver(OBJECTDESTRUCTION, "BlueShadowVirusBunkerScreenPlay", "onCaveMobDied", pMob)
+      else
+        printLuaError("BSV: failed to spawn combat droid '" .. tostring(tpl) .. "' at index " .. i)
+      end
+    else
+      printLuaError("BSV: invalid combatSpawns entry at index " .. i)
+    end
+  end
+
 
   ------------------------------------------------------------------
   -- QUIZ DROIDS
@@ -607,9 +765,6 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     printLuaError("BSV: quizDroidSpawns not configured; no quiz droids spawned.")
   end
 end
-
-
-
 
 -- ---------------------------------------------------------------
 -- Optional: live particle preview helper
