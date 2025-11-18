@@ -105,7 +105,7 @@ bsv_quiz_convo:addScreen(q001)
 q002 = ConvoScreen:new {
     id = "q002",
     leftDialog = "",
-    customDialogText = "On which world does Padmé discover Dr. Vindi's underground virus laboratory?",
+    customDialogText = "On which world does Padme discover Dr. Vindi's underground virus laboratory?",
     stopConversation = "false",
     options = {
         {"Tatooine", "q_failed"},
@@ -119,7 +119,7 @@ bsv_quiz_convo:addScreen(q002)
 q003 = ConvoScreen:new {
     id = "q003",
     leftDialog = "",
-    customDialogText = "Which Gungan accompanies Padmé into the Blue Shadow Virus lab and causes chaos almost immediately?",
+    customDialogText = "Which Gungan accompanies Padme into the Blue Shadow Virus lab and causes chaos almost immediately?",
     stopConversation = "false",
     options = {
         {"Jar Jar Binks", "q_correct"},   -- correct (top)
@@ -161,7 +161,7 @@ bsv_quiz_convo:addScreen(q005)
 q006 = ConvoScreen:new {
     id = "q006",
     leftDialog = "",
-    customDialogText = "Which Jedi Padawan becomes trapped inside the infected lab with the clones and Padmé?",
+    customDialogText = "Which Jedi Padawan becomes trapped inside the infected lab with the clones and Padme?",
     stopConversation = "false",
     options = {
         {"Barriss Offee", "q_failed"},
@@ -404,7 +404,7 @@ q023 = ConvoScreen:new {
     options = {
         {"Fives", "q_failed"},
         {"Jesse", "q_failed"},
-        {"Commander Appo", "q_correct"}     -- correct (bottom)
+        {"Sergeant Appo", "q_correct"}     -- correct (bottom)
     }
 }
 bsv_quiz_convo:addScreen(q023)
@@ -693,7 +693,7 @@ bsv_quiz_convo:addScreen(q043)
 q044 = ConvoScreen:new {
     id = "q044",
     leftDialog = "",
-    customDialogText = "Which legendary bounty hunter is the genetic template for the Republic’s clone army?",
+    customDialogText = "Which legendary bounty hunter is the genetic template for the Republic Clone Troopers?",
     stopConversation = "false",
     options = {
         {"Jango Fett", "q_correct"},        -- correct (top)
