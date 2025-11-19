@@ -39,10 +39,17 @@ function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOp
         return self:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
     end
 
-    -- Check if this is a bg_token vendor trade screen
+    -- Check if this is a bg_token vendor trade screen (vendor 1 or 2)
     if string.find(screenId, "give_item_") then
-        print("[DEBUG] Detected bg_token vendor trade screen, calling handleBGTokenTrade")
-        return self:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+        print("[DEBUG] Detected bg_token vendor trade screen")
+        -- Check if it's vendor 2 (75 tokens) vs vendor 1 (50 tokens)
+        if string.find(screenId, "give_item_2_") then
+            print("[DEBUG] Detected bg_token vendor 2 trade screen, calling handleBGTokenTrade2")
+            return self:handleBGTokenTrade2(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+        else
+            print("[DEBUG] Detected bg_token vendor 1 trade screen, calling handleBGTokenTrade")
+            return self:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+        end
     end
 
     print("[DEBUG] Not a trade screen, returning pConvScreen")
@@ -444,6 +451,75 @@ function conv_handler:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedO
     return pConvScreen
 end
 
+-- ============================= BG TOKEN VENDOR 2 HANDLER (75 tokens) =============================
+
+function conv_handler:handleBGTokenTrade2(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    print("[BG-TOKEN-2] === ENTERED handleBGTokenTrade2 ===")
+    print("[BG-TOKEN-2] screenId: " .. tostring(screenId))
+
+    local screen = LuaConversationScreen(pConvScreen)
+    local requiredTokens = 75
+
+    -- Get reward info for this item
+    local rewardInfo = self:getBGTokenReward2(screenId)
+
+    if not rewardInfo then
+        print("[BG-TOKEN-2] ERROR: No reward info found for screenId: " .. screenId)
+        screen:setCustomDialogText("Error: Invalid item selection.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-2] === STARTING " .. rewardInfo.name .. " TRADE ===")
+    print("[BG-TOKEN-2] Required tokens: " .. requiredTokens)
+
+    -- Count bg_tokens
+    print("[BG-TOKEN-2] About to count tokens...")
+    local success, tokenCount = pcall(function()
+        return self:countBGTokens(pPlayer)
+    end)
+
+    if not success then
+        print("[BG-TOKEN-2] Error counting tokens: " .. tostring(tokenCount))
+        screen:setCustomDialogText("Error reading your inventory. Please try again later.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-2] Found " .. tokenCount .. " tokens")
+
+    if tokenCount < requiredTokens then
+        screen:setCustomDialogText("You only have " .. tokenCount .. " Bellum Gero Tokens, but need " .. requiredTokens .. ". Please collect more!")
+        return pConvScreen
+    end
+
+    -- Remove tokens
+    print("[BG-TOKEN-2] About to remove tokens...")
+    local removeSuccess, removedCount = pcall(function()
+        return self:removeBGTokens(pPlayer, requiredTokens)
+    end)
+
+    if not removeSuccess or removedCount < requiredTokens then
+        print("[BG-TOKEN-2] Error removing tokens. Removed: " .. (removedCount or 0))
+        screen:setCustomDialogText("Error removing tokens. Trade cancelled.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-2] Successfully removed " .. removedCount .. " tokens")
+
+    -- Give reward
+    print("[BG-TOKEN-2] About to give reward...")
+    local rewardSuccess = self:giveReward(pPlayer, rewardInfo.template, rewardInfo.name)
+
+    if rewardSuccess then
+        screen:setCustomDialogText("Trade successful!\n\n" .. removedCount .. " Bellum Gero Tokens removed.\n\nYou received: " .. rewardInfo.name .. "\n\nCheck your inventory!")
+        print("[BG-TOKEN-2] Successfully gave " .. rewardInfo.name .. " to player")
+    else
+        screen:setCustomDialogText("Tokens removed but error giving reward. Contact an admin.")
+        print("[BG-TOKEN-2] Failed to give " .. rewardInfo.name)
+    end
+
+    return pConvScreen
+end
+
 function conv_handler:getBGTokenReward(screenId)
     -- Template mapping for 20 items - EDIT THE TEMPLATES AND NAMES BELOW
     local rewards = {
@@ -467,6 +543,34 @@ function conv_handler:getBGTokenReward(screenId)
         ["give_item_18"] = {name = "Flora Recycler", template = "object/tangible/recycler/flora_recycler.iff"},
         ["give_item_19"] = {name = "Metal Recycler", template = "object/tangible/recycler/metal_recycler.iff"},
         ["give_item_20"] = {name = "Ore Recycler", template = "object/tangible/recycler/ore_recycler.iff"},
+    }
+    return rewards[screenId]
+end
+
+function conv_handler:getBGTokenReward2(screenId)
+    -- Template mapping for 20 items - EDIT THE TEMPLATES AND NAMES BELOW
+    -- Use "give_item_2_XX" format for this vendor
+    local rewards = {
+        ["give_item_2_01"] = {name = "Medium Oval Rug", template = "object/tangible/furniture/modern/rug_oval_m_s02.iff"},
+        ["give_item_2_02"] = {name = "Small Oval Rug", template = "object/tangible/furniture/modern/rug_oval_sml_s01.iff"},
+        ["give_item_2_03"] = {name = "Medium Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_m_s01.iff"},
+        ["give_item_2_04"] = {name = "Small Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_sml_s01.iff"},
+        ["give_item_2_05"] = {name = "Medium Round Rug", template = "object/tangible/furniture/modern/rug_rnd_m_s01.iff"},
+        ["give_item_2_06"] = {name = "Small Round Rug", template = "object/tangible/furniture/modern/rug_rnd_sml_s01.iff"},
+        ["give_item_2_07"] = {name = "Large Oval Rug", template = "object/tangible/furniture/modern/rug_oval_lg_s01.iff"},
+        ["give_item_2_08"] = {name = "Large Rectugangulr Rug 01", template = "object/tangible/furniture/modern/rug_rect_lg_s01.iff"},
+        ["give_item_2_09"] = {name = "Large Rectugangulr Rug 02", template = "object/tangible/furniture/modern/rug_rect_lg_s02.iff"},
+        ["give_item_2_10"] = {name = "Large Round Rug", template = "object/tangible/furniture/modern/rug_rnd_lg_s01.iff"},
+        ["give_item_2_11"] = {name = "Painting: Cast Wing in Flight", template = "object/tangible/veteran_reward/one_year_anniversary/painting_01.iff"},
+        ["give_item_2_12"] = {name = "Painting: Decimator", template = "object/tangible/veteran_reward/one_year_anniversary/painting_02.iff"},
+        ["give_item_2_13"] = {name = "Painting: Tatooine Dune Speeder", template = "object/tangible/veteran_reward/one_year_anniversary/painting_03.iff"},
+        ["give_item_2_14"] = {name = "Painting: Weapon of War", template = "object/tangible/veteran_reward/one_year_anniversary/painting_04.iff"},
+        ["give_item_2_15"] = {name = "Painting: Fighter Study", template = "object/tangible/veteran_reward/one_year_anniversary/painting_05.iff"},
+        ["give_item_2_16"] = {name = "Painting: Hutt Greed", template = "object/tangible/veteran_reward/one_year_anniversary/painting_06.iff"},
+        ["give_item_2_17"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
+        ["give_item_2_18"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
+        ["give_item_2_19"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
+        ["give_item_2_20"] = {name = "Large Potted Plant (Style 2)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s2.iff"},
     }
     return rewards[screenId]
 end
