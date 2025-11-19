@@ -348,3 +348,8 @@ print("Finished loading sea vendor")
 print("Loading conversations.lua - checking bg_token vendor...")
 includeFile("conversations/vendors/bg_token_vendor_conv.lua")
 print("Finished loading bg_token vendor")
+
+-- BG TOKEN VENDOR 2
+print("Loading conversations.lua - checking bg_token vendor 2...")
+includeFile("conversations/vendors/bg_token_vendor_2_conv.lua")
+print("Finished loading bg_token vendor 2")
