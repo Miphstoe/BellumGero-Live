@@ -4,8 +4,9 @@
 --=====================================================================
 
 BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
-  numberOfActs = 1,
-  planet = "naboo",
+  numberOfActs   = 1,
+  planet         = "naboo",
+  screenplayName = "BlueShadowVirusBunkerScreenPlay",
 
   -- Building objectID (used for auth observer)
   buildingID = 9895361,
@@ -36,10 +37,10 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
 
   -- Exit clear trigger (just outside the bunker door, world coords)
   exitClearArea = {
-    x      = -3615.5,  -- match outside.x
-    z      = 30.4,     -- match outside.z
+    x      = -3605.5,  -- match outside.x
+    z      = 29.8,     -- match outside.z
     y      = 759.8,    -- match outside.y
-    radius = 2.0,      -- adjust as needed
+    radius = 12.0,      -- adjust as needed
   },
 
   -- Engine DoT parameters (Geonosian Lab pattern)
@@ -132,6 +133,46 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
 
   -- Template for the medical droid in the lab
   medDroidTemplate = "bsv_quiz_21b_dummy",
+
+  ------------------------------------------------------------------
+  -- Lootable crates (Force Crystal / Rancor cave style)
+  ------------------------------------------------------------------
+
+  -- This gets filled at runtime by spawnLootContainers()
+  lootContainers = {},
+
+  -- How strong the loot is (same idea as Force Crystal / Rancor caves)
+  lootLevel = 125,
+
+  -- What can drop from the crates (tweak as you like)
+  lootGroups = {
+    {
+      groups = {
+        -- Example pool; adjust to match BSV rewards
+        { group = "bsv_droid_bunker",            chance = 10000000 },
+      },
+      lootChance = 10000000  -- 100% when a crate is opened
+    }
+  },
+
+  -- Respawn delay between a crate being looted and refilling (seconds)
+  lootContainerRespawn = 1800, -- 30 minutes
+
+  -- Where to spawn the physical crate objects INSIDE the bunker
+  -- Fill out these entries as you find good spots.
+  lootContainerSpawns = {
+    -- Example placeholder entries:
+    { cell = 9895366, x = 2.2,  z = -12.0,  y = 52.1,  heading = -180 },
+    { cell = 9895369, x = -78.0,  z = -20.0,  y = 63.3,  heading = 90 },
+    { cell = 9895369, x = -47.1,  z = -20.0,  y = 33.8,  heading = -90 },
+    { cell = 9895370, x = -46.3,  z = -20.0,  y = 13.0,  heading = -90 },
+    { cell = 9895372, x = -77.0,  z = -20.0,  y = 88.4,  heading = 180 },
+    { cell = 9895379, x = 62.9,  z = -12.0,  y = 10.9,  heading = -90 },
+    { cell = 9895384, x = -27.5,  z = -20.0,  y = 110.6,  heading = 90 },
+    { cell = 9895387, x = -9.2,  z = -20.0,  y = 78.4,  heading = 180 },
+    { cell = 9895377, x = 38.1,  z = -20.0,  y = 146.0,  heading = 180 },
+    -- Add as many as you like; coords are LOCAL to the cell.
+  },
 }
 
 registerScreenPlay("BlueShadowVirusBunkerScreenPlay", true)
@@ -178,6 +219,10 @@ function BlueShadowVirusBunkerScreenPlay:start()
 
   -- Gate Officer + Medical Droid + Combat Droids + Quiz Droids
   self:spawnMobiles()
+
+  -- Lootable crates (spawn + hook up Force Crystal-style loot)
+  self:spawnLootContainers()
+  self:initializeLootContainers()
 end
 
 --==================================================
@@ -429,7 +474,28 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
     return 0
   end
 
-  -- 1) Clear infection-related flags (what you already had)
+  -- A) Only fire once the player is actually OUTSIDE the bunker.
+  --    If their parent chain still points into our bunker building, bail out.
+  local pParent = SceneObject(pMoving):getParent()
+  if pParent ~= nil and SceneObject(pParent):isCellObject() then
+    local pBuilding = SceneObject(pParent):getParent()
+    if pBuilding ~= nil and SceneObject(pBuilding):getObjectID() == self.buildingID then
+      -- Still somewhere inside the BSV bunker (any floor) — don't clear yet.
+      return 0
+    end
+  end
+
+  -- B) Check what we are about to clear so we can suppress the flavor text
+  --    when there was nothing to reset (eg: character has never been inside).
+  local hadInfected  = (readData(keyInfected(pMoving))  == 1)
+  local hadImmune    = (readData(keyImmune(pMoving))    == 1)
+  local hadHeartbeat = (readData(keyHeartbeat(pMoving)) == 1)
+  local hadAuthed    = (readData(keyAuthed(pMoving))    == 1)
+
+  -- We also check lab door permissions below.
+  local hadLabPerm = false
+
+  -- 1) Clear infection-related flags
   deleteData(keyInfected(pMoving))
   deleteData(keyImmune(pMoving))
   deleteData(keyHeartbeat(pMoving)) -- ensure heartbeat stops
@@ -441,17 +507,20 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
   -- 3) Remove lab access permission group so the lab door relocks
   local pGhost = CreatureObject(pMoving):getPlayerObject()
   if pGhost ~= nil and PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup) then
+    hadLabPerm = true
     PlayerObject(pGhost):removePermissionGroup(self.labPermissionGroup, true)
   end
 
-  -- 4) Optional flavor message, mirroring DWB/Geo "systems reset"
-  --    (You can swap this to an STF entry later.)
-  CreatureObject(pMoving):sendSystemMessage(
-    "Security and containment systems in the Blue Shadow Virus Facility have been cycled and reset."
-  )
+  -- 4) Optional flavor message, but ONLY if we actually reset something.
+  if hadInfected or hadImmune or hadHeartbeat or hadAuthed or hadLabPerm then
+    CreatureObject(pMoving):sendSystemMessage(
+      "Security and containment systems in the Blue Shadow Virus Facility have been cycled and reset."
+    )
+  end
 
   return 0
 end
+
 
 --==================================================
 -- Lab door permission groups (Geo-style) + door AA
@@ -610,6 +679,35 @@ function BlueShadowVirusBunkerScreenPlay:onCaveMobDied(pVictim, pKiller)
   end
 
   return 0
+end
+
+--==================================================
+-- Lootable crates (Force Crystal Cave style)
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:spawnLootContainers()
+  -- Clear any previous list in case of reload
+  self.lootContainers = {}
+
+  local spawns = self.lootContainerSpawns or {}
+  for i, data in ipairs(spawns) do
+    local cell    = data.cell or 0                 -- 0 = world cell
+    local x       = data.x or 0
+    local z       = data.z or 0
+    local y       = data.y or 0
+    local heading = data.heading or 0
+    local template = data.template
+      or "object/tangible/container/loot/placable_loot_crate.iff"
+
+    local pContainer = spawnSceneObject(self.planet, template, x, z, y, cell, heading)
+    if pContainer ~= nil then
+      local oid = SceneObject(pContainer):getObjectID()
+      table.insert(self.lootContainers, oid)
+      -- Optional debug:
+      -- print("BSV: spawned loot crate #" .. i .. " oid=" .. oid .. " cell=" .. cell)
+    else
+      printLuaError("BSV: failed to spawn loot container at index " .. i)
+    end
+  end
 end
 
 --==================================================
