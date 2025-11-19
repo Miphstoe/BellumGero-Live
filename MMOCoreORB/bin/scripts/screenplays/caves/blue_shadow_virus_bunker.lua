@@ -131,7 +131,7 @@ BlueShadowVirusBunkerScreenPlay = ScreenPlay:new {
   labKeyTemplate = "object/tangible/mission/quest_item/bsv_lab_passkey_s01.iff",
 
   -- Template for the medical droid in the lab
-  medDroidTemplate = "surgical_droid_21b",
+  medDroidTemplate = "bsv_quiz_21b_dummy",
 }
 
 registerScreenPlay("BlueShadowVirusBunkerScreenPlay", true)
@@ -394,8 +394,11 @@ function BlueShadowVirusBunkerScreenPlay:onEnterCureArea(pArea, pMoving)
 
   CreatureObject(pMoving):sendSystemMessage("\\#55FF55You have been cured of the Blue Shadow Virus.")
 
+  print("BSV: cure area fired for", SceneObject(pMoving):getObjectID())
+
   -- Have the medical droid announce the cure in a chat bubble
   local medID = readData(MED_DROID_KEY)
+  print("BSV: MED_DROID_KEY read as", tostring(medID))
   if medID ~= nil then
     local pMed = getSceneObject(medID)
     if pMed ~= nil then
@@ -619,13 +622,16 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     printLuaError("BSV: failed to spawn gate officer at (-3614,30,764).")
   end
 
-  -- Medical droid inside the lab (coords are local to lab cell 9895377)
+    -- Medical droid inside the lab (coords are local to lab cell 9895377)
   local pMed = spawnMobile(self.planet, self.medDroidTemplate, 0, 33.0, -20.0, 145.0, 180, 9895377)
   if pMed ~= nil then
-    writeData(MED_DROID_KEY, SceneObject(pMed):getObjectID())
+    local oid = SceneObject(pMed):getObjectID()
+    writeData(MED_DROID_KEY, oid)
+    print("BSV: medical droid spawned, oid=" .. oid .. " cell=" .. SceneObject(pMed):getParentID())
   else
     printLuaError("BSV: failed to spawn medical droid in lab (cell 9895377).")
   end
+
 
   -- Lab key guard droid: random spawn from multiple possible locations
   -- Format: { cellId, x, z, y, heading, respawnSeconds }
