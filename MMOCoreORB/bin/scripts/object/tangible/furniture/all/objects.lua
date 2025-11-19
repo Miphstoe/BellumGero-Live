@@ -7085,3 +7085,63 @@ object_tangible_furniture_all_shared_frn_all_banner_rebel_lg = SharedTangibleObj
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_banner_rebel_lg, "object/tangible/furniture/all/shared_frn_all_banner_rebel_lg.iff")
+
+object_tangible_furniture_all_shared_frn_all_organichem_stores = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_organichem_stores.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_organichem_stores, "object/tangible/furniture/all/shared_frn_all_organichem_stores.iff")
+
+object_tangible_furniture_all_shared_frn_all_medic_bacta_tank = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_medic_bacta_tank, "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank.iff")
+
+object_tangible_furniture_all_shared_frn_all_medic_bacta_tank_large = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank_large.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_medic_bacta_tank_large, "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank_large.iff")
+
+object_tangible_furniture_all_shared_frn_all_medic_bacta_tank_advanced = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank_advanced.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_medic_bacta_tank_advanced, "object/tangible/furniture/all/shared_frn_all_medic_bacta_tank_advanced.iff")
+
+object_tangible_furniture_all_shared_frn_all_medical_console = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_medical_console.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_medical_console, "object/tangible/furniture/all/shared_frn_all_medical_console.iff")
+
+object_tangible_furniture_all_shared_frn_all_droideka = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_droideka.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_droideka, "object/tangible/furniture/all/shared_frn_all_droideka.iff")
+
+object_tangible_furniture_all_shared_frn_all_21b_surgical_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_21b_surgical_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_21b_surgical_droid, "object/tangible/furniture/all/shared_frn_all_21b_surgical_droid.iff")
+
+object_tangible_furniture_all_shared_frn_all_battle_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_battle_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_battle_droid, "object/tangible/furniture/all/shared_frn_all_battle_droid.iff")
+
+object_tangible_furniture_all_shared_frn_all_super_battle_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_super_battle_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_super_battle_droid, "object/tangible/furniture/all/shared_frn_all_super_battle_droid.iff")
+
+object_tangible_furniture_all_shared_frn_all_ito_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_all_ito_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_ito_droid, "object/tangible/furniture/all/shared_frn_all_ito_droid.iff")

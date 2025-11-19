@@ -271,6 +271,8 @@ includeFile("groups/npc/naboo/plasma_thief_tier_1.lua")
 includeFile("groups/npc/naboo/skaak_tipper_gang_tier_1.lua")
 includeFile("groups/npc/naboo/swamp_rat_tier_1.lua")
 includeFile("groups/npc/naboo/trade_federation_tier_1.lua")
+includeFile("groups/npc/naboo/bsv_droid_bunker.lua")
+includeFile("groups/npc/naboo/bsv_lab_key_guard.lua") 
 
 -- npc/rori sub-folder
 includeFile("groups/npc/rori/cobral_tier_1.lua")

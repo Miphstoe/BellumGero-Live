@@ -180,3 +180,6 @@ includeFile("tangible/component/weapon/weapon_rifle_laser_stock.lua")
 includeFile("tangible/component/weapon/weapon_t21_stock.lua")
 includeFile("tangible/component/weapon/weapon_targeting_computer.lua")
 includeFile("tangible/component/weapon/weapon_trajectory_computer.lua")
+
+
+includeFile("tangible/component/weapon/durasteel_reinforcement_core.lua")
