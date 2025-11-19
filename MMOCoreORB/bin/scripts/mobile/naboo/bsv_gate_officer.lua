@@ -1,9 +1,7 @@
 bsv_gate_officer = Creature:new {
     objectName = "@mob/creature_names:imperial_officer",
-    customName = "Imperial Bunker Officer",
-    socialGroup = "imperial",
-    pvpFaction = "imperial",
-    faction = "imperial",
+    customName = "Bunker Officer",
+    socialGroup = "self",
     level = 10,
     chanceHit = 0.35,
     damageMin = 50,
