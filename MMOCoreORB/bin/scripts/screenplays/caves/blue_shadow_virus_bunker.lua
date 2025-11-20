@@ -737,7 +737,7 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     -- EXAMPLES – replace/expand with the real spots you want:
     { 9895372,   -62.7,  -20.0,  87.6,  180, 1800 },
     { 9895370, -62.4,  -20.0,  7.5,  0, 1800 },
-    { 9895379, -39.1,  -12.0,  -4.7, -36, 1800 },
+    { 9895379, 39.1,  -12.0,  -4.7, -36, 1800 },
     { 9895384, -37.4,  -20.0,  123.7, 131, 1800 },
   }
 
