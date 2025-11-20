@@ -62,8 +62,8 @@ items_menu_2 = ConvoScreen:new {
     options = {
         {"Item 6 - [Small Round Rug]", "trade_item_06"},
         {"Item 7 - [Large Oval Rug]", "trade_item_07"},
-        {"Item 8 - [Large Rectugangulr Rug 01]", "trade_item_08"},
-        {"Item 9 - [Large Rectugangulr Rug 02]", "trade_item_09"},
+        {"Item 8 - [Large Rectugangular Rug 01]", "trade_item_08"},
+        {"Item 9 - [Large Rectugangular Rug 02]", "trade_item_09"},
         {"Item 10 - [Large Round Rug]", "trade_item_10"},
         {"More items...", "items_menu_3"},
         {"Previous", "items_menu"},
