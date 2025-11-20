@@ -134,6 +134,48 @@ local function playerHasTemplateTopLevel(creatureObj, templatePath)
     end
     return false
 end
+
+--========================================================
+-- Travel destinations for mySWG Vendor "Travel" menu
+--========================================================
+local MySwgTravelDestinations = {
+	-- Force Crystal Cave on Dantooine (FCC)
+	forceCrystalCave = {
+		planet = "dantooine",
+		x      = -6216,
+		z      = 49,
+		y      = 7381,
+		cell   = 0
+	},
+
+	-- Nightsister Rancor Cave on Dathomir
+	rancorCave = {
+		planet = "dathomir",
+		x      = -4258,
+		z      = 92,
+		y      = -2051,
+		cell   = 0
+	},
+
+	-- GCW Lost Aqualish Cave on Talus
+	gcwCave = {
+		planet = "talus",
+		x      = -4385,
+		z      = 57,
+		y      = -1400,
+		cell   = 0
+	},
+
+	-- Blue Shadow Virus Bunker (exitClearArea coords)
+	blueShadowVirus = {
+		planet = "naboo",
+		x      = -3605.5,
+		z      = 29.8,
+		y      = 759.8,
+		cell   = 0
+	}
+}
+--========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
                 -- Take action when the player makes a purchase.
@@ -1254,6 +1296,95 @@ elseif (optionLink == "option301") then
   creature:sendSystemMessage("Purchased: Return Ticket (Coronet) for 25,000 credits.")
   nextConversationScreen = conversation:getScreen("first_screen")
   return nextConversationScreen
+
+  -- Teleport: Force Crystal Cave (Dantooine)
+elseif (optionLink == "travel_force_cave_teleport") then
+    local PRICE = 25000
+    local dest  = MySwgTravelDestinations.forceCrystalCave
+
+    if not canAfford(PRICE) then
+        nextConversationScreen = conversation:getScreen("insufficient_funds")
+        creature:sendSystemMessage("You have insufficient funds")
+        return nextConversationScreen
+    end
+
+    local player = CreatureObject(conversingPlayer)
+    if player:isRidingMount() then
+        player:dismount()
+    end
+
+    charge(PRICE)
+    SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
+    creature:sendSystemMessage("Travelling to the Force Crystal Cave on Dantooine...")
+    nextConversationScreen = conversation:getScreen("travel_complete")
+    return nextConversationScreen
+
+-- Teleport: Nightsister Rancor Cave (Dathomir)
+elseif (optionLink == "travel_nightsister_cave_teleport") then
+    local PRICE = 25000
+    local dest  = MySwgTravelDestinations.rancorCave
+
+    if not canAfford(PRICE) then
+        nextConversationScreen = conversation:getScreen("insufficient_funds")
+        creature:sendSystemMessage("You have insufficient funds")
+        return nextConversationScreen
+    end
+
+    local player = CreatureObject(conversingPlayer)
+    if player:isRidingMount() then
+        player:dismount()
+    end
+
+    charge(PRICE)
+    SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
+    creature:sendSystemMessage("Travelling to the Nightsister Rancor Cave on Dathomir...")
+    nextConversationScreen = conversation:getScreen("travel_complete")
+    return nextConversationScreen
+
+-- Teleport: GCW Lost Aqualish Cave (Talus)
+elseif (optionLink == "travel_gcw_cave_teleport") then
+    local PRICE = 25000
+    local dest  = MySwgTravelDestinations.gcwCave
+
+    if not canAfford(PRICE) then
+        nextConversationScreen = conversation:getScreen("insufficient_funds")
+        creature:sendSystemMessage("You have insufficient funds")
+        return nextConversationScreen
+    end
+
+    local player = CreatureObject(conversingPlayer)
+    if player:isRidingMount() then
+        player:dismount()
+    end
+
+    charge(PRICE)
+    SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
+    creature:sendSystemMessage("Travelling to the GCW Cave on Talus...")
+    nextConversationScreen = conversation:getScreen("travel_complete")
+    return nextConversationScreen
+
+-- Teleport: Blue Shadow Virus Bunker (Naboo)
+elseif (optionLink == "travel_bsv_teleport") then
+    local PRICE = 25000
+    local dest  = MySwgTravelDestinations.blueShadowVirus
+
+    if not canAfford(PRICE) then
+        nextConversationScreen = conversation:getScreen("insufficient_funds")
+        creature:sendSystemMessage("You have insufficient funds")
+        return nextConversationScreen
+    end
+
+    local player = CreatureObject(conversingPlayer)
+    if player:isRidingMount() then
+        player:dismount()
+    end
+
+    charge(PRICE)
+    SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
+    creature:sendSystemMessage("Travelling to the Blue Shadow Virus Bunker on Naboo...")
+    nextConversationScreen = conversation:getScreen("travel_complete")
+    return nextConversationScreen
+
 
                    
 --DROIDS  
