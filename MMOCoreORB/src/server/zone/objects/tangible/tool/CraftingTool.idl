@@ -178,4 +178,8 @@ class CraftingTool extends ToolTangibleObject {
 	public void setForceCriticalExperiment(int amount) {
 		forceCriticalExperiment = amount;
 	}
+
+	@local
+	@preLocked
+	private native int tuneCrystals(CreatureObject player);
 }

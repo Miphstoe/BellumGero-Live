@@ -729,3 +729,211 @@ function conv_handler:removeBGTokens(pPlayer, count)
     print("[BG-TOKEN] Successfully removed " .. removed .. " tokens from inventory and containers")
     return removed
 end
+
+-- Crystal Tuning Functions
+function conv_handler:countUntunedCrystals(pPlayer)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[CRYSTAL-TUNE] Could not get LuaCreatureObject")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[CRYSTAL-TUNE] Could not get inventory")
+        return 0
+    end
+
+    local crystalCount = self:countUntunedCrystalsInContainer(pInventory)
+    print("[CRYSTAL-TUNE] Counted " .. crystalCount .. " untuned crystals")
+    return crystalCount
+end
+
+function conv_handler:countUntunedCrystalsInContainer(container)
+    local count = 0
+    if not container then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    for i = 0, size - 1, 1 do
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                local isCrystal = false
+
+                if success and displayedName then
+                    -- Trim whitespace
+                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+
+                    -- Check for untuned crystals:
+                    -- 1. Exactly "Crystal" (untuned power crystals)
+                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
+                    -- 3. Lightsaber Color Crystal (lightsaber color module)
+                    if displayedName == "Crystal" then
+                        isCrystal = true
+                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
+                        isCrystal = true
+                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
+                        isCrystal = true
+                    end
+                end
+
+                if isCrystal then
+                    count = count + 1
+                end
+            end
+        end
+    end
+
+    -- Also check containers within inventory
+    for i = 0, size - 1, 1 do
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local success, isContainer = pcall(function() return object:isContainerObject() end)
+                if success and isContainer then
+                    count = count + self:countUntunedCrystalsInContainer(pObject)
+                end
+            end
+        end
+    end
+
+    return count
+end
+
+function conv_handler:removeUntunedCrystals(pPlayer, count)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[CRYSTAL-TUNE] Could not get LuaCreatureObject for removal")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[CRYSTAL-TUNE] Could not get inventory for removal")
+        return 0
+    end
+
+    local removed = self:removeUntunedCrystalsFromContainer(pInventory, count)
+    print("[CRYSTAL-TUNE] Successfully removed " .. removed .. " untuned crystals")
+    return removed
+end
+
+function conv_handler:removeUntunedCrystalsFromContainer(container, count)
+    local removed = 0
+    if not container or count <= 0 then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    for i = size - 1, 0, -1 do
+        if removed >= count then break end
+
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                local isCrystal = false
+
+                if success and displayedName then
+                    -- Trim whitespace
+                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+
+                    -- Check for untuned crystals:
+                    -- 1. Exactly "Crystal" (untuned power crystals)
+                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
+                    -- 3. Lightsaber Color Crystal (lightsaber color module)
+                    if displayedName == "Crystal" then
+                        isCrystal = true
+                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
+                        isCrystal = true
+                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
+                        isCrystal = true
+                    end
+                end
+
+                if isCrystal then
+                    local destroySuccess = pcall(function() object:destroyObjectFromWorld(true) end)
+                    if destroySuccess then
+                        removed = removed + 1
+                    end
+                end
+            end
+        end
+    end
+
+    -- Also remove from containers
+    if removed < count then
+        for i = size - 1, 0, -1 do
+            if removed >= count then break end
+
+            local pObject = containerObj:getContainerObject(i)
+            if pObject then
+                local object = LuaSceneObject(pObject)
+                if object then
+                    local success, isContainer = pcall(function() return object:isContainerObject() end)
+                    if success and isContainer then
+                        removed = removed + self:removeUntunedCrystalsFromContainer(pObject, count - removed)
+                    end
+                end
+            end
+        end
+    end
+
+    return removed
+end
+
+function conv_handler:tuneCrystals(pPlayer, crystalsToTune)
+    -- Validate input
+    if crystalsToTune <= 0 then
+        CreatureObject(pPlayer):sendSystemMessage("Invalid crystal count.")
+        return false
+    end
+
+    -- Count untuned crystals
+    local crystalCount = self:countUntunedCrystals(pPlayer)
+    if crystalCount < (crystalsToTune * 15) then
+        CreatureObject(pPlayer):sendSystemMessage("You need " .. (crystalsToTune * 15) .. " untuned crystals. You have " .. crystalCount .. ".")
+        return false
+    end
+
+    -- Remove untuned crystals
+    local removed = self:removeUntunedCrystals(pPlayer, crystalsToTune * 15)
+    if removed < (crystalsToTune * 15) then
+        CreatureObject(pPlayer):sendSystemMessage("Error removing crystals. Tuning cancelled.")
+        return false
+    end
+
+    -- Create tuned crystals
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    local created = 0
+
+    if pInventory then
+        for i = 1, crystalsToTune do
+            local crystalID = createLoot(pInventory, "force_color_crystal_special", 1, true)
+            if crystalID ~= 0 then
+                created = created + 1
+            end
+        end
+    end
+
+    if created > 0 then
+        CreatureObject(pPlayer):sendSystemMessage("Successfully tuned " .. created .. " crystal(s)!")
+        return true
+    else
+        CreatureObject(pPlayer):sendSystemMessage("Error creating tuned crystals.")
+        return false
+    end
+end

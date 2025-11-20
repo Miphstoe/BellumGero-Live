@@ -13,6 +13,10 @@
 #include "server/zone/objects/manufactureschematic/craftingvalues/CraftingValues.h"
 #include "server/zone/packets/scene/AttributeListMessage.h"
 #include "server/zone/objects/player/sessions/crafting/CraftingSession.h"
+#include "server/zone/managers/loot/LootManager.h"
+#include "server/zone/Zone.h"
+#include "server/zone/ZoneServer.h"
+#include "server/zone/objects/transaction/TransactionLog.h"
 
 void CraftingToolImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	TangibleObjectImplementation::loadTemplateData(templateData);
@@ -51,6 +55,11 @@ void CraftingToolImplementation::fillObjectMenuResponse(ObjectMenuResponse* menu
 	if (isFinished()) {
 		menuResponse->addRadialMenuItem(RadialOptions::SERVER_ITEM_OPTIONS, 3, "@ui_radial:craft_hopper_output");
 	}
+
+	// Add crystal exchange option for Lightsaber Crafting Tool (JEDI type)
+	if (type == JEDI) {
+		menuResponse->addRadialMenuItem(100, 3, "Crystal Exchange");
+	}
 }
 
 Reference<TangibleObject*> CraftingToolImplementation::getPrototype() {
@@ -65,6 +74,11 @@ int CraftingToolImplementation::handleObjectMenuSelect(CreatureObject* player, b
 		return 0;
 
 	int toolSize = getContainerObjectsSize();
+
+	// Handle crystal tuning for Lightsaber Crafting Tool
+	if (selectedID == 100 && type == JEDI) {
+		return tuneCrystals(player);
+	}
 
 	// Get Finished Prototype
 	if (selectedID == RadialOptions::SERVER_ITEM_OPTIONS) {
@@ -191,6 +205,100 @@ void CraftingToolImplementation::disperseItems() {
 		prototype->destroyObjectFromWorld(true);
 	}
 }*/
+
+int CraftingToolImplementation::tuneCrystals(CreatureObject* player) {
+	if (player == nullptr) {
+		return 0;
+	}
+
+	// Get player inventory
+	ManagedReference<SceneObject*> inventory = player->getInventory();
+	if (inventory == nullptr) {
+		player->sendSystemMessage("Error: Could not access inventory.");
+		return 0;
+	}
+
+	// Count tunable items (untuned crystals OR untuned Krayt Dragon Pearls)
+	// Count items from BOTH main inventory and backpacks/containers
+	int tunableCount = 0;
+	unsigned long long inventoryId = inventory->getObjectID();
+	for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
+		ManagedReference<SceneObject*> obj = inventory->getContainerObject(i);
+		if (obj != nullptr) {
+			String name = obj->getDisplayedName();
+			// Check for untuned crystals - contains "Crystal" but NOT "(Tuned)" or "(tuned)"
+			bool isUntuned = (name.contains("Crystal") && !name.contains("(Tuned)") && !name.contains("(tuned)"));
+			// Check for untuned Krayt Dragon Pearls - contains "Krayt" and "Pearl" but NOT "(tuned)"
+			bool isPearl = (name.contains("Krayt") && name.contains("Pearl") && !name.contains("(tuned)"));
+
+			if (isUntuned || isPearl) {
+				tunableCount++;
+			}
+		}
+	}
+
+	if (tunableCount < 25) {
+		StringBuffer msg;
+		msg << "You need 25 untuned crystals and/or Krayt Dragon Pearls to exchange. You have " << tunableCount << ".";
+		player->sendSystemMessage(msg.toString());
+		return 0;
+	}
+
+	// Remove 25 tunable items (any combination of untuned crystals and untuned pearls)
+	// Only remove items DIRECTLY in the main inventory, not in backpacks/containers
+	int removed = 0;
+	for (int i = inventory->getContainerObjectsSize() - 1; i >= 0 && removed < 25; --i) {
+		ManagedReference<SceneObject*> obj = inventory->getContainerObject(i);
+		if (obj != nullptr) {
+			// Only process items directly in the main inventory
+			if (obj->getParentID() == inventoryId) {
+				String name = obj->getDisplayedName();
+				// Check for untuned crystals - must NOT contain "(Tuned)" or "(tuned)"
+				bool isUntuned = (name.contains("Crystal") && !name.contains("(Tuned)") && !name.contains("(tuned)"));
+				// Check for untuned Krayt Dragon Pearls - must NOT contain "(tuned)"
+				bool isPearl = (name.contains("Krayt") && name.contains("Pearl") && !name.contains("(tuned)"));
+
+				if (isUntuned || isPearl) {
+					obj->destroyObjectFromWorld(true);
+					obj->destroyObjectFromDatabase(true);
+					removed++;
+				}
+			}
+		}
+	}
+
+	if (removed < 25) {
+		player->sendSystemMessage("Error: Could not remove all items. Exchange cancelled.");
+		return 0;
+	}
+
+	// Create a named color crystal using the LootManager
+	Zone* zone = player->getZone();
+	if (zone == nullptr) {
+		player->sendSystemMessage("Error: Could not access zone.");
+		return 0;
+	}
+
+	ManagedReference<LootManager*> lootManager = zone->getZoneServer()->getLootManager();
+	if (lootManager == nullptr) {
+		player->sendSystemMessage("Error: Loot system unavailable.");
+		return 0;
+	}
+
+	// Create transaction for loot creation
+	TransactionLog trx(TrxCode::NPCLOOTCLAIM, player);
+	unsigned long long objectId = lootManager->createLoot(trx, inventory, "force_color_crystal_special", player->getLevel(), false);
+
+	if (objectId != 0) {
+		trx.commit(true);
+		player->sendSystemMessage("Successfully exchanged crystals! 25 crystals and/or pearls converted to 1 named color crystal.");
+		return 1;
+	} else {
+		trx.abort() << "Failed to create force_color_crystal_special";
+		player->sendSystemMessage("Error creating tuned crystal. Please contact an administrator.");
+		return 0;
+	}
+}
 
 Reference<ManufactureSchematic*> CraftingToolImplementation::getManufactureSchematic() {
 	return getSlottedObject("test_manf_schematic").castTo<ManufactureSchematic*>();
