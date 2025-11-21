@@ -16,10 +16,10 @@
 class WaypointCommand : public QueueCommand {
 private:
 	bool advancedWaypoints = ConfigManager::instance()->getBool("Core3.PlayerManager.AdvancedWaypoints", false);
-	String advancedGroundUsage = "Usage: /waypoint X Y <name> or /waypoint <name> or /waypoint <zone> X Z Y";
-	String advancedSpaceUsage = "Usage: /waypoint X Z Y <name> or /waypoint <name> or /waypoint <zone> X Z Y";
-	String groundUsage = "Usage: /waypoint X Y";
-	String spaceUsage = "Usage: /waypoint X Z Y";
+	String advancedGroundUsage = "Usage: /waypoint X Y <name> [color] or /waypoint <name> [color] or /waypoint <zone> X Z Y [color]";
+	String advancedSpaceUsage = "Usage: /waypoint X Z Y <name> [color] or /waypoint <name> [color] or /waypoint <zone> X Z Y [color]";
+	String groundUsage = "Usage: /waypoint X Y [color]";
+	String spaceUsage = "Usage: /waypoint X Z Y [color]";
 	mutable bool isSpaceZone;
 
 public:
@@ -57,6 +57,7 @@ public:
 		String waypointData = arguments.toString();
 		String waypointName = "@ui:datapad_new_waypoint"; // New Waypoint
 		String planet = zone->getZoneName();
+		byte waypointColor = 0xFF; // 0xFF = use default
 
 		float x = creature->getPositionX();
 		float y = creature->getPositionY();
@@ -82,9 +83,14 @@ public:
 			String arg;
 			tokenizer.getStringToken(arg);
 
-			// First argument was alpha (zone name)
-			// This is invalid if advanced waypoints are disabled
-			if (!advancedWaypoints && isalpha(arg[0]) > 0) {
+			// Check if the first argument is a valid color (works in both basic and advanced modes)
+			byte potentialColor = parseWaypointColor(arg);
+			if (potentialColor != 0xFF) {
+				// It's a valid color! Use it and create waypoint at current location
+				waypointColor = potentialColor;
+			} else if (!advancedWaypoints && isalpha(arg[0]) > 0) {
+				// First argument was alpha but not a valid color (zone name)
+				// This is invalid if advanced waypoints are disabled
 				sendSystemMessage(creature);
 				return GENERALERROR;
 			}
@@ -110,19 +116,40 @@ public:
 						}
 					}
 
-					// Allows the last argument to name the waypoint
-					if (advancedWaypoints) {
-						StringBuffer newWaypointName;
+					// Parse remaining arguments for waypoint name and/or color (works in both basic and advanced modes)
+					StringBuffer newWaypointName;
+					String lastToken;
 
-						while (tokenizer.hasMoreTokens()) {
-							String name;
-							tokenizer.getStringToken(name);
-							newWaypointName << name << " ";
-						}
+					while (tokenizer.hasMoreTokens()) {
+						String token;
+						tokenizer.getStringToken(token);
 
-						if (newWaypointName.length() > 0) {
-							waypointName = newWaypointName.toString();
+						if (tokenizer.hasMoreTokens()) {
+							// Not the last token, add to name (only in advanced mode)
+							if (advancedWaypoints) {
+								newWaypointName << token << " ";
+							}
+						} else {
+							// This is the last token - could be color or part of name
+							lastToken = token;
 						}
+					}
+
+					// Check if last token is a valid color
+					byte potentialColor = parseWaypointColor(lastToken);
+					if (potentialColor != 0xFF) {
+						// It's a valid color!
+						waypointColor = potentialColor;
+						// lastToken is not added to waypoint name
+					} else {
+						// Not a color, it's part of the name (only in advanced mode)
+						if (advancedWaypoints) {
+							newWaypointName << lastToken << " ";
+						}
+					}
+
+					if (advancedWaypoints && newWaypointName.length() > 0) {
+						waypointName = newWaypointName.toString();
 					}
 				} else {
 					// A waypoint in the form of /waypoint planet X Z Y - Planetary Map
@@ -176,7 +203,18 @@ public:
 		z = (z < -8192) ? -8192 : z;
 		z = (z > 8192) ? 8192 : z;
 
-		ManagedReference<WaypointObject*> waypoint = zoneServer->createObject(0xc456e788, 1).castTo<WaypointObject*>();
+		// Determine the final waypoint color to use (user specified or default)
+		byte finalWaypointColor = waypointColor;
+		if (finalWaypointColor == 0xFF) {
+			// Use default based on zone type
+			finalWaypointColor = isSpaceZone ? WaypointObject::COLOR_SPACE : WaypointObject::COLOR_BLUE;
+		}
+
+		// Get the template CRC for the waypoint based on color
+		uint32_t waypointTemplateCRC = getWaypointTemplateCRC(finalWaypointColor);
+
+		// Create waypoint with the appropriate colored template
+		ManagedReference<WaypointObject*> waypoint = zoneServer->createObject(waypointTemplateCRC, 1).castTo<WaypointObject*>();
 
 		if (waypoint == nullptr) {
 			return GENERALERROR;
@@ -188,9 +226,8 @@ public:
 		waypoint->setPosition(x, z, y);
 		waypoint->setCustomObjectName(waypointName, false);
 
-		if (isSpaceZone) {
-			waypoint->setColor(WaypointObject::COLOR_SPACE);
-		}
+		// Set waypoint color (using the final color determined above)
+		waypoint->setColor(finalWaypointColor);
 
 		waypoint->setActive(true);
 
@@ -267,6 +304,46 @@ public:
 		} else {
 			creature->sendSystemMessage((isSpaceZone) ? spaceUsage : groundUsage);
 		}
+	}
+
+	byte parseWaypointColor(const String& colorArg) const {
+		String colorLower = colorArg;
+		colorLower.toLowerCase();
+
+		// Try parsing as a number first
+		if (isdigit(colorLower[0])) {
+			int colorID = atoi(colorLower.toCharArray());
+			if (colorID >= 0 && colorID <= 7)
+				return (byte)colorID;
+		}
+
+		// Parse as color name
+		if (colorLower == "white" || colorLower == "white1")
+			return WaypointObject::COLOR_WHITE;
+		else if (colorLower == "blue")
+			return WaypointObject::COLOR_BLUE;
+		else if (colorLower == "green")
+			return WaypointObject::COLOR_GREEN;
+		else if (colorLower == "orange")
+			return WaypointObject::COLOR_ORANGE;
+		else if (colorLower == "yellow")
+			return WaypointObject::COLOR_YELLOW;
+		else if (colorLower == "purple")
+			return WaypointObject::COLOR_PURPLE;
+		else if (colorLower == "white2")
+			return WaypointObject::COLOR_WHITE2;
+		else if (colorLower == "space")
+			return WaypointObject::COLOR_SPACE;
+
+		// Return 0xFF for invalid (we'll use default instead)
+		return 0xFF;
+	}
+
+	uint32_t getWaypointTemplateCRC(byte color) const {
+		// Uses the universal waypoint template
+		// The color is applied to the waypoint object and synchronized to the client
+		// The client will render the correct colored light beam based on the color field
+		return 0xc456e788;  // shared_world_waypoint (universal template)
 	}
 };
 
