@@ -601,7 +601,7 @@ function BestineElection:giveCampaignReward(pPlayer, candidate)
         if candidate == self.SEAN then
             rewardTemplate = "object/tangible/furniture/all/bestine_quest_statue.iff"
         else
-            rewardTemplate = "object/tangible/wearables/necklace/bestine_quest_badge.iff"
+            rewardTemplate = "object/tangible/item/sea_removal_tool.iff"
         end
     end
 

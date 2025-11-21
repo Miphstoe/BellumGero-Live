@@ -32,6 +32,12 @@ tusken_observer = Creature:new {
 			groups = {
 				{group = "tusken_raider_tier_5", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

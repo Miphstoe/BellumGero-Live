@@ -1,0 +1,5 @@
+object_tangible_mission_quest_item_bsv_lab_passkey_s01 = object_tangible_mission_quest_item_shared_bsv_lab_passkey_s01:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_mission_quest_item_bsv_lab_passkey_s01, "object/tangible/mission/quest_item/bsv_lab_passkey_s01.iff")

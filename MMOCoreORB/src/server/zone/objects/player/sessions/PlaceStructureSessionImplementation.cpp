@@ -21,6 +21,7 @@
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/Zone.h"
 #include "server/zone/managers/gcw/GCWManager.h"
+#include "server/zone/managers/housepackup/HousePackupManager.h"
 
 
 int PlaceStructureSessionImplementation::constructStructure(float x, float y, int angle) {
@@ -129,89 +130,88 @@ void PlaceStructureSessionImplementation::removeTemporaryNoBuildZone() {
 }
 
 int PlaceStructureSessionImplementation::completeSession() {
-	ManagedReference<SceneObject*> barricade = constructionBarricade.get();
+    ManagedReference<SceneObject*> barricade = constructionBarricade.get();
+    
+    if (barricade != nullptr) {
+        Locker locker(barricade);
+        barricade->destroyObjectFromWorld(true);
+    }
+    
+    ManagedReference<StructureDeed*> deed = deedObject.get();
+    ManagedReference<CreatureObject*> creature = creatureObject.get();
+    ManagedReference<Zone*> thisZone = zone.get();
+    
+    if (deed == nullptr || creature == nullptr || thisZone == nullptr)
+        return cancelSession();
+    
+    String serverTemplatePath = deed->getGeneratedObjectTemplate();
+    
+    // Check if this is a packed deed BEFORE placing
+    bool isPackedDeed = HousePackupManager::instance()->hasSavedPayloadForDeed(deed->getObjectID());
 
-	if (barricade != nullptr) {
-		Locker locker(barricade);
-
-		barricade->destroyObjectFromWorld(true);
-	}
-
-	ManagedReference<StructureDeed*> deed = deedObject.get();
-	ManagedReference<CreatureObject*> creature = creatureObject.get();
-	ManagedReference<Zone*> thisZone = zone.get();
-
-	if (deed == nullptr || creature == nullptr || thisZone == nullptr)
-		return cancelSession();
-
-	String serverTemplatePath = deed->getGeneratedObjectTemplate();
-
-	StructureManager* structureManager = StructureManager::instance();
-	ManagedReference<StructureObject*> structureObject = structureManager->placeStructure(creature, serverTemplatePath, positionX, positionY, directionAngle);
-
-	removeTemporaryNoBuildZone();
-
-	TransactionLog trx(deed, creature, structureObject, TrxCode::STRUCTUREDEED);
-	trx.addState("subjectTemplate", serverTemplatePath);
-
-	if (structureObject == nullptr) {
-		ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
-
-		if (inventory != nullptr)
-			inventory->transferObject(deed, -1, true);
-
-		return cancelSession();
-	}
-
-	Locker clocker(structureObject, creature);
-
-	structureObject->setDeedObjectID(deed->getObjectID());
-
-	deed->notifyStructurePlaced(creature, structureObject);
-
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-
-	if (ghost != nullptr) {
-
-		//Create Waypoint
-		ManagedReference<WaypointObject*> waypointObject = ( thisZone->getZoneServer()->createObject(STRING_HASHCODE("object/waypoint/world_waypoint_blue.iff"), 1)).castTo<WaypointObject*>();
-
-		Locker locker(waypointObject);
-
-		waypointObject->setCustomObjectName(structureObject->getDisplayedName(), false);
-		waypointObject->setActive(true);
-		waypointObject->setPosition(positionX, 0, positionY);
-		waypointObject->setPlanetCRC(thisZone->getZoneCRC());
-		structureObject->setWaypointID(waypointObject->getObjectID());
-
-		ghost->addWaypoint(waypointObject, false, true);
-
-		locker.release();
-
-		//Create an email.
-		ManagedReference<ChatManager*> chatManager = thisZone->getZoneServer()->getChatManager();
-
-		if (chatManager != nullptr) {
-			UnicodeString subject = "@player_structure:construction_complete_subject";
-
-			StringIdChatParameter emailBody("@player_structure:construction_complete");
-			emailBody.setTO(structureObject->getObjectName());
-			emailBody.setDI(ghost->getLotsRemaining());
-
-			chatManager->sendMail("@player_structure:construction_complete_sender", subject, emailBody, creature->getFirstName(), waypointObject);
-		}
-
-		if (structureObject->isBuildingObject()) {
-			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-
-			if (building->getSignObject() != nullptr) {
-				if (building->isCivicStructure() || building->isCommercialStructure())
-					building->setCustomObjectName(structureObject->getDisplayedName(), true);
-				else
-					building->setCustomObjectName(creature->getFirstName() + "'s House", true);
-			}
-		}
-	}
-
-	return cancelSession(); //Canceling the session just removes the session from the player's map.
+StructureManager* structureManager = StructureManager::instance();
+ManagedReference<StructureObject*> structureObject = structureManager->placeStructure(creature, serverTemplatePath, positionX, positionY, directionAngle, 1);
+    removeTemporaryNoBuildZone();
+    
+    TransactionLog trx(deed, creature, structureObject, TrxCode::STRUCTUREDEED);
+    trx.addState("subjectTemplate", serverTemplatePath);
+    
+    if (structureObject == nullptr) {
+        ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
+        
+        if (inventory != nullptr)
+            inventory->transferObject(deed, -1, true);
+        
+        return cancelSession();
+    }
+    
+    Locker clocker(structureObject, creature);
+    
+    structureObject->setDeedObjectID(deed->getObjectID());
+    deed->notifyStructurePlaced(creature, structureObject);
+    
+    ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+    
+    if (ghost != nullptr) {
+        // Create Waypoint
+        ManagedReference<WaypointObject*> waypointObject = (thisZone->getZoneServer()->createObject(STRING_HASHCODE("object/waypoint/world_waypoint_blue.iff"), 1)).castTo<WaypointObject*>();
+        
+        Locker locker(waypointObject);
+        
+        waypointObject->setCustomObjectName(structureObject->getDisplayedName(), false);
+        waypointObject->setActive(true);
+        waypointObject->setPosition(positionX, 0, positionY);
+        waypointObject->setPlanetCRC(thisZone->getZoneCRC());
+        structureObject->setWaypointID(waypointObject->getObjectID());
+        
+        ghost->addWaypoint(waypointObject, false, true);
+        
+        locker.release();
+        
+        // Create an email
+        ManagedReference<ChatManager*> chatManager = thisZone->getZoneServer()->getChatManager();
+        
+        if (chatManager != nullptr) {
+            UnicodeString subject = "@player_structure:construction_complete_subject";
+            
+            StringIdChatParameter emailBody("@player_structure:construction_complete");
+            emailBody.setTO(structureObject->getObjectName());
+            emailBody.setDI(ghost->getLotsRemaining());
+            
+            chatManager->sendMail("@player_structure:construction_complete_sender", subject, emailBody, creature->getFirstName(), waypointObject);
+        }
+        
+        if (structureObject->isBuildingObject()) {
+            BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+            
+            if (building->getSignObject() != nullptr) {
+                if (building->isCivicStructure() || building->isCommercialStructure())
+                    building->setCustomObjectName(structureObject->getDisplayedName(), true);
+                else
+                    building->setCustomObjectName(creature->getFirstName() + "'s House", true);
+            }
+        }
+    }
+    
+    return cancelSession();
 }

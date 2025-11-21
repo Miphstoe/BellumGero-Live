@@ -37,6 +37,12 @@ cobral_hooligan = Creature:new {
 			groups = {
 				{group = "cobral_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

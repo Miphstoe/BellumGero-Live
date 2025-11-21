@@ -352,6 +352,7 @@ includeFile("events/lifeDay.lua")
 includeFile("events/buffTerminalMenuComponent.lua")
 includeFile("events/race_droid.lua")
 includeFile("events/scheduled_event.lua")
+includeFile("events/scheduled_events_frs.lua")
 
 -- Hero of Tatooine
 includeFile("tasks/hero_of_tatooine/conversations/hermitConvoHandler.lua")
@@ -565,6 +566,7 @@ includeFile("caves/lok_droid_engineer_cave.lua")
 includeFile("caves/lok_gas_mine.lua")
 includeFile("caves/lok_imperial_research_facility.lua")
 includeFile("caves/lok_nym_pirate_cave.lua")
+includeFile("caves/blue_shadow_virus_bunker.lua")
 includeFile("caves/naboo_narglatch_cave.lua")
 includeFile("caves/naboo_pirate_bunker.lua")
 includeFile("caves/naboo_veermok_cave.lua")
@@ -587,6 +589,9 @@ includeFile("caves/tatooine_hutt_hideout.lua")
 includeFile("caves/tatooine_sennex_cave.lua")
 includeFile("caves/tatooine_squill_cave.lua")
 includeFile("caves/tatooine_tusken_bunker.lua")
+includeFile("caves/conversations/gcw_cave_daily_conv_handler.lua")
+includeFile("caves/conversations/bsv_gate_convo_handler.lua")
+includeFile("caves/conversations/bsv_quiz_convo_handler.lua")
 
 -- Cantinas
 includeFile("cities/cantinas/bartenders.lua")
@@ -741,7 +746,7 @@ includeFile("events/ServerEventAutomation.lua")
 --includeFile("../custom_scripts/screenplays/screenplays.lua")
 includeFile("tasks/naboo/myswg_vendor.lua")
 includeFile("tools/mission_direction_choice.lua")
-includeFile("tools/mission_level_choice.lua")
+includeFile("tools/mission_target_choice.lua")
 -- near your other includes...
 printLuaError("[WBOSS-SC] include: acklay_worldboss.lua")
 includeFile("acklay_worldboss.lua")
@@ -753,4 +758,11 @@ includeFile("world/infernomaw_boss.lua")
 includeFile("world/jarjar_worldboss_simple.lua")
 -- then load the boss screenplay
 includeFile("boss/djm_random_name_boss.lua")
+-- screenplay LAST so it can spawn after the above are loaded
+includeFile("vendors/attachment_exchange_vendor.lua")
+includeFile("vendors/bg_token_vendor.lua")
+includeFile("vendors/bg_token_vendor_2.lua")
+
+-- Player Bounty System
+includeFile("player_bounty/player_bounty_system.lua")
 

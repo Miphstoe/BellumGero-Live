@@ -37,6 +37,12 @@ vicious_pubam_battlelord = Creature:new {
 				{group = "pubam_tier_1", chance = 10000000}
 			},
 			lootChance = 1700000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

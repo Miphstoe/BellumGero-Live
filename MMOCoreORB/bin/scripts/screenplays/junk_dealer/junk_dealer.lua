@@ -54,6 +54,11 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 		return junkList
 	end
 
+	-- Items that should NOT be sellable to junk dealers (by custom name)
+	local nameBlacklist = {
+		"Bellum Gero Token"  -- Cannot be sold to junk dealers
+	}
+
 	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
 		local pItem = SceneObject(pInventory):getContainerObject(i)
 
@@ -65,7 +70,24 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 				-- Get item info first
 				local name = sceno:getDisplayedName()
 				local craftersName = ""
-				
+
+				-- Check if item is in the blacklist by name
+				local isBlacklisted = false
+				if name ~= nil then
+					for _, blacklistedName in ipairs(nameBlacklist) do
+						if name == blacklistedName then
+							isBlacklisted = true
+							print("Excluding blacklisted item: " .. name)
+							break
+						end
+					end
+				end
+
+				-- If blacklisted, skip this item
+				if isBlacklisted then
+					goto continue
+				end
+
 				-- Safely get crafter's name
 				if tano.getCraftersName then
 					craftersName = tano:getCraftersName() or ""
@@ -149,6 +171,7 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 					print("Added item to sell list: " .. name .. " for " .. value .. " credits")
 				end
 			end
+			::continue::
 		end
 	end
 
@@ -275,6 +298,23 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	end
 
 	local item = SceneObject(pItem)
+	local itemName = item:getDisplayedName()
+
+	-- Safety check: prevent selling blacklisted items by name
+	local nameBlacklist = {
+		"Bellum Gero Token"  -- Cannot be sold to junk dealers
+	}
+
+	if itemName ~= nil then
+		for _, blacklistedName in ipairs(nameBlacklist) do
+			if itemName == blacklistedName then
+				CreatureObject(pPlayer):sendSystemMessage("You cannot sell that item to a junk dealer.")
+				deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+				return
+			end
+		end
+	end
+
 	local skipItem = item:getObjectID()
 	local name = item:getDisplayedName()
 	local value = TangibleObject(pItem):getJunkValue()

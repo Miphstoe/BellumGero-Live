@@ -35,6 +35,12 @@ kimogila_hatchling = Creature:new {
 				{group = "kimogila_common", chance = 10000000}
 			},
 			lootChance = 1440000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

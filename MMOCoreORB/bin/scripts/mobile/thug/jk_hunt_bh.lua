@@ -60,6 +60,18 @@ jk_hunt_bh = Creature:new {
 		},
 		lootChance = 1000000, -- 10.00% total chance
 	},
+    {
+        groups = {
+		    {group = "endgame_weapon_schematics", chance = 10000000}
+	    },
+	    lootChance = 500000, -- 5.00% total chance
+	},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 350000
+		}
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

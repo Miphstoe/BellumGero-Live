@@ -35,6 +35,12 @@ enhanced_force_kliknik = Creature:new {
 				{group = "geo_kliknik", chance = 10000000}
 			},
 			lootChance = 2880000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

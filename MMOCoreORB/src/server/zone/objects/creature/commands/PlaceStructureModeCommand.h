@@ -9,6 +9,9 @@
 #include "server/zone/packets/player/EnterStructurePlacementModeMessage.h"
 #include "templates/manager/TemplateManager.h"
 #include "templates/faction/Factions.h"
+// add with other includes
+#include "server/zone/managers/housepackup/HousePackupManager.h"
+
 
 class PlaceStructureModeCommand : public QueueCommand {
 public:
@@ -95,9 +98,14 @@ public:
 
 		int lots = serverTemplate->getLotSize();
 
+// If this deed was from a packed house, free the temporary lot-hold now
+		HousePackupManager::instance()->releaseLotsPlaceholder(deed->getObjectID());
+
+// Now perform the normal lots check
 		if (!ghost->hasLotsRemaining(lots)) {
-			StringIdChatParameter param("@player_structure:not_enough_lots");
-			param.setDI(lots);
+    		StringIdChatParameter param("@player_structure:not_enough_lots");
+    		param.setDI(lots);
+
 			creature->sendSystemMessage(param);
 			return GENERALERROR;
 		}

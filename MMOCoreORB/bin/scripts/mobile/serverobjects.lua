@@ -51,4 +51,14 @@ includeFile("outfits/serverobjects.lua")
 includeFile("acklay_worldboss.lua")
 includeFile("enhanced_gaping_spider_boss.lua")
 
+-- SEA Vendor
+-- mobile (creature) template FIRST so spawnMobile can find it
+includeFile("vendors/attachment_exchange_vendor.lua")
+
+-- BG Token Vendor
+includeFile("vendors/bg_token_vendor.lua")
+
+-- BG Token Vendor 2 (75 tokens per item)
+includeFile("vendors/bg_token_vendor_2.lua")
+
 

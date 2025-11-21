@@ -36,6 +36,9 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 
+#include "server/zone/managers/creature/SpawnGroup.h"
+#include "templates/faction/Factions.h"
+
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
 		Lua* lua = new Lua();
@@ -796,32 +799,23 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 
 	int diffDisplay = difficultyLevel < 5 ? 4 : difficultyLevel;
 
-	PlayerObject* targetGhost = player->getPlayerObject();
-    
-    String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
-    
-    int levelChoice = Integer::valueOf(level);
-    
-	if(levelChoice > 0){
-		diffDisplay += levelChoice;
-	}else{
-		if (player->isGrouped()) {
-			bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
-			Reference<GroupObject*> group = player->getGroup();
-
-			if (group != nullptr) {
-				Locker locker(group);
-				diffDisplay += group->getGroupLevel(includeFactionPets);
-			}
-		} else {
-			diffDisplay += playerLevel;
-		}
+	if (player->isGrouped()) {
+    	bool includeFactionPets = faction != Factions::FACTIONNEUTRAL && ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
+    	Reference<GroupObject*> group = player->getGroup();
+    	if (group != nullptr) {
+        	Locker locker(group);
+        	diffDisplay += group->getGroupLevel(includeFactionPets);
+    	}
+	} else {
+    	diffDisplay += playerLevel;
 	}
+	
 
 	//info(true) << "playerLevel: " << String::valueOf(playerLevel) << " maxDiff: " << String::valueOf(maxDiff) << " minDiff: " << String::valueOf(minDiff) << " difficultyLevel: " << String::valueOf(difficultyLevel) << " difficulty: " << String::valueOf(difficulty) << " levelChoice: " << String::valueOf(levelChoice);
 
+	PlayerObject* targetGhost = player->getPlayerObject();
 	String dir = targetGhost->getScreenPlayData("mission_direction_choice", "directionChoice");
-    float dirChoise = Float::valueOf(dir);
+	float dirChoise = Float::valueOf(dir);
 	String building = lairTemplateObject->getMissionBuilding(difficulty);
 
 	if (building.isEmpty()) {
@@ -1884,24 +1878,132 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 	bool foundLair = false;
 	int counter = availableLairList->size();
 	int playerLevel = server->getPlayerManager()->calculatePlayerLevel(player);
-	PlayerObject* targetGhost = player->getPlayerObject();
 
-	String level = targetGhost->getScreenPlayData("mission_level_choice", "levelChoice");
+	if (player->isGrouped()) {
+    	bool includeFactionPets = faction != Factions::FACTIONNEUTRAL && ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
+    	Reference<GroupObject*> group = player->getGroup();
+    	if (group != nullptr) {
+        	Locker locker(group);
+        	playerLevel = group->getGroupLevel(includeFactionPets);
+    	}
+	}
 
-	int levelChoice = Integer::valueOf(level);
+	// --- BEGIN: Mission Target Lock (Bellum Gero) ---
+// Robust version: trims/normalizes, uses saved list to reconstruct,
+// searches filtered list first, then full groups, and never clears on a miss.
+if (type == MissionTypes::DESTROY && player != nullptr) {
+    PlayerObject* ghost = player->getPlayerObject();
+    if (ghost != nullptr) {
+        // Read what Lua saved
+        String chosenName   = ghost->getScreenPlayData("mission_target_choice", "lairSelect").trim();
+        String chosenCRCStr = ghost->getScreenPlayData("mission_target_choice", "lairSelectCRC").trim();
+        String chosenIdxStr = ghost->getScreenPlayData("mission_target_choice", "lairSelectIndex").trim();
+        String lastList     = ghost->getScreenPlayData("mission_target_choice", "lastList"); // newline-delimited templates
 
-	if (levelChoice > 0)
-		playerLevel = levelChoice;
+        // If name is missing but we have index + lastList, reconstruct the template name.
+        if (chosenName.isEmpty() && !chosenIdxStr.isEmpty() && !lastList.isEmpty()) {
+            int idx0 = Integer::valueOf(chosenIdxStr); // 0-based
+            // Manual split of lastList on '\n' (Core3 String has no split())
+            Vector<String> lines;
+            int start = 0;
+            while (true) {
+                int nl = lastList.indexOf('\n', start);
+                if (nl < 0) {
+                    String seg = lastList.subString(start);
+                    if (!seg.isEmpty())
+                        lines.add(seg);
+                    break;
+                } else {
+                    lines.add(lastList.subString(start, nl - start));
+                    start = nl + 1;
+                }
+            }
+            if (idx0 >= 0 && idx0 < lines.size())
+                chosenName = lines.get(idx0).trim();
+        }
 
-/*	if (player->isGrouped()) {
-		bool includeFactionPets = faction != Factions::FACTIONNEUTRAL || ConfigManager::instance()->includeFactionPetsForMissionDifficulty();
-		Reference<GroupObject*> group = player->getGroup();
+        // Compute desired CRCs (exact and normalized)
+        uint32 desiredExact = 0;
+        if (!chosenName.isEmpty())
+            desiredExact = chosenName.hashCode();
+        else if (!chosenCRCStr.isEmpty())
+            desiredExact = (uint32)Integer::valueOf(chosenCRCStr);
 
-		if (group != nullptr) {
-			Locker locker(group);
-			playerLevel = group->getGroupLevel(includeFactionPets);
-		}
-	}*/
+        // Build normalized desired CRC if we have a name
+        uint32 desiredNorm = 0;
+        if (!chosenName.isEmpty()) {
+            String tmp = chosenName;
+            int p = tmp.indexOf("_neutral_"); if (p >= 0) tmp = tmp.subString(0, p);
+            tmp = tmp.replaceAll("_large_boss_01", "");
+            tmp = tmp.replaceAll("_medium_boss_01", "");
+            tmp = tmp.replaceAll("_boss_01", "");
+            tmp = tmp.trim();
+            if (!tmp.isEmpty())
+                desiredNorm = tmp.hashCode();
+        }
+
+        if (desiredExact != 0) {
+            // PASS 1: try filtered list (respects difficulty)
+            if (availableLairList != nullptr && availableLairList->size() > 0) {
+                for (int i = 0; i < availableLairList->size(); ++i) {
+                    LairSpawn* ls = availableLairList->get(i);
+                    if (ls == nullptr) continue;
+
+                    const String& nm = ls->getLairTemplateName();
+                    if (nm.hashCode() == desiredExact) return ls;
+
+                    if (desiredNorm != 0) {
+                        String nmNorm = nm;
+                        int p2 = nmNorm.indexOf("_neutral_"); if (p2 >= 0) nmNorm = nmNorm.subString(0, p2);
+                        nmNorm = nmNorm.replaceAll("_large_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_medium_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_boss_01", "");
+                        nmNorm = nmNorm.trim();
+                        if (!nmNorm.isEmpty() && nmNorm.hashCode() == desiredNorm) return ls;
+                    }
+                }
+            }
+
+            // PASS 2: try full groups (override difficulty if needed)
+            Zone* zone = player->getZone();
+            String planet = zone ? zone->getZoneName() : "";
+
+            Vector<String> groups;
+            if (!planet.isEmpty()) groups.add(planet + "_destroy_missions");
+            groups.add("factional_neutral_destroy_missions");
+            groups.add("factional_imperial_destroy_missions");
+            groups.add("factional_rebel_destroy_missions");
+
+            for (int gi = 0; gi < groups.size(); ++gi) {
+                SpawnGroup* g = CreatureTemplateManager::instance()->getDestroyMissionGroup(groups.get(gi).hashCode());
+                if (g == nullptr) continue;
+
+                const Vector<Reference<LairSpawn*>>& all = g->getSpawnList();
+                for (int i = 0; i < all.size(); ++i) {
+                    LairSpawn* ls = all.get(i);
+                    if (ls == nullptr) continue;
+
+                    const String& nm = ls->getLairTemplateName();
+                    if (nm.hashCode() == desiredExact) return ls;
+
+                    if (desiredNorm != 0) {
+                        String nmNorm = nm;
+                        int p2 = nmNorm.indexOf("_neutral_"); if (p2 >= 0) nmNorm = nmNorm.subString(0, p2);
+                        nmNorm = nmNorm.replaceAll("_large_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_medium_boss_01", "");
+                        nmNorm = nmNorm.replaceAll("_boss_01", "");
+                        nmNorm = nmNorm.trim();
+                        if (!nmNorm.isEmpty() && nmNorm.hashCode() == desiredNorm) return ls;
+                    }
+                }
+            }
+
+            // Do NOT clear the saved choice on a miss; just fall back silently.
+            // Keeping the choice means it will be honored on the next roll without re-selecting.
+        }
+    }
+}
+// --- END: Mission Target Lock (Bellum Gero) ---
 
 	LairSpawn* lairSpawn = nullptr;
 
@@ -2024,6 +2126,36 @@ void MissionManagerImplementation::addPlayerToBountyList(uint64 targetId, int re
 	}
 }
 
+void MissionManagerImplementation::addPlayerPlacedBounty(uint64 targetId, uint64 placerId, int amount) {
+	Locker listLocker(&playerBountyListMutex);
+
+	if (playerBountyList.contains(targetId)) {
+		// Add to existing bounty
+		PlayerBounty* bounty = playerBountyList.get(targetId);
+		bounty->addBountyPlacer(placerId, amount);
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
+
+		info("Player " + String::valueOf(placerId) + " added " + String::valueOf(amount) + " credits to bounty on player " + String::valueOf(targetId) + ". New total: " + String::valueOf(bounty->getReward()), true);
+	} else {
+		// Create new bounty with this placer
+		PlayerBounty* bounty = new PlayerBounty(targetId, amount);
+		bounty->addBountyPlacer(placerId, amount);
+
+		// Set online status if target is online
+		ManagedReference<CreatureObject*> target = server->getObject(targetId).castTo<CreatureObject*>();
+		if (target != nullptr && target->isPlayerCreature()) {
+			bounty->setOnline(true);
+			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (ONLINE)", true);
+		} else {
+			bounty->setOnline(false);
+			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (OFFLINE)", true);
+		}
+
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
+		playerBountyList.put(targetId, bounty);
+	}
+}
+
 void MissionManagerImplementation::removePlayerFromBountyList(uint64 targetId) {
 	Locker listLocker(&playerBountyListMutex);
 
@@ -2137,10 +2269,19 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 		return false;
 
 	auto targetGhost = creature->getPlayerObject();
-	float terminalVisibilityThreshold = VisibilityManager::instance()->getTerminalVisThreshold();
 
-	if (targetGhost == nullptr || targetGhost->getVisibility() < terminalVisibilityThreshold)
+	if (targetGhost == nullptr)
 		return false;
+
+	// Only apply visibility requirement to Jedi bounties (not player-placed bounties)
+	// Player-placed bounties have at least one placer, Jedi bounties have none
+	bool isPlayerPlacedBounty = bounty->getNumberOfBountyPlacers() > 0;
+
+	if (!isPlayerPlacedBounty) {
+		float terminalVisibilityThreshold = VisibilityManager::instance()->getTerminalVisThreshold();
+		if (targetGhost->getVisibility() < terminalVisibilityThreshold)
+			return false;
+	}
 
 	auto playerGhost = player->getPlayerObject();
 
@@ -2159,16 +2300,19 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 			return false;
 	}
 
-	auto hunters = bounty->getBountyHunters();
+	// Only check for same-account hunters if same-account bounties are disabled
+	if (!enableSameAccountBountyMissions) {
+		auto hunters = bounty->getBountyHunters();
 
-	for (int j = 0; j < hunters->size(); j++) {
-		ManagedReference<CreatureObject*> hunter = server->getObject(hunters->get(j)).castTo<CreatureObject*>();
+		for (int j = 0; j < hunters->size(); j++) {
+			ManagedReference<CreatureObject*> hunter = server->getObject(hunters->get(j)).castTo<CreatureObject*>();
 
-		if (hunter != nullptr) {
-			auto hunterGhost = hunter->getPlayerObject();
+			if (hunter != nullptr) {
+				auto hunterGhost = hunter->getPlayerObject();
 
-			if (hunterGhost != nullptr && hunterGhost->getAccountID() == accountId)
-				return false;
+				if (hunterGhost != nullptr && hunterGhost->getAccountID() == accountId)
+					return false;
+			}
 		}
 	}
 

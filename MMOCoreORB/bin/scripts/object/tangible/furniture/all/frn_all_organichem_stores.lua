@@ -1,0 +1,5 @@
+object_tangible_furniture_all_frn_all_organichem_stores = object_tangible_furniture_all_shared_frn_all_organichem_stores:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_all_frn_all_organichem_stores, "object/tangible/furniture/all/frn_all_organichem_stores.iff")

@@ -146,6 +146,9 @@
 #include "server/zone/objects/creature/commands/PurchaseTicketCommand.h"
 #include "server/zone/objects/creature/commands/QuickHealCommand.h"
 #include "server/zone/objects/creature/commands/RallyCommand.h"
+#include "server/zone/objects/creature/commands/ReaperStrikeCommand.h"    //Reaper Strike
+#include "server/zone/objects/creature/commands/ReaperBlastCommand.h"     //Reaper Blast
+#include "server/zone/objects/creature/commands/ReaperShotCommand.h"      //Reaper Shot
 #include "server/zone/objects/creature/commands/ReconnectToTransferServerCommand.h"
 #include "server/zone/objects/creature/commands/RecruitSkillTrainerCommand.h"
 #include "server/zone/objects/creature/commands/RegainConsciousnessCommand.h"
@@ -189,6 +192,7 @@
 #include "server/zone/objects/creature/commands/RestartConversionCommand.h"
 #include "server/zone/objects/creature/commands/RestartCraftingSessionCommand.h"
 #include "server/zone/objects/creature/commands/RetreatCommand.h"
+#include "server/zone/objects/creature/commands/ReturnTicketCommand.h"
 #include "server/zone/objects/creature/commands/RevivePlayerCommand.h"
 #include "server/zone/objects/creature/commands/RevokeBadgeCommand.h"
 #include "server/zone/objects/creature/commands/RevokeSkillCommand.h"
@@ -447,6 +451,9 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<PurchaseTicketCommand>(String("purchaseTicket").toLowerCase());
 	commandFactory.registerCommand<QuickHealCommand>(String("quickHeal").toLowerCase());
 	commandFactory.registerCommand<RallyCommand>(String("rally").toLowerCase());
+	commandFactory.registerCommand<ReaperStrikeCommand>(String("reaperStrike").toLowerCase());
+	commandFactory.registerCommand<ReaperBlastCommand>(String("reaperBlast").toLowerCase());
+	commandFactory.registerCommand<ReaperShotCommand>(String("reaperShot").toLowerCase());
 	commandFactory.registerCommand<ReconnectToTransferServerCommand>(String("reconnectToTransferServer").toLowerCase());
 	commandFactory.registerCommand<RecruitSkillTrainerCommand>(String("recruitSkillTrainer").toLowerCase());
 	commandFactory.registerCommand<RegainConsciousnessCommand>(String("regainConsciousness").toLowerCase());
@@ -490,6 +497,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<RestartConversionCommand>(String("restartConversion").toLowerCase());
 	commandFactory.registerCommand<RestartCraftingSessionCommand>(String("restartCraftingSession").toLowerCase());
 	commandFactory.registerCommand<RetreatCommand>(String("retreat").toLowerCase());
+	commandFactory.registerCommand<UseReturnTicketCommand>(String("useReturnTicket").toLowerCase());
 	commandFactory.registerCommand<RevivePlayerCommand>(String("revivePlayer").toLowerCase());
 	commandFactory.registerCommand<RevokeBadgeCommand>(String("revokeBadge").toLowerCase());
 	commandFactory.registerCommand<RevokeSkillCommand>(String("revokeSkill").toLowerCase());

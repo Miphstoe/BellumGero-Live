@@ -245,9 +245,7 @@ class StructureObject extends TangibleObject {
 	}
 
 	@dirty
-	public void sendPermissionListTo(CreatureObject creature, final string listName) {
-		structurePermissionList.sendTo(creature, listName);
-	}
+	public native void sendPermissionListTo(CreatureObject creature, final string listName);
 
 	@read
 	public boolean hasPermissionList(final string listName) {
@@ -259,25 +257,20 @@ class StructureObject extends TangibleObject {
 		return structurePermissionList.isListFull(listName);
 	}
 
-	public int togglePermission(final string listName, final unsigned long objectID) {
-		return structurePermissionList.togglePermission(listName, objectID);
-	}
+	@dirty
+	public native int togglePermission(final string listName, final unsigned long objectID);
 
-	public int grantPermission(final string listName, final unsigned long objectID) {
-		return structurePermissionList.grantPermission(listName, objectID);
-	}
+	@dirty
+	public native int grantPermission(final string listName, final unsigned long objectID);
 
-	public int revokePermission(final string listName, final unsigned long objectID) {
-		return structurePermissionList.revokePermission(listName, objectID);
-	}
+	@dirty
+	public native int revokePermission(final string listName, final unsigned long objectID);
 
-	public int revokeAllPermissions(final unsigned long objectID) {
-		return structurePermissionList.revokeAllPermissions(objectID);
-	}
+	@dirty
+	public native int revokeAllPermissions(final unsigned long objectID);
 
-	public void revokeAllPermissions() {
-		structurePermissionList.revokeAllPermissions();
-	}
+	@dirty
+	public native void revokeAllPermissions();
 
 	/**
 	 * Returns the cost to redeed this building. The redeed cost is 50 times the hourly maintenance rate.

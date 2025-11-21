@@ -1,5 +1,5 @@
 --frequency of sanity check in seconds
-gcwCheckTimer = 3600
+gcwCheckTimer = 86400
 
 --Amount of time in seconds that a base will be vulnerable
 vulnerabilityDuration = 10800
@@ -97,7 +97,7 @@ spawnDefenses = 1
 -- Amount of time to delay vulnerability in seconds afer placing base
 initialVulnerabilityDelay = 0
 
-racialPenaltyEnabled = 1
+racialPenaltyEnabled = 0
 
 -- assign points to each type of base
 -- s01=Forward Outpost, s02 = Field Hospital , s03 = Tactical Center, s04 = Detach HQ
@@ -128,22 +128,19 @@ HQValues = {
 
 }
 
--- race (raceid, penalty_multiplier)
--- raceid found in creatureobject
---HUMAN = 0; RODIAN = 1; TRANDOSHAN = 2; MONCAL = 3; WOOKIEE = 4; BOTHAN = 5; TWILEK = 6; ZABRAK = 7; ITHORIAN = 0x21; SULLUSTAN = 0x31;
 imperial_racial_penalty = {
-	{0, 1},
-	{1, 3}, --rodian
-	{2, 2}, -- trando
-	{3, 3}, -- moncal
-	{4, 3}, -- wookie
-	{5, 2},  -- bothan
-	{6, 1.5}, -- twilek
-	{7, 2},  -- zabrack
-	{33, 2}, --ithorian
-	{49, 2}, -- sullustan
-
+  {0, 1},   -- human
+  {1, 1},   -- rodian
+  {2, 1},   -- trandoshan
+  {3, 1},   -- mon calamari
+  {4, 1},   -- wookiee
+  {5, 1},   -- bothan
+  {6, 1},   -- twi'lek
+  {7, 1},   -- zabrak
+  {33, 1},  -- ithorian
+  {49, 1},  -- sullustan
 }
+
 
 strongholdCities = {
 	imperial = {"bela_vistal", "deeja_peak", "bestine"},

@@ -34,7 +34,7 @@ public:
 		for (int i = 0; i < closeObjects.size(); i++) {
 			SceneObject* object = cast<SceneObject*>( closeObjects.get(i));
 
-			if (object == nullptr || (object->getGameObjectType() != SceneObjectType::TRAVELTERMINAL) || !checkDistance(creature, object, 8.f)) {
+			if (object == nullptr || (object->getGameObjectType() != SceneObjectType::TRAVELTERMINAL) || !checkDistance(creature, object, 128.f)) {
 				continue;
 			}
 

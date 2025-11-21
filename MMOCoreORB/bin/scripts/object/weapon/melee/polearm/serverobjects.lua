@@ -63,3 +63,5 @@ includeFile("weapon/melee/polearm/lance_vibrolance.lua")
 includeFile("weapon/melee/polearm/lance_vibrolance_ranged.lua")
 includeFile("weapon/melee/polearm/polearm_vibro_axe.lua")
 includeFile("weapon/melee/polearm/polearm_vibro_axe_ranged.lua")
+
+includeFile("weapon/melee/polearm/lance_obsidian.lua")

@@ -19,72 +19,108 @@
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/managers/creature/PetManager.h"
 
-void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
+// NEW: House pack-up manager
+#include "server/zone/managers/housepackup/HousePackupManager.h"
 
-	if(!sceneObject->isTerminal())
+// NEW: City faction alignment
+#include "server/zone/objects/player/sessions/CityFactionAlignmentSession.h"
+#include "server/zone/objects/region/CityRegion.h"
+
+static const int RADIAL_ROOT_MANAGEMENT = 118;
+static const int RADIAL_ROOT_PERMISSIONS = 117;
+
+// New action ID for Pack Up House
+static const int RADIAL_PACK_UP_HOUSE = 240;
+// New action ID for View House Storage
+static const int RADIAL_VIEW_HOUSE_STORAGE = 241;
+
+// New action ID for Set Faction Alignment
+static const int RADIAL_SET_FACTION_ALIGNMENT = 241;
+
+void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
+	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
 		return;
 
-	if(!creature->isPlayerCreature())
+	if (!sceneObject->isTerminal())
+		return;
+
+	if (!creature->isPlayerCreature())
 		return;
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-	if( ghost == nullptr )
+	if (ghost == nullptr)
 		return;
 
 	ManagedReference<Terminal*> terminal = cast<Terminal*>(sceneObject);
-	if(terminal == nullptr)
+	if (terminal == nullptr)
 		return;
 
 	ManagedReference<StructureObject*> structureObject = cast<StructureObject*>(terminal->getControlledObject());
-
 	if (structureObject == nullptr)
 		return;
 
+	// Civic structures
 	if (structureObject->isCivicStructure()) {
 		if (structureObject->isOnAdminList(creature)) {
-			menuResponse->addRadialMenuItem(118, 3, "@player_structure:management"); //Structure Management
-			menuResponse->addRadialMenuItemToRadialID(118, 128, 3, "@player_structure:permission_destroy"); //Destroy Structure
-			menuResponse->addRadialMenuItemToRadialID(118, 124, 3, "@player_structure:management_status"); //Status
+			menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 128, 3, "@player_structure:permission_destroy"); // Destroy Structure
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 124, 3, "@player_structure:management_status");  // Status
 
 			if (structureObject->isBuildingObject()) {
-				menuResponse->addRadialMenuItemToRadialID(118, 50, 3, "@player_structure:management_name_structure"); //Name Structure
-				menuResponse->addRadialMenuItemToRadialID(118, 201, 3, "@player_structure:delete_all_items"); //Delete all items
-				menuResponse->addRadialMenuItemToRadialID(118, 202, 3, "@player_structure:move_first_item"); //Find Lost Items
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 50, 3, "@player_structure:management_name_structure"); // Name Structure
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");         // Delete all items
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");          // Find Lost Items
 
-				// Not all civic buildings have signs.  Check to see if build already has one before allowing a change
+				// Only some civic buildings have signs
 				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-				if( building != nullptr && building->getSignObject() != nullptr )
-					menuResponse->addRadialMenuItemToRadialID(118, 69, 3, "@player_structure:management_change_sign"); //Change Sign
+				if (building != nullptr && building->getSignObject() != nullptr)
+					menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 69, 3, "@player_structure:management_change_sign"); // Change Sign
+			}
+
+			// Permissions submenu for civic structures (city halls)
+			menuResponse->addRadialMenuItem(RADIAL_ROOT_PERMISSIONS, 3, "@player_structure:permissions"); // Structure Permissions
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 121, 3, "@player_structure:permission_admin");  // Administrator List
+
+			if (structureObject->isBuildingObject()) {
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 122, 3, "@player_structure:permission_vendor"); // Vendor List
+				// Note: Entry list (119) and Ban list (120) intentionally omitted for civic structures
+
+				// NEW: City Faction Alignment option (for cities at Metropolis rank or higher)
+				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+				if (building != nullptr) {
+					ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
+					if (cityRegion != nullptr && cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_SET_FACTION_ALIGNMENT, 3, "Set Faction Alignment");
+					}
+				}
 			}
 		}
-
 		return;
 	}
 
+	// Player / non-civic structures
 	if (structureObject->isOnAdminList(creature)) {
-		menuResponse->addRadialMenuItem(118, 3, "@player_structure:management"); //Structure Management
-		menuResponse->addRadialMenuItemToRadialID(118, 128, 3, "@player_structure:permission_destroy"); //Destroy Structure
-		menuResponse->addRadialMenuItemToRadialID(118, 124, 3, "@player_structure:management_status"); //Status
-		menuResponse->addRadialMenuItemToRadialID(118, 129, 3, "@player_structure:management_pay"); //Pay Maintenance
+		menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
+		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 128, 3, "@player_structure:permission_destroy"); // Destroy Structure
+		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 124, 3, "@player_structure:management_status");  // Status
+		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 129, 3, "@player_structure:management_pay");     // Pay Maintenance
 
 		// Allow withdraw for houses (non-civic buildings) and guild halls
-		if (structureObject->isGuildHall()
-    		|| (structureObject->isBuildingObject() && !structureObject->isCivicStructure())) {
-    		menuResponse->addRadialMenuItemToRadialID(118, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
+		if (structureObject->isGuildHall() || (structureObject->isBuildingObject() && !structureObject->isCivicStructure())) {
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 70, 3, "@player_structure:take_maintenance"); // Withdraw Maintenance
 		}
 
-		menuResponse->addRadialMenuItemToRadialID(118, 50, 3, "@player_structure:management_name_structure"); //Name Structure
+		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 50, 3, "@player_structure:management_name_structure"); // Name Structure
 
+		// Droid assignment option if user has a droid control device
 		ManagedReference<SceneObject*> datapad = creature->getSlottedObject("datapad");
-		if(datapad != nullptr) {
+		if (datapad != nullptr) {
 			for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
 				ManagedReference<SceneObject*> object = datapad->getContainerObject(i);
-
 				if (object != nullptr && object->isPetControlDevice()) {
-					PetControlDevice* device = cast<PetControlDevice*>( object.get());
-
-					if (device->getPetType() == PetManager::DROIDPET) {
-						menuResponse->addRadialMenuItemToRadialID(118, 131, 3, "@player_structure:assign_droid"); //Assign Droid
+					PetControlDevice* device = cast<PetControlDevice*>(object.get());
+					if (device != nullptr && device->getPetType() == PetManager::DROIDPET) {
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 131, 3, "@player_structure:assign_droid"); // Assign Droid
 						break;
 					}
 				}
@@ -92,182 +128,243 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 		}
 
 		if (structureObject->isBuildingObject()) {
-			menuResponse->addRadialMenuItemToRadialID(118, 127, 3, "@player_structure:management_residence"); //Declare Residence
-			menuResponse->addRadialMenuItemToRadialID(118, 125, 3, "@player_structure:management_privacy"); //Privacy
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 127, 3, "@player_structure:management_residence"); // Declare Residence
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 125, 3, "@player_structure:management_privacy");   // Privacy
 
-			if (creature->hasSkill("crafting_artisan_business_01") && structureObject->isOnAdminList(creature)) {
+			if (creature->hasSkill("crafting_artisan_business_01")) {
 				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-				if(!building->hasAccessFee())
-					menuResponse->addRadialMenuItemToRadialID(118, 68, 3, "@player_structure:management_add_turnstile"); //Set Access Fee
-				else
-					menuResponse->addRadialMenuItemToRadialID(118, 68, 3, "@player_structure:management_remove_turnstile"); //Remove Access Fee
-
+				if (building != nullptr) {
+					if (!building->hasAccessFee())
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 68, 3, "@player_structure:management_add_turnstile"); // Set Access Fee
+					else
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 68, 3, "@player_structure:management_remove_turnstile"); // Remove Access Fee
+				}
 			}
 
 			if (creature->hasSkill("crafting_artisan_business_03"))
-				menuResponse->addRadialMenuItemToRadialID(118, 130, 3, "@player_structure:create_vendor"); //Create Vendor
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor"); // Create Vendor
 
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 69, 3, "@player_structure:management_change_sign"); // Change Sign
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 201, 3, "@player_structure:delete_all_items");       // Delete all items
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
-			menuResponse->addRadialMenuItemToRadialID(118, 69, 3, "@player_structure:management_change_sign"); //Change Sign
-			menuResponse->addRadialMenuItemToRadialID(118, 201, 3, "@player_structure:delete_all_items"); //Delete all items
-			menuResponse->addRadialMenuItemToRadialID(118, 202, 3, "@player_structure:move_first_item"); //Find Lost Items
 		}
 
-		menuResponse->addRadialMenuItem(117, 3, "@player_structure:permissions"); //Structure Permissions
-		menuResponse->addRadialMenuItemToRadialID(117, 121, 3, "@player_structure:permission_admin"); //Administrator List
+		// Permissions submenu
+		menuResponse->addRadialMenuItem(RADIAL_ROOT_PERMISSIONS, 3, "@player_structure:permissions"); // Structure Permissions
+		menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 121, 3, "@player_structure:permission_admin");  // Administrator List
 
 		if (structureObject->isBuildingObject()) {
-			menuResponse->addRadialMenuItemToRadialID(117, 119, 3, "@player_structure:permission_enter"); //Entry List
-			menuResponse->addRadialMenuItemToRadialID(117, 120, 3, "@player_structure:permission_banned"); //Ban List
-			menuResponse->addRadialMenuItemToRadialID(117, 122, 3, "@player_structure:permission_vendor"); //Vendor List
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 119, 3, "@player_structure:permission_enter");  // Entry List
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 120, 3, "@player_structure:permission_banned"); // Ban List
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 122, 3, "@player_structure:permission_vendor"); // Vendor List
 		}
-	} else if(structureObject->isOnPermissionList("VENDOR", creature)) {
+	} else if (structureObject->isOnPermissionList("VENDOR", creature)) {
 		if (creature->hasSkill("crafting_artisan_business_03")) {
-			menuResponse->addRadialMenuItem(118, 3, "@player_structure:management"); //Structure Management
-			menuResponse->addRadialMenuItemToRadialID(118, 130, 3, "@player_structure:create_vendor"); //Create Vendor
+			menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor");      // Create Vendor
 		}
 	}
 }
 
 int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
-	ManagedReference<Terminal*> terminal = cast<Terminal*>(sceneObject);
-	if(terminal == nullptr)
+	if (sceneObject == nullptr || creature == nullptr)
 		return 1;
 
-	if(!creature->isPlayerCreature())
+	ManagedReference<Terminal*> terminal = cast<Terminal*>(sceneObject);
+	if (terminal == nullptr)
+		return 1;
+
+	if (!creature->isPlayerCreature())
 		return 1;
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
-	if( ghost == nullptr )
+	if (ghost == nullptr)
 		return 1;
 
 	ManagedReference<StructureObject*> structureObject = cast<StructureObject*>(terminal->getControlledObject());
-
 	if (structureObject == nullptr)
 		return 1;
 
 	ManagedReference<Zone*> zone = structureObject->getZone();
-
 	if (zone == nullptr)
 		return 1;
 
+	// Civic structures
 	if (structureObject->isCivicStructure()) {
 		if (structureObject->isOnAdminList(creature)) {
 			StructureManager* structureManager = StructureManager::instance();
-
 			Locker structureLocker(structureObject, creature);
 
 			switch (selectedID) {
+				case 201:
+					structureManager->promptDeleteAllItems(creature, structureObject);
+					break;
+				case 202:
+					structureManager->promptFindLostItems(creature, structureObject);
+					break;
+				case 128:
+					creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); // destroyStructure
+					break;
+				case 50:
+					structureManager->promptNameStructure(creature, structureObject, nullptr);
+					break;
+				case 124:
+					creature->executeObjectControllerAction(0x13F7E585, structureObject->getObjectID(), ""); // structureStatus
+					break;
+				case 69:
+					structureManager->promptSelectSign(structureObject, creature);
+					break;
+				case 121:
+					structureObject->sendPermissionListTo(creature, "ADMIN");
+					break;
+				case 122:
+					structureObject->sendPermissionListTo(creature, "VENDOR");
+					break;
+			case RADIAL_SET_FACTION_ALIGNMENT: { // Set Faction Alignment
+
+				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+
+				if (building != nullptr) {
+					ManagedReference<CityRegion*> cityRegion = building->getCityRegion();
+
+					if (cityRegion != nullptr) {
+
+						if (cityRegion->getCityRank() >= CityRegion::RANK_METROPOLIS) {
+							ManagedReference<CityFactionAlignmentSession*> session = new CityFactionAlignmentSession(creature, cityRegion, sceneObject);
+
+							int initResult = session->initializeSession();
+
+							if (initResult == 1) {
+								creature->addActiveSession(SessionFacadeType::CITYFACTION, session);
+							} else {
+								creature->sendSystemMessage("ERROR: initializeSession returned " + String::valueOf(initResult));
+							}
+						} else {
+							creature->sendSystemMessage("City must be Metropolis rank or higher to set faction alignment.");
+						}
+					} else {
+						creature->sendSystemMessage("ERROR: CityRegion is nullptr");
+					}
+				} else {
+					creature->sendSystemMessage("ERROR: Building is nullptr");
+				}
+				break;
+			}
+					default:
+					break;
+			}
+		}
+		return 0;
+	}
+
+	// Player / non-civic structures
+	if (structureObject->isOnAdminList(creature)) {
+		StructureManager* structureManager = StructureManager::instance();
+		Locker structureLocker(structureObject, creature);
+
+		switch (selectedID) {
 			case 201:
 				structureManager->promptDeleteAllItems(creature, structureObject);
 				break;
 			case 202:
 				structureManager->promptFindLostItems(creature, structureObject);
 				break;
+			case 121:
+				structureObject->sendPermissionListTo(creature, "ADMIN");
+				break;
+			case 119:
+				structureObject->sendPermissionListTo(creature, "ENTRY");
+				break;
+			case 120:
+				structureObject->sendPermissionListTo(creature, "BAN");
+				break;
+			case 122:
+				structureObject->sendPermissionListTo(creature, "VENDOR");
+				break;
 			case 128:
-				creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); //destroyStructure
+				creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); // destroyStructure
+				break;
+			case 129:
+				creature->executeObjectControllerAction(0xE7E35B30, structureObject->getObjectID(), ""); // payMaintenance
+				break;
+			case 70:
+				structureManager->promptWithdrawMaintenance(structureObject, creature);
+				break;
+			case 124:
+				creature->executeObjectControllerAction(0x13F7E585, structureObject->getObjectID(), ""); // structureStatus
+				break;
+			case 127:
+				creature->executeObjectControllerAction(0xF59E3CE1, structureObject->getObjectID(), ""); // declareResidence
+				break;
+			case 125:
+				creature->executeObjectControllerAction(0x786CC38E, structureObject->getObjectID(), ""); // setPrivacy
+				break;
+			case 68:
+				if (structureObject->isBuildingObject()) {
+					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+					if (building != nullptr) {
+						if (!building->hasAccessFee()) {
+							if (!building->canChangeAccessFee()) {
+								StringIdChatParameter param("@player_structure:turnstile_wait");
+								param.setDI(building->getAccessFeeDelay());
+								creature->sendSystemMessage(param);
+								return 0;
+							}
+							ManagedReference<StructureSetAccessFeeSession*> session = new StructureSetAccessFeeSession(creature, building);
+							if (session->initializeSession() == 1) {
+								creature->addActiveSession(SessionFacadeType::SETSTRUCTUREACCESSFEE, session);
+								session->promptSetAccessFee();
+							}
+						} else {
+							building->removeAccessFee();
+							creature->sendSystemMessage("Access fee removed");
+						}
+					}
+				}
 				break;
 			case 50:
 				structureManager->promptNameStructure(creature, structureObject, nullptr);
-				break;
-			case 124:
-				creature->executeObjectControllerAction(0x13F7E585, structureObject->getObjectID(), ""); //structureStatus
+				// creature->executeObjectControllerAction(0xC367B461, structureObject->getObjectID(), ""); // nameStructure
 				break;
 			case 69:
 				structureManager->promptSelectSign(structureObject, creature);
 				break;
-			}
-		}
+			case 131: // Assign Droid
+				structureManager->promptMaintenanceDroid(structureObject, creature);
+				break;
 
-		return 0;
-	}
-
-	if (structureObject->isOnAdminList(creature)) {
-
-		StructureManager* structureManager = StructureManager::instance();
-
-		Locker structureLocker(structureObject, creature);
-
-		switch (selectedID) {
-		case 201:
-			structureManager->promptDeleteAllItems(creature, structureObject);
-			break;
-		case 202:
-			structureManager->promptFindLostItems(creature, structureObject);
-			break;
-		case 121:
-			structureObject->sendPermissionListTo(creature, "ADMIN");
-			break;
-		case 119:
-			structureObject->sendPermissionListTo(creature, "ENTRY");
-			break;
-		case 120:
-			structureObject->sendPermissionListTo(creature, "BAN");
-			break;
-		case 122:
-			structureObject->sendPermissionListTo(creature, "VENDOR");
-			break;
-		case 128:
-			creature->executeObjectControllerAction(0x18FC1726, structureObject->getObjectID(), ""); //destroyStructure
-			break;
-		case 129:
-			creature->executeObjectControllerAction(0xE7E35B30, structureObject->getObjectID(), ""); //payMaintenance
-			break;
-		case 70:
-			structureManager->promptWithdrawMaintenance(structureObject, creature);
-			break;
-		case 124:
-			creature->executeObjectControllerAction(0x13F7E585, structureObject->getObjectID(), ""); //structureStatus
-			break;
-		case 127:
-			creature->executeObjectControllerAction(0xF59E3CE1, structureObject->getObjectID(), ""); //declareResidence
-			break;
-		case 125:
-			creature->executeObjectControllerAction(0x786CC38E, structureObject->getObjectID(), ""); //setPrivacy
-			break;
-		case 68:
-			if(structureObject->isBuildingObject()) {
-				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
-				if(!building->hasAccessFee()) {
-
-					if(!building->canChangeAccessFee()) {
-						StringIdChatParameter param("@player_structure:turnstile_wait");
-						param.setDI(building->getAccessFeeDelay());
-						creature->sendSystemMessage(param);
-						return 0;
-					}
-
-					ManagedReference<StructureSetAccessFeeSession*> session = new StructureSetAccessFeeSession(creature, building);
-					if(session->initializeSession() == 1) {
-						creature->addActiveSession(SessionFacadeType::SETSTRUCTUREACCESSFEE, session);
-						session->promptSetAccessFee();
-					}
-				} else {
-					building->removeAccessFee();
-					creature->sendSystemMessage("Access fee removed");
+			case RADIAL_VIEW_HOUSE_STORAGE: // View House Storage
+				if (structureObject->isBuildingObject()) {
+					structureManager->promptViewHouseStorage(creature, structureObject);
 				}
-			}
-			break;
-		case 50:
-			structureManager->promptNameStructure(creature, structureObject, nullptr);
-			//creature->executeObjectControllerAction(0xC367B461, structureObject->getObjectID(), ""); //nameStructure
-			break;
-		case 69:
-			structureManager->promptSelectSign(structureObject, creature);
-			break;
-		case 131: // Assign Droid
-			structureManager->promptMaintenanceDroid(structureObject,creature);
-			break;
-		}
+				break;
 
+			// NEW: Pack Up House (non-civic only)
+			case RADIAL_PACK_UP_HOUSE: {
+				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
+					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+					if (building != nullptr) {
+						if (!HousePackupManager::instance()->packUpHouse(building, creature)) {
+							creature->sendSystemMessage("Pack up failed.");
+						}
+					}
+				}
+				break;
+			}
+
+			default:
+				break;
+		}
 	}
 
-	if(selectedID == 130 && (structureObject->isOnAdminList(creature) || structureObject->isOnPermissionList("VENDOR", creature))) {
+	// Vendor creation (admin or vendor permission)
+	if (selectedID == 130 && (structureObject->isOnAdminList(creature) || structureObject->isOnPermissionList("VENDOR", creature))) {
 		if (creature->hasSkill("crafting_artisan_business_03")) {
 			creature->executeObjectControllerAction(STRING_HASHCODE("createvendor")); // Create Vendor
 		}
 	}
-
 
 	return 0;
 }

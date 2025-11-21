@@ -20,6 +20,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Medic", "doc1"},
         {"Droids", "droid1"},
         {"Tailor", "tailor1"},
+        {"Travel", "travel1"}, 
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
@@ -245,6 +246,85 @@ newbuff1 = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(newbuff1);
+
+travel1 = ConvoScreen:new {
+    id = "travel1",
+    leftDialog = "",
+    customDialogText = "Where are you heading?",
+    stopConversation = "false",
+    options = {
+        {"Return Ticket (Coronet) - 25k", "option301"},
+        {"Dantooine - Force Crystal Cave [Hard Difficulty] - 25k", "travel_force_cave_confirm"},
+        {"Dathomir - Nightsister Rancor Cave [Hard Difficulty] - 25k", "travel_nightsister_cave_confirm"},
+        {"Talus - GCW Cave [Medium Difficulty] - 25k", "travel_gcw_cave_confirm"},
+        {"Naboo - Blue Shadow Virus Bunker [Medium Difficulty] - 25k", "travel_bsv_confirm"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(travel1)
+
+--========================
+-- Travel confirm screens
+--========================
+
+travel_force_cave_confirm = ConvoScreen:new {
+    id = "travel_force_cave_confirm",
+    leftDialog = "",
+    customDialogText = "Travel to the Force Crystal Cave on Dantooine for 25,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Yes, send me there.", "travel_force_cave_teleport"},
+        {"No, show me travel options.", "travel1"},
+    }
+}
+myswg_vendor_conv:addScreen(travel_force_cave_confirm)
+
+travel_nightsister_cave_confirm = ConvoScreen:new {
+    id = "travel_nightsister_cave_confirm",
+    leftDialog = "",
+    customDialogText = "Travel to the Nightsister Rancor Cave on Dathomir for 25,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Yes, send me there.", "travel_nightsister_cave_teleport"},
+        {"No, show me travel options.", "travel1"},
+    }
+}
+myswg_vendor_conv:addScreen(travel_nightsister_cave_confirm)
+
+travel_gcw_cave_confirm = ConvoScreen:new {
+    id = "travel_gcw_cave_confirm",
+    leftDialog = "",
+    customDialogText = "Travel to the GCW Cave on Talus for 25,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Yes, send me there.", "travel_gcw_cave_teleport"},
+        {"No, show me travel options.", "travel1"},
+    }
+}
+myswg_vendor_conv:addScreen(travel_gcw_cave_confirm)
+
+travel_bsv_confirm = ConvoScreen:new {
+    id = "travel_bsv_confirm",
+    leftDialog = "",
+    customDialogText = "Travel to the Blue Shadow Virus Bunker on Naboo for 25,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Yes, send me there.", "travel_bsv_teleport"},
+        {"No, show me travel options.", "travel1"},
+    }
+}
+myswg_vendor_conv:addScreen(travel_bsv_confirm)
+
+travel_complete = ConvoScreen:new {
+    id = "travel_complete",
+    leftDialog = "",
+    customDialogText = "Safe travels.",
+    stopConversation = "true",
+    options = {
+        -- no options; this screen just closes the conversation
+    }
+}
+myswg_vendor_conv:addScreen(travel_complete)
 
 myswg_vendor_accept_quest = ConvoScreen:new {    
     id = "buff1",
@@ -813,6 +893,13 @@ myswg_vendor_accept_quest = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
+myswg_vendor_accept_quest = ConvoScreen:new {    
+    id = "option301",
+    leftDialog = "",
+    customDialogText = "Enjoy!",
+    stopConversation = "true",
+    options = { }
+}
 myswg_vendor_conv:addScreen(myswg_vendor_accept_quest);
 myswg_vendor_deny_quest = ConvoScreen:new {
     id = "deny_quest",
@@ -825,7 +912,7 @@ myswg_vendor_conv:addScreen(myswg_vendor_deny_quest);
 myswg_vendor_insufficient_funds = ConvoScreen:new {
     id = "insufficient_funds",  
     leftDialog = "", 
-    customDialogText = "Sorry, but you don't have enough cash credits with you to purchase that. Head on over to the bank. I'll be here when ya get back!",
+    customDialogText = "Sorry, but you don't have enough credits to purchase that at this time.",
     stopConversation = "true",
     options = { }
 }

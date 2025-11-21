@@ -47,7 +47,7 @@ object_tangible_loot_loot_schematic_technical_console_s01_schematic = object_tan
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_architect_production_04",
 	targetDraftSchematic = "object/draft_schematic/furniture/furniture_technical_console_s01.iff",
-	targetUseCount = 1,
+	targetUseCount = 3,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_technical_console_s01_schematic, "object/tangible/loot/loot_schematic/technical_console_s01_schematic.iff")

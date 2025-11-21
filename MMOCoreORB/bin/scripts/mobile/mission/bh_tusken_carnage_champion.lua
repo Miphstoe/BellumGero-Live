@@ -32,12 +32,10 @@ bh_tusken_carnage_champion = Creature:new {
 			groups = {
 				{group = "armor_attachments", chance = 2000000},
 				{group = "clothing_attachments", chance = 2000000},
-				{group = "power_crystals", chance = 1000000},
-				{group = "color_crystals", chance = 500000},
-				{group = "weapon_component_advanced", chance = 1000000},
-				{group = "chemistry_component_advanced", chance = 1000000},
+				{group = "weapon_component_advanced", chance = 1500000},
+				{group = "chemistry_component_advanced", chance = 1500000},
 				{group = "coa_encoded_disk_fragments", chance = 1000000},
-				{group = "bounty_hunter_armor_schematics", chance = 1000000},
+				{group = "bounty_hunter_armor_schematics", chance = 1500000},
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
@@ -47,12 +45,10 @@ bh_tusken_carnage_champion = Creature:new {
 			groups = {
 				{group = "armor_attachments", chance = 2000000},
 				{group = "clothing_attachments", chance = 2000000},
-				{group = "power_crystals", chance = 1000000},
-				{group = "color_crystals", chance = 500000},
-				{group = "weapon_component_advanced", chance = 1000000},
-				{group = "chemistry_component_advanced", chance = 1000000},
+				{group = "weapon_component_advanced", chance = 1500000},
+				{group = "chemistry_component_advanced", chance = 1500000},
 				{group = "coa_encoded_disk_fragments", chance = 1000000},
-				{group = "bounty_hunter_armor_schematics", chance = 1000000},
+				{group = "bounty_hunter_armor_schematics", chance = 1500000},
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
@@ -62,17 +58,27 @@ bh_tusken_carnage_champion = Creature:new {
 			groups = {
 				{group = "armor_attachments", chance = 2000000},
 				{group = "clothing_attachments", chance = 2000000},
-				{group = "power_crystals", chance = 1000000},
-				{group = "color_crystals", chance = 500000},
-				{group = "weapon_component_advanced", chance = 1000000},
-				{group = "chemistry_component_advanced", chance = 1000000},
+				{group = "weapon_component_advanced", chance = 1500000},
+				{group = "chemistry_component_advanced", chance = 1500000},
 				{group = "coa_encoded_disk_fragments", chance = 1000000},
-				{group = "bounty_hunter_armor_schematics", chance = 1000000},
+				{group = "bounty_hunter_armor_schematics", chance = 1500000},
 				{group = "jetpack_base", chance = 500000},
 				{group = "jetpack_parts", chance = 500000},
 			},
 			lootChance = 1500000
 		},
+		{
+        	groups = {
+				{group = "rifle_lightning_heavy_schematic", chance = 10000000}
+			},
+			lootChance = 500000, -- 5.00% total chance
+		},
+        {
+            groups = {
+                {group = "bg_token_group", chance = 10000000}
+            },
+            lootChance = 250000
+        }
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

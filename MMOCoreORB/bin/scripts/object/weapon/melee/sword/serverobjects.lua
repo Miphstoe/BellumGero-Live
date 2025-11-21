@@ -72,3 +72,6 @@ includeFile("weapon/melee/sword/sword_lightsaber_vader.lua")
 includeFile("weapon/melee/sword/sword_nyax.lua")
 includeFile("weapon/melee/sword/sword_nyax_ranged.lua")
 includeFile("weapon/melee/sword/sword_rantok.lua")
+includeFile("weapon/melee/sword/sword_wookiee.lua")
+
+includeFile("weapon/melee/sword/sword_obsidian.lua")

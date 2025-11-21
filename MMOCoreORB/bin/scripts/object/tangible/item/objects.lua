@@ -335,3 +335,9 @@ object_tangible_item_shared_vehicle_customization = SharedTangibleObjectTemplate
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_item_shared_vehicle_customization, "object/tangible/item/shared_vehicle_customization.iff")
+
+object_tangible_item_shared_return_ticket = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/item/shared_return_ticket.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_item_shared_return_ticket, "object/tangible/item/shared_return_ticket.iff")

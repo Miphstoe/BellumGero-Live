@@ -317,6 +317,9 @@ includeFile("conversations/pet/pets_conv.lua")
 -- Misc
 includeFile("conversations/misc/bartender_conv.lua")
 includeFile("conversations/misc/philosopher_conv.lua")
+includeFile("conversations/misc/gcw_cave_daily_convo.lua")
+includeFile("conversations/misc/bsv_gate_convo.lua")
+includeFile("conversations/misc/bsv_quiz_convo.lua")
 
 -- Junk Dealers
 includeFile("conversations/junk_dealer/junk_dealer_generic_conv.lua")
@@ -336,3 +339,17 @@ includeFile("conversations/junk_dealer/junk_dealer_sneg_conv.lua")
 
 -- MY SWG VENDOR
 includeFile("conversations/tasks/myswg_vendor_conv.lua")
+-- Add this line to your conversations.lua BEFORE the conversation template
+print("Loading conversations.lua - checking sea vendor...")
+includeFile("conversations/tasks/sea_attachment_vendor_conv.lua")
+print("Finished loading sea vendor")
+
+-- BG TOKEN VENDOR
+print("Loading conversations.lua - checking bg_token vendor...")
+includeFile("conversations/vendors/bg_token_vendor_conv.lua")
+print("Finished loading bg_token vendor")
+
+-- BG TOKEN VENDOR 2
+print("Loading conversations.lua - checking bg_token vendor 2...")
+includeFile("conversations/vendors/bg_token_vendor_2_conv.lua")
+print("Finished loading bg_token vendor 2")

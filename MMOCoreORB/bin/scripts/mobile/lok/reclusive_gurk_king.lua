@@ -35,6 +35,12 @@ reclusive_gurk_king = Creature:new {
 				{group = "gurk_king_common", chance = 10000000}
 			},
 			lootChance = 1900000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

@@ -513,8 +513,10 @@ tatooine = {
 		{name = "Mos Entha Starport", x = 1266.0996, z = 7, y = 3065.1392, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle B", x = 1395.447, z = 7, y = 3467.0117, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle A", x = 1730.8828, z = 7, y = 3184.6135, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 6},
-		{name = "Wayfair Shuttleport", x = -5043, z = 75, y = -6549, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Jabba's Palace", x = -6171.6, z = 90.0, y = -6381.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 0, landingRange = 3}
+		{name = "Wayfar Shuttleport", x = -5043, z = 75, y = -6549, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Jabba's Palace", x = -6171.6, z = 90.0, y = -6381.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 0, landingRange = 3},
+		{name = "Mos Taike", x = 3736, z = 6, y = 2300, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
+
 	},
 
 	jtlLaunchPoint = {"space_tatooine",2300,-5900,1900},
@@ -561,7 +563,8 @@ tatooine = {
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.486657, oz = 0, ow = 0.873593, x = -1271.07, z = 12, y = -3590.22, parentid = 0},
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.514176, oz = 0, ow = 0.857684, x = -2896.35, z = 5, y = 2130.87, parentid = 0},
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.989124, oz = 0, ow = -0.147086, x = 1299.08, z = 7, y = 3145.21, parentid = 0},
-		{templateFile = "object/building/tatooine/shuttleport_tatooine.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -5064, z = 75, y = -6549, parentid = 0}
+		{templateFile = "object/building/tatooine/shuttleport_tatooine.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -5064, z = 75, y = -6549, parentid = 0},
+		{templateFile = "object/building/tatooine/shuttleport_tatooine.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = 3717, z = 7, y = 2301, parentid = 0}
 	}
 }
 

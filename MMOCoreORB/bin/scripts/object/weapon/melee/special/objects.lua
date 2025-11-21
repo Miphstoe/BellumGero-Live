@@ -172,3 +172,10 @@ object_weapon_melee_special_shared_vibroknuckler = SharedWeaponObjectTemplate:ne
 }
 
 ObjectTemplates:addClientTemplate(object_weapon_melee_special_shared_vibroknuckler, "object/weapon/melee/special/shared_vibroknuckler.iff")
+
+
+object_weapon_melee_special_shared_punchknuckler = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/melee/special/shared_punchknuckler.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_melee_special_shared_punchknuckler, "object/weapon/melee/special/shared_punchknuckler.iff")

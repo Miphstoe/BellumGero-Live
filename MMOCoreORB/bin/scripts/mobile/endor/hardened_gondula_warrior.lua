@@ -37,6 +37,12 @@ hardened_gondula_warrior = Creature:new {
 				{group = "gondula_tribe_tier_2", chance = 10000000}
 			},
 			lootChance = 2060000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

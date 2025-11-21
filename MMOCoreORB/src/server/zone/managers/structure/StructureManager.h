@@ -62,9 +62,6 @@ public:
 	 * Simply creates and places a structure at the provided coordinates.
 	 */
 	StructureObject* placeStructure(CreatureObject* creature, const String& structureTemplatePath, float x, float y, int angle, int persistenceLevel = 1);
-
-	StructureObject* placeCamp(CreatureObject* creature, CustomizationVariables* customVars, const String& structureTemplatePath, float x, float y, int angle, int persistenceLevel = 1);
-
 	/**
 	 * Destroys the structure after the confirmation of the player.
 	 * All items still in the structure will be deleted from the database. If the maintenance requirements are met, it is to be redeeded.
@@ -72,7 +69,9 @@ public:
 	 * post: structure deleted*
 	 * @param structure The structure that is being destroyed.
 	 */
-	int destroyStructure(StructureObject* structureObject, bool playEffect = false);
+	int destroyStructure(StructureObject* structureObject, bool playEffect = false, bool refundLots = true);
+
+	StructureObject* placeCamp(CreatureObject* player, CustomizationVariables* customVars, const String& campTemplatePath, float x, float y, int angle, int persistenceLevel);
 
 	/**
 	 * Redeeds the structure, returning it to the player in deed form with any surplus maintenance and power attached.
@@ -135,6 +134,13 @@ public:
 	 * @param structure The structure containing the item.
 	 */
 	void moveFirstItemTo(CreatureObject* creature, StructureObject* structure);
+
+	/**
+	 * Displays a SUI list showing all items in the house with filtering options.
+	 * @param creature The creature to show the storage list to.
+	 * @param structure The structure/building to display contents from.
+	 */
+	void promptViewHouseStorage(CreatureObject* creature, StructureObject* structure);
 
 	/**
 	 * Sends a Sui prompt to the player asking if they want to pay the

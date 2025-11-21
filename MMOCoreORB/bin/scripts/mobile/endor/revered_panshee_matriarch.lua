@@ -34,6 +34,12 @@ revered_panshee_matriarch = Creature:new {
 				{group = "panshee_tribe_tier_1", chance = 10000000}
 			},
 			lootChance = 1780000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

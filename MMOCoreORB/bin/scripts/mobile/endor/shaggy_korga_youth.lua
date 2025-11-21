@@ -37,6 +37,12 @@ shaggy_korga_youth = Creature:new {
 				{group = "korga_tribe_tier_1", chance = 10000000}
 			},
 			lootChance = 1300000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

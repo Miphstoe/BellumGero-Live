@@ -205,7 +205,7 @@ int CampKitMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creat
 		CustomizationVariables* customVars = campKit->getCustomizationVariables();
 
 		/// Create Structure
-		StructureObject* campObject = StructureManager::instance()->placeCamp(player, customVars, campTemplate, player->getPositionX(), player->getPositionY(), (int)player->getDirectionAngle());
+		StructureObject* campObject = StructureManager::instance()->placeCamp(player, customVars, campTemplate, player->getPositionX(), player->getPositionY(), (int)player->getDirectionAngle(), 1);
 
 		if (campObject == nullptr) {
 			error("Unable to create camp: " + campTemplate);

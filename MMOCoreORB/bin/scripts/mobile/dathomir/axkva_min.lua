@@ -52,6 +52,18 @@ axkva_min = Creature:new {
 				{group = "axkva_min", chance = 10000000},
 			},
 			lootChance = 500000 --5%
+		},
+		{
+        	groups = {
+		    	{group = "endgame_weapon_schematics", chance = 10000000}
+	    	},
+			lootChance = 500000, -- 5.00% total chance
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 2500000
 		}
 	},
 

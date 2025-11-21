@@ -1,0 +1,40 @@
+package server.zone.objects.player.sessions;
+
+import engine.util.Facade;
+import server.zone.objects.creature.CreatureObject;
+import server.zone.objects.region.CityRegion;
+import server.zone.objects.scene.SceneObject;
+include server.zone.objects.scene.SessionFacadeType;
+
+class CityFactionAlignmentSession extends Facade {
+	protected CreatureObject creatureObject;
+	protected CityRegion cityRegion;
+	protected SceneObject terminalObject;
+
+	protected string factionAlignment;
+
+	public CityFactionAlignmentSession(CreatureObject creature, CityRegion city, SceneObject terminal = null) {
+		Logger.setLoggingName("CityFactionAlignmentSession");
+		Logger.setLogging(true);
+
+		creatureObject = creature;
+		cityRegion = city;
+		terminalObject = terminal;
+	}
+
+	public native int initializeSession();
+
+	public native int sendConfirmationBox(final string choice);
+
+	public native int acceptChoice();
+
+	public int cancelSession() {
+		creatureObject.dropActiveSession(SessionFacadeType.CITYFACTION);
+
+		return 0;
+	}
+
+	public int clearSession() {
+		return 0;
+	}
+}

@@ -34,6 +34,12 @@ rsf_pilot = Creature:new {
 			groups = {
 				{group = "naboo_security_force_tier_1", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 150000
 		}
 	},
 

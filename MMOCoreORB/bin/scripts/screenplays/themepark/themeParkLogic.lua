@@ -1076,7 +1076,7 @@ function ThemeParkLogic:notifyItemLooted(pItem, pLooter)
 
 	if self:lootedByCorrectPlayer(itemID, looterID) then
 		local currentLootCount = readData(looterID .. ":requiredItemsLooted") + 1
-		writeData(looterID, ":requiredItemsLooted", currentLootCount)
+		writeData(looterID .. ":requiredItemsLooted", currentLootCount)
 
 		if currentLootCount == self:getMissionLootCount(pLooter) then
 			self:completeMission(pLooter)

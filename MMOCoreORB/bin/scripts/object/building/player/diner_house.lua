@@ -2,7 +2,7 @@ object_building_player_diner_house = object_building_player_shared_diner_house:n
 	lotSize = 3,
     storageLimit = 600,
 	baseMaintenanceRate = 16,
-	allowedZones = {"dantooine", "lok", "tatooine", "naboo", "rori", "corellia", "talus"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

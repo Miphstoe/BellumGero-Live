@@ -544,3 +544,9 @@ object_weapon_melee_2h_sword_shared_2h_sword_scythe = SharedWeaponObjectTemplate
 }
 
 ObjectTemplates:addClientTemplate(object_weapon_melee_2h_sword_shared_2h_sword_scythe, "object/weapon/melee/2h_sword/shared_2h_sword_scythe.iff")
+
+object_weapon_melee_2h_sword_shared_2h_sword_obsidian = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/melee/2h_sword/shared_2h_sword_obsidian.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_melee_2h_sword_shared_2h_sword_obsidian, "object/weapon/melee/2h_sword/shared_2h_sword_obsidian.iff")

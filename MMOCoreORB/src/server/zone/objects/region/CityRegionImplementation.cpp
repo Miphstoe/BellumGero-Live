@@ -84,6 +84,8 @@ void CityRegionImplementation::initialize() {
 
 	assessmentPending = false;
 
+	cityFactionAlignment = "neutral"; // Default to neutral faction
+
 	zoningRights.setAllowOverwriteInsertPlan();
 	zoningRights.setNullValue(0);
 
@@ -216,24 +218,54 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
         CreatureObject* creature = cast<CreatureObject*>(object);
         StringIdChatParameter params("city/city", "city_enter_city"); //You have entered %TT (%TO).
         params.setTT(getCityRegionName());
-        UnicodeString strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
-        		
-		if (citySpecialization.isEmpty()) {
-            params.setTO(strRank);
+
+        // Handle custom rank name for Cosmopolis (rank 6)
+        UnicodeString strRank;
+        if (cityRank == 6) {
+            strRank = "Cosmopolis";
+        } else {
+            strRank = StringIdManager::instance()->getStringId(String("@city/city:rank" + String::valueOf(cityRank)).hashCode());
         }
-        else {
+
+        // Build city info string with rank, specialization, and faction alignment
+        UnicodeString cityInfo = strRank;
+
+        // Add specialization if present
+        if (!citySpecialization.isEmpty()) {
+            // Try to get displayName first, fall back to string ID
             UnicodeString citySpec;
-            // Handle custom metropolis specializations
-           // Handle custom metropolis specializations
-		if (citySpecialization == "Enhancement District") {
-    			citySpec = "Enhancement District";
-} 			else if (citySpecialization == "Industrial District") {
-    			citySpec = "Industrial District";
-} 		else {
-    		citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
-}
-            params.setTO(strRank + ", " + citySpec);
+            auto zs = getZone()->getZoneServer();
+            if (zs != nullptr) {
+                CityManager* cityManager = zs->getCityManager();
+                if (cityManager != nullptr) {
+                    const CitySpecialization* spec = cityManager->getCitySpecialization(citySpecialization);
+                    if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+                        citySpec = spec->getDisplayName();
+                    } else {
+                        citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+                    }
+                } else {
+                    citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+                }
+            } else {
+                citySpec = StringIdManager::instance()->getStringId(citySpecialization.hashCode());
+            }
+            cityInfo = cityInfo + ", " + citySpec;
         }
+
+        // Add faction alignment if present
+        if (!cityFactionAlignment.isEmpty() && cityFactionAlignment != "neutral") {
+            // Capitalize faction name for display
+            UnicodeString factionDisplay = cityFactionAlignment;
+            if (factionDisplay == "rebel") {
+                factionDisplay = "Rebel Aligned";
+            } else if (factionDisplay == "imperial") {
+                factionDisplay = "Imperial Aligned";
+            }
+            cityInfo = cityInfo + ", " + factionDisplay;
+        }
+
+        params.setTO(cityInfo);
         creature->sendSystemMessage(params);
         applySpecializationModifiers(creature);
     }
@@ -1340,6 +1372,20 @@ void CityRegionImplementation::cleanupMissionTerminals(int limit) {
 			cityMissionTerminals.removeElementAt(0);
 		}
 	}
+}
+
+void CityRegionImplementation::setCityFactionAlignment(const String& alignment) {
+	// Only allow faction alignment changes for cities at Metropolis rank or higher
+	if (cityRank < RANK_METROPOLIS) {
+		return;
+	}
+
+	// Validate alignment value
+	if (alignment != "rebel" && alignment != "imperial" && alignment != "neutral") {
+		return;
+	}
+
+	cityFactionAlignment = alignment;
 }
 
 uint64 CityRegionImplementation::getObjectID() const {

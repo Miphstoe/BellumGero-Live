@@ -38,6 +38,12 @@ elite_canyon_corsair = Creature:new {
 			groups = {
 				{group = "canyon_corsair_tier_2", chance = 10000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

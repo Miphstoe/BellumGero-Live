@@ -59,3 +59,5 @@ includeFile("weapon/ranged/carbine/carbine_ee3.lua")
 includeFile("weapon/ranged/carbine/carbine_elite.lua")
 includeFile("weapon/ranged/carbine/carbine_laser.lua")
 includeFile("weapon/ranged/carbine/carbine_nym_slugthrower.lua")
+
+includeFile("weapon/ranged/carbine/carbine_e5.lua")

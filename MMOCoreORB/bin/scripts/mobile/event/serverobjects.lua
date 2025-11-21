@@ -13,3 +13,6 @@ includeFile("event/city_control_landing/luke_skywalker_city_control.lua")
 --eventmobs
 includeFile("event/r2_d2_event.lua")
 includeFile("event/c3po_event.lua")
+includeFile("event/krayt_dragon_ancient_event.lua")
+includeFile("event/mutant_crazed_geonosian_guard.lua")
+includeFile("event/giant_ewok_warchief.lua")

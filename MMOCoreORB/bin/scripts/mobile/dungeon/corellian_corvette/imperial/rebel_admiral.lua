@@ -43,6 +43,12 @@ rebel_admiral = Creature:new {
 				{group = "rebel_officer_common", chance = 450000},
 				{group = "wearables_scarce", chance = 1000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 350000
 		}
 	},
 

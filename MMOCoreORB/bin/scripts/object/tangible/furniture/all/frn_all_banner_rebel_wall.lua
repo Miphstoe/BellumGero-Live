@@ -1,0 +1,5 @@
+object_tangible_furniture_all_frn_all_banner_rebel_wall = object_tangible_furniture_all_shared_frn_all_banner_rebel_wall:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_all_frn_all_banner_rebel_wall, "object/tangible/furniture/all/frn_all_banner_rebel_wall.iff")

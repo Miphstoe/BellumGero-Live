@@ -44,23 +44,43 @@
 Melee2hHit3Command = {
         name = "melee2hhit3",
 	damageMultiplier = 4.0,
-	speedMultiplier = 2.5,
-	healthCostMultiplier = 1.25,
-	actionCostMultiplier = 2.0,
-	mindCostMultiplier = 1.25,
-        accuracyBonus = 10,
+	speedMultiplier = 3.0,
+	healthCostMultiplier = 2,
+	actionCostMultiplier = 2,
+	mindCostMultiplier = 2,
+    accuracyBonus = 25,
+	areaAction = true,
+	areaRange = 16,
 
 	stateEffects = {
+      StateEffect( 
+		BLIND_EFFECT, 
+		{}, 
+		{ "blind_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		65, 
+		0, 
+		30 
+	  ),
+	  StateEffect( 
+		STUN_EFFECT, 
+		{}, 
+		{ "stun_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		75, 
+		0, 
+		45 
+	  ),
 	  StateEffect( 
 		DIZZY_EFFECT, 
 		{}, 
 		{ "dizzy_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		50, 
+		65, 
 		0, 
 		30 
-	  )
-	},
+	  ),
+    },
 	
 	weaponType = TWOHANDMELEEWEAPON,
 

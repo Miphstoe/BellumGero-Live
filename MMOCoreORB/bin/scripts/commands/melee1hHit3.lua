@@ -44,27 +44,47 @@
 Melee1hHit3Command = {
         name = "melee1hhit3",
 
-	damageMultiplier = 5.0,
-	speedMultiplier = 2.25,
-	healthCostMultiplier = 1.0,
-	actionCostMultiplier = 1.0,
-	mindCostMultiplier = 2.0,
-        accuracyBonus = 25,
+	damageMultiplier = 4.0,
+	speedMultiplier = 3.0,
+	healthCostMultiplier = 2,
+	actionCostMultiplier = 2,
+	mindCostMultiplier = 2,
+    accuracyBonus = 25,
+	areaAction = true,
+	areaRange = 16,
 
 	animation = "combo_5a", 
 	animType = GENERATE_INTENSITY,
 
 	stateEffects = {
-	  StateEffect( 
+      StateEffect( 
 		BLIND_EFFECT, 
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
 		30 
-	  )
-	},
+	  ),
+	  StateEffect( 
+		STUN_EFFECT, 
+		{}, 
+		{ "stun_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		75, 
+		0, 
+		45 
+	  ),
+	  StateEffect( 
+		DIZZY_EFFECT, 
+		{}, 
+		{ "dizzy_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		65, 
+		0, 
+		30 
+	  ),
+    },
 
 	combatSpam = "chomok",
 	

@@ -66,3 +66,7 @@ includeFile("weapon/ranged/rifle/rifle_t21.lua")
 includeFile("weapon/ranged/rifle/rifle_tenloss_dxr6_disruptor_loot.lua")
 includeFile("weapon/ranged/rifle/rifle_tusken.lua")
 includeFile("weapon/ranged/rifle/rifle_victor_tusken.lua")
+
+includeFile("weapon/ranged/rifle/rifle_dc15.lua")
+includeFile("weapon/ranged/rifle/rifle_lightning_heavy.lua")
+

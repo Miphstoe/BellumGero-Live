@@ -108,6 +108,8 @@ class CityRegion extends ManagedObject implements Logger {
 
 	protected string citySpecialization; //We want to implement this with skill mods.
 
+	protected string cityFactionAlignment; // "rebel", "imperial", or "neutral"
+
 	protected StructureObject cityHall;
 
 	@dereferenced
@@ -137,6 +139,7 @@ class CityRegion extends ManagedObject implements Logger {
 	public static final byte RANK_TOWNSHIP = 3;
 	public static final byte RANK_CITY = 4;
 	public static final byte RANK_METROPOLIS = 5;
+	public static final byte RANK_COSMOPOLIS = 6;
 
 	public static final byte TAX_INCOME = 0;
 	public static final byte TAX_PROPERTY = 1;
@@ -455,6 +458,14 @@ class CityRegion extends ManagedObject implements Logger {
 	public void setCitySpecialization(final string spec) {
 		citySpecialization = spec;
 	}
+
+	@read
+	public string getCityFactionAlignment() {
+		return cityFactionAlignment;
+	}
+
+	@preLocked
+	public native void setCityFactionAlignment(final string alignment);
 
 	@preLocked
 	public native void setRegionName(final string fullPath);

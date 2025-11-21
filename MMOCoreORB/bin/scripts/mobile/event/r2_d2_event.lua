@@ -13,15 +13,15 @@ r2_d2_event = Creature:new {
     mobType = MOB_DROID,
 
     -- Tuning: “somewhat strong” elite add, not a boss
-    level = 85,
+    level = 200,
     chanceHit = 0.62,
     damageMin = 350,
     damageMax = 520,
     baseXp = 8500,
 
     -- HAM / Armor / Resists (droid-leaning, generally high; LS kept modest)
-    baseHAM = 46000,
-    baseHAMmax = 52000,
+    baseHAM = 210000,
+    baseHAMmax = 250000,
     armor = 1,  -- 0=none, 1=light, 2=medium, 3=heavy (keep light to let resists do the work)
     -- Resist order: kinetic, energy, blast, heat, cold, electricity, acid, stun, lightsaber
     resists = {65, 65, 55, 60, 55, 70, 45, 35, 25},
@@ -50,7 +50,7 @@ r2_d2_event = Creature:new {
     --   "object/mobile/r2.iff"
     --   "object/mobile/droid_r2.iff"
     --   "object/mobile/astromech_r2.iff"
-    templates = {"object/mobile/r2.iff"},
+    templates = {"object/mobile/r2d2.iff"},
 
     lootGroups = {
 		{

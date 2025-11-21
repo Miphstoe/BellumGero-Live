@@ -802,7 +802,7 @@ void CreatureManagerImplementation::droidHarvest(Creature* creature, CreatureObj
 		return;
 	}
 	int ownerSkill = owner->getSkillMod("creature_harvesting");
-	int quantityExtracted = int(quantity * float(ownerSkill / 100.0f));
+	int quantityExtracted = int(quantity * float(ownerSkill / 75.0f));
 	// add in droid bonus
 	quantityExtracted = Math::max(quantityExtracted, 3);
 	ManagedReference<ResourceSpawn*> resourceSpawn = resourceManager->getCurrentSpawn(restype, droidZone->getZoneName());
@@ -841,7 +841,9 @@ void CreatureManagerImplementation::droidHarvest(Creature* creature, CreatureObj
 	if (creature->getParent().get() != nullptr)
 		quantityExtracted = 1;
 
-	int droidBonus = DroidMechanics::determineDroidSkillBonus(ownerSkill,harvestBonus,quantityExtracted);
+	// Calculate droid bonus: harvestBonus stat directly adds percentage to harvested amount
+	// Example: harvestBonus of 50 = 50% extra resources, 100 = 100% extra (double)
+	int droidBonus = int(quantityExtracted * (harvestBonus / 100.0f));
 
 	quantityExtracted += droidBonus;
 	// add to droid inventory if there is space available, otherwise to player

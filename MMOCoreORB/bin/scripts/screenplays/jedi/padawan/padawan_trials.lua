@@ -2,22 +2,94 @@ local ObjectManager = require("managers.object.object_manager")
 
 PadawanTrials = ScreenPlay:new {}
 
-function PadawanTrials:doPadawanTrialsSetup(pPlayer)
-	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+-- Configuration: Cost to skip Padawan Trials (in credits)
+local PADAWAN_TRIAL_SKIP_COST = 5000000  -- 5 million credits
 
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		sui.setTitle("@jedi_trials:padawan_trials_title")
-		sui.setPrompt("@jedi_trials:padawan_trials_started_not_eligible")
-	else
-		JediTrials:createClosestShrineWaypoint(pPlayer)
-		sui.setTitle("@jedi_trials:force_shrine_title")
-		sui.setPrompt("@jedi_trials:padawan_trials_intro_msg")
+-- Attempts to charge 'amount' credits (tries CASH first, then BANK) and instantly unlock Padawan.
+function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
+	if (pPlayer == nil) then
+		return
 	end
 
+	amount = amount or PADAWAN_TRIAL_SKIP_COST
+
+	local creature = CreatureObject(pPlayer)
+
+	if (creature == nil) then
+		return
+	end
+
+	-- Safety check: Prevent double payment if already Padawan or higher
+	if (creature:hasSkill("force_title_jedi_rank_02") or creature:hasSkill("force_title_jedi_rank_03")) then
+		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+		sui.setTitle("@jedi_trials:force_shrine_title")
+		sui.setPrompt("You are already a Jedi Padawan or higher.\n\nYou cannot purchase trials you have already completed.")
+		sui.setOkButtonText("@jedi_trials:button_close")
+		sui.sendTo(pPlayer)
+		return
+	end
+
+	local cash = creature:getCashCredits() or 0
+	local bank = creature:getBankCredits() or 0
+	local total = cash + bank
+
+	-- Check if player has enough credits
+	if (total < amount) then
+		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+		sui.setTitle("@jedi_trials:force_shrine_title")
+		sui.setPrompt("You do not have enough credits.\n\nRequired: " .. amount .. " credits\n\nYou have:\n  Cash: " .. cash .. " credits\n  Bank: " .. bank .. " credits\n  Total: " .. total .. " credits")
+		sui.setOkButtonText("@jedi_trials:button_close")
+		sui.sendTo(pPlayer)
+		return
+	end
+
+	-- Deduct credits: cash first, then bank
+	local remaining = amount
+	local cashDeducted = 0
+	local bankDeducted = 0
+
+	if (cash > 0 and remaining > 0) then
+		cashDeducted = math.min(cash, remaining)
+		creature:subtractCashCredits(cashDeducted)
+		remaining = remaining - cashDeducted
+	end
+
+	if (remaining > 0) then
+		bankDeducted = remaining
+		creature:subtractBankCredits(bankDeducted)
+	end
+
+	-- Clean up any trial state
+	self:removeAllAreas(pPlayer)
+	JediTrials:setCurrentTrial(pPlayer, 0)
+	JediTrials:setTrialsCompleted(pPlayer, 0)
+	JediTrials:resetTrialData(pPlayer, "padawan")
+
+	-- Unlock Padawan status
+	JediTrials:unlockJediPadawan(pPlayer)
+
+	-- Send confirmation with payment breakdown
+	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+	sui.setTitle("@jedi_trials:force_shrine_title")
+	local confirmMsg = "Payment received: " .. amount .. " credits"
+	if (cashDeducted > 0 and bankDeducted > 0) then
+		confirmMsg = confirmMsg .. "\n  (Cash: " .. cashDeducted .. ", Bank: " .. bankDeducted .. ")"
+	elseif (cashDeducted > 0) then
+		confirmMsg = confirmMsg .. "\n  (From Cash)"
+	else
+		confirmMsg = confirmMsg .. "\n  (From Bank)"
+	end
+	confirmMsg = confirmMsg .. "\n\nYou have been granted the rank of Jedi Padawan!\n\nMay the Force be with you."
+	sui.setPrompt(confirmMsg)
+	sui.setOkButtonText("@jedi_trials:button_close")
 	sui.sendTo(pPlayer)
 end
 
 function PadawanTrials:startPadawanTrials(pObject, pPlayer)
+	if (pPlayer == nil) then 
+		return 
+	end
+
 	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
 		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
 		sui.setTitle("@jedi_trials:padawan_trials_title")
@@ -27,24 +99,37 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 	end
 
 	local sui = SuiMessageBox.new("PadawanTrials", "jediPadawanTrialsStartCallback")
-	sui.setTargetNetworkId(SceneObject(pObject):getObjectID())
+	
+	if (pObject ~= nil) then
+		sui.setTargetNetworkId(SceneObject(pObject):getObjectID())
+	end
+	
 	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt("@jedi_trials:padawan_trials_start_query")
-	sui.setOkButtonText("@jedi_trials:button_yes") -- Yes
-	sui.setCancelButtonText("@jedi_trials:button_no") -- No
+	sui.setPrompt("@jedi_trials:padawan_trials_intro_msg\n\nWould you like to begin the Padawan Trials normally, or pay " .. PADAWAN_TRIAL_SKIP_COST .. " credits to complete them instantly?\n\n(Credits will be taken from cash first, then bank)")
+
+	sui.setOkButtonText("@jedi_trials:button_yes")
+	sui.setCancelButtonText("@jedi_trials:button_no")
+	sui.setOtherButtonText("Pay " .. PADAWAN_TRIAL_SKIP_COST)
+
+	sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
+	sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
+
 	sui.sendTo(pPlayer)
 end
 
-function PadawanTrials:jediPadawanTrialsStartCallback(pPlayer, pSui, eventIndex, args)
-	if (pPlayer == nil) then
-		return
+function PadawanTrials:jediPadawanTrialsStartCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then 
+		return 
 	end
 
 	local cancelPressed = (eventIndex == 1)
-
-	if (cancelPressed) then
-		return
+	
+	if (cancelPressed) then 
+		return 
 	end
+
+	local args = {...}
+	local otherPressed = (args ~= nil and args[1] ~= nil)
 
 	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
 		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
@@ -54,8 +139,14 @@ function PadawanTrials:jediPadawanTrialsStartCallback(pPlayer, pSui, eventIndex,
 		return
 	end
 
-	local rand = getRandomNumber(1, #padawanTrialQuests) -- 16 Jedi Padawan Trials
+	if (otherPressed) then
+		self:tryCompletePadawanForCredits(pPlayer, PADAWAN_TRIAL_SKIP_COST)
+		return
+	end
 
+	-- Normal trial start
+	local rand = getRandomNumber(1, #padawanTrialQuests)
+	
 	while padawanTrialQuests[rand].trialType == TRIAL_LIGHTSABER do
 		rand = getRandomNumber(1, #padawanTrialQuests)
 	end

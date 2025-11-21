@@ -14,6 +14,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/tangible/terminal/guild/GuildTerminal.h"
+#include "server/zone/objects/region/CityRegion.h"
 
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/managers/city/PayPropertyTaxTask.h"
@@ -171,9 +172,8 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 	TangibleObjectImplementation::notifyInsertToZone(zone);
 
 	if (isCivicStructure()) {
-		if (structurePermissionList.containsList("ADMIN"))
-			structurePermissionList.dropList("ADMIN");
-
+		// Drop permission lists that civic structures don't use
+		// Keep ADMIN and VENDOR lists for city halls
 		if (structurePermissionList.containsList("ENTRY"))
 			structurePermissionList.dropList("ENTRY");
 
@@ -182,9 +182,6 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 
 		if (structurePermissionList.containsList("BAN"))
 			structurePermissionList.dropList("BAN");
-
-		if (structurePermissionList.containsList("VENDOR"))
-			structurePermissionList.dropList("VENDOR");
 	}
 
 	if (!staticObject && getBaseMaintenanceRate() != 0 && !isTurret() && !isMinefield() && !isScanner()) {
@@ -814,7 +811,15 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 
 	if (ghost != nullptr && ghost->isPrivileged())
 		return true;
-	else if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
+
+	// Check if this is a civic structure and the player is the mayor
+	if (isCivicStructure()) {
+		ManagedReference<CityRegion*> city = const_cast<ManagedWeakReference<CityRegion*>&>(cityRegion).get();
+		if (city != nullptr && city->isMayor(player->getObjectID()))
+			return true;
+	}
+
+	if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
 		return true;
 	} else {
 		ManagedReference<GuildObject*> guild = player->getGuildObject().get();
@@ -901,4 +906,44 @@ bool StructureObjectImplementation::isOnPermissionList(const String& listName, C
 	}
 
 	return false;
+}
+
+void StructureObjectImplementation::sendPermissionListTo(CreatureObject* creature, const String& listName) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	structurePermissionList.sendTo(creature, listName);
+}
+
+int StructureObjectImplementation::togglePermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.togglePermission(listName, objectID);
+}
+
+int StructureObjectImplementation::grantPermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.grantPermission(listName, objectID);
+}
+
+int StructureObjectImplementation::revokePermission(const String& listName, uint64 objectID) {
+	// Ensure the permission list exists (for civic structures that may not have them initialized)
+	if (!structurePermissionList.containsList(listName)) {
+		structurePermissionList.addList(listName);
+	}
+	return structurePermissionList.revokePermission(listName, objectID);
+}
+
+int StructureObjectImplementation::revokeAllPermissions(uint64 objectID) {
+	return structurePermissionList.revokeAllPermissions(objectID);
+}
+
+void StructureObjectImplementation::revokeAllPermissions() {
+	structurePermissionList.revokeAllPermissions();
 }

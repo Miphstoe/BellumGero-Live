@@ -36,6 +36,12 @@ minor_gorax = Creature:new {
 				{group = "clothing_attachments", chance = 2000000}
 			},
 			lootChance = 3620000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

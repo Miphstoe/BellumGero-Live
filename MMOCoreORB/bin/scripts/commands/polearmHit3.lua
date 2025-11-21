@@ -44,13 +44,24 @@
 PolearmHit3Command = {
         name = "polearmhit3",
 	damageMultiplier = 4.0,
-	speedMultiplier = 2.5,
-	healthCostMultiplier = 2.0,
-	actionCostMultiplier = 1.5,
-	mindCostMultiplier = 1.5,
-	accuracyBonus = 10,
+	speedMultiplier = 3.0,
+	healthCostMultiplier = 2,
+	actionCostMultiplier = 2,
+	mindCostMultiplier = 2,
+    accuracyBonus = 25,
+	areaAction = true,
+	areaRange = 16,
 
 	stateEffects = {
+      StateEffect( 
+		BLIND_EFFECT, 
+		{}, 
+		{ "blind_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		65, 
+		0, 
+		30 
+	  ),
 	  StateEffect( 
 		STUN_EFFECT, 
 		{}, 
@@ -61,15 +72,15 @@ PolearmHit3Command = {
 		45 
 	  ),
 	  StateEffect( 
-		POSTUREDOWN_EFFECT, 
-		{ "postureDownRecovery" }, 
-		{ "posture_change_down_defense" }, 
-		{},
-		100, 
+		DIZZY_EFFECT, 
+		{}, 
+		{ "dizzy_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		65, 
 		0, 
-		0 
-	  )
-	},
+		30 
+	  ),
+    },
 
 	animation = "combo_5a", 
 	animType = GENERATE_INTENSITY,

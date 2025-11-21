@@ -401,27 +401,23 @@ void CityManagerImplementation::promptCitySpecialization(CityRegion* city, Creat
 	mayor->addActiveSession(SessionFacadeType::CITYSPEC, session);
 	session->initializeSession();
 }
-// Add this BEFORE the changeCitySpecialization function
-static bool isMetropolisOnlySpecialization(const String& spec) {
-    if (spec == "@city/city:city_spec_enhancement_district" || 
-        spec == "@city/city:city_spec_industrial_district") {
-        return true;
-    }
-    return false;
-}
-
 void CityManagerImplementation::changeCitySpecialization(CityRegion* city, CreatureObject* mayor, const String& spec) {
     Locker _clock(city, mayor);
-    
-    // Add rank validation for metropolis-only specializations
-    int cityRank = city->getCityRank();
-    
-    // Check if this is a metropolis-only specialization
-    if (isMetropolisOnlySpecialization(spec) && cityRank < METROPOLIS) {
-        mayor->sendSystemMessage("This specialization requires Metropolis rank.");
-        return;
+
+    // Validate city rank against specialization requirements
+    if (!spec.isEmpty()) {
+        const CitySpecialization* citySpec = getCitySpecialization(spec);
+        if (citySpec != nullptr) {
+            int minRank = citySpec->getMinRank();
+            int cityRank = city->getCityRank();
+
+            if (minRank > 0 && cityRank < minRank) {
+                mayor->sendSystemMessage("This specialization requires a higher city rank.");
+                return;
+            }
+        }
     }
-    
+
     city->setCitySpecialization(spec);
     PlayerObject* ghost = mayor->getPlayerObject().get();
     if (ghost != nullptr && !ghost->isPrivileged())
@@ -468,10 +464,17 @@ void CityManagerImplementation::sendStatusReport(CityRegion* city, CreatureObjec
 	list->addMenuItem("@city/city:citizen_prompt " + String::valueOf(city->getCitizenCount())); //Citizenship:
 	list->addMenuItem("@city/city:structures_prompt " + String::valueOf(city->getAllStructuresCount())); //Structures:
 
-	if (city->getCitySpecialization().isEmpty())
+	if (city->getCitySpecialization().isEmpty()) {
 		list->addMenuItem("@city/city:specialization_prompt @city/city:null"); //Specialization: None
-	else
-		list->addMenuItem("@city/city:specialization_prompt " + city->getCitySpecialization()); //Specialization:
+	} else {
+		// Get the display name if available, otherwise use string ID
+		String specDisplay = city->getCitySpecialization();
+		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
+		if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+			specDisplay = spec->getDisplayName();
+		}
+		list->addMenuItem("@city/city:specialization_prompt " + specDisplay); //Specialization:
+	}
 
 	list->addMenuItem("@city/city:current_trainers " + String::valueOf(city->getSkillTrainerCount())); // Current Trainer Count:
 	list->addMenuItem("@city/city:current_mt " + String::valueOf(city->getMissionTerminalCount())); // Current Terminal Count:
@@ -800,7 +803,7 @@ void CityManagerImplementation::processCityUpdate(CityRegion* city) {
 
 		if (citizens < maintainCitizens) {
 			contractCity(city);
-		} else if (cityRank < METROPOLIS) {
+		} else if (cityRank < COSMOPOLIS) {
 			int advanceCitizens = citizensPerRank.get(cityRank);
 
 			if (citizens >= advanceCitizens) {
@@ -860,6 +863,9 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 	Locker _lock(city);
 
+	// Cosmopolis gets 75% discount, all other ranks get 50% discount
+	float rankDiscount = (city->getCityRank() == COSMOPOLIS) ? 0.25f : maintenanceDiscount;
+
 	// pay city hall maintenanance first
 	ManagedReference<StructureObject*> ch = city->getCityHall();
 
@@ -871,7 +877,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 	if (structureTemplate == nullptr)
 		return;
 
-	int thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+	int thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 	totalPaid +=  collectCivicStructureMaintenance(ch, city, thisCost);
 
 	for(int i = 0; i < city->getStructuresCount(); i++) {
@@ -879,7 +885,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 		if(str != nullptr && str != ch) {
 			structureTemplate = cast<SharedStructureObjectTemplate*> (str->getObjectTemplate());
-			thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+			thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 			totalPaid += collectCivicStructureMaintenance(str, city, thisCost);
 		}
 	}
@@ -895,27 +901,27 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 
 			if(structure != nullptr) {
 				structureTemplate = cast<SharedStructureObjectTemplate*>(structure->getObjectTemplate());
-				thisCost = maintenanceDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
+				thisCost = rankDiscount * structureTemplate->getCityMaintenanceAtRank(city->getCityRank() - 1);
 				totalPaid += collectCivicStructureMaintenance(structure, city, thisCost);
 			}
 		} else {
-			thisCost = maintenanceDiscount * 1500;
+			thisCost = rankDiscount * 1500;
 			totalPaid += collectNonStructureMaintenance(decoration, city, thisCost);
 		}
 	}
 
 	for(int i = city->getMissionTerminalCount() - 1; i >= 0; i--) {
-		thisCost = maintenanceDiscount * 1500;
+		thisCost = rankDiscount * 1500;
 		totalPaid += collectNonStructureMaintenance(city->getCityMissionTerminal(i), city, thisCost);
 	}
 
 	for(int i = city->getSkillTrainerCount() -1; i >=0; i--) {
-		thisCost = maintenanceDiscount * 1500;
+		thisCost = rankDiscount * 1500;
 		totalPaid += collectNonStructureMaintenance(city->getCitySkillTrainer(i), city, thisCost);
 	}
 
 	if(city->isRegistered()) {
-		thisCost = maintenanceDiscount * 5000;
+		thisCost = rankDiscount * 5000;
 
 		if(city->getCityTreasury() >= thisCost) {
 			city->subtractFromCityTreasury(thisCost);
@@ -930,7 +936,7 @@ void CityManagerImplementation::deductCityMaintenance(CityRegion* city) {
 		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
 
 		if (spec != nullptr) {
-			thisCost = maintenanceDiscount * spec->getCost();
+			thisCost = rankDiscount * spec->getCost();
 
 			if(city->getCityTreasury() >= thisCost) {
 				city->subtractFromCityTreasury(thisCost);
@@ -1270,6 +1276,8 @@ void CityManagerImplementation::updateCityVoting(CityRegion* city, bool override
 void CityManagerImplementation::contractCity(CityRegion* city) {
 	uint8 newRank = city->getCityRank() - 1;
 	bool startedAssessment = false;
+	bool specializationRemoved = false;
+	String removedSpecName = "";
 
 	if (city->getCitizenCount() < citizensPerRank.get(0)) {
 		newRank = OUTPOST;
@@ -1279,10 +1287,41 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 	}
 
 	if (newRank < TOWNSHIP) {
+		String currentSpec = city->getCitySpecialization();
+		if (!currentSpec.isEmpty()) {
+			const CitySpecialization* spec = getCitySpecialization(currentSpec);
+			if (spec != nullptr && !spec->getDisplayName().isEmpty()) {
+				removedSpecName = spec->getDisplayName();
+			} else {
+				removedSpecName = currentSpec;
+			}
+			specializationRemoved = true;
+		}
 		city->setCitySpecialization("");
 
 		if (city->isRegistered())
 			unregisterCity(city, nullptr);
+	} else {
+		// Check if current specialization requires a higher rank than the new rank
+		String currentSpec = city->getCitySpecialization();
+		if (!currentSpec.isEmpty()) {
+			const CitySpecialization* spec = getCitySpecialization(currentSpec);
+			if (spec != nullptr) {
+				int minRank = spec->getMinRank();
+				if (minRank > newRank) {
+					// Specialization requires higher rank than city now has, remove it
+					if (!spec->getDisplayName().isEmpty()) {
+						removedSpecName = spec->getDisplayName();
+					} else {
+						removedSpecName = currentSpec;
+					}
+					specializationRemoved = true;
+					city->setCitySpecialization("");
+					// Reset the region to remove specialization modifiers from players
+					city->setRadius(city->getRadius());
+				}
+			}
+		}
 	}
 
 	ManagedReference<SceneObject*> obj = zoneServer->getObject(city->getMayorID());
@@ -1312,6 +1351,17 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 		} else {
 			return;
 		}
+
+		// Notify mayor if specialization was removed due to rank demotion
+		if (specializationRemoved) {
+			StringIdChatParameter specParams;
+			specParams.setStringId("Your city's specialization (" + removedSpecName + ") has been removed because the city rank is now too low.");
+			specParams.setTO(city->getCityRegionName());
+
+			UnicodeString specSubject = "City Specialization Removed";
+
+			chatManager->sendMail("@city/city:new_city_from", specSubject, specParams, mayor->getFirstName(), nullptr);
+		}
 	}
 
 	city->removeAmenitiesOutsideCity(radiusPerRank.get(newRank - 1));
@@ -1328,7 +1378,7 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 void CityManagerImplementation::expandCity(CityRegion* city) {
 	uint8 currentRank = city->getCityRank();
 
-	if (currentRank == METROPOLIS) //City doesn't expand if it's metropolis.
+	if (currentRank == COSMOPOLIS) //City doesn't expand if it's cosmopolis (max rank).
 		return;
 
 	uint8 newRank = currentRank + 1;
@@ -1387,7 +1437,7 @@ void CityManagerImplementation::destroyCity(CityRegion* city) {
 
 	city->destroyNavMesh();
 
-	for (int i = CityManager::METROPOLIS; i > 0; i--) {
+	for (int i = CityManager::COSMOPOLIS; i > 0; i--) {
 		city->destroyAllStructuresForRank(uint8(i), false);
 	}
 
@@ -1479,7 +1529,7 @@ void CityManagerImplementation::sendManageMilitia(CityRegion* city, CreatureObje
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(creature->getObjectID()) && !ghost->isAdmin()) {
+	if (!city->isMayor(creature->getObjectID()) && !city->isMilitiaMember(creature->getObjectID()) && !ghost->isAdmin()) {
 		return;
 	}
 
@@ -1535,7 +1585,7 @@ void CityManagerImplementation::addMilitiaMember(CityRegion* city, CreatureObjec
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+	if (!city->isMayor(mayor->getObjectID()) && !city->isMilitiaMember(mayor->getObjectID()) && !ghost->isAdmin())
 		return;
 
 	PlayerManager* playerManager = zoneServer->getPlayerManager();
@@ -1577,7 +1627,7 @@ void CityManagerImplementation::removeMilitiaMember(CityRegion* city, CreatureOb
 	if (ghost == nullptr)
 		return;
 
-	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+	if (!city->isMayor(mayor->getObjectID()) && !city->isMilitiaMember(mayor->getObjectID()) && !ghost->isAdmin())
 		return;
 
 	ManagedReference<SceneObject*> obj = zoneServer->getObject(militiaid);
@@ -1617,13 +1667,13 @@ void CityManagerImplementation::sendCityAdvancement(CityRegion* city, CreatureOb
 		return;
 
 	int currentRank = citizensPerRank.get(rank - 1);
-	int nextRank = citizensPerRank.get(rank == METROPOLIS ? rank - 1 : rank);
+	int nextRank = citizensPerRank.get(rank == COSMOPOLIS ? rank - 1 : rank);
 
 	listbox->addMenuItem("@city/city:city_rank_prompt @city/city:rank" + String::valueOf(rank)); // City Rank:
 	listbox->addMenuItem("@city/city:city_pop_prompt " + String::valueOf(city->getCitizenCount()) + " @city/city:citizens"); // City Population: citizens
 	listbox->addMenuItem("@city/city:pop_req_current_rank " + String::valueOf(currentRank) + " @city/city:citizens"); // Pop. Req. for Current Rank: citizens
 
-	if (rank < CityRegion::RANK_METROPOLIS)
+	if (rank < CityRegion::RANK_COSMOPOLIS)
 		listbox->addMenuItem("@city/city:pop_req_next_rank " + String::valueOf(nextRank) + " @city/city:citizens"); // Pop. Req. for Next Rank: citizens
 	else
 		listbox->addMenuItem("@city/city:pop_req_next_rank @city/city:max_rank_achieved"); // Pop. Req. for Next Rank: Maximum City Rank Achieved
@@ -1963,6 +2013,9 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 	if (ghost == nullptr)
 		return;
 
+	// Cosmopolis gets 75% discount, all other ranks get 50% discount
+	float rankDiscount = (city->getCityRank() == COSMOPOLIS) ? 0.25f : maintenanceDiscount;
+
 	int totalcost = 0;
 
 	ManagedReference<SuiListBox*> maintList = new SuiListBox(creature, SuiWindowType::CITY_TREASURY_REPORT);
@@ -1978,7 +2031,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (cityHall->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int thiscost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int thiscost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 
 				totalcost += thiscost;
 
@@ -2001,7 +2054,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		const CitySpecialization* spec = getCitySpecialization(city->getCitySpecialization());
 
 		if (spec != nullptr) {
-			int speccost = maintenanceDiscount * spec->getCost();
+			int speccost = rankDiscount * spec->getCost();
 			totalcost += speccost;
 			maintList->addMenuItem("@city/city:specialization " + String::valueOf(speccost) + " @city/city:credits");
 		}
@@ -2027,7 +2080,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (structure->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int thiscost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int thiscost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 
 				totalcost += thiscost;
 
@@ -2054,13 +2107,13 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 			Reference<SharedStructureObjectTemplate*> serverTemplate = cast<SharedStructureObjectTemplate*> (structure->getObjectTemplate());
 
 			if (serverTemplate != nullptr) {
-				int decCost = maintenanceDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
+				int decCost = rankDiscount * serverTemplate->getCityMaintenanceAtRank(city->getCityRank()-1);
 				totalcost += decCost;
 				maintString += structure->getObjectName()->getFullPath() + " : " + String::valueOf(decCost) + " @city/city:credits";
 			}
 
 		} else if ( sceno != nullptr) {
-			int decCost = maintenanceDiscount * 1500;
+			int decCost = rankDiscount * 1500;
 			totalcost += decCost;
 			maintString += sceno->getObjectName()->getFullPath() + " : " + String::valueOf(decCost) + " @city/city:credits";
 		}
@@ -2074,7 +2127,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		ManagedReference<SceneObject*> trainer = city->getCitySkillTrainer(i);
 
 		if (trainer != nullptr) {
-			int trainerCost = maintenanceDiscount * 1500;
+			int trainerCost = rankDiscount * 1500;
 			totalcost += trainerCost;
 			maintList->addMenuItem("@city/city:default \t" + trainer->getObjectName()->getFullPath() + " : " + String::valueOf(trainerCost) + " @city/city:credits");
 		}
@@ -2084,7 +2137,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 		ManagedReference<SceneObject*> term = city->getCityMissionTerminal(i);
 
 		if (term != nullptr) {
-			int terminalCost = maintenanceDiscount * 1500;
+			int terminalCost = rankDiscount * 1500;
 			totalcost += terminalCost;
 			maintList->addMenuItem("@city/city:default \t" + term->getObjectName()->getFullPath() + " : " + String::valueOf(terminalCost) + " @city/city:credits");
 		}
@@ -2303,6 +2356,44 @@ const CitySpecialization* CityManagerImplementation::getCitySpecialization(const
 		return nullptr;
 
 	return &citySpecializations.get(name);
+}
+
+String CityManagerImplementation::getCitySpecializationNameByDisplay(const String& displayName) {
+	// First try exact match on name (in case it's a string ID)
+	if (citySpecializations.containsKey(displayName))
+		return displayName;
+
+	// Search for a specialization with matching displayName
+	HashTableIterator<String, CitySpecialization> iter = citySpecializations.iterator();
+
+	while (iter.hasNext()) {
+		const String& key = iter.getNextKey();
+		const CitySpecialization& spec = citySpecializations.get(key);
+
+		if (spec.getDisplayName() == displayName)
+			return key;
+	}
+
+	// If not found, return the input (might be a string ID)
+	return displayName;
+}
+
+void CityManagerImplementation::getAvailableSpecializations(int cityRank, Vector<String>& specNames) {
+	// Iterate through all loaded specializations using HashTableIterator
+	HashTableIterator<String, CitySpecialization> iter = citySpecializations.iterator();
+
+	while (iter.hasNext()) {
+		const String& key = iter.getNextKey();
+		const CitySpecialization& spec = citySpecializations.get(key);
+
+		// Check if city meets minimum rank requirement
+		int minRank = spec.getMinRank();
+		if (minRank > 0 && cityRank < minRank)
+			continue;
+
+		// Add this specialization name to the list
+		specNames.add(key);
+	}
 }
 
 const CityTax* CityManagerImplementation::getCityTax(int idx) {

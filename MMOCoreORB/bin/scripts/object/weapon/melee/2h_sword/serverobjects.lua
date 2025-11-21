@@ -56,3 +56,5 @@ includeFile("weapon/melee/2h_sword/2h_sword_katana_quest.lua")
 includeFile("weapon/melee/2h_sword/2h_sword_maul.lua")
 includeFile("weapon/melee/2h_sword/2h_sword_maul_ranged.lua")
 includeFile("weapon/melee/2h_sword/2h_sword_scythe.lua")
+
+includeFile("weapon/melee/2h_sword/2h_sword_obsidian.lua")

@@ -11,6 +11,10 @@
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/structure/StructureManager.h"
+#include "server/zone/managers/housepackup/HousePackupManager.h"
+#include "server/zone/objects/tangible/deed/structure/StructureDeed.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/managers/vendor/VendorManager.h"
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/chat/ChatManager.h"
@@ -1775,6 +1779,14 @@ void PlayerObjectImplementation::notifyOnline() {
 		}
 	}
 
+	// Update online status for player-placed bounties (non-Jedi players)
+	if (missionManager != nullptr) {
+		uint64 id = playerCreature->getObjectID();
+		if (missionManager->hasPlayerBountyTargetInList(id)) {
+			missionManager->updatePlayerBountyOnlineStatus(id, true);
+		}
+	}
+
 	playerCreature->schedulePersonalEnemyFlagTasks();
 
 	if (ConfigManager::instance()->isPvpBroadcastChannelEnabled() && playerCreature->getFactionStatus() == FactionStatus::OVERT) {
@@ -1834,6 +1846,14 @@ void PlayerObjectImplementation::notifyOffline() {
 
 	if (missionManager != nullptr && playerCreature->hasSkill("force_title_jedi_rank_02")) {
 		missionManager->updatePlayerBountyOnlineStatus(playerCreature->getObjectID(), false);
+	}
+
+	// Update offline status for player-placed bounties (non-Jedi players)
+	if (missionManager != nullptr) {
+		uint64 id = playerCreature->getObjectID();
+		if (missionManager->hasPlayerBountyTargetInList(id)) {
+			missionManager->updatePlayerBountyOnlineStatus(id, false);
+		}
 	}
 
 	ManagedReference<SurveySession*> session = playerCreature->getActiveSession(SessionFacadeType::SURVEY).castTo<SurveySession*>();
@@ -3062,21 +3082,46 @@ void PlayerObjectImplementation::deleteAllWaypoints() {
 }
 
 int PlayerObjectImplementation::getLotsRemaining() {
-	Locker locker(asPlayerObject());
+    Locker locker(asPlayerObject());
 
-	int lotsRemaining = maximumLots;
+    int lotsRemaining = maximumLots;
 
-	for (int i = 0; i < ownedStructures.size(); ++i) {
-		auto oid = ownedStructures.get(i);
+    // Subtract lots consumed by placed structures
+    for (int i = 0; i < ownedStructures.size(); ++i) {
+        auto oid = ownedStructures.get(i);
+        Reference<StructureObject*> structure = getZoneServer()->getObject(oid).castTo<StructureObject*>();
+        if (structure != nullptr) {
+            lotsRemaining = lotsRemaining - structure->getLotSize();
+        }
+    }
 
-		Reference<StructureObject*> structure = getZoneServer()->getObject(oid).castTo<StructureObject*>();
+    /* COMMENTED OUT - Let Core3 handle lots normally
+    // Subtract lots consumed by packed deeds in inventory
+    CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+    if (creature != nullptr) {
+        SceneObject* inventory = creature->getSlottedObject("inventory");
+        if (inventory != nullptr) {
+            for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
+                SceneObject* item = inventory->getContainerObject(i);
+                if (item != nullptr && item->isDeedObject()) {
+                    if (HousePackupManager::instance()->hasSavedPayloadForDeed(item->getObjectID())) {
+                        StructureDeed* deed = cast<StructureDeed*>(item);
+                        if (deed != nullptr) {
+                            String templatePath = deed->getGeneratedObjectTemplate();
+                            Reference<SharedStructureObjectTemplate*> tmpl = dynamic_cast<SharedStructureObjectTemplate*>(
+                                TemplateManager::instance()->getTemplate(templatePath.hashCode()));
+                            if (tmpl != nullptr) {
+                                lotsRemaining -= tmpl->getLotSize();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    */
 
-		if (structure != nullptr) {
-			lotsRemaining = lotsRemaining - structure->getLotSize();
-		}
-	}
-
-	return lotsRemaining;
+    return lotsRemaining;
 }
 
 int PlayerObjectImplementation::getOwnedChatRoomCount() {

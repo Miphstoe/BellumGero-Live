@@ -37,6 +37,12 @@ bedraggled_korga_laborer = Creature:new {
 				{group = "korga_tribe_tier_1", chance = 10000000}
 			},
 			lootChance = 1540000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

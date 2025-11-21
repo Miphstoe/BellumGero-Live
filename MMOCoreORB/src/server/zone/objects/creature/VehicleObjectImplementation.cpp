@@ -26,7 +26,8 @@ void VehicleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* men
 	menuResponse->addRadialMenuItem(205, 1, "@pet/pet_menu:menu_enter_exit");
 	menuResponse->addRadialMenuItem(61, 3, "");
 
-	if (player->getPlayerObject()->isPrivileged() || (checkInRangeGarage() && !isDisabled()))
+	// MODIFIED: Allow repair option even for disabled vehicles
+	if (player->getPlayerObject()->isPrivileged() || checkInRangeGarage())
 		menuResponse->addRadialMenuItem(62, 3, "@pet/pet_menu:menu_repair_vehicle"); //Repair Vehicle
 }
 
@@ -183,7 +184,7 @@ void VehicleObjectImplementation::repairVehicle(CreatureObject* player) {
 		return;
 
 	// check if the vehicle requires repairs
-	if (getConditionDamage() == 0) {
+	if (getConditionDamage() == 0 && !isDisabled()) {
 		player->sendSystemMessage("@pet/pet_menu:undamaged_vehicle"); //The targeted vehicle does not require any repairs at the moment.
 		return;
 	}
@@ -195,11 +196,7 @@ void VehicleObjectImplementation::repairVehicle(CreatureObject* player) {
 			return;
 		}
 
-		// Check if Vehicle is Disabled
-		if (isDisabled()) {
-			player->sendSystemMessage("@pet/pet_menu:cannot_repair_disabled"); //You may not repair a disabled vehicle.
-			return;
-		}
+		// MODIFIED: Removed disabled vehicle check - now allowing repairs on disabled vehicles
 
 		//Need to check if they are city banned.
 		ManagedReference<ActiveArea*> activeArea = getActiveRegion();
@@ -250,6 +247,10 @@ void VehicleObjectImplementation::sendRepairConfirmTo(CreatureObject* player) {
 int VehicleObjectImplementation::calculateRepairCost(CreatureObject* player) {
 	if (player->getPlayerObject()->isPrivileged())
 		return 0;
+
+	// MODIFIED: Charge 100000 credits to repair disabled vehicles
+	if (isDisabled())
+		return 100000;
 
 	return getConditionDamage() * 4;
 }

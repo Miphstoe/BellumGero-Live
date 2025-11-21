@@ -42,6 +42,18 @@ death_watch_overlord = Creature:new {
 				{group = "death_watch_bunker_overlord_quest", chance  = 9500000}
 			},
 			lootChance = 5000000
+		},
+		{
+        	groups = {
+		    	{group = "endgame_weapon_schematics", chance = 10000000}
+	    	},
+	    	lootChance = 500000, -- 5.00% total chance
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

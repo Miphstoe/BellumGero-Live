@@ -13,15 +13,15 @@ c3po_event = Creature:new {
     mobType = MOB_DROID,
 
     -- Tuning: “somewhat strong” like your R2 template
-    level = 85,
+    level = 200,
     chanceHit = 0.62,
     damageMin = 350,
     damageMax = 520,
     baseXp = 8500,
 
     -- HAM / Armor / Resists
-    baseHAM = 46000,
-    baseHAMmax = 52000,
+    baseHAM = 210000,
+    baseHAMmax = 250000,
     armor = 1,  -- light
     -- Resist order: kinetic, energy, blast, heat, cold, electricity, acid, stun, lightsaber
     resists = {65, 65, 55, 60, 55, 70, 45, 35, 25},

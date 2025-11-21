@@ -174,6 +174,23 @@ void BountyMissionObjectiveImplementation::spawnTarget(const String& zoneName) {
 		}
 		if (npcTarget != nullptr) {
 			npcTarget->setCustomObjectName(mission->getTargetName(), true);
+
+			// Set inventory loot ownership to mission owner so bounty mission completion works correctly
+			SceneObject* targetInventory = npcTarget->getSlottedObject("inventory");
+			if (targetInventory != nullptr) {
+				ManagedReference<CreatureObject*> owner = getPlayerOwner();
+				if (owner != nullptr) {
+					GroupObject* group = owner->getGroup();
+					// Set loot owner to player or their group
+					ContainerPermissions* permissions = targetInventory->getContainerPermissionsForUpdate();
+					if (group != nullptr) {
+						permissions->setOwner(group->getObjectID());
+					} else {
+						permissions->setOwner(owner->getObjectID());
+					}
+				}
+			}
+
 			//TODO add observer to catch player kill and fail mission in that case.
 			addObserverToCreature(ObserverEventType::OBJECTDESTRUCTION, npcTarget);
 			addObserverToCreature(ObserverEventType::DAMAGERECEIVED, npcTarget);

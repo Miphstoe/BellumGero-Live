@@ -49,7 +49,9 @@ UnarmedHit3Command = {
 	healthCostMultiplier = 2,
 	actionCostMultiplier = 2,
 	mindCostMultiplier = 2,
-        accuracyBonus = 15,
+    accuracyBonus = 25,
+	areaAction = true,
+	areaRange = 16,
 
 	animation = "combo_5a", 
 	animType = GENERATE_INTENSITY,
@@ -57,16 +59,34 @@ UnarmedHit3Command = {
 
 
 	stateEffects = {
-	  StateEffect( 
+      StateEffect( 
 		BLIND_EFFECT, 
 		{}, 
 		{ "blind_defense" }, 
 		{ "jedi_state_defense", "resistance_states" },
-		40, 
+		65, 
 		0, 
-		30
-	  )
-	},
+		30 
+	  ),
+	  StateEffect( 
+		STUN_EFFECT, 
+		{}, 
+		{ "stun_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		75, 
+		0, 
+		45 
+	  ),
+	  StateEffect( 
+		DIZZY_EFFECT, 
+		{}, 
+		{ "dizzy_defense" }, 
+		{ "jedi_state_defense", "resistance_states" },
+		65, 
+		0, 
+		30 
+	  ),
+    },
 	
 	combatSpam = "spittingrawl",
 	

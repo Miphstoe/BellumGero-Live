@@ -48,7 +48,7 @@ object_building_base_base_building = object_building_base_shared_base_building:n
 	
 	--What zones can this building be built by a player on.
 	--Default is corellia, dantooine, lok, naboo, rori, talus, tatooine
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
 	
 	--The minimum rank of a player city required for this structure to be placed.
 	cityRankRequired = 0,

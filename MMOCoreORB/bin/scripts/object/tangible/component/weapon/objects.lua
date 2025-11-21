@@ -7946,3 +7946,10 @@ object_tangible_component_weapon_shared_weapon_trajectory_computer = SharedTangi
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_component_weapon_shared_weapon_trajectory_computer, "object/tangible/component/weapon/shared_weapon_trajectory_computer.iff")
+
+
+object_tangible_component_weapon_shared_durasteel_reinforcement_core = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/weapon/shared_durasteel_reinforcement_core.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_component_weapon_shared_durasteel_reinforcement_core, "object/tangible/component/weapon/shared_durasteel_reinforcement_core.iff")
