@@ -6171,3 +6171,43 @@ object_draft_schematic_furniture_shared_tanning_hide_2 = SharedDraftSchematicObj
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_tanning_hide_2, "object/draft_schematic/furniture/shared_tanning_hide_2.iff")
+
+
+-- Armoire (Plain)
+object_draft_schematic_furniture_shared_furniture_armoire_plain = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_armoire_plain.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_armoire_plain, "object/draft_schematic/furniture/shared_furniture_armoire_plain.iff")
+
+-- Armoire (Technical)
+object_draft_schematic_furniture_shared_furniture_armoire_technical = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_armoire_technical.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_armoire_technical, "object/draft_schematic/furniture/shared_furniture_armoire_technical.iff")
+
+
+-- Cabinet (Plain)
+object_draft_schematic_furniture_shared_furniture_cabinet_plain = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_cabinet_plain.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_cabinet_plain, "object/draft_schematic/furniture/shared_furniture_cabinet_plain.iff")
+
+-- Cabinet (Technical)
+object_draft_schematic_furniture_shared_furniture_cabinet_technical = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_cabinet_technical.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_cabinet_technical, "object/draft_schematic/furniture/shared_furniture_cabinet_technical.iff")
+
+
+-- Chest (Plain)
+object_draft_schematic_furniture_shared_furniture_chest_plain = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_chest_plain.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_chest_plain, "object/draft_schematic/furniture/shared_furniture_chest_plain.iff")
+
+-- Chest (Technical)
+object_draft_schematic_furniture_shared_furniture_chest_technical = SharedDraftSchematicObjectTemplate:new {
+    clientTemplateFileName = "object/draft_schematic/furniture/shared_furniture_chest_technical.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_furniture_shared_furniture_chest_technical, "object/draft_schematic/furniture_shared_furniture_chest_technical.iff")
+

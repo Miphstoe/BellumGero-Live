@@ -199,3 +199,10 @@ includeFile("tangible/loot/loot_schematic/2h_sword_obsidian_schematic.lua")
 includeFile("tangible/loot/loot_schematic/sword_obsidian_schematic.lua")
 includeFile("tangible/loot/loot_schematic/rifle_lightning_heavy_schematic.lua")
 
+includeFile("tangible/loot/loot_schematic/armoire_plain_schematic.lua")
+includeFile("tangible/loot/loot_schematic/armoire_technical_schematic.lua")
+includeFile("tangible/loot/loot_schematic/cabinet_plain_schematic.lua")
+includeFile("tangible/loot/loot_schematic/cabinet_technical_schematic.lua")
+includeFile("tangible/loot/loot_schematic/chest_plain_schematic.lua")
+includeFile("tangible/loot/loot_schematic/chest_technical_schematic.lua")
+

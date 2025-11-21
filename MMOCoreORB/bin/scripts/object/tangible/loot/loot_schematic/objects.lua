@@ -6426,3 +6426,55 @@ object_tangible_loot_loot_schematic_shared_rifle_lightning_heavy_schematic = Sha
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rifle_lightning_heavy_schematic, "object/tangible/loot/loot_schematic/shared_rifle_lightning_heavy_schematic.iff")
+
+--------------------------------------------------------------------
+
+-- Armoire (Plain)
+object_tangible_loot_loot_schematic_shared_armoire_plain_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_armoire_plain_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_armoire_plain_schematic, "object/tangible/loot/loot_schematic/shared_armoire_plain_schematic.iff")
+
+--------------------------------------------------------------------
+
+-- Armoire (Technical)
+object_tangible_loot_loot_schematic_shared_armoire_technical_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_armoire_technical_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_armoire_technical_schematic, "object/tangible/loot/loot_schematic/shared_armoire_technical_schematic.iff")
+
+--------------------------------------------------------------------
+
+
+-- Cabinet (Plain)
+object_tangible_loot_loot_schematic_shared_cabinet_plain_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_cabinet_plain_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_cabinet_plain_schematic, "object/tangible/loot/loot_schematic/shared_cabinet_plain_schematic.iff")
+
+--------------------------------------------------------------------
+
+-- Cabinet (Technical)
+object_tangible_loot_loot_schematic_shared_cabinet_technical_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_cabinet_technical_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_cabinet_technical_schematic, "object/tangible/loot/loot_schematic/shared_cabinet_technical_schematic.iff")
+
+--------------------------------------------------------------------
+
+
+-- Chest (Plain)
+object_tangible_loot_loot_schematic_shared_chest_plain_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_chest_plain_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_chest_plain_schematic, "object/tangible/loot/loot_schematic/shared_chest_plain_schematic.iff")
+
+--------------------------------------------------------------------
+
+-- Chest (Technical)
+object_tangible_loot_loot_schematic_shared_chest_technical_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_chest_technical_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_chest_technical_schematic, "object/tangible/loot/loot_schematic/shared_chest_technical_schematic.iff")
+
+--------------------------------------------------------------------
