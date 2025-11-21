@@ -1810,3 +1810,10 @@ object_tangible_component_structure_shared_weapon_mount_heavy_stabilization_unit
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_component_structure_shared_weapon_mount_heavy_stabilization_unit, "object/tangible/component/structure/shared_weapon_mount_heavy_stabilization_unit.iff")
+
+
+object_tangible_component_structure_shared_container_expansion_module = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/structure/shared_container_expansion_module.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_component_structure_shared_container_expansion_module, "object/tangible/component/structure/shared_container_expansion_module.iff")

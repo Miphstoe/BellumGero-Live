@@ -47,6 +47,7 @@
 -- Server Objects
 includeFile("tangible/component/structure/capacitor_bank.lua")
 includeFile("tangible/component/structure/connections.lua")
+includeFile("tangible/component/structure/container_expansion_module.lua")
 includeFile("tangible/component/structure/fluidic_drilling_pumping_unit.lua")
 includeFile("tangible/component/structure/generator_turbine.lua")
 includeFile("tangible/component/structure/harvesting_mechanism.lua")
