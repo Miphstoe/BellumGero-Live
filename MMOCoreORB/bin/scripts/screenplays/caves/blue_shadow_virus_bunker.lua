@@ -197,6 +197,74 @@ local function keyHeartbeat(p) return oid(p) .. ":bsv:hb" end
 local MED_DROID_KEY = "bsv:med_droid_oid"
 
 --==================================================
+-- Helper: check if a player is currently inside the BSV bunker building
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:isPlayerInBunker(pPlayer)
+  if pPlayer == nil then
+    return false
+  end
+
+  local pParent = SceneObject(pPlayer):getParent()
+  if pParent == nil then
+    return false
+  end
+
+  local parentSO = SceneObject(pParent)
+  if parentSO == nil or not parentSO:isCellObject() then
+    return false
+  end
+
+  local pBuilding = parentSO:getParent()
+  if pBuilding == nil then
+    return false
+  end
+
+  return SceneObject(pBuilding):getObjectID() == self.buildingID
+end
+
+--==================================================
+-- Helper: clear infection/immune/heartbeat + auth + lab perm
+--          (shared by exit clear + off-bunker heartbeat cleanup)
+--==================================================
+function BlueShadowVirusBunkerScreenPlay:clearBunkerRunState(pPlayer, suppressMessage)
+  if pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() then
+    return
+  end
+
+  suppressMessage = (suppressMessage == true)
+
+  -- Track what we're about to clear so we only message if something changed
+  local hadInfected  = (readData(keyInfected(pPlayer))  == 1)
+  local hadImmune    = (readData(keyImmune(pPlayer))    == 1)
+  local hadHeartbeat = (readData(keyHeartbeat(pPlayer)) == 1)
+  local hadAuthed    = (readData(keyAuthed(pPlayer))    == 1)
+  local hadLabPerm   = false
+
+  -- 1) Clear infection-related flags
+  deleteData(keyInfected(pPlayer))
+  deleteData(keyImmune(pPlayer))
+  deleteData(keyHeartbeat(pPlayer))
+
+  -- 2) Clear bunker auth cache
+  deleteData(keyAuthed(pPlayer))
+
+  -- 3) Remove lab access permission group so the lab door relocks
+  local pGhost = CreatureObject(pPlayer):getPlayerObject()
+  if pGhost ~= nil and PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup) then
+    hadLabPerm = true
+    PlayerObject(pGhost):removePermissionGroup(self.labPermissionGroup, true)
+  end
+
+  -- 4) Optional flavor message, but ONLY if we actually reset something,
+  --    and ONLY if the caller didn't suppress it (e.g., death+clone case).
+  if (not suppressMessage) and (hadInfected or hadImmune or hadHeartbeat or hadAuthed or hadLabPerm) then
+    CreatureObject(pPlayer):sendSystemMessage(
+      "Security and containment systems in the Blue Shadow Virus Facility have been cycled and reset."
+    )
+  end
+end
+
+--==================================================
 -- Startup
 --==================================================
 function BlueShadowVirusBunkerScreenPlay:start()
@@ -378,6 +446,16 @@ function BlueShadowVirusBunkerScreenPlay:infectionHeartbeat(pPlayer, args)
     return 0
   end
 
+  -- NEW: if they are no longer anywhere inside the BSV bunker building,
+  -- treat this as if they hit the exit clear and fully reset their run.
+  -- This cleanly handles death + clone (and any other teleports out).
+  if not self:isPlayerInBunker(pPlayer) then
+    -- We suppress the "Security systems reset" message here so they
+    -- don't get a random system message at the cloner.
+    self:clearBunkerRunState(pPlayer, true)
+    return 0
+  end
+
   -- If they are no longer infected or have become immune, stop enforcing.
   if readData(keyInfected(pPlayer)) ~= 1 or readData(keyImmune(pPlayer)) == 1 then
     deleteData(keyHeartbeat(pPlayer))
@@ -485,38 +563,8 @@ function BlueShadowVirusBunkerScreenPlay:onEnterExitClearArea(pArea, pMoving)
     end
   end
 
-  -- B) Check what we are about to clear so we can suppress the flavor text
-  --    when there was nothing to reset (eg: character has never been inside).
-  local hadInfected  = (readData(keyInfected(pMoving))  == 1)
-  local hadImmune    = (readData(keyImmune(pMoving))    == 1)
-  local hadHeartbeat = (readData(keyHeartbeat(pMoving)) == 1)
-  local hadAuthed    = (readData(keyAuthed(pMoving))    == 1)
-
-  -- We also check lab door permissions below.
-  local hadLabPerm = false
-
-  -- 1) Clear infection-related flags
-  deleteData(keyInfected(pMoving))
-  deleteData(keyImmune(pMoving))
-  deleteData(keyHeartbeat(pMoving)) -- ensure heartbeat stops
-
-  -- 2) Clear bunker auth cache so the gate behaves like "fresh" again
-  --    (they still need the physical key item, just like now)
-  deleteData(keyAuthed(pMoving))
-
-  -- 3) Remove lab access permission group so the lab door relocks
-  local pGhost = CreatureObject(pMoving):getPlayerObject()
-  if pGhost ~= nil and PlayerObject(pGhost):hasPermissionGroup(self.labPermissionGroup) then
-    hadLabPerm = true
-    PlayerObject(pGhost):removePermissionGroup(self.labPermissionGroup, true)
-  end
-
-  -- 4) Optional flavor message, but ONLY if we actually reset something.
-  if hadInfected or hadImmune or hadHeartbeat or hadAuthed or hadLabPerm then
-    CreatureObject(pMoving):sendSystemMessage(
-      "Security and containment systems in the Blue Shadow Virus Facility have been cycled and reset."
-    )
-  end
+  -- Delegate the actual cleanup + conditional messaging to the shared helper.
+  self:clearBunkerRunState(pMoving, false)
 
   return 0
 end
@@ -720,7 +768,7 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     printLuaError("BSV: failed to spawn gate officer at (-3614,30,764).")
   end
 
-    -- Medical droid inside the lab (coords are local to lab cell 9895377)
+  -- Medical droid inside the lab (coords are local to lab cell 9895377)
   local pMed = spawnMobile(self.planet, self.medDroidTemplate, 0, 33.0, -20.0, 145.0, 180, 9895377)
   if pMed ~= nil then
     local oid = SceneObject(pMed):getObjectID()
@@ -737,7 +785,7 @@ function BlueShadowVirusBunkerScreenPlay:spawnMobiles()
     -- EXAMPLES – replace/expand with the real spots you want:
     { 9895372,   -62.7,  -20.0,  87.6,  180, 1800 },
     { 9895370, -62.4,  -20.0,  7.5,  0, 1800 },
-    { 9895379, -39.1,  -12.0,  -4.7, -36, 1800 },
+    { 9895379, 39.1,  -12.0,  -4.7, -36, 1800 },
     { 9895384, -37.4,  -20.0,  123.7, 131, 1800 },
   }
 
