@@ -598,7 +598,7 @@ q037 = ConvoScreen:new {
     customDialogText = "Which ancient Sith Lord's holocron was sought after by both Jedi and Sith?",
     stopConversation = "false",
     options = {
-        {"Darth Revan", "q_failed"},
+        {"Darth Nihilus", "q_failed"},
         {"Darth Sidious", "q_failed"},
         {"Darth Bane", "q_correct"}         -- correct (bottom)
     }
