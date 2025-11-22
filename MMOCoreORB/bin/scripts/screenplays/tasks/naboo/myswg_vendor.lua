@@ -26,7 +26,7 @@ function myswg_vendor:start()
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 1293, 7.0, 3140, 35, 0 )--entha
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 48.33,52.00,-5340.53, 35, 0 )--anc 
 	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 3746.6,6.8,2300.5, -90, 0 )--taike
-	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -5032.8,75.0,6572.5, -37, 0 )--wayfar
+	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -5032.8,75.0,-6572.5, -37, 0 )--wayfar
         
     local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, -2193, 20.0, 2313, 35, 0 )--talus imp
     local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 4447, 2.0, 5271, 35, 0 )--nashal
