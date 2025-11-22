@@ -632,13 +632,14 @@ void PetDeedImplementation::setSpecialResist(unsigned int type) {
 void PetDeedImplementation::adjustPetLevel(CreatureObject* player, CreatureObject* pet) {
 	int newLevel = calculatePetLevel();
 
-	if (newLevel < 1 || newLevel > 75) {
-		player->sendSystemMessage("@bio_engineer:pet_sui_fix_error");
-		return;
-	}
+	// Clamp the calculated level to valid range instead of rejecting it
+	if (newLevel < 1)
+		newLevel = 1;
+	if (newLevel > 75)
+		newLevel = 75;
 
 	level = newLevel;
-	pet->reloadTemplate();
+	pet->setLevel(newLevel, true);
 	player->sendSystemMessage("@bio_engineer:pet_sui_level_fixed");
 }
 

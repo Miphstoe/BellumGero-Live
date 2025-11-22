@@ -11,6 +11,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     stopConversation = "false",
     options = { 
         {"DOC/ENT BUFFS", "newbuff1"},
+        {"Pet Enhance", "petbuff1"},
         {"Weapons", "weaps1"},
         {"Armor", "armor1"},
         {"Loot", "loot1"},
@@ -247,6 +248,18 @@ newbuff1 = ConvoScreen:new {
 }
 myswg_vendor_conv:addScreen(newbuff1);
 
+petbuff1 = ConvoScreen:new {
+    id = "petbuff1",
+    leftDialog = "",
+    customDialogText = "I can enhance your pet with powerful buffs!",
+    stopConversation = "false",
+    options = {
+        {"Pet 2500 Buffs 2hr - 10k", "petbuff_option1"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(petbuff1);
+
 travel1 = ConvoScreen:new {
     id = "travel1",
     leftDialog = "",
@@ -326,7 +339,14 @@ travel_complete = ConvoScreen:new {
 }
 myswg_vendor_conv:addScreen(travel_complete)
 
-myswg_vendor_accept_quest = ConvoScreen:new {    
+myswg_vendor_accept_quest = ConvoScreen:new {
+    id = "petbuff_option1",
+    leftDialog = "",
+    customDialogText = "Your pet has been enhanced!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_accept_quest = ConvoScreen:new {
     id = "buff1",
     leftDialog = "",
     customDialogText = "Enjoy!",

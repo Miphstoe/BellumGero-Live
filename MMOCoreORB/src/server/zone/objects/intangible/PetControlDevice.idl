@@ -387,4 +387,12 @@ class PetControlDevice extends ControlDevice {
 
 	@dirty
 	public native string getRequiredAstromechCert();
+
+	@preLocked
+	@arg1preLocked
+	public native void syncPetLevel(CreatureObject player);
+
+	@preLocked
+	@arg1preLocked
+	public native void adjustPetStats(CreatureObject player, int adjustOption);
 }
