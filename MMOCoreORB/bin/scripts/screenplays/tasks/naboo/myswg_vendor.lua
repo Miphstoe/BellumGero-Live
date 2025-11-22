@@ -1149,6 +1149,16 @@ local MySwgTravelDestinations = {
                     charge(2000)
                     CreatureObject(conversingPlayer):reset_buffs()
 
+                elseif (optionLink == "petbuff_option1" and not canAfford(10000)) then
+                    -- Bail if the player doesn't have enough cash on hand.
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "petbuff_option1" and canAfford(10000)) then
+                    -- Charge player for pet enhancement
+                    charge(10000)
+                    -- Apply pet enhancement
+                    CreatureObject(conversingPlayer):enhancePet()
+
                -- elseif (optionLink == "buff3" and not canAfford(30000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.

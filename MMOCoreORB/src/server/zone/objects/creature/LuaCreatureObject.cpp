@@ -170,6 +170,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getSpawnerID", &LuaCreatureObject::getSpawnerID },
 		{ "storePets", &LuaCreatureObject::storePets },
 		{ "reset_buffs", &LuaCreatureObject::reset_buffs },
+		{ "enhancePet", &LuaCreatureObject::enhancePet },
 
 		// JTL
 		{ "isRebelPilot", &LuaCreatureObject::isRebelPilot },
@@ -1630,12 +1631,68 @@ int LuaCreatureObject::reset_buffs(lua_State* L) {
     }
     realObject->sendSystemMessage("Your Buffs Have Been Reset.");
     realObject->clearBuffs(true, false);
-    
+
     ManagedReference<PlayerObject*> ghost = realObject->getPlayerObject();
     if (ghost != nullptr) {
         ghost->setFoodFilling(0);
         ghost->setDrinkFilling(0);
     }
-    
+
     return 0;
+}
+
+int LuaCreatureObject::enhancePet(lua_State* L) {
+	// Get the player
+	CreatureObject* player = realObject;
+	if (player == nullptr)
+		return 0;
+
+	// Get the player's PlayerObject ghost
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	if (ghost == nullptr) {
+		player->sendSystemMessage("You do not have an active pet to enhance.");
+		return 0;
+	}
+
+	// Find the first active pet from the player's active pets list
+	AiAgent* activePet = nullptr;
+	for (int i = 0; i < ghost->getActivePetsSize(); ++i) {
+		ManagedReference<AiAgent*> pet = ghost->getActivePet(i);
+		if (pet != nullptr && !pet->isDead()) {
+			activePet = pet.get();
+			break;
+		}
+	}
+
+	if (activePet == nullptr) {
+		player->sendSystemMessage("You do not have an active pet to enhance.");
+		return 0;
+	}
+
+	// Check if pet is in combat
+	if (activePet->isInCombat()) {
+		player->sendSystemMessage("Your pet is in combat and cannot be enhanced right now.");
+		return 0;
+	}
+
+	// Apply enhancement buffs to the pet
+	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
+
+	// Apply 2500 buff points to the pet for 2 hours (7200 seconds)
+	// Medical buffs for health attributes
+	playerManager->healEnhance(player, activePet, 0, 2500, 7200.0f); // medical_enhance_health
+	playerManager->healEnhance(player, activePet, 1, 2500, 7200.0f); // medical_enhance_strength
+	playerManager->healEnhance(player, activePet, 2, 2500, 7200.0f); // medical_enhance_constitution
+	playerManager->healEnhance(player, activePet, 3, 2500, 7200.0f); // medical_enhance_action
+	playerManager->healEnhance(player, activePet, 4, 2500, 7200.0f); // medical_enhance_quickness
+	playerManager->healEnhance(player, activePet, 5, 2500, 7200.0f); // medical_enhance_stamina
+
+	// Performance buffs for mind attributes
+	playerManager->healEnhance(player, activePet, 6, 2500, 7200.0f); // performance_enhance_dance_mind
+	playerManager->healEnhance(player, activePet, 7, 2500, 7200.0f); // performance_enhance_music_focus
+	playerManager->healEnhance(player, activePet, 8, 2500, 7200.0f); // performance_enhance_music_willpower
+
+	player->sendSystemMessage("Your pet has been enhanced with 2500 buffs for 2 hours!");
+
+	return 0;
 }

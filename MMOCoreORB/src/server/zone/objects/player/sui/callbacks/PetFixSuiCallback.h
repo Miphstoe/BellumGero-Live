@@ -47,19 +47,30 @@ public:
 
 		ManagedReference<Creature*> pet = cast<Creature*>(controlledObject.get());
 		ManagedReference<PetDeed*> deed = pet->getPetDeed();
+
 		Locker lock(pet, player);
 
 		if (otherPressed) {
-			deed->adjustPetLevel(player,pet);
-		}
-		else {
-			if(deed->adjustPetStats(player,pet)){
-                          	Locker locker(device);
-				device->growPet(player, true);
+			// "Adjust Pet Level" button was pressed (Other button)
+			if (deed != nullptr) {
+				int newLevel = deed->calculatePetLevel();
+				if (newLevel < 1 || newLevel > 75) {
+					player->sendSystemMessage("@bio_engineer:pet_sui_fix_error");
+					return;
+				}
+				deed->setLevel(newLevel);
+				player->sendSystemMessage("@bio_engineer:pet_sui_level_fixed");
 			}
 		}
-
-		device->sendAttributeListTo(player);
+		else {
+			// "Adjust Pet Stats" button was pressed (OK button)
+			if (deed != nullptr) {
+				if (deed->adjustPetStats(player, pet)) {
+					// Stats were adjusted successfully
+					player->sendSystemMessage("Your pet is ready to be called!");
+				}
+			}
+		}
 	}
 };
 

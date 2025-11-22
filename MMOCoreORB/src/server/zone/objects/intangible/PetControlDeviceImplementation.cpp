@@ -1379,10 +1379,14 @@ bool PetControlDeviceImplementation::isValidPet(AiAgent* pet) {
 	PetDeed* deed = pet->getPetDeed();
 
 	if (deed != nullptr) {
-		// time to calculate!
-		int calculatedLevel =  deed->calculatePetLevel();
+		// For bioengineered pets, check if HAM is at least 100
+		// This is a simpler check - if the pet has decent HAM, it's valid
+		int health = pet->getBaseHAM(0);
+		int action = pet->getBaseHAM(3);
+		int mind = pet->getBaseHAM(6);
 
-		if (pet->getTemplateLevel() >= (calculatedLevel * 0.85)) {
+		// If HAM is reasonable, the pet is valid
+		if (health >= 100 && action >= 80 && mind >= 60) {
 			return true;
 		} else {
 			return false;
@@ -1477,4 +1481,133 @@ String PetControlDeviceImplementation::getRequiredAstromechCert() {
 
 	String entry = templateData->getTemplateFileName();
 	return requiredSkill + entry.charAt(entry.length() - 1);
+}
+
+void PetControlDeviceImplementation::syncPetLevel(CreatureObject* player) {
+	ManagedReference<TangibleObject*> controlledObj = controlledObject.get();
+	if (controlledObj == nullptr || !controlledObj->isAiAgent())
+		return;
+
+	ManagedReference<AiAgent*> pet = cast<AiAgent*>(controlledObj.get());
+	if (pet == nullptr)
+		return;
+
+	// Get the creature's actual level
+	int creatureLevel = pet->getLevel();
+
+	// Lock the pet
+	Locker petLock(pet, _this.getReferenceUnsafeStaticCast());
+
+	petLock.release();
+	updateToDatabase();
+
+	if (player != nullptr) {
+		StringBuffer syncMsg;
+		syncMsg << pet->getDisplayedName() << "'s level has been synced to level " << creatureLevel << ".";
+		player->sendSystemMessage(syncMsg.toString());
+	}
+}
+
+void PetControlDeviceImplementation::adjustPetStats(CreatureObject* player, int adjustOption) {
+	// adjustOption: 1 = Adjust Pet Stats (keep level, reduce stats)
+
+	ManagedReference<TangibleObject*> controlledObj = controlledObject.get();
+	if (controlledObj == nullptr || !controlledObj->isAiAgent())
+		return;
+
+	ManagedReference<AiAgent*> pet = controlledObj.castTo<AiAgent*>();
+	if (pet == nullptr)
+		return;
+
+	Locker petLock(pet, _this.getReferenceUnsafeStaticCast());
+
+	if (adjustOption == 1) {
+		// Adjust Pet Stats - reduce stats to match the current petLevel
+		PetDeed* deed = pet->getPetDeed();
+		bool isAdjusted = false;
+
+		if (deed != nullptr) {
+			// Bioengineered pet - use the deed's adjustPetStats method
+			petLock.release();
+			isAdjusted = deed->adjustPetStats(player, pet);
+
+			// After adjusting, sync the pet's HAM from the deed
+			if (isAdjusted) {
+				Locker petLock2(pet, _this.getReferenceUnsafeStaticCast());
+				int health = deed->getHealth();
+				int action = deed->getAction();
+				int mind = deed->getMind();
+
+				if (health > 0) {
+					pet->setBaseHAM(0, health);
+					pet->setMaxHAM(0, health, true);
+					pet->setHAM(0, health);
+				}
+				if (action > 0) {
+					pet->setBaseHAM(3, action);
+					pet->setMaxHAM(3, action, true);
+					pet->setHAM(3, action);
+				}
+				if (mind > 0) {
+					pet->setBaseHAM(6, mind);
+					pet->setMaxHAM(6, mind, true);
+					pet->setHAM(6, mind);
+				}
+			}
+		} else {
+			// Regular creature pet - use simple stat formulas
+			int petLevel = pet->getLevel();
+
+			if (petType == PetManager::CREATUREPET) {
+				int defaultHealth = (int)(100.0f + (petLevel * 5.0f));
+				int defaultAction = (int)(80.0f + (petLevel * 4.0f));
+				int defaultMind = (int)(60.0f + (petLevel * 3.0f));
+
+				pet->setMaxHAM(0, defaultHealth, true);
+				pet->setMaxHAM(3, defaultAction, true);
+				pet->setMaxHAM(6, defaultMind, true);
+
+				pet->setHAM(0, defaultHealth);
+				pet->setHAM(3, defaultAction);
+				pet->setHAM(6, defaultMind);
+
+				isAdjusted = true;
+			} else if (petType == PetManager::DROIDPET || petType == PetManager::HELPERDROIDPET) {
+				int defaultHealth = (int)(80.0f + (petLevel * 4.0f));
+				int defaultAction = (int)(100.0f + (petLevel * 5.0f));
+
+				pet->setMaxHAM(0, defaultHealth, true);
+				pet->setMaxHAM(3, defaultAction, true);
+
+				pet->setHAM(0, defaultHealth);
+				pet->setHAM(3, defaultAction);
+
+				isAdjusted = true;
+			} else if (petType == PetManager::FACTIONPET) {
+				int defaultHealth = (int)(120.0f + (petLevel * 6.0f));
+				int defaultAction = (int)(100.0f + (petLevel * 5.0f));
+				int defaultMind = (int)(80.0f + (petLevel * 4.0f));
+
+				pet->setMaxHAM(0, defaultHealth, true);
+				pet->setMaxHAM(3, defaultAction, true);
+				pet->setMaxHAM(6, defaultMind, true);
+
+				pet->setHAM(0, defaultHealth);
+				pet->setHAM(3, defaultAction);
+				pet->setHAM(6, defaultMind);
+
+				isAdjusted = true;
+			}
+
+			petLock.release();
+		}
+
+		updateToDatabase();
+
+		if (isAdjusted && player != nullptr) {
+			StringBuffer msg;
+			msg << pet->getDisplayedName() << "'s stats have been adjusted.";
+			player->sendSystemMessage(msg.toString());
+		}
+	}
 }
