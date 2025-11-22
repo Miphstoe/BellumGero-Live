@@ -22,7 +22,9 @@ public:
 		ConversationTemplateTypeDeliverMission,
 		ConversationTemplateTypeInformantMission,
 		ConversationTemplateTypeLua,
-		ConversationTemplateTypePersonality
+		ConversationTemplateTypePersonality,
+		// New: Master Bounty Guild missions
+		ConversationTemplateTypeBountyGuild
 	};
 protected:
 	String initialScreenID;

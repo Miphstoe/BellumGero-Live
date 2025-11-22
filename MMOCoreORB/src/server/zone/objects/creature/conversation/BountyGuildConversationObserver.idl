@@ -1,0 +1,15 @@
+/*
+				Copyright <SWGEmu>
+		See file COPYING for copying conditions.*/
+
+package server.zone.objects.creature.conversation;
+
+include server.zone.objects.creature.conversation.ConversationObserver;
+include server.zone.objects.creature.conversation.screenhandlers.MasterBountyGuildScreenHandler;
+
+class BountyGuildConversationObserver extends ConversationObserver {
+	@dereferenced
+	MasterBountyGuildScreenHandler masterBountyGuildScreenHandler;
+
+	public native BountyGuildConversationObserver(unsigned int convoTemplateCRC);
+}

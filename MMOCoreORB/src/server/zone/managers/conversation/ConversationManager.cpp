@@ -8,6 +8,8 @@
 #include "server/zone/objects/creature/conversation/InformantMissionConversationObserver.h"
 #include "server/zone/objects/creature/conversation/LuaConversationObserver.h"
 #include "server/zone/objects/creature/conversation/PetTrainingConversationObserver.h"
+#include "server/zone/objects/creature/conversation/BountyGuildConversationObserver.h"
+
 
 ConversationManager::ConversationManager()
 	: Logger("ConversationManager") {
@@ -33,7 +35,7 @@ ConversationObserver* ConversationManager::getConversationObserver(uint32 conver
 			return conversationObserver;
 		}
 
-		switch (conversationTemplate->getConversationTemplateType()) {
+				switch (conversationTemplate->getConversationTemplateType()) {
 			case ConversationTemplate::ConversationTemplateTypeNormal:
 				conversationObserver = new ConversationObserver(conversationTemplateCRC);
 				break;
@@ -49,10 +51,14 @@ ConversationObserver* ConversationManager::getConversationObserver(uint32 conver
 			case ConversationTemplate::ConversationTemplateTypePersonality:
 				conversationObserver = new PetTrainingConversationObserver(conversationTemplateCRC);
 				break;
+			case ConversationTemplate::ConversationTemplateTypeBountyGuild:
+				conversationObserver = new BountyGuildConversationObserver(conversationTemplateCRC);
+				break;
 			default:
 				conversationObserver = new ConversationObserver(conversationTemplateCRC);
 				break;
 		}
+
 
 		if (conversationObserver != nullptr) {
 			// Add it to the map.
