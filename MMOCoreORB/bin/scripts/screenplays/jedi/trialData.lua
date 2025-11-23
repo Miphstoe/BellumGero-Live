@@ -234,6 +234,53 @@ knightTrialQuests = {
 	},
 }
 
+-- PvE Point Accrual System for Knight Progression
+-- Points are awarded based on creature level, allowing players to hunt ANY creature
+-- Level-based point tiers make progression flexible and accessible across the game world
+
+knightTrialLevelPointTiers = {
+	-- Level 0-29: 1 point per kill (weak/trash creatures)
+	{ minLevel = 0, maxLevel = 29, points = 1 },
+	-- Level 30-59: 2 points per kill (novice difficulty)
+	{ minLevel = 30, maxLevel = 59, points = 2 },
+	-- Level 60-89: 5 points per kill (intermediate difficulty)
+	{ minLevel = 60, maxLevel = 89, points = 5 },
+	-- Level 90-129: 10 points per kill (challenging difficulty)
+	{ minLevel = 90, maxLevel = 129, points = 10 },
+	-- Level 130-169: 15 points per kill (hard difficulty)
+	{ minLevel = 130, maxLevel = 169, points = 15 },
+	-- Level 170-209: 20 points per kill (very hard difficulty)
+	{ minLevel = 170, maxLevel = 209, points = 20 },
+	-- Level 210-249: 25 points per kill (elite difficulty)
+	{ minLevel = 210, maxLevel = 249, points = 25 },
+	-- Level 250-289: 30 points per kill (advanced elite difficulty)
+	{ minLevel = 250, maxLevel = 289, points = 30 },
+	-- Level 290-350: 35 points per kill (extreme/boss difficulty)
+	{ minLevel = 290, maxLevel = 350, points = 35 }
+}
+
+-- Total points required to become a Knight (significant threshold)
+-- This represents a challenging progression that requires dedicated hunting
+-- With point values from 1-35 per kill, this requires roughly 1,400-5,000 creature kills depending on difficulty
+KNIGHT_TRIALS_REQUIRED_POINTS = 50000
+
+-- Milestone messages at different point thresholds
+knightTrialPointMilestones = {
+	{ points = 5000, message = "@jedi_trials:knight_trials_points_milestone_5000" },
+	{ points = 10000, message = "@jedi_trials:knight_trials_points_milestone_10000" },
+	{ points = 15000, message = "@jedi_trials:knight_trials_points_milestone_15000" },
+	{ points = 20000, message = "@jedi_trials:knight_trials_points_milestone_20000" },
+	{ points = 25000, message = "@jedi_trials:knight_trials_points_milestone_25000" },
+	{ points = 30000, message = "@jedi_trials:knight_trials_points_milestone_30000" },
+	{ points = 35000, message = "@jedi_trials:knight_trials_points_milestone_35000" },
+	{ points = 40000, message = "@jedi_trials:knight_trials_points_milestone_40000" },
+	{ points = 45000, message = "@jedi_trials:knight_trials_points_milestone_45000" },
+	{ points = 50000, message = "@jedi_trials:knight_trials_points_milestone_complete" }
+}
+
+-- Council choice requirement at halfway point (25000 points)
+KNIGHT_TRIALS_HALFWAY_POINTS = 25000
+
 trialsCivilizedPlanets = { "corellia", "naboo", "rori", "talus", "tatooine" }
 
 trialsCivilizedPlanetCities = {
