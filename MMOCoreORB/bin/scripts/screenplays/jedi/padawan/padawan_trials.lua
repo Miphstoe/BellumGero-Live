@@ -330,7 +330,7 @@ function PadawanTrials:notifyKilledForPoints(pPlayer, pVictim)
 		local pointMessage = string.format("Padawan Trials: +%d points (%d / %d)", pointsAwarded, currentPhasePoints, PADAWAN_TRIALS_PHASE_POINTS)
 		CreatureObject(pPlayer):sendSystemMessage(pointMessage)
 
-		-- Check if phase complete (10,000 points)
+		-- Check if phase complete
 		if currentPhasePoints >= PADAWAN_TRIALS_PHASE_POINTS then
 			self:completePhase(pPlayer, tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase")))
 		end
@@ -617,7 +617,7 @@ function PadawanTrials:showPhaseStatus(pPlayer)
 
 	local statusMsg = "Welcome back to the Padawan Trials.\n\n"
 	statusMsg = statusMsg .. "Phase: " .. currentPhase .. " of 5\n"
-	statusMsg = statusMsg .. "Total Progress: " .. totalPoints .. " / 50,000 points\n\n"
+	statusMsg = statusMsg .. "Total Progress: " .. totalPoints .. " / " .. PADAWAN_TRIALS_TOTAL_REQUIRED_POINTS .. " points\n\n"
 
 	if (phaseStatus == "trivia") then
 		local currentQuestion = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")) or 1
