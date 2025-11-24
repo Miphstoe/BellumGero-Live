@@ -1,11 +1,440 @@
+-- ============================================================================
+-- PADAWAN TRIALS: 5-TIER SYSTEM
+-- Refactored implementation with Trivia + PvE Point Accrual
+-- ============================================================================
+
 local ObjectManager = require("managers.object.object_manager")
+
+-- Load SUI dialog classes
+require("sui.SuiListBox")
+require("sui.SuiMessageBox")
+
+-- Load separate data files
+require("screenplays.jedi.padawan.padawanTrialData")
+require("screenplays.jedi.padawan.PADAWAN_TRIVIA_QUESTIONS")
 
 PadawanTrials = ScreenPlay:new {}
 
--- Configuration: Cost to skip Padawan Trials (in credits)
+-- Configuration
 local PADAWAN_TRIAL_SKIP_COST = 5000000  -- 5 million credits
 
--- Attempts to charge 'amount' credits (tries CASH first, then BANK) and instantly unlock Padawan.
+-- ============================================================================
+-- CORE FUNCTIONS
+-- ============================================================================
+
+-- Initialize Padawan Trials for a player
+function PadawanTrials:startPadawanTrials(pObject, pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- First check if player is awaiting lightsaber crafting for Phase 3
+	local awaitingCrafting = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting"))
+	if awaitingCrafting == 1 then
+		CreatureObject(pPlayer):sendSystemMessage("You have crafted your lightsaber! Proceeding to Phase 3 hunting...")
+		-- For now, we'll automatically proceed when awaiting crafting
+		-- The player has crafted and tuned a lightsaber (they told us they did)
+		writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 0)
+		self:startHuntingPhase(pPlayer, 3)
+		return
+	end
+
+	-- First check if player is in an active trial mid-progress (has phaseStatus set)
+	local phaseStatus = readScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus")
+
+	-- If player is waiting at shrine to start next phase
+	if (phaseStatus == "awaiting_shrine") then
+		local nextPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "nextPhase"))
+		if nextPhase and nextPhase > 0 then
+			self:startPhase(pPlayer, nextPhase)
+			return
+		end
+	end
+
+	-- If player is in the middle of trials, show status
+	if (phaseStatus == "trivia" or phaseStatus == "hunting" or phaseStatus == "crafting") then
+		-- If stuck in trivia, offer to reset
+		if phaseStatus == "trivia" then
+			local sui = SuiMessageBox.new("PadawanTrials", "triiaResetCallback")
+			sui.setTitle("Padawan Trials - Reset")
+			sui.setPrompt("You appear to be stuck in trivia mode. Would you like to reset the trials and start Phase 1 fresh?")
+			sui.setOkButtonText("Reset and Start Over")
+			sui.setCancelButtonText("Cancel")
+			sui.sendTo(pPlayer)
+			return
+		end
+		self:showPhaseStatus(pPlayer)
+		return
+	end
+
+	-- Otherwise, reset any stale data
+	self:resetAllPadawanTrials(pPlayer)
+
+	-- Check eligibility
+	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
+		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+		sui.setTitle("Padawan Trials")
+		sui.setPrompt("You are not eligible for the Padawan Trials at this time.\n\nYou must:\n- Be a Jedi Novice\n- Have learned at least 6 Force abilities\n- Not already be a Padawan or higher")
+		sui.setOkButtonText("Close")
+		sui.sendTo(pPlayer)
+		return
+	end
+
+	-- Show initial dialog with 3 options: Begin, Skip, Cancel
+	local sui = SuiMessageBox.new("PadawanTrials", "padawanTrialsStartCallback")
+
+	if (pObject ~= nil) then
+		sui.setTargetNetworkId(SceneObject(pObject):getObjectID())
+	end
+
+	sui.setTitle("Padawan Trials")
+	sui.setPrompt("Greetings, Initiate.\n\nYou stand at the threshold of greatness. The path to Padawan awaits those with the dedication to walk it.\n\nWould you like to begin the Padawan Trials, or pay " .. PADAWAN_TRIAL_SKIP_COST .. " credits to complete them instantly?\n\n(Credits will be taken from cash first, then bank)")
+
+	sui.setOkButtonText("Begin Trials")
+	sui.setCancelButtonText("Cancel")
+	sui.setOtherButtonText("Skip - " .. PADAWAN_TRIAL_SKIP_COST)
+
+	-- Enable the Other button (needed for 3-button dialogs)
+	sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
+	sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
+
+	sui.sendTo(pPlayer)
+end
+
+-- Handle trivia reset dialog
+function PadawanTrials:triiaResetCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("Reset cancelled.")
+		return
+	end
+
+	-- OK button was pressed - reset and start fresh
+	self:resetAllPadawanTrials(pPlayer)
+	CreatureObject(pPlayer):sendSystemMessage("Trials reset! Please meditate again to begin Phase 1.")
+end
+
+-- Handle initial dialog response
+function PadawanTrials:padawanTrialsStartCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed
+	if (eventIndex == 1) then
+		return
+	end
+
+	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
+		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+		sui.setTitle("@jedi_trials:force_shrine_title")
+		sui.setPrompt("@jedi_trials:padawan_trials_started_not_eligible")
+		sui.setOkButtonText("@jedi_trials:button_close")
+		sui.sendTo(pPlayer)
+		return
+	end
+
+	-- Check if other button was pressed (Skip option)
+	local args = {...}
+	local skipPressed = (args ~= nil and args[1] ~= nil)
+
+	if (skipPressed) then
+		-- Other button (Skip) was pressed
+		self:tryCompletePadawanForCredits(pPlayer, PADAWAN_TRIAL_SKIP_COST)
+		return
+	end
+
+	-- OK button (Begin Trials) was pressed
+	self:startPhase(pPlayer, 1)
+end
+
+-- Start a specific phase
+function PadawanTrials:startPhase(pPlayer, phase)
+	if (pPlayer == nil or phase < 1 or phase > PADAWAN_TRIALS_TOTAL_PHASES) then
+		return
+	end
+
+
+	-- Initialize phase data
+	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhase", phase)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", 0)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "startedTrials", 1)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus", "trivia")
+
+	-- Pre-generate and store the 3 questions for this phase
+	-- This ensures the questions don't change between question 1, 2, and 3
+	local questions = getPadawanTriviaQuestions(phase)
+
+	for i = 1, 3 do
+		if questions[i] then
+			writeScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. i .. "Correct", questions[i].correctAnswer)
+			writeScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. i .. "Text", questions[i].question)
+			-- Store all 4 answers
+			for j = 1, 4 do
+				writeScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. i .. "Answer" .. j, questions[i].answers[j])
+			end
+		end
+	end
+
+	-- Register global kill observer for PvE points
+	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+
+	-- Start trivia questions
+	self:presentTriviaQuestion(pPlayer, phase, 1)
+end
+
+-- Present trivia questions (3 per phase) using SUI ListBox for proper 4-answer support
+function PadawanTrials:presentTriviaQuestion(pPlayer, phase, questionNumber)
+	if (pPlayer == nil or phase < 1 or phase > PADAWAN_TRIALS_TOTAL_PHASES or questionNumber < 1 or questionNumber > 3) then
+		return
+	end
+
+
+	-- Retrieve the pre-stored question data for this specific question (phase-specific keys)
+	local questionText = readScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. questionNumber .. "Text")
+	local correctAnswer = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. questionNumber .. "Correct"))
+
+
+	if questionText == nil or correctAnswer == nil then
+		CreatureObject(pPlayer):sendSystemMessage("Error retrieving trivia question for phase " .. phase .. ", question " .. questionNumber)
+		return
+	end
+
+	-- Create ListBox dialog for multiple choice (supports all 4 answers)
+	local sui = SuiListBox.new("PadawanTrials", "handleTriviaAnswer")
+	sui.setPrompt(questionText)
+	sui.setTitle("Jedi Trials - Question " .. questionNumber .. " of 3")
+
+	-- Add all 4 answer options (pre-stored)
+	local answerCount = 0
+	for j = 1, 4 do
+		local answerText = readScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. questionNumber .. "Answer" .. j)
+		if answerText then
+			answerCount = answerCount + 1
+			sui.add(answerText, "")  -- Don't use data field, eventIndex will give us the list position
+		end
+	end
+
+	-- Store current question number and phase for validation
+	writeScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion", questionNumber)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "phaseForQuestion", phase)
+
+	sui.sendTo(pPlayer)
+end
+
+-- Handle trivia answer
+function PadawanTrials:handleTriviaAnswer(pPlayer, pSui, eventIndex, args)
+	if (pPlayer == nil) then
+		return
+	end
+
+
+	-- args is 0-based list index (0, 1, 2, 3 for items 1, 2, 3, 4 in the list)
+	-- Convert to 1-based answer number
+	local playerAnswer = tonumber(args) + 1
+
+
+	local questionNumber = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion"))
+	local phase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "phaseForQuestion"))
+	-- Get the correct answer from pre-stored data (phase-specific keys)
+	local correctAnswer = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. questionNumber .. "Correct"))
+
+
+	if playerAnswer == correctAnswer then
+		CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].trivia_success)
+
+		-- If all 3 questions answered correctly
+		if questionNumber == 3 then
+			-- Handle phase-specific requirements
+			if phase == 3 then
+				-- Phase 3: Requires lightsaber crafting
+				-- Grant Jedi Initiate rank so they can craft lightsaber
+				if not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_01") then
+					awardSkill(pPlayer, "force_title_jedi_rank_01")
+					CreatureObject(pPlayer):sendSystemMessage("You have been granted the rank of Jedi Initiate. You may now craft your lightsaber!")
+				end
+				writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 1)
+				CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].crafting_prompt)
+			else
+				-- Other phases: Go directly to hunting
+				self:startHuntingPhase(pPlayer, phase)
+			end
+		else
+			-- Continue to next question
+			self:presentTriviaQuestion(pPlayer, phase, questionNumber + 1)
+		end
+	else
+		-- Wrong answer - ask to retry
+		CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].trivia_failure)
+		self:presentTriviaQuestion(pPlayer, phase, questionNumber)
+	end
+end
+
+-- Start the hunting phase
+function PadawanTrials:startHuntingPhase(pPlayer, phase)
+	if (pPlayer == nil or phase < 1 or phase > PADAWAN_TRIALS_TOTAL_PHASES) then
+		return
+	end
+
+	writeScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus", "hunting")
+	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", 0)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase", phase)
+
+	-- Observer already created in startPhase, so kills will be tracked
+	CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].hunting_progress)
+end
+
+-- Global kill observer for PvE points
+function PadawanTrials:notifyKilledForPoints(pPlayer, pVictim)
+	if (pVictim == nil or pPlayer == nil) then
+		return 0
+	end
+
+
+	-- Check if player is on Padawan Trials
+	local startedTrials = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "startedTrials"))
+	if startedTrials ~= 1 then
+		return 0
+	end
+
+	local phaseStatus = readScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus")
+
+	-- Only award points during hunting phases
+	if phaseStatus ~= "hunting" then
+		return 0
+	end
+
+
+	-- Get creature level and calculate points
+	local creatureLevel = CreatureObject(pVictim):getLevel()
+	local pointsAwarded = self:getPointsForCreatureLevel(creatureLevel)
+
+	if (pointsAwarded > 0) then
+		-- Update current phase points
+		local currentPhasePoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints")) or 0
+		currentPhasePoints = currentPhasePoints + pointsAwarded
+
+		writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", currentPhasePoints)
+
+		-- Update total points
+		local totalPoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "totalPoints")) or 0
+		totalPoints = totalPoints + pointsAwarded
+
+		writeScreenPlayData(pPlayer, "PadawanTrials", "totalPoints", totalPoints)
+
+		-- Send system message
+		local pointMessage = string.format("Padawan Trials: +%d points (%d / %d)", pointsAwarded, currentPhasePoints, PADAWAN_TRIALS_PHASE_POINTS)
+		CreatureObject(pPlayer):sendSystemMessage(pointMessage)
+
+		-- Check if phase complete (10,000 points)
+		if currentPhasePoints >= PADAWAN_TRIALS_PHASE_POINTS then
+			self:completePhase(pPlayer, tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase")))
+		end
+
+		-- Check for milestone celebrations
+		self:checkMilestones(pPlayer, totalPoints)
+	end
+
+	return 0
+end
+
+-- Complete a phase and advance
+function PadawanTrials:completePhase(pPlayer, phase)
+	if (pPlayer == nil or phase < 1 or phase > PADAWAN_TRIALS_TOTAL_PHASES) then
+		return
+	end
+
+
+	-- Drop observer
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+
+	-- Message
+	CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].hunting_complete)
+
+	if phase == PADAWAN_TRIALS_TOTAL_PHASES then
+		-- Phase 5 complete - become Padawan
+		self:unlockPadawan(pPlayer)
+	else
+		-- Move to next phase
+		writeScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus", "awaiting_shrine")
+		writeScreenPlayData(pPlayer, "PadawanTrials", "nextPhase", phase + 1)
+		CreatureObject(pPlayer):sendSystemMessage("Return to the shrine to begin the next phase.")
+	end
+end
+
+-- Unlock Padawan status
+function PadawanTrials:unlockPadawan(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- Drop observer
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+
+	-- Grant Padawan skill
+	JediTrials:unlockJediPadawan(pPlayer)
+
+	-- Give robes based on faction
+	local creature = CreatureObject(pPlayer)
+	local faction = creature:getFaction()
+
+	local robeTemplate
+	if faction == FACTIONREBEL then
+		robeTemplate = PADAWAN_ROBE_LIGHT
+	else
+		robeTemplate = PADAWAN_ROBE_DARK
+	end
+
+	-- Place robes in inventory
+	local inventory = creature:getSlottedObject("inventory")
+	if inventory ~= nil then
+		giveItem(inventory, robeTemplate, -1)
+	end
+
+	-- Send congratulation message
+	CreatureObject(pPlayer):sendSystemMessage("Congratulations! You have become a Jedi Padawan!")
+	CreatureObject(pPlayer):sendSystemMessage("Your Padawan robes have been placed in your inventory.")
+
+	-- Clear trial data
+	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "startedTrials", 0)
+end
+
+-- Check for milestone celebrations
+function PadawanTrials:checkMilestones(pPlayer, totalPoints)
+	if (pPlayer == nil) then
+		return
+	end
+
+	for _, milestone in ipairs(padawanTrialMilestones) do
+		if totalPoints == milestone.points then
+			CreatureObject(pPlayer):sendSystemMessage(milestone.message)
+			break
+		end
+	end
+end
+
+-- Get points for creature level
+function PadawanTrials:getPointsForCreatureLevel(creatureLevel)
+	if (creatureLevel == nil) then
+		return 0
+	end
+
+	for i = 1, #padawanTrialLevelPointTiers, 1 do
+		local tier = padawanTrialLevelPointTiers[i]
+		if (creatureLevel >= tier.minLevel and creatureLevel <= tier.maxLevel) then
+			return tier.points
+		end
+	end
+
+	return 0
+end
+
+-- Handle 5M credit skip
 function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
 	if (pPlayer == nil) then
 		return
@@ -19,7 +448,7 @@ function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
 		return
 	end
 
-	-- Safety check: Prevent double payment if already Padawan or higher
+	-- Safety check
 	if (creature:hasSkill("force_title_jedi_rank_02") or creature:hasSkill("force_title_jedi_rank_03")) then
 		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
 		sui.setTitle("@jedi_trials:force_shrine_title")
@@ -43,7 +472,7 @@ function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
 		return
 	end
 
-	-- Deduct credits: cash first, then bank
+	-- Deduct credits
 	local remaining = amount
 	local cashDeducted = 0
 	local bankDeducted = 0
@@ -59,16 +488,19 @@ function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
 		creature:subtractBankCredits(bankDeducted)
 	end
 
-	-- Clean up any trial state
-	self:removeAllAreas(pPlayer)
-	JediTrials:setCurrentTrial(pPlayer, 0)
-	JediTrials:setTrialsCompleted(pPlayer, 0)
-	JediTrials:resetTrialData(pPlayer, "padawan")
-
-	-- Unlock Padawan status
+	-- Unlock Padawan
 	JediTrials:unlockJediPadawan(pPlayer)
 
-	-- Send confirmation with payment breakdown
+	-- Give robes
+	local inventory = creature:getSlottedObject("inventory")
+	local faction = creature:getFaction()
+	local robeTemplate = faction == FACTIONREBEL and PADAWAN_ROBE_LIGHT or PADAWAN_ROBE_DARK
+
+	if inventory ~= nil then
+		giveItem(inventory, robeTemplate, -1)
+	end
+
+	-- Send confirmation
 	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
 	sui.setTitle("@jedi_trials:force_shrine_title")
 	local confirmMsg = "Payment received: " .. amount .. " credits"
@@ -79,1170 +511,161 @@ function PadawanTrials:tryCompletePadawanForCredits(pPlayer, amount)
 	else
 		confirmMsg = confirmMsg .. "\n  (From Bank)"
 	end
-	confirmMsg = confirmMsg .. "\n\nYou have been granted the rank of Jedi Padawan!\n\nMay the Force be with you."
+	confirmMsg = confirmMsg .. "\n\nYou have been granted the rank of Jedi Padawan!\n\nYour robes have been placed in your inventory.\n\nMay the Force be with you."
 	sui.setPrompt(confirmMsg)
+	sui.setOkButtonText("@jedi_trials:button_close")
+	sui.sendTo(pPlayer)
+
+	-- Clear any trial state
+	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
+	writeScreenPlayData(pPlayer, "PadawanTrials", "startedTrials", 0)
+end
+
+-- Check if player has crafted a lightsaber (detects any lightsaber in inventory)
+function PadawanTrials:checkLightsaberCrafted(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local creature = CreatureObject(pPlayer)
+	if creature == nil then
+		return false
+	end
+
+	local inventory = creature:getSlottedObject("inventory")
+
+	if inventory == nil then
+		return false
+	end
+
+	-- Check all items in inventory for lightsabers
+	local items = inventory:getContainedObjects()
+
+	if items == nil then
+		return false
+	end
+
+	local itemCount = items:size()
+
+	for i = 0, itemCount - 1 do
+		local item = items:get(i)
+		if item ~= nil then
+			local template = SceneObject(item):getTemplate()
+			if template ~= nil then
+				local templateLower = string.lower(template)
+				-- Check if item is a lightsaber (contains "lightsaber" or "saber" in template name)
+				if string.find(templateLower, "lightsaber") or string.find(templateLower, "saber") then
+					return true
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+-- Manual confirmation for Phase 3 lightsaber crafting
+function PadawanTrials:confirmLightsaberCrafted(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local awaitingCrafting = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting"))
+
+	if awaitingCrafting ~= 1 then
+		CreatureObject(pPlayer):sendSystemMessage("You are not currently awaiting lightsaber confirmation.")
+		return
+	end
+
+	-- Check if player actually has a lightsaber
+	if not self:checkLightsaberCrafted(pPlayer) then
+		CreatureObject(pPlayer):sendSystemMessage("I do not sense a lightsaber in your possession. You must craft one to continue.")
+		return
+	end
+
+	-- Lightsaber confirmed
+	writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 0)
+	CreatureObject(pPlayer):sendSystemMessage("Your lightsaber is complete. Return to the shrine to continue your trials.")
+	self:startHuntingPhase(pPlayer, 3)
+end
+
+-- Re-register observers on player login to persist across server restarts
+function PadawanTrials:onPlayerLoggedIn(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local startedTrials = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "startedTrials"))
+	local phaseStatus = readScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus")
+
+	-- If player is in hunting phase, re-register the kill observer
+	if (startedTrials == 1 and phaseStatus == "hunting") then
+		createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+	end
+end
+
+-- Show current phase status when player returns to shrine during trials
+function PadawanTrials:showPhaseStatus(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local currentPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhase")) or 0
+	local phaseStatus = readScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus") or "unknown"
+	local currentPhasePoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints")) or 0
+	local totalPoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "totalPoints")) or 0
+
+	local statusMsg = "Welcome back to the Padawan Trials.\n\n"
+	statusMsg = statusMsg .. "Phase: " .. currentPhase .. " of 5\n"
+	statusMsg = statusMsg .. "Total Progress: " .. totalPoints .. " / 50,000 points\n\n"
+
+	if (phaseStatus == "trivia") then
+		local currentQuestion = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")) or 1
+		statusMsg = statusMsg .. "Status: Answer trivia questions (Question " .. currentQuestion .. " of 3)"
+	elseif (phaseStatus == "hunting") then
+		statusMsg = statusMsg .. "Status: Hunting (" .. currentPhasePoints .. " / " .. PADAWAN_TRIALS_PHASE_POINTS .. " points)"
+	elseif (phaseStatus == "crafting") then
+		statusMsg = statusMsg .. "Status: Craft your lightsaber and return to continue"
+	else
+		statusMsg = statusMsg .. "Status: Unknown (contact an administrator)"
+	end
+
+	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
+	sui.setTitle("@jedi_trials:force_shrine_title")
+	sui.setPrompt(statusMsg)
 	sui.setOkButtonText("@jedi_trials:button_close")
 	sui.sendTo(pPlayer)
 end
 
-function PadawanTrials:startPadawanTrials(pObject, pPlayer)
-	if (pPlayer == nil) then 
-		return 
-	end
-
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
-		sui.setTitle("@jedi_trials:padawan_trials_title")
-		sui.setPrompt("@jedi_trials:padawan_trials_started_not_eligible")
-		sui.sendTo(pPlayer)
-		return
-	end
-
-	local sui = SuiMessageBox.new("PadawanTrials", "jediPadawanTrialsStartCallback")
-	
-	if (pObject ~= nil) then
-		sui.setTargetNetworkId(SceneObject(pObject):getObjectID())
-	end
-	
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt("@jedi_trials:padawan_trials_intro_msg\n\nWould you like to begin the Padawan Trials normally, or pay " .. PADAWAN_TRIAL_SKIP_COST .. " credits to complete them instantly?\n\n(Credits will be taken from cash first, then bank)")
-
-	sui.setOkButtonText("@jedi_trials:button_yes")
-	sui.setCancelButtonText("@jedi_trials:button_no")
-	sui.setOtherButtonText("Pay " .. PADAWAN_TRIAL_SKIP_COST)
-
-	sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
-	sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
-
-	sui.sendTo(pPlayer)
-end
-
-function PadawanTrials:jediPadawanTrialsStartCallback(pPlayer, pSui, eventIndex, ...)
-	if (pPlayer == nil) then 
-		return 
-	end
-
-	local cancelPressed = (eventIndex == 1)
-	
-	if (cancelPressed) then 
-		return 
-	end
-
-	local args = {...}
-	local otherPressed = (args ~= nil and args[1] ~= nil)
-
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
-		sui.setTitle("@jedi_trials:padawan_trials_title")
-		sui.setPrompt("@jedi_trials:padawan_trials_started_not_eligible")
-		sui.sendTo(pPlayer)
-		return
-	end
-
-	if (otherPressed) then
-		self:tryCompletePadawanForCredits(pPlayer, PADAWAN_TRIAL_SKIP_COST)
-		return
-	end
-
-	-- Normal trial start
-	local rand = getRandomNumber(1, #padawanTrialQuests)
-	
-	while padawanTrialQuests[rand].trialType == TRIAL_LIGHTSABER do
-		rand = getRandomNumber(1, #padawanTrialQuests)
-	end
-
-	JediTrials:setStartedTrials(pPlayer)
-	JediTrials:setTrialsCompleted(pPlayer, 0)
-	self:startTrial(pPlayer, rand)
-end
-
-function PadawanTrials:restartCurrentPadawanTrial(pPlayer)
-	local sui = SuiMessageBox.new("PadawanTrials", "jediPadawanTrialsRestartCallback")
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt("@jedi_trials:padawan_trials_restart_confirmation")
-	sui.sendTo(pPlayer)
-end
-
-function PadawanTrials:jediPadawanTrialsRestartCallback(pPlayer, pSui, eventIndex, args)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local cancelPressed = (eventIndex == 1)
-
-	if (cancelPressed) then
-		return
-	end
-
-	CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_trial_restarted")
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialName = JediTrials:getTrialStateName(pPlayer, trialNumber)
-
-	self:startTrial(pPlayer, trialNumber)
-end
-
-function PadawanTrials:quitPadawanTrials(pPlayer)
-	local sui = SuiMessageBox.new("PadawanTrials", "jediPadawanTrialsAbortCallback")
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt("@jedi_trials:padawan_trials_abort_confirmation")
-	sui.sendTo(pPlayer)
-end
-
-function PadawanTrials:jediPadawanTrialsAbortCallback(pPlayer, pSui, eventIndex, args)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local cancelPressed = (eventIndex == 1)
-
-	if (cancelPressed) then
-		return
-	end
-
-	CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_aborted")
-	self:resetAllPadawanTrials(pPlayer)
-end
-
-function PadawanTrials:startNextPadawanTrial(pObject, pPlayer)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer)
-
-	if (trialsCompleted == #padawanTrialQuests) then
-		JediTrials:unlockJediPadawan(pPlayer)
-		return
-	elseif (trialsCompleted == 7) then
-		local trialNum = self:getSaberCraftingTrialNumber()
-		self:startTrial(pPlayer, trialNum)
-	else
-		local incompleteTrials = {}
-		for i = 1, #padawanTrialQuests, 1 do
-			local trialState = JediTrials:getTrialStateName(pPlayer, i)
-			if not CreatureObject(pPlayer):hasScreenPlayState(1, trialState) and padawanTrialQuests[i].trialType ~= TRIAL_LIGHTSABER then
-				table.insert(incompleteTrials, i)
-			end
-		end
-
-		local rand = getRandomNumber(1, #incompleteTrials)
-		local randTrial = incompleteTrials[rand]
-		self:startTrial(pPlayer, randTrial)
-	end
-end
-
-function PadawanTrials:getSaberCraftingTrialNumber()
-	for i = 1, #padawanTrialQuests, 1 do
-		if padawanTrialQuests[i].trialType == TRIAL_LIGHTSABER then
-			return i
-		end
-	end
-
-	return -1
-end
-
+-- Reset all Padawan trial data
 function PadawanTrials:resetAllPadawanTrials(pPlayer)
-	--Remove All States.
-	for i = 1, #padawanTrialQuests, 1 do
-		local trialState = JediTrials:getTrialStateName(pPlayer, i)
-		CreatureObject(pPlayer):removeScreenPlayState(1, trialState)
-
-		if padawanTrialQuests[i].trialType == TRIAL_LIGHTSABER then
-			CreatureObject(pPlayer):removeScreenPlayState(1, trialState .. "_saber")
-			CreatureObject(pPlayer):removeScreenPlayState(1, trialState .. "_crystal")
-		end
-	end
-
-	self:removeAllAreas(pPlayer)
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_01")) then
-		CreatureObject(pPlayer):surrenderSkill("force_title_jedi_rank_01")
-	end
-
-	JediTrials:resetTrialData(pPlayer, "padawan")
-	PlayerObject(pGhost):removeWaypointBySpecialType(WAYPOINTQUESTTASK)
-end
-
-function PadawanTrials:startTrial(pPlayer, trialNum, skipNotification)
-	if (skipNotification == nil) then
-		skipNotification = false
-	end
-
-	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-	dropObserver(PROTOTYPECREATED, "PadawanTrials", "notifyCraftedTrainingSaber", pPlayer)
-	dropObserver(TUNEDCRYSTAL, "PadawanTrials", "notifyTunedLightsaberCrystal", pPlayer)
-
-	self:removeAllAreas(pPlayer)
-
-	JediTrials:setCurrentTrial(pPlayer, trialNum)
-	local trialData = padawanTrialQuests[trialNum]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:startTrial, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNum)
-		return
-	end
-
-	if (trialData.trialType == TRIAL_LIGHTSABER) then
-		if (not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_01")) then
-			awardSkill(pPlayer, "force_title_jedi_rank_01")
-		end
-
-		local trialState = JediTrials:getTrialStateName(pPlayer, trialNum)
-
-		CreatureObject(pPlayer):removeScreenPlayState(1, trialState .. "_saber")
-		CreatureObject(pPlayer):removeScreenPlayState(1, trialState .. "_crystal")
-
-		createObserver(PROTOTYPECREATED, "PadawanTrials", "notifyCraftedTrainingSaber", pPlayer)
-		self:sendSuiNotification(pPlayer)
-		return
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-
-	deleteData(playerID .. ":JediTrials:acceptedTask")
-	deleteData(playerID .. ":JediTrials:killedTarget")
-	deleteData(playerID .. ":JediTrials:spokeToTarget01")
-	deleteData(playerID .. ":JediTrials:spokeToTarget02")
-
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTarget")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetCount")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")
-
-	local planetName = trialsCivilizedPlanets[getRandomNumber(1, #trialsCivilizedPlanets)]
-	local playerPlanet = SceneObject(pPlayer):getZoneName()
-
-	local retries = 0
-	while ((not isZoneEnabled(planetName) or playerPlanet == planetName) and retries < 20) do
-		planetName = trialsCivilizedPlanets[getRandomNumber(1, #trialsCivilizedPlanets)]
-		retries = retries + 1
-	end
-
-	if (trialData.trialName == "artist") then
-		planetName = "naboo"
-	end
-
-	local randomCityTable = trialsCivilizedPlanetCities[planetName]
-	local randomCity = randomCityTable[getRandomNumber(1, #randomCityTable)]
-
-	if (trialData.trialLoc ~= nil) then
-		local locData = trialData.trialLoc
-
-		if locData[4] ~= nil then
-			planetName = locData[4]
-		end
-
-		if locData[5] ~= nil then
-			randomCity = locData[5]
-		else
-			randomCityTable = trialsCivilizedPlanetCities[planetName]
-			randomCity = randomCityTable[getRandomNumber(1, #randomCityTable)]
-		end
-	end
-
-	if (randomCity == nil) then
-		printLuaError("PadawanTrials:startTrial, unable to get random city for planet " .. planetName .. ".")
-		return
-	end
-
-	JediTrials:setTrialPlanetAndCity(pPlayer, planetName, randomCity)
-
-	local spawnPoint
-
-	if (trialData.trialLoc == nil) then
-		local randomLocTable = trialsCivilizedNpcSpawnPoints[planetName][randomCity]
-		local randomLoc = randomLocTable[getRandomNumber(1, #randomLocTable)]
-
-		if (randomLoc == nil) then
-			printLuaError("PadawanTrials:startTrial, unable to get random location for " .. randomCity .. " on  " .. planetName .. ".")
-			return
-		end
-
-		spawnPoint = getSpawnPointInArea(planetName, randomLoc[1], randomLoc[2], randomLoc[3])
-
-		-- Execute the function again to pick a new random location
-		if (spawnPoint == nil) then
-			local pointAttempts = readData(playerID .. ":JediTrials:spawnPointAttempts")
-
-			if (pointAttempts <= 5) then
-				self:startTrial(pPlayer, trialNum, skipNotification)
-				writeData(playerID .. ":JediTrials:spawnPointAttempts", pointAttempts + 1)
-			else
-				printLuaError("PadawanTrials:startTrial, unable to find start point for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial number " .. trialNum .. " after 5 attempts.")
-				deleteData(playerID .. ":JediTrials:spawnPointAttempts")
-			end
-
-			return
-		end
-
-		deleteData(playerID .. ":JediTrials:spawnPointAttempts")
-	else
-		spawnPoint = trialData.trialLoc
-	end
-
-	JediTrials:setTrialLocation(pPlayer, spawnPoint[1], spawnPoint[2], spawnPoint[3], planetName)
-
-	if (not skipNotification) then
-		self:sendSuiNotification(pPlayer)
-	end
-
-	self:createMainLocation(pPlayer)
-end
-
-function PadawanTrials:notifyCraftedTrainingSaber(pPlayer, pItem)
-	if (pPlayer == nil or pItem == nil) then
-		return 0
-	end
-
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		return 1
-	end
-
-	local trialNum = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNum]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:notifyCraftedTrainingSaber, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNum)
-		return 1
-	end
-
-	if (trialData.trialType ~= TRIAL_LIGHTSABER) then
-		return 1
-	end
-
-	local trialState = JediTrials:getTrialStateName(pPlayer, trialNum)
-
-	if (CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_saber")) then -- Already crafted a saber
-		return 1
-	end
-
-	if (not string.find(SceneObject(pItem):getTemplateObjectPath(), "object/weapon/melee/sword/crafted_saber")) then
-		return 0
-	end
-
-	CreatureObject(pPlayer):setScreenPlayState(1, trialState .. "_saber")
-	dropObserver(TUNEDCRYSTAL, "PadawanTrials", "notifyTunedLightsaberCrystal", pPlayer)
-	createObserver(TUNEDCRYSTAL, "PadawanTrials", "notifyTunedLightsaberCrystal", pPlayer)
-	self:sendSuiNotification(pPlayer)
-
-	return 1
-end
-
-function PadawanTrials:notifyTunedLightsaberCrystal(pPlayer, pItem)
-	if (pPlayer == nil or pItem == nil) then
-		return 0
-	end
-
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		return 1
-	end
-
-	local trialNum = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNum]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:notifyTunedLightsaberCrystal, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNum)
-		return 1
-	end
-
-	if (trialData.trialType ~= TRIAL_LIGHTSABER) then
-		return 1
-	end
-
-	local trialState = JediTrials:getTrialStateName(pPlayer, trialNum)
-
-	if (CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_crystal")) then -- Already tuned a crystal
-		return 1
-	end
-
-	CreatureObject(pPlayer):setScreenPlayState(1, trialState .. "_crystal")
-	self:passTrial(pPlayer)
-	return 1
-end
-
-function PadawanTrials:setupHuntTrial(pPlayer)
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-
-	if (trialNumber <= 1) then
-		return
-	end
-
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:setupHuntTrial, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return
-	end
-
-	if (trialData.trialType ~= TRIAL_HUNT) then
-		return
-	end
-
-	writeScreenPlayData(pPlayer, "JediTrials", "huntTarget", trialData.huntTarget)
-	writeScreenPlayData(pPlayer, "JediTrials", "huntTargetCount", 0)
-	writeScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal", trialData.huntGoal)
-	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-end
-
-function PadawanTrials:hasCompletedHunt(pPlayer)
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-
-	if (trialNumber <= 1) then
-		return false
-	end
-
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:hasCompletedHunt, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return false
-	end
-
-	if (trialData.trialType ~= TRIAL_HUNT) then
-		return false
-	end
-
-	local targetCount = tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetCount"))
-	local targetGoal = tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal"))
-
-	if (targetCount == nil or targetGoal == nil) then
-		return false
-	end
-
-	return targetCount >= targetGoal
-end
-
-
-function PadawanTrials:notifyKilledHuntTarget(pPlayer, pVictim)
-	if (pVictim == nil or pPlayer == nil) then
-		return 0
-	end
-
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-
-	if (trialNumber <= 1) then
-		return 1
-	end
-
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:notifyKilledHuntTarget, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return 1
-	end
-
-	if (trialData.trialType ~= TRIAL_HUNT) then
-		return 1
-	end
-
-	local huntTarget = readScreenPlayData(pPlayer, "JediTrials", "huntTarget")
-	local targetCount = tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetCount"))
-	local targetGoal = tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal"))
-
-	if (targetCount == nil) then
-		printLuaError("PadawanTrials:notifyKilledHuntTarget, nil targetCount for player: " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber .. " (player killed target: " .. SceneObject(pVictim):getObjectName() .. ").")
-		return 1
-	end
-
-	if (targetGoal == nil) then
-		printLuaError("PadawanTrials:notifyKilledHuntTarget, nil targetGoal for player: " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber .. " (player killed target: " .. SceneObject(pVictim):getObjectName() .. ").")
-		return 1
-	end
-
-	if (SceneObject(pVictim):getZoneName() ~= SceneObject(pPlayer):getZoneName() or not CreatureObject(pPlayer):isInRangeWithObject(pVictim, 80)) then
-		return 0
-	end
-
-	if (string.find(SceneObject(pVictim):getObjectName(), huntTarget)) then
-		CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_progress")
-		targetCount = targetCount + 1
-		writeScreenPlayData(pPlayer, "JediTrials", "huntTargetCount", targetCount)
-
-		if (targetCount >= targetGoal) then
-			CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_return_to_npc")
-			self:createMainLocation(pPlayer)
-			return 1
-		end
-	end
-
-	return 0
-end
-
-function PadawanTrials:createMainLocation(pPlayer)
-	local trialNum = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNum]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:createMainLocation, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNum)
-		return
-	end
-
-	local mainLocData = JediTrials:getTrialPlanetAndCity(pPlayer)
-	local planetName = mainLocData[1]
-	local spawnLoc = JediTrials:getTrialLocation(pPlayer)
-
-	if (trialData.trialLoc == nil) then
-		local pActiveArea = spawnActiveArea(planetName, "object/active_area.iff", spawnLoc[1], spawnLoc[2], spawnLoc[3], 64, 0)
-		local playerID = SceneObject(pPlayer):getObjectID()
-
-		if pActiveArea == nil then
-			printLuaError("PadawanTrials:createMainLocation, failed to create active area.")
-			return
-		end
-
-		local areaID = SceneObject(pActiveArea):getObjectID()
-		writeData(playerID .. ":mainLocSpawnAreaID", areaID)
-		writeData(areaID .. ":ownerID", playerID)
-		createObserver(ENTEREDAREA, "PadawanTrials", "notifyEnteredMainLocSpawnArea", pActiveArea)
-	end
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost ~= nil) then
-		PlayerObject(pGhost):addWaypoint(planetName, "Speak to this person", "", spawnLoc[1], 0, spawnLoc[3], WAYPOINT_BLUE, true, true, WAYPOINTQUESTTASK)
-	end
-end
-
-function PadawanTrials:sendSuiNotification(pPlayer)
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:sendSuiNotification, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return
-	end
-
-	local msgFinal
-
-	if (trialData.trialType == TRIAL_LIGHTSABER) then
-		local trialState = JediTrials:getTrialStateName(pPlayer, trialNumber)
-		if (CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_saber")) then
-			msgFinal = "@jedi_trials:craft_lightsaber_02"
-		else
-			msgFinal = "@jedi_trials:craft_lightsaber_01"
-		end
-	else
-		local planetData = JediTrials:getTrialPlanetAndCity(pPlayer)
-		local cityName = planetData[2]
-		cityName = string.gsub(cityName, "_", " ")
-		cityName = string.gsub(" "..cityName, "%W%l", string.upper):sub(2)
-
-		local msgPrefix =  "@jedi_trials:" .. trialData.trialName .. "_01 " .. "@jedi_trials:" .. planetData[1]
-		local msgPostfix =  "@jedi_trials:" .. trialData.trialName .. "_02 " .. cityName .. "."
-		msgFinal = msgPrefix .. " " .. msgPostfix
-	end
-
-	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
-	sui.hideCancelButton()
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt(msgFinal)
-	sui.sendTo(pPlayer)
-
-	CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_tell_about_restart")
-end
-
-function PadawanTrials:notifyEnteredMainLocSpawnArea(pArea, pPlayer)
-	if (pArea == nil or pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
-		return 0
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-	local ownerID = readData(SceneObject(pArea):getObjectID() .. ":ownerID")
-
-	if (playerID ~= ownerID) then
-		return 0
-	end
-
-	local pActiveArea = spawnActiveArea(SceneObject(pPlayer):getZoneName(), "object/active_area.iff", SceneObject(pArea):getWorldPositionX(), SceneObject(pArea):getWorldPositionZ(), SceneObject(pArea):getWorldPositionY(), 32, 0)
-
-	if pActiveArea == nil then
-		printLuaError("PadawanTrials:notifyEnteredMainLocSpawnArea, failed to create npc destroy active area.")
-		CreatureObject(pPlayer):sendSystemMessage("Failed to spawn quest area, please submit a bug report.")
-		self:failTrial(pPlayer)
-		return 1
-	end
-
-	createObserver(EXITEDAREA, "PadawanTrials", "notifyExitedLocDestroyArea", pActiveArea)
-	local areaID = SceneObject(pActiveArea):getObjectID()
-	writeData(areaID .. ":ownerID", playerID)
-	writeData(playerID .. ":destroyAreaID", areaID)
-
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:notifyEnteredMainLocSpawnArea, nil trialData for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial number " .. trialNumber .. "\n.")
-		self:failTrial(pPlayer)
-		return 1
-	end
-
-	local spawnLoc = JediTrials:getTrialLocation(pPlayer)
-	local planetData = JediTrials:getTrialPlanetAndCity(pPlayer)
-
-	if (trialData.trialNpc == nil) then
-		printLuaError("PadawanTrials:notifyEnteredMainLocSpawnArea, nil trialNpc for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial number " .. trialNumber .. "\n.")
-		self:failTrial(pPlayer)
-		return 1
-	end
-
-	local pNpc = spawnMobile(planetData[1], trialData.trialNpc, 0, spawnLoc[1], spawnLoc[2], spawnLoc[3], getRandomNumber(180) - 180, 0)
-
-	if (pNpc == nil) then
-		printLuaError("PadawanTrials:notifyEnteredTrialTargetArea, failed to spawn quest mobile.")
-		CreatureObject(pPlayer):sendSystemMessage("Failed to spawn quest mobile, please submit a bug report.")
-		self:failTrial(pPlayer)
-		return 1
-	end
-
-	local npcID = SceneObject(pNpc):getObjectID()
-	CreatureObject(pNpc):setPvpStatusBitmask(0) -- Prevent attacking.
-	CreatureObject(pNpc):setOptionsBitmask(136)
-	CreatureObject(pNpc):setCustomObjectName(trialData.trialNpcName)
-	writeData(areaID .. ":npcID", npcID)
-	writeData(npcID .. ":ownerID", playerID)
-	AiAgent(pNpc):setConvoTemplate("padawan_" .. trialData.trialName .. "_01_convo_template")
-
-	deleteData(playerID .. ":mainLocSpawnAreaID")
-	deleteData(SceneObject(pArea):getObjectID() .. ":ownerID")
-	SceneObject(pArea):destroyObjectFromWorld()
-
-	return 1
-end
-
-function PadawanTrials:notifyExitedLocDestroyArea(pArea, pPlayer)
-	if (pArea == nil or pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
-		return 0
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-	local ownerID = readData(SceneObject(pArea):getObjectID() .. ":ownerID")
-
-	if (playerID ~= ownerID) then
-		return 0
-	end
-
-	local areaID = SceneObject(pArea):getObjectID()
-	local npcID = readData(areaID .. ":npcID")
-	local pNpc = getSceneObject(npcID)
-
-	if (pNpc == nil) then
-		deleteData(npcID .. ":ownerID")
-		deleteData(npcID .. ":JediTrials:objectSearched")
-		deleteData(areaID .. ":ownerID")
-		deleteData(areaID .. ":npcID")
-		return 1
-	end
-
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-
-	if (trialNumber == nil or not JediTrials:isOnPadawanTrials(pPlayer)) then
-		self:removeNpcDestroyActiveArea(pPlayer)
-		deleteData(npcID .. ":ownerID")
-		deleteData(npcID .. ":JediTrials:objectSearched")
-		deleteData(npcID .. ":destroyNpcOnExit")
-		SceneObject(pNpc):destroyObjectFromWorld()
-		return 1
-	end
-
-	local trialState = JediTrials:getTrialStateName(pPlayer, trialNumber)
-
-	if (trialState == nil or CreatureObject(pPlayer):hasScreenPlayState(1, trialState) or readData(npcID .. ":destroyNpcOnExit") == 1) then
-		self:removeNpcDestroyActiveArea(pPlayer)
-		deleteData(npcID .. ":ownerID")
-		deleteData(npcID .. ":JediTrials:objectSearched")
-		deleteData(npcID .. ":destroyNpcOnExit")
-		SceneObject(pNpc):destroyObjectFromWorld()
-		return 1
-	end
-
-	return 0
-end
-
-function PadawanTrials:removeNpcDestroyActiveArea(pPlayer)
-	local playerID = SceneObject(pPlayer):getObjectID()
-	local areaID = readData(playerID .. ":destroyAreaID")
-
-	local pArea = getSceneObject(areaID)
-
-	if (pArea ~= nil) then
-		SceneObject(pArea):destroyObjectFromWorld()
-	end
-
-	deleteData(areaID .. ":npcID")
-	deleteData(areaID .. ":ownerID")
-	deleteData(playerID .. ":destroyAreaID")
-end
-
-function PadawanTrials:createTargetLocation(pPlayer, isThirdLocation)
-	if (isThirdLocation == nil) then
-		isThirdLocation = false
-	end
-
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:createTargetLocation, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return
-	end
-
-	local trialName = trialData.trialName
-	local zoneName = SceneObject(pPlayer):getZoneName()
-
-	local targetLoc
-
-	if (isThirdLocation and trialData.thirdTargetLoc ~= nil) then
-		targetLoc = trialData.thirdTargetLoc
-		zoneName = targetLoc[4]
-	elseif (trialData.targetLoc ~= nil) then
-		targetLoc = trialData.targetLoc
-		zoneName = targetLoc[4]
-	else
-		targetLoc = getSpawnPoint(zoneName, SceneObject(pPlayer):getWorldPositionX(), SceneObject(pPlayer):getWorldPositionY(), 900, 1800, true)
-	end
-
-	if (targetLoc == nil) then
-		printLuaError("Unable to find spawn point in PadawanTrials:createTargetLocation.")
-		CreatureObject(pPlayer):sendSystemMessage("Failed to get a good spawn location, please submit a bug report.")
-		self:failTrial(pPlayer)
-		return
-	end
-
-	local npcTemplate
-
-	if (isThirdLocation and trialData.thirdTargetNpc ~= nil) then
-		npcTemplate = trialData.thirdTargetNpc
-	elseif (trialData.targetNpc ~= nil) then
-		npcTemplate = trialData.targetNpc
-	end
-
-	if (npcTemplate ~= nil) then
-		local pActiveArea = spawnActiveArea(zoneName, "object/active_area.iff", targetLoc[1], targetLoc[2], targetLoc[3], 100, 0)
-		local playerID = SceneObject(pPlayer):getObjectID()
-
-		if pActiveArea == nil then
-			printLuaError("PadawanTrials:createTargetLocation, failed to create active area.")
-			CreatureObject(pPlayer):sendSystemMessage("Failed to spawn quest area, please submit a bug report.")
-			self:failTrial(pPlayer)
-			return
-		end
-
-		local areaID = SceneObject(pActiveArea):getObjectID()
-		writeData(areaID .. ":ownerID", playerID)
-		writeData(playerID .. ":targetLocSpawnAreaID", areaID)
-
-		if (isThirdLocation) then
-			writeData(areaID .. ":isThirdLoc", 1)
-		end
-
-		createObserver(ENTEREDAREA, "PadawanTrials", "notifyEnteredTargetLocSpawnArea", pActiveArea)
-	end
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost ~= nil) then
-		PlayerObject(pGhost):addWaypoint(zoneName, "Padawan Trial waypoint", "", targetLoc[1], 0, targetLoc[3], WAYPOINT_BLUE, true, true, WAYPOINTQUESTTASK)
-	end
-end
-
-function PadawanTrials:notifyEnteredTargetLocSpawnArea(pArea, pPlayer)
-	if (pArea == nil or pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
-		return 0
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-	local areaID = SceneObject(pArea):getObjectID()
-	local ownerID = readData(areaID .. ":ownerID")
-	local isThirdLocation = readData(areaID .. ":isThirdLoc") == 1
-
-	if (playerID ~= ownerID) then
-		return 0
-	end
-
-	deleteData(playerID .. ":targetLocSpawnAreaID")
-	deleteData(areaID .. ":ownerID")
-	deleteData(areaID .. ":isThirdLoc")
-	SceneObject(pArea):destroyObjectFromWorld()
-
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNumber]
-
-	if (trialData == nil) then
-		printLuaError("PadawanTrials:notifyEnteredTargetLocSpawnArea, unable to get trial data for player " .. SceneObject(pPlayer):getCustomObjectName() .. " on trial " .. trialNumber)
-		return 1
-	end
-
-	local npcTemplate
-
-	if (isThirdLocation and trialData.thirdTargetNpc ~= nil) then
-		npcTemplate = trialData.thirdTargetNpc
-	elseif (trialData.targetNpc ~= nil) then
-		npcTemplate = trialData.targetNpc
-	end
-
-	if (npcTemplate ~= nil) then
-		local planetName = SceneObject(pPlayer):getZoneName()
-		local locX = SceneObject(pArea):getWorldPositionX()
-		local locZ = SceneObject(pArea):getWorldPositionZ()
-		local locY = SceneObject(pArea):getWorldPositionY()
-
-		local pNpc
-
-		if (string.find(trialData.targetNpc, ".iff")) then
-			pNpc = spawnSceneObject(planetName, trialData.targetNpc, locX, locZ, locY, 0, getRandomNumber(180) - 180)
-		else
-			pNpc = spawnMobile(planetName, trialData.targetNpc, 0, locX, locZ, locY, getRandomNumber(180) - 180, 0)
-		end
-
-		if (pNpc == nil) then
-			printLuaError("PadawanTrials:notifyEnteredTargetLocSpawnArea, failed to spawn quest mobile.")
-			CreatureObject(pPlayer):sendSystemMessage("Failed to spawn quest mobile, please submit a bug report.")
-			self:failTrial(pPlayer)
-			return 1
-		end
-
-		local npcID = SceneObject(pNpc):getObjectID()
-		writeData(npcID .. ":ownerID", playerID)
-
-		if (isThirdLocation and trialData.thirdTargetName ~= nil) then
-			SceneObject(pNpc):setCustomObjectName(trialData.thirdTargetName)
-		elseif (trialData.targetNpcName ~= nil) then
-			SceneObject(pNpc):setCustomObjectName(trialData.targetNpcName)
-		end
-
-		if (not string.find(trialData.targetNpc, ".iff")) then
-			if ((isThirdLocation and trialData.thirdTargetKillable ~= nil and trialData.thirdTargetKillable) or trialData.targetKillable) then
-				createObserver(OBJECTDESTRUCTION, "PadawanTrials", "notifyQuestTargetDead", pNpc)
-			else
-				CreatureObject(pNpc):setPvpStatusBitmask(0)
-			end
-		end
-
-		if (trialData.trialType == TRIAL_TALK and not string.find(trialData.targetNpc, ".iff")) then
-			CreatureObject(pNpc):setOptionsBitmask(136)
-
-			if (isThirdLocation) then
-				AiAgent(pNpc):setConvoTemplate("padawan_" .. trialData.trialName .. "_03_convo_template")
-			else
-				AiAgent(pNpc):setConvoTemplate("padawan_" .. trialData.trialName .. "_02_convo_template")
-			end
-		end
-
-		local pActiveArea = spawnActiveArea(planetName, "object/active_area.iff", locX, locZ, locY, 32, 0)
-
-		if pActiveArea == nil then
-			printLuaError("PadawanTrials:notifyEnteredTargetLocSpawnArea, failed to create npc destroy active area.")
-			CreatureObject(pPlayer):sendSystemMessage("Failed to spawn quest area, please submit a bug report.")
-			self:failTrial(pPlayer)
-			return 1
-		end
-
-		local areaID = SceneObject(pActiveArea):getObjectID()
-		writeData(areaID .. ":ownerID", playerID)
-		writeData(areaID .. ":npcID", npcID)
-		createObserver(EXITEDAREA, "PadawanTrials", "notifyExitedLocDestroyArea", pActiveArea)
-	end
-
-	return 1
-end
-
-function PadawanTrials:notifyQuestTargetDead(pVictim, pAttacker)
-	if (pVictim == nil or pAttacker == nil) then
-		return 1
-	end
-
-	local ownerID = readData(SceneObject(pVictim):getObjectID() .. ":ownerID")
-	local pOwner = getSceneObject(ownerID)
-
-	if (pOwner == nil) then
-		return 1
-	end
-
-	local npcID = SceneObject(pVictim):getObjectID()
-
-	if (readData(npcID .. ":destroyNpcOnExit") ~= 1) then
-		local trialNumber = JediTrials:getCurrentTrial(pOwner)
-
-		if (trialNumber == 0) then
-			return 1
-		end
-
-		local trialData = padawanTrialQuests[trialNumber]
-
-		if (trialData == nil) then
-			printLuaError("PadawanTrials:notifyQuestTargetDead, unable to get trial data for player " .. SceneObject(pOwner):getCustomObjectName() .. " on trial " .. trialNumber)
-			return 1
-		end
-
-		if (trialData.killMessage ~= nil and trialData.killMessage ~= "") then
-			CreatureObject(pOwner):sendSystemMessage(trialData.killMessage)
-		end
-
-		CreatureObject(pOwner):sendSystemMessage("@jedi_trials:padawan_trials_return_to_npc")
-		writeData(ownerID .. ":JediTrials:killedTarget", 1)
-		self:createMainLocation(pOwner)
-	end
-
-	deleteData(npcID .. ":destroyNpcOnExit")
-	deleteData(npcID .. ":ownerID")
-
-	return 1
-end
-
-function PadawanTrials:removeAllAreas(pPlayer)
 	if (pPlayer == nil) then
 		return
 	end
 
-	local playerID = SceneObject(pPlayer):getObjectID()
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "startedTrials")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "completedTrials")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "currentPhase")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "totalPoints")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "correctAnswer")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "phaseForQuestion")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "nextPhase")
 
-	local areaID = readData(playerID .. ":mainLocSpawnAreaID")
-	local pArea = getSceneObject(areaID)
-
-	if (pArea ~= nil) then
-		SceneObject(pArea):destroyObjectFromWorld()
-	end
-
-	deleteData(areaID .. ":ownerID")
-	deleteData(playerID .. ":mainLocSpawnAreaID")
-
-	areaID = readData(playerID .. ":destroyAreaID")
-	pArea = getSceneObject(areaID)
-
-	if (pArea ~= nil) then
-		SceneObject(pArea):destroyObjectFromWorld()
-	end
-
-	local npcID = readData(areaID .. ":npcID")
-
-	deleteData(npcID .. ":JediTrials:objectSearched")
-
-	local pMobile = getSceneObject(npcID)
-
-	if (pMobile ~= nil) then
-		createEvent(5000, "HelperFuncs", "despawnMobileTask", pMobile, "")
-	end
-
-	deleteData(areaID .. ":npcID")
-	deleteData(areaID .. ":ownerID")
-	deleteData(playerID .. ":destroyAreaID")
-
-	areaID = readData(playerID .. ":targetLocSpawnAreaID")
-	pArea = getSceneObject(areaID)
-
-	if (pArea ~= nil) then
-		SceneObject(pArea):destroyObjectFromWorld()
-	end
-
-	deleteData(areaID .. ":ownerID")
-	deleteData(areaID .. ":isThirdLoc")
-	deleteData(playerID .. ":targetLocSpawnAreaID")
-end
-
-function PadawanTrials:failTrial(pPlayer)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-
-	self:removeAllAreas(pPlayer)
-	PlayerObject(pGhost):removeWaypointBySpecialType(WAYPOINTQUESTTASK)
-	JediTrials:setCurrentTrial(pPlayer, 0)
-	deleteData(playerID .. ":JediTrials:acceptedTask")
-	deleteData(playerID .. ":JediTrials:killedTarget")
-	deleteData(playerID .. ":JediTrials:spokeToTarget01")
-	deleteData(playerID .. ":JediTrials:spokeToTarget02")
-
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTarget")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetCount")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")
-
-	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-
-	local failAmount = JediTrials:getTrialFailureCount(pPlayer)
-	local failAmountMsg = nil
-
-	if (failAmount == nil or failAmount == 0) then
-		JediTrials:setTrialFailureCount(pPlayer, 1)
-		failAmountMsg = "@jedi_trials:padawan_trials_trial_failed_first"
-	elseif (failAmount == 1) then
-		JediTrials:setTrialFailureCount(pPlayer, 2)
-		failAmountMsg = "@jedi_trials:padawan_trials_trial_failed_second"
-	elseif (failAmount == 2) then
-		failAmountMsg = "@jedi_trials:padawan_trials_trial_failed_final"
-		self:resetAllPadawanTrials(pPlayer)
-	end
-
-	local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
-	sui.hideCancelButton()
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setPrompt(failAmountMsg)
-	sui.sendTo(pPlayer)
-end
-
-function PadawanTrials:passTrial(pPlayer)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	if (not JediTrials:isEligibleForPadawanTrials(pPlayer)) then
-		local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
-		sui.setTitle("@jedi_trials:padawan_trials_title")
-
-		if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_01")) then
-			sui.setPrompt("@jedi_trials:padawan_trials_being_removed_revoked")
-		else
-			sui.setPrompt("@jedi_trials:padawan_trials_being_removed")
-		end
-
-		sui.setOkButtonText("@jedi_trials:button_close")
-		sui.sendTo(pPlayer)
-
-		self:resetAllPadawanTrials(pPlayer)
-		return
-	end
-
-	local playerID = SceneObject(pPlayer):getObjectID()
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialState = JediTrials:getTrialStateName(pPlayer, trialNumber)
-
-	local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer) + 1
-
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTarget")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetCount")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")
-
-	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-
-	deleteData(playerID .. ":JediTrials:acceptedTask")
-	deleteData(playerID .. ":JediTrials:killedTarget")
-	deleteData(playerID .. ":JediTrials:spokeToTarget01")
-	deleteData(playerID .. ":JediTrials:spokeToTarget02")
-
-	CreatureObject(pPlayer):setScreenPlayState(1, trialState) -- Complete Trial.
-	JediTrials:setCurrentTrial(pPlayer, 0)
-	JediTrials:setTrialsCompleted(pPlayer, trialsCompleted)
-	PlayerObject(pGhost):removeWaypointBySpecialType(WAYPOINTQUESTTASK)
-
-	CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:padawan_trials_next_trial") -- You have done well and successfully completed the trial you faced. To undertake your next trial, simply meditate at any Force shrine.
-end
-
-
-function PadawanTrials:showCurrentTrial(pShrine, pPlayer)
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local trialData = padawanTrialQuests[trialNumber]
-
-	local sui = SuiMessageBox.new("PadawanTrials", "handleShowInfoChoice")
-	sui.setTitle("@jedi_trials:force_shrine_title")
-	sui.setTargetNetworkId(SceneObject(pShrine):getObjectID())
-	sui.setCancelButtonText("@jedi_trials:button_close") -- Close
-	sui.setOtherButtonText("@jedi_trials:button_restart") -- Restart Current Trial
-	sui.setOkButtonText("@jedi_trials:button_abort_padawan") -- Quit Padawan Trials
-	-- Other Button setup subscribe
-	sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
-	sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
-
-	if (trialData.trialType == TRIAL_LIGHTSABER) then
-		local trialState = JediTrials:getTrialStateName(pPlayer, trialNumber)
-		if (CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_saber")) then
-			sui.setPrompt("@jedi_trials:" .. trialData.trialName .. "_02")
-		else
-			sui.setPrompt("@jedi_trials:" .. trialData.trialName .. "_01")
-		end
-	else
-		local suiPrompt = "@jedi_trials:" .. trialData.trialName .. "_03"
-
-		if (trialData.trialType == TRIAL_HUNT) then
-			local targetCount = tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetCount"))
-
-			if (targetCount ~= nil and targetCount > 0) then
-				suiPrompt = suiPrompt .. " " .. targetCount
-			else
-				local planetData = JediTrials:getTrialPlanetAndCity(pPlayer)
-				local cityName = planetData[2]
-				cityName = string.gsub(cityName, "_", " ")
-				cityName = string.gsub(" "..cityName, "%W%l", string.upper):sub(2)
-
-				local msgPrefix =  "@jedi_trials:" .. trialData.trialName .. "_01 " .. "@jedi_trials:" .. planetData[1]
-				local msgPostfix =  "@jedi_trials:" .. trialData.trialName .. "_02 " .. cityName .. "."
-				suiPrompt = msgPrefix .. " " .. msgPostfix
-			end
-		end
-
-		sui.setPrompt(suiPrompt)
-	end
-
-	sui.sendTo(pPlayer)
-end
-
-function PadawanTrials:handleShowInfoChoice(pPlayer, pSui, eventIndex, ...)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local cancelPressed = (eventIndex == 1)
-	local args = {...}
-	local restart = args[1]
-
-	if (cancelPressed) then
-		return
-	elseif (restart ~= nil) then
-		self:restartCurrentPadawanTrial(pPlayer)
-	elseif (eventIndex == 0) then
-		self:quitPadawanTrials(pPlayer)
-	end
-end
-
-function PadawanTrials:onPlayerLoggedIn(pPlayer)
-	local trialNumber = JediTrials:getCurrentTrial(pPlayer)
-	local playerID = SceneObject(pPlayer):getObjectID()
-
-	if (trialNumber >= 1) then
-		local trialData = padawanTrialQuests[trialNumber]
-		local trialState = JediTrials:getTrialStateName(pPlayer, trialNumber)
-
-		if (trialData.trialType == TRIAL_HUNT and tonumber(readScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")) ~= nil) then
-			dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-
-			if (self:hasCompletedHunt(pPlayer) and not JediTrials:hasTrialArea(pPlayer)) then
-				self:createMainLocation(pPlayer)
-			elseif (not self:hasCompletedHunt(pPlayer)) then
-				createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledHuntTarget", pPlayer)
-			end
-		elseif (trialData.trialType == TRIAL_LIGHTSABER and not CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_crystal")) then
-			if (CreatureObject(pPlayer):hasScreenPlayState(1, trialState .. "_saber")) then
-				dropObserver(TUNEDCRYSTAL, "PadawanTrials", "notifyTunedLightsaberCrystal", pPlayer)
-				createObserver(TUNEDCRYSTAL, "PadawanTrials", "notifyTunedLightsaberCrystal", pPlayer)
-			else
-				dropObserver(PROTOTYPECREATED, "PadawanTrials", "notifyCraftedTrainingSaber", pPlayer)
-				createObserver(PROTOTYPECREATED, "PadawanTrials", "notifyCraftedTrainingSaber", pPlayer)
-			end
-		elseif (trialData.trialType ~= TRIAL_HUNT and trialData.trialType ~= TRIAL_LIGHTSABER and not JediTrials:hasTrialArea(pPlayer) and trialData.trialName ~= "pannaqa" and readData(playerID .. ":JediTrials:acceptedTask") == 0) then
-			-- Restarts trial if player does not have a properly stored spawn location
-			if (JediTrials:getTrialLocation(pPlayer) == nil) then
-				self:startTrial(pPlayer, trialNumber, true)
-			else
-				self:createMainLocation(pPlayer)
+	-- Also clear all pre-stored question data for all phases
+	for phase = 1, 5 do
+		for q = 1, 3 do
+			deleteScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. q .. "Text")
+			deleteScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. q .. "Correct")
+			for a = 1, 4 do
+				deleteScreenPlayData(pPlayer, "PadawanTrials", "phase" .. phase .. "Question" .. q .. "Answer" .. a)
 			end
 		end
 	end
 end
+
+return PadawanTrials
