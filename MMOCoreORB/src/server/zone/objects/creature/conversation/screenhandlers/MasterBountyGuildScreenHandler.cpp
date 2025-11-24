@@ -6,7 +6,7 @@
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/ZoneServer.h"
 
-const String MasterBountyGuildScreenHandler::STARTSCREENHANDLERID = "bounty_guild_start";
+const String MasterBountyGuildScreenHandler::STARTSCREENHANDLERID = "give_mission";
 
 ConversationScreen* MasterBountyGuildScreenHandler::handleScreen(
 		CreatureObject* conversingPlayer,
@@ -17,6 +17,10 @@ ConversationScreen* MasterBountyGuildScreenHandler::handleScreen(
 	if (conversingPlayer == nullptr || conversationScreen == nullptr)
 		return conversationScreen;
 
+	// Only handle the "give_mission" screen
+	if (conversationScreen->getScreenID() != "give_mission")
+		return conversationScreen;
+
 	ZoneServer* zoneServer = conversingPlayer->getZoneServer();
 	if (zoneServer == nullptr)
 		return conversationScreen;
@@ -25,27 +29,21 @@ ConversationScreen* MasterBountyGuildScreenHandler::handleScreen(
 	if (missionManager == nullptr)
 		return conversationScreen;
 
-	// Log for debugging so you can confirm this is actually running
-	info("Handling screen: " + conversationScreen->getScreenID(), true);
-
-	// We only do special work on the 'give_mission' screen
-	String screenID = conversationScreen->getScreenID();
-	if (screenID != "give_mission")
-		return conversationScreen;
-
-	// Try to create the Guild Tier 3 same-planet bounty
-	Reference<MissionObject*> mission = missionManager->getGuildTier3BountyMission(conversingPlayer);
+	// Ask MissionManager to create the mission
+	Reference<MissionObject*> mission =
+		missionManager->getGuildTier3BountyMission(conversingPlayer);
 
 	if (mission == nullptr) {
-		// MissionManager already sent specific system messages; show a readable failure line.
-		conversationScreen->setDialogText(String("You cannot take a Guild contract right now. Check your missions and try again."));
+		conversationScreen->setCustomDialogText(
+			UnicodeString("You cannot take a Guild contract right now. Check your missions and try again."));
 	} else {
-		// Success
-		conversationScreen->setDialogText(String("A Tier 3 Guild contract has been added to your datapad."));
+		// ⭐ Critical: Ensure the mission appears in the datapad immediately
+		mission->sendTo(conversingPlayer, true);
+
+		conversationScreen->setCustomDialogText(
+			UnicodeString("Here is a Guild contract in the local system. Good Luck Bounty Hunter!"));
 	}
 
-	// Always close the convo after attempting to assign a mission
 	conversationScreen->setStopConversation(true);
-
 	return conversationScreen;
 }

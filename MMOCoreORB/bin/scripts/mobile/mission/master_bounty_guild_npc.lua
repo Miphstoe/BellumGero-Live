@@ -1,37 +1,51 @@
 master_bounty_guild_npc = Creature:new {
-    objectName = "@npc_name:bounty_guild_master", -- add STF if you like
+    objectName     = "@mob/creature_names:bounty_guild_master", -- add STF entry if you like
+    randomNameType = NAME_GENERIC,
+    randomNameTag  = true,
+    mobType        = MOB_NPC,
+
     socialGroup = "bounty",
-    faction = "",
-    level = 100,
-    chanceHit = 0.5,
+    faction     = "",
+    level       = 100,
+
+    chanceHit = 0.39,
     damageMin = 0,
     damageMax = 0,
-    baseXp = 0,
-    baseHAM = 10000,
-    baseHAMmax = 10000,
-    armor = 0,
-    resists = {0,0,0,0,0,0,0,0,-1},
-    meatType = "",
+
+    baseXp    = 0,
+    baseHAM   = 8400,
+    baseHAMmax = 10200,
+
+    armor   = 0,
+    resists = {-1,-1,-1,-1,-1,-1,-1,-1,-1},
+
+    meatType   = "",
     meatAmount = 0,
-    hideType = "",
+    hideType   = "",
     hideAmount = 0,
-    boneType = "",
+    boneType   = "",
     boneAmount = 0,
-    milk = 0,
+    milk       = 0,
+
     tamingChance = 0,
-    ferocity = 0,
-    pvpBitmask = NONE,
+    ferocity     = 0,
+
+    pvpBitmask      = NONE,
     creatureBitmask = NONE,
-    optionsBitmask = INVULNERABLE + CONVERSABLE,
+    optionsBitmask  = INVULNERABLE + CONVERSABLE,
+
     diet = HERBIVORE,
 
     templates = {
         "object/mobile/dressed_bountyhunter_trainer_01.iff"
     },
 
-    conversationTemplate = "master_bounty_guild",
+    -- No combat: this is a conversation utility NPC
     lootGroups = {},
-    weapons = {},
+    weapons    = {},
+
+    conversationTemplate = "master_bounty_guild",
+
     attacks = {}
 }
 

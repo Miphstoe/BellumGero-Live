@@ -20,18 +20,19 @@ class MasterBountyGuildScreenHandler : public ScreenHandler, public Logger {
 public:
 	static const String STARTSCREENHANDLERID;
 
-	MasterBountyGuildScreenHandler() : ScreenHandler(), Logger("MasterBountyGuildScreenHandler") {
+	MasterBountyGuildScreenHandler() :
+			ScreenHandler(),
+			Logger("MasterBountyGuildScreenHandler") {
 	}
 
 	virtual ~MasterBountyGuildScreenHandler() {
 	}
 
-	// This MUST match ScreenHandler's pure virtual signature exactly.
 	virtual ConversationScreen* handleScreen(
-		CreatureObject* conversingPlayer,
-		SceneObject* conversingNPC,
-		int selectedOption,
-		ConversationScreen* conversationScreen);
+			CreatureObject* conversingPlayer,
+			SceneObject* conversingNPC,
+			int selectedOption,
+			ConversationScreen* conversationScreen);
 
 	bool toBinaryStream(ObjectOutputStream* stream) {
 		return true;
@@ -42,12 +43,7 @@ public:
 	}
 };
 
-} // namespace screenhandlers
-} // namespace conversation
-} // namespace creature
-} // namespace objects
-} // namespace zone
-} // namespace server
+} } } } } }
 
 using namespace server::zone::objects::creature::conversation::screenhandlers;
 
