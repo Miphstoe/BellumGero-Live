@@ -44,6 +44,8 @@
 object_tangible_wearables_armor_stormtrooper_armor_stormtrooper_boots = object_tangible_wearables_armor_stormtrooper_shared_armor_stormtrooper_boots:new {
 	templateType = ARMOROBJECT,
 
+	objectMenuComponent = "ArmorObjectMenuComponent",
+
 	faction = "Imperial",
 
 	playerRaces = { "object/creature/player/bothan_male.iff",
