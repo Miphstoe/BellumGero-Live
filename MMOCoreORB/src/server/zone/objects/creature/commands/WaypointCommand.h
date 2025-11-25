@@ -86,13 +86,8 @@ public:
 			// Check if the first argument is a valid color (works in both basic and advanced modes)
 			byte potentialColor = parseWaypointColor(arg);
 			if (potentialColor != 0xFF) {
-				// It's a valid color! Use it and create waypoint at current location
-				waypointColor = potentialColor;
-			} else if (!advancedWaypoints && isalpha(arg[0]) > 0) {
-				// First argument was alpha but not a valid color (zone name)
-				// This is invalid if advanced waypoints are disabled
-				sendSystemMessage(creature);
-				return GENERALERROR;
+    			// It's a valid color! Use it and create waypoint at current location
+    			waypointColor = potentialColor;
 			}
 
 			if (tokenizer.hasMoreTokens()) {
@@ -151,7 +146,7 @@ public:
 					if (advancedWaypoints && newWaypointName.length() > 0) {
 						waypointName = newWaypointName.toString();
 					}
-				} else {
+					} else {
 					// A waypoint in the form of /waypoint planet X Z Y - Planetary Map
 					if (advancedWaypoints) {
 						planet = arg;
@@ -307,37 +302,42 @@ public:
 	}
 
 	byte parseWaypointColor(const String& colorArg) const {
-		String colorLower = colorArg;
-		colorLower.toLowerCase();
+    String colorLower = colorArg;
+    colorLower.toLowerCase();
 
-		// Try parsing as a number first
-		if (isdigit(colorLower[0])) {
-			int colorID = atoi(colorLower.toCharArray());
-			if (colorID >= 0 && colorID <= 7)
-				return (byte)colorID;
-		}
+    // Empty argument -> not a color
+    if (colorLower.isEmpty())
+        return 0xFF;
 
-		// Parse as color name
-		if (colorLower == "white" || colorLower == "white1")
-			return WaypointObject::COLOR_WHITE;
-		else if (colorLower == "blue")
-			return WaypointObject::COLOR_BLUE;
-		else if (colorLower == "green")
-			return WaypointObject::COLOR_GREEN;
-		else if (colorLower == "orange")
-			return WaypointObject::COLOR_ORANGE;
-		else if (colorLower == "yellow")
-			return WaypointObject::COLOR_YELLOW;
-		else if (colorLower == "purple")
-			return WaypointObject::COLOR_PURPLE;
-		else if (colorLower == "white2")
-			return WaypointObject::COLOR_WHITE2;
-		else if (colorLower == "space")
-			return WaypointObject::COLOR_SPACE;
+    // Try parsing as a number first
+    if (isdigit(colorLower[0])) {
+        int colorID = atoi(colorLower.toCharArray());
+        if (colorID >= 0 && colorID <= 7)
+            return (byte) colorID;
+    }
 
-		// Return 0xFF for invalid (we'll use default instead)
-		return 0xFF;
-	}
+    // Parse as color name
+    if (colorLower == "white" || colorLower == "white1")
+        return WaypointObject::COLOR_WHITE;
+    else if (colorLower == "blue")
+        return WaypointObject::COLOR_BLUE;
+    else if (colorLower == "green")
+        return WaypointObject::COLOR_GREEN;
+    else if (colorLower == "orange")
+        return WaypointObject::COLOR_ORANGE;
+    else if (colorLower == "yellow")
+        return WaypointObject::COLOR_YELLOW;
+    else if (colorLower == "purple")
+        return WaypointObject::COLOR_PURPLE;
+    else if (colorLower == "white2")
+        return WaypointObject::COLOR_WHITE2;
+    else if (colorLower == "space")
+        return WaypointObject::COLOR_SPACE;
+
+    // Return 0xFF for invalid (we'll use default instead)
+    return 0xFF;
+}
+
 
 	uint32_t getWaypointTemplateCRC(byte color) const {
 		// Uses the universal waypoint template
