@@ -16,8 +16,8 @@ ScheduledEventFRS.EVENT_RESPAWN_DELAY = 5      -- our event respawn delay in sec
 ScheduledEventFRS.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEventFRS.START_TIME = { year = 2025, month = 11, day = 09, hour = 19, min = 00, sec = 0 }
-ScheduledEventFRS.END_TIME   = { year = 2025, month = 11, day = 09, hour = 20, min = 00, sec = 0 }
+ScheduledEventFRS.START_TIME = { year = 2025, month = 11, day = 30, hour = 19, min = 00, sec = 0 }
+ScheduledEventFRS.END_TIME   = { year = 2025, month = 11, day = 30, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEventFRS.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -31,14 +31,14 @@ ScheduledEventFRS.CATCH_UP_IF_MISSED = true
 
 -- NPCs
 ScheduledEventFRS.NPCS = {
-  { planet = "corellia", template = "mutant_crazed_geonosian_guard", x = -172, y = -4723, heading = 0 },
-  { planet = "corellia", template = "mutant_crazed_geonosian_guard", x = -174, y = -4725, heading = 0 },
-  { planet = "corellia", template = "mutant_crazed_geonosian_guard", x = -176, y = -4727, heading = 0 },
-  { planet = "corellia", template = "mutant_crazed_geonosian_guard", x = -175, y = -4726, heading = 0 },
+  { planet = "corellia", template = "bsv_droideka", x = -172, y = -4723, z = 28, heading = 0 },
+  { planet = "corellia", template = "bsv_battle_droid", x = -174, y = -4725, z = 28, heading = 0 },
+  { planet = "corellia", template = "bsv_super_battle_droid", x = -176, y = -4727, z = 28, heading = 0 },
+  { planet = "corellia", template = "bsv_battle_droid", x = -175, y = -4726, z = 28, heading = 0 },
 }
 
 -- FRS Reward Configuration
-ScheduledEventFRS.FRS_XP_AMOUNT = 150          -- Force Rank XP awarded per kill
+ScheduledEventFRS.FRS_XP_AMOUNT = 50          -- Force Rank XP awarded per kill
 ScheduledEventFRS.FRS_RANGE_METERS = 64        -- Range for group members to receive credit
 
 -- Messages
@@ -257,9 +257,9 @@ end
 -- ============================= CORE FUNCTIONS =============================
 
 function ScheduledEventFRS:spawnAll()
-  
+
   for i, spec in ipairs(self.NPCS) do
-    local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+    local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
     local hdg = spec.heading or 0
     local cell = spec.cell or 0
 
@@ -270,11 +270,21 @@ function ScheduledEventFRS:spawnAll()
       if so ~= nil then
         local oid = so:getObjectID()
         spec.oid = oid
-        
+
         -- Store the OID globally so we can find it later
         writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(oid))
         writeData("ScheduledEventFRS:npc_" .. i .. "_template", spec.template)
-        
+
+        -- Ensure creature is properly initialized and alive
+        local creature = LuaCreatureObject(pMob)
+        if creature then
+          -- Set health to max to ensure it's alive
+          local maxHam = creature:getMaxHAM(0)
+          creature:setHAM(0, maxHam)  -- Health = maxHealth
+          creature:setHAM(1, maxHam)  -- Action = maxAction
+          creature:setHAM(2, maxHam)  -- Mind = maxMind
+        end
+
         -- CRITICAL: Add observer for FRS XP rewards on kill
         createObserver(OBJECTDESTRUCTION,
                        "ScheduledEventFRS",
@@ -284,7 +294,7 @@ function ScheduledEventFRS:spawnAll()
     else
     end
   end
-  
+
   -- Start our event respawn system
   self:scheduleEventRespawn()
 end
@@ -327,7 +337,7 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
       local obj = getSceneObject(storedOid)
       if not obj then
         -- NPC is dead, respawn it
-        local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+        local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
         local hdg = spec.heading or 0
         local cell = spec.cell or 0
 
@@ -341,6 +351,15 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
             -- Update stored OID
             writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(newOid))
 
+            -- Ensure creature is properly initialized and alive
+            local creature = LuaCreatureObject(pMob)
+            if creature then
+              local maxHam = creature:getMaxHAM(0)
+              creature:setHAM(0, maxHam)  -- Health = maxHealth
+              creature:setHAM(1, maxHam)  -- Action = maxAction
+              creature:setHAM(2, maxHam)  -- Mind = maxMind
+            end
+
             -- Re-add the FRS XP observer
             createObserver(OBJECTDESTRUCTION,
                            "ScheduledEventFRS",
@@ -351,16 +370,21 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
         else
         end
       else
-        -- Check if the NPC is actually alive (has health > 0)
+        -- Check if the NPC is actually alive (has health > 0) or is a corpse
         local so = LuaSceneObject(obj)
         if so then
           local creature = LuaCreatureObject(obj)
           if creature then
             local health = creature:getHAM(0)  -- Get health
-            if health <= 0 then
+            local isDead = creature:isDead()  -- Check if marked as dead
 
-              -- Respawn (corpse will disappear when looted automatically)
-              local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+            if health <= 0 or isDead then
+              -- Corpse detected - respawn it
+              -- Destroy the corpse first
+              so:destroyObjectFromWorld()
+
+              -- Respawn
+              local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
               local hdg = spec.heading or 0
               local cell = spec.cell or 0
 
@@ -372,6 +396,15 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
                   spec.oid = newOid
                   writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(newOid))
 
+                  -- Ensure creature is properly initialized and alive
+                  local creature = LuaCreatureObject(pMob)
+                  if creature then
+                    local maxHam = creature:getMaxHAM(0)
+                    creature:setHAM(0, maxHam)
+                    creature:setHAM(1, maxHam)
+                    creature:setHAM(2, maxHam)
+                  end
+
                   -- Re-add the FRS XP observer
                   createObserver(OBJECTDESTRUCTION,
                                  "ScheduledEventFRS",
@@ -380,18 +413,79 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
                   respawnedAny = true
                 end
               end
-            else
             end
           else
+            -- If it's not a creature object (maybe corrupted), destroy it and respawn
+            pcall(function() so:destroyObjectFromWorld() end)
+
+            local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
+            local hdg = spec.heading or 0
+            local cell = spec.cell or 0
+
+            local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
+            if pMob ~= nil then
+              local newSo = LuaSceneObject(pMob)
+              if newSo ~= nil then
+                local newOid = newSo:getObjectID()
+                spec.oid = newOid
+                writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(newOid))
+
+                -- Ensure creature is properly initialized and alive
+                local creature = LuaCreatureObject(pMob)
+                if creature then
+                  local maxHam = creature:getMaxHAM(0)
+                  creature:setHAM(0, maxHam)
+                  creature:setHAM(1, maxHam)
+                  creature:setHAM(2, maxHam)
+                end
+
+                -- Re-add the FRS XP observer
+                createObserver(OBJECTDESTRUCTION,
+                               "ScheduledEventFRS",
+                               "onEventMobDied",
+                               pMob)
+                respawnedAny = true
+              end
+            end
           end
         else
+          -- Could not convert to SceneObject, destroy and respawn
+          local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
+          local hdg = spec.heading or 0
+          local cell = spec.cell or 0
+
+          local pMob = spawnMobile(spec.planet, spec.template, 0, spec.x, z, spec.y, hdg, cell)
+          if pMob ~= nil then
+            local newSo = LuaSceneObject(pMob)
+            if newSo ~= nil then
+              local newOid = newSo:getObjectID()
+              spec.oid = newOid
+              writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(newOid))
+
+              -- Ensure creature is properly initialized and alive
+              local creature = LuaCreatureObject(pMob)
+              if creature then
+                local maxHam = creature:getMaxHAM(0)
+                creature:setHAM(0, maxHam)
+                creature:setHAM(1, maxHam)
+                creature:setHAM(2, maxHam)
+              end
+
+              -- Re-add the FRS XP observer
+              createObserver(OBJECTDESTRUCTION,
+                             "ScheduledEventFRS",
+                             "onEventMobDied",
+                             pMob)
+              respawnedAny = true
+            end
+          end
         end
         -- Make sure spec.oid is in sync with stored OID
         spec.oid = storedOid
       end
     else
       -- No stored OID, spawn a new one
-      local z = safeTerrainZ(spec.planet, spec.x, spec.y)
+      local z = spec.z or safeTerrainZ(spec.planet, spec.x, spec.y)
       local hdg = spec.heading or 0
       local cell = spec.cell or 0
 
@@ -402,6 +496,15 @@ function ScheduledEventFRS:checkRespawns(pCreatureObject, pPlayer)
           local newOid = so:getObjectID()
           spec.oid = newOid
           writeData("ScheduledEventFRS:npc_" .. i .. "_oid", tostring(newOid))
+
+          -- Ensure creature is properly initialized and alive
+          local creature = LuaCreatureObject(pMob)
+          if creature then
+            local maxHam = creature:getMaxHAM(0)
+            creature:setHAM(0, maxHam)
+            creature:setHAM(1, maxHam)
+            creature:setHAM(2, maxHam)
+          end
 
           -- Add the FRS XP observer
           createObserver(OBJECTDESTRUCTION,
@@ -433,6 +536,8 @@ function ScheduledEventFRS:monitorEvent(pCreatureObject, pPlayer)
   end
 
   if tnow >= activeUntil then
+    -- Set cutoff flag FIRST to prevent respawns during cleanup
+    writeData("ScheduledEventFRS:cutoff_reached", "1")
     self:endEventNow()
     return 0
   end
