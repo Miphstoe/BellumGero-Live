@@ -459,10 +459,26 @@ function KnightTrials:resetCompletedTrialsToStart(pPlayer)
 end
 
 -- Global kill observer for PvE points (awards points for ANY creature killed, independent of trials)
-function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
-	if (pVictim == nil or pPlayer == nil) then
-		printLuaError("KnightTrials:notifyKilledForPoints - nil player or victim")
+function KnightTrials:notifyKilledForPoints(pKiller, pVictim)
+	if (pVictim == nil or pKiller == nil) then
+		printLuaError("KnightTrials:notifyKilledForPoints - nil killer or victim")
 		return 0
+	end
+
+	-- pKiller might be a pet or NPC, so resolve the actual player
+	local pPlayer = pKiller
+	if (not SceneObject(pKiller):isPlayerCreature()) then
+		-- If killer is not a player, try to get the owner
+		local ko = CreatureObject(pKiller)
+		if (ko ~= nil and ko.getOwner ~= nil) then
+			pPlayer = ko:getOwner()
+		end
+
+		-- If still not a player, return
+		if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
+			printLuaError("KnightTrials:notifyKilledForPoints - killer is not a player and has no player owner")
+			return 0
+		end
 	end
 
 	-- Only award points if player has Padawan rank and hasn't gotten Knight rank
