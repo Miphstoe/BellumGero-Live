@@ -1,9 +1,9 @@
 master_bounty_guild_npc = Creature:new {
-    objectName     = "@mob/creature_names:bounty_guild_master", -- add STF entry if you like
+    --objectName     = "@mob/creature_names:bounty_guild_master", -- add STF entry if you like
     randomNameType = NAME_GENERIC,
     randomNameTag  = true,
     mobType        = MOB_NPC,
-
+    customName = "Bounty Hunters' Guild",
     socialGroup = "bounty",
     faction     = "",
     level       = 100,

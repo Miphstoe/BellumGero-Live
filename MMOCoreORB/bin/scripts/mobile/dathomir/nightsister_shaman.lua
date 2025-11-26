@@ -1,8 +1,9 @@
 nightsister_shaman = Creature:new {
-	objectName = "@mob/creature_names:nightsister_shaman",
+	--objectName = "@mob/creature_names:nightsister_shaman",
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,
+	customName = "a Nightsister Shaman",
 	socialGroup = "nightsister",
     faction = "nightsister",
 	faction = "",
