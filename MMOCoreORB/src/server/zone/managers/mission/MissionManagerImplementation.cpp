@@ -2093,6 +2093,102 @@ Vector3 MissionManagerImplementation::getRandomBountyTargetPosition(CreatureObje
 	return position;
 }
 
+Reference<MissionObject*> MissionManagerImplementation::getGuildTier3BountyMission(CreatureObject* player) {
+	if (player == nullptr)
+		return nullptr;
+
+	// Require Master Bounty Hunter only.
+	if (!player->hasSkill("combat_bountyhunter_master")) {
+		player->sendSystemMessage("These Guild contracts are reserved for Master Bounty Hunters.");
+		return nullptr;
+	}
+
+	Zone* playerZone = player->getZone();
+	if (playerZone == nullptr)
+		return nullptr;
+
+	// Enforce the same limits as mission accept:
+	// - max 6 missions
+	// - only one bounty mission at a time
+	SceneObject* datapad = player->getSlottedObject("datapad");
+	if (datapad == nullptr)
+		return nullptr;
+
+	int missionCount = 0;
+	bool hasBountyMission = false;
+
+	for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+		SceneObject* obj = datapad->getContainerObject(i);
+
+		if (obj->isMissionObject()) {
+			++missionCount;
+			MissionObject* datapadMission = cast<MissionObject*>(obj);
+			if (datapadMission != nullptr && datapadMission->getTypeCRC() == MissionTypes::BOUNTY) {
+				hasBountyMission = true;
+			}
+		}
+	}
+
+	if (missionCount >= 6) {
+		player->sendSystemMessage("You already have the maximum number of missions.");
+		return nullptr;
+	}
+
+	if (hasBountyMission) {
+		player->sendSystemMessage("You are already on a bounty contract. Complete it before taking another Guild contract.");
+		return nullptr;
+	}
+
+	// Create an empty mission object, same template as used in populateMissionList(...)
+	ManagedReference<SceneObject*> missionSO = server->createObject(0x18e19914, 1); // empty mission
+	if (missionSO == nullptr)
+		return nullptr;
+
+	Reference<MissionObject*> mission = cast<MissionObject*>(missionSO.get());
+	if (mission == nullptr)
+		return nullptr;
+
+	Locker locker(mission);
+
+	// Put the mission directly into the datapad (we're bypassing the mission_bag list UI)
+	datapad->transferObject(mission, -1, true);
+
+	// Prepare an empty potential player-bounty list so we force an NPC-target bounty.
+	Vector< ManagedReference<PlayerBounty*> > potentialTargets;
+
+	// Use the existing generic bounty generator so we inherit all rewards / text / target logic.
+	// This function already:
+	//  - checks BH skills
+	//  - sets mission type to MissionTypes::BOUNTY
+	//  - picks Tier 1/2/3 based on investigation skill
+	randomizeGenericBountyMission(player, mission, Factions::FACTIONNEUTRAL, &potentialTargets);
+
+	// If for some reason it failed to produce a bounty, bail.
+	if (mission->getTypeCRC() != MissionTypes::BOUNTY) {
+		// Clean up the bad mission
+		mission->destroyObjectFromWorld(true);
+		mission->destroyObjectFromDatabase(true);
+		return nullptr;
+	}
+
+	// Force this mission to be Tier-3 (in case investigation logic changes later)
+	mission->setMissionLevel(3);
+
+	// Now enforce "same-planet" behavior:
+	String planet = playerZone->getZoneName();
+	Vector3 endPos = getRandomBountyTargetPosition(player, planet);
+	mission->setEndPosition(endPos.getX(), endPos.getY(), planet, true);
+
+	// Create the bounty mission objective so the mission behaves exactly like a normal bounty.
+	createBountyMissionObjectives(mission, nullptr, player);
+
+	player->updateToDatabaseAllObjects(false);
+
+	return mission;
+}
+
+
+
 Reference<MissionObject*> MissionManagerImplementation::getBountyHunterMission(CreatureObject* player) {
 	ManagedReference<SceneObject*> datapad = player->getSlottedObject("datapad");
 

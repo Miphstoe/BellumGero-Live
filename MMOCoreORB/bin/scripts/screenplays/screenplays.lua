@@ -766,3 +766,4 @@ includeFile("vendors/bg_token_vendor_2.lua")
 -- Player Bounty System
 includeFile("player_bounty/player_bounty_system.lua")
 
+includeFile("static_spawns/master_bounty_guild.lua")

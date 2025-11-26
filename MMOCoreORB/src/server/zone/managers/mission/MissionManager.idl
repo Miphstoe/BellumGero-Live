@@ -155,6 +155,10 @@ class MissionManager extends Observer implements Logger {
 	@reference
 	public native MissionObject getBountyHunterMission(CreatureObject player);
 
+	// New: Master BH same-planet Tier-3 “Guild” bounty mission
+	@reference
+	public native MissionObject getGuildTier3BountyMission(CreatureObject player);
+
 	@dirty
 	public native int getRealBountyReward(CreatureObject creo, PlayerBounty bounty);
 

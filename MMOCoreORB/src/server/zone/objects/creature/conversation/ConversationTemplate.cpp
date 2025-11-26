@@ -27,6 +27,9 @@ void ConversationTemplate::readObject(LuaObject* templateData) {
 	else if (templateType == "Personality") {
 		conversationTemplateType = ConversationTemplateTypePersonality;
 	}
+	else if (templateType == "BountyGuildNPC") {
+		conversationTemplateType = ConversationTemplateTypeBountyGuild;
+	}
 	else {
 		conversationTemplateType = ConversationTemplateTypeNormal;
 	}
