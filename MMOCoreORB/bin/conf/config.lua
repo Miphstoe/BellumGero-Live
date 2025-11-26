@@ -255,6 +255,11 @@ Core3 = {
 	TermsOfServiceVersion = 0,
 	TermsOfService = "",
 
+	------Player Manager Config------
+    PlayerManager = {
+        AdvancedWaypoints = true,
+    },
+
 	------Mission Manager Config------
 	MissionManager = {
 		PlayerBountyCooldown = false, -- Set to true to enable cooldown between bounty missions on same target
