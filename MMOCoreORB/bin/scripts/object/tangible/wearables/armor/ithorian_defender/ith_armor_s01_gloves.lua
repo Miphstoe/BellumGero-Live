@@ -45,6 +45,8 @@ object_tangible_wearables_armor_ithorian_defender_ith_armor_s01_gloves = object_
 
 	templateType = ARMOROBJECT,
 
+	objectMenuComponent = "ArmorObjectMenuComponent",
+
 	playerRaces = { "object/creature/player/bothan_male.iff",
 				"object/creature/player/bothan_female.iff",
 				"object/creature/player/human_male.iff",

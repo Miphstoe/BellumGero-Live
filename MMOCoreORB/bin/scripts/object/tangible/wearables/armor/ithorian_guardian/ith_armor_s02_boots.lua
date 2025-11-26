@@ -44,6 +44,8 @@
 object_tangible_wearables_armor_ithorian_guardian_ith_armor_s02_boots = object_tangible_wearables_armor_ithorian_guardian_shared_ith_armor_s02_boots:new {
 	templateType = ARMOROBJECT,
 
+	objectMenuComponent = "ArmorObjectMenuComponent",
+
 	playerRaces = { "object/creature/player/bothan_male.iff",
 				"object/creature/player/bothan_female.iff",
 				"object/creature/player/human_male.iff",
