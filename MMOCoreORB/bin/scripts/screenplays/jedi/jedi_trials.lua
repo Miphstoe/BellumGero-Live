@@ -69,6 +69,8 @@ function JediTrials:isOnKnightTrials(pPlayer)
 end
 
 function JediTrials:onPlayerLoggedIn(pPlayer)
+	printLuaError("JediTrials:onPlayerLoggedIn called for player!")
+
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "completedTrials")) ~= 1) then
 		writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
 	end
@@ -81,7 +83,9 @@ function JediTrials:onPlayerLoggedIn(pPlayer)
 		PadawanTrials:onPlayerLoggedIn(pPlayer)
 	end
 
+	printLuaError("JediTrials:onPlayerLoggedIn - About to call KnightTrials:onPlayerLoggedIn")
 	KnightTrials:onPlayerLoggedIn(pPlayer)
+	printLuaError("JediTrials:onPlayerLoggedIn - KnightTrials:onPlayerLoggedIn returned")
 end
 
 function JediTrials:droppedSkillDuringTrials(pPlayer, pSkill)
@@ -137,6 +141,10 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 
 	awardSkill(pPlayer, "force_title_jedi_rank_02")
 	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
+
+	-- Register observer for Knight Trials PvE point tracking
+	printLuaError("JediTrials:unlockJediPadawan - Registering Knight Trials observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 
 	CreatureObject(pPlayer):playEffect("clienteffect/trap_electric_01.cef", "")
 	CreatureObject(pPlayer):playMusicMessage("sound/music_become_jedi.snd")
@@ -651,3 +659,6 @@ function JediTrials:getPointsForCreatureLevel(creatureLevel)
 	-- Default: no points for unknown levels (shouldn't happen)
 	return 0
 end
+
+-- Register screenplay to enable onPlayerLoggedIn hook
+registerScreenPlay("JediTrials", true)

@@ -348,16 +348,16 @@ function KnightTrials:showCurrentTrial(pPlayer)
 		end
 	end
 
-	shrinePrompt = getStringId(shrinePrompt)
+	-- Don't show the old quest message, just show PvE points progress
+	-- shrinePrompt = getStringId(shrinePrompt)
+	-- if (trialData.huntGoal ~= nil and trialData.huntGoal > 1) then
+	--	shrinePrompt = shrinePrompt .. " " .. targetCount .. " of " .. trialData.huntGoal
+	-- end
 
-	if (trialData.huntGoal ~= nil and trialData.huntGoal > 1) then
-		shrinePrompt = shrinePrompt .. " " .. targetCount .. " of " .. trialData.huntGoal
-	end
-
-	-- Add PvE point progress to the dialog
+	-- Show only PvE point progress
 	local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
-	local pointProgress = string.format("\n\nPvE Progression: %d / %d points", currentPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
-	shrinePrompt = shrinePrompt .. pointProgress
+	local pointProgress = string.format("PvE Progression: %d / %d points", currentPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
+	shrinePrompt = pointProgress
 
 	local sui = SuiMessageBox.new("KnightTrials", "noCallback")
 	sui.setTitle("@jedi_trials:knight_trials_title")
@@ -388,16 +388,26 @@ function KnightTrials:getTrialShrine(pPlayer)
 end
 
 function KnightTrials:onPlayerLoggedIn(pPlayer)
+	printLuaError("KnightTrials:onPlayerLoggedIn called!")
+
 	if (pPlayer == nil) then
+		printLuaError("KnightTrials:onPlayerLoggedIn - pPlayer is nil!")
 		return
+	end
+
+	printLuaError("KnightTrials:onPlayerLoggedIn - Player: " .. SceneObject(pPlayer):getCustomObjectName())
+
+	-- Always register points observer for any player with Padawan rank who hasn't gotten Knight rank
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+		printLuaError("KnightTrials:onPlayerLoggedIn - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	else
+		printLuaError("KnightTrials:onPlayerLoggedIn - NOT registering observer. Has rank_02: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) .. ", Has rank_03: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")))
 	end
 
 	if (JediTrials:isEligibleForKnightTrials(pPlayer) and not JediTrials:isOnKnightTrials(pPlayer)) then
 		KnightTrials:startKnightTrials(pPlayer)
 	elseif (JediTrials:isOnKnightTrials(pPlayer)) then
-		-- Re-register the global points observer for PvE progression
-		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
-
 		local trialNumber = JediTrials:getCurrentTrial(pPlayer)
 
 		if (trialNumber <= 0) then
@@ -451,33 +461,47 @@ end
 -- Global kill observer for PvE points (awards points for ANY creature killed, independent of trials)
 function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
 	if (pVictim == nil or pPlayer == nil) then
+		printLuaError("KnightTrials:notifyKilledForPoints - nil player or victim")
 		return 0
 	end
 
-	-- Only award points if player is on Knight Trials
-	if (not JediTrials:isOnKnightTrials(pPlayer)) then
+	-- Only award points if player has Padawan rank and hasn't gotten Knight rank
+	if (not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player doesn't have Padawan rank")
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player already completed Knight Trials (has rank_03)")
 		return 0
 	end
 
 	-- Award points for creature kill in PvE system (based on creature level)
 	local creatureLevel = CreatureObject(pVictim):getLevel()
+	printLuaError("KnightTrials:notifyKilledForPoints - creature level: " .. creatureLevel .. ", victim: " .. SceneObject(pVictim):getObjectName())
+
 	local pointsAwarded = JediTrials:getPointsForCreatureLevel(creatureLevel)
+	printLuaError("KnightTrials:notifyKilledForPoints - points awarded: " .. pointsAwarded)
 
 	if (pointsAwarded > 0) then
 		local creatureName = SceneObject(pVictim):getObjectName()
 
 		-- Get current points before adding
 		local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+		printLuaError("KnightTrials:notifyKilledForPoints - current points: " .. currentPoints)
 
 		-- Award the points
 		JediTrials:addKnightTrialPoints(pPlayer, pointsAwarded)
 
 		-- Get new points after adding
 		local newPoints = JediTrials:getKnightTrialPoints(pPlayer)
+		printLuaError("KnightTrials:notifyKilledForPoints - new points: " .. newPoints)
 
 		-- Send detailed system message with point gain and total
-		local pointMessage = string.format("Knight Trials: +%d points (%d / 50000)", pointsAwarded, newPoints)
+		local pointMessage = string.format("Knight Trials: +%d points (%d / %d)", pointsAwarded, newPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
 		CreatureObject(pPlayer):sendSystemMessage(pointMessage)
+	else
+		printLuaError("KnightTrials:notifyKilledForPoints - no points awarded for this creature level")
 	end
 
 	return 0
