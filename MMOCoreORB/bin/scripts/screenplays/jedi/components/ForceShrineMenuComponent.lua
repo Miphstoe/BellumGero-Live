@@ -57,6 +57,9 @@ function ForceShrineMenuComponent:doMeditate(pObject, pPlayer)
 
 			-- Register the observer to ensure points are tracked
 			printLuaError("ForceShrineMenuComponent:doMeditate - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+			-- First drop any existing observer to prevent duplicates
+			dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+			-- Now register the observer
 			createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 
 			-- Always show the progress box for Knight Trials

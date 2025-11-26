@@ -144,6 +144,9 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 
 	-- Register observer for Knight Trials PvE point tracking
 	printLuaError("JediTrials:unlockJediPadawan - Registering Knight Trials observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+	-- First drop any existing observer to prevent duplicates
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	-- Now register the observer
 	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 
 	CreatureObject(pPlayer):playEffect("clienteffect/trap_electric_01.cef", "")

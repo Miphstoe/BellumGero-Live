@@ -2,6 +2,25 @@ local ObjectManager = require("managers.object.object_manager")
 
 KnightTrials = ScreenPlay:new {}
 
+-- Check if a player participated in a creature's death
+-- To prevent passive point gain from group members far away, we check if the player was close
+local function playerParticipatedInKill(pPlayer, pCreature)
+	if pPlayer == nil or pCreature == nil then
+		return false
+	end
+
+	-- Check if player is within interaction range (32 meters)
+	-- This prevents passive point gain from distant group members
+	-- Group members must be actively fighting nearby to earn credit
+	local PARTICIPATION_RANGE = 32
+	local isInRange = SceneObject(pPlayer):isInRangeWithObject(pCreature, PARTICIPATION_RANGE)
+
+	printLuaError("KnightTrials:playerParticipatedInKill - Player: " .. SceneObject(pPlayer):getCustomObjectName() ..
+		", Creature: " .. SceneObject(pCreature):getObjectName() .. ", InRange(32m): " .. tostring(isInRange))
+
+	return isInRange
+end
+
 function KnightTrials:startKnightTrials(pPlayer)
 	local randomShrinePlanet = JediTrials:getRandomDifferentShrinePlanet(pPlayer)
 	local pRandShrine = JediTrials:getRandomShrineOnPlanet(randomShrinePlanet)
@@ -16,6 +35,9 @@ function KnightTrials:startKnightTrials(pPlayer)
 	self:setTrialShrine(pPlayer, pRandShrine)
 
 	-- Register global kill observer for PvE points (independent of trial targets)
+	-- First drop any existing observer to prevent duplicates
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	-- Now register the observer
 	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 
 	local suiPrompt = getStringId("@jedi_trials:knight_trials_intro_msg") .. " " .. getStringId("@jedi_trials:" .. randomShrinePlanet) .. " " .. getStringId("@jedi_trials:knight_trials_intro_msg_end")
@@ -400,6 +422,9 @@ function KnightTrials:onPlayerLoggedIn(pPlayer)
 	-- Always register points observer for any player with Padawan rank who hasn't gotten Knight rank
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 		printLuaError("KnightTrials:onPlayerLoggedIn - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+		-- First drop any existing observer to prevent duplicates
+		dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+		-- Now register the observer
 		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 	else
 		printLuaError("KnightTrials:onPlayerLoggedIn - NOT registering observer. Has rank_02: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) .. ", Has rank_03: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")))
@@ -459,26 +484,18 @@ function KnightTrials:resetCompletedTrialsToStart(pPlayer)
 end
 
 -- Global kill observer for PvE points (awards points for ANY creature killed, independent of trials)
-function KnightTrials:notifyKilledForPoints(pKiller, pVictim)
-	if (pVictim == nil or pKiller == nil) then
-		printLuaError("KnightTrials:notifyKilledForPoints - nil killer or victim")
+-- Note: pPlayer parameter is actually the player this observer was registered on
+function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
+	if (pVictim == nil or pPlayer == nil) then
+		printLuaError("KnightTrials:notifyKilledForPoints - nil player or victim")
 		return 0
 	end
 
-	-- pKiller might be a pet or NPC, so resolve the actual player
-	local pPlayer = pKiller
-	if (not SceneObject(pKiller):isPlayerCreature()) then
-		-- If killer is not a player, try to get the owner
-		local ko = CreatureObject(pKiller)
-		if (ko ~= nil and ko.getOwner ~= nil) then
-			pPlayer = ko:getOwner()
-		end
-
-		-- If still not a player, return
-		if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
-			printLuaError("KnightTrials:notifyKilledForPoints - killer is not a player and has no player owner")
-			return 0
-		end
+	-- The observer fires for the registered player only - so pPlayer should always be the intended player
+	-- Double-check that pPlayer is actually a player creature (not a pet or NPC)
+	if (not SceneObject(pPlayer):isPlayerCreature()) then
+		printLuaError("KnightTrials:notifyKilledForPoints - registered observer object is not a player")
+		return 0
 	end
 
 	-- Only award points if player has Padawan rank and hasn't gotten Knight rank
@@ -489,6 +506,13 @@ function KnightTrials:notifyKilledForPoints(pKiller, pVictim)
 
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 		printLuaError("KnightTrials:notifyKilledForPoints - player already completed Knight Trials (has rank_03)")
+		return 0
+	end
+
+	-- Verify the player participated in the kill (was within 80 meters of the creature)
+	-- This ensures points are only awarded for creatures the player helped kill
+	if (not playerParticipatedInKill(pPlayer, pVictim)) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player did not participate in kill of creature: " .. SceneObject(pVictim):getObjectName())
 		return 0
 	end
 
