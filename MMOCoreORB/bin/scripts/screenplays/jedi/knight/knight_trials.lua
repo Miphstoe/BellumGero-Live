@@ -15,6 +15,9 @@ function KnightTrials:startKnightTrials(pPlayer)
 	JediTrials:setCurrentTrial(pPlayer, 0)
 	self:setTrialShrine(pPlayer, pRandShrine)
 
+	-- Register global kill observer for PvE points (independent of trial targets)
+	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+
 	local suiPrompt = getStringId("@jedi_trials:knight_trials_intro_msg") .. " " .. getStringId("@jedi_trials:" .. randomShrinePlanet) .. " " .. getStringId("@jedi_trials:knight_trials_intro_msg_end")
 
 	local sui = SuiMessageBox.new("KnightTrials", "noCallback")
@@ -52,43 +55,9 @@ function KnightTrials:startNextKnightTrial(pPlayer)
 		return
 	end
 
-	local shrinePrompt = ""
-
-	if (trialsCompleted > 0) then
-		shrinePrompt = getStringId("@jedi_trials:knight_trials_current_trial_complete") .. " "
-	else
-		self:unsetTrialShrine(pPlayer)
-	end
-
-	local currentTrial = trialsCompleted + 1
-	JediTrials:setCurrentTrial(pPlayer, currentTrial)
-
-	local trialData = knightTrialQuests[currentTrial]
-
-	if (trialData.trialType == TRIAL_COUNCIL) then
-		self:sendCouncilChoiceSui(pPlayer)
-		return
-	end
-
-	local trialString = "@jedi_trials:" .. trialData.trialName
-
-	if (trialData.trialType == TRIAL_HUNT_FACTION) then
-		local councilChoice = JediTrials:getJediCouncil(pPlayer)
-
-		if (councilChoice == JediTrials.COUNCIL_LIGHT) then
-			trialString = trialString .. "_light"
-		else
-			trialString = trialString .. "_dark"
-		end
-	end
-
-	trialString = getStringId(trialString)
-
-	shrinePrompt = shrinePrompt .. trialString
-
-	if (trialData.huntGoal ~= nil and trialData.huntGoal > 1) then
-		shrinePrompt = shrinePrompt .. " 0 of " .. trialData.huntGoal
-	end
+	-- Display only PvE point progression
+	local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+	local shrinePrompt = string.format("PvE Progression: %d / 50000 points\n\nContinue hunting creatures to progress toward Knight status.", currentPoints)
 
 	local sui = SuiMessageBox.new("KnightTrials", "noCallback")
 	sui.setTitle("@jedi_trials:knight_trials_title")
@@ -96,28 +65,6 @@ function KnightTrials:startNextKnightTrial(pPlayer)
 	sui.setOkButtonText("@jedi_trials:button_close")
 	sui.hideCancelButton()
 	sui.sendTo(pPlayer)
-
-	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledHuntTarget", pPlayer)
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTarget")
-	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")
-	writeScreenPlayData(pPlayer, "JediTrials", "huntTargetCount", 0)
-
-	if (trialData.trialType == TRIAL_HUNT or trialData.trialType == TRIAL_HUNT_FACTION) then
-		if (trialData.trialType == TRIAL_HUNT) then
-			writeScreenPlayData(pPlayer, "JediTrials", "huntTarget", trialData.huntTarget)
-		else
-			local councilChoice = JediTrials:getJediCouncil(pPlayer)
-
-			if (councilChoice == JediTrials.COUNCIL_LIGHT) then
-				writeScreenPlayData(pPlayer, "JediTrials", "huntTarget", trialData.rebelTarget)
-			else
-				writeScreenPlayData(pPlayer, "JediTrials", "huntTarget", trialData.imperialTarget)
-			end
-		end
-
-		writeScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal", trialData.huntGoal)
-		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledHuntTarget", pPlayer)
-	end
 end
 
 function KnightTrials:sendCouncilChoiceSui(pPlayer)
@@ -281,6 +228,17 @@ function KnightTrials:notifyKilledHuntTarget(pPlayer, pVictim)
 		targetCount = targetCount + 1
 		writeScreenPlayData(pPlayer, "JediTrials", "huntTargetCount", targetCount)
 
+		-- Award points for creature kill in PvE system (based on creature level)
+		local creatureLevel = CreatureObject(pVictim):getLevel()
+		local pointsAwarded = JediTrials:getPointsForCreatureLevel(creatureLevel)
+		if (pointsAwarded > 0) then
+			JediTrials:addKnightTrialPoints(pPlayer, pointsAwarded)
+			-- Show point gain message to player
+			local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+			local pointMessage = string.format("Knight Trials: +%d points (%d / 50000)", pointsAwarded, currentPoints)
+			CreatureObject(pPlayer):sendSystemMessage(pointMessage)
+		end
+
 		if (targetCount >= targetGoal) then
 			if (not JediTrials:isEligibleForKnightTrials(pPlayer)) then
 				self:failTrialsIneligible(pPlayer)
@@ -396,6 +354,11 @@ function KnightTrials:showCurrentTrial(pPlayer)
 		shrinePrompt = shrinePrompt .. " " .. targetCount .. " of " .. trialData.huntGoal
 	end
 
+	-- Add PvE point progress to the dialog
+	local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+	local pointProgress = string.format("\n\nPvE Progression: %d / %d points", currentPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
+	shrinePrompt = shrinePrompt .. pointProgress
+
 	local sui = SuiMessageBox.new("KnightTrials", "noCallback")
 	sui.setTitle("@jedi_trials:knight_trials_title")
 	sui.setPrompt(shrinePrompt)
@@ -432,6 +395,9 @@ function KnightTrials:onPlayerLoggedIn(pPlayer)
 	if (JediTrials:isEligibleForKnightTrials(pPlayer) and not JediTrials:isOnKnightTrials(pPlayer)) then
 		KnightTrials:startKnightTrials(pPlayer)
 	elseif (JediTrials:isOnKnightTrials(pPlayer)) then
+		-- Re-register the global points observer for PvE progression
+		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+
 		local trialNumber = JediTrials:getCurrentTrial(pPlayer)
 
 		if (trialNumber <= 0) then
@@ -471,10 +437,48 @@ function KnightTrials:resetCompletedTrialsToStart(pPlayer)
 		return
 	end
 
+	-- Drop the global points observer
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+
 	JediTrials:resetTrialData(pPlayer, "knight")
 	deleteScreenPlayData(pPlayer, "KnightTrials", "completedTrials")
 
 	JediTrials:setStartedTrials(pPlayer)
 	JediTrials:setTrialsCompleted(pPlayer, 0)
 	JediTrials:setCurrentTrial(pPlayer, 0)
+end
+
+-- Global kill observer for PvE points (awards points for ANY creature killed, independent of trials)
+function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
+	if (pVictim == nil or pPlayer == nil) then
+		return 0
+	end
+
+	-- Only award points if player is on Knight Trials
+	if (not JediTrials:isOnKnightTrials(pPlayer)) then
+		return 0
+	end
+
+	-- Award points for creature kill in PvE system (based on creature level)
+	local creatureLevel = CreatureObject(pVictim):getLevel()
+	local pointsAwarded = JediTrials:getPointsForCreatureLevel(creatureLevel)
+
+	if (pointsAwarded > 0) then
+		local creatureName = SceneObject(pVictim):getObjectName()
+
+		-- Get current points before adding
+		local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+
+		-- Award the points
+		JediTrials:addKnightTrialPoints(pPlayer, pointsAwarded)
+
+		-- Get new points after adding
+		local newPoints = JediTrials:getKnightTrialPoints(pPlayer)
+
+		-- Send detailed system message with point gain and total
+		local pointMessage = string.format("Knight Trials: +%d points (%d / 50000)", pointsAwarded, newPoints)
+		CreatureObject(pPlayer):sendSystemMessage(pointMessage)
+	end
+
+	return 0
 end

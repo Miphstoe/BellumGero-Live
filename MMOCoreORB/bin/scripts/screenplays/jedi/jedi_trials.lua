@@ -529,3 +529,125 @@ function JediTrials:completeKnightForTesting(pPlayer, councilType)
 		SceneObject(pPlayer):switchZone("yavin4", enclaveLoc[1], enclaveLoc[2], enclaveLoc[3], 0)
 	end
 end
+
+-- PvE Point Accrual System Functions
+function JediTrials:getKnightTrialPoints(pPlayer)
+	if (pPlayer == nil) then
+		return 0
+	end
+
+	local points = tonumber(readScreenPlayData(pPlayer, "KnightTrials", "accruedPoints"))
+
+	if (points == nil) then
+		writeScreenPlayData(pPlayer, "KnightTrials", "accruedPoints", 0)
+		return 0
+	else
+		return points
+	end
+end
+
+function JediTrials:addKnightTrialPoints(pPlayer, pointsToAdd)
+	if (pPlayer == nil or pointsToAdd == nil or pointsToAdd <= 0) then
+		return
+	end
+
+	local currentPoints = self:getKnightTrialPoints(pPlayer)
+	local newPoints = currentPoints + pointsToAdd
+	writeScreenPlayData(pPlayer, "KnightTrials", "accruedPoints", newPoints)
+
+	-- Check for milestone achievements
+	self:checkKnightTrialPointMilestones(pPlayer, currentPoints, newPoints)
+
+	-- Check if player has reached the halfway point (500 points) and needs to choose council
+	if (currentPoints < 500 and newPoints >= 500 and (self:getJediCouncil(pPlayer) == nil or self:getJediCouncil(pPlayer) == 0)) then
+		self:promptCouncilChoiceAtHalfway(pPlayer)
+		return
+	end
+
+	-- Check if player has reached the required points for Knight status
+	if (newPoints >= KNIGHT_TRIALS_REQUIRED_POINTS and not self:hasCompletedKnightTrials(pPlayer)) then
+		self:completeKnightTrialsViaPoints(pPlayer)
+	end
+end
+
+function JediTrials:checkKnightTrialPointMilestones(pPlayer, oldPoints, newPoints)
+	if (pPlayer == nil) then
+		return
+	end
+
+	for i = 1, #knightTrialPointMilestones, 1 do
+		local milestone = knightTrialPointMilestones[i]
+		-- Check if player just crossed this milestone threshold
+		if (oldPoints < milestone.points and newPoints >= milestone.points) then
+			local messageStr = getStringId(milestone.message)
+			if (messageStr ~= nil and messageStr ~= "") then
+				CreatureObject(pPlayer):sendSystemMessage(messageStr)
+			end
+		end
+	end
+end
+
+function JediTrials:hasCompletedKnightTrials(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	return tonumber(readScreenPlayData(pPlayer, "KnightTrials", "completedTrials")) == 1
+end
+
+function JediTrials:promptCouncilChoiceAtHalfway(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- Player has reached 500 points and must choose a council
+	local sui = SuiMessageBox.new("KnightTrials", "emptyCallback")
+	sui.setTitle("@jedi_trials:knight_trials_title")
+	sui.setPrompt("@jedi_trials:knight_trials_halfway_council_choice")
+	sui.setOkButtonText("@jedi_trials:button_close")
+	sui.hideCancelButton()
+	sui.sendTo(pPlayer)
+
+	-- Send council choice dialog
+	KnightTrials:sendCouncilChoiceSui(pPlayer)
+end
+
+function JediTrials:completeKnightTrialsViaPoints(pPlayer)
+	if (pPlayer == nil or not self:isEligibleForKnightTrials(pPlayer)) then
+		return
+	end
+
+	-- Player has accumulated enough points and council is already selected
+	local councilType = self:getJediCouncil(pPlayer)
+
+	if (councilType == nil or councilType == 0) then
+		-- This shouldn't happen (council should be selected at 500 points), but handle it
+		local sui = SuiMessageBox.new("KnightTrials", "emptyCallback")
+		sui.setTitle("@jedi_trials:knight_trials_title")
+		sui.setPrompt("@jedi_trials:knight_trials_points_complete")
+		sui.setOkButtonText("@jedi_trials:button_close")
+		sui.hideCancelButton()
+		sui.sendTo(pPlayer)
+		KnightTrials:sendCouncilChoiceSui(pPlayer)
+	else
+		-- Player already has a council selected, unlock them as Knight
+		self:unlockJediKnight(pPlayer)
+	end
+end
+
+function JediTrials:getPointsForCreatureLevel(creatureLevel)
+	if (creatureLevel == nil) then
+		return 0
+	end
+
+	-- Check each tier to find the appropriate point value for this creature level
+	for i = 1, #knightTrialLevelPointTiers, 1 do
+		local tier = knightTrialLevelPointTiers[i]
+		if (creatureLevel >= tier.minLevel and creatureLevel <= tier.maxLevel) then
+			return tier.points
+		end
+	end
+
+	-- Default: no points for unknown levels (shouldn't happen)
+	return 0
+end
