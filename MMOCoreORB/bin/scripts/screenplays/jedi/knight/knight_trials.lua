@@ -300,11 +300,13 @@ function KnightTrials:showCurrentTrial(pPlayer)
 
 	local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer)
 
-	if (trialsCompleted == trialNumber) then
+	local trialData = knightTrialQuests[trialNumber]
+
+	-- Only skip if it's not the council choice trial
+	-- Council choice trial (TRIAL_COUNCIL) should always show the council dialog when first encountered
+	if (trialData.trialType ~= TRIAL_COUNCIL and trialsCompleted == trialNumber) then
 		return
 	end
-
-	local trialData = knightTrialQuests[trialNumber]
 
 	if (trialData.trialType == TRIAL_COUNCIL) then
 		self:sendCouncilChoiceSui(pPlayer)
