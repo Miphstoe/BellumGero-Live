@@ -105,6 +105,9 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "subtractBankCredits", &LuaCreatureObject::subtractBankCredits},
 		{ "addCashCredits", &LuaCreatureObject::addCashCredits},
 		{ "addBankCredits", &LuaCreatureObject::addBankCredits},
+		{ "getApprenticeshipXp", &LuaCreatureObject::getApprenticeshipXp},
+		{ "addApprenticeshipXp", &LuaCreatureObject::addApprenticeshipXp},
+		{ "subtractApprenticeshipXp", &LuaCreatureObject::subtractApprenticeshipXp},
 		{ "removeScreenPlayState", &LuaCreatureObject::removeScreenPlayState},
 		{ "isGrouped", &LuaCreatureObject::isGrouped},
 		{ "isGroupedWith", &LuaCreatureObject::isGroupedWith},
@@ -1694,5 +1697,52 @@ int LuaCreatureObject::enhancePet(lua_State* L) {
 
 	player->sendSystemMessage("Your pet has been enhanced with 2500 buffs for 2 hours!");
 
+	return 0;
+}
+
+int LuaCreatureObject::getApprenticeshipXp(lua_State* L) {
+	ManagedReference<PlayerObject*> ghost = realObject->getPlayerObject();
+	if (ghost == nullptr) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	lua_pushinteger(L, ghost->getApprenticeshipXp());
+	return 1;
+}
+
+int LuaCreatureObject::addApprenticeshipXp(lua_State* L) {
+	int amount = lua_tointeger(L, -1);
+
+	if (amount <= 0) {
+		return 0;
+	}
+
+	Locker locker(realObject);
+
+	ManagedReference<PlayerObject*> ghost = realObject->getPlayerObject();
+	if (ghost == nullptr) {
+		return 0;
+	}
+
+	ghost->addApprenticeshipXp(amount);
+	return 0;
+}
+
+int LuaCreatureObject::subtractApprenticeshipXp(lua_State* L) {
+	int amount = lua_tointeger(L, -1);
+
+	if (amount <= 0) {
+		return 0;
+	}
+
+	Locker locker(realObject);
+
+	ManagedReference<PlayerObject*> ghost = realObject->getPlayerObject();
+	if (ghost == nullptr) {
+		return 0;
+	}
+
+	ghost->subtractApprenticeshipXp(amount);
 	return 0;
 }
