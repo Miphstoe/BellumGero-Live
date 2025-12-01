@@ -35,7 +35,7 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 		-- For now, we'll automatically proceed when awaiting crafting
 		-- The player has crafted and tuned a lightsaber (they told us they did)
 		writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 0)
-		self:startHuntingPhase(pPlayer, 3)
+		self:resumeHuntingPhase(pPlayer, 3)
 		return
 	end
 
@@ -51,8 +51,17 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 		end
 	end
 
+	-- If player is in the middle of hunting, resume it (preserve points)
+	if (phaseStatus == "hunting") then
+		local huntingPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase"))
+		if huntingPhase and huntingPhase > 0 then
+			self:resumeHuntingPhase(pPlayer, huntingPhase)
+			return
+		end
+	end
+
 	-- If player is in the middle of trials, show status
-	if (phaseStatus == "trivia" or phaseStatus == "hunting" or phaseStatus == "crafting") then
+	if (phaseStatus == "trivia" or phaseStatus == "crafting") then
 		-- If stuck in trivia, offer to reset
 		if phaseStatus == "trivia" then
 			local sui = SuiMessageBox.new("PadawanTrials", "triiaResetCallback")
@@ -284,8 +293,30 @@ function PadawanTrials:startHuntingPhase(pPlayer, phase)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", 0)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase", phase)
 
+	-- Register global kill observer for PvE points (if not already registered)
+	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+
 	-- Observer already created in startPhase, so kills will be tracked
 	CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].hunting_progress)
+end
+
+-- Resume hunting phase after logout (preserves points)
+function PadawanTrials:resumeHuntingPhase(pPlayer, phase)
+	if (pPlayer == nil or phase < 1 or phase > PADAWAN_TRIALS_TOTAL_PHASES) then
+		return
+	end
+
+	-- Re-register the kill observer (in case it was lost during logout)
+	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
+
+	-- Preserve the phase status and hunting phase data
+	-- Don't reset currentPhasePoints - keep the accumulated points
+	local currentPoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints")) or 0
+
+	-- Send resume message
+	local resumeMessage = string.format("Padawan Trials: Resuming Phase %d hunting. You have %d / %d points.", phase, currentPoints, PADAWAN_TRIALS_PHASE_POINTS)
+	CreatureObject(pPlayer):sendSystemMessage(resumeMessage)
+	CreatureObject(pPlayer):sendSystemMessage("Continue hunting to accumulate points for this phase.")
 end
 
 -- Global kill observer for PvE points
