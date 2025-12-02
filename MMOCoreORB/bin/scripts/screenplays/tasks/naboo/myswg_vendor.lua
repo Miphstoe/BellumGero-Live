@@ -57,7 +57,7 @@ function myswg_vendor:start()
     local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -512, 1, -3016, 35, 0 )--Rose Red
     --local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town 
     local pWeaponsmith5 = spawnMobile("dantooine", "myswg_vendor", 1, -5683.33,2,6885, 35, 0 )--New Asgard
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven  
+    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven  
     local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -512, 1, -3023, 35, 0 )--Rose red
     local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
     local pWeaponsmith2 = spawnMobile("tatooine", "myswg_vendor", 1, 5847,38,4432, 35, 0 ) --Mos Ender Krayt
