@@ -76,7 +76,7 @@ KnockdownFireCommand = {
 
 	combatSpam = "knockdownfire",
 	
-	weaponType = PISTOLWEAPON + CARBINEWEAPON,
+	weaponType = PISTOLWEAPON + CARBINEWEAPON + SPECIALHEAVYWEAPON,
 
 	range = -1
 }

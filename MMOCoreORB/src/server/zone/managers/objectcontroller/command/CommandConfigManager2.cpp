@@ -406,6 +406,7 @@
 #include "server/zone/objects/creature/commands/LegShot2Command.h"
 #include "server/zone/objects/creature/commands/LegShot3Command.h"
 #include "server/zone/objects/creature/commands/LfgCommand.h"
+#include "server/zone/objects/creature/commands/LightningBarrageCommand.h" //BH Lightning Cannon Ultimate
 #include "server/zone/objects/creature/commands/ListActiveQuestsCommand.h"
 #include "server/zone/objects/creature/commands/ListCompletedQuestsCommand.h"
 #include "server/zone/objects/creature/commands/ListenCommand.h"
@@ -825,6 +826,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<LegShot2Command>(String("legShot2").toLowerCase());
 	commandFactory.registerCommand<LegShot3Command>(String("legShot3").toLowerCase());
 	commandFactory.registerCommand<LfgCommand>(String("lfg").toLowerCase());
+	commandFactory.registerCommand<LightningBarrageCommand>(String("lightningBarrage").toLowerCase());
 	commandFactory.registerCommand<ListActiveQuestsCommand>(String("listActiveQuests").toLowerCase());
 	commandFactory.registerCommand<ListCompletedQuestsCommand>(String("listCompletedQuests").toLowerCase());
 	commandFactory.registerCommand<ListenCommand>(String("listen").toLowerCase());
