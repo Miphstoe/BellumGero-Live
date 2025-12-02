@@ -23,6 +23,7 @@
 #include "server/zone/objects/ship/ai/ShipAiAgent.h"
 
 #include "server/zone/managers/stringid/StringIdManager.h"
+#include "templates/SharedObjectTemplate.h"
 
 
 // ————————————————————————————————————————————————
@@ -269,22 +270,52 @@ void LootManagerImplementation::setCustomizationData(const LootItemTemplate* tem
 #endif
 }
 
-void LootManagerImplementation::setCustomObjectName(TangibleObject* object, const LootItemTemplate* templateObject, float excMod) {
-	const String& customName = templateObject->getCustomObjectName();
+void LootManagerImplementation::setCustomObjectName(
+    TangibleObject* object,
+    const LootItemTemplate* templateObject,
+    float excMod
+) {
+    const String& customName = templateObject->getCustomObjectName();
 
-	if (!customName.isEmpty()) {
-		if (customName.charAt(0) == '@') {
-			StringId stringId(customName);
+    if (!customName.isEmpty()) {
+        if (customName.charAt(0) == '@') {
+            StringId stringId(customName);
 
-			object->setObjectName(stringId, false);
-		} else {
-			object->setCustomObjectName(customName, false);
-		}
-	}
+            object->setObjectName(stringId, false);
+        } else {
+            object->setCustomObjectName(customName, false);
+        }
+    }
 
-    // skip suffix for attachments OR any group in our SKIPPED_LOOT_GROUPS list
+    // Look at the underlying template to classify the item.
+    SharedObjectTemplate* tmpl = (object != nullptr)
+        ? object->getObjectTemplate()
+        : nullptr;
+
+    String templatePath;
+    if (tmpl != nullptr)
+        templatePath = tmpl->getFullTemplateString();
+
+    // Any loot schematic: object/tangible/loot/loot_schematic/...
+    const bool isLootSchematic =
+        !templatePath.isEmpty() &&
+        (templatePath.indexOf("/loot/loot_schematic/") != -1);
+
+    // Any deed (housing, factory, harvester, vehicle, etc.):
+    // object/tangible/deed/...
+    const bool isDeed =
+        !templatePath.isEmpty() &&
+        (templatePath.indexOf("/tangible/deed/") != -1);
+
+    // Skip suffix for:
+    //  - attachments (unchanged),
+    //  - any explicitly skipped loot group (unchanged),
+    //  - any loot schematic,
+    //  - any deed.
     const bool skipSuffix =
         object->isAttachment() ||
+        isLootSchematic ||
+        isDeed ||
         ( std::find(
               SKIPPED_LOOT_GROUPS.begin(),
               SKIPPED_LOOT_GROUPS.end(),
@@ -293,7 +324,7 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
         );
 
     if (!skipSuffix) {
-        String suffixName = "";
+        String suffixName;
 
         if (excMod >= legendaryModifier) {
             suffixName = " (Legendary)";
@@ -303,7 +334,7 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
             suffixName = " (Uncommon)";
         }
 
-        if (suffixName != "") {
+        if (!suffixName.isEmpty()) {
             object->setCustomObjectName(
                 object->getDisplayedName() + suffixName,
                 false
@@ -311,9 +342,11 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
             object->addMagicBit(false);
         }
     }
-    // clear for next item
+
+    // Clear for next item
     s_currentLootGroup = "";
 }
+
 
 //New function to set the attachment name based on skill mods
 void LootManagerImplementation::setAttachmentName(TangibleObject* prototype) {
