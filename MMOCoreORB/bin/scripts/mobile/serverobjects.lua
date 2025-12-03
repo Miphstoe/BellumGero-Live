@@ -51,6 +51,9 @@ includeFile("outfits/serverobjects.lua")
 includeFile("acklay_worldboss.lua")
 includeFile("enhanced_gaping_spider_boss.lua")
 
+-- Apprentice Coin Vendor
+includeFile("vendors/apprentice_coin_vendor.lua")
+
 -- SEA Vendor
 -- mobile (creature) template FIRST so spawnMobile can find it
 includeFile("vendors/attachment_exchange_vendor.lua")

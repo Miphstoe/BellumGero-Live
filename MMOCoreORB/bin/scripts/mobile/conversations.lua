@@ -345,6 +345,11 @@ print("Loading conversations.lua - checking sea vendor...")
 includeFile("conversations/tasks/sea_attachment_vendor_conv.lua")
 print("Finished loading sea vendor")
 
+-- APPRENTICE COIN VENDOR
+print("Loading conversations.lua - checking apprentice coin vendor...")
+includeFile("conversations/vendors/apprentice_coin_vendor_conv.lua")
+print("Finished loading apprentice coin vendor")
+
 -- BG TOKEN VENDOR
 print("Loading conversations.lua - checking bg_token vendor...")
 includeFile("conversations/vendors/bg_token_vendor_conv.lua")

@@ -3830,3 +3830,37 @@ void PlayerObjectImplementation::createHelperDroid() {
 	Reference<Task*> createDroid = new SpawnHelperDroidTask(player);
 	createDroid->schedule(5000);
 }
+
+void PlayerObjectImplementation::addApprenticeshipXp(int amount, bool notifyClient) {
+	if (amount <= 0)
+		return;
+
+	apprenticeshipXp += amount;
+	apprenticeshipXp = Math::max(0, apprenticeshipXp);
+
+	if (notifyClient) {
+		CreatureObject* player = dynamic_cast<CreatureObject*>(parent.get().get());
+		if (player != nullptr) {
+			StringBuffer msg;
+			msg << "You have gained " << amount << " Apprentice Experience Points. Total: " << apprenticeshipXp;
+			player->sendSystemMessage(msg.toString());
+		}
+	}
+}
+
+void PlayerObjectImplementation::subtractApprenticeshipXp(int amount, bool notifyClient) {
+	if (amount <= 0)
+		return;
+
+	apprenticeshipXp -= amount;
+	apprenticeshipXp = Math::max(0, apprenticeshipXp);
+
+	if (notifyClient) {
+		CreatureObject* player = dynamic_cast<CreatureObject*>(parent.get().get());
+		if (player != nullptr) {
+			StringBuffer msg;
+			msg << "You have lost " << amount << " Apprentice Experience Points. Total: " << apprenticeshipXp;
+			player->sendSystemMessage(msg.toString());
+		}
+	}
+}

@@ -86,6 +86,9 @@ namespace creature {
 		int subtractBankCredits(lua_State* L);
 		int addCashCredits(lua_State* L);
 		int addBankCredits(lua_State* L);
+		int getApprenticeshipXp(lua_State* L);
+		int addApprenticeshipXp(lua_State* L);
+		int subtractApprenticeshipXp(lua_State* L);
 		int removeScreenPlayState(lua_State* L);
 		int setLootRights(lua_State* L);
 		int isGrouped(lua_State* L);

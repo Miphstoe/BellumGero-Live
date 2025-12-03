@@ -127,6 +127,8 @@ class PlayerObject extends IntangibleObject {
 	@dereferenced
 	protected DeltaVectorMap<string, int> experienceList;
 
+	protected int apprenticeshipXp;
+
 	@dereferenced
 	protected FrsData frsData;
 
@@ -2174,4 +2176,13 @@ class PlayerObject extends IntangibleObject {
 
 	@read
 	public native string getPlayedTimeString(boolean verbose = false);
+
+	@read
+	public int getApprenticeshipXp() {
+		return apprenticeshipXp;
+	}
+
+	public native void addApprenticeshipXp(int amount, boolean notifyClient = true);
+
+	public native void subtractApprenticeshipXp(int amount, boolean notifyClient = true);
 }

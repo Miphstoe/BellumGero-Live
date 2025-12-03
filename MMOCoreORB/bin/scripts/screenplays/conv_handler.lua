@@ -11,6 +11,29 @@ function conv_handler:getNextConversationScreen(pConvTemplate, pPlayer, selected
     local nextConvScreen
     if (lastConvScreen ~= nil) then
         local luaLastConvScreen = LuaConversationScreen(lastConvScreen)
+        local screenId = luaLastConvScreen:getScreenID()
+
+        -- Check if this is the apprentice vendor confirm_trade screen
+        if screenId == "confirm_trade" then
+            local optionLink = luaLastConvScreen:getOptionLink(selectedOption)
+
+            -- Only process if they selected "Yes, proceed with the trade"
+            if optionLink == "give_apprentice_token" then
+                local success, result = pcall(function()
+                    return self:handleApprenticeXpTrade(pConvTemplate, pPlayer, pNpc, selectedOption, lastConvScreen)
+                end)
+                if success and result ~= nil then
+                    return result
+                else
+                    if not success then
+                    else
+                    end
+                    -- Fall through to normal flow if handler fails
+                end
+            end
+        end
+
+        -- Normal flow
         local optionLink = luaLastConvScreen:getOptionLink(selectedOption)
         nextConvScreen = conv:getScreen(optionLink)
         if nextConvScreen == nil then
@@ -31,86 +54,64 @@ function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOp
     local screen = LuaConversationScreen(pConvScreen)
     local screenId = screen:getScreenID()
 
-    print("[DEBUG] runScreenHandlers called with screenId: " .. tostring(screenId))
 
     -- Check if this is an attachment vendor trade screen (give_ screens are where we process)
     if string.find(screenId, "give_t1_") or string.find(screenId, "give_t2_") or string.find(screenId, "give_t3_") then
-        print("[DEBUG] Detected attachment trade screen, calling handleAttachmentTrade")
         return self:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
     end
 
     -- Check if this is a bg_token vendor trade screen (vendor 1 or 2)
     if string.find(screenId, "give_item_") then
-        print("[DEBUG] Detected bg_token vendor trade screen")
         -- Check if it's vendor 2 (75 tokens) vs vendor 1 (50 tokens)
         if string.find(screenId, "give_item_2_") then
-            print("[DEBUG] Detected bg_token vendor 2 trade screen, calling handleBGTokenTrade2")
             return self:handleBGTokenTrade2(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
         else
-            print("[DEBUG] Detected bg_token vendor 1 trade screen, calling handleBGTokenTrade")
             return self:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
         end
     end
 
-    print("[DEBUG] Not a trade screen, returning pConvScreen")
     return pConvScreen
 end
 
 function conv_handler:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
-    print("[DEBUG] === ENTERED handleAttachmentTrade ===")
-    print("[DEBUG] screenId parameter: " .. tostring(screenId))
    
     local screen = LuaConversationScreen(pConvScreen)
-    print("[DEBUG] Created LuaConversationScreen")
    
     -- Determine tier and required attachments
     local requiredAttachments = 0
     local rewardInfo = nil
    
     if string.find(screenId, "give_t1_") then
-        print("[DEBUG] Detected Tier 1 trade")
         requiredAttachments = 25
         rewardInfo = self:getTier1Reward(screenId)
     elseif string.find(screenId, "give_t2_") then
-        print("[DEBUG] Detected Tier 2 trade")
         requiredAttachments = 50
         rewardInfo = self:getTier2Reward(screenId)
     elseif string.find(screenId, "give_t3_") then
-        print("[DEBUG] Detected Tier 3 trade")
         requiredAttachments = 75
         rewardInfo = self:getTier3Reward(screenId)
     end
    
-    print("[DEBUG] rewardInfo: " .. tostring(rewardInfo))
     if rewardInfo then
-        print("[DEBUG] Reward name: " .. rewardInfo.name)
-        print("[DEBUG] Reward template: " .. rewardInfo.template)
     end
    
     if not rewardInfo then
-        print("[DEBUG] ERROR: No reward info found for screenId: " .. screenId)
         screen:setCustomDialogText("Error: Invalid reward selection.")
         return pConvScreen
     end
    
-    print("[DEBUG] === STARTING " .. rewardInfo.name .. " TRADE ===")
-    print("[DEBUG] Required attachments: " .. requiredAttachments)
    
     -- Count attachments
-    print("[DEBUG] About to count attachments...")
     local success, attachmentCount = pcall(function() 
         return self:countAttachments(pPlayer) 
     end)
    
-    print("[DEBUG] Count pcall returned - success: " .. tostring(success) .. ", result: " .. tostring(attachmentCount))
    
     if not success then
-        print("[DEBUG] Error counting attachments: " .. tostring(attachmentCount))
         screen:setCustomDialogText("Error reading your inventory. Please try again later.")
         return pConvScreen
     end
    
-    print("[DEBUG] Found " .. attachmentCount .. " attachments")
    
     if attachmentCount < requiredAttachments then
         screen:setCustomDialogText("You only have " .. attachmentCount .. " attachments, but need " .. requiredAttachments .. ". Please collect more!")
@@ -118,29 +119,23 @@ function conv_handler:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, select
     end
    
     -- Remove attachments
-    print("[DEBUG] About to remove attachments...")
     local removeSuccess, removedCount = pcall(function()
         return self:removeAttachments(pPlayer, requiredAttachments)
     end)
    
     if not removeSuccess or removedCount < requiredAttachments then
-        print("[DEBUG] Error removing attachments. Removed: " .. (removedCount or 0))
         screen:setCustomDialogText("Error removing attachments. Trade cancelled.")
         return pConvScreen
     end
    
-    print("[DEBUG] Successfully removed " .. removedCount .. " attachments")
    
     -- Give reward
-    print("[DEBUG] About to give reward...")
     local rewardSuccess = self:giveReward(pPlayer, rewardInfo.template, rewardInfo.name)
    
     if rewardSuccess then
         screen:setCustomDialogText("Trade successful!\n\n" .. removedCount .. " attachments removed.\n\nYou received: " .. rewardInfo.name .. "\n\nCheck your inventory!")
-        print("[DEBUG] Successfully gave " .. rewardInfo.name .. " to player")
     else
         screen:setCustomDialogText("Attachments removed but error giving reward. Contact an admin.")
-        print("[DEBUG] Failed to give " .. rewardInfo.name)
     end
    
     return pConvScreen
@@ -207,19 +202,16 @@ end
 function conv_handler:countAttachments(pPlayer)
     local pCreatureObject = LuaCreatureObject(pPlayer)
     if not pCreatureObject then 
-        print("[DEBUG] Could not get LuaCreatureObject")
         return 0 
     end
     
     local pInventory = pCreatureObject:getSlottedObject("inventory")
     if not pInventory then 
-        print("[DEBUG] Could not get inventory")
         return 0 
     end
     
     local inventory = LuaSceneObject(pInventory)
     if not inventory then 
-        print("[DEBUG] Could not get LuaSceneObject")
         return 0 
     end
     
@@ -277,19 +269,16 @@ end
 function conv_handler:removeAttachments(pPlayer, count)
     local pCreatureObject = LuaCreatureObject(pPlayer)
     if not pCreatureObject then 
-        print("[DEBUG] Could not get LuaCreatureObject for removal")
         return 0 
     end
     
     local pInventory = pCreatureObject:getSlottedObject("inventory")
     if not pInventory then 
-        print("[DEBUG] Could not get inventory for removal")
         return 0 
     end
     
     local inventory = LuaSceneObject(pInventory)
     if not inventory then 
-        print("[DEBUG] Could not get LuaSceneObject for removal")
         return 0 
     end
     
@@ -935,5 +924,100 @@ function conv_handler:tuneCrystals(pPlayer, crystalsToTune)
     else
         CreatureObject(pPlayer):sendSystemMessage("Error creating tuned crystals.")
         return false
+    end
+end
+
+-- Apprentice Experience to Token Exchange Handler
+function conv_handler:handleApprenticeXpTrade(pConvTemplate, pPlayer, pNpc, selectedOption, lastConvScreen)
+
+    if pPlayer == nil then
+        return nil
+    end
+
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        return nil
+    end
+
+    local XP_REQUIRED = 500
+    local XP_TYPE = "apprenticeship"
+
+    -- Get player object to access experience system
+    local pGhost = pCreatureObject:getPlayerObject()
+    if pGhost == nil then
+        pCreatureObject:sendSystemMessage("Error accessing player data.")
+        return nil
+    end
+
+    -- Wrap it with LuaPlayerObject to access Lua methods
+    local ghost = LuaPlayerObject(pGhost)
+    if ghost == nil then
+        pCreatureObject:sendSystemMessage("Error accessing player data.")
+        return nil
+    end
+
+    -- Get current apprentice experience
+    local success, xpAmount = pcall(function()
+        return ghost:getExperience(XP_TYPE)
+    end)
+
+    if not success then
+        pCreatureObject:sendSystemMessage("Error reading your apprentice experience.")
+        return nil
+    end
+
+    if not xpAmount then
+        xpAmount = 0
+    end
+
+
+    -- Check if player has enough apprentice XP
+    if xpAmount < XP_REQUIRED then
+        pCreatureObject:sendSystemMessage("You need " .. XP_REQUIRED .. " Apprentice Experience Points. You have " .. xpAmount .. ".")
+        return nil
+    end
+
+
+    -- Check inventory space
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if pInventory == nil then
+        pCreatureObject:sendSystemMessage("You do not have an inventory!")
+        return nil
+    end
+
+    local pInvObject = LuaSceneObject(pInventory)
+    if pInvObject:isContainerFullRecursive() then
+        pCreatureObject:sendSystemMessage("Your inventory is full.")
+        return nil
+    end
+
+
+    -- Give Bellum Gero Token using the loot item system
+    local tokenID = createLoot(pInventory, "bg_token", 1, true)
+
+    if tokenID ~= 0 then
+        -- Deduct the XP using awardExperience with negative amount
+        local xpSuccess, xpResult = pcall(function()
+            return pCreatureObject:awardExperience(XP_TYPE, -XP_REQUIRED, false)
+        end)
+
+        pCreatureObject:sendSystemMessage("You have exchanged 500 Apprentice Experience Points for 1 Bellum Gero Token!")
+
+        -- Get the give_apprentice_token screen from the conversation template
+        local convTemplate = LuaConversationTemplate(pConvTemplate)
+        local nextScreen = convTemplate:getScreen("give_apprentice_token")
+
+        if nextScreen ~= nil then
+
+            -- Just return the screen as-is from the template
+            -- The template already has stopConversation=false and the proper options defined
+
+            return nextScreen
+        else
+            return nil
+        end
+    else
+        pCreatureObject:sendSystemMessage("Failed to create token. Please try again.")
+        return nil
     end
 end
