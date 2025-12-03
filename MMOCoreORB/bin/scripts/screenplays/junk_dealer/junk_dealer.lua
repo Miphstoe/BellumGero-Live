@@ -45,22 +45,71 @@ function JunkDealer:getDealerNum(dealerType)
 	return dealerNum
 end
 
-function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
-	local junkList = {}
-
+function JunkDealer:findItemInContainers(pPlayer, oid)
+	-- Helper function to find an item by ObjectID in inventory and all backpacks
 	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
 
 	if pInventory == nil then
-		return junkList
+		return nil
 	end
 
-	-- Items that should NOT be sellable to junk dealers (by custom name)
-	local nameBlacklist = {
-		"Bellum Gero Token"  -- Cannot be sold to junk dealers
-	}
+	-- First check main inventory
+	local pItem = SceneObject(pInventory):getContainerObjectById(oid)
+	if pItem ~= nil then
+		return pItem
+	end
 
+	-- Then check all backpacks/containers
 	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
-		local pItem = SceneObject(pInventory):getContainerObject(i)
+		local pContainer = SceneObject(pInventory):getContainerObject(i)
+
+		if pContainer ~= nil and SceneObject(pContainer):getContainerObjectsSize() > 0 then
+			pItem = SceneObject(pContainer):getContainerObjectById(oid)
+			if pItem ~= nil then
+				return pItem
+			end
+		end
+	end
+
+	return nil
+end
+
+function JunkDealer:isSchematic(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local sceno = SceneObject(pItem)
+	local itemName = sceno:getDisplayedName()
+
+	-- Try method 1: getTemplateObjectPath
+	local templatePath = sceno:getTemplateObjectPath()
+
+	if templatePath ~= nil and string.find(templatePath, "draft_schematic") then
+		return true
+	end
+
+	-- Try method 2: Check the object name for schematic indicator
+	if itemName ~= nil then
+		local lowerName = string.lower(itemName)
+
+		-- Check if it's a schematic by name patterns (most schematics have specific naming)
+		if string.find(lowerName, "schematic") or string.find(lowerName, "blueprint") then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipItem, junkList, nameBlacklist)
+	-- Helper function to scan a container (inventory or backpack) for junk items
+	if pContainer == nil then
+		return
+	end
+
+	for i = 0, SceneObject(pContainer):getContainerObjectsSize() - 1, 1 do
+		local pItem = SceneObject(pContainer):getContainerObject(i)
 
 		if pItem ~= nil then
 			local tano = TangibleObject(pItem)
@@ -71,13 +120,17 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 				local name = sceno:getDisplayedName()
 				local craftersName = ""
 
+				-- IMPORTANT: Skip containers/backpacks - don't sell them!
+				if SceneObject(pItem):getContainerObjectsSize() > 0 then
+					goto continue
+				end
+
 				-- Check if item is in the blacklist by name
 				local isBlacklisted = false
 				if name ~= nil then
 					for _, blacklistedName in ipairs(nameBlacklist) do
 						if name == blacklistedName then
 							isBlacklisted = true
-							print("Excluding blacklisted item: " .. name)
 							break
 						end
 					end
@@ -92,12 +145,12 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 				if tano.getCraftersName then
 					craftersName = tano:getCraftersName() or ""
 				end
-				
+
 				-- More comprehensive resource container detection
 				local isResourceContainer = false
 				if name ~= nil then
 					local lowerName = string.lower(name)
-					
+
 					-- Check for resource container keywords
 					local resourceKeywords = {
 						"hide", "bone", "meat", "milk", "blood", "hair", "horn", "scalp",
@@ -110,12 +163,12 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 						"fiber", "vegetable", "fruit", "grain", "tuber", "berry",
 						"seafood", "fish", "crustacean", "mollusk"
 					}
-					
+
 					-- Also check for common resource container patterns
 					local containerPatterns = {
 						"container", "units of", "units", "sample", "batch"
 					}
-					
+
 					-- Check if name contains resource keywords
 					for _, keyword in ipairs(resourceKeywords) do
 						if string.find(lowerName, keyword) then
@@ -123,7 +176,7 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 							break
 						end
 					end
-					
+
 					-- Additional checks for container patterns
 					if not isResourceContainer then
 						for _, pattern in ipairs(containerPatterns) do
@@ -133,31 +186,35 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 							end
 						end
 					end
-					
+
 					-- Check for quantity brackets [number] which almost always indicates resources
 					if not isResourceContainer and string.find(name, "%[%d+%]") then
 						isResourceContainer = true
 					end
-					
+
 					-- Check for "wooly hide" specifically since that was your example
 					if string.find(lowerName, "wooly") then
 						isResourceContainer = true
 					end
 				end
-				
-				print("Checking item: " .. (name or "nil") .. ", crafter: " .. craftersName .. ", isResource: " .. tostring(isResourceContainer))
-				
+
+
+				-- Check if item is a schematic
+				local isSchematic = self:isSchematic(pItem)
+
 				-- Check exclusions
 				local isCrafted = (craftersName ~= nil and craftersName ~= "")
-				
-				if isResourceContainer then
-					print("Excluding resource container: " .. name)
+
+				if isSchematic then
+					-- Schematics are always buyable for 2000 credits
+					local textTable = {"[2000] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				elseif isResourceContainer then
 				elseif isCrafted then
-					print("Excluding crafted item: " .. name .. " by " .. craftersName)
 				elseif name ~= nil and name ~= "" then
 					-- Item is eligible
 					local value = 1 -- Default value
-					
+
 					-- Safely get junk value
 					if tano.getJunkValue then
 						local junkValue = tano:getJunkValue()
@@ -165,17 +222,50 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 							value = junkValue
 						end
 					end
-					
+
 					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
-					print("Added item to sell list: " .. name .. " for " .. value .. " credits")
 				end
 			end
 			::continue::
 		end
 	end
+end
 
-	print("Total eligible items found: " .. #junkList)
+function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
+	local junkList = {}
+
+	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+
+	if pInventory == nil then
+		return junkList
+	end
+
+	-- Items that should NOT be sellable to junk dealers (by custom name)
+	local nameBlacklist = {
+		"Bellum Gero Token"  -- Cannot be sold to junk dealers
+	}
+
+	-- First scan the main inventory
+	self:scanContainerForJunk(pPlayer, pInventory, dealerType, skipItem, junkList, nameBlacklist)
+
+	-- Then scan for backpacks and scan their contents
+	for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
+		local pItem = SceneObject(pInventory):getContainerObject(i)
+
+		if pItem ~= nil then
+			-- Check if this item is a container (backpack)
+			local sceno = SceneObject(pItem)
+			local displayName = sceno:getDisplayedName()
+
+			-- Check if it's a container by looking for specific backpack templates or checking if it has container size > 0
+			if SceneObject(pItem):getContainerObjectsSize() > 0 then
+				-- Recursively scan this container
+				self:scanContainerForJunk(pPlayer, pItem, dealerType, skipItem, junkList, nameBlacklist)
+			end
+		end
+	end
+
 	return junkList
 end
 
@@ -216,15 +306,23 @@ function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
 	local amount = 0
 	local itemsSold = 0
 
-	-- Only sell items that have proper junk values (> 0)
+	-- Sell items that have proper junk values (> 0) or are schematics (2000 credits)
 	for i = 0, listBox:getMenuSize() - 1, 1 do
 		local oid = listBox:getMenuObjectID(i)
-		local pItem = SceneObject(pInventory):getContainerObjectById(oid)
+		-- Search for item in inventory and all backpacks
+		local pItem = self:findItemInContainers(pPlayer, oid)
 
 		if pItem ~= nil then
-			local value = TangibleObject(pItem):getJunkValue()
-			
-			-- Only sell items with actual junk values > 0
+			local value = 0
+
+			-- Check if item is a schematic first
+			if self:isSchematic(pItem) then
+				value = 2000
+			else
+				value = TangibleObject(pItem):getJunkValue()
+			end
+
+			-- Only sell items with actual values > 0
 			if value ~= nil and value > 0 then
 				createEvent(10, "JunkDealer", "destroyItem", pItem, "")
 				amount = amount + value
@@ -290,7 +388,9 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	local listBox = LuaSuiListBox(pSui)
 	local pNpc = listBox:getUsingObject()
 	local oid = listBox:getMenuObjectID(rowIndex)
-	local pItem = SceneObject(pInventory):getContainerObjectById(oid)
+
+	-- Search for item in inventory and all backpacks
+	local pItem = self:findItemInContainers(pPlayer, oid)
 
 	if pItem == nil or pNpc == nil then
 		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
@@ -317,12 +417,22 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 
 	local skipItem = item:getObjectID()
 	local name = item:getDisplayedName()
-	local value = TangibleObject(pItem):getJunkValue()
-	
-	-- If item has no junk value, give it a default value of 250 credit
-	if value == nil or value <= 0 then
-		value = 250 -- Default value for items without a junk value
+
+	-- Check if this is a schematic - if so, buy for 2000 credits
+	local isSchematic = self:isSchematic(pItem)
+
+	local value = 250
+	if isSchematic then
+		value = 2000
+	else
+		value = TangibleObject(pItem):getJunkValue()
+
+		-- If item has no junk value, give it a default value of 250 credit
+		if value == nil or value <= 0 then
+			value = 250 -- Default value for items without a junk value
+		end
 	end
+
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
 
