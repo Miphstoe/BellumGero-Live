@@ -48,6 +48,7 @@
 includeFile("tangible/wearables/base/armor_base.lua")
 includeFile("tangible/wearables/base/base_back.lua")
 includeFile("tangible/wearables/base/base_backpack.lua")
+includeFile("tangible/wearables/base/base_backpack2.lua")
 includeFile("tangible/wearables/base/base_bandolier.lua")
 includeFile("tangible/wearables/base/base_belt.lua")
 includeFile("tangible/wearables/base/base_bicep_both.lua")
