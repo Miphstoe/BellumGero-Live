@@ -846,6 +846,7 @@
 #include "ReaperStrikeCommand.h"
 #include "ReaperBlastCommand.h"
 #include "ReaperShotCommand.h"
+#include "LightningBarrageCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */
