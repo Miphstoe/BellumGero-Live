@@ -48,36 +48,25 @@ function ForceShrineMenuComponent:doMeditate(pObject, pPlayer)
 		-- New 5-tier Padawan system: Always call startPadawanTrials
 		-- It handles all phase progression internally
 		PadawanTrials:startPadawanTrials(pObject, pPlayer)
-	elseif (JediTrials:isOnKnightTrials(pPlayer)) then
-		local pPlayerShrine = KnightTrials:getTrialShrine(pPlayer)
-
-		if (pPlayerShrine ~= nil and pObject ~= pPlayerShrine) then
-			local correctShrineZone = SceneObject(pPlayerShrine):getZoneName()
-			if (correctShrineZone ~= SceneObject(pObject):getZoneName()) then
-				local messageString = LuaStringIdChatParameter("@jedi_trials:knight_shrine_reminder")
-				messageString:setTO(getStringId("@jedi_trials:" .. correctShrineZone))
-				CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
-			else
-				CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:knight_shrine_wrong")
-			end
-			return
-		end
-
-		local currentTrial = JediTrials:getCurrentTrial(pPlayer)
-		local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer)
-
-		if (currentTrial == 0 and trialsCompleted == 0) then
-			local sui = SuiMessageBox.new("KnightTrials", "startNextKnightTrial")
-			sui.setTitle("@jedi_trials:knight_trials_title")
-			sui.setPrompt("@jedi_trials:knight_trials_start_query")
-			sui.setOkButtonText("@jedi_trials:button_yes")
-			sui.setCancelButtonText("@jedi_trials:button_no")
-			sui.sendTo(pPlayer)
-		else
-			KnightTrials:showCurrentTrial(pPlayer)
-		end
 	else
-		CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:force_shrine_wisdom_" .. getRandomNumber(1, 15))
+		-- Check if player has Padawan rank (rank_02) - if so, show Knight Trials
+		if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) then
+			local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+			local currentTrial = JediTrials:getCurrentTrial(pPlayer)
+			local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer)
+
+			-- Register the observer to ensure points are tracked
+			printLuaError("ForceShrineMenuComponent:doMeditate - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+			-- First drop any existing observer to prevent duplicates
+			dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+			-- Now register the observer
+			createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+
+			-- Always show the progress box for Knight Trials
+			KnightTrials:showCurrentTrial(pPlayer)
+		else
+			CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:force_shrine_wisdom_" .. getRandomNumber(1, 15))
+		end
 	end
 end
 

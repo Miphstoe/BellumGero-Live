@@ -69,6 +69,8 @@ function JediTrials:isOnKnightTrials(pPlayer)
 end
 
 function JediTrials:onPlayerLoggedIn(pPlayer)
+	printLuaError("JediTrials:onPlayerLoggedIn called for player!")
+
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "completedTrials")) ~= 1) then
 		writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
 	end
@@ -81,7 +83,9 @@ function JediTrials:onPlayerLoggedIn(pPlayer)
 		PadawanTrials:onPlayerLoggedIn(pPlayer)
 	end
 
+	printLuaError("JediTrials:onPlayerLoggedIn - About to call KnightTrials:onPlayerLoggedIn")
 	KnightTrials:onPlayerLoggedIn(pPlayer)
+	printLuaError("JediTrials:onPlayerLoggedIn - KnightTrials:onPlayerLoggedIn returned")
 end
 
 function JediTrials:droppedSkillDuringTrials(pPlayer, pSkill)
@@ -137,6 +141,13 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 
 	awardSkill(pPlayer, "force_title_jedi_rank_02")
 	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
+
+	-- Register observer for Knight Trials PvE point tracking
+	printLuaError("JediTrials:unlockJediPadawan - Registering Knight Trials observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+	-- First drop any existing observer to prevent duplicates
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	-- Now register the observer
+	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 
 	CreatureObject(pPlayer):playEffect("clienteffect/trap_electric_01.cef", "")
 	CreatureObject(pPlayer):playMusicMessage("sound/music_become_jedi.snd")
@@ -558,8 +569,8 @@ function JediTrials:addKnightTrialPoints(pPlayer, pointsToAdd)
 	-- Check for milestone achievements
 	self:checkKnightTrialPointMilestones(pPlayer, currentPoints, newPoints)
 
-	-- Check if player has reached the halfway point (500 points) and needs to choose council
-	if (currentPoints < 500 and newPoints >= 500 and (self:getJediCouncil(pPlayer) == nil or self:getJediCouncil(pPlayer) == 0)) then
+	-- Check if player has reached the halfway point (25,000 points) and needs to choose council
+	if (currentPoints < KNIGHT_TRIALS_HALFWAY_POINTS and newPoints >= KNIGHT_TRIALS_HALFWAY_POINTS and (self:getJediCouncil(pPlayer) == nil or self:getJediCouncil(pPlayer) == 0)) then
 		self:promptCouncilChoiceAtHalfway(pPlayer)
 		return
 	end
@@ -600,7 +611,7 @@ function JediTrials:promptCouncilChoiceAtHalfway(pPlayer)
 		return
 	end
 
-	-- Player has reached 500 points and must choose a council
+	-- Player has reached halfway point (25,000 points) and must choose a council
 	local sui = SuiMessageBox.new("KnightTrials", "emptyCallback")
 	sui.setTitle("@jedi_trials:knight_trials_title")
 	sui.setPrompt("@jedi_trials:knight_trials_halfway_council_choice")
@@ -621,7 +632,7 @@ function JediTrials:completeKnightTrialsViaPoints(pPlayer)
 	local councilType = self:getJediCouncil(pPlayer)
 
 	if (councilType == nil or councilType == 0) then
-		-- This shouldn't happen (council should be selected at 500 points), but handle it
+		-- This shouldn't happen (council should be selected at 25,000 points), but handle it
 		local sui = SuiMessageBox.new("KnightTrials", "emptyCallback")
 		sui.setTitle("@jedi_trials:knight_trials_title")
 		sui.setPrompt("@jedi_trials:knight_trials_points_complete")
@@ -651,3 +662,6 @@ function JediTrials:getPointsForCreatureLevel(creatureLevel)
 	-- Default: no points for unknown levels (shouldn't happen)
 	return 0
 end
+
+-- Register screenplay to enable onPlayerLoggedIn hook
+registerScreenPlay("JediTrials", true)
