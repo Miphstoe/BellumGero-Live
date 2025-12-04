@@ -2045,19 +2045,31 @@ int CombatManager::getAttackerAccuracyModifier(TangibleObject* attacker, Creatur
 		attackerAccuracy += (deadEyeBonus / 100.0f) * attackerAccuracy;
 	}
 
+		// If we still have no accuracy from weapon-specific mods, apply an unskilled penalty
 	if (attackerAccuracy == 0)
-		attackerAccuracy = -15; // unskilled penalty, TODO: this might be -50 or -125, do research
+		attackerAccuracy = -15; // TODO: verify retail value
 
 	attackerAccuracy += creoAttacker->getSkillMod("attack_accuracy");
 
 	// FS skill mods
-	if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK)
-		attackerAccuracy += creoAttacker->getSkillMod("melee_accuracy");
-	else if (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK)
-		attackerAccuracy += creoAttacker->getSkillMod("ranged_accuracy");
+	if (weapon != nullptr) {
+		if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK)
+			attackerAccuracy += creoAttacker->getSkillMod("melee_accuracy");
+		else if (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK)
+			attackerAccuracy += creoAttacker->getSkillMod("ranged_accuracy");
+
+		// NEW: generic heavy-weapon accuracy mod
+		uint32 weaponMask = weapon->getWeaponBitmask();
+
+		if ((weaponMask & WeaponType::HEAVYWEAPON) || (weaponMask & WeaponType::SPECIALHEAVYWEAPON)) {
+			attackerAccuracy += creoAttacker->getSkillMod("heavyweapon_accuracy");
+			attackerAccuracy += creoAttacker->getSkillMod("private_heavyweapon_accuracy");
+		}
+	}
 
 	return attackerAccuracy;
 }
+
 
 int CombatManager::getAttackerAccuracyBonus(CreatureObject* attacker, WeaponObject* weapon) const {
 	int bonus = 0;
@@ -2341,16 +2353,27 @@ int CombatManager::getSpeedModifier(CreatureObject* attacker, WeaponObject* weap
 
 	speedMods += attacker->getSkillMod("private_speed_bonus");
 
-	if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK) {
-		speedMods += attacker->getSkillMod("private_melee_speed_bonus");
-		speedMods += attacker->getSkillMod("melee_speed");
-	} else if (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK) {
-		speedMods += attacker->getSkillMod("private_ranged_speed_bonus");
-		speedMods += attacker->getSkillMod("ranged_speed");
+	if (weapon != nullptr) {
+		if (weapon->getAttackType() == SharedWeaponObjectTemplate::MELEEATTACK) {
+			speedMods += attacker->getSkillMod("private_melee_speed_bonus");
+			speedMods += attacker->getSkillMod("melee_speed");
+		} else if (weapon->getAttackType() == SharedWeaponObjectTemplate::RANGEDATTACK) {
+			speedMods += attacker->getSkillMod("private_ranged_speed_bonus");
+			speedMods += attacker->getSkillMod("ranged_speed");
+		}
+
+		// NEW: generic heavy-weapon speed mod
+		uint32 weaponMask = weapon->getWeaponBitmask();
+
+		if ((weaponMask & WeaponType::HEAVYWEAPON) || (weaponMask & WeaponType::SPECIALHEAVYWEAPON)) {
+			speedMods += attacker->getSkillMod("heavyweapon_speed");
+			speedMods += attacker->getSkillMod("private_heavyweapon_speed");
+		}
 	}
 
 	return speedMods;
 }
+
 
 // Toughness Mitigation
 
