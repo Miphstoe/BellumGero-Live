@@ -562,6 +562,18 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
         end
       end
 
+      -- Clear cash from the corpse using subtractCashCredits (method 4)
+      pcall(function()
+        local creatureCorpse = CreatureObject(pBoss)
+        if creatureCorpse then
+          local currentCash = creatureCorpse:getCashCredits()
+          if currentCash and currentCash > 0 then
+            creatureCorpse:subtractCashCredits(currentCash)
+            log("Cleared %d credits from corpse", currentCash)
+          end
+        end
+      end)
+
       log("Boss corpse cleared - no traditional looting available")
     end
   end
