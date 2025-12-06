@@ -26,60 +26,8 @@ peko_peko_infernomaw = Creature:new {
   hues = {16,17,18,19,20,21,22,23},
   scale = 2.6,
   lootGroups = {
-    {
-      groups = {
-        { group = "peko_albatross",        chance = 3500000 }, -- 35%
-        { group = "clothing_attachments",  chance = 3500000 }, -- 35%
-        { group = "armor_attachments",     chance = 3000000 }  -- 30%
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        { group = "peko_albatross", chance = 3500000 }, -- 35%
-        { group = "holocron_dark",  chance = 3000000 }, -- 30%
-        { group = "holocron_light", chance = 3500000 }  -- 35%
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        { group = "peko_albatross",  chance = 3000000 }, -- 30%
-        { group = "power_crystals",  chance = 3500000 }, -- 35%
-        { group = "color_crystals",  chance = 3500000 }  -- 35%
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        -- FIXED: all four at 2,500,000 (25% each)
-        { group = "chemistry_component_advanced", chance = 2500000 },
-        { group = "armor_component_advanced",     chance = 2500000 },
-        { group = "weapon_component_advanced",    chance = 2500000 },
-        { group = "crafting_component_advanced",  chance = 2500000 }
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        { group = "component_enhancement", chance = 10000000 }
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        { group = "sea_removal_tool_1x",  chance = 2500000 }, -- 25%
-        { group = "clothing_attachments", chance = 3750000 }, -- 37.5%
-        { group = "armor_attachments",    chance = 3750000 }  -- 37.5%
-      },
-      lootChance = 10000000
-    },
-    {
-        groups = {
-            {group = "endgame_weapon_schematics", chance = 10000000}
-        },
-        lootChance = 1500000, -- 15.00% total chance
-    },
+    -- Loot groups removed - using WorldBossLootManager for automatic distribution
+    -- Players who damage the boss receive loot directly to inventory
   },
 
   -- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

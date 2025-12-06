@@ -32,77 +32,9 @@ acklay_worldboss = Creature:new {
     templates = {"object/mobile/acklay_hue.iff"},
 
     lootGroups = {
-	{
-        groups = {
-			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
-			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
-			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
-		},
-		lootChance = 10000000, -- 100.00% total chance
+		-- Loot groups removed - using WorldBossLootManager for automatic distribution
+		-- Players who damage the boss receive loot directly to inventory
 	},
-	{
-        groups = {
-			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
-			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
-			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
-		},
-		lootChance = 10000000, -- 100.00% total chance
-	},
-	{
-        groups = {
-			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
-			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
-			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
-		},
-		lootChance = 10000000, -- 100.00% total chance
-	},
-	{
-        groups = {
-			{group = "acklay", chance = 3000000},         -- 30.00% of group, 30.00% total
-			{group = "color_crystals", chance = 3000000},       -- 30.00% of group, 30.00% total
-			{group = "power_crystals", chance = 2000000},              -- 20.00% of group, 20.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
-		},
-		lootChance = 10000000, -- 100.00% total chance
-	},
-	{
-        groups = {
-			{group = "power_crystals", chance = 10000000},             -- 100.00% of group, 15.00% total
-		},
-		lootChance = 5000000, -- 50.00% total chance
-	},
-	{
-        groups = {
-			{group = "power_crystals", chance = 10000000},             -- 100.00% of group, 10.00% total
-		},
-		lootChance = 2500000, -- 25.00% total chance
-	},
-    {
-        groups = {
-            {group = "house_deeds", chance = 10000000}
-        },
-        lootChance = 2000000, -- 20.00% total chance
-    },
-    {
-        groups = {
-            {group = "endgame_weapon_schematics", chance = 10000000}
-        },
-        lootChance = 1500000, -- 15.00% total chance
-    },
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 350000
-		}
-},
 
     primaryWeapon = "unarmed",
     secondaryWeapon = "none",

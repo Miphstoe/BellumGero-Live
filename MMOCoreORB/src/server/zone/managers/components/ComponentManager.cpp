@@ -123,6 +123,7 @@
 #include "server/zone/objects/tangible/components/GogglesObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/ArmorObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/PlaceableLootContainerComponent.h"
+#include "server/zone/objects/tangible/components/WorldBossLootBoxContainerComponent.h"
 #include "server/zone/objects/tangible/components/ScavengerChestContainerComponent.h"
 #include "server/zone/objects/tangible/components/ScavengerDroidContainerComponent.h"
 #include "server/zone/objects/tangible/tool/recycle/RecycleToolContainerComponent.h"
@@ -331,6 +332,7 @@ ComponentManager::ComponentManager() {
 	// SE Goggles.
 	components.put("GogglesObjectMenuComponent", new GogglesObjectMenuComponent());
 	components.put("PlaceableLootContainerComponent", new PlaceableLootContainerComponent());
+	components.put("WorldBossLootBoxContainerComponent", new WorldBossLootBoxContainerComponent());
 
 	components.put("ScavengerChestContainerComponent", new ScavengerChestContainerComponent());
 	components.put("ScavengerDroidContainerComponent", new ScavengerDroidContainerComponent());
