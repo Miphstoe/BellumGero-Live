@@ -23,9 +23,9 @@ void ItemLockMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Obj
 	bool isLocked = !lockValue.isEmpty() && Integer::valueOf(lockValue) == 1;
 
 	if (isLocked) {
-		menuResponse->addRadialMenuItem(RADIAL_UNLOCK_ITEM, 3, "@base_player:unlock_item"); // "Unlock Item"
+		menuResponse->addRadialMenuItem(RADIAL_UNLOCK_ITEM, 3, "Unlock Item");
 	} else {
-		menuResponse->addRadialMenuItem(RADIAL_LOCK_ITEM, 3, "@base_player:lock_item"); // "Lock Item"
+		menuResponse->addRadialMenuItem(RADIAL_LOCK_ITEM, 3, "Lock Item");
 	}
 }
 
