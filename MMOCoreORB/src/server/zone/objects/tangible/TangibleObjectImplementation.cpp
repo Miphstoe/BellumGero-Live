@@ -1866,7 +1866,7 @@ int TangibleObjectImplementation::canBeDestroyed(CreatureObject* player) {
 	String lockValue = getLuaStringData("item_locked");
 	if (!lockValue.isEmpty() && Integer::valueOf(lockValue) == 1) {
 		if (player != nullptr) {
-			player->sendSystemMessage("@base_player:cannot_destroy_locked_item");
+			player->sendSystemMessage("You cannot destroy a locked item.");
 		}
 		return 1; // Cannot be destroyed
 	}
