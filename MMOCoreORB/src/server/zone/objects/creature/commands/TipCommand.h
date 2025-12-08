@@ -66,6 +66,24 @@ private:
 		tipself.setTT(targetPlayer->getCreatureName());
 		player->sendSystemMessage(tipself);
 
+		// Send email notifications for cash tip
+		ManagedReference<ChatManager*> chatManager = player->getZoneServer()->getChatManager();
+		if (chatManager != nullptr) {
+			UnicodeString subject("Cash Tip Received");
+			String sender = "Galactic Banking";
+
+			// Email to target player
+			StringBuffer bodyTarget;
+			bodyTarget << player->getCreatureName().toString() << " has cash tipped you " << amount << " credits.";
+			chatManager->sendMail(sender, subject, UnicodeString(bodyTarget.toString()), targetPlayer->getFirstName());
+
+			// Email to sender
+			UnicodeString subjectSelf("Cash Tip Sent");
+			StringBuffer bodySelf;
+			bodySelf << "You have successfully cash tipped " << amount << " credits to " << targetPlayer->getCreatureName().toString() << ".";
+			chatManager->sendMail(sender, subjectSelf, UnicodeString(bodySelf.toString()), player->getFirstName());
+		}
+
 		return SUCCESS;
 	}
 
