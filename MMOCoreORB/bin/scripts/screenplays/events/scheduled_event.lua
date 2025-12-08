@@ -15,8 +15,8 @@ ScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in second
 ScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-ScheduledEvent.START_TIME = { year = 2025, month = 12, day = 07, hour = 19, min = 00, sec = 0 }
-ScheduledEvent.END_TIME   = { year = 2025, month = 12, day = 07, hour = 20, min = 00, sec = 0 }
+ScheduledEvent.START_TIME = { year = 2025, month = 12, day = 14, hour = 19, min = 00, sec = 0 }
+ScheduledEvent.END_TIME   = { year = 2025, month = 12, day = 14, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 ScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -30,7 +30,7 @@ ScheduledEvent.CATCH_UP_IF_MISSED = true
 
 -- NPCs
 ScheduledEvent.NPCS = {
-  { planet = "corellia", template = "torgas_the_enslaver", x = -172, y = -4723, z = 28, heading = 0 },
+  { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -165, y = -4720, z = 28, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -180, y = -4725, z = 28, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -172, y = -4735, z = 28, heading = 0 },
