@@ -181,12 +181,12 @@ class FindTargetTask : public Task, public Logger {
 			successChance = maximumSkillMod;
 		}
 
-		successChance -= ((getTargetLevel(player, objective)) / 3);
+		successChance -= ((getTargetLevel(player, objective)) / 5);
 
 		if (successChance < 5) {
 			successChance = 5;
-		} else if (successChance > 95) {
-			successChance = 95;
+		} else if (successChance > 98) {
+			successChance = 98;
 		}
 
 		int randomValue = System::random(100);
