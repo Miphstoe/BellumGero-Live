@@ -55,6 +55,8 @@
 #include "server/zone/objects/tangible/components/CloningTerminalMenuComponent.h"
 #include "server/zone/objects/tangible/components/HolocronMenuComponent.h"
 #include "server/zone/objects/tangible/components/WaypointDatapadMenuComponent.h"
+#include "server/zone/objects/tangible/components/DatapadMenuComponent.h"
+#include "server/zone/objects/waypoint/components/WaypointMenuComponent.h"
 #include "server/zone/objects/tangible/components/ForceCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/RobeObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/generic/ArtCrateMenuComponent.h"
@@ -211,6 +213,8 @@ ComponentManager::ComponentManager() {
 
 	components.put("HolocronMenuComponent", new HolocronMenuComponent());
 	components.put("WaypointDatapadMenuComponent", new WaypointDatapadMenuComponent());
+	components.put("DatapadMenuComponent", new DatapadMenuComponent());
+	components.put("WaypointMenuComponent", new WaypointMenuComponent());
 
 	components.put("AttributeListComponent", new AttributeListComponent());
 	components.put("LootSchematicAttributeListComponent", new LootSchematicAttributeListComponent());

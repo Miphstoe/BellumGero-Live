@@ -42,7 +42,7 @@
 
 
 object_waypoint_base_waypoint_default = object_waypoint_base_shared_waypoint_default:new {
-
+	objectMenuComponent = "WaypointMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_waypoint_base_waypoint_default, "object/waypoint/base/waypoint_default.iff")

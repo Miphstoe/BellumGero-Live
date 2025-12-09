@@ -133,6 +133,7 @@
 #include "server/zone/objects/creature/commands/LaunchIntoSpaceCommand.h"
 #include "server/zone/objects/creature/commands/UnstickCommand.h"
 #include "server/zone/objects/creature/commands/WaypointCommand.h"
+#include "server/zone/objects/creature/commands/WaypointColorCommand.h"
 #include "server/zone/objects/creature/commands/CreateVendorCommand.h"
 #include "server/zone/objects/creature/commands/RequestQuestTimersAndCountersCommand.h"
 #include "server/zone/objects/creature/commands/PilotShipCommand.h"
@@ -280,6 +281,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<LaunchIntoSpaceCommand>(String("launchIntoSpace").toLowerCase());
 	commandFactory.registerCommand<UnstickCommand>(String("unstick").toLowerCase());
 	commandFactory.registerCommand<WaypointCommand>(String("waypoint").toLowerCase());
+	commandFactory.registerCommand<WaypointColorCommand>(String("waypointcolor").toLowerCase());
 	commandFactory.registerCommand<CreateVendorCommand>(String("createVendor").toLowerCase());
 	commandFactory.registerCommand<PilotShipCommand>(String("pilotShip").toLowerCase());
 	commandFactory.registerCommand<UnpilotShipCommand>(String("unpilotShip").toLowerCase());
@@ -303,6 +305,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<DestroyTargetCommand>(String("destroyTarget").toLowerCase());
 	commandFactory.registerCommand<SendFormObjectDataCommand>(String("sendFormObjectData").toLowerCase());
 	commandFactory.registerCommand<WaypointCommand>(String("waypoint").toLowerCase());
+	commandFactory.registerCommand<WaypointColorCommand>(String("waypointcolor").toLowerCase());
 	commandFactory.registerCommand<InspacerepairCommand>(String("inspacerepair").toLowerCase());
 	commandFactory.registerCommand<LightEngineScrambleCommand>(String("lightEngineScramble").toLowerCase());
 	commandFactory.registerCommand<HyperspaceCommand>(String("hyperspace").toLowerCase());
