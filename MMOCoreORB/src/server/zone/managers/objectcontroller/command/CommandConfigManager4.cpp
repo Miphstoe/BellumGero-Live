@@ -124,6 +124,7 @@
 #include "server/zone/objects/creature/commands/WildShot1Command.h"
 #include "server/zone/objects/creature/commands/WildShot2Command.h"
 #include "server/zone/objects/creature/commands/WipeItemsCommand.h"
+#include "server/zone/objects/creature/commands/WaypointColorCommand.h"
 #include "server/zone/objects/creature/commands/WookieeRoarCommand.h"
 #include "server/zone/objects/creature/commands/CityInfoCommand.h"
 #include "server/zone/objects/creature/commands/GroupLootCommand.h"
@@ -269,6 +270,7 @@ void CommandConfigManager::registerCommands4() {
 	commandFactory.registerCommand<WildShot1Command>(String("wildShot1").toLowerCase());
 	commandFactory.registerCommand<WildShot2Command>(String("wildShot2").toLowerCase());
 	commandFactory.registerCommand<WipeItemsCommand>(String("wipeItems").toLowerCase());
+	commandFactory.registerCommand<WaypointColorCommand>(String("waypointcolor").toLowerCase());
 	commandFactory.registerCommand<WookieeRoarCommand>(String("wookieeRoar").toLowerCase());
 
 	commandFactory.registerCommand<CityInfoCommand>(String("cityInfo").toLowerCase());

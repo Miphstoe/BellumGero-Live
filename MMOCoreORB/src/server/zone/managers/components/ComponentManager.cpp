@@ -167,6 +167,7 @@
 #include "server/zone/objects/tangible/components/StarshipPaintKitObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/StarshipTextureKitObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/ClothingColorMenuComponent.h"
+#include "server/zone/objects/tangible/components/ItemLockMenuComponent.h"
 
 
 ComponentManager::ComponentManager() {
@@ -271,6 +272,7 @@ ComponentManager::ComponentManager() {
 	components.put("LairMenuComponent", new LairMenuComponent());
 
 	components.put("WeaponObjectMenuComponent", new WeaponObjectMenuComponent());
+	components.put("ItemLockMenuComponent", new ItemLockMenuComponent());
 
 	components.put("ShellfishHarvesterMenuComponent", new ShellfishHarvesterMenuComponent());
 
