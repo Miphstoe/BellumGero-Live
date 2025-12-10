@@ -12,6 +12,7 @@
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/creature/commands/QueueCommand.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/chat/ChatManager.h"
 
 class TipCommand: public QueueCommand {
 private:
@@ -65,6 +66,24 @@ private:
 		tipself.setTT(targetPlayer->getCreatureName());
 		player->sendSystemMessage(tipself);
 
+		// Send email notifications for cash tip
+		ManagedReference<ChatManager*> chatManager = player->getZoneServer()->getChatManager();
+		if (chatManager != nullptr) {
+			UnicodeString subject("Cash Tip Received");
+			String sender = "Galactic Banking";
+
+			// Email to target player
+			StringBuffer bodyTarget;
+			bodyTarget << player->getCreatureName().toString() << " has cash tipped you " << amount << " credits.";
+			chatManager->sendMail(sender, subject, UnicodeString(bodyTarget.toString()), targetPlayer->getFirstName());
+
+			// Email to sender
+			UnicodeString subjectSelf("Cash Tip Sent");
+			StringBuffer bodySelf;
+			bodySelf << "You have successfully cash tipped " << amount << " credits to " << targetPlayer->getCreatureName().toString() << ".";
+			chatManager->sendMail(sender, subjectSelf, UnicodeString(bodySelf.toString()), player->getFirstName());
+		}
+
 		return SUCCESS;
 	}
 
@@ -93,21 +112,46 @@ private:
 				return GENERALERROR;
 		}
 
-		Reference<SuiMessageBox*> confirmbox = new SuiMessageBox(player,
-				SuiWindowType::BANK_TIP_CONFIRM);
-		confirmbox->setCallback(
-				new TipCommandSuiCallback(server->getZoneServer(),
-						targetPlayer, amount));
+		// Perform the bank tip immediately without confirmation
+		Locker clocker(targetPlayer, player);
+		{
+			TransactionLog trx(player, targetPlayer, TrxCode::PLAYERTIP, amount, true);
+			player->subtractBankCredits(amount);
+			targetPlayer->addBankCredits(amount, true);
+		}
 
-		String promptText = "Would you like to send a bank transfer? There is no fee for this transaction.";
+		// Send in-game message to target (if online)
+		StringIdChatParameter tiptarget("base_player", "prose_wire_pass_target"); // %TT has sent you %DI credits.
+		tiptarget.setDI(amount);
+		tiptarget.setTO(player->getCreatureName());
+		targetPlayer->sendSystemMessage(tiptarget);
 
-		confirmbox->setPromptTitle("@base_player:tip_wire_title"); // Confirm Bank Transfer
-		confirmbox->setPromptText(promptText);
-		confirmbox->setCancelButton(true, "@no");
-		confirmbox->setOkButton(true, "@yes");
+		// Confirm to sender
+		StringIdChatParameter tipself("base_player", "prose_wire_pass_self"); // You have successfully sent %DI bank credits to %TO.
+		tipself.setDI(amount);
+		tipself.setTO(targetPlayer->getCreatureName());
+		player->sendSystemMessage(tipself);
 
-		ghost->addSuiBox(confirmbox);
-		player->sendMessage(confirmbox->generateMessage());
+		// Send email notifications to both players
+		ManagedReference<ChatManager*> chatManager = player->getZoneServer()->getChatManager();
+		if (chatManager != nullptr) {
+			UnicodeString subject("@base_player:wire_mail_subject"); // Bank Transfer Complete
+			String sender = "bank";
+
+			// Email to target player
+			StringIdChatParameter bodyTarget("@base_player:prose_wire_mail_target");
+			// %DI credits from %TO have been successfully delivered from escrow to your bank account.
+			bodyTarget.setTO(player->getCreatureName());
+			bodyTarget.setDI(amount);
+			chatManager->sendMail(sender, subject, bodyTarget, targetPlayer->getFirstName());
+
+			// Email to sender
+			StringIdChatParameter bodySelf("@base_player:prose_wire_mail_self");
+			// %TO has received %DI credits from you, via bank wire transfer.
+			bodySelf.setTO(targetPlayer->getCreatureName());
+			bodySelf.setDI(amount);
+			chatManager->sendMail(sender, subject, bodySelf, player->getFirstName());
+		}
 
 		return SUCCESS;
 	}
