@@ -30,45 +30,13 @@ jarjar_boss = Creature:new {
   scale = 1.2,
 
   lootGroups = {
-    {
-      groups = {
-        {group = "power_crystals", chance = 6000000},
-        {group = "holocron_light",  chance = 2000000},
-        {group = "holocron_dark", chance = 2000000}
-      },
-      lootChance = 10000000
-    },
-    {
-      groups = {
-        {group = "clothing_attachments", chance = 6000000},
-        {group = "potted_plants_sml_s02_schematic",  chance = 2000000},
-        {group = "sea_removal_tool", chance = 2000000}
-      },
-      lootChance = 5000000
-    },
-    {
-      groups = {
-        {group = "color_crystals", chance = 6000000},
-        {group = "potted_plants_sml_s02_schematic",  chance = 2000000},
-        {group = "sea_removal_tool", chance = 2000000}
-      },
-      lootChance = 2500000
-    },
-    {
-      groups = {
-        {group = "armor_attachments", chance = 6000000},
-        {group = "potted_plants_sml_s02_schematic",  chance = 2000000},
-        {group = "sea_removal_tool", chance = 2000000}
-      },
-      lootChance = 1250000
-    },
-    {
-            groups = {
-                {group = "house_deeds", chance = 10000000}
-            },
-            lootChance = 600000, -- 6.00% total chance
-        }
+    -- Loot groups removed - using WorldBossLootManager for automatic distribution
+    -- Players who damage the boss receive loot directly to inventory
   },
+
+  -- No credits on corpse - players receive credits directly to inventory
+  cashMin = 0,
+  cashMax = 0,
 
   -- keep it ultra-safe for now:
   primaryWeapon   = "unarmed",

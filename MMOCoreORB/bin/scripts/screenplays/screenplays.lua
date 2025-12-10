@@ -749,13 +749,18 @@ includeFile("tools/mission_direction_choice.lua")
 includeFile("tools/mission_target_choice.lua")
 -- near your other includes...
 printLuaError("[WBOSS-SC] include: acklay_worldboss.lua")
-includeFile("acklay_worldboss.lua")
+--includeFile("acklay_worldboss.lua")  -- DISABLED: Using loot box version instead
+printLuaError("[WBOSS-SC] include: acklay_worldboss_loot.lua (NEW LOOT BOX SYSTEM)")
+includeFile("acklay_worldboss_loot.lua")
 printLuaError("[WBOSS-SC] loader end")
 includeFile("world/gorax_nw_endor.lua")
 includeFile("yavin4/egspider_worldboss.lua")
+includeFile("yavin4/egspider_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
 includeFile("world/infernomaw_boss.lua")
+includeFile("world/infernomaw_boss_loot_wrapper.lua")  -- Add automatic loot distribution
 --includeFile("world/jarjar_worldboss.lua")
 includeFile("world/jarjar_worldboss_simple.lua")
+includeFile("world/jarjar_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
 -- then load the boss screenplay
 includeFile("boss/djm_random_name_boss.lua")
 -- screenplay LAST so it can spawn after the above are loaded
