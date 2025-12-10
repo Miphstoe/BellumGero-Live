@@ -1043,4 +1043,14 @@ class TangibleObject extends SceneObject {
 
 	@dirty
 	public native abstract boolean isDestroying();
+
+	/**
+	 * Checks if this object can be destroyed by the player
+	 * @pre { this object is locked }
+	 * @post { this object is locked }
+	 * @param player CreatureObject attempting to destroy this object
+	 * @return 0 if can be destroyed, 1 if locked and cannot be destroyed
+	 */
+	@dirty
+	public native int canBeDestroyed(CreatureObject player);
 }

@@ -2729,6 +2729,17 @@ void PlayerManagerImplementation::handleAddItemToTradeWindow(CreatureObject* pla
 		return;
 	}
 
+	// Check if item is locked
+	TangibleObject* tangible = cast<TangibleObject*>(objectToTrade.get());
+	if (tangible != nullptr) {
+		String lockValue = tangible->getLuaStringData("item_locked");
+		if (!lockValue.isEmpty() && Integer::valueOf(lockValue) == 1) {
+			player->sendSystemMessage("You cannot trade a locked item.");
+			handleAbortTradeMessage(player);
+			return;
+		}
+	}
+
 	// Containers containing notrade items...
 	if (objectToTrade->containsNoTradeObjectRecursive()) {
 		player->sendSystemMessage("@container_error_message:container26");

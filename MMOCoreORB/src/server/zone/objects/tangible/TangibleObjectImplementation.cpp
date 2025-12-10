@@ -228,6 +228,9 @@ void TangibleObjectImplementation::initializeTransientMembers() {
 
 	setLoggingName("TangibleObject");
 
+	// Add item lock menu component to all tangible objects
+	setObjectMenuComponent("ItemLockMenuComponent");
+
 	if (faction !=  Factions::FACTIONREBEL && faction != Factions::FACTIONIMPERIAL) {
 		faction = 0;
 	}
@@ -1856,4 +1859,17 @@ TangibleObject* TangibleObject::asTangibleObject() {
 
 TangibleObject* TangibleObjectImplementation::asTangibleObject() {
 	return _this.getReferenceUnsafeStaticCast();
+}
+
+int TangibleObjectImplementation::canBeDestroyed(CreatureObject* player) {
+	// Check if item is locked
+	String lockValue = getLuaStringData("item_locked");
+	if (!lockValue.isEmpty() && Integer::valueOf(lockValue) == 1) {
+		if (player != nullptr) {
+			player->sendSystemMessage("You cannot destroy a locked item.");
+		}
+		return 1; // Cannot be destroyed
+	}
+
+	return 0; // Can be destroyed
 }
