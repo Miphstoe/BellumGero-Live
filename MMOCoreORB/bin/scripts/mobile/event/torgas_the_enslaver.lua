@@ -11,7 +11,7 @@ torgas_the_enslaver = Creature:new {
 	mobType = MOB_CARNIVORE,
 
 	-- ========== COMBAT STATS ==========
-	level = 325,
+	level = 350,
 	chanceHit = 28.0,
 	damageMin = 2100,
 	damageMax = 4200,
