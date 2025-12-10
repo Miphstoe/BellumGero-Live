@@ -42,7 +42,7 @@
 
 
 object_tangible_datapad_character_datapad = object_tangible_datapad_shared_character_datapad:new {
-
+	
 }
 
 ObjectTemplates:addTemplate(object_tangible_datapad_character_datapad, "object/tangible/datapad/character_datapad.iff")

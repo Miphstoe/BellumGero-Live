@@ -1,85 +1,50 @@
 /*
- * WaypointObjectImplementation.cpp
+ * WaypointMenuComponent.cpp
  *
- *  Created on: 28/12/2009
- *      Author: victor
+ * Handles radial menu options for waypoint objects, including color selection
  */
 
+#include "WaypointMenuComponent.h"
 #include "server/zone/objects/waypoint/WaypointObject.h"
-#include "server/zone/packets/object/ObjectMenuResponse.h"
+#include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/callbacks/WaypointColorSuiCallback.h"
 
-void WaypointObjectImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
-	IntangibleObjectImplementation::loadTemplateData(templateData);
-
-	cellID = 0; //?
-
-	unknown = 0;
-	planetCRC = 0;
-
-	color = COLOR_BLUE;
-	active = 0;
-
-	specialTypeID = 0;
-}
-
-String WaypointObjectImplementation::getDetailedDescription() const {
-	if (detailedDescription.isEmpty())
-		return SceneObjectImplementation::getDetailedDescription();
-
-	return detailedDescription;
-}
-
-void WaypointObjectImplementation::insertToMessage(BaseMessage* msg) {
-	msg->writeInt(cellID); // cellID
-	msg->writeFloat(getPositionX());
-	msg->writeFloat(getPositionZ()); //Z
-	msg->writeFloat(getPositionY());
-	msg->writeLong(unknown); //?
-	msg->writeInt(planetCRC);
-
-	customName.toBinaryStream(msg);
-
-	msg->writeLong(getObjectID());
-	msg->writeByte(color);
-	msg->writeByte(active);
-}
-
-void WaypointObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
-	IntangibleObjectImplementation::fillAttributeList(alm, object);
-
-	if (questDetails.length() > 0)
-		alm->insertAttribute("quest_details", questDetails);
-}
-
-void WaypointObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
-	if (menuResponse == nullptr || player == nullptr)
+void WaypointMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
+	if (sceneObject == nullptr || !sceneObject->isWaypointObject() || player == nullptr) {
 		return;
+	}
 
-	Logger::console.info("WaypointObjectImplementation::fillObjectMenuResponse called!", true);
+	Logger::console.info("WaypointMenuComponent::fillObjectMenuResponse called!", true);
 
-	// Add default waypoint menu options
+	// Add waypoint menu options
 	menuResponse->addRadialMenuItem(20, 3, "@ui_radial:waypoint_activate"); // Activate
 	menuResponse->addRadialMenuItem(21, 3, "@ui_radial:waypoint_set_name"); // Set Name
 	menuResponse->addRadialMenuItem(22, 3, "@examine"); // Examine
-	menuResponse->addRadialMenuItem(83, 3, "Set Color"); // Set Color - NEW!
+	menuResponse->addRadialMenuItem(83, 3, "Set Color"); // Set Color
 	menuResponse->addRadialMenuItem(69, 3, "@ui_radial:item_destroy"); // Destroy
 
-	Logger::console.info("WaypointObjectImplementation: Added 5 menu items including Set Color", true);
+	Logger::console.info("WaypointMenuComponent: Added 5 menu items", true);
 }
 
-int WaypointObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
-	if (player == nullptr)
+int WaypointMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
+	if (!sceneObject->isWaypointObject() || player == nullptr) {
 		return 0;
+	}
+
+	ManagedReference<WaypointObject*> waypoint = cast<WaypointObject*>(sceneObject);
+
+	if (waypoint == nullptr) {
+		return 0;
+	}
 
 	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
 
-	if (ghost == nullptr)
+	if (ghost == nullptr) {
 		return 0;
-
-	ManagedReference<WaypointObject*> waypoint = _this.getReferenceUnsafeStaticCast();
+	}
 
 	switch (selectedID) {
 		case 20: // Activate
@@ -96,7 +61,7 @@ int WaypointObjectImplementation::handleObjectMenuSelect(CreatureObject* player,
 			// This is handled by the base object examine functionality
 			break;
 
-		case 83: // Set Color - NEW!
+		case 83: // Set Color
 			{
 				// Create SUI listbox for color selection
 				ManagedReference<SuiListBox*> suiBox = new SuiListBox(player, SuiWindowType::NONE);
