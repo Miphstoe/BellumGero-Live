@@ -4,7 +4,7 @@
 container_expansion_module = {
     minimumLevel = 0,
     maximumLevel = -1,
-    customObjectName = "",
+    customObjectName = "@craft_item_ingredients_n:container_expansion_module",
     directObjectTemplate = "object/tangible/component/structure/container_expansion_module.iff",
     craftingValues = {
         -- Only care about number of uses; no other stats needed

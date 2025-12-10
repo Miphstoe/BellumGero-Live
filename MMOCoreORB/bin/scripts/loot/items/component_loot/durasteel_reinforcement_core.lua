@@ -3,7 +3,7 @@
 durasteel_reinforcement_core = {
     minimumLevel = 50,
     maximumLevel = -1,
-    customObjectName = "",
+    customObjectName = "@craft_weapon_ingredients_n:durasteel_reinforcement_core",
     directObjectTemplate = "object/tangible/component/weapon/durasteel_reinforcement_core.iff",
     craftingValues = {
         {"mindamage",65,130,0},
