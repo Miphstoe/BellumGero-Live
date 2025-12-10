@@ -30,11 +30,6 @@ void RadialManagerImplementation::handleObjectMenuRequest(CreatureObject* player
 
 		debug("entering object menu request");
 
-		// Log if this is a waypoint
-		if (menuObject->isWaypointObject()) {
-			Logger::console.info("RadialManager: Processing waypoint menu request", true);
-		}
-
 		menuObject->fillObjectMenuResponse(defaultMenuResponse, player);
 	}
 
@@ -63,13 +58,6 @@ void RadialManagerImplementation::handleObjectMenuSelect(CreatureObject* player,
 	if (selectedObject == nullptr) {
 		player->error() << "RadialManagerImplementation::handleObjectMenuSelect(player=" << player->getObjectID() << ", selectID=" << selectID << ", objectID=" << objectID << "): Failed to get selectedObject from zone server.";
 		return;
-	}
-
-	// Log waypoint selections
-	if (selectedObject->isWaypointObject()) {
-		StringBuffer logMsg;
-		logMsg << "Waypoint radial selection: selectID=" << (int)selectID;
-		Logger::console.info(logMsg.toString(), true);
 	}
 
 	try {
