@@ -1196,6 +1196,29 @@ void ResourceSpawner::sendSampleResults(TransactionLog& trx, CreatureObject* pla
 
 	addResourceToPlayerInventory(trx, player, resourceSpawn, unitsExtracted);
 
+	// Treasure map drop chance: 0.1% (1 in 1000 samples)
+	if (System::random(1000) == 0) {
+		ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+
+		if (inventory != nullptr && !inventory->isContainerFullRecursive()) {
+			ManagedReference<SceneObject*> treasureMap = server->createObject(STRING_HASHCODE("object/tangible/treasure_map/treasure_map_pirate1.iff"), 1);
+
+			if (treasureMap != nullptr) {
+				Locker mapLocker(inventory);
+
+				if (inventory->transferObject(treasureMap, -1, false)) {
+					trx.addRelatedObject(treasureMap);
+					trx.addState("treasureMapFound", "true");
+
+					inventory->broadcastObject(treasureMap, true);
+					player->sendSystemMessage("You discovered a treasure map while sampling!");
+				} else {
+					treasureMap->destroyObjectFromDatabase(true);
+				}
+			}
+		}
+	}
+
 	player->notifyObservers(ObserverEventType::SAMPLE, resourceSpawn, density * 100);
 	player->notifyObservers(ObserverEventType::SAMPLETAKEN, resourceSpawn, unitsExtracted);
 
