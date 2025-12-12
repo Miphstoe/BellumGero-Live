@@ -8,7 +8,9 @@ object_building_player_diner_house = object_building_player_shared_diner_house:n
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}
+		{"private_safe_logout", 1},
+		{"food_assembly", 10},
+		{"food_experimentation", 5}
 	},
 	childObjects = {
 		{templateFile = "object/tangible/sign/player/house_address.iff", x = 7.12, z = 3.39, y = 5.69, ox = 0, oy = -1, oz = 0, ow = 0, cellid = -1, containmentType = -1},

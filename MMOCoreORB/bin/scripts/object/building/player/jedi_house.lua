@@ -8,7 +8,9 @@ object_building_player_jedi_house = object_building_player_shared_jedi_house:new
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}	
+		{"private_safe_logout", 1},
+		{"jedi_saber_assembly", 10},
+		{"jedi_saber_experimentation", 5}
 	},
 	childObjects = {
 		{templateFile = "object/tangible/sign/player/house_address.iff", x = 2.75, z = 2.75, y = 6, ox = 0, oy = -1, oz = 0, ow = 0, cellid = -1, containmentType = -1},
