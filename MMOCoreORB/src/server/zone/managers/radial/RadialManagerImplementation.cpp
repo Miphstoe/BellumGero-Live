@@ -30,11 +30,6 @@ void RadialManagerImplementation::handleObjectMenuRequest(CreatureObject* player
 
 		debug("entering object menu request");
 
-		// Debug logging
-		player->info(true) << "RadialManager: Opening menu for object: " << menuObject->getDisplayedName()
-			<< " ObjectID: " << objectID
-			<< " Template: " << menuObject->getObjectTemplate()->getTemplateFileName();
-
 		menuObject->fillObjectMenuResponse(defaultMenuResponse, player);
 	}
 

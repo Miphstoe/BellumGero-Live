@@ -16,12 +16,6 @@ void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 	//All objects in a cell can be picked up, if the player is on the structures permission list.
 	//This opens the door to allow admins to be able to drop/pickup items in public structures
 
-	// Debug: Log function entry - ALWAYS show this
-	if (player != nullptr) {
-		player->sendSystemMessage("DEBUG: ObjectMenuComponent called for: " +
-			(sceneObject ? sceneObject->getDisplayedName() : "null"));
-	}
-
 	if (sceneObject == nullptr)
 		return;
 
@@ -42,9 +36,6 @@ void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 		if (building != nullptr) {
 			bool isAdmin = building->isOnAdminList(player);
 			bool isOwner = (building->getOwnerObjectID() == player->getObjectID());
-
-			// Debug - send to player chat
-			player->sendSystemMessage("DEBUG: isAdmin=" + String::valueOf(isAdmin) + " isOwner=" + String::valueOf(isOwner));
 
 			if (isAdmin || isOwner)
 				checkPermissions = true;
