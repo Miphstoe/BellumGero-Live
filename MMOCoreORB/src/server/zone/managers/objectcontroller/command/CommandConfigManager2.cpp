@@ -152,6 +152,7 @@
 #include "server/zone/objects/creature/commands/DeathCountCommand.h"
 #include "server/zone/objects/creature/commands/DeclareOvertCommand.h"
 #include "server/zone/objects/creature/commands/DeclareresidenceCommand.h"
+#include "server/zone/objects/creature/commands/GohomeCommand.h"
 #include "server/zone/objects/creature/commands/DeclineCommand.h"
 #include "server/zone/objects/creature/commands/DefaultAttackCommand.h"
 #include "server/zone/objects/creature/commands/DefaultDroidAttackCommand.h"
@@ -561,6 +562,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<DeathCountCommand>(String("deathCount").toLowerCase());
 	commandFactory.registerCommand<DeclareOvertCommand>(String("declareOvert").toLowerCase());
 	commandFactory.registerCommand<DeclareresidenceCommand>(String("declareresidence").toLowerCase());
+	commandFactory.registerCommand<GohomeCommand>(String("gohome").toLowerCase());
 	commandFactory.registerCommand<DeclineCommand>(String("decline").toLowerCase());
 	commandFactory.registerCommand<DefaultAttackCommand>(String("defaultAttack").toLowerCase());
 	commandFactory.registerCommand<DefaultDroidAttackCommand>(String("defaultDroidAttack").toLowerCase());
