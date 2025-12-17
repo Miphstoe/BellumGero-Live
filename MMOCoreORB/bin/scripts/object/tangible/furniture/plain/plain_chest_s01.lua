@@ -42,7 +42,7 @@
 
 
 object_tangible_furniture_plain_plain_chest_s01 = object_tangible_furniture_plain_shared_plain_chest_s01:new {
-
+	objectMenuComponent = "ObjectMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_furniture_plain_plain_chest_s01, "object/tangible/furniture/plain/plain_chest_s01.iff")

@@ -20,6 +20,9 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
+#include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/ship/PobShipObject.h"
+#include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
 #include "server/zone/Zone.h"
 #include "tasks/ClearDefenderListsTask.h"
@@ -1056,6 +1059,71 @@ if (isWearableObject()) {
 		else {
 			alm->insertAttribute( "lock_mechanism", "@obj_attr_n:broken" );
 		}
+	}
+}
+
+void TangibleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
+	// Call parent implementation first
+	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
+
+	// Don't add move/rotate/pickup options to terminals
+	if (isTerminal()) {
+		return;
+	}
+
+	// Check if this object is placed in a cell and player has permissions
+	ManagedReference<SceneObject*> parent = getParent().get();
+
+	if (parent == nullptr || !parent->isCellObject()) {
+		return;
+	}
+
+	ManagedReference<SceneObject*> rootParent = getRootParent();
+
+	if (rootParent == nullptr) {
+		return;
+	}
+
+	bool checkPermissions = false;
+
+	if (rootParent->isBuildingObject()) {
+		ManagedReference<BuildingObject*> building = rootParent.castTo<BuildingObject*>();
+
+		if (building != nullptr) {
+			bool isAdmin = building->isOnAdminList(player);
+			bool isOwner = (building->getOwnerObjectID() == player->getObjectID());
+
+			if (isAdmin || isOwner)
+				checkPermissions = true;
+		}
+	} else if (rootParent->isPobShip()) {
+		ManagedReference<PobShipObject*> pobShip = rootParent->asPobShip();
+
+		if (pobShip != nullptr && (pobShip->isOnAdminList(player) || pobShip->getOwnerID() == player->getObjectID()))
+			checkPermissions = true;
+	}
+
+	if (!checkPermissions)
+		return;
+
+	// Check if parent is nested on player
+	bool nestedOnPlayer = getParentRecursively(SceneObjectType::PLAYERCREATURE);
+
+	// Add radial options
+	if (parent->isCellObject() || (parent->getGameObjectType() == SceneObjectType::CONTAINER && !nestedOnPlayer))
+		menuResponse->addRadialMenuItem(10, 3, "@ui_radial:item_pickup"); //Pick up
+
+	if (parent->isCellObject()) {
+		menuResponse->addRadialMenuItem(54, 1, "@ui_radial:item_move"); //Move
+		menuResponse->addRadialMenuItem(51, 1, "@ui_radial:item_rotate"); //Rotate
+
+		menuResponse->addRadialMenuItemToRadialID(54, 55, 3, "@ui_radial:item_move_forward"); //Move Forward
+		menuResponse->addRadialMenuItemToRadialID(54, 56, 3, "@ui_radial:item_move_back"); //Move Back
+		menuResponse->addRadialMenuItemToRadialID(54, 57, 3, "@ui_radial:item_move_up"); //Move Up
+		menuResponse->addRadialMenuItemToRadialID(54, 58, 3, "@ui_radial:item_move_down"); //Move Down
+
+		menuResponse->addRadialMenuItemToRadialID(51, 52, 3, "@ui_radial:item_rotate_left"); //Rotate Left
+		menuResponse->addRadialMenuItemToRadialID(51, 53, 3, "@ui_radial:item_rotate_right"); //Rotate Right
 	}
 }
 

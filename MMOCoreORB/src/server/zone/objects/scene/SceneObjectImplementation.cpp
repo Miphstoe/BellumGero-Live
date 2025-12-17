@@ -20,6 +20,7 @@
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/packets/object/ShowFlyText.h"
+#include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 
 #include "server/zone/ZoneClientSession.h"
 #include "server/zone/Zone.h"
@@ -1415,6 +1416,13 @@ void SceneObjectImplementation::rotateRoll(int degrees) {
 
 void SceneObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
 	if (objectMenuComponent == nullptr) {
+		// Fallback: Use ObjectMenuComponent for tangible objects in cells (furniture, decorations)
+		ManagedReference<SceneObject*> parentObject = getParent().get();
+		if (isTangibleObject() && parentObject != nullptr && parentObject->isCellObject()) {
+			ObjectMenuComponent defaultComponent;
+			return defaultComponent.fillObjectMenuResponse(asSceneObject(), menuResponse, player);
+		}
+
 		error("no object menu component set for " + templateObject->getTemplateFileName());
 
 		return;

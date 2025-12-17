@@ -13,6 +13,7 @@ import server.zone.objects.tangible.tool.repair.RepairTool;
 import server.zone.objects.area.ActiveArea;
 import server.zone.objects.tangible.threat.ThreatMap;
 import engine.util.u3d.Vector3;
+import server.zone.packets.object.ObjectMenuResponse;
 
 include templates.params.OptionBitmask;
 include templates.params.ObserverEventType;
@@ -348,6 +349,17 @@ class TangibleObject extends SceneObject {
 	@local
 	@dirty
 	public native void fillAttributeList(AttributeListMessage msg, CreatureObject object);
+
+	/**
+	 * Fills the radial menu options for tangible objects in cells
+	 * @pre { }
+	 * @post { }
+	 * @param menuResponse radial menu response to fill
+	 * @param player player creature requesting the menu
+	 */
+	@local
+	@dirty
+	public native void fillObjectMenuResponse(ObjectMenuResponse menuResponse, CreatureObject player);
 
 	/**
 	 * Cleares the combat state
