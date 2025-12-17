@@ -11,7 +11,9 @@ object_building_player_vehicle_house = object_building_player_shared_vehicle_hou
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}	
+		{"private_safe_logout", 1},
+		{"general_assembly", 10},
+		{"general_experimentation", 5}
 	},
 	childObjects = {
 			{templateFile = "object/tangible/terminal/terminal_player_structure.iff", x = 14.5356, z = 0.629973, y = 12.9319, ow = -4.37114e-08, ox = 0, oz = 0, oy = 1, cellid = 1, containmentType = -1},

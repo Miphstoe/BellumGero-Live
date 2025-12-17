@@ -8,7 +8,9 @@ object_building_player_vipbunker_house = object_building_player_shared_vipbunker
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}
+		{"private_safe_logout", 1},
+		{"clothing_assembly", 10},
+		{"clothing_experimentation", 5}
 	},
 	childObjects = {
 		{templateFile = "object/tangible/sign/player/house_address.iff", x = -3.27, z = 1.78, y = 0.37, ox = 0, oy = 0, oz = 0, ow = 1, cellid = -1, containmentType = -1},
