@@ -1066,8 +1066,8 @@ void TangibleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* me
 	// Call parent implementation first
 	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
 
-	// Don't add move/rotate/pickup options to terminals
-	if (isTerminal()) {
+	// Don't add move/rotate/pickup options to terminals or creatures
+	if (isTerminal() || isPlayerCreature() || isCreatureObject()) {
 		return;
 	}
 
