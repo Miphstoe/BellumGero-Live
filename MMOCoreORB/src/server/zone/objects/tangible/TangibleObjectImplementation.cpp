@@ -1857,3 +1857,16 @@ TangibleObject* TangibleObject::asTangibleObject() {
 TangibleObject* TangibleObjectImplementation::asTangibleObject() {
 	return _this.getReferenceUnsafeStaticCast();
 }
+
+int TangibleObjectImplementation::canBeDestroyed(CreatureObject* player) {
+	// Check if item is locked
+	String lockValue = getLuaStringData("item_locked");
+	if (!lockValue.isEmpty() && Integer::valueOf(lockValue) == 1) {
+		if (player != nullptr) {
+			player->sendSystemMessage("This item is locked and cannot be destroyed. Unlock it first using the radial menu.");
+		}
+		return 1; // Cannot be destroyed
+	}
+
+	return 0; // Can be destroyed
+}

@@ -14,6 +14,8 @@
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "server/zone/objects/scene/TransferErrorCode.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
+#include "system/lang/Integer.h"
 #include "QueueCommand.h"
 
 class TransferItemMiscCommand : public QueueCommand {
@@ -133,6 +135,21 @@ public:
 			creature->sendSystemMessage("@error_message:perm_no_move");
 			trx.abort() << "No permission to move objectToTransfer";
 			return GENERALERROR;
+		}
+
+		// Check if item is locked
+		TangibleObject* tangible = dynamic_cast<TangibleObject*>(objectToTransfer);
+		if (tangible != nullptr) {
+			String lockValue = tangible->getLuaStringData("item_locked");
+			if (!lockValue.isEmpty() && Integer::valueOf(lockValue) == 1) {
+				// Check if destination is not owned by the same player (i.e., dropping into a structure/house)
+				ManagedReference<SceneObject*> destRoot = destinationObject->getRootParent();
+				if (destRoot != nullptr && destRoot != creature) {
+					creature->sendSystemMessage("This item is locked and cannot be dropped into structures or containers owned by others.");
+					trx.abort() << "Item is locked";
+					return GENERALERROR;
+				}
+			}
 		}
 
 		ManagedReference<SceneObject*> objectsParent = objectToTransfer->getParent().get();
