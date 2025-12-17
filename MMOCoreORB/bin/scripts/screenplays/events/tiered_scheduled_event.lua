@@ -65,7 +65,7 @@ TieredScheduledEvent.TIER4_NPCS = {
 TieredScheduledEvent.TIER1_DURATION = 15 * 60  -- 15 minutes
 TieredScheduledEvent.TIER2_DURATION = 15 * 60  -- 15 minutes
 TieredScheduledEvent.TIER3_DURATION = 15 * 60  -- 15 minutes
-TieredScheduledEvent.TIER4_DURATION =  * 60  -- 15 minutes (until event ends)
+TieredScheduledEvent.TIER4_DURATION = 15 * 60  -- 15 minutes (until event ends)
 
 -- Messages
 TieredScheduledEvent.START_MSG = "A tiered event has begun! Tier 1 enemies have arrived!"

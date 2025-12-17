@@ -42,7 +42,7 @@
 
 
 object_tangible_furniture_furniture_base = object_tangible_furniture_shared_furniture_base:new {
-
+	objectMenuComponent = "ObjectMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_furniture_furniture_base, "object/tangible/furniture/furniture_base.iff")
