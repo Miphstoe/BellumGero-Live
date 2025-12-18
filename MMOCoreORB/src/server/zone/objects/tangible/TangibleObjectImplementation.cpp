@@ -1063,13 +1063,15 @@ if (isWearableObject()) {
 }
 
 void TangibleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
-	// Call parent implementation first
-	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
-
-	// Don't add move/rotate/pickup options to terminals or creatures
-	if (isTerminal() || isPlayerCreature() || isCreatureObject()) {
+	// Mission terminals need TangibleObjectMenuComponent, so let parent handle them
+	// Terminals and creatures should not get move/rotate/pickup options
+	if (isMissionTerminal() || isTerminal() || isPlayerCreature() || isCreatureObject()) {
+		SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
 		return;
 	}
+
+	// Call parent implementation first
+	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
 
 	// Check if this object is placed in a cell and player has permissions
 	ManagedReference<SceneObject*> parent = getParent().get();

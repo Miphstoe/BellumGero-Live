@@ -44,6 +44,7 @@
 object_tangible_terminal_terminal_mission_imperial = object_tangible_terminal_shared_terminal_mission_imperial:new {
 	planetMapCategory = "terminal",
 	planetMapSubCategory = "terminal_mission",
+	objectMenuComponent = "TangibleObjectMenuComponent",
 	templateType = MISSIONTERMINAL,
 	missionTerminalType = "imperial"
 

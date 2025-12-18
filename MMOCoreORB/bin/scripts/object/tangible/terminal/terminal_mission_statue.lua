@@ -44,6 +44,7 @@
 object_tangible_terminal_terminal_mission_statue = object_tangible_terminal_shared_terminal_mission_statue:new {
 	planetMapCategory = "terminal",
 	planetMapSubCategory = "terminal_mission",
+	objectMenuComponent = "TangibleObjectMenuComponent",
 	templateType = MISSIONTERMINAL,
 	missionTerminalType = "statue"
 

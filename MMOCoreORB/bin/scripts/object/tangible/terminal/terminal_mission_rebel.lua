@@ -44,6 +44,7 @@
 object_tangible_terminal_terminal_mission_rebel = object_tangible_terminal_shared_terminal_mission_rebel:new {
 	planetMapCategory = "terminal",
 	planetMapSubCategory = "terminal_mission",
+	objectMenuComponent = "TangibleObjectMenuComponent",
 	templateType = MISSIONTERMINAL,
 	missionTerminalType = "rebel"
 
