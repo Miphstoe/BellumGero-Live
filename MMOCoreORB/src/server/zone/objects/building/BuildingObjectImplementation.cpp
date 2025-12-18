@@ -916,7 +916,9 @@ void BuildingObjectImplementation::onEnter(CreatureObject* player) {
 	if (getZone() == nullptr)
 		return;
 
-	addTemplateSkillMods(player);
+	// Don't add skill mods here - CellObjectImplementation::insertObject already handles it
+	// and does it correctly (only adds when first entering the building, not when changing cells)
+	// addTemplateSkillMods(player);
 
 	Locker accessLock(&paidAccessListMutex);
 
@@ -1043,7 +1045,9 @@ void BuildingObjectImplementation::onExit(CreatureObject* player, uint64 parenti
 	if (getZone() == nullptr)
 		return;
 
-	removeTemplateSkillMods(player);
+	// Don't remove skill mods here - CellObjectImplementation::removeObject already handles it
+	// and does it correctly (only removes when truly leaving the building, not just changing cells)
+	// removeTemplateSkillMods(player);
 
 	unregisterProfessional(player);
 
