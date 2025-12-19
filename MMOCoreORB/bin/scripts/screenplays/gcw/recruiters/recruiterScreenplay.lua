@@ -471,6 +471,196 @@ function recruiterScreenplay:sendPurchaseSui(pNpc, pPlayer, screenID, gcwDiscoun
 	suiManager:sendListBox(pNpc, pPlayer, "@faction_recruiter:faction_purchase", "@faction_recruiter:select_item_purchase", 2, "@cancel", "", "@ok", "recruiterScreenplay", "handleSuiPurchase", 32, options)
 end
 
+function recruiterScreenplay:sendQuantitySui(pCreature, faction, itemString, gcwDiscount)
+	if pCreature == nil then
+		return
+	end
+
+	local pGhost = CreatureObject(pCreature):getPlayerObject()
+	if pGhost == nil then
+		CreatureObject(pCreature):sendSystemMessage("Error accessing player data. Please try again.")
+		return
+	end
+
+	local playerID = SceneObject(pCreature):getObjectID()
+
+	-- Calculate item cost with all discounts
+	local itemCost = self:getItemCost(faction, itemString)
+	if itemCost == nil then
+		CreatureObject(pCreature):sendSystemMessage("Error determining cost of item. Please post a bug report.")
+		self:cleanupQuantityData(playerID)
+		return
+	end
+
+	local bothanDiscount = 1.0
+	if CreatureObject(pCreature):getSpecies() == SPECIES_BOTHAN then
+		bothanDiscount = 0.9
+	end
+
+	local smugglerDiscount = self:getSmugglerDiscount(pCreature)
+	itemCost = math.ceil(itemCost * gcwDiscount * smugglerDiscount * bothanDiscount)
+
+	-- Get player's faction standing
+	local factionStanding = PlayerObject(pGhost):getFactionStanding(faction)
+
+	-- Calculate max affordable quantity
+	local maxAffordable = math.floor((factionStanding - self.minimumFactionStanding) / itemCost)
+
+	-- Calculate available space
+	local availableSpace = 0
+	local containerName = "inventory"
+
+	if self:isHireling(faction, itemString) then
+		local pDatapad = SceneObject(pCreature):getSlottedObject("datapad")
+		if pDatapad ~= nil then
+			availableSpace = SceneObject(pDatapad):getContainerVolumeLimit() - SceneObject(pDatapad):getCountableObjectsRecursive()
+		end
+		containerName = "datapad"
+	else
+		local pInventory = SceneObject(pCreature):getSlottedObject("inventory")
+		if pInventory ~= nil then
+			availableSpace = SceneObject(pInventory):getContainerVolumeLimit() - SceneObject(pInventory):getCountableObjectsRecursive()
+		end
+
+		-- Account for bonus items if applicable
+		local bonusItemCount = self:getBonusItemCount(faction, itemString)
+		if not self.allowPveBases then
+			bonusItemCount = 0
+		end
+
+		if bonusItemCount > 0 then
+			availableSpace = math.floor(availableSpace / (1 + bonusItemCount))
+		end
+	end
+
+	-- Determine maximum quantity (capped at 1000 to prevent abuse)
+	local maxQuantity = math.min(maxAffordable, availableSpace, 1000)
+
+	-- Error check: can't afford even one
+	if maxQuantity < 1 then
+		if maxAffordable < 1 then
+			local messageString = LuaStringIdChatParameter("@faction_recruiter:not_enough_standing_spend")
+			messageString:setDI(self.minimumFactionStanding)
+			messageString:setTO(self:toTitleCase(faction))
+			CreatureObject(pCreature):sendSystemMessage(messageString:_getObject())
+		else
+			if containerName == "datapad" then
+				CreatureObject(pCreature):sendSystemMessage("@faction_recruiter:datapad_full")
+			else
+				CreatureObject(pCreature):sendSystemMessage("@dispenser:inventory_full")
+			end
+		end
+		self:cleanupQuantityData(playerID)
+		return
+	end
+
+	-- Get item display name
+	local itemDisplayName = getStringId(self:getDisplayName(faction, itemString))
+	if itemDisplayName == nil or itemDisplayName == "" then
+		itemDisplayName = itemString
+	end
+
+	-- Build informative prompt
+	local prompt = string.format(
+		"How many %s do you wish to purchase?\n\n" ..
+		"Cost per item: %d faction points\n" ..
+		"Your faction points: %d\n" ..
+		"Maximum quantity: %d\n\n" ..
+		"Enter quantity (1-%d):",
+		itemDisplayName, itemCost, factionStanding, maxQuantity, maxQuantity
+	)
+
+	-- Create and send SUI input box
+	local sui = SuiInputBox.new("recruiterScreenplay", "handleQuantityCallback")
+	sui.setTitle("Purchase Quantity")
+	sui.setPrompt(prompt)
+	sui.setOkButtonText("@ok")
+	sui.setCancelButtonText("@cancel")
+
+	sui.sendTo(pCreature)
+end
+
+function recruiterScreenplay:cleanupQuantityData(playerID)
+	deleteStringData(playerID .. ":faction_purchase_item")
+	deleteStringData(playerID .. ":faction_purchase_faction")
+	deleteData(playerID .. ":faction_purchase_gcw")
+end
+
+function recruiterScreenplay:handleQuantityCallback(pCreature, pSui, eventIndex, args)
+	local cancelPressed = (eventIndex == 1)
+
+	if pCreature == nil then
+		return
+	end
+
+	local playerID = SceneObject(pCreature):getObjectID()
+
+	-- Retrieve stored context
+	local itemString = readStringData(playerID .. ":faction_purchase_item")
+	local faction = readStringData(playerID .. ":faction_purchase_faction")
+	local gcwDiscount = readData(playerID .. ":faction_purchase_gcw")
+
+	-- Clean up stored data
+	self:cleanupQuantityData(playerID)
+
+	-- Handle cancel
+	if cancelPressed then
+		return
+	end
+
+	-- Validate input exists
+	if args == nil or args == "" then
+		CreatureObject(pCreature):sendSystemMessage("Invalid quantity. Please try again.")
+		return
+	end
+
+	-- Parse quantity
+	local quantity = tonumber(args)
+
+	if quantity == nil or quantity < 1 then
+		CreatureObject(pCreature):sendSystemMessage("Invalid quantity. Please enter a number greater than 0.")
+		return
+	end
+
+	if quantity > 1000 then
+		CreatureObject(pCreature):sendSystemMessage("Maximum quantity is 1000 items per purchase.")
+		return
+	end
+
+	-- Round to integer
+	quantity = math.floor(quantity)
+
+	-- Route to appropriate award function with quantity parameter
+	local awardResult
+	if self:isHireling(faction, itemString) then
+		awardResult = self:awardData(pCreature, faction, itemString, gcwDiscount, quantity)
+	else
+		awardResult = self:awardItem(pCreature, faction, itemString, gcwDiscount, quantity)
+	end
+
+	-- Handle error codes (same as original handleSuiPurchase)
+	if awardResult == self.errorCodes.SUCCESS then
+		return
+	elseif awardResult == self.errorCodes.INVENTORYFULL then
+		CreatureObject(pCreature):sendSystemMessage("@dispenser:inventory_full")
+	elseif awardResult == self.errorCodes.DATAPADFULL then
+		CreatureObject(pCreature):sendSystemMessage("@faction_recruiter:datapad_full")
+	elseif awardResult == self.errorCodes.TOOMANYHIRELINGS then
+		CreatureObject(pCreature):sendSystemMessage("@faction_recruiter:too_many_hirelings")
+	elseif awardResult == self.errorCodes.NOTENOUGHFACTION then
+		local messageString = LuaStringIdChatParameter("@faction_recruiter:not_enough_standing_spend")
+		messageString:setDI(self.minimumFactionStanding)
+		messageString:setTO(self:toTitleCase(faction))
+		CreatureObject(pCreature):sendSystemMessage(messageString:_getObject())
+	elseif awardResult == self.errorCodes.ITEMCOST then
+		CreatureObject(pCreature):sendSystemMessage("Error determining cost of item. Please post a bug report regarding the item you attempted to purchase.")
+	elseif awardResult == self.errorCodes.INVENTORYERROR or awardResult == self.DATAPADERROR then
+		CreatureObject(pCreature):sendSystemMessage("Error finding location to put item. Please post a report.")
+	elseif awardResult == self.errorCodes.TEMPLATEPATHERROR then
+		CreatureObject(pCreature):sendSystemMessage("Error determining data for item. Please post a bug report regarding the item you attempted to purchase..")
+	end
+end
+
 function recruiterScreenplay:handleSuiPurchase(pCreature, pSui, eventIndex, arg0)
 	local cancelPressed = (eventIndex == 1)
 
@@ -504,39 +694,40 @@ function recruiterScreenplay:handleSuiPurchase(pCreature, pSui, eventIndex, arg0
 
 	local awardResult = nil
 
-	if (self:isHireling(faction, itemString)) then
-		awardResult = self:awardData(pCreature, faction, itemString, gcwDiscount)
-	elseif (self:isSchematic(faction, itemString)) then
+	if (self:isSchematic(faction, itemString)) then
+		-- Schematics: no quantity support, use existing behavior
 		awardResult = self:awardSchematic(pCreature, faction, itemString, gcwDiscount)
-	else
-		awardResult = self:awardItem(pCreature, faction, itemString, gcwDiscount)
-	end
 
-	if (awardResult == self.errorCodes.SUCCESS) then
-		return
-	elseif (awardResult == self.errorCodes.INVENTORYFULL) then
-		CreatureObject(pCreature):sendSystemMessage("@dispenser:inventory_full") -- Your inventory is full. You must make some room before you can purchase.
-	elseif (awardResult == self.errorCodes.DATAPADFULL) then
-		CreatureObject(pCreature):sendSystemMessage("@faction_recruiter:datapad_full") -- Your datapad is full. You must first free some space.
-	elseif (awardResult == self.errorCodes.TOOMANYHIRELINGS) then
-		CreatureObject(pCreature):sendSystemMessage("@faction_recruiter:too_many_hirelings") -- You already have too much under your command.
-	elseif (awardResult == self.errorCodes.NOTENOUGHFACTION) then
-		local messageString = LuaStringIdChatParameter("@faction_recruiter:not_enough_standing_spend")
-		messageString:setDI(self.minimumFactionStanding)
-		messageString:setTO(self:toTitleCase(faction))
-		CreatureObject(pCreature):sendSystemMessage(messageString:_getObject()) -- You do not have enough faction standing to spend. You must maintain at least %DI to remain part of the %TO faction.
-	elseif (awardResult == self.errorCodes.ITEMCOST) then
-		CreatureObject(pCreature):sendSystemMessage("Error determining cost of item. Please post a bug report regarding the item you attempted to purchase.")
-	elseif (awardResult == self.errorCodes.INVENTORYERROR or awardResult == self.DATAPADERROR) then
-		CreatureObject(pCreature):sendSystemMessage("Error finding location to put item. Please post a report.")
-	elseif (awardResult == self.errorCodes.TEMPLATEPATHERROR) then
-		CreatureObject(pCreature):sendSystemMessage("Error determining data for item. Please post a bug report regarding the item you attempted to purchase..")
-	elseif (awardResult == self.errorCodes.SCHEMATICERROR) then
-		CreatureObject(pCreature):sendSystemMessage("@loot_schematic:already_have_schematic")
+		-- Handle schematic errors immediately
+		if (awardResult == self.errorCodes.SUCCESS) then
+			return
+		elseif (awardResult == self.errorCodes.NOTENOUGHFACTION) then
+			local messageString = LuaStringIdChatParameter("@faction_recruiter:not_enough_standing_spend")
+			messageString:setDI(self.minimumFactionStanding)
+			messageString:setTO(self:toTitleCase(faction))
+			CreatureObject(pCreature):sendSystemMessage(messageString:_getObject())
+		elseif (awardResult == self.errorCodes.ITEMCOST) then
+			CreatureObject(pCreature):sendSystemMessage("Error determining cost of item. Please post a bug report regarding the item you attempted to purchase.")
+		elseif (awardResult == self.errorCodes.SCHEMATICERROR) then
+			CreatureObject(pCreature):sendSystemMessage("@loot_schematic:already_have_schematic")
+		elseif (awardResult == self.errorCodes.DATAPADERROR) then
+			CreatureObject(pCreature):sendSystemMessage("Error finding location to put item. Please post a report.")
+		end
+	else
+		-- Items and hirelings: show quantity dialog
+		writeStringData(playerID .. ":faction_purchase_item", itemString)
+		writeStringData(playerID .. ":faction_purchase_faction", faction)
+		writeData(playerID .. ":faction_purchase_gcw", gcwDiscount)
+
+		self:sendQuantitySui(pCreature, faction, itemString, gcwDiscount)
+		return  -- Don't process errors yet, wait for quantity callback
 	end
 end
 
-function recruiterScreenplay:awardItem(pPlayer, faction, itemString, gcwDiscount)
+function recruiterScreenplay:awardItem(pPlayer, faction, itemString, gcwDiscount, quantity)
+	-- Default quantity to 1 for backward compatibility
+	quantity = quantity or 1
+
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
 	if (pGhost == nil) then
@@ -566,7 +757,11 @@ function recruiterScreenplay:awardItem(pPlayer, faction, itemString, gcwDiscount
 
 	itemCost = math.ceil(itemCost * gcwDiscount * smugglerDiscount * bothanDiscount)
 
-	if (factionStanding < (itemCost + self.minimumFactionStanding)) then
+	-- Calculate total cost for quantity
+	local totalCost = itemCost * quantity
+
+	-- Validate total cost
+	if (factionStanding < (totalCost + self.minimumFactionStanding)) then
 		return self.errorCodes.NOTENOUGHFACTION
 	end
 
@@ -578,37 +773,90 @@ function recruiterScreenplay:awardItem(pPlayer, faction, itemString, gcwDiscount
 		bonusItemCount = 0
 	end
 
-	if (slotsremaining < (1 + bonusItemCount)) then
+	-- Calculate total slots needed for quantity purchase
+	local slotsPerItem = 1 + bonusItemCount
+	local totalSlotsNeeded = quantity * slotsPerItem
+
+	if (slotsremaining < totalSlotsNeeded) then
 		return self.errorCodes.INVENTORYFULL
 	end
 
-	local transferResult =  self:transferItem(pPlayer, pInventory, faction, itemString)
+	-- Loop to create items
+	local successfulItems = 0
 
-	if (transferResult ~= self.errorCodes.SUCCESS) then
-		return transferResult
+	for i = 1, quantity do
+		-- Transfer main item
+		local transferResult = self:transferItem(pPlayer, pInventory, faction, itemString)
+
+		if (transferResult ~= self.errorCodes.SUCCESS) then
+			-- Partial failure: deduct points only for successful items
+			if successfulItems > 0 then
+				PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost * successfulItems)
+			end
+			return transferResult
+		end
+
+		successfulItems = successfulItems + 1
+
+		-- Transfer bonus items if applicable
+		if bonusItemCount > 0 then
+			local bonusItems = self:getBonusItems(faction, itemString)
+			if bonusItems ~= nil then
+				for k, v in pairs(bonusItems) do
+					transferResult = self:transferItem(pPlayer, pInventory, faction, v)
+					if (transferResult ~= self.errorCodes.SUCCESS) then
+						-- Deduct for completed items so far
+						PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost * successfulItems)
+						return transferResult
+					end
+				end
+			end
+		end
 	end
 
-	PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost)
+	-- All items created successfully: deduct total cost
+	PlayerObject(pGhost):decreaseFactionStanding(faction, totalCost)
 
-	local messageString = LuaStringIdChatParameter("@faction_recruiter:item_purchase_complete") -- Your requisition of %TT is complete.
-	messageString:setTT(self:getDisplayName(faction, itemString))
-	CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	-- Show appropriate message based on quantity
+	local messageString
+	if quantity == 1 then
+		messageString = LuaStringIdChatParameter("@faction_recruiter:item_purchase_complete")
+		messageString:setTT(self:getDisplayName(faction, itemString))
+	else
+		-- For multiple items, show quantity in message
+		local itemDisplayName = getStringId(self:getDisplayName(faction, itemString))
+		if itemDisplayName == nil or itemDisplayName == "" then
+			itemDisplayName = itemString
+		end
+		messageString = string.format("Your requisition of %d %s is complete.", quantity, itemDisplayName)
+		CreatureObject(pPlayer):sendSystemMessage(messageString)
+		messageString = nil  -- Set to nil so we don't send it again below
+	end
 
-	if bonusItemCount then
+	if messageString ~= nil then
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	end
+
+	-- Bonus item notification (only show once, not per item)
+	if bonusItemCount > 0 then
 		local bonusItems = self:getBonusItems(faction, itemString)
 		if bonusItems ~= nil then
-			messageString = LuaStringIdChatParameter("@faction_perk:given_extra_bases") -- Congratulations! In addition to the base that you purchased, we have given you two additional bases. They are:
+			messageString = LuaStringIdChatParameter("@faction_perk:given_extra_bases")
 			CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
 
+			-- List each bonus item type once
+			local listedBonuses = {}
 			for k, v in pairs(bonusItems) do
-				transferResult = self:transferItem(pPlayer, pInventory, faction, v)
-				if(transferResult ~= self.errorCodes.SUCCESS) then
-					return transferResult
+				if not listedBonuses[v] then
+					messageString = LuaStringIdChatParameter("@faction_perk:bonus_base_name")
+					messageString:setTO(self:getDisplayName(faction, v))
+					CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+					listedBonuses[v] = true
 				end
+			end
 
-				messageString = LuaStringIdChatParameter("@faction_perk:bonus_base_name") -- You received a: %TO
-				messageString:setTO(self:getDisplayName(faction, v))
-				CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+			if quantity > 1 then
+				CreatureObject(pPlayer):sendSystemMessage(string.format("(You received %d bonus items for each main item purchased.)", bonusItemCount))
 			end
 		end
 	end
@@ -685,7 +933,10 @@ function recruiterScreenplay:awardSchematic(pPlayer, faction, itemString, gcwDis
 	return self.errorCodes.SUCCESS
 end
 
-function recruiterScreenplay:awardData(pPlayer, faction, itemString, gcwDiscount)
+function recruiterScreenplay:awardData(pPlayer, faction, itemString, gcwDiscount, quantity)
+	-- Default quantity to 1 for backward compatibility
+	quantity = quantity or 1
+
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
 	if (pGhost == nil) then
@@ -707,39 +958,79 @@ function recruiterScreenplay:awardData(pPlayer, faction, itemString, gcwDiscount
 
 	itemCost = math.ceil(itemCost * gcwDiscount * self:getSmugglerDiscount(pPlayer))
 
-	if factionStanding < (itemCost + self.minimumFactionStanding) then
+	-- Calculate total cost for quantity
+	local totalCost = itemCost * quantity
+
+	-- Validate total cost
+	if factionStanding < (totalCost + self.minimumFactionStanding) then
 		return self.errorCodes.NOTENOUGHFACTION
 	end
 
 	local slotsRemaining = SceneObject(pDatapad):getContainerVolumeLimit() - SceneObject(pDatapad):getCountableObjectsRecursive()
 	local bonusItemCount = self:getBonusItemCount(faction, itemString)
 
-	if (slotsRemaining < (1 + bonusItemCount)) then
+	-- Calculate total slots needed for quantity purchase
+	local slotsPerItem = 1 + bonusItemCount
+	local totalSlotsNeeded = quantity * slotsPerItem
+
+	if (slotsRemaining < totalSlotsNeeded) then
 		return self.errorCodes.DATAPADFULL
 	end
 
-	local transferResult = self:transferData(pPlayer, pDatapad, faction, itemString)
+	-- Loop to create hirelings
+	local successfulItems = 0
 
-	if(transferResult ~= self.errorCodes.SUCCESS) then
-		return transferResult
-	end
+	for i = 1, quantity do
+		-- Transfer main hireling
+		local transferResult = self:transferData(pPlayer, pDatapad, faction, itemString)
 
-	PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost)
+		if (transferResult ~= self.errorCodes.SUCCESS) then
+			-- Partial failure: deduct points only for successful items
+			if successfulItems > 0 then
+				PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost * successfulItems)
+			end
+			return transferResult
+		end
 
-	local messageString = LuaStringIdChatParameter("@faction_recruiter:hireling_purchase_complete") -- The %TT is now under your command.
-	messageString:setTT(self:getDisplayName(faction, itemString))
-	CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+		successfulItems = successfulItems + 1
 
-	if bonusItemCount then
-		local bonusItems = self:getBonusItems(faction, itemString)
-		if bonusItems ~= nil then
-			for k, v in pairs(bonusItems) do
-				transferResult = self:transferData(pPlayer, pDatapad, faction, v)
-				if (transferResult ~= self.errorCodes.SUCCESS) then
-					return transferResult
+		-- Transfer bonus items if applicable
+		if bonusItemCount > 0 then
+			local bonusItems = self:getBonusItems(faction, itemString)
+			if bonusItems ~= nil then
+				for k, v in pairs(bonusItems) do
+					transferResult = self:transferData(pPlayer, pDatapad, faction, v)
+					if (transferResult ~= self.errorCodes.SUCCESS) then
+						-- Deduct for completed items so far
+						PlayerObject(pGhost):decreaseFactionStanding(faction, itemCost * successfulItems)
+						return transferResult
+					end
 				end
 			end
 		end
+	end
+
+	-- All hirelings created successfully: deduct total cost
+	PlayerObject(pGhost):decreaseFactionStanding(faction, totalCost)
+
+	-- Show appropriate message based on quantity
+	local messageString
+	if quantity == 1 then
+		messageString = LuaStringIdChatParameter("@faction_recruiter:hireling_purchase_complete")
+		messageString:setTT(self:getDisplayName(faction, itemString))
+	else
+		-- For multiple hirelings, show quantity in message
+		local itemDisplayName = getStringId(self:getDisplayName(faction, itemString))
+		if itemDisplayName == nil or itemDisplayName == "" then
+			itemDisplayName = itemString
+		end
+		messageString = string.format("%d %s are now under your command.", quantity, itemDisplayName)
+		CreatureObject(pPlayer):sendSystemMessage(messageString)
+		messageString = nil  -- Set to nil so we don't send it again below
+	end
+
+	if messageString ~= nil then
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
 	end
 
 	return self.errorCodes.SUCCESS
