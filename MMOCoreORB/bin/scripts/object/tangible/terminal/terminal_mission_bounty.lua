@@ -44,6 +44,7 @@
 object_tangible_terminal_terminal_mission_bounty = object_tangible_terminal_shared_terminal_mission_bounty:new {
 	planetMapCategory = "terminal",
 	planetMapSubCategory = "terminal_mission",
+	objectMenuComponent = "TangibleObjectMenuComponent",
 	templateType = MISSIONTERMINAL,
 	missionTerminalType = "bounty"
 }
