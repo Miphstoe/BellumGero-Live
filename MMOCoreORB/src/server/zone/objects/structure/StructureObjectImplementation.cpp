@@ -745,7 +745,9 @@ void StructureObjectImplementation::removeTemplateSkillMods(TangibleObject* targ
 		targetObject->removeSkillMod(SkillModManager::STRUCTURE, entry.getKey(), entry.getValue());
 	}
 
-	SkillModManager::instance()->verifyStructureSkillMods(targetObject);
+	// Don't verify after removal - player is leaving the structure, so proper value will be 0
+	// and verifyStructureSkillMods would incorrectly try to correct any remaining mods
+	// SkillModManager::instance()->verifyStructureSkillMods(targetObject);
 }
 
 bool StructureObjectImplementation::isCivicStructure() const {
