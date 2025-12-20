@@ -11,6 +11,7 @@
 #include "server/zone/objects/ship/PobShipObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
+#include "server/zone/objects/tangible/components/TangibleObjectMenuComponent.h"
 
 void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	//All objects in a cell can be picked up, if the player is on the structures permission list.
@@ -24,9 +25,8 @@ void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 
 	ManagedReference<SceneObject*> rootParent = sceneObject->getRootParent();
 
-	if (rootParent == nullptr) {
+	if (rootParent == nullptr)
 		return;
-	}
 
 	bool checkPermissions = false;
 
@@ -45,6 +45,14 @@ void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 
 		if (pobShip != nullptr && (pobShip->isOnAdminList(player) || pobShip->getOwnerID() == player->getObjectID()))
 			checkPermissions = true;
+	}
+
+	// Add rename option for decorative objects (works for inventory AND structures)
+	if (sceneObject->isTangibleObject()) {
+		TangibleObject* tano = cast<TangibleObject*>(sceneObject);
+		if (tano != nullptr && tano->isDecorativeObject() && TangibleObjectMenuComponent::hasRenamePermission(player, tano)) {
+			menuResponse->addRadialMenuItem(50, 3, "@base_player:set_name"); // Set Name
+		}
 	}
 
 	if (!checkPermissions)
@@ -84,6 +92,16 @@ int ObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 		//String actionName = "transferitemmisc";
 		//player->executeObjectControllerAction(actionName.hashCode(), getObjectID(), "");
 		//transferitem
+		break;
+	}
+	case 50: // Rename decorative object
+	{
+		if (sceneObject->isTangibleObject()) {
+			TangibleObject* tano = cast<TangibleObject*>(sceneObject);
+			if (tano != nullptr && tano->isDecorativeObject() && TangibleObjectMenuComponent::hasRenamePermission(player, tano)) {
+				TangibleObjectMenuComponent::promptRenameObject(player, tano);
+			}
+		}
 		break;
 	}
 	}

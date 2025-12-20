@@ -11,6 +11,18 @@
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h"
 #include "server/zone/managers/radial/RadialOptions.h"
 
+namespace server {
+ namespace zone {
+  namespace objects {
+   namespace tangible {
+    class TangibleObject;
+   }
+  }
+ }
+}
+
+using namespace server::zone::objects::tangible;
+
 class TangibleObjectMenuComponent : public ObjectMenuComponent {
 public:
 
@@ -31,6 +43,21 @@ public:
 	 * @returns 0 if successfull
 	 */
 	virtual int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const;
+
+	/**
+	 * Checks if the player has permission to rename the given object
+	 * @param player The player attempting to rename
+	 * @param object The tangible object being renamed
+	 * @returns true if player has permission (object in inventory or admin in structure)
+	 */
+	static bool hasRenamePermission(CreatureObject* player, TangibleObject* object);
+
+	/**
+	 * Prompts the player with a rename dialog for the given object
+	 * @param player The player to show the dialog to
+	 * @param object The tangible object to rename
+	 */
+	static void promptRenameObject(CreatureObject* player, TangibleObject* object);
 
 };
 

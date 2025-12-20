@@ -542,6 +542,9 @@ class TangibleObject extends SceneObject {
 	}
 
 	@local
+	public native boolean isDecorativeObject();
+
+	@local
 	@dirty
 	public CustomizationVariables getCustomizationVariables() {
 		return customizationVariables;

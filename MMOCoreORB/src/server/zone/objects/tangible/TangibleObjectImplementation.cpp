@@ -1880,6 +1880,15 @@ bool TangibleObjectImplementation::isNeutral() const {
 	return faction == Factions::FACTIONNEUTRAL;
 }
 
+bool TangibleObjectImplementation::isDecorativeObject() {
+	String templatePath = getObjectTemplate()->getTemplateFileName();
+	uint32 gameType = getGameObjectType();
+
+	return (templatePath.contains("/furniture/") ||
+			templatePath.contains("/painting/") ||
+			gameType == SceneObjectType::FURNITURE);
+}
+
 void TangibleObjectImplementation::setDisabled(bool disabled) {
 	if (disabled)
 		setOptionBit(OptionBitmask::DISABLED, true);

@@ -1433,6 +1433,13 @@ void SceneObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuR
 
 int SceneObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
 	if (objectMenuComponent == nullptr) {
+		// Fallback: Use ObjectMenuComponent for tangible objects in cells
+		ManagedReference<SceneObject*> parentObject = getParent().get();
+		if (isTangibleObject() && parentObject != nullptr && parentObject->isCellObject()) {
+			ObjectMenuComponent defaultComponent;
+			return defaultComponent.handleObjectMenuSelect(asSceneObject(), player, selectedID);
+		}
+
 		error("no object menu component set for " + templateObject->getTemplateFileName());
 
 		return 1;
