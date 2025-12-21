@@ -81,7 +81,7 @@ int InstrumentImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 
 	if (player->isPlayingMusic()) {
 		player->executeObjectControllerAction(STRING_HASHCODE("stopmusic"), getObjectID(), "");
-	} else if (isActiveInstrument(player) && !player->isPlayingMusic()) {
+	} else if ((isActiveInstrument(player) || (isUnequippable() && isInWorld)) && !player->isPlayingMusic()) {
 		if (isInWorld && isUnequippable()) {
 			if (isOwnedByPlayer) {
 				initializePosition(player->getPositionX(), player->getPositionZ(), player->getPositionY());

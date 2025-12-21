@@ -219,26 +219,33 @@ int PerformanceManager::getMatchingPerformanceIndex(int performanceIndex, int in
 	return 0;
 }
 
-void PerformanceManager::sendAvailablePerformances(CreatureObject* player, int performanceType, bool bandCommand) {
+void PerformanceManager::sendAvailablePerformances(CreatureObject* player, int performanceType, bool bandCommand, Instrument* instrument) {
 	Reference<PlayerObject*> ghost = player->getPlayerObject();
 
 	if (ghost == nullptr)
 		return;
 
-	Reference<Instrument*> instrument = player->getPlayableInstrument();
+	// Use provided instrument if available, otherwise try to get equipped instrument
+	Reference<Instrument*> instrumentRef = instrument;
+	if (instrumentRef == nullptr) {
+		instrumentRef = player->getPlayableInstrument();
+	}
 
-	if (performanceType == PerformanceType::MUSIC && instrument == nullptr) {
+	if (performanceType == PerformanceType::MUSIC && instrumentRef == nullptr) {
 		performanceMessageToSelf(player, nullptr, "performance", "music_no_instrument"); // You must have an instrument equipped to play music.
 		return;
 	}
 
 	int instrumentType = 0;
+	uint64 instrumentObjectID = 0;
 
-	if (instrument != nullptr)
-		instrumentType = instrument->getInstrumentType();
+	if (instrumentRef != nullptr) {
+		instrumentType = instrumentRef->getInstrumentType();
+		instrumentObjectID = instrumentRef->getObjectID();
+	}
 
 	Reference<SuiListBox*> sui = new SuiListBox(player, SuiWindowType::PERFORMANCE_SELECT);
-	sui->setCallback(new SelectPerformanceSuiCallback(player->getZoneServer(), performanceType, bandCommand));
+	sui->setCallback(new SelectPerformanceSuiCallback(player->getZoneServer(), performanceType, bandCommand, instrumentObjectID));
 
 	if (performanceType == PerformanceType::DANCE) {
 		sui->setPromptTitle("@performance:available_dances");
