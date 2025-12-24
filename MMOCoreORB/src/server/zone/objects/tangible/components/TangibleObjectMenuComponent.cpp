@@ -9,6 +9,10 @@
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/player/sui/callbacks/RenameDecorativeObjectCallback.h"
+#include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
+#include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/objects/guild/GuildObject.h"
 
 void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	ObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
@@ -58,6 +62,11 @@ void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 	if (parent != nullptr && parent->getGameObjectType() == SceneObjectType::STATICLOOTCONTAINER) {
 		menuResponse->addRadialMenuItem(10, 3, "@ui_radial:item_pickup"); //Pick up
 	}
+
+	// Add rename option for decorative objects
+	if (tano->isDecorativeObject() && hasRenamePermission(player, tano)) {
+		menuResponse->addRadialMenuItem(50, 3, "@base_player:set_name"); // Set Name
+	}
 }
 
 int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
@@ -105,8 +114,71 @@ int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 		}
 
 		return 0;
-	}else
-		return ObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
+	} else if (selectedID == 50 && tano->isDecorativeObject()) { // Rename decorative object
+		if (hasRenamePermission(player, tano)) {
+			promptRenameObject(player, tano);
+			return 0;
+		}
+	}
 
+	return ObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
+}
+
+bool TangibleObjectMenuComponent::hasRenamePermission(CreatureObject* player, TangibleObject* object) {
+	if (player == nullptr || object == nullptr)
+		return false;
+
+	// Case 1: Object in player's inventory (or equipped)
+	ManagedReference<SceneObject*> playerParent = object->getParentRecursively(SceneObjectType::PLAYERCREATURE);
+
+	if (playerParent != nullptr && playerParent == player)
+		return true; // Object is owned by player
+
+	// Case 2: Object placed in a structure where player has admin rights
+	ManagedReference<SceneObject*> rootParent = object->getRootParent();
+
+	if (rootParent != nullptr && rootParent->isStructureObject()) {
+		StructureObject* structure = cast<StructureObject*>(rootParent.get());
+
+		if (structure == nullptr)
+			return false;
+
+		// Check if player is owner
+		if (structure->isOwnerOf(player))
+			return true;
+
+		// Check if player has ADMIN permission
+		uint64 playerID = player->getObjectID();
+		if (structure->isOnAdminList(playerID))
+			return true;
+
+		// Check if player's guild has ADMIN permission
+		ManagedReference<GuildObject*> guild = player->getGuildObject().get();
+		if (guild != nullptr && structure->isOnAdminList(guild->getObjectID()))
+			return true;
+	}
+
+	return false;
+}
+
+void TangibleObjectMenuComponent::promptRenameObject(CreatureObject* player, TangibleObject* object) {
+	if (player == nullptr || object == nullptr)
+		return;
+
+	auto ghost = player->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	ManagedReference<SuiInputBox*> inputBox = new SuiInputBox(player, SuiWindowType::OBJECT_NAME);
+
+	inputBox->setPromptTitle("@sui:set_name_title");
+	inputBox->setPromptText("@sui:set_name_prompt");
+	inputBox->setUsingObject(object);
+	inputBox->setMaxInputSize(255);
+	inputBox->setDefaultInput(object->getCustomObjectName().toString());
+	inputBox->setCallback(new RenameDecorativeObjectCallback(player->getZoneServer()));
+
+	ghost->addSuiBox(inputBox);
+	player->sendMessage(inputBox->generateMessage());
 }
 
