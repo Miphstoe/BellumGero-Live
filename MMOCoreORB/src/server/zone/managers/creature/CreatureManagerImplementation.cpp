@@ -17,6 +17,7 @@
 #include "server/zone/managers/faction/FactionManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/loot/LootManager.h"
+#include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 #include "server/zone/objects/creature/ai/Creature.h"
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -668,6 +669,53 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 						factionManager->awardFactionStanding(player, destructedObject->getFactionString(), level);
 					else
 						factionManager->awardFactionStanding(copyThreatMap.getHighestDamagePlayer(), destructedObject->getFactionString(), level);
+				}
+
+				// Award Force Rank System (FRS) experience for Dark Jedi and Force-sensitive NPC kills
+				if (!destructedObject->isEventMob() && destructedObject->getCreatureTemplate() != nullptr) {
+					String templateName = destructedObject->getCreatureTemplate()->getTemplateName();
+					int frsExperience = 0;
+
+					// Check if killed creature is a Dark Jedi or Force-sensitive NPC and award appropriate FRS XP
+					// Handles both wild spawns and mission variants (bh_dark_adept, etc.)
+					if (templateName == "dark_jedi_master") {
+						frsExperience = 150;
+					} else if (templateName == "singing_mountain_clan_councilwoman") {
+						frsExperience = 125;
+					} else if (templateName == "nightsister_elder") {
+						frsExperience = 125;
+					} else if (templateName == "dark_jedi_knight") {
+						frsExperience = 100;
+					} else if (templateName == "dark_adept" || templateName == "bh_dark_adept") {
+						frsExperience = 50;
+					}
+
+					// Award FRS experience to player or group members
+					if (frsExperience > 0) {
+						FrsManager* frsManager = zoneServer->getFrsManager();
+						if (frsManager != nullptr) {
+							if (player->isGrouped()) {
+								ManagedReference<GroupObject*> group = player->getGroup();
+								if (group != nullptr) {
+									for (int i = 0; i < group->getGroupSize(); i++) {
+										ManagedReference<CreatureObject*> groupMember = group->getGroupMember(i);
+										if (groupMember != nullptr && groupMember->isPlayerCreature()) {
+											PlayerObject* ghost = groupMember->getPlayerObject();
+											if (ghost != nullptr && ghost->isJedi()) {
+												Locker locker(groupMember, destructedObject);
+												frsManager->adjustFrsExperience(groupMember, frsExperience, true);
+											}
+										}
+									}
+								}
+							} else {
+								PlayerObject* ghost = player->getPlayerObject();
+								if (ghost != nullptr && ghost->isJedi()) {
+									frsManager->adjustFrsExperience(player, frsExperience, true);
+								}
+							}
+						}
+					}
 				}
 			}
 
