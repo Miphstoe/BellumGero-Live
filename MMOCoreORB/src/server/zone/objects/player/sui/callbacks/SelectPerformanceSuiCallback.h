@@ -6,11 +6,13 @@
 class SelectPerformanceSuiCallback : public SuiCallback {
 	int performanceType;
 	bool bandCommand;
+	uint64 instrumentID;
 public:
-	SelectPerformanceSuiCallback(ZoneServer* server, int type, bool bandCmd)
+	SelectPerformanceSuiCallback(ZoneServer* server, int type, bool bandCmd, uint64 instrID = 0)
 		: SuiCallback(server) {
 		performanceType = type;
 		bandCommand = bandCmd;
+		instrumentID = instrID;
 
 	}
 
@@ -37,14 +39,14 @@ public:
 		if (performanceType == PerformanceType::MUSIC) {
 			if (player->isPlayingMusic()) {
 				if (bandCommand)
-					player->executeObjectControllerAction(STRING_HASHCODE("changebandmusic"), 0, performanceName);
+					player->executeObjectControllerAction(STRING_HASHCODE("changebandmusic"), instrumentID, performanceName);
 				else
-					player->executeObjectControllerAction(STRING_HASHCODE("changemusic"), 0, performanceName);
+					player->executeObjectControllerAction(STRING_HASHCODE("changemusic"), instrumentID, performanceName);
 			} else {
 				if (bandCommand)
-					player->executeObjectControllerAction(STRING_HASHCODE("startband"), 0, performanceName);
+					player->executeObjectControllerAction(STRING_HASHCODE("startband"), instrumentID, performanceName);
 				else
-					player->executeObjectControllerAction(STRING_HASHCODE("startmusic"), 0, performanceName);
+					player->executeObjectControllerAction(STRING_HASHCODE("startmusic"), instrumentID, performanceName);
 			}
 		} else if (performanceType == PerformanceType::DANCE) {
 			if (player->isDancing()) {

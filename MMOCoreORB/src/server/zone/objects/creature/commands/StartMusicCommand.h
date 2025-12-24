@@ -52,7 +52,23 @@ public:
 			return GENERALERROR;
 		}
 
-		Reference<Instrument*> instrument = creature->getPlayableInstrument();
+		Reference<Instrument*> instrument = nullptr;
+
+		// Check if target is a placed instrument (Nalargon/Omni box)
+		if (target != 0) {
+			ZoneServer* zoneServer = creature->getZoneServer();
+			if (zoneServer != nullptr) {
+				ManagedReference<SceneObject*> targetObject = zoneServer->getObject(target);
+				if (targetObject != nullptr && targetObject->isInstrument()) {
+					instrument = targetObject.castTo<Instrument*>();
+				}
+			}
+		}
+
+		// If no target instrument, try to get equipped instrument
+		if (instrument == nullptr) {
+			instrument = creature->getPlayableInstrument();
+		}
 
 		if (instrument == nullptr) {
 			creature->sendSystemMessage("@performance:music_no_instrument"); // You must have an instrument equipped to play music.
@@ -96,7 +112,7 @@ public:
 
 		if (!activeBandSong) {
 			if (songToPlay.length() < 1) {
-				performanceManager->sendAvailablePerformances(creature, PerformanceType::MUSIC, false);
+				performanceManager->sendAvailablePerformances(creature, PerformanceType::MUSIC, false, instrument);
 				return SUCCESS;
 			}
 

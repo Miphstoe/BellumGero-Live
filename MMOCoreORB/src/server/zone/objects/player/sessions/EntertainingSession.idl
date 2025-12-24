@@ -35,6 +35,9 @@ class EntertainingSession extends Facade {
 
 	protected int performanceIndex;
 
+	@weakReference
+	protected Instrument activeInstrument;
+
 	protected int flourishXp;
 	protected int oldFlourishXp;
 	protected int healingXp;
@@ -54,6 +57,7 @@ class EntertainingSession extends Facade {
 		performanceIndex = 0;
 
 		observer = null;
+		activeInstrument = null;
 
 		acceptingBandFlourishes = true;
 		performingOutro = false;

@@ -49,7 +49,12 @@ void EntertainingSessionImplementation::doEntertainerPatronEffects() {
 	if (performance == nullptr)
 		return;
 
-	ManagedReference<Instrument*> instrument = creo->getPlayableInstrument();
+	// Use stored activeInstrument for placed instruments (Nalargon/Omni box), otherwise get equipped instrument
+	ManagedReference<Instrument*> instrument = activeInstrument;
+
+	if (instrument == nullptr) {
+		instrument = creo->getPlayableInstrument();
+	}
 
 	float woundHealingSkill = 0.0f;
 	float playerShockHealingSkill = 0.0f;
@@ -253,7 +258,12 @@ void EntertainingSessionImplementation::doPerformanceAction() {
 	if (performance == nullptr)
 		return;
 
-	ManagedReference<Instrument*> instrument = entertainer->getPlayableInstrument();
+	// Use stored activeInstrument for placed instruments (Nalargon/Omni box), otherwise get equipped instrument
+	ManagedReference<Instrument*> instrument = activeInstrument;
+
+	if (instrument == nullptr) {
+		instrument = entertainer->getPlayableInstrument();
+	}
 
 	if (!isDancing() && (!isPlayingMusic() || !instrument)) {
 		cancelSession();
@@ -288,6 +298,7 @@ void EntertainingSessionImplementation::stopPlaying() {
     if (!isPlayingMusic())
         return;
     performanceIndex = 0;
+    activeInstrument = nullptr;
     entertainer->setListenToID(0);
     entertainer->dropObserver(ObserverEventType::POSTURECHANGED, observer);
     entertainer->setPosture(CreaturePosture::UPRIGHT, true, true);
@@ -488,6 +499,7 @@ void EntertainingSessionImplementation::startPlayingMusic(int perfIndex, Instrum
 	}
 
 	performanceIndex = perfIndex;
+	activeInstrument = instrument;
 
 	PerformanceManager* performanceManager = SkillManager::instance()->getPerformanceManager();
 	Performance* performance = performanceManager->getPerformanceFromIndex(performanceIndex);
@@ -1003,7 +1015,12 @@ void EntertainingSessionImplementation::increaseEntertainerBuff(CreatureObject* 
     if (performance == nullptr)
         return;
 
-    ManagedReference<Instrument*> instrument = entertainer->getPlayableInstrument();
+    // Use stored activeInstrument for placed instruments (Nalargon/Omni box), otherwise get equipped instrument
+    ManagedReference<Instrument*> instrument = activeInstrument;
+
+    if (instrument == nullptr) {
+        instrument = entertainer->getPlayableInstrument();
+    }
 
     if (performanceIndex == 0)
         return;

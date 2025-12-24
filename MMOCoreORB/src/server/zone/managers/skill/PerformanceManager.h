@@ -46,7 +46,7 @@ public:
 
 	String getDanceAnimation(int performanceIndex);
 
-	void sendAvailablePerformances(CreatureObject* player, int performanceType, bool bandCommand);
+	void sendAvailablePerformances(CreatureObject* player, int performanceType, bool bandCommand, Instrument* instrument = nullptr);
 
 	bool canPlaySong(CreatureObject* player, const String& name);
 	bool canPlaySong(CreatureObject* player, int performanceIndex);
