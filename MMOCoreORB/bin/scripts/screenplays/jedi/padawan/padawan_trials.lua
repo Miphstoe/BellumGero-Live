@@ -283,7 +283,8 @@ function PadawanTrials:startPhase(pPlayer, phase)
 		end
 	end
 
-	-- Register global kill observer for PvE points
+	-- Drop any existing observer to prevent duplicates, then register new one
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
 	-- Start trivia questions
@@ -398,10 +399,10 @@ function PadawanTrials:startHuntingPhase(pPlayer, phase)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", 0)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase", phase)
 
-	-- Register global kill observer for PvE points (if not already registered)
+	-- Drop any existing observer to prevent duplicates, then register new one
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
-	-- Observer already created in startPhase, so kills will be tracked
 	CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].hunting_progress)
 end
 
@@ -411,7 +412,8 @@ function PadawanTrials:resumeHuntingPhase(pPlayer, phase)
 		return
 	end
 
-	-- Re-register the kill observer (in case it was lost during logout)
+	-- Drop any existing observer to prevent duplicates, then re-register
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
 	-- Preserve the phase status and hunting phase data
@@ -736,6 +738,8 @@ function PadawanTrials:onPlayerLoggedIn(pPlayer)
 
 	-- If player is in hunting phase, re-register the kill observer
 	if (startedTrials == 1 and phaseStatus == "hunting") then
+		-- Drop any existing observer first to prevent duplicates
+		dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 		createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	end
 end
