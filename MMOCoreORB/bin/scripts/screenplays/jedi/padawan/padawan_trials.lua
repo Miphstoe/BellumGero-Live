@@ -46,7 +46,12 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 	if (phaseStatus == "awaiting_shrine") then
 		local nextPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "nextPhase"))
 		if nextPhase and nextPhase > 0 then
-			self:startPhase(pPlayer, nextPhase)
+			local sui = SuiMessageBox.new("PadawanTrials", "startNextPhaseCallback")
+			sui.setTitle("Padawan Trials - Continue")
+			sui.setPrompt("You have completed the previous phase.\n\nWould you like to begin Phase " .. nextPhase .. "?")
+			sui.setOkButtonText("Begin Phase " .. nextPhase)
+			sui.setCancelButtonText("Not Yet")
+			sui.sendTo(pPlayer)
 			return
 		end
 	end
@@ -55,20 +60,36 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 	if (phaseStatus == "hunting") then
 		local huntingPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase"))
 		if huntingPhase and huntingPhase > 0 then
-			self:resumeHuntingPhase(pPlayer, huntingPhase)
+			local currentPoints = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints")) or 0
+
+			local sui = SuiMessageBox.new("PadawanTrials", "resumeHuntingCallback")
+			sui.setTitle("Padawan Trials - Resume Hunting")
+			sui.setPrompt("You are in Phase " .. huntingPhase .. " hunting.\n\nYour progress: " .. currentPoints .. " / " .. PADAWAN_TRIALS_PHASE_POINTS .. " points\n\nYour hunting points have been preserved. Would you like to continue hunting?")
+			sui.setOkButtonText("Continue Hunting")
+			sui.setCancelButtonText("Not Yet")
+			sui.sendTo(pPlayer)
 			return
 		end
 	end
 
 	-- If player is in the middle of trials, show status
 	if (phaseStatus == "trivia" or phaseStatus == "crafting") then
-		-- If stuck in trivia, offer to reset
+		-- If stuck in trivia, offer to resume from current question
 		if phaseStatus == "trivia" then
-			local sui = SuiMessageBox.new("PadawanTrials", "triiaResetCallback")
-			sui.setTitle("Padawan Trials - Reset")
-			sui.setPrompt("You appear to be stuck in trivia mode. Would you like to reset the trials and start Phase 1 fresh?")
-			sui.setOkButtonText("Reset and Start Over")
+			local currentQuestion = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")) or 1
+			local phase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhase")) or 1
+
+			local sui = SuiMessageBox.new("PadawanTrials", "triviaResumeCallback")
+			sui.setTitle("Padawan Trials - Resume")
+			sui.setPrompt("You are in Phase " .. phase .. ", Question " .. currentQuestion .. " of 3.\n\nYour progress has been saved. Would you like to resume where you left off?\n\nNote: Your current phase, question progress, and hunting points are all preserved.")
+			sui.setOkButtonText("Resume Trials")
 			sui.setCancelButtonText("Cancel")
+			sui.setOtherButtonText("Reset All Progress")
+
+			-- Enable the Other button for reset option
+			sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
+			sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
+
 			sui.sendTo(pPlayer)
 			return
 		end
@@ -110,21 +131,94 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 	sui.sendTo(pPlayer)
 end
 
--- Handle trivia reset dialog
-function PadawanTrials:triiaResetCallback(pPlayer, pSui, eventIndex, ...)
+-- Handle trivia resume dialog
+function PadawanTrials:triviaResumeCallback(pPlayer, pSui, eventIndex, ...)
 	if (pPlayer == nil) then
 		return
 	end
 
 	-- eventIndex == 1 means Cancel button was pressed
 	if (eventIndex == 1) then
-		CreatureObject(pPlayer):sendSystemMessage("Reset cancelled.")
+		CreatureObject(pPlayer):sendSystemMessage("Resume cancelled.")
 		return
 	end
 
-	-- OK button was pressed - reset and start fresh
+	-- Check if Other button (Reset) was pressed
+	local args = {...}
+	local resetPressed = (args ~= nil and args[1] ~= nil)
+
+	if (resetPressed) then
+		-- Other button (Reset) was pressed - confirm reset with warning
+		local sui = SuiMessageBox.new("PadawanTrials", "confirmResetCallback")
+		sui.setTitle("Padawan Trials - Confirm Reset")
+		sui.setPrompt("WARNING: This will reset ALL your Padawan Trials progress!\n\nYou will lose:\n- All phase progress\n- All hunting points\n- Current question answers\n- Lightsaber crafting progress\n\nYou will have to start from Phase 1 again.\n\nAre you absolutely sure?")
+		sui.setOkButtonText("Yes, Reset Everything")
+		sui.setCancelButtonText("No, Keep My Progress")
+		sui.sendTo(pPlayer)
+		return
+	end
+
+	-- OK button was pressed - resume from current question
+	local currentQuestion = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")) or 1
+	local phase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhase")) or 1
+
+	CreatureObject(pPlayer):sendSystemMessage("Resuming Phase " .. phase .. " trials...")
+	self:presentTriviaQuestion(pPlayer, phase, currentQuestion)
+end
+
+-- Handle reset confirmation
+function PadawanTrials:confirmResetCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed (keep progress)
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("Reset cancelled. Your progress is safe.")
+		return
+	end
+
+	-- OK button was pressed - reset all progress
 	self:resetAllPadawanTrials(pPlayer)
-	CreatureObject(pPlayer):sendSystemMessage("Trials reset! Please meditate again to begin Phase 1.")
+	CreatureObject(pPlayer):sendSystemMessage("All Padawan Trials progress has been reset. Meditate at the shrine to begin Phase 1.")
+end
+
+-- Handle start next phase callback
+function PadawanTrials:startNextPhaseCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You may return to begin the next phase when ready.")
+		return
+	end
+
+	-- OK button was pressed - start next phase
+	local nextPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "nextPhase"))
+	if nextPhase and nextPhase > 0 then
+		self:startPhase(pPlayer, nextPhase)
+	end
+end
+
+-- Handle resume hunting callback
+function PadawanTrials:resumeHuntingCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You may return to continue hunting when ready. Your points are safe.")
+		return
+	end
+
+	-- OK button was pressed - resume hunting
+	local huntingPhase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase"))
+	if huntingPhase and huntingPhase > 0 then
+		self:resumeHuntingPhase(pPlayer, huntingPhase)
+	end
 end
 
 -- Handle initial dialog response
@@ -189,7 +283,8 @@ function PadawanTrials:startPhase(pPlayer, phase)
 		end
 	end
 
-	-- Register global kill observer for PvE points
+	-- Drop any existing observer to prevent duplicates, then register new one
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
 	-- Start trivia questions
@@ -241,6 +336,17 @@ function PadawanTrials:handleTriviaAnswer(pPlayer, pSui, eventIndex, args)
 		return
 	end
 
+	-- Check if dialog was cancelled (player died, went out of range, or closed it)
+	-- eventIndex == 1 means Cancel button was pressed or dialog closed
+	if (eventIndex == 1) then
+		-- Dialog was cancelled - preserve current state and allow resume
+		local questionNumber = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentQuestion")) or 1
+		local phase = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "currentPhase")) or 1
+
+		CreatureObject(pPlayer):sendSystemMessage("Trial question cancelled. Your progress has been saved. Return to the shrine to resume.")
+		-- Keep phaseStatus as "trivia" so player can resume where they left off
+		return
+	end
 
 	-- args is 0-based list index (0, 1, 2, 3 for items 1, 2, 3, 4 in the list)
 	-- Convert to 1-based answer number
@@ -293,10 +399,10 @@ function PadawanTrials:startHuntingPhase(pPlayer, phase)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "currentPhasePoints", 0)
 	writeScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase", phase)
 
-	-- Register global kill observer for PvE points (if not already registered)
+	-- Drop any existing observer to prevent duplicates, then register new one
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
-	-- Observer already created in startPhase, so kills will be tracked
 	CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].hunting_progress)
 end
 
@@ -306,7 +412,8 @@ function PadawanTrials:resumeHuntingPhase(pPlayer, phase)
 		return
 	end
 
-	-- Re-register the kill observer (in case it was lost during logout)
+	-- Drop any existing observer to prevent duplicates, then re-register
+	dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 
 	-- Preserve the phase status and hunting phase data
@@ -631,6 +738,8 @@ function PadawanTrials:onPlayerLoggedIn(pPlayer)
 
 	-- If player is in hunting phase, re-register the kill observer
 	if (startedTrials == 1 and phaseStatus == "hunting") then
+		-- Drop any existing observer first to prevent duplicates
+		dropObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 		createObserver(KILLEDCREATURE, "PadawanTrials", "notifyKilledForPoints", pPlayer)
 	end
 end
