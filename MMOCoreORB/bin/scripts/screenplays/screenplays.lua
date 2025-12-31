@@ -354,6 +354,7 @@ includeFile("events/race_droid.lua")
 includeFile("events/scheduled_event.lua")
 includeFile("events/scheduled_events_frs.lua")
 includeFile("events/tiered_scheduled_event.lua")
+includeFile("events/tiered_frs_event.lua")
 
 -- Hero of Tatooine
 includeFile("tasks/hero_of_tatooine/conversations/hermitConvoHandler.lua")
