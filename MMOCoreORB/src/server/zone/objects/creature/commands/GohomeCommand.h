@@ -111,7 +111,7 @@ public:
 		// Offset the teleport position 15 meters in front of the building (south)
 		// This helps ensure we land on the ground, not on or under the building
 		float teleportX = residenceX;
-		float teleportY = residenceY + 15.0f;  // Offset 15 meters
+		float teleportY = residenceY + 20.0f;  // Offset 20 meters
 
 		// Get the proper ground level Z coordinate at the offset position
 		float residenceZ = CollisionManager::getWorldFloorCollision(teleportX, teleportY, residenceZone, false);

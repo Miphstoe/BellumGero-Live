@@ -1063,70 +1063,9 @@ if (isWearableObject()) {
 }
 
 void TangibleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
-	// Mission terminals need TangibleObjectMenuComponent, so let parent handle them
-	// Terminals and creatures should not get move/rotate/pickup options
-	if (isMissionTerminal() || isTerminal() || isPlayerCreature() || isCreatureObject()) {
-		SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
-		return;
-	}
-
-	// Call parent implementation first
+	// Call parent implementation which delegates to the appropriate component
+	// ObjectMenuComponent handles Move/Rotate/Pickup options for objects in cells
 	SceneObjectImplementation::fillObjectMenuResponse(menuResponse, player);
-
-	// Check if this object is placed in a cell and player has permissions
-	ManagedReference<SceneObject*> parent = getParent().get();
-
-	if (parent == nullptr || !parent->isCellObject()) {
-		return;
-	}
-
-	ManagedReference<SceneObject*> rootParent = getRootParent();
-
-	if (rootParent == nullptr) {
-		return;
-	}
-
-	bool checkPermissions = false;
-
-	if (rootParent->isBuildingObject()) {
-		ManagedReference<BuildingObject*> building = rootParent.castTo<BuildingObject*>();
-
-		if (building != nullptr) {
-			bool isAdmin = building->isOnAdminList(player);
-			bool isOwner = (building->getOwnerObjectID() == player->getObjectID());
-
-			if (isAdmin || isOwner)
-				checkPermissions = true;
-		}
-	} else if (rootParent->isPobShip()) {
-		ManagedReference<PobShipObject*> pobShip = rootParent->asPobShip();
-
-		if (pobShip != nullptr && (pobShip->isOnAdminList(player) || pobShip->getOwnerID() == player->getObjectID()))
-			checkPermissions = true;
-	}
-
-	if (!checkPermissions)
-		return;
-
-	// Check if parent is nested on player
-	bool nestedOnPlayer = getParentRecursively(SceneObjectType::PLAYERCREATURE);
-
-	// Add radial options
-	if (parent->isCellObject() || (parent->getGameObjectType() == SceneObjectType::CONTAINER && !nestedOnPlayer))
-		menuResponse->addRadialMenuItem(10, 3, "@ui_radial:item_pickup"); //Pick up
-
-	if (parent->isCellObject()) {
-		menuResponse->addRadialMenuItem(54, 1, "@ui_radial:item_move"); //Move
-		menuResponse->addRadialMenuItem(51, 1, "@ui_radial:item_rotate"); //Rotate
-
-		menuResponse->addRadialMenuItemToRadialID(54, 55, 3, "@ui_radial:item_move_forward"); //Move Forward
-		menuResponse->addRadialMenuItemToRadialID(54, 56, 3, "@ui_radial:item_move_back"); //Move Back
-		menuResponse->addRadialMenuItemToRadialID(54, 57, 3, "@ui_radial:item_move_up"); //Move Up
-		menuResponse->addRadialMenuItemToRadialID(54, 58, 3, "@ui_radial:item_move_down"); //Move Down
-
-		menuResponse->addRadialMenuItemToRadialID(51, 52, 3, "@ui_radial:item_rotate_left"); //Rotate Left
-		menuResponse->addRadialMenuItemToRadialID(51, 53, 3, "@ui_radial:item_rotate_right"); //Rotate Right
-	}
 }
 
 void TangibleObjectImplementation::setCustomizationVariable(byte type, int16 value, bool notifyClient) {
@@ -1886,7 +1825,10 @@ bool TangibleObjectImplementation::isDecorativeObject() {
 
 	return (templatePath.contains("/furniture/") ||
 			templatePath.contains("/painting/") ||
-			gameType == SceneObjectType::FURNITURE);
+			templatePath.contains("/crafting/station/") ||
+			gameType == SceneObjectType::FURNITURE ||
+			gameType == SceneObjectType::CRAFTINGSTATION ||
+			gameType == SceneObjectType::LIGHTOBJECT);
 }
 
 void TangibleObjectImplementation::setDisabled(bool disabled) {
