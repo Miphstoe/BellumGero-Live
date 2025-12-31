@@ -243,7 +243,11 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 
 	-- Items that should NOT be sellable to junk dealers (by custom name)
 	local nameBlacklist = {
-		"Bellum Gero Token"  -- Cannot be sold to junk dealers
+		"Bellum Gero Token",  -- Cannot be sold to junk dealers
+		"Travel Ticket",
+		"Jedi Robe",
+		"Dark Jedi Robe",
+		"Jedi Padawan Robe"
 	}
 
 	-- First scan the main inventory
@@ -402,7 +406,11 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 
 	-- Safety check: prevent selling blacklisted items by name
 	local nameBlacklist = {
-		"Bellum Gero Token"  -- Cannot be sold to junk dealers
+		"Bellum Gero Token",  -- Cannot be sold to junk dealers
+		"Travel Ticket",
+		"Jedi Robe",
+		"Dark Jedi Robe",
+		"Jedi Padawan Robe"
 	}
 
 	if itemName ~= nil then
