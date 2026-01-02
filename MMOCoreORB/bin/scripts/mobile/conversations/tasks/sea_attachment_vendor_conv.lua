@@ -155,7 +155,7 @@ tier_3_menu = ConvoScreen:new {
         {"Bacta Tank", "trade_t3_01"},
         {"Hanging Planter", "trade_t3_02"},
         {"Foodcart", "trade_t3_03"},
-        {"Blowfish", "trade_t3_04"},
+        {"Aurillian Banner", "trade_t3_04"},
         {"More options...", "tier_3_menu_2"},
         {"Back", "trade_menu"},
     }
@@ -805,7 +805,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_03);
 trade_t3_04 = ConvoScreen:new {    
     id = "trade_t3_04",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for Blowfish?",
+    customDialogText = "Confirm: Trade 75 attachments for Aurillian Banner?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_04"},

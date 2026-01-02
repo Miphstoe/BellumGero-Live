@@ -183,7 +183,7 @@ function conv_handler:getTier3Reward(screenId)
         ["give_t3_01"] = {name = "Bacta Tank", template = "object/tangible/item/quest/force_sensitive/bacta_tank.iff"},
         ["give_t3_02"] = {name = "Hanging Planter", template = "object/tangible/furniture/decorative/hanging_planter.iff"},
         ["give_t3_03"] = {name = "foodcart", template = "object/tangible/furniture/decorative/foodcart.iff"},
-        ["give_t3_04"] = {name = "Blowfish", template = "object/tangible/fishing/fish/blowfish.iff"},
+        ["give_t3_04"] = {name = "Aurillian Banner", template = "object/tangible/item/quest/force_sensitive/fs_village_bannerpole_s01.iff"},
         ["give_t3_05"] = {name = "Decorative Campfire", template = "object/tangible/furniture/decorative/campfire.iff"},
         ["give_t3_06"] = {name = "Microphone", template = "object/tangible/furniture/decorative/microphone_s01.iff"},
         ["give_t3_07"] = {name = "Round Cantina Table (Style 1)", template = "object/tangible/furniture/all/frn_all_table_s01.iff"},
