@@ -699,7 +699,7 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 								if (group != nullptr) {
 									for (int i = 0; i < group->getGroupSize(); i++) {
 										ManagedReference<CreatureObject*> groupMember = group->getGroupMember(i);
-										if (groupMember != nullptr && groupMember->isPlayerCreature()) {
+										if (groupMember != nullptr && groupMember->isPlayerCreature() && groupMember->isInRange(destructedObject, 32.0f)) {
 											PlayerObject* ghost = groupMember->getPlayerObject();
 											if (ghost != nullptr && ghost->isJedi()) {
 												Locker locker(groupMember, destructedObject);
