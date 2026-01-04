@@ -15,6 +15,9 @@
 #define LOGOUTTASK_H_
 
 #include "server/zone/packets/player/LogoutMessage.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
+#include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/cell/CellObject.h"
 
 class LogoutTask: public Task {
 	ManagedReference<CreatureObject*> creature;
@@ -41,6 +44,51 @@ public:
 		creature->sendSystemMessage(abortMsg); // Your attempt to log out safely has been aborted.
 	}
 
+	void findSecuredItems(SceneObject* container, uint64 buildingOID, Vector<ManagedReference<SceneObject*>>& items) {
+		if (container == nullptr)
+			return;
+
+		for (int i = 0; i < container->getContainerObjectsSize(); i++) {
+			SceneObject* child = container->getContainerObject(i);
+			if (child == nullptr)
+				continue;
+
+			// Check if secured to this building
+			TangibleObject* tangible = child->asTangibleObject();
+			if (tangible != nullptr) {
+				String securedValue = tangible->getLuaStringData("item_secured");
+				if (!securedValue.isEmpty() && UnsignedLong::valueOf(securedValue) == buildingOID) {
+					items.add(child);
+				}
+			}
+
+			// Recurse into nested containers
+			if (child->getContainerObjectsSize() > 0) {
+				findSecuredItems(child, buildingOID, items);
+			}
+		}
+	}
+
+	void dropSecuredItemsFromInventory(CreatureObject* player, uint64 buildingOID, SceneObject* dropCell) {
+		SceneObject* inventory = player->getSlottedObject("inventory");
+		if (inventory == nullptr)
+			return;
+
+		Vector<ManagedReference<SceneObject*>> itemsToDrop;
+
+		// Recursively find secured items
+		findSecuredItems(inventory, buildingOID, itemsToDrop);
+
+		// Drop each item to player's current cell
+		for (int i = 0; i < itemsToDrop.size(); i++) {
+			SceneObject* item = itemsToDrop.get(i);
+			if (item != nullptr && dropCell != nullptr) {
+				dropCell->transferObject(item, -1, true);
+				item->setPosition(player->getPositionX(), player->getPositionY(), player->getPositionZ());
+			}
+		}
+	}
+
 	void run() {
 		Locker creatureLocker(creature);
 
@@ -64,6 +112,15 @@ public:
 				creature->sendSystemMessage(safeMsg); // You may now log out safely.
 
 				creature->removePendingTask("logout");
+
+				// Drop secured items if player is in a building
+				ManagedReference<SceneObject*> parentCell = creature->getParent().get();
+				if (parentCell != nullptr && parentCell->isCellObject()) {
+					SceneObject* building = creature->getRootParent();
+					if (building != nullptr && building->isBuildingObject()) {
+						dropSecuredItemsFromInventory(creature, building->getObjectID(), parentCell);
+					}
+				}
 
 				// Send the client the Logout Packet
 				creature->sendMessage(new LogoutMessage());

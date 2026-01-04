@@ -10,6 +10,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
 
 int ContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* object, int containmentType, String& errorDescription) const {
 	if (sceneObject == object) {
@@ -56,6 +57,25 @@ int ContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* obje
 
 		if (!sceneObject->isCellObject() && (!sceneObject->hasArrangementDescriptor("inventory") || containerPlayerParent == nullptr)) {
 			return TransferErrorCode::CANTADD;
+		}
+	}
+
+	// Check if object is secured to a building
+	if (object->isTangibleObject()) {
+		TangibleObject* tangible = object->asTangibleObject();
+		String securedValue = tangible->getLuaStringData("item_secured");
+
+		if (!securedValue.isEmpty()) {
+			uint64 securedBuildingOID = UnsignedLong::valueOf(securedValue);
+
+			// Check if destination is still in the same building
+			ManagedReference<SceneObject*> destRoot = sceneObject->getRootParent();
+
+			if (destRoot == nullptr || !destRoot->isBuildingObject() ||
+				destRoot->getObjectID() != securedBuildingOID) {
+				errorDescription = "This item is secured to a house and cannot be removed.";
+				return TransferErrorCode::CANTREMOVE;
+			}
 		}
 	}
 

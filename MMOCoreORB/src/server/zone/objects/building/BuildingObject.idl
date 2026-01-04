@@ -162,6 +162,43 @@ class BuildingObject extends StructureObject {
 	public native boolean isCityBanned(CreatureObject player);
 
 	/**
+	 * Checks if player can exit the building with their current inventory.
+	 * Returns false if player has secured items (and is not owner).
+	 * @param player The player attempting to exit
+	 * @return Returns true if player can exit, false if they have secured items
+	 */
+	@dirty
+	private native boolean checkCanExitWithInventory(CreatureObject player);
+
+	/**
+	 * Recursively checks a container for items secured to this building.
+	 * @param container The container to check
+	 * @param buildingOID The building OID to check against
+	 * @return Returns true if any secured items found
+	 */
+	@dirty
+	private native boolean hasSecuredItemsRecursive(SceneObject container, unsigned long buildingOID);
+
+	/**
+	 * Finds all secured items in a container and adds them to the items vector.
+	 * @param container The container to search
+	 * @param buildingOID The building OID to check against
+	 * @param items Vector to store found items
+	 */
+	@dirty
+	@local
+	private native void findSecuredItems(SceneObject container, unsigned long buildingOID, Vector<SceneObject> items);
+
+	/**
+	 * Drops secured items from player inventory to the specified cell.
+	 * @param player The player whose inventory to check
+	 * @param buildingOID The building OID to check against
+	 * @param dropCell The cell to drop items into
+	 */
+	@dirty
+	private native void dropSecuredItemsFromInventory(CreatureObject player, unsigned long buildingOID, SceneObject dropCell);
+
+	/**
 	 * Gets called when the structure has been created;
 	 */
 	public abstract int notifyStructurePlaced(CreatureObject player) {
