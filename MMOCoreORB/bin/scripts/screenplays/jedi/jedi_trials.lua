@@ -142,12 +142,16 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 	awardSkill(pPlayer, "force_title_jedi_rank_02")
 	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
 
-	-- Register observer for Knight Trials PvE point tracking
-	printLuaError("JediTrials:unlockJediPadawan - Registering Knight Trials observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
-	-- First drop any existing observer to prevent duplicates
-	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
-	-- Now register the observer
-	createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	-- Register observer for Knight Trials PvE point tracking only if eligible (meets skill point requirements)
+	if (self:isEligibleForKnightTrials(pPlayer)) then
+		printLuaError("JediTrials:unlockJediPadawan - Registering Knight Trials observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+		-- First drop any existing observer to prevent duplicates
+		dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+		-- Now register the observer
+		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	else
+		printLuaError("JediTrials:unlockJediPadawan - NOT registering observer, player not eligible for Knight Trials yet")
+	end
 
 	CreatureObject(pPlayer):playEffect("clienteffect/trap_electric_01.cef", "")
 	CreatureObject(pPlayer):playMusicMessage("sound/music_become_jedi.snd")

@@ -55,12 +55,16 @@ function ForceShrineMenuComponent:doMeditate(pObject, pPlayer)
 			local currentTrial = JediTrials:getCurrentTrial(pPlayer)
 			local trialsCompleted = JediTrials:getTrialsCompleted(pPlayer)
 
-			-- Register the observer to ensure points are tracked
-			printLuaError("ForceShrineMenuComponent:doMeditate - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
-			-- First drop any existing observer to prevent duplicates
-			dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
-			-- Now register the observer
-			createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+			-- Register the observer only if player is eligible (meets skill point requirements)
+			if (JediTrials:isEligibleForKnightTrials(pPlayer)) then
+				printLuaError("ForceShrineMenuComponent:doMeditate - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
+				-- First drop any existing observer to prevent duplicates
+				dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+				-- Now register the observer
+				createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+			else
+				printLuaError("ForceShrineMenuComponent:doMeditate - NOT registering observer, player not eligible for Knight Trials yet")
+			end
 
 			-- Always show the progress box for Knight Trials
 			KnightTrials:showCurrentTrial(pPlayer)

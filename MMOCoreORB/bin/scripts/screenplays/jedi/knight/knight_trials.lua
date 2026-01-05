@@ -421,15 +421,15 @@ function KnightTrials:onPlayerLoggedIn(pPlayer)
 
 	printLuaError("KnightTrials:onPlayerLoggedIn - Player: " .. SceneObject(pPlayer):getCustomObjectName())
 
-	-- Always register points observer for any player with Padawan rank who hasn't gotten Knight rank
-	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+	-- Register points observer only for eligible players (Padawan rank + meets skill point requirements)
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03") and JediTrials:isEligibleForKnightTrials(pPlayer)) then
 		printLuaError("KnightTrials:onPlayerLoggedIn - Registering observer for player: " .. SceneObject(pPlayer):getCustomObjectName())
 		-- First drop any existing observer to prevent duplicates
 		dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 		-- Now register the observer
 		createObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
 	else
-		printLuaError("KnightTrials:onPlayerLoggedIn - NOT registering observer. Has rank_02: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) .. ", Has rank_03: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")))
+		printLuaError("KnightTrials:onPlayerLoggedIn - NOT registering observer. Has rank_02: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) .. ", Has rank_03: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) .. ", Eligible: " .. tostring(JediTrials:isEligibleForKnightTrials(pPlayer)))
 	end
 
 	if (JediTrials:isEligibleForKnightTrials(pPlayer) and not JediTrials:isOnKnightTrials(pPlayer)) then
@@ -508,6 +508,12 @@ function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
 
 	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 		printLuaError("KnightTrials:notifyKilledForPoints - player already completed Knight Trials (has rank_03)")
+		return 0
+	end
+
+	-- Check if player meets Knight Trial eligibility requirements (206+ Jedi skill points)
+	if (not JediTrials:isEligibleForKnightTrials(pPlayer)) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player not eligible for Knight Trials (insufficient Jedi skill points)")
 		return 0
 	end
 
