@@ -83,6 +83,11 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 
 			if (structureObject->isBuildingObject()) {
 				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_PERMISSIONS, 122, 3, "@player_structure:permission_vendor"); // Vendor List
+
+				// Add Create Vendor option for admins with required skill
+				if (creature->hasSkill("crafting_artisan_business_03")) {
+					menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor"); // Create Vendor
+				}
 				// Note: Entry list (119) and Ban list (120) intentionally omitted for civic structures
 
 				// NEW: City Faction Alignment option (for cities at Metropolis rank or higher)
@@ -93,6 +98,14 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_SET_FACTION_ALIGNMENT, 3, "Set Faction Alignment");
 					}
 				}
+			}
+		}
+
+		// Allow users on vendor list to create vendors
+		if (structureObject->isOnPermissionList("VENDOR", creature)) {
+			if (creature->hasSkill("crafting_artisan_business_03")) {
+				menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
+				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor"); // Create Vendor
 			}
 		}
 		return;
@@ -222,6 +235,9 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				case 122:
 					structureObject->sendPermissionListTo(creature, "VENDOR");
 					break;
+				case 130: // Create Vendor
+					creature->executeObjectControllerAction(STRING_HASHCODE("createvendor"));
+					break;
 			case RADIAL_SET_FACTION_ALIGNMENT: { // Set Faction Alignment
 
 				BuildingObject* building = cast<BuildingObject*>(structureObject.get());
@@ -254,6 +270,13 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 			}
 					default:
 					break;
+			}
+		}
+
+		// Handle vendor list users for civic structures
+		if (structureObject->isOnPermissionList("VENDOR", creature)) {
+			if (selectedID == 130) { // Create Vendor
+				creature->executeObjectControllerAction(STRING_HASHCODE("createvendor"));
 			}
 		}
 		return 0;
