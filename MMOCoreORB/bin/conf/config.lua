@@ -258,6 +258,7 @@ Core3 = {
 	------Player Manager Config------
     PlayerManager = {
         AdvancedWaypoints = true,
+    	WipeFillingOnClone = true,
     },
 
 	------Mission Manager Config------
