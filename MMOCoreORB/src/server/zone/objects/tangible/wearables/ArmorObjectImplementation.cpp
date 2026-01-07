@@ -282,10 +282,11 @@ bool ArmorObjectImplementation::isVulnerable(int type) const {
 float ArmorObjectImplementation::getTypeValue(int type, float value) const {
     int val = 0;
 
-    // If this armor is vulnerable to the requested type, no protection applies.
-    if ( (vulnerabilites & type) == type ) {
-        return value;
-    }
+    // Keep vulnerability behavior consistent with isVulnerable():
+	// only null protection for non-special types (or if broken).
+	if (isVulnerable(type)) {
+    	return value;
+	}
 
     // Special vs base handling stays exactly as before
     if (isSpecial(type)) {
