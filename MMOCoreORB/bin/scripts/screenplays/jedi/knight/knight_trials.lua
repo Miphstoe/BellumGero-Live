@@ -21,6 +21,53 @@ local function playerParticipatedInKill(pPlayer, pCreature)
 	return isInRange
 end
 
+function KnightTrials:showKnightTrialsActivationDialog(pObject, pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- Show activation dialog
+	local sui = SuiMessageBox.new("KnightTrials", "knightTrialsActivationCallback")
+
+	if (pObject ~= nil) then
+		sui.setTargetNetworkId(SceneObject(pObject):getObjectID())
+	end
+
+	sui.setTitle("Knight Trials")
+	sui.setPrompt("Greetings, Padawan.\n\nYou have grown strong in the Force, mastering multiple disciplines and honing your skills. The path to Knighthood now beckons.\n\nThe Knight Trials await you. By hunting creatures across the galaxy and proving your strength in combat, you will earn the respect of the Jedi Council.\n\nYou must earn 50,000 PvE points through battle. Stronger foes grant more points.\n\nWould you like to begin the Knight Trials?")
+
+	sui.setOkButtonText("Begin Knight Trials")
+	sui.setCancelButtonText("Not Yet")
+
+	sui.sendTo(pPlayer)
+end
+
+function KnightTrials:knightTrialsActivationCallback(pPlayer, pSui, eventIndex, ...)
+	if (pPlayer == nil) then
+		return
+	end
+
+	-- eventIndex == 1 means Cancel button was pressed
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You have chosen to delay your Knight Trials. Return to any Force Shrine when you are ready.")
+		return
+	end
+
+	-- Player chose to begin - verify eligibility one more time
+	if (not JediTrials:isEligibleForKnightTrials(pPlayer)) then
+		CreatureObject(pPlayer):sendSystemMessage("You are no longer eligible for Knight Trials.")
+		return
+	end
+
+	-- Activate the Knight Trials
+	KnightTrials:startKnightTrials(pPlayer)
+
+	-- Set the shrine activation flag (separate from startedTrials)
+	writeScreenPlayData(pPlayer, "KnightTrials", "activatedAtShrine", 1)
+
+	CreatureObject(pPlayer):sendSystemMessage("Knight Trials activated! You will now earn PvE points for hunting creatures. Check your progress at any Force Shrine.")
+end
+
 function KnightTrials:startKnightTrials(pPlayer)
 	local randomShrinePlanet = JediTrials:getRandomDifferentShrinePlanet(pPlayer)
 	local pRandShrine = JediTrials:getRandomShrineOnPlanet(randomShrinePlanet)
@@ -302,6 +349,21 @@ function KnightTrials:showCurrentTrial(pPlayer)
 
 	local trialData = knightTrialQuests[trialNumber]
 
+	-- If trialNumber is 0 or trialData is nil, just show PvE points progress
+	-- This happens when Knight Trials are first activated (currentTrial = 0)
+	if (trialNumber == 0 or trialData == nil) then
+		local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+		local pointProgress = string.format("Knight Trials - PvE Progression\n\nYour Progress: %d / %d points\n\nHunt creatures across the galaxy to earn points. Stronger foes grant more points.\n\nAt 25,000 points, you will choose your Jedi Council (Light or Dark).\n\nAt 50,000 points, you will become a Jedi Knight!", currentPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
+
+		local sui = SuiMessageBox.new("KnightTrials", "noCallback")
+		sui.setTitle("@jedi_trials:knight_trials_title")
+		sui.setPrompt(pointProgress)
+		sui.setOkButtonText("@jedi_trials:button_close")
+		sui.hideCancelButton()
+		sui.sendTo(pPlayer)
+		return
+	end
+
 	-- Only skip if it's not the council choice trial
 	-- Council choice trial (TRIAL_COUNCIL) should always show the council dialog when first encountered
 	if (trialData.trialType ~= TRIAL_COUNCIL and trialsCompleted == trialNumber) then
@@ -432,9 +494,11 @@ function KnightTrials:onPlayerLoggedIn(pPlayer)
 		printLuaError("KnightTrials:onPlayerLoggedIn - NOT registering observer. Has rank_02: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) .. ", Has rank_03: " .. tostring(CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) .. ", Eligible: " .. tostring(JediTrials:isEligibleForKnightTrials(pPlayer)))
 	end
 
-	if (JediTrials:isEligibleForKnightTrials(pPlayer) and not JediTrials:isOnKnightTrials(pPlayer)) then
-		KnightTrials:startKnightTrials(pPlayer)
-	elseif (JediTrials:isOnKnightTrials(pPlayer)) then
+	-- Don't auto-start Knight Trials on login - player must activate at shrine
+	-- if (JediTrials:isEligibleForKnightTrials(pPlayer) and not JediTrials:isOnKnightTrials(pPlayer)) then
+	-- 	KnightTrials:startKnightTrials(pPlayer)
+	-- elseif (JediTrials:isOnKnightTrials(pPlayer)) then
+	if (JediTrials:isOnKnightTrials(pPlayer)) then
 		local trialNumber = JediTrials:getCurrentTrial(pPlayer)
 
 		if (trialNumber <= 0) then
@@ -514,6 +578,13 @@ function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
 	-- Check if player meets Knight Trial eligibility requirements (206+ Jedi skill points)
 	if (not JediTrials:isEligibleForKnightTrials(pPlayer)) then
 		printLuaError("KnightTrials:notifyKilledForPoints - player not eligible for Knight Trials (insufficient Jedi skill points)")
+		return 0
+	end
+
+	-- Check if player has activated Knight Trials at a Force Shrine
+	local activatedAtShrine = tonumber(readScreenPlayData(pPlayer, "KnightTrials", "activatedAtShrine"))
+	if (activatedAtShrine ~= 1) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player has not activated Knight Trials at a shrine")
 		return 0
 	end
 
