@@ -154,8 +154,8 @@ tier_3_menu = ConvoScreen:new {
     options = { 
         {"Bacta Tank", "trade_t3_01"},
         {"Hanging Planter", "trade_t3_02"},
-        {"Stuffed Fish", "trade_t3_03"},
-        {"Blowfish", "trade_t3_04"},
+        {"Foodcart", "trade_t3_03"},
+        {"Aurillian Banner", "trade_t3_04"},
         {"More options...", "tier_3_menu_2"},
         {"Back", "trade_menu"},
     }
@@ -170,8 +170,8 @@ tier_3_menu_2 = ConvoScreen:new {
     options = { 
         {"Decorative Campfire", "trade_t3_05"},
         {"Microphone", "trade_t3_06"},
-        {"VR: Cast Wing in Flight", "trade_t3_07"},
-        {"VR: Decimator", "trade_t3_08"},
+        {"Round Cantina Table (Style 1)", "trade_t3_07"},
+        {"Round Cantina Table (Style 2)", "trade_t3_08"},
         {"More options...", "tier_3_menu_3"},
         {"Previous page", "tier_3_menu"},
         {"Back", "trade_menu"},
@@ -185,10 +185,10 @@ tier_3_menu_3 = ConvoScreen:new {
     customDialogText = "Tier III Rewards (Veteran Rewards continued):",
     stopConversation = "false",
     options = { 
-        {"VR: Weapon of War", "trade_t3_09"},
-        {"VR: Tatooine Dune Speeder", "trade_t3_10"},
-        {"VR: Fighter Study", "trade_t3_11"},
-        {"VR: Hutt Greed", "trade_t3_12"},
+        {"Round Cantina Table (Style 3)", "trade_t3_09"},
+        {"Large Cantina Sofa", "trade_t3_10"},
+        {"Bar Countertop", "trade_t3_11"},
+        {"Bar Countertop (Curved, Style 1)", "trade_t3_12"},
         {"More options...", "tier_3_menu_4"},
         {"Previous page", "tier_3_menu_2"},
         {"Back", "trade_menu"},
@@ -202,9 +202,9 @@ tier_3_menu_4 = ConvoScreen:new {
     customDialogText = "Tier III Rewards (Veteran Rewards final):",
     stopConversation = "false",
     options = { 
-        {"VR: Smuggler's Run", "trade_t3_13"},
-        {"VR: Imperial TIE Oppressor", "trade_t3_14"},
-        {"VR: Emperor's Eyes TIE", "trade_t3_15"},
+        {"Bar Countertop (Curved, Style 2)", "trade_t3_13"},
+        {"Bar Countertop (Straight, Style 1)", "trade_t3_14"},
+        {"Bar Countertop (Straight, Style 2)", "trade_t3_15"},
         {"Previous page", "tier_3_menu_3"},
         {"Back", "trade_menu"},
     }
@@ -784,7 +784,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_02);
 trade_t3_03 = ConvoScreen:new {    
     id = "trade_t3_03",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for Stuffed Fish?",
+    customDialogText = "Confirm: Trade 75 attachments for Foodcart?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_03"},
@@ -805,7 +805,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_03);
 trade_t3_04 = ConvoScreen:new {    
     id = "trade_t3_04",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for Blowfish?",
+    customDialogText = "Confirm: Trade 75 attachments for Aurillian Banner?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_04"},
@@ -868,7 +868,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_06);
 trade_t3_07 = ConvoScreen:new {    
     id = "trade_t3_07",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Cast Wing in Flight?",
+    customDialogText = "Confirm: Trade 75 attachments for Round Cantina Table (Style 1)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_07"},
@@ -889,7 +889,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_07);
 trade_t3_08 = ConvoScreen:new {    
     id = "trade_t3_08",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Decimator?",
+    customDialogText = "Confirm: Trade 75 attachments for Round Cantina Table (Style 2)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_08"},
@@ -910,7 +910,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_08);
 trade_t3_09 = ConvoScreen:new {    
     id = "trade_t3_09",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Weapon of War?",
+    customDialogText = "Confirm: Trade 75 attachments for Round Cantina Table (Style 3)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_09"},
@@ -931,7 +931,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_09);
 trade_t3_10 = ConvoScreen:new {    
     id = "trade_t3_10",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Tatooine Dune Speeder?",
+    customDialogText = "Confirm: Trade 75 attachments for Large Cantina Sofa?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_10"},
@@ -952,7 +952,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_10);
 trade_t3_11 = ConvoScreen:new {    
     id = "trade_t3_11",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Fighter Study?",
+    customDialogText = "Confirm: Trade 75 attachments for Bar Countertop?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_11"},
@@ -973,7 +973,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_11);
 trade_t3_12 = ConvoScreen:new {    
     id = "trade_t3_12",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Hutt Greed?",
+    customDialogText = "Confirm: Trade 75 attachments for Bar Countertop (Curved, Style 1)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_12"},
@@ -994,7 +994,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_12);
 trade_t3_13 = ConvoScreen:new {    
     id = "trade_t3_13",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Smuggler's Run?",
+    customDialogText = "Confirm: Trade 75 attachments for Bar Countertop (Curved, Style 2)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_13"},
@@ -1015,7 +1015,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_13);
 trade_t3_14 = ConvoScreen:new {    
     id = "trade_t3_14",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Imperial TIE Oppressor?",
+    customDialogText = "Confirm: Trade 75 attachments for Bar Countertop (Straight, Style 1)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_14"},
@@ -1036,7 +1036,7 @@ sea_attachment_vendor_conv:addScreen(give_t3_14);
 trade_t3_15 = ConvoScreen:new {    
     id = "trade_t3_15",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 75 attachments for VR: Emperor's Eyes TIE?",
+    customDialogText = "Confirm: Trade 75 attachments for Bar Countertop (Straight, Style 2)?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_t3_15"},
