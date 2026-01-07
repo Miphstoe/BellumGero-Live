@@ -35,14 +35,20 @@ public:
 	}
 
 	void updateCustomName(const UnicodeString& name, const UnicodeString& tag = "") {
-		if (tano->isPlayerCreature()) {
+		if (tano->isPlayerCreature() && tag != "") {
 			CreatureObject* player = cast<CreatureObject*>( tano.get());
+			UnicodeString customName;
 
-			if (player->getPlayerObject()->hasGodMode() && tag != "") {
-				UnicodeString customName = name + " \\#ffff00[" + tag + "]\\#.";
-				addUnicodeUpdate(2, customName);
-				return;
+			// Admin tags in yellow
+			if (player->getPlayerObject()->hasGodMode()) {
+				customName = name + " \\#ffff00[" + tag + "]\\#.";
+			} else {
+				// Guild titles in cyan/blue
+				customName = name + " \\#00ffff[" + tag + "]\\#.";
 			}
+
+			addUnicodeUpdate(2, customName);
+			return;
 		}
 
 		addUnicodeUpdate(2, name);

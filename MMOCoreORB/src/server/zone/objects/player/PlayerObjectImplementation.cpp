@@ -31,6 +31,7 @@
 #include "server/zone/packets/player/PlayerObjectDeltaMessage8.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage6.h"
+#include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/chat/ChatOnGetFriendsList.h"
 #include "server/zone/packets/chat/ChatOnGetIgnoreList.h"
 #include "server/zone/packets/chat/ChatOnAddFriend.h"
@@ -1630,6 +1631,33 @@ void PlayerObjectImplementation::setTitle(const String& characterTitle, bool not
 	}
 }
 
+void PlayerObjectImplementation::refreshDisplayTitle() {
+	// Get parent CreatureObject
+	ManagedReference<SceneObject*> parent = getParent().get();
+
+	if (parent == nullptr || !parent->isCreatureObject())
+		return;
+
+	CreatureObject* creature = parent->asCreatureObject();
+
+	// Get guild title if player is in a guild
+	UnicodeString guildTitle = "";
+	ManagedReference<GuildObject*> guild = creature->getGuildObject().get();
+
+	if (guild != nullptr) {
+		String guildTitleStr = guild->getGuildMemberTitle(creature->getObjectID());
+		if (!guildTitleStr.isEmpty()) {
+			guildTitle = UnicodeString(guildTitleStr);
+		}
+	}
+
+	// Update the displayed name with guild title tag
+	TangibleObjectDeltaMessage3* tanod3 = new TangibleObjectDeltaMessage3(creature);
+	tanod3->updateCustomName(creature->getDisplayedName(), guildTitle);
+	tanod3->close();
+	creature->broadcastMessage(tanod3, true);
+}
+
 void PlayerObjectImplementation::notifyOnline() {
 	ManagedReference<SceneObject*> parent = getParent().get();
 
@@ -2522,6 +2550,9 @@ void PlayerObjectImplementation::setOnline() {
 	doRecovery(1000);
 
 	activateMissions();
+
+	// Refresh guild title display on login
+	refreshDisplayTitle();
 }
 
 void PlayerObjectImplementation::setOffline() {
