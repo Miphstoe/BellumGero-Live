@@ -14,6 +14,7 @@
 
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/tangible/sign/SignObject.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/packets/tangible/TangibleObjectMessage3.h"
 #include "server/zone/packets/tangible/TangibleObjectMessage6.h"
 #include "server/zone/packets/cell/UpdateCellPermissionsMessage.h"
@@ -1045,6 +1046,16 @@ void BuildingObjectImplementation::onExit(CreatureObject* player, uint64 parenti
 	if (getZone() == nullptr)
 		return;
 
+	// Check for secured items and drop them before exit
+	if (!isOwnerOf(player)) {
+		// Get the cell they just left using the parentid parameter
+		ManagedReference<SceneObject*> parentCell = getZone()->getZoneServer()->getObject(parentid);
+		if (parentCell != nullptr && parentCell->isCellObject()) {
+			uint64 buildingOID = _this.getReferenceUnsafeStaticCast()->getObjectID();
+			dropSecuredItemsFromInventory(player, buildingOID, parentCell);
+		}
+	}
+
 	// Don't remove skill mods here - CellObjectImplementation::removeObject already handles it
 	// and does it correctly (only removes when truly leaving the building, not just changing cells)
 	// removeTemplateSkillMods(player);
@@ -2026,4 +2037,160 @@ String BuildingObjectImplementation::getCellName(uint64 cellID) const {
 		return "";
 
 	return cellProperty->getName();
+}
+
+bool BuildingObjectImplementation::checkCanExitWithInventory(CreatureObject* player) {
+	// Owner can always exit
+	if (isOwnerOf(player))
+		return true;
+
+	// Get player inventory
+	SceneObject* inventory = player->getSlottedObject("inventory");
+	if (inventory == nullptr)
+		return true;
+
+	// Recursively check inventory for secured items
+	uint64 buildingOID = _this.getReferenceUnsafeStaticCast()->getObjectID();
+	return !hasSecuredItemsRecursive(inventory, buildingOID);
+}
+
+bool BuildingObjectImplementation::hasSecuredItemsRecursive(SceneObject* container, uint64 buildingOID) {
+	if (container == nullptr)
+		return false;
+
+	for (int i = 0; i < container->getContainerObjectsSize(); i++) {
+		SceneObject* item = container->getContainerObject(i);
+		if (item == nullptr)
+			continue;
+
+		// Check if this item is secured to this building
+		TangibleObject* tangible = item->asTangibleObject();
+		if (tangible != nullptr) {
+			String securedValue = tangible->getLuaStringData("item_secured");
+			if (!securedValue.isEmpty()) {
+				uint64 securedBuildingOID = UnsignedLong::valueOf(securedValue);
+				if (securedBuildingOID == buildingOID) {
+					return true; // Found a secured item!
+				}
+			}
+		}
+
+		// Check nested containers
+		if (item->getContainerObjectsSize() > 0) {
+			if (hasSecuredItemsRecursive(item, buildingOID)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void BuildingObjectImplementation::findSecuredItems(SceneObject* container, uint64 buildingOID, Vector<ManagedReference<SceneObject*>>* items) {
+	if (container == nullptr || items == nullptr)
+		return;
+
+	for (int i = 0; i < container->getContainerObjectsSize(); i++) {
+		SceneObject* child = container->getContainerObject(i);
+		if (child == nullptr)
+			continue;
+
+		// Check if secured to this building
+		TangibleObject* tangible = child->asTangibleObject();
+		if (tangible != nullptr) {
+			String securedValue = tangible->getLuaStringData("item_secured");
+			if (!securedValue.isEmpty() && UnsignedLong::valueOf(securedValue) == buildingOID) {
+				items->add(child);
+			}
+		}
+
+		// Recurse into nested containers
+		if (child->getContainerObjectsSize() > 0) {
+			findSecuredItems(child, buildingOID, items);
+		}
+	}
+}
+
+void BuildingObjectImplementation::dropSecuredItemsFromInventory(CreatureObject* player, uint64 buildingOID, SceneObject* dropCell) {
+	if (player == nullptr || dropCell == nullptr)
+		return;
+
+	Vector<ManagedReference<SceneObject*>> itemsToDrop;
+
+	// Check inventory
+	SceneObject* inventory = player->getSlottedObject("inventory");
+	if (inventory != nullptr) {
+		findSecuredItems(inventory, buildingOID, &itemsToDrop);
+	}
+
+	// Check all equipment slots for worn/equipped secured items
+	Vector<String> equipmentSlots;
+	equipmentSlots.add("chest1");
+	equipmentSlots.add("chest2");
+	equipmentSlots.add("pants1");
+	equipmentSlots.add("shoes");
+	equipmentSlots.add("hat");
+	equipmentSlots.add("gloves");
+	equipmentSlots.add("cloak");
+	equipmentSlots.add("back");
+	equipmentSlots.add("utility_belt");
+	equipmentSlots.add("neck");
+	equipmentSlots.add("earring_l");
+	equipmentSlots.add("earring_r");
+	equipmentSlots.add("bracelet_l");
+	equipmentSlots.add("bracelet_r");
+	equipmentSlots.add("ring_l");
+	equipmentSlots.add("ring_r");
+	equipmentSlots.add("wrist_l");
+	equipmentSlots.add("wrist_r");
+	equipmentSlots.add("hold_l");
+	equipmentSlots.add("hold_r");
+	equipmentSlots.add("default_weapon");
+	equipmentSlots.add("bank");
+	equipmentSlots.add("mission_bag");
+	equipmentSlots.add("datapad");
+	equipmentSlots.add("hair");
+	equipmentSlots.add("eyes");
+
+	for (int i = 0; i < equipmentSlots.size(); i++) {
+		SceneObject* slottedItem = player->getSlottedObject(equipmentSlots.get(i));
+		if (slottedItem != nullptr) {
+			// Check if this slotted item itself is secured
+			TangibleObject* tangible = slottedItem->asTangibleObject();
+			if (tangible != nullptr) {
+				String securedValue = tangible->getLuaStringData("item_secured");
+				if (!securedValue.isEmpty() && UnsignedLong::valueOf(securedValue) == buildingOID) {
+					itemsToDrop.add(slottedItem);
+				}
+			}
+
+			// Also check contents of slotted items (like backpacks)
+			if (slottedItem->getContainerObjectsSize() > 0) {
+				findSecuredItems(slottedItem, buildingOID, &itemsToDrop);
+			}
+		}
+	}
+
+	if (itemsToDrop.size() > 0) {
+		// Drop each item to the cell - spread them out slightly to avoid overlap
+		for (int i = 0; i < itemsToDrop.size(); i++) {
+			SceneObject* item = itemsToDrop.get(i);
+			if (item != nullptr) {
+				// Transfer to the cell
+				dropCell->transferObject(item, -1, true);
+
+				// Set position in the cell (spread items out in a small area)
+				float offsetX = (i % 3) * 0.5f; // 0, 0.5, 1.0
+				float offsetY = (i / 3) * 0.5f; // 0, 0, 0, 0.5, 0.5, 0.5...
+				item->setPosition(offsetX, 0, offsetY);
+			}
+		}
+
+		// Send message to player
+		if (itemsToDrop.size() == 1) {
+			player->sendSystemMessage("A secured item has been dropped in the house.");
+		} else {
+			player->sendSystemMessage(String::valueOf(itemsToDrop.size()) + " secured items have been dropped in the house.");
+		}
+	}
 }

@@ -13,6 +13,7 @@
 #include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
+#include "server/zone/objects/building/BuildingObject.h"
 
 void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 	ObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
@@ -67,6 +68,24 @@ void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 	if (tano->isDecorativeObject() && hasRenamePermission(player, tano)) {
 		menuResponse->addRadialMenuItem(50, 3, "@base_player:set_name"); // Set Name
 	}
+
+	// Add secure/unsecure option for items in buildings (owner only)
+	if (!sceneObject->isASubChildOf(player)) {
+		ManagedReference<SceneObject*> rootParent = sceneObject->getRootParent();
+		if (rootParent != nullptr && rootParent->isBuildingObject()) {
+			BuildingObject* building = cast<BuildingObject*>(rootParent.get());
+			if (building != nullptr && building->isOwnerOf(player)) {
+				String securedValue = tano->getLuaStringData("item_secured");
+				bool isSecured = !securedValue.isEmpty();
+
+				if (isSecured) {
+					menuResponse->addRadialMenuItem(223, 3, "Unsecure from House");
+				} else {
+					menuResponse->addRadialMenuItem(222, 3, "Secure to House");
+				}
+			}
+		}
+	}
 }
 
 int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
@@ -118,6 +137,38 @@ int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 		if (hasRenamePermission(player, tano)) {
 			promptRenameObject(player, tano);
 			return 0;
+		}
+	} else if (selectedID == 222 || selectedID == 223) { // Secure/Unsecure to House
+		// Verify item is in a building (not in player inventory)
+		if (!sceneObject->isASubChildOf(player)) {
+			ManagedReference<SceneObject*> rootParent = sceneObject->getRootParent();
+			if (rootParent != nullptr && rootParent->isBuildingObject()) {
+				BuildingObject* building = cast<BuildingObject*>(rootParent.get());
+				if (building != nullptr && building->isOwnerOf(player)) {
+					if (selectedID == 222) { // Secure
+						uint64 buildingOID = building->getObjectID();
+						tano->setLuaStringData("item_secured", String::valueOf(buildingOID));
+						tano->addMagicBit(true);
+
+						String itemName = sceneObject->getDisplayedName();
+						if (itemName.isEmpty())
+							itemName = sceneObject->getObjectNameStringIdName();
+
+						player->sendSystemMessage("Item secured to house: " + itemName + " - Players cannot leave with this item.");
+						return 0;
+					} else if (selectedID == 223) { // Unsecure
+						tano->deleteLuaStringData("item_secured");
+						tano->removeMagicBit(true);
+
+						String itemName = sceneObject->getDisplayedName();
+						if (itemName.isEmpty())
+							itemName = sceneObject->getObjectNameStringIdName();
+
+						player->sendSystemMessage("Item unsecured from house: " + itemName + " - Players may now take this item.");
+						return 0;
+					}
+				}
+			}
 		}
 	}
 
