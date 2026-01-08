@@ -64,7 +64,7 @@ end
 
 function WarrenQuestContainerComponent:removeObject(pContainer, pObj, slot)
 	if (pContainer ~= nil) then
-		createEvent(1800 * 1000, "Warren", "refillQuestContainer", pContainer, "")
+		createEvent(900 * 1000, "Warren", "refillQuestContainer", pContainer, "")
 	end
 
 	return -1
