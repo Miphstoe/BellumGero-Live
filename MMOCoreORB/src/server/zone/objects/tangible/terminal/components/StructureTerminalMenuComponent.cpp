@@ -101,8 +101,8 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			}
 		}
 
-		// Allow users on vendor list to create vendors
-		if (structureObject->isOnPermissionList("VENDOR", creature)) {
+		// Allow users on vendor list to create vendors (but not if they're already admin - admins already have this option)
+		if (structureObject->isOnPermissionList("VENDOR", creature) && !structureObject->isOnAdminList(creature)) {
 			if (creature->hasSkill("crafting_artisan_business_03")) {
 				menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
 				menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor"); // Create Vendor
@@ -273,8 +273,8 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 			}
 		}
 
-		// Handle vendor list users for civic structures
-		if (structureObject->isOnPermissionList("VENDOR", creature)) {
+		// Handle vendor list users for civic structures (but not if they're already admin - admins already handled above)
+		if (structureObject->isOnPermissionList("VENDOR", creature) && !structureObject->isOnAdminList(creature)) {
 			if (selectedID == 130) { // Create Vendor
 				creature->executeObjectControllerAction(STRING_HASHCODE("createvendor"));
 			}
