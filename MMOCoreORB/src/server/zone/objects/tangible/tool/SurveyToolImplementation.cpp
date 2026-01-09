@@ -42,10 +42,14 @@ int SurveyToolImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 	PlayerObject* playerObject = player->getPlayerObject();
 
 	if(isASubChildOf(player)) {
-		if (!playerObject->hasAbility("survey")) {
-			player->sendSystemMessage("@error_message:insufficient_skill");
-			return 0;
-		}
+		bool hasSurveyAbility = playerObject->hasAbility("survey");
+		bool isRangerNovice = player->hasSkill("outdoors_ranger_novice");
+		bool isCompleteSurveyTool = (surveyType == "all"); // survey_tool_all.iff
+
+	if (!hasSurveyAbility && !(isRangerNovice && isCompleteSurveyTool)) {
+    	player->sendSystemMessage("@error_message:insufficient_skill");
+    	return 0;
+	}
 
 		if (selectedID == 20) { // use object
 			int range = getRange(player);
@@ -89,6 +93,11 @@ int SurveyToolImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 void SurveyToolImplementation::sendRangeSui(CreatureObject* player) {
 	int surveyMod = player->getSkillMod("surveying");
 
+	// Ranger bypass for Complete Survey tool: allow range selection without granting surveying mod globally.
+    if (surveyMod <= 0 && player->hasSkill("outdoors_ranger_novice") && surveyType == "all") {
+        surveyMod = 120; // gives 64m + 128m options (matches your getRange() fallback)
+    }
+
 	ManagedReference<SuiListBox*> suiToolRangeBox = new SuiListBox(player, SuiWindowType::SURVEY_TOOL_RANGE, 0);
 
 	suiToolRangeBox->setPromptTitle("@base_player:swg");
@@ -121,7 +130,15 @@ void SurveyToolImplementation::sendRangeSui(CreatureObject* player) {
 int SurveyToolImplementation::getRange(CreatureObject* player) {
 
 	int surveyMod = player->getSkillMod("surveying");
+
+	// Allow Rangers to get a baseline range when using the Complete Survey tool,
+	// without granting them (or stacking) the surveying skillmod globally.
+	if (surveyMod <= 0 && player->hasSkill("outdoors_ranger_novice") && surveyType == "all") {
+    	surveyMod = 120; // 35 -> 128 range via getSkillBasedRange()
+	}
+
 	int rangeBasedOnSkill = getSkillBasedRange(surveyMod);
+
 
 	if (range > rangeBasedOnSkill)
 		setRange(rangeBasedOnSkill);
