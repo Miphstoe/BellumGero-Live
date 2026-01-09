@@ -767,6 +767,7 @@ class PlayerObject extends IntangibleObject {
 	public native void removeIgnore(final string name, boolean notifyClient = true);
 
 	public native void setTitle(final string characterTitle, boolean notifyClient = true);
+	public native void refreshDisplayTitle();
 
 	public native void setFoodFilling(int newValue, boolean notifyClient = true);
 	public native void setDrinkFilling(int newValue, boolean notifyClient = true);

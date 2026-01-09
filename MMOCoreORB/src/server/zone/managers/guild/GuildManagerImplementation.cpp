@@ -1210,6 +1210,12 @@ void GuildManagerImplementation::setMemberTitle(CreatureObject* player, Creature
 		params.setStringId("@guild:title_target"); // %TU has set your guild title to '%TT'.
 		params.setTU(player->getDisplayedName());
 		target->sendSystemMessage(params);
+
+		// Refresh target's displayed title
+		PlayerObject* targetGhost = target->getPlayerObject();
+		if (targetGhost != nullptr) {
+			targetGhost->refreshDisplayTitle();
+		}
 	}
 
 }
@@ -1299,6 +1305,8 @@ void GuildManagerImplementation::kickMember(CreatureObject* player, CreatureObje
 
 		if (targetGhost != nullptr) {
 			targetGhost->updateInRangeBuildingPermissions();
+			// Refresh displayed title to show profession title
+			targetGhost->refreshDisplayTitle();
 		}
 	}
 
@@ -1663,6 +1671,8 @@ void GuildManagerImplementation::acceptSponsoredPlayer(CreatureObject* player, u
 
 		if (targetGhost != nullptr) {
 			targetGhost->updateInRangeBuildingPermissions();
+			// Refresh displayed title to show guild title if set
+			targetGhost->refreshDisplayTitle();
 		}
 	}
 
