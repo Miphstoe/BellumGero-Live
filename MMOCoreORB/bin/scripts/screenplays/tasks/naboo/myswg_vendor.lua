@@ -1674,17 +1674,33 @@ elseif (optionLink == "travel_bsv_teleport") then
 
                 -- Advertisement System Handlers
                 elseif (optionLink == "ad_view_queue") then
-                    -- View the current ad queue
-                    require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
-                    local queueStatus = MySwgVendorAdManager:getQueueStatus()
-
-                    nextConversationScreen = conversation:getScreen("ad_view_queue")
-                    if nextConversationScreen ~= nil then
-                        local screenObj = LuaConversationScreen(nextConversationScreen)
-                        if screenObj ~= nil then
-                            screenObj:setCustomDialogText(queueStatus)
+                    -- View the current ad queue - send as system message
+                    if not MySwgVendorAdManager then
+                        local success, err = pcall(function()
+                            require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+                        end)
+                        if not success then
+                            print("ERROR: Failed to load ad_manager in ad_view_queue: " .. tostring(err))
                         end
                     end
+
+                    local queueStatus = "No advertisements currently active.\n\nPurchase your ad space now!"
+                    if MySwgVendorAdManager and type(MySwgVendorAdManager.getQueueStatus) == "function" then
+                        queueStatus = MySwgVendorAdManager:getQueueStatus()
+                    end
+
+                    -- Send queue status as system messages (split by newlines)
+                    local lines = {}
+                    for line in string.gmatch(queueStatus, "[^\n]+") do
+                        table.insert(lines, line)
+                    end
+
+                    for _, line in ipairs(lines) do
+                        creature:sendSystemMessage(line)
+                    end
+
+                    -- Return to main menu
+                    nextConversationScreen = conversation:getScreen("intro")
 
                 elseif (optionLink == "ad_purchase_proceed") then
                     -- Purchase advertisement - check if they can afford it first
