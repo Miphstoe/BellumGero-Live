@@ -32,9 +32,10 @@ function myswg_vendor:performBark(pNpc)
     local activeAds = MySwgVendorAdManager:getActiveAds()
 
     if activeAds ~= nil and #activeAds > 0 then
-        -- Each NPC barks a different ad based on their ID (distributes load, avoids spam protection)
+        -- Each NPC rotates through ads over time (NPC ID + time-based cycle)
         local npcId = SceneObject(pNpc):getObjectID()
-        local adIndex = (npcId % #activeAds) + 1  -- Round-robin: NPC ID determines which ad to bark
+        local cycleNumber = math.floor(os.time() / (self.BARK_INTERVAL / 1000))  -- Changes every 2 minutes
+        local adIndex = ((npcId + cycleNumber) % #activeAds) + 1  -- Rotates through ads over time
 
         local ad = activeAds[adIndex]
 
