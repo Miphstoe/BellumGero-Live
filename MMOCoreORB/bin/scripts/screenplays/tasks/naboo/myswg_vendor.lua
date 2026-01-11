@@ -2,7 +2,7 @@ myswg_vendor = ScreenPlay:new {
     numberOfActs = 1,
     questString = "myswg_vendor_task",
     states = {},
-    BARK_INTERVAL = 120000  -- 2 minutes between barks
+    BARK_INTERVAL = 30000  -- 30 seconds between barks
 }
 registerScreenPlay("myswg_vendor", true)
 
