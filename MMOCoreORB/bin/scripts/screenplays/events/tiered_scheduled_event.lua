@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 1, day = 11, hour = 19, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 1, day = 11, hour = 20, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 1, day = 18, hour = 19, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 1, day = 18, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -35,29 +35,29 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
- -- { planet = "corellia", template = "meatlump_fool", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "corellia", template = "krayt_dragon_adolescent", x = -165, y = -4720, z = 28, heading = 0 },
+  { planet = "corellia", template = "deez_nuts_jedi", x = -172, y = -4723, z = 28, heading = 0 },
+  { planet = "corellia", template = "deez_nuts_jedi", x = -165, y = -4720, z = 28, heading = 0 },
  -- { planet = "corellia", template = "meatlump_fool", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
   --{ planet = "corellia", template = "meatlump_cretin", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "corellia", template = "canyon_krayt_dragon", x = -165, y = -4720, z = 28, heading = 0 },
+  { planet = "corellia", template = "throat_goat_jedi", x = -165, y = -4720, z = 28, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
  -- { planet = "corellia", template = "meatlump_loon", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "corellia", template = "krayt_dragon_grand", x = -165, y = -4720, z = 28, heading = 0 },
+  { planet = "corellia", template = "dude_jedi", x = -165, y = -4720, z = 28, heading = 0 },
  -- { planet = "corellia", template = "meatlump_loon", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
  -- { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "corellia", template = "krayt_dragon_ancient", x = -165, y = -4720, z = 28, heading = 0 },
+  { planet = "corellia", template = "humdinger_jedi", x = -165, y = -4720, z = 28, heading = 0 },
   --{ planet = "corellia", template = "wookiee_jedi_event", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
