@@ -9,7 +9,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     leftDialog = "",
     customDialogText = "What can I help you with?",
     stopConversation = "false",
-    options = { 
+    options = {
         {"DOC/ENT BUFFS", "newbuff1"},
         {"Pet Enhance", "petbuff1"},
         {"Weapons", "weaps1"},
@@ -17,11 +17,12 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Loot", "loot1"},
         {"Artisan", "art1"},
         {"Architect", "arch1"},
-        {"Chef", "chef1"},        
+        {"Chef", "chef1"},
         {"Medic", "doc1"},
         {"Droids", "droid1"},
         {"Tailor", "tailor1"},
-        {"Travel", "travel1"}, 
+        {"Travel", "travel1"},
+        {"Advertisement Space", "ad_menu"},
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
@@ -945,4 +946,42 @@ myswg_vendor_insufficient_space = ConvoScreen:new {
     options = { }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_insufficient_space);
+
+-- Advertisement Menu Screens
+myswg_vendor_ad_menu = ConvoScreen:new {
+    id = "ad_menu",
+    leftDialog = "",
+    customDialogText = "I can broadcast your advertisement to all visitors! Each ad runs for 1 week and costs 100,000 credits. Multiple ads will queue up automatically.",
+    stopConversation = "false",
+    options = {
+        {"Purchase Advertisement (100k for 1 week)", "ad_purchase_confirm"},
+        {"View Current Ad Queue", "ad_view_queue"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_ad_menu);
+
+myswg_vendor_ad_purchase_confirm = ConvoScreen:new {
+    id = "ad_purchase_confirm",
+    leftDialog = "",
+    customDialogText = "Ready to purchase ad space for 100,000 credits? You'll be prompted to enter your custom advertisement message.",
+    stopConversation = "false",
+    options = {
+        {"Yes, I want to purchase an ad", "ad_purchase_proceed"},
+        {"No, go back", "ad_menu"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_ad_purchase_confirm);
+
+myswg_vendor_ad_view_queue = ConvoScreen:new {
+    id = "ad_view_queue",
+    leftDialog = "",
+    customDialogText = "QUEUE_STATUS_PLACEHOLDER",
+    stopConversation = "false",
+    options = {
+        {"Back to ad menu", "ad_menu"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_ad_view_queue);
+
 addConversationTemplate("myswg_vendor_conv", myswg_vendor_conv);

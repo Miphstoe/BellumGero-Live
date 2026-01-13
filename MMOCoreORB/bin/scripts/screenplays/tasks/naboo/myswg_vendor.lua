@@ -1,66 +1,215 @@
-myswg_vendor = ScreenPlay:new {                
-    numberOfActs = 1,                
-    questString = "myswg_vendor_task",                   
-    states = {}, 
+myswg_vendor = ScreenPlay:new {
+    numberOfActs = 1,
+    questString = "myswg_vendor_task",
+    states = {},
+    BARK_INTERVAL = 30000  -- 30 seconds between barks
 }
 registerScreenPlay("myswg_vendor", true)
-function myswg_vendor:start()     
-    -- Spawn our character into the world, setting pLarry a pointer variable we can use to check or change his state. 
-    local pWeaponsmith = spawnMobile("corellia", "myswg_vendor", 1, -157, 28.0, -4724, 35, 0 )--cnet
-    local pWeaponsmith1 = spawnMobile("corellia", "myswg_vendor", 1, -5042, 21.0, -2297, 35, 0 )--tyrena
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -3138, 31.0, 2796, 35, 0 )--korvella   
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3333, 308.0, 5524, 35, 0 )--doaba   
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -5550, 15.58, -6061, 35, 0 )--venri  
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 6643.02,330.00,-5920.87, 35, 0 )--belav  
 
+-- Barking function integrated into screenplay (avoids Lua context issues)
+function myswg_vendor:performBark(pNpc)
+    if pNpc == nil then
+        print("ERROR: performBark called with nil pNpc")
+        return
+    end
+
+    -- Load ad manager if needed
+    if not MySwgVendorAdManager then
+        local success, err = pcall(function()
+            require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+        end)
+        if not success then
+            print("ERROR: Failed to load ad manager in performBark: " .. tostring(err))
+            createEvent(self.BARK_INTERVAL, "myswg_vendor", "performBark", pNpc, "")
+            return
+        end
+    end
+
+    -- Check and rotate ads
+    MySwgVendorAdManager:checkAndRotateAds()
+
+    -- Get ALL active ads
+    local activeAds = MySwgVendorAdManager:getActiveAds()
+
+    if activeAds ~= nil and #activeAds > 0 then
+        -- Each NPC rotates through ads over time (NPC ID + time-based cycle)
+        local npcId = SceneObject(pNpc):getObjectID()
+        local cycleNumber = math.floor(os.time() / (self.BARK_INTERVAL / 1000))  -- Changes every 2 minutes
+        local adIndex = ((npcId + cycleNumber) % #activeAds) + 1  -- Rotates through ads over time
+
+        local ad = activeAds[adIndex]
+
+        if ad ~= nil and ad.adMessage ~= nil and ad.adMessage ~= "" then
+            spatialChat(pNpc, ad.adMessage)
+        end
+    end
+
+    -- Schedule next bark
+    createEvent(self.BARK_INTERVAL, "myswg_vendor", "performBark", pNpc, "")
+end
+function myswg_vendor:start()
+    -- Load advertisement system modules GLOBALLY
+    local success, err = pcall(function()
+        require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+    end)
+    if not success then
+        print("ERROR: Failed to load myswg_vendor_ad_manager: " .. tostring(err))
+    end
+
+    success, err = pcall(function()
+        require("screenplays.tasks.naboo.myswg_vendor_barker")
+    end)
+    if not success then
+        print("ERROR: Failed to load myswg_vendor_barker: " .. tostring(err))
+    end
+
+    success, err = pcall(function()
+        require("screenplays.tasks.naboo.myswg_vendor_ad_sui")
+    end)
+    if not success then
+        print("ERROR: Failed to load myswg_vendor_ad_sui: " .. tostring(err))
+    end
+
+    -- Spawn our character into the world, setting pLarry a pointer variable we can use to check or change his state.
+    -- The first spawn (Coronet) is the MASTER NPC that stores the ad queue
+    local pWeaponsmith = spawnMobile("corellia", "myswg_vendor", 1, -157, 28.0, -4724, 35, 0 )--cnet (MASTER)
+
+    -- Initialize barking for master NPC with random delay to stagger NPCs
+    if pWeaponsmith ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith, "") end
+    -- Spawn and initialize other Corellia vendors
+    local pWeaponsmith1 = spawnMobile("corellia", "myswg_vendor", 1, -5042, 21.0, -2297, 35, 0 )--tyrena
+    if pWeaponsmith1 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith1, "") end
+
+    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -3138, 31.0, 2796, 35, 0 )--korvella
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+
+    pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3333, 308.0, 5524, 35, 0 )--doaba
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+
+    pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -5550, 15.58, -6061, 35, 0 )--venri
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+
+    pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 6643.02,330.00,-5920.87, 35, 0 )--belav
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end  
+
+    -- Spawn and initialize Naboo vendors
     local pWeaponsmith3 = spawnMobile("naboo", "myswg_vendor", 1, -4872, 6.0, 4151, 35, 0 )--theed
+    if pWeaponsmith3 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith3, "") end
+
     local pWeaponsmith4 = spawnMobile("naboo", "myswg_vendor", 1, 4807, 4.0, -4705, 35, 0 )--moena
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
     local pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, 5200, -192.0, 6677, 35, 0 )--kaadara
-    local pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, 1444, 14.0, 2777, 35, 0 )--keren
-    local pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, 5331.16,326.95,-1576.12, 35, 0 )--deja
-    local pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, -5495.62,-150.00,-24.69, 35, 0 )--lake ret
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, 1444, 14.0, 2777, 35, 0 )--keren
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, 5331.16,326.95,-1576.12, 35, 0 )--deja
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    pWeaponsmith5 = spawnMobile("naboo", "myswg_vendor", 1, -5495.62,-150.00,-24.69, 35, 0 )--lake ret
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
     
+    -- Spawn and initialize Tatooine vendors
     local pWeaponsmith3 = spawnMobile("tatooine", "myswg_vendor", 1, 3522, 5.0, -4803, 35, 0 )--eisley
+    if pWeaponsmith3 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith3, "") end
+
     local pWeaponsmith4 = spawnMobile("tatooine", "myswg_vendor", 1, -1281, 12.0, -3590, 35, 0 )--bestine
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
     local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -2914, 5.0, 2129, 35, 0 )--espa
-    local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 1293, 7.0, 3140, 35, 0 )--entha
-    local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 48.33,52.00,-5340.53, 35, 0 )--anc 
-	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 3746.6,6.8,2300.5, -90, 0 )--taike
-	local pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -5032.8,75.0,-6572.5, -37, 0 )--wayfar
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 1293, 7.0, 3140, 35, 0 )--entha
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 48.33,52.00,-5340.53, 35, 0 )--anc
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+	pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, 3746.6,6.8,2300.5, -90, 0 )--taike
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+	pWeaponsmith5 = spawnMobile("tatooine", "myswg_vendor", 1, -5032.8,75.0,-6572.5, -37, 0 )--wayfar
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
         
+    -- Spawn and initialize Talus vendors
     local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, -2193, 20.0, 2313, 35, 0 )--talus imp
-    local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 4447, 2.0, 5271, 35, 0 )--nashal
-    local pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 338, 6.0, -2931, 35, 0 )--dearic
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 4447, 2.0, 5271, 35, 0 )--nashal
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("talus", "myswg_vendor", 1, 338, 6.0, -2931, 35, 0 )--dearic
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
     
+    -- Spawn and initialize Rori vendors
     local pWeaponsmith4 = spawnMobile("rori", "myswg_vendor", 1, 5365, 80.0, 5657, 35, 0 )--restuss
-    local pWeaponsmith4 = spawnMobile("rori", "myswg_vendor", 1, -5305, 80.0, -2228, 35, 0 )--narmle             
-    local pWeaponsmith4 = spawnMobile("rori", "myswg_vendor", 1, 3683, 96.0, -6436, 35, 0 )--reb
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("rori", "myswg_vendor", 1, -5305, 80.0, -2228, 35, 0 )--narmle
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("rori", "myswg_vendor", 1, 3683, 96.0, -6436, 35, 0 )--reb
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
     
+    -- Spawn and initialize Endor vendors
     local pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, -948, 73.0, 1550, 35, 0 )--smugglers
-    local pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, 3201, 24.0, -3501, 35, 0 )--research
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("endor", "myswg_vendor", 1, 3201, 24.0, -3501, 35, 0 )--research
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
     
+    -- Spawn and initialize Dantooine vendors
     local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -638, 3.0, 2505, 35, 0 )--mining
-    local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -4209, 3.0, -2349, 35, 0 )--imp
-    local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, 1564, 4.0, -6415, 35, 0 )--aggro
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -4209, 3.0, -2349, 35, 0 )--imp
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, 1564, 4.0, -6415, 35, 0 )--aggro
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
     
+    -- Spawn and initialize Dathomir vendors
     local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, 619, 3.0, 3090, 35, 0 )--trade
-    local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, -47, 18.0, -1586, 35, 0 )--science
-    local pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, 5253, 78.0, -4217, 35, 0 )--Village
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, -47, 18.0, -1586, 35, 0 )--science
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("dathomir", "myswg_vendor", 1, 5253, 78.0, -4217, 35, 0 )--Village
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
 
      
+    -- Spawn and initialize Yavin4 vendors
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -265, 35.0, 4897, 35, 0 )--mining
-    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4052, 17.0, -6220, 37, 0 )--imp
-    local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -6922, 73.0, -5730, 35, 0 )--labor
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4052, 17.0, -6220, 37, 0 )--imp
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -6922, 73.0, -5730, 35, 0 )--labor
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
     
+    -- Spawn and initialize Lok vendors
     local pWeaponsmith4 = spawnMobile("lok", "myswg_vendor", 1, 479, 8.0, 5512, 35, 0 )--lok
-    
-    local pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -512, 1, -3016, 35, 0 )--Rose Red
-    --local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town 
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    -- Spawn and initialize player city vendors
+    pWeaponsmith4 = spawnMobile("dantooine", "myswg_vendor", 1, -512, 1, -3016, 35, 0 )--Rose Red
+    if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
+
+    --local pWeaponsmith2 = spawnMobile("lok", "myswg_vendor", 1, 5052,12,1353, 35, 0 )--Chyna Town
     local pWeaponsmith5 = spawnMobile("dantooine", "myswg_vendor", 1, -5683.33,2,6885, 35, 0 )--New Asgard
-    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven  
-    local pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -512, 1, -3023, 35, 0 )--Rose red
+    if pWeaponsmith5 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith5, "") end
+
+    --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven
+    pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -512, 1, -3023, 35, 0 )--Rose red
     local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
-    local pWeaponsmith2 = spawnMobile("tatooine", "myswg_vendor", 1, 5847,38,4432, 35, 0 ) --Mos Ender Krayt
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+
+    pWeaponsmith2 = spawnMobile("tatooine", "myswg_vendor", 1, 5847,38,4432, 35, 0 ) --Mos Ender Krayt
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
     --junk dealers
     --local pWeaponsmith4 = spawnMobile("lok", "junk_dealer", 1, 5050, 12.0, 1353, 35, 0 )--Chyna Town
     --local pWeaponsmith4 = spawnMobile("dathomir", "junk_dealer", 1, -3947, 124.0, -54, 35, 0 )--ns    
@@ -72,8 +221,86 @@ function myswg_vendor:start()
 --    local pLarry = spawnMobile("naboo", "merch_crazy_larry", 1, -4881, 6.0, 4150, 35, 0 )
 end
 myswg_vendor_convo_handler = Object:new {
-    tstring = "myconversation" 
+    tstring = "myconversation"
 }
+
+-- SUI callback for advertisement input - must be in this screenplay object
+function myswg_vendor_convo_handler:handleAdPurchaseSui(pPlayer, pSui, eventIndex, args)
+    if pPlayer == nil then
+        print("ERROR: handleAdPurchaseSui called with nil pPlayer")
+        return
+    end
+
+    local player = LuaCreatureObject(pPlayer)
+    if player == nil then
+        print("ERROR: handleAdPurchaseSui - LuaCreatureObject returned nil")
+        return
+    end
+
+    -- Check if player cancelled
+    if eventIndex == 1 then
+        player:sendSystemMessage("Advertisement purchase cancelled. No credits were charged.")
+        return
+    end
+
+    -- Get the input text
+    local adMessage = args
+
+    if adMessage == nil or adMessage == "" then
+        print("ERROR: adMessage is nil or empty")
+        player:sendSystemMessage("Advertisement message cannot be empty. No credits were charged.")
+        return
+    end
+
+    -- Trim whitespace
+    adMessage = adMessage:match("^%s*(.-)%s*$")
+
+    -- Load ad manager if needed
+    if not MySwgVendorAdManager then
+        require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+    end
+
+    -- Validate message length
+    if string.len(adMessage) > MySwgVendorAdManager.MAX_AD_LENGTH then
+        print("ERROR: adMessage too long: " .. string.len(adMessage))
+        player:sendSystemMessage("Advertisement message is too long (max " .. MySwgVendorAdManager.MAX_AD_LENGTH .. " characters). No credits were charged.")
+        return
+    end
+
+    if adMessage == "" then
+        print("ERROR: adMessage empty after trim")
+        player:sendSystemMessage("Advertisement message cannot be empty. No credits were charged.")
+        return
+    end
+
+    -- Check if player can afford it (double-check)
+    local credits = player:getCashCredits()
+
+    if credits < MySwgVendorAdManager.AD_COST then
+        print("ERROR: Player cannot afford ad")
+        player:sendSystemMessage("You need " .. MySwgVendorAdManager.AD_COST .. " credits to purchase advertisement space.")
+        return
+    end
+
+    -- Get player name
+    local playerName = player:getFirstName()
+
+    -- Purchase the ad (this adds it to the queue)
+    local success, message = MySwgVendorAdManager:purchaseAd(playerName, adMessage, "", "")
+
+    -- Send result to player
+    if success then
+        -- Only charge credits AFTER successful ad purchase
+        player:subtractCashCredits(MySwgVendorAdManager.AD_COST)
+
+        player:sendSystemMessage("@base_player:prose_pay_success")  -- "You successfully make a payment"
+        player:sendSystemMessage("Advertisement purchased successfully!")
+        player:sendSystemMessage(message)
+    else
+        print("ERROR: Ad purchase failed: " .. tostring(message))
+        player:sendSystemMessage("Failed to purchase advertisement: " .. message)
+    end
+end
 function myswg_vendor_convo_handler:getNextConversationScreen(conversationTemplate, conversingPlayer, selectedOption)            
         -- Assign the player to variable creature for use inside this function.
         local creature = LuaCreatureObject(conversingPlayer)
@@ -1443,8 +1670,76 @@ elseif (optionLink == "travel_bsv_teleport") then
                 -- giveItem(pInventory, "object/tangible/politician_master_token.iff", -1)
     
                 -- Send confirmation message
-               -- creature:sendSystemMessage("You have been granted Politician Master access!")  
-                                       
+               -- creature:sendSystemMessage("You have been granted Politician Master access!")
+
+                -- Advertisement System Handlers
+                elseif (optionLink == "ad_view_queue") then
+                    -- View the current ad queue - send as system message
+                    if not MySwgVendorAdManager then
+                        local success, err = pcall(function()
+                            require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+                        end)
+                        if not success then
+                            print("ERROR: Failed to load ad_manager in ad_view_queue: " .. tostring(err))
+                        end
+                    end
+
+                    local queueStatus = "No advertisements currently active.\n\nPurchase your ad space now!"
+                    if MySwgVendorAdManager and type(MySwgVendorAdManager.getQueueStatus) == "function" then
+                        queueStatus = MySwgVendorAdManager:getQueueStatus()
+                    end
+
+                    -- Send queue status as system messages (split by newlines)
+                    local lines = {}
+                    for line in string.gmatch(queueStatus, "[^\n]+") do
+                        table.insert(lines, line)
+                    end
+
+                    for _, line in ipairs(lines) do
+                        creature:sendSystemMessage(line)
+                    end
+
+                    -- Return to main menu
+                    nextConversationScreen = conversation:getScreen("intro")
+
+                elseif (optionLink == "ad_purchase_proceed") then
+                    -- Purchase advertisement - check if they can afford it first
+                    if not canAfford(100000) then
+                        nextConversationScreen = conversation:getScreen("insufficient_funds")
+                        creature:sendSystemMessage("You need 100,000 credits to purchase advertisement space")
+                    else
+                        -- Load the ad modules in this context (needed for SUI callback)
+                        if not MySwgVendorAdManager then
+                            local success, err = pcall(function()
+                                require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+                            end)
+                            if not success then
+                                print("ERROR: Failed to load ad_manager: " .. tostring(err))
+                            end
+                        end
+
+                        if not MySwgVendorAdSui then
+                            local success, err = pcall(function()
+                                require("screenplays.tasks.naboo.myswg_vendor_ad_sui")
+                            end)
+                            if not success then
+                                print("ERROR: Failed to load ad_sui in conversation handler: " .. tostring(err))
+                                creature:sendSystemMessage("ERROR: Advertisement system failed to load. Please contact an administrator.")
+                                return nil
+                            end
+                        end
+
+                        if MySwgVendorAdSui and MySwgVendorAdSui.promptForAd then
+                            MySwgVendorAdSui:promptForAd(conversingPlayer)
+                        else
+                            print("ERROR: MySwgVendorAdSui or promptForAd is nil!")
+                            creature:sendSystemMessage("ERROR: Advertisement system not available. Please contact an administrator.")
+                        end
+
+                        -- Close conversation
+                        return nil
+                    end
+
                 end
             end
         end
