@@ -559,7 +559,7 @@ function conv_handler:getBGTokenReward2(screenId)
         ["give_item_2_17"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
         ["give_item_2_18"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
         ["give_item_2_19"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
-        ["give_item_2_20"] = {name = "Large Potted Plant (Style 2)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s2.iff"},
+        ["give_item_2_20"] = {name = "Large Potted Plant (Style 3)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s3.iff"},
     }
     return rewards[screenId]
 end

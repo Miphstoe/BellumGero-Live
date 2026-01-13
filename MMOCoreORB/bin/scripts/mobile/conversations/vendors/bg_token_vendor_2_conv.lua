@@ -102,7 +102,7 @@ items_menu_4 = ConvoScreen:new {
         {"Item 17 - [Painting: Smuggler's Run]", "trade_item_17"},
         {"Item 18 - [Painting: Imperial Oppression (TIE Oppressor)]", "trade_item_18"},
         {"Item 19 - [Painting: Emperor's Eyes (TIE Sentinel)]", "trade_item_19"},
-        {"Item 20 - [Large Potted Plant (Style 2)]", "trade_item_20"},
+        {"Item 20 - [Large Potted Plant (Style 3)]", "trade_item_20"},
         {"Previous", "items_menu_3"},
         {"Back", "first_screen"},
     }
