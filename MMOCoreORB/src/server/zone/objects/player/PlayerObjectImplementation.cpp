@@ -31,7 +31,6 @@
 #include "server/zone/packets/player/PlayerObjectDeltaMessage8.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage6.h"
-#include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/chat/ChatOnGetFriendsList.h"
 #include "server/zone/packets/chat/ChatOnGetIgnoreList.h"
 #include "server/zone/packets/chat/ChatOnAddFriend.h"
@@ -582,6 +581,9 @@ void PlayerObjectImplementation::notifySceneReady() {
 		// Create or spawn the helper droid
 		createHelperDroid();
 	}
+
+	// Refresh guild title display after scene is ready to prevent titles from disappearing during zone transfers
+	refreshDisplayTitle();
 
 	// info(true) << creature->getDisplayedName() << " --- notifySceneReady COMPLETE with Zone Name: " << zone->getZoneName() << " World Pos: " << creature->getWorldPosition().toString();
 }
@@ -1640,22 +1642,29 @@ void PlayerObjectImplementation::refreshDisplayTitle() {
 
 	CreatureObject* creature = parent->asCreatureObject();
 
+	// Get the base name (first name + last name)
+	String firstName = creature->getFirstName();
+	String lastName = creature->getLastName();
+	UnicodeString baseName = firstName;
+
+	if (!lastName.isEmpty()) {
+		baseName = baseName + " " + lastName;
+	}
+
 	// Get guild title if player is in a guild
-	UnicodeString guildTitle = "";
 	ManagedReference<GuildObject*> guild = creature->getGuildObject().get();
+	UnicodeString displayName = baseName;
 
 	if (guild != nullptr) {
 		String guildTitleStr = guild->getGuildMemberTitle(creature->getObjectID());
 		if (!guildTitleStr.isEmpty()) {
-			guildTitle = UnicodeString(guildTitleStr);
+			// Add guild title tag in cyan
+			displayName = baseName + " \\#00ffff[" + guildTitleStr + "]\\#.";
 		}
 	}
 
-	// Update the displayed name with guild title tag
-	TangibleObjectDeltaMessage3* tanod3 = new TangibleObjectDeltaMessage3(creature);
-	tanod3->updateCustomName(creature->getDisplayedName(), guildTitle);
-	tanod3->close();
-	creature->broadcastMessage(tanod3, true);
+	// Store the custom name (this makes it visible to all players)
+	creature->setCustomObjectName(displayName, true);
 }
 
 void PlayerObjectImplementation::notifyOnline() {
