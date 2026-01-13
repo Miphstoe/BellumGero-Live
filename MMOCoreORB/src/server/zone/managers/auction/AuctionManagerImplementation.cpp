@@ -31,6 +31,7 @@
 #include "server/zone/managers/vendor/VendorManager.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/objects/tangible/components/vendor/AuctionTerminalDataComponent.h"
+#include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/objects/player/sessions/TradeSession.h"
 #include "AuctionSearchTask.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
@@ -960,6 +961,14 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 		region = cityRegion->getCityRegionName();
 
 	String name = objectToSell->getDisplayedName();
+
+	// Fallback: if name is empty, try to get from template objectName
+	if (name.isEmpty()) {
+		const StringId* templateName = objectToSell->getObjectName();
+		if (templateName != nullptr && !templateName->isEmpty()) {
+			name = StringIdManager::instance()->getStringId(templateName->getFullPath().hashCode()).toString();
+		}
+	}
 
 	Locker locker(item);
 
