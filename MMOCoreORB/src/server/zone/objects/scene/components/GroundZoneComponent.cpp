@@ -325,6 +325,15 @@ void GroundZoneComponent::switchZone(SceneObject* sceneObject, const String& new
 		newZone->transferObject(sceneObject, -1, true);
 	}
 
+	// Refresh guild title display after zone transfer to prevent titles from disappearing
+	CreatureObject* creature = sceneObject->asCreatureObject();
+	if (creature != nullptr) {
+		PlayerObject* ghost = creature->getPlayerObject();
+		if (ghost != nullptr) {
+			ghost->refreshDisplayTitle();
+		}
+	}
+
 	sceneObject->setMovementCounter(0);
 }
 

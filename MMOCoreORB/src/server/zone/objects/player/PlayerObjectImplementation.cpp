@@ -582,6 +582,9 @@ void PlayerObjectImplementation::notifySceneReady() {
 		createHelperDroid();
 	}
 
+	// Refresh guild title display after scene is ready to prevent titles from disappearing during zone transfers
+	refreshDisplayTitle();
+
 	// info(true) << creature->getDisplayedName() << " --- notifySceneReady COMPLETE with Zone Name: " << zone->getZoneName() << " World Pos: " << creature->getWorldPosition().toString();
 }
 
