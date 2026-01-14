@@ -38,6 +38,7 @@
 #include "server/zone/objects/guild/sui/GuildMemberOptionsSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildMemberPermissionsResponseSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildMemberRemoveSuiCallback.h"
+#include "server/zone/objects/guild/sui/GuildRemoveTitleSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildTitleResponseSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildSponsorSuiCallback.h"
 #include "server/zone/objects/guild/sui/GuildSponsorVerifySuiCallback.h"
@@ -1125,6 +1126,7 @@ void GuildManagerImplementation::sendGuildMemberOptionsTo(CreatureObject* player
 	suiBox->setCancelButton(true, "@cancel");
 
 	suiBox->addMenuItem("@guild:title", memberID); // Set Title
+	suiBox->addMenuItem("Remove Title", memberID); // Remove Title
 	suiBox->addMenuItem("@guild:kick", memberID); // Kick
 	suiBox->addMenuItem("@guild:permissions", memberID); // Change Permissions
 
@@ -1178,17 +1180,20 @@ void GuildManagerImplementation::setMemberTitle(CreatureObject* player, Creature
 		return;
 	}
 
-	NameManager* nameManager = processor->getNameManager();
+	// Allow empty string to remove title, otherwise validate
+	if (!title.isEmpty()) {
+		NameManager* nameManager = processor->getNameManager();
 
-	int validate = nameManager->validateGuildName(title, NameManagerType::GUILD_TITLE);
+		int validate = nameManager->validateGuildName(title, NameManagerType::GUILD_TITLE);
 
-	if (validate != NameManagerResult::ACCEPTED) {
-		if (validate == NameManagerResult::DECLINED_GUILD_LENGTH)
-			player->sendSystemMessage("@guild:title_fail_bad_length"); // Guild member titles may be at most 25 characters in length.
-		else
-			player->sendSystemMessage("@guild:title_fail_not_allowed"); // That title is not allowed.
+		if (validate != NameManagerResult::ACCEPTED) {
+			if (validate == NameManagerResult::DECLINED_GUILD_LENGTH)
+				player->sendSystemMessage("@guild:title_fail_bad_length"); // Guild member titles may be at most 25 characters in length.
+			else
+				player->sendSystemMessage("@guild:title_fail_not_allowed"); // That title is not allowed.
 
-		return;
+			return;
+		}
 	}
 
 	Locker clocker(guild, player);
@@ -1201,16 +1206,28 @@ void GuildManagerImplementation::setMemberTitle(CreatureObject* player, Creature
 	guild->setGuildMemberTitle(targetID, title);
 
 	StringIdChatParameter params;
-	params.setStringId("@guild:title_self"); // You set %TU's guild title to '%TT'.
-	params.setTU(target->getDisplayedName());
-	params.setTT(title);
-	player->sendSystemMessage(params);
+
+	// Different message for removing vs setting title
+	if (title.isEmpty()) {
+		player->sendSystemMessage("You removed " + target->getDisplayedName() + "'s guild title.");
+
+		if (target->isOnline()) {
+			target->sendSystemMessage(player->getDisplayedName() + " has removed your guild title.");
+		}
+	} else {
+		params.setStringId("@guild:title_self"); // You set %TU's guild title to '%TT'.
+		params.setTU(target->getDisplayedName());
+		params.setTT(title);
+		player->sendSystemMessage(params);
+
+		if (target->isOnline()) {
+			params.setStringId("@guild:title_target"); // %TU has set your guild title to '%TT'.
+			params.setTU(player->getDisplayedName());
+			target->sendSystemMessage(params);
+		}
+	}
 
 	if (target->isOnline()) {
-		params.setStringId("@guild:title_target"); // %TU has set your guild title to '%TT'.
-		params.setTU(player->getDisplayedName());
-		target->sendSystemMessage(params);
-
 		// Refresh target's displayed title
 		PlayerObject* targetGhost = target->getPlayerObject();
 		if (targetGhost != nullptr) {
@@ -1218,6 +1235,38 @@ void GuildManagerImplementation::setMemberTitle(CreatureObject* player, Creature
 		}
 	}
 
+}
+
+void GuildManagerImplementation::sendGuildRemoveTitlePromptTo(CreatureObject* player, CreatureObject* target) {
+	PlayerObject* ghost = player->getPlayerObject();
+
+	if (ghost == nullptr)
+		return;
+
+	ManagedReference<GuildObject*> guild = player->getGuildObject().get();
+
+	if (guild == nullptr || !guild->hasTitlePermission(player->getObjectID())) {
+		player->sendSystemMessage("@guild:generic_fail_no_permission"); // You do not have permission to perform that operation.
+		return;
+	}
+
+	ghost->closeSuiWindowType(SuiWindowType::GUILD_MEMBER_TITLE);
+
+	ManagedReference<SuiMessageBox*> suiBox = new SuiMessageBox(player, SuiWindowType::GUILD_MEMBER_TITLE);
+	suiBox->setCallback(new GuildRemoveTitleSuiCallback(server));
+
+	suiBox->setPromptTitle("Remove Guild Title");
+
+	String text = "Are you sure you want to remove the guild title from " + target->getDisplayedName() + "?";
+
+	suiBox->setPromptText(text);
+	suiBox->setUsingObject(target);
+	suiBox->setForceCloseDisabled();
+	suiBox->setCancelButton(true, "@no");
+	suiBox->setOkButton(true, "@yes");
+
+	ghost->addSuiBox(suiBox);
+	player->sendMessage(suiBox->generateMessage());
 }
 
 void GuildManagerImplementation::sendGuildKickPromptTo(CreatureObject* player, CreatureObject* target) {
