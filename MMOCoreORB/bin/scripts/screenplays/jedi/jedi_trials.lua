@@ -228,6 +228,18 @@ function JediTrials:unlockJediKnight(pPlayer)
 	sui.setPrompt(unlockString)
 	sui.sendTo(pPlayer)
 
+	-- Galaxy-wide broadcast announcing the new Knight
+	local playerName = CreatureObject(pPlayer):getFirstName()
+	local councilName = (councilType == self.COUNCIL_LIGHT) and "Light Jedi" or "Dark Jedi"
+	local broadcastMsg = "There is a Disturbance in the Force! " .. playerName .. " has completed the Knight Trials and become a " .. councilName .. " Knight!"
+
+	if type(broadcastToGalaxy) == "function" then
+		local ok = pcall(broadcastToGalaxy, pPlayer, broadcastMsg)
+		if not ok then
+			pcall(broadcastToGalaxy, broadcastMsg)
+		end
+	end
+
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
 
 	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
