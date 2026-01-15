@@ -61,8 +61,8 @@ padawanPhaseMessages = {
 }
 
 -- Padawan robe templates (placed in inventory upon completion)
-PADAWAN_ROBE_LIGHT = "object/tangible/wearables/robe/jedi_padawan_robe_light"
-PADAWAN_ROBE_DARK = "object/tangible/wearables/robe/jedi_padawan_robe_dark"
+PADAWAN_ROBE_LIGHT = "object/tangible/wearables/robe/robe_jedi_padawan.iff"
+PADAWAN_ROBE_DARK = "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff"
 
 -- Level-based point tiers (same as Knight Trials)
 padawanTrialLevelPointTiers = {

@@ -448,6 +448,9 @@ function VillageGmSui.playerInfo(pPlayer, targetID)
 		sui.add("Manage Visibility", "manageVisibility" .. targetID)
 	end
 
+	sui.add("Padawan Trials", "padawanTrialsMenu" .. targetID)
+	sui.add("Knight Trials", "knightTrialsMenu" .. targetID)
+
 	sui.sendTo(pPlayer)
 end
 
@@ -786,6 +789,159 @@ function VillageGmSui:manageVisibilityCallback(pPlayer, pSui, eventIndex, args)
 	local cancelPressed = (eventIndex == 1)
 
 	if (cancelPressed) then
+		return
+	end
+end
+
+function VillageGmSui.padawanTrialsMenu(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	local sui = SuiListBox.new("VillageGmSui", "padawanTrialsCallback")
+	sui.setTitle("Padawan Trials Management")
+
+	local promptBuf = " \\#pcontrast1 " .. "Player:" .. " \\#pcontrast2 " .. SceneObject(pTarget):getCustomObjectName() .. " (" .. targetID .. ")\n"
+	promptBuf = promptBuf .. "Select the Padawan Trials phase to start, or complete the trials."
+	sui.setPrompt(promptBuf)
+
+	sui.add("Advance to Phase 1", "padawanPhase1:" .. targetID)
+	sui.add("Advance to Phase 2", "padawanPhase2:" .. targetID)
+	sui.add("Advance to Phase 3", "padawanPhase3:" .. targetID)
+	sui.add("Advance to Phase 4", "padawanPhase4:" .. targetID)
+	sui.add("Advance to Phase 5", "padawanPhase5:" .. targetID)
+	sui.add("Make Eligible to Start Padawan Trials", "padawanEligible:" .. targetID)
+	sui.add("Complete Padawan Trials", "padawanComplete:" .. targetID)
+	sui.add("Back", "padawanBack:" .. targetID)
+
+	sui.sendTo(pPlayer)
+end
+
+function VillageGmSui:padawanTrialsCallback(pPlayer, pSui, eventIndex, args)
+	local cancelPressed = (eventIndex == 1)
+
+	if (cancelPressed or args == nil or tonumber(args) < 0) then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local menuOption = suiPageData:getStoredData(tostring(args))
+	local targetID, pTarget
+	local optionBase, optionTarget = string.match(menuOption, "^(.*):(%d+)$")
+
+	if (optionBase ~= nil and optionTarget ~= nil) then
+		menuOption = optionBase
+		targetID = optionTarget
+		pTarget = getSceneObject(targetID)
+	end
+
+	if (pTarget == nil or not SceneObject(pTarget):isPlayerCreature()) then
+		Logger:log("Unable to find player for VillageGmSui function padawanTrialsCallback - " .. menuOption .. " using oid " .. targetID, LT_ERROR)
+		return
+	end
+
+	if (menuOption == "padawanBack") then
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	local phase = tonumber(string.match(menuOption, "^padawanPhase(%d)$"))
+
+	if (phase ~= nil) then
+		PadawanTrials:resetAllPadawanTrials(pTarget)
+		PadawanTrials:startPhase(pTarget, phase)
+		CreatureObject(pPlayer):sendSystemMessage("Padawan Trials set to Phase " .. phase .. " for " .. SceneObject(pTarget):getCustomObjectName() .. ".")
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	if (menuOption == "padawanComplete") then
+		PadawanTrials:unlockPadawan(pTarget)
+		CreatureObject(pPlayer):sendSystemMessage("Padawan Trials completed for " .. SceneObject(pTarget):getCustomObjectName() .. ".")
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	if (menuOption == "padawanEligible") then
+		PadawanTrials:resetAllPadawanTrials(pTarget)
+		VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE)
+		CreatureObject(pPlayer):sendSystemMessage("Padawan Trials eligibility set for " .. SceneObject(pTarget):getCustomObjectName() .. ".")
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+end
+
+function VillageGmSui.knightTrialsMenu(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	local sui = SuiListBox.new("VillageGmSui", "knightTrialsCallback")
+	sui.setTitle("Knight Trials Management")
+
+	local promptBuf = " \\#pcontrast1 " .. "Player:" .. " \\#pcontrast2 " .. SceneObject(pTarget):getCustomObjectName() .. " (" .. targetID .. ")\n"
+	promptBuf = promptBuf .. "Select which Jedi Knight path to grant."
+	sui.setPrompt(promptBuf)
+
+	sui.add("Make Light Jedi Knight", "knightLight:" .. targetID)
+	sui.add("Make Dark Jedi Knight", "knightDark:" .. targetID)
+	sui.add("Back", "knightBack:" .. targetID)
+
+	sui.sendTo(pPlayer)
+end
+
+function VillageGmSui:knightTrialsCallback(pPlayer, pSui, eventIndex, args)
+	local cancelPressed = (eventIndex == 1)
+
+	if (cancelPressed or args == nil or tonumber(args) < 0) then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local menuOption = suiPageData:getStoredData(tostring(args))
+	local targetID, pTarget
+	local optionBase, optionTarget = string.match(menuOption, "^(.*):(%d+)$")
+
+	if (optionBase ~= nil and optionTarget ~= nil) then
+		menuOption = optionBase
+		targetID = optionTarget
+		pTarget = getSceneObject(targetID)
+	end
+
+	if (pTarget == nil or not SceneObject(pTarget):isPlayerCreature()) then
+		Logger:log("Unable to find player for VillageGmSui function knightTrialsCallback - " .. menuOption .. " using oid " .. targetID, LT_ERROR)
+		return
+	end
+
+	if (menuOption == "knightBack") then
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	if (menuOption == "knightLight" or menuOption == "knightDark") then
+		local councilType = menuOption == "knightLight" and JediTrials.COUNCIL_LIGHT or JediTrials.COUNCIL_DARK
+		writeScreenPlayData(pTarget, "KnightTrials", "startedTrials", 1)
+		writeScreenPlayData(pTarget, "KnightTrials", "activatedAtShrine", 1)
+		JediTrials:setJediCouncil(pTarget, councilType)
+		JediTrials:unlockJediKnight(pTarget)
+		CreatureObject(pPlayer):sendSystemMessage("Knight Trials completed for " .. SceneObject(pTarget):getCustomObjectName() .. ".")
+		VillageGmSui.playerInfo(pPlayer, targetID)
 		return
 	end
 end

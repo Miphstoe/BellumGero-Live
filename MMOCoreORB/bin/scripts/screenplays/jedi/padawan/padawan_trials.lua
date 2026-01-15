@@ -517,26 +517,8 @@ function PadawanTrials:unlockPadawan(pPlayer)
 	-- Grant Padawan skill
 	JediTrials:unlockJediPadawan(pPlayer)
 
-	-- Give robes based on faction
-	local creature = CreatureObject(pPlayer)
-	local faction = creature:getFaction()
-
-	local robeTemplate
-	if faction == FACTIONREBEL then
-		robeTemplate = PADAWAN_ROBE_LIGHT
-	else
-		robeTemplate = PADAWAN_ROBE_DARK
-	end
-
-	-- Place robes in inventory
-	local inventory = creature:getSlottedObject("inventory")
-	if inventory ~= nil then
-		giveItem(inventory, robeTemplate, -1)
-	end
-
 	-- Send congratulation message
 	CreatureObject(pPlayer):sendSystemMessage("Congratulations! You have become a Jedi Padawan!")
-	CreatureObject(pPlayer):sendSystemMessage("Your Padawan robes have been placed in your inventory.")
 
 	-- Clear trial data
 	writeScreenPlayData(pPlayer, "PadawanTrials", "completedTrials", 1)
