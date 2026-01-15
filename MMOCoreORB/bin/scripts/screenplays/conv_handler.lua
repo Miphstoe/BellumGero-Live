@@ -753,42 +753,45 @@ function conv_handler:countUntunedCrystalsInContainer(container)
         if pObject then
             local object = LuaSceneObject(pObject)
             if object then
-                local success, displayedName = pcall(function() return object:getDisplayedName() end)
-                local isCrystal = false
-
-                if success and displayedName then
-                    -- Trim whitespace
-                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
-
-                    -- Check for untuned crystals:
-                    -- 1. Exactly "Crystal" (untuned power crystals)
-                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
-                    -- 3. Lightsaber Color Crystal (lightsaber color module)
-                    if displayedName == "Crystal" then
-                        isCrystal = true
-                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    end
+                -- Get the template path to check what type of object this is
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                local templatePath = ""
+                if templateSuccess and template then
+                    templatePath = string.lower(template)
                 end
 
-                if isCrystal then
-                    count = count + 1
-                end
-            end
-        end
-    end
+                -- Check if this is a container (bag, backpack, etc) by template path
+                local isContainer = string.find(templatePath, "container/") or
+                                   string.find(templatePath, "backpack/") or
+                                   string.find(templatePath, "wearables/backpack")
 
-    -- Also check containers within inventory
-    for i = 0, size - 1, 1 do
-        local pObject = containerObj:getContainerObject(i)
-        if pObject then
-            local object = LuaSceneObject(pObject)
-            if object then
-                local success, isContainer = pcall(function() return object:isContainerObject() end)
-                if success and isContainer then
+                if isContainer then
+                    -- This is a container, recurse into it but don't count the container itself
                     count = count + self:countUntunedCrystalsInContainer(pObject)
+                else
+                    -- Check if it's a crystal by template path (most reliable check)
+                    local isCrystal = false
+
+                    -- Crystals have templates containing "lightsaber_module" or in component/weapon/lightsaber path
+                    if string.find(templatePath, "lightsaber_module") or
+                       string.find(templatePath, "component/weapon/lightsaber") then
+                        -- It's a lightsaber crystal component - check if untuned
+                        local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                        if success and displayedName then
+                            displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+                            -- Only count if NOT tuned
+                            if not displayedName:find("Tuned") then
+                                isCrystal = true
+                            end
+                        else
+                            -- If we can't get the name, still count it as a crystal based on template
+                            isCrystal = true
+                        end
+                    end
+
+                    if isCrystal then
+                        count = count + 1
+                    end
                 end
             end
         end
@@ -832,48 +835,47 @@ function conv_handler:removeUntunedCrystalsFromContainer(container, count)
         if pObject then
             local object = LuaSceneObject(pObject)
             if object then
-                local success, displayedName = pcall(function() return object:getDisplayedName() end)
-                local isCrystal = false
-
-                if success and displayedName then
-                    -- Trim whitespace
-                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
-
-                    -- Check for untuned crystals:
-                    -- 1. Exactly "Crystal" (untuned power crystals)
-                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
-                    -- 3. Lightsaber Color Crystal (lightsaber color module)
-                    if displayedName == "Crystal" then
-                        isCrystal = true
-                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    end
+                -- Get the template path to check what type of object this is
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                local templatePath = ""
+                if templateSuccess and template then
+                    templatePath = string.lower(template)
                 end
 
-                if isCrystal then
-                    local destroySuccess = pcall(function() object:destroyObjectFromWorld(true) end)
-                    if destroySuccess then
-                        removed = removed + 1
+                -- Check if this is a container (bag, backpack, etc) by template path
+                local isContainer = string.find(templatePath, "container/") or
+                                   string.find(templatePath, "backpack/") or
+                                   string.find(templatePath, "wearables/backpack")
+
+                if isContainer then
+                    -- This is a container, recurse into it to find crystals inside
+                    removed = removed + self:removeUntunedCrystalsFromContainer(pObject, count - removed)
+                else
+                    -- Check if it's a crystal by template path (most reliable check)
+                    local isCrystal = false
+
+                    -- Crystals have templates containing "lightsaber_module" or in component/weapon/lightsaber path
+                    if string.find(templatePath, "lightsaber_module") or
+                       string.find(templatePath, "component/weapon/lightsaber") then
+                        -- It's a lightsaber crystal component - check if untuned
+                        local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                        if success and displayedName then
+                            displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+                            -- Only remove if NOT tuned
+                            if not displayedName:find("Tuned") then
+                                isCrystal = true
+                            end
+                        else
+                            -- If we can't get the name, still treat it as a crystal based on template
+                            isCrystal = true
+                        end
                     end
-                end
-            end
-        end
-    end
 
-    -- Also remove from containers
-    if removed < count then
-        for i = size - 1, 0, -1 do
-            if removed >= count then break end
-
-            local pObject = containerObj:getContainerObject(i)
-            if pObject then
-                local object = LuaSceneObject(pObject)
-                if object then
-                    local success, isContainer = pcall(function() return object:isContainerObject() end)
-                    if success and isContainer then
-                        removed = removed + self:removeUntunedCrystalsFromContainer(pObject, count - removed)
+                    if isCrystal then
+                        local destroySuccess = pcall(function() object:destroyObjectFromWorld(true) end)
+                        if destroySuccess then
+                            removed = removed + 1
+                        end
                     end
                 end
             end

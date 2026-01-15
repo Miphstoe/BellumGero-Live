@@ -35,7 +35,7 @@ function PadawanTrials:startPadawanTrials(pObject, pPlayer)
 		-- For now, we'll automatically proceed when awaiting crafting
 		-- The player has crafted and tuned a lightsaber (they told us they did)
 		writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 0)
-		self:resumeHuntingPhase(pPlayer, 3)
+		self:startHuntingPhase(pPlayer, 3)
 		return
 	end
 
@@ -372,6 +372,7 @@ function PadawanTrials:handleTriviaAnswer(pPlayer, pSui, eventIndex, args)
 					awardSkill(pPlayer, "force_title_jedi_rank_01")
 					CreatureObject(pPlayer):sendSystemMessage("You have been granted the rank of Jedi Initiate. You may now craft your lightsaber!")
 				end
+				writeScreenPlayData(pPlayer, "PadawanTrials", "phaseStatus", "crafting")
 				writeScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting", 1)
 				CreatureObject(pPlayer):sendSystemMessage(padawanPhaseMessages[phase].crafting_prompt)
 			else
