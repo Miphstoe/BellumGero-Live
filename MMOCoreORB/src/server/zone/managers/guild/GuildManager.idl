@@ -180,6 +180,8 @@ class GuildManager extends ManagedService implements Logger {
 
 	public native void setMemberTitle(CreatureObject player, CreatureObject target, final string title);
 
+	public native void sendGuildRemoveTitlePromptTo(CreatureObject player, CreatureObject target);
+
 	public native void toggleGuildPermission(CreatureObject player, unsigned long targetID, int permissionIndex, GuildTerminal guildTerminal);
 
 	public native ChatRoom createGuildChannels(GuildObject guild);

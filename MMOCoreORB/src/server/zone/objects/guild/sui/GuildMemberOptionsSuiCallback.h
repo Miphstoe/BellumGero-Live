@@ -69,10 +69,13 @@ public:
 		case 0: //Set Title
 			guildManager->sendGuildSetTitleTo(player, target);
 			break;
-		case 1: //Kick
+		case 1: //Remove Title
+			guildManager->sendGuildRemoveTitlePromptTo(player, target);
+			break;
+		case 2: //Kick
 			guildManager->sendGuildKickPromptTo(player, target);
 			break;
-		case 2: //Change Permissions
+		case 3: //Change Permissions
 			guildManager->sendMemberPermissionsTo(player, memberID, guildTerminal);
 			break;
 		default:

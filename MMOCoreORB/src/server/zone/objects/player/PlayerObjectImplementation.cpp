@@ -1642,13 +1642,32 @@ void PlayerObjectImplementation::refreshDisplayTitle() {
 
 	CreatureObject* creature = parent->asCreatureObject();
 
-	// Get the base name (first name + last name)
-	String firstName = creature->getFirstName();
-	String lastName = creature->getLastName();
-	UnicodeString baseName = firstName;
+	// Get the current custom name and strip out any existing guild title tags
+	UnicodeString currentName = creature->getCustomObjectName();
+	UnicodeString baseName;
 
-	if (!lastName.isEmpty()) {
-		baseName = baseName + " " + lastName;
+	// Find and remove any guild title tag (format: \#00c000[TitleText]\#.)
+	// Also handles cases where there might be multiple titles (the bug we're fixing)
+	// Check for old cyan color, bright green, and new darker green for backwards compatibility
+	int titleStart = currentName.indexOf("\\#00ffff[");
+	if (titleStart == -1) {
+		titleStart = currentName.indexOf("\\#00ff00[");
+	}
+	if (titleStart == -1) {
+		titleStart = currentName.indexOf("\\#00c000[");
+	}
+
+	if (titleStart != -1) {
+		// Extract just the name part before the first guild title tag
+		baseName = currentName.subString(0, titleStart);
+
+		// Remove any trailing spaces
+		while (baseName.length() > 0 && baseName[baseName.length() - 1] == ' ') {
+			baseName = baseName.subString(0, baseName.length() - 1);
+		}
+	} else {
+		// No guild title found, use the whole name
+		baseName = currentName;
 	}
 
 	// Get guild title if player is in a guild
@@ -1658,8 +1677,8 @@ void PlayerObjectImplementation::refreshDisplayTitle() {
 	if (guild != nullptr) {
 		String guildTitleStr = guild->getGuildMemberTitle(creature->getObjectID());
 		if (!guildTitleStr.isEmpty()) {
-			// Add guild title tag in cyan
-			displayName = baseName + " \\#00ffff[" + guildTitleStr + "]\\#.";
+			// Add guild title tag in darker green
+			displayName = baseName + " \\#00c000[" + guildTitleStr + "]\\#.";
 		}
 	}
 
