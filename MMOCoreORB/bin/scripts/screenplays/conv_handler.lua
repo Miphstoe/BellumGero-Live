@@ -564,6 +564,62 @@ function conv_handler:getBGTokenReward2(screenId)
     return rewards[screenId]
 end
 
+local BG_TOKEN_TEMPLATES = {
+    ["object/tangible/component/clothing/jewelry_setting.iff"] = true,
+    ["object/tangible/component/clothing/shared_jewelry_setting.iff"] = true,
+    ["object/token/token.iff"] = true,
+    ["object/token/shared_token.iff"] = true
+}
+
+local function isBellumGeroToken(sceneObject)
+    if not sceneObject then
+        return false
+    end
+
+    local nameSuccess, displayedName = pcall(function() return sceneObject:getDisplayedName() end)
+    local customSuccess, customName = pcall(function() return sceneObject:getCustomObjectName() end)
+    local objectSuccess, objectName = pcall(function() return sceneObject:getObjectName() end)
+
+    local name = displayedName
+    if not nameSuccess or name == nil or name == "" then
+        name = customSuccess and customName or nil
+    end
+    if name == nil or name == "" then
+        name = objectSuccess and objectName or nil
+    end
+
+    if name == nil or name == "" then
+        return false
+    end
+
+    local templateSuccess, template = pcall(function() return sceneObject:getTemplateObjectPath() end)
+    if not templateSuccess or not template then
+        templateSuccess, template = pcall(function() return sceneObject:getTemplate() end)
+    end
+    if not templateSuccess or not template then
+        return false
+    end
+
+    local nameLower = string.lower(name)
+    if not (string.find(nameLower, "bellum gero token") or string.find(nameLower, "bg_token")) then
+        return false
+    end
+
+    local templateLower = string.lower(template)
+    local hasTemplate = BG_TOKEN_TEMPLATES[templateLower] == true
+
+    if not hasTemplate then
+        return false
+    end
+
+    -- Guard: renamed containers should never count as tokens
+    local isContainer = string.find(templateLower, "container/") or
+        string.find(templateLower, "backpack/") or
+        string.find(templateLower, "wearables/backpack")
+
+    return not isContainer
+end
+
 function conv_handler:countBGTokensInContainer(container)
     local tokenCount = 0
     if not container then return 0 end
@@ -584,8 +640,7 @@ function conv_handler:countBGTokensInContainer(container)
                 local success, displayedName = pcall(function() return object:getDisplayedName() end)
                 if success and displayedName then
                     print("[BG-TOKEN] Found object: " .. displayedName)
-                    if string.find(string.lower(displayedName), "bellum gero token") or
-                       string.find(string.lower(displayedName), "bg_token") then
+                    if isBellumGeroToken(object) then
                         -- Try to get count, default to 1 if not countable
                         local countSuccess, count = pcall(function() return object:getCount() end)
                         if countSuccess and count and count > 0 then
@@ -648,8 +703,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
             if object then
                 local success, displayedName = pcall(function() return object:getDisplayedName() end)
                 if success and displayedName then
-                    if string.find(string.lower(displayedName), "bellum gero token") or
-                       string.find(string.lower(displayedName), "bg_token") then
+                    if isBellumGeroToken(object) then
 
                         print("[BG-TOKEN] Found token to remove: " .. displayedName)
                         -- Try to get count
