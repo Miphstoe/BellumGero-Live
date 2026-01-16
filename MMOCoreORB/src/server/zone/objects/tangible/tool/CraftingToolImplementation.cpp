@@ -17,6 +17,7 @@
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/objects/tangible/component/lightsaber/LightsaberCrystalComponent.h"
 
 void CraftingToolImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	TangibleObjectImplementation::loadTemplateData(templateData);
@@ -218,21 +219,24 @@ int CraftingToolImplementation::tuneCrystals(CreatureObject* player) {
 		return 0;
 	}
 
-	// Count tunable items (untuned crystals OR untuned Krayt Dragon Pearls)
-	// Count items from BOTH main inventory and backpacks/containers
+	// Count tunable items (untuned regular crystals OR untuned Krayt Dragon Pearls)
+	// Uses type checking to ensure only real crystals are counted, not bags/containers with "crystal" in name
+	// Excludes Named Crystals (color 12-30) as those are the exchange reward
 	int tunableCount = 0;
 	unsigned long long inventoryId = inventory->getObjectID();
 	for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
 		ManagedReference<SceneObject*> obj = inventory->getContainerObject(i);
-		if (obj != nullptr) {
-			String name = obj->getDisplayedName();
-			// Check for untuned crystals - contains "Crystal" but NOT "(Tuned)" or "(tuned)"
-			bool isUntuned = (name.contains("Crystal") && !name.contains("(Tuned)") && !name.contains("(tuned)"));
-			// Check for untuned Krayt Dragon Pearls - contains "Krayt" and "Pearl" but NOT "(tuned)"
-			bool isPearl = (name.contains("Krayt") && name.contains("Pearl") && !name.contains("(tuned)"));
-
-			if (isUntuned || isPearl) {
-				tunableCount++;
+		if (obj != nullptr && obj->isLightsaberCrystalObject()) {
+			// Cast to LightsaberCrystalComponent to check tuned status and color
+			LightsaberCrystalComponent* crystal = cast<LightsaberCrystalComponent*>(obj.get());
+			if (crystal != nullptr && crystal->getOwnerID() == 0) {
+				// Crystal is untuned (no owner)
+				// Check color: 0-11 = regular color crystals, 31 = power crystals/pearls
+				// Exclude Named Crystals which have color 12-30
+				int color = crystal->getColor();
+				if (color <= 11 || color == 31) {
+					tunableCount++;
+				}
 			}
 		}
 	}
@@ -244,24 +248,27 @@ int CraftingToolImplementation::tuneCrystals(CreatureObject* player) {
 		return 0;
 	}
 
-	// Remove 25 tunable items (any combination of untuned crystals and untuned pearls)
+	// Remove 25 tunable items (any combination of untuned regular crystals and untuned pearls)
 	// Only remove items DIRECTLY in the main inventory, not in backpacks/containers
+	// Excludes Named Crystals (color 12-30) as those are the exchange reward
 	int removed = 0;
 	for (int i = inventory->getContainerObjectsSize() - 1; i >= 0 && removed < 25; --i) {
 		ManagedReference<SceneObject*> obj = inventory->getContainerObject(i);
-		if (obj != nullptr) {
+		if (obj != nullptr && obj->isLightsaberCrystalObject()) {
 			// Only process items directly in the main inventory
 			if (obj->getParentID() == inventoryId) {
-				String name = obj->getDisplayedName();
-				// Check for untuned crystals - must NOT contain "(Tuned)" or "(tuned)"
-				bool isUntuned = (name.contains("Crystal") && !name.contains("(Tuned)") && !name.contains("(tuned)"));
-				// Check for untuned Krayt Dragon Pearls - must NOT contain "(tuned)"
-				bool isPearl = (name.contains("Krayt") && name.contains("Pearl") && !name.contains("(tuned)"));
-
-				if (isUntuned || isPearl) {
-					obj->destroyObjectFromWorld(true);
-					obj->destroyObjectFromDatabase(true);
-					removed++;
+				// Cast to LightsaberCrystalComponent to check tuned status and color
+				LightsaberCrystalComponent* crystal = cast<LightsaberCrystalComponent*>(obj.get());
+				if (crystal != nullptr && crystal->getOwnerID() == 0) {
+					// Crystal is untuned (no owner)
+					// Check color: 0-11 = regular color crystals, 31 = power crystals/pearls
+					// Exclude Named Crystals which have color 12-30
+					int color = crystal->getColor();
+					if (color <= 11 || color == 31) {
+						obj->destroyObjectFromWorld(true);
+						obj->destroyObjectFromDatabase(true);
+						removed++;
+					}
 				}
 			}
 		}

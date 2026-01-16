@@ -564,6 +564,62 @@ function conv_handler:getBGTokenReward2(screenId)
     return rewards[screenId]
 end
 
+local BG_TOKEN_TEMPLATES = {
+    ["object/tangible/component/clothing/jewelry_setting.iff"] = true,
+    ["object/tangible/component/clothing/shared_jewelry_setting.iff"] = true,
+    ["object/token/token.iff"] = true,
+    ["object/token/shared_token.iff"] = true
+}
+
+local function isBellumGeroToken(sceneObject)
+    if not sceneObject then
+        return false
+    end
+
+    local nameSuccess, displayedName = pcall(function() return sceneObject:getDisplayedName() end)
+    local customSuccess, customName = pcall(function() return sceneObject:getCustomObjectName() end)
+    local objectSuccess, objectName = pcall(function() return sceneObject:getObjectName() end)
+
+    local name = displayedName
+    if not nameSuccess or name == nil or name == "" then
+        name = customSuccess and customName or nil
+    end
+    if name == nil or name == "" then
+        name = objectSuccess and objectName or nil
+    end
+
+    if name == nil or name == "" then
+        return false
+    end
+
+    local templateSuccess, template = pcall(function() return sceneObject:getTemplateObjectPath() end)
+    if not templateSuccess or not template then
+        templateSuccess, template = pcall(function() return sceneObject:getTemplate() end)
+    end
+    if not templateSuccess or not template then
+        return false
+    end
+
+    local nameLower = string.lower(name)
+    if not (string.find(nameLower, "bellum gero token") or string.find(nameLower, "bg_token")) then
+        return false
+    end
+
+    local templateLower = string.lower(template)
+    local hasTemplate = BG_TOKEN_TEMPLATES[templateLower] == true
+
+    if not hasTemplate then
+        return false
+    end
+
+    -- Guard: renamed containers should never count as tokens
+    local isContainer = string.find(templateLower, "container/") or
+        string.find(templateLower, "backpack/") or
+        string.find(templateLower, "wearables/backpack")
+
+    return not isContainer
+end
+
 function conv_handler:countBGTokensInContainer(container)
     local tokenCount = 0
     if not container then return 0 end
@@ -584,8 +640,7 @@ function conv_handler:countBGTokensInContainer(container)
                 local success, displayedName = pcall(function() return object:getDisplayedName() end)
                 if success and displayedName then
                     print("[BG-TOKEN] Found object: " .. displayedName)
-                    if string.find(string.lower(displayedName), "bellum gero token") or
-                       string.find(string.lower(displayedName), "bg_token") then
+                    if isBellumGeroToken(object) then
                         -- Try to get count, default to 1 if not countable
                         local countSuccess, count = pcall(function() return object:getCount() end)
                         if countSuccess and count and count > 0 then
@@ -648,8 +703,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
             if object then
                 local success, displayedName = pcall(function() return object:getDisplayedName() end)
                 if success and displayedName then
-                    if string.find(string.lower(displayedName), "bellum gero token") or
-                       string.find(string.lower(displayedName), "bg_token") then
+                    if isBellumGeroToken(object) then
 
                         print("[BG-TOKEN] Found token to remove: " .. displayedName)
                         -- Try to get count
@@ -753,42 +807,45 @@ function conv_handler:countUntunedCrystalsInContainer(container)
         if pObject then
             local object = LuaSceneObject(pObject)
             if object then
-                local success, displayedName = pcall(function() return object:getDisplayedName() end)
-                local isCrystal = false
-
-                if success and displayedName then
-                    -- Trim whitespace
-                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
-
-                    -- Check for untuned crystals:
-                    -- 1. Exactly "Crystal" (untuned power crystals)
-                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
-                    -- 3. Lightsaber Color Crystal (lightsaber color module)
-                    if displayedName == "Crystal" then
-                        isCrystal = true
-                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    end
+                -- Get the template path to check what type of object this is
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                local templatePath = ""
+                if templateSuccess and template then
+                    templatePath = string.lower(template)
                 end
 
-                if isCrystal then
-                    count = count + 1
-                end
-            end
-        end
-    end
+                -- Check if this is a container (bag, backpack, etc) by template path
+                local isContainer = string.find(templatePath, "container/") or
+                                   string.find(templatePath, "backpack/") or
+                                   string.find(templatePath, "wearables/backpack")
 
-    -- Also check containers within inventory
-    for i = 0, size - 1, 1 do
-        local pObject = containerObj:getContainerObject(i)
-        if pObject then
-            local object = LuaSceneObject(pObject)
-            if object then
-                local success, isContainer = pcall(function() return object:isContainerObject() end)
-                if success and isContainer then
+                if isContainer then
+                    -- This is a container, recurse into it but don't count the container itself
                     count = count + self:countUntunedCrystalsInContainer(pObject)
+                else
+                    -- Check if it's a crystal by template path (most reliable check)
+                    local isCrystal = false
+
+                    -- Crystals have templates containing "lightsaber_module" or in component/weapon/lightsaber path
+                    if string.find(templatePath, "lightsaber_module") or
+                       string.find(templatePath, "component/weapon/lightsaber") then
+                        -- It's a lightsaber crystal component - check if untuned
+                        local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                        if success and displayedName then
+                            displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+                            -- Only count if NOT tuned
+                            if not displayedName:find("Tuned") then
+                                isCrystal = true
+                            end
+                        else
+                            -- If we can't get the name, still count it as a crystal based on template
+                            isCrystal = true
+                        end
+                    end
+
+                    if isCrystal then
+                        count = count + 1
+                    end
                 end
             end
         end
@@ -832,48 +889,47 @@ function conv_handler:removeUntunedCrystalsFromContainer(container, count)
         if pObject then
             local object = LuaSceneObject(pObject)
             if object then
-                local success, displayedName = pcall(function() return object:getDisplayedName() end)
-                local isCrystal = false
-
-                if success and displayedName then
-                    -- Trim whitespace
-                    displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
-
-                    -- Check for untuned crystals:
-                    -- 1. Exactly "Crystal" (untuned power crystals)
-                    -- 2. Contains "Crystal" but NOT "Tuned" (other crystals)
-                    -- 3. Lightsaber Color Crystal (lightsaber color module)
-                    if displayedName == "Crystal" then
-                        isCrystal = true
-                    elseif displayedName:find("Crystal") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    elseif displayedName:find("Lightsaber") and displayedName:find("Color") and not displayedName:find("Tuned") then
-                        isCrystal = true
-                    end
+                -- Get the template path to check what type of object this is
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                local templatePath = ""
+                if templateSuccess and template then
+                    templatePath = string.lower(template)
                 end
 
-                if isCrystal then
-                    local destroySuccess = pcall(function() object:destroyObjectFromWorld(true) end)
-                    if destroySuccess then
-                        removed = removed + 1
+                -- Check if this is a container (bag, backpack, etc) by template path
+                local isContainer = string.find(templatePath, "container/") or
+                                   string.find(templatePath, "backpack/") or
+                                   string.find(templatePath, "wearables/backpack")
+
+                if isContainer then
+                    -- This is a container, recurse into it to find crystals inside
+                    removed = removed + self:removeUntunedCrystalsFromContainer(pObject, count - removed)
+                else
+                    -- Check if it's a crystal by template path (most reliable check)
+                    local isCrystal = false
+
+                    -- Crystals have templates containing "lightsaber_module" or in component/weapon/lightsaber path
+                    if string.find(templatePath, "lightsaber_module") or
+                       string.find(templatePath, "component/weapon/lightsaber") then
+                        -- It's a lightsaber crystal component - check if untuned
+                        local success, displayedName = pcall(function() return object:getDisplayedName() end)
+                        if success and displayedName then
+                            displayedName = displayedName:gsub("^%s+", ""):gsub("%s+$", "")
+                            -- Only remove if NOT tuned
+                            if not displayedName:find("Tuned") then
+                                isCrystal = true
+                            end
+                        else
+                            -- If we can't get the name, still treat it as a crystal based on template
+                            isCrystal = true
+                        end
                     end
-                end
-            end
-        end
-    end
 
-    -- Also remove from containers
-    if removed < count then
-        for i = size - 1, 0, -1 do
-            if removed >= count then break end
-
-            local pObject = containerObj:getContainerObject(i)
-            if pObject then
-                local object = LuaSceneObject(pObject)
-                if object then
-                    local success, isContainer = pcall(function() return object:isContainerObject() end)
-                    if success and isContainer then
-                        removed = removed + self:removeUntunedCrystalsFromContainer(pObject, count - removed)
+                    if isCrystal then
+                        local destroySuccess = pcall(function() object:destroyObjectFromWorld(true) end)
+                        if destroySuccess then
+                            removed = removed + 1
+                        end
                     end
                 end
             end

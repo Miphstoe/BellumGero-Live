@@ -211,10 +211,9 @@ void CampSiteActiveAreaImplementation::abandonCamp() {
 
 	if(despawnTask != nullptr && despawnTask->isScheduled()) {
 		despawnTask->cancel();
-		int newTime = (CampSiteActiveArea::DESPAWNTIME / 6);
-		int maxTime = CampSiteActiveArea::DESPAWNTIME - ((System::getTime() - timeCreated) * 1000);
-
-		despawnTask->schedule(newTime < maxTime ? newTime : maxTime);
+		// Abandoned camps get a full 2 hours regardless of when they were abandoned
+		int newTime = 7200000; // 2 hours in milliseconds
+		despawnTask->schedule(newTime);
 	}
 
 	if(terminal != nullptr) {

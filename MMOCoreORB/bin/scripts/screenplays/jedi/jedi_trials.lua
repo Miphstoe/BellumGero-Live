@@ -160,17 +160,50 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
 
-	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
-		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
-	else
-		local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
-		-- Give both the light and dark padawan robes to allow player choice
-		local pItem = give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan.iff", 4)
+	if (pInventory == nil) then
+		return
+	end
 
-		-- Check if inventory has room for second robe
-		if (not SceneObject(pInventory):isContainerFullRecursive()) then
-			local pItem = give_socketed(pInventory, "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff", 4)
+	local function inventoryHasTemplate(pInv, template)
+		local items = pInv:getContainedObjects()
+		if items == nil then
+			return false
 		end
+
+		local count = items:size()
+		for i = 0, count - 1 do
+			local item = items:get(i)
+			if item ~= nil then
+				local itemTemplate = SceneObject(item):getTemplate()
+				if itemTemplate == template then
+					return true
+				end
+			end
+		end
+
+		return false
+	end
+
+	local lightTemplate = "object/tangible/wearables/robe/robe_jedi_padawan.iff"
+	local darkTemplate = "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff"
+	local hasLight = inventoryHasTemplate(pInventory, lightTemplate)
+	local hasDark = inventoryHasTemplate(pInventory, darkTemplate)
+
+	if (hasLight and hasDark) then
+		return
+	end
+
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
+		return
+	end
+
+	if (not hasLight) then
+		give_socketed(pInventory, lightTemplate, 4)
+	end
+
+	if (not hasDark and not SceneObject(pInventory):isContainerFullRecursive()) then
+		give_socketed(pInventory, darkTemplate, 4)
 	end
 
 	sendMail("system", "@jedi_spam:welcome_subject", "@jedi_spam:welcome_body", CreatureObject(pPlayer):getFirstName())
@@ -213,6 +246,13 @@ function JediTrials:unlockJediKnight(pPlayer)
 
 	awardSkill(pPlayer, "force_title_jedi_rank_03")
 	writeScreenPlayData(pPlayer, "KnightTrials", "completedTrials", 1)
+
+	-- Galaxy broadcast for Knight completion
+	local playerName = CreatureObject(pPlayer):getFirstName()
+	local councilName = (councilType == self.COUNCIL_LIGHT) and "Light Jedi" or "Dark Jedi"
+	local broadcastMsg = "\\#FF6600There is a Disturbance in the Force! \\#FFFFFF" .. playerName .. " \\#FF6600has completed the Knight Trials and become a \\#FFFFFF" .. councilName .. " \\#FF6600Knight!"
+	broadcastToGalaxy(pPlayer, broadcastMsg)
+
 	CreatureObject(pPlayer):playMusicMessage(unlockMusic)
 	playClientEffectLoc(pPlayer, "clienteffect/trap_electric_01.cef", CreatureObject(pPlayer):getZoneName(), CreatureObject(pPlayer):getPositionX(), CreatureObject(pPlayer):getPositionZ(), CreatureObject(pPlayer):getPositionY(), CreatureObject(pPlayer):getParentID())
 

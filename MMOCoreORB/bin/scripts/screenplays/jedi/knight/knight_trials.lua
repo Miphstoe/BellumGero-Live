@@ -147,6 +147,7 @@ function KnightTrials:sendCouncilChoiceSui(pPlayer)
 	sui.setCancelButtonText("@jedi_trials:button_cancel") -- Cancel
 	sui.setOtherButtonText("@jedi_trials:button_lightside") -- 	Light Jedi Council
 	sui.setOkButtonText("@jedi_trials:button_darkside") -- Dark Jedi Council
+	sui.hideCancelButton()
 	-- Other Button setup subscribe
 	sui.setProperty("btnRevert", "OnPress", "RevertWasPressed=1\r\nparent.btnOk.press=t")
 	sui.subscribeToPropertyForEvent(SuiEventType.SET_onClosedOk, "btnRevert", "RevertWasPressed")
@@ -164,7 +165,10 @@ function KnightTrials:handleCouncilChoice(pPlayer, pSui, eventIndex, ...)
 	local lightSide = args[1]
 
 	if (cancelPressed) then
-		CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:council_choice_delayed")
+		if (JediTrials:getJediCouncil(pPlayer) == nil or JediTrials:getJediCouncil(pPlayer) == 0) then
+			CreatureObject(pPlayer):sendSystemMessage("You must choose a Jedi council to continue your Knight Trials.")
+			self:sendCouncilChoiceSui(pPlayer)
+		end
 		return
 	elseif (lightSide ~= nil) then -- Chose Light Side
 		KnightTrials:doCouncilDecision(pPlayer, JediTrials.COUNCIL_LIGHT)

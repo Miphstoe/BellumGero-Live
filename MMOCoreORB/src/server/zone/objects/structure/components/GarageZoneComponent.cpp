@@ -40,7 +40,7 @@ void GarageZoneComponent::notifyPositionUpdate(SceneObject* sceneObject, TreeEnt
 	float deltaY = sceneObject->getPositionY() - player->getPositionY();
 	float rangeSq = deltaX * deltaX + deltaY * deltaY;
 
-	if (rangeSq > 4096) { // 64^2
+	if (rangeSq > 9216) { // 96^2
 		if (data->hasNotifiedPlayer(objID))
 		{
 			data->removeNotifiedPlayer(objID);
