@@ -246,6 +246,13 @@ function JediTrials:unlockJediKnight(pPlayer)
 
 	awardSkill(pPlayer, "force_title_jedi_rank_03")
 	writeScreenPlayData(pPlayer, "KnightTrials", "completedTrials", 1)
+
+	-- Galaxy broadcast for Knight completion
+	local playerName = CreatureObject(pPlayer):getFirstName()
+	local councilName = (councilType == self.COUNCIL_LIGHT) and "Light Jedi" or "Dark Jedi"
+	local broadcastMsg = "\\#FF6600There is a Disturbance in the Force! \\#FFFFFF" .. playerName .. " \\#FF6600has completed the Knight Trials and become a \\#FFFFFF" .. councilName .. " \\#FF6600Knight!"
+	broadcastToGalaxy(pPlayer, broadcastMsg)
+
 	CreatureObject(pPlayer):playMusicMessage(unlockMusic)
 	playClientEffectLoc(pPlayer, "clienteffect/trap_electric_01.cef", CreatureObject(pPlayer):getZoneName(), CreatureObject(pPlayer):getPositionX(), CreatureObject(pPlayer):getPositionZ(), CreatureObject(pPlayer):getPositionY(), CreatureObject(pPlayer):getParentID())
 
