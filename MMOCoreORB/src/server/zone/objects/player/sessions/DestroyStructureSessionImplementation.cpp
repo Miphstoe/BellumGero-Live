@@ -77,7 +77,7 @@ int DestroyStructureSessionImplementation::sendDestroyCode() {
 
 	CreatureObject* player = cast<CreatureObject*>( creatureObject.get());
 
-	destroyCode = System::random(899999) + 100000;
+	destroyCode = 0;
 
 	String no = "\\#FF6347 @player_structure:will_not_redeed_confirm \\#.";
 	String yes = "\\#32CD32 @player_structure:will_redeed_confirm \\#.";
@@ -87,7 +87,7 @@ int DestroyStructureSessionImplementation::sendDestroyCode() {
 	StringBuffer entry;
 	entry << "@player_structure:your_structure_prefix ";
 	entry << redeed << " @player_structure:will_redeed_suffix \n\n";
-	entry << "Code: " << destroyCode;
+	entry << "Type YES to confirm.";
 
 	ManagedReference<SuiInputBox*> sui = new SuiInputBox(player);
 	sui->setCallback(new DestroyStructureCodeSuiCallback(player->getZoneServer()));
@@ -95,7 +95,7 @@ int DestroyStructureSessionImplementation::sendDestroyCode() {
 	sui->setPromptTitle("@player_structure:confirm_destruction_t"); //Confirm Structure Deletion
 	sui->setPromptText(entry.toString());
 	sui->setCancelButton(true, "@cancel");
-	sui->setMaxInputSize(6);
+	sui->setMaxInputSize(3);
 
 	player->getPlayerObject()->addSuiBox(sui);
 	player->sendMessage(sui->generateMessage());
