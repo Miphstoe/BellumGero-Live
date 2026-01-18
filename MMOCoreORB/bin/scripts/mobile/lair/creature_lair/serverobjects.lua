@@ -158,6 +158,7 @@ includeFile("lair/creature_lair/endor/endor_bark_mite_burrower_lair_neutral_smal
 includeFile("lair/creature_lair/endor/endor_bark_mite_burrower_queen_lair_neutral_small.lua")
 includeFile("lair/creature_lair/endor/endor_bark_mite_burrower_swarmling_lair_neutral_small.lua")
 includeFile("lair/creature_lair/endor/endor_bark_mite_burrower_worker_lair_neutral_small.lua")
+includeFile("lair/creature_lair/endor/endor_death_stalking_grak_lair_neutral_large.lua")
 includeFile("lair/creature_lair/endor/endor_bloodseeker_mite_drone_lair_neutral_small.lua")
 includeFile("lair/creature_lair/endor/endor_bloodseeker_mite_drone_lair_neutral_small_boss_01.lua")
 includeFile("lair/creature_lair/endor/endor_bloodseeker_mite_lair_neutral_small.lua")

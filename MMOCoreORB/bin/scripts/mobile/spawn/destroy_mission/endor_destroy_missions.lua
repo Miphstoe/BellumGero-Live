@@ -255,6 +255,12 @@ endor_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "endor_death_stalking_grak_lair_neutral_large",
+			minDifficulty = 65,
+			maxDifficulty = 70,
+			size = 35,
+		},
+		{
 			lairTemplateName = "global_black_sun_neutral_none",
 			minDifficulty = 70,
 			maxDifficulty = 70,

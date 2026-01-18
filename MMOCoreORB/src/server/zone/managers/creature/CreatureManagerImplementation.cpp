@@ -147,6 +147,9 @@ SceneObject* CreatureManagerImplementation::spawnLair(unsigned int lairTemplate,
 
  	building->initializePosition(x, z, y);
  	building->setDespawnOnNoPlayersInRange(true);
+	if (!lairTmpl->getCustomName().isEmpty()) {
+		building->setCustomObjectName(lairTmpl->getCustomName(), true);
+	}
 
  	ManagedReference<LairObserver*> lairObserver = new LairObserver();
 
