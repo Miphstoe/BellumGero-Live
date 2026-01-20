@@ -573,6 +573,34 @@ void HousePackupManager::releaseLotsPlaceholder(uint64 deedOID, CreatureObject* 
     // No structure to destroy since we only recorded the mapping
 }
 // -----------------------------
+// Vendor detection helper
+// -----------------------------
+
+bool HousePackupManager::hasVendorsInside(BuildingObject* building) const {
+    if (building == nullptr)
+        return false;
+
+    int totalCells = building->getTotalCellNumber();
+
+    // Cell numbering starts at 1, not 0
+    for (int i = 1; i <= totalCells; i++) {
+        ManagedReference<CellObject*> cell = building->getCell(i);
+        if (cell == nullptr)
+            continue;
+
+        int containerSize = cell->getContainerObjectsSize();
+        for (int j = 0; j < containerSize; j++) {
+            ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
+            if (obj != nullptr && obj->isVendor()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// -----------------------------
 // Recursive collector
 // -----------------------------
 
