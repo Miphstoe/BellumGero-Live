@@ -1312,7 +1312,7 @@ local MySwgTravelDestinations = {
                       creature:sendSystemMessage("You have insufficient funds") 
                 elseif (optionLink == "option46" and canAfford(500000)) then
                     -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    charge(200000)
+                    charge(500000)
                     local pItem = 
                     giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
                     --createLoot(pInventory, "junk", 300, false)
