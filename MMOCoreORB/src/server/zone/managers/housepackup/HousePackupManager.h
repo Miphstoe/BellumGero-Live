@@ -28,6 +28,7 @@ public:
     // Main entry points
     bool packUpHouse(bld::BuildingObject* building, crt::CreatureObject* requester);
     bool restoreFromDeed(bld::BuildingObject* building, tang::TangibleObject* deed, crt::CreatureObject* placer);
+    bool hasVendorsInside(bld::BuildingObject* building) const;
     // Add to HousePackupManager.h
     bool hasLotPlaceholder(uint64 deedOID) const;
 

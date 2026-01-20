@@ -162,6 +162,17 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
+			// Pack Up House option - owner only, no vendors
+			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
+			if (building != nullptr && ghost != nullptr) {
+				if (ghost->isOwnedStructure(structureObject)) {
+					// Only show option if no vendors inside
+					if (!HousePackupManager::instance()->hasVendorsInside(building)) {
+						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up Structure");
+					}
+				}
+			}
+
 		}
 
 		// Permissions submenu
@@ -369,6 +380,19 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
 					BuildingObject* building = cast<BuildingObject*>(structureObject.get());
 					if (building != nullptr) {
+						// Check 1: Owner-only validation
+						if (!ghost->isOwnedStructure(structureObject)) {
+							creature->sendSystemMessage("You must be the owner to pack up this structure.");
+							break;
+						}
+
+						// Check 2: Vendor detection
+						if (HousePackupManager::instance()->hasVendorsInside(building)) {
+							creature->sendSystemMessage("Cannot pack up structure with vendors inside. Please dismiss all vendors first.");
+							break;
+						}
+
+						// Proceed with packup
 						if (!HousePackupManager::instance()->packUpHouse(building, creature)) {
 							creature->sendSystemMessage("Pack up failed.");
 						}
