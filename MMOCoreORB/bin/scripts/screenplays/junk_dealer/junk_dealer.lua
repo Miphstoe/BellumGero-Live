@@ -102,6 +102,28 @@ function JunkDealer:isSchematic(pItem)
 	return false
 end
 
+function JunkDealer:isTreasureMap(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	if string.find(templatePath, "object/tangible/treasure_map/") then
+		return true
+	end
+
+	if string.find(templatePath, "object/tangible/loot/quest/treasure_map_") then
+		return true
+	end
+
+	return false
+end
+
 function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipItem, junkList, nameBlacklist)
 	-- Helper function to scan a container (inventory or backpack) for junk items
 	if pContainer == nil then
@@ -201,6 +223,7 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 
 				-- Check if item is a schematic
 				local isSchematic = self:isSchematic(pItem)
+				local isTreasureMap = self:isTreasureMap(pItem)
 
 				-- Check exclusions
 				local isCrafted = (craftersName ~= nil and craftersName ~= "")
@@ -208,6 +231,9 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 				if isSchematic then
 					-- Schematics are always buyable for 2000 credits
 					local textTable = {"[2000] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				elseif isTreasureMap then
+					local textTable = {"[1000] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
 				elseif isResourceContainer then
 				elseif isCrafted then
@@ -322,6 +348,8 @@ function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
 			-- Check if item is a schematic first
 			if self:isSchematic(pItem) then
 				value = 2000
+			elseif self:isTreasureMap(pItem) then
+				value = 1000
 			else
 				value = TangibleObject(pItem):getJunkValue()
 			end
@@ -428,10 +456,13 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 
 	-- Check if this is a schematic - if so, buy for 2000 credits
 	local isSchematic = self:isSchematic(pItem)
+	local isTreasureMap = self:isTreasureMap(pItem)
 
 	local value = 250
 	if isSchematic then
 		value = 2000
+	elseif isTreasureMap then
+		value = 1000
 	else
 		value = TangibleObject(pItem):getJunkValue()
 

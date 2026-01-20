@@ -1,4 +1,8 @@
 includeFile("dungeon/death_watch_bunker/black_sun_assassin.lua")
+includeFile("dungeon/death_watch_bunker/black_sun_assassin_krayt_juvenile.lua")
+includeFile("dungeon/death_watch_bunker/black_sun_assassin_krayt_canyon.lua")
+includeFile("dungeon/death_watch_bunker/black_sun_assassin_krayt_grand.lua")
+includeFile("dungeon/death_watch_bunker/black_sun_assassin_krayt_ancient.lua")
 includeFile("dungeon/death_watch_bunker/black_sun_guard.lua")
 includeFile("dungeon/death_watch_bunker/black_sun_henchman.lua")
 includeFile("dungeon/death_watch_bunker/black_sun_thug.lua")

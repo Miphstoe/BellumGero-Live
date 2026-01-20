@@ -8,6 +8,7 @@
 #ifndef DESTROYSTRUCTURECODESUICALLBACK_H_
 #define DESTROYSTRUCTURECODESUICALLBACK_H_
 
+#include "system/io/StringTokenizer.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/player/sessions/DestroyStructureSession.h"
 
@@ -30,9 +31,14 @@ public:
 			return;
 		}
 
-		uint32 inputtedCode = Integer::valueOf(args->get(0).toString());
+		if (args->size() < 1) {
+			session->cancelSession();
+			return;
+		}
 
-		if (!session->isDestroyCode(inputtedCode)) {
+		StringTokenizer tokenizer(args->get(0).toString());
+
+		if (!tokenizer.hasMoreTokens() || tokenizer.getStringToken().toLowerCase() != "yes") {
 			player->sendSystemMessage("@player_structure:incorrect_destroy_code"); //You have entered an incorrect code. You will have to issue the /destroyStructure again if you wish to continue.
 			session->cancelSession();
 			return;

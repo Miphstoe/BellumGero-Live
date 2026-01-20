@@ -26,6 +26,7 @@ protected:
 
 	String missionBuilding;
 	String name;
+	String customName;
 
 	unsigned int faction;
 
@@ -221,6 +222,10 @@ public:
 		if (templateData->getStringField("missionBuilding").length() > 0) {
 			missionBuilding = templateData->getStringField("missionBuilding");
 		}
+
+		if (templateData->getStringField("customName").length() > 0) {
+			customName = templateData->getStringField("customName");
+		}
 	}
 
 	int getSpawnLimit() const {
@@ -249,6 +254,10 @@ public:
 
 	const String& getName() const {
 		return name;
+	}
+
+	const String& getCustomName() const {
+		return customName;
 	}
 
 	unsigned int getFaction() const {

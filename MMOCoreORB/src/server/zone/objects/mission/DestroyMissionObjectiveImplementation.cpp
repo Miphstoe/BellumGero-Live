@@ -209,10 +209,15 @@ void DestroyMissionObjectiveImplementation::spawnLair() {
 	 	}
 
 		String lairName = lair->getName();
+		const String& lairCustomName = lair->getCustomName();
 
 	 	Locker llocker(lairObject);
 
-		lairObject->setObjectName("@lair_n:" + lairName, false);
+		if (!lairCustomName.isEmpty()) {
+			lairObject->setCustomObjectName(lairCustomName, true);
+		} else {
+			lairObject->setObjectName("@lair_n:" + lairName, false);
+		}
 	 	lairObject->setFaction(lair->getFaction());
 	 	lairObject->setPvpStatusBitmask(ObjectFlag::ATTACKABLE);
 	 	lairObject->setOptionsBitmask(0, false);
