@@ -11,7 +11,7 @@ local Logger = require("utils.logger")
 local LOOT_BOX_TEMPLATE = "object/tangible/container/loot/placable_loot_crate_tech_chest.iff"
 local ELIGIBILITY_RADIUS = 64  -- meters - players must be within this range when boss dies (fallback: all damagers if proximity APIs unavailable)
 local BOX_LIFETIME_SECONDS = 30 * 60  -- 30 minutes
-local DEBUG_LOGS = false  -- Set to true for detailed debugging
+local DEBUG_LOGS = true  -- Set to true for detailed debugging (ENABLED to verify level scaling)
 local CREDITS_PER_PLAYER = 5000  -- Credits awarded to each eligible player
 
 -- ===== Globals for tracking =====
@@ -255,7 +255,7 @@ local function collectEligiblePlayers(pBoss, bossOID)
 end
 
 -- ===== Loot Box Creation =====
-local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossName)
+local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossName, bossLevel)
   if pBoss == nil then
     log("ERROR: Cannot create loot box - pBoss is nil")
     return nil
@@ -295,6 +295,8 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
     eligiblePlayers = eligiblePlayers,
     lootedPlayers = {},
     lootGroups = lootGroups,
+    bossName = bossName,
+    bossLevel = bossLevel or 1,
     spawnTime = os.time(),
     planet = planet,
     x = x,
@@ -302,9 +304,10 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
     z = z
   }
 
-  log("Loot box OID %s created for boss OID %s with %d eligible players",
+  log("Loot box OID %s created for boss OID %s (level %d) with %d eligible players",
       tostring(boxOID),
       tostring(bossOID),
+      bossLevel or 1,
       (function() local c=0; for _ in pairs(eligiblePlayers) do c=c+1 end return c end)())
 
   createEvent(BOX_LIFETIME_SECONDS * 1000, "WorldBossLootManager", "despawnLootBox", pBox, "")
@@ -313,7 +316,7 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
 end
 
 -- ===== Loot Generation =====
-local function generateLootForPlayer(pPlayer, lootGroups, bossName)
+local function generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel)
   if not isPlayerPtr(pPlayer) then
     log("Player is not valid")
     return false
@@ -323,6 +326,10 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName)
     log("No loot groups available")
     return false
   end
+
+  -- Default to level 1 if not provided (backward compatibility)
+  local lootLevel = tonumber(bossLevel) or 1
+  log("Generating loot at level %d for player", lootLevel)
 
   -- Select a random loot group from the boss's loot tables
   local selectedGroup = lootGroups[math.random(#lootGroups)]
@@ -383,7 +390,9 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName)
 
   -- Use createLoot to generate item from the loot group
   -- Syntax: createLoot(container, lootGroup, level, true)
-  local itemOID = createLoot(pInventory, selectedLootGroup, 1, true)
+  -- Use boss level for proper loot scaling
+  local itemOID = createLoot(pInventory, selectedLootGroup, lootLevel, true)
+  log("createLoot called with level %d, group: %s", lootLevel, selectedLootGroup)
 
   if itemOID and itemOID ~= 0 then
     local pItem = getSceneObject(itemOID)
@@ -451,10 +460,11 @@ local function onPlayerOpenLootBox(pBox, pPlayer)
   end
 
   local bossName = boxData.bossName or "the World Boss"
+  local bossLevel = boxData.bossLevel or 1
 
-  if generateLootForPlayer(pPlayer, boxData.lootGroups, bossName) then
+  if generateLootForPlayer(pPlayer, boxData.lootGroups, bossName, bossLevel) then
     boxData.lootedPlayers[playerOID] = true
-    log("Player OID %s successfully looted box OID %s", tostring(playerOID), tostring(boxOID))
+    log("Player OID %s successfully looted box OID %s (level %d loot)", tostring(playerOID), tostring(boxOID), bossLevel)
 
     local totalEligible = 0
     local totalLooted = 0
@@ -512,7 +522,16 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
     return nil
   end
 
-  log("Boss died - OID %s, Name: %s", tostring(bossOID), bossName or "Unknown")
+  -- Get the boss level for proper loot scaling
+  local bossLevel = 1
+  pcall(function()
+    local coBoss = CreatureObject(pBoss)
+    if coBoss and coBoss.getLevel then
+      bossLevel = coBoss:getLevel() or 1
+    end
+  end)
+
+  log("Boss died - OID %s, Name: %s, Level: %d", tostring(bossOID), bossName or "Unknown", bossLevel)
 
   local eligiblePlayers = collectEligiblePlayers(pBoss, bossOID)
 
@@ -527,14 +546,14 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
     return nil
   end
 
-  log("Distributing loot to %d eligible players", count)
+  log("Distributing loot to %d eligible players at level %d", count, bossLevel)
 
   -- Give loot directly to each eligible player
   for playerOID, _ in pairs(eligiblePlayers) do
     local pPlayer = getSceneObject(tonumber(playerOID))
     if pPlayer and isPlayerPtr(pPlayer) then
-      if generateLootForPlayer(pPlayer, lootGroups, bossName) then
-        log("Successfully gave loot to player OID %s", tostring(playerOID))
+      if generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel) then
+        log("Successfully gave level %d loot to player OID %s", bossLevel, tostring(playerOID))
       else
         log("Failed to give loot to player OID %s", tostring(playerOID))
       end
