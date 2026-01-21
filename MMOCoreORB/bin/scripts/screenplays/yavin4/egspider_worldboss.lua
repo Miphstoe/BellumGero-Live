@@ -86,8 +86,8 @@ EGSpiderBoss = {
 
   RESPAWN_SECONDS       = 12*60*60,   -- 12h (use 60 for tests)
   LOOP_INTERVAL         = 5,          -- seconds
-  FIRST_BROADCAST_DELAY = 60,         -- 1 minute after spawn (set 0 for immediate)
-  REPEAT_EVERY_SECONDS  = 3600,       -- hourly
+  FIRST_BROADCAST_DELAY = 300,        -- 5 minutes after spawn
+  REPEAT_EVERY_SECONDS  = 10800,      -- every 3 hours
 
   WAVE_COUNTS  = { cavern_spider = 10 },
   WAVE_SCATTER = { cavern_spider = 4 },
