@@ -261,6 +261,12 @@ endor_destroy_missions = {
 			size = 35,
 		},
 		{
+			lairTemplateName = "endor_bone_crushing_grak_lair_neutral_large",
+			minDifficulty = 75,
+			maxDifficulty = 80,
+			size = 40,
+		},
+		{
 			lairTemplateName = "global_black_sun_neutral_none",
 			minDifficulty = 70,
 			maxDifficulty = 70,
