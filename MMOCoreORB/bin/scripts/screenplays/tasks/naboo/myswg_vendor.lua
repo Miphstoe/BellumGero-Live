@@ -185,7 +185,7 @@ function myswg_vendor:start()
     local pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -265, 35.0, 4897, 35, 0 )--mining
     if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
 
-    pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4052, 17.0, -6220, 37, 0 )--imp
+    pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, 4054, 37.0, -6219, 37, 0 )--imp
     if pWeaponsmith4 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith4, "") end
 
     pWeaponsmith4 = spawnMobile("yavin4", "myswg_vendor", 1, -6922, 73.0, -5730, 35, 0 )--labor
