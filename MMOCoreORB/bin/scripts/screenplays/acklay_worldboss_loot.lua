@@ -25,7 +25,16 @@ AcklayWorldBossLoot = ScreenPlay:new {
 
   bootGuardKey   = "AcklayWorldBossLoot:booted:v1",
 
-  bossName = "Acklay, Devourer of Massassi"
+  bossName = "Acklay, Devourer of Massassi",
+
+  -- Galaxy broadcast configuration
+  FIRST_BROADCAST_DELAY = 240,      -- 4 minutes after spawn
+  REPEAT_EVERY_SECONDS  = 10800,    -- every 3 hours
+  DATA_BOSS_OID         = "AcklayWorldBossLoot:bossOID",
+  DATA_NEXT_BCAST_AT    = "AcklayWorldBossLoot:nextBcastAt",
+  DATA_LOOP_STARTED     = "AcklayWorldBossLoot:loopStarted",
+
+  bossPtr = nil
 }
 
 registerScreenPlay("AcklayWorldBossLoot", true)
@@ -34,6 +43,28 @@ logf("FILE LOADED; screenplay registered with loot box system")
 local function toNum(v) local n = tonumber(v) return n or 0 end
 local function getFlag(k) return (readData and toNum(readData(k)) or 0) end
 local function setFlag(k, v) if writeData then writeData(k, v) end end
+
+-- Galaxy broadcast helper function
+local function galaxyBroadcast(msg, ctx)
+  msg = tostring(msg or "")
+  if type(broadcastToGalaxy) == "function" then
+    local function _try(f, ...) return pcall(f, ...) end
+    if ctx and _try(broadcastToGalaxy, ctx, msg) then
+      logf("[BCAST] broadcastToGalaxy(ctx,msg)")
+      return true
+    end
+    if _try(broadcastToGalaxy, nil, msg) then
+      logf("[BCAST] broadcastToGalaxy(nil,msg)")
+      return true
+    end
+    if _try(broadcastToGalaxy, msg) then
+      logf("[BCAST] broadcastToGalaxy(msg)")
+      return true
+    end
+  end
+  logf("[BCAST-FAIL] " .. msg)
+  return false
+end
 
 function AcklayWorldBossLoot:start()
   if getFlag(self.bootGuardKey) == 1 then
@@ -44,6 +75,13 @@ function AcklayWorldBossLoot:start()
   logf("start(): boot guard set -> spawning with loot box integration")
 
   self:spawnBoss()
+
+  -- Start broadcast loop if not already running
+  if readData and readData(self.DATA_LOOP_STARTED) ~= 1 then
+    if writeData then writeData(self.DATA_LOOP_STARTED, 1) end
+    logf("start(): starting broadcast loop")
+    createEvent(5, "AcklayWorldBossLoot", "broadcastLoop", nil, "")
+  end
 end
 
 function AcklayWorldBossLoot:spawnBoss()
@@ -70,6 +108,19 @@ function AcklayWorldBossLoot:spawnBoss()
 
   if broadcastMessage then
     broadcastMessage("\\#FF9933A terrifying presence is felt on Yavin IV... the Acklay has emerged.")
+  end
+
+  -- Store boss pointer and OID for broadcast loop
+  self.bossPtr = pBoss
+  local boss = LuaCreatureObject(pBoss)
+  if boss and boss.getObjectID then
+    local oid = boss:getObjectID()
+    if writeData then writeData(self.DATA_BOSS_OID, oid) end
+  end
+
+  -- Schedule first galaxy broadcast
+  if writeData then
+    writeData(self.DATA_NEXT_BCAST_AT, os.time() + self.FIRST_BROADCAST_DELAY)
   end
 
   logf("SPAWNED at (%.1f, %.1f, %.1f) with loot box system enabled.", x2, y2, z2)
@@ -130,9 +181,49 @@ function AcklayWorldBossLoot:onBossDeath(pBoss, pKiller)
 
   WorldBossLootManager:onBossDeath(pBoss, lootGroups, self.bossName)
 
+  -- Stop galaxy broadcasts
+  if writeData then
+    writeData(self.DATA_NEXT_BCAST_AT, 0)
+    writeData(self.DATA_BOSS_OID, 0)
+  end
+  self.bossPtr = nil
+
   if broadcastMessage then
     broadcastMessage("\\#00FF00The Acklay has been defeated! A treasure chest appears at its feet.")
   end
 
+  return 0
+end
+
+function AcklayWorldBossLoot:broadcastLoop()
+  -- Re-acquire pointer if we know the OID
+  if not self.bossPtr and readData then
+    local savedOID = readData(self.DATA_BOSS_OID)
+    if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 then
+      local obj = getSceneObject(tonumber(savedOID))
+      if obj then self.bossPtr = obj end
+    end
+  end
+
+  -- Check if it's time to broadcast
+  if self.bossPtr and readData then
+    local now = os.time()
+    local nextBcast = tonumber(readData(self.DATA_NEXT_BCAST_AT) or 0) or 0
+
+    if nextBcast > 0 and now >= nextBcast then
+      -- Broadcast boss location
+      local msg = string.format("[NOTICE] %s is located (%.0f, %.0f) on Yavin IV.",
+                                self.bossName, self.x, self.y)
+      galaxyBroadcast(msg, self.bossPtr)
+
+      -- Schedule next broadcast
+      if writeData then
+        writeData(self.DATA_NEXT_BCAST_AT, now + self.REPEAT_EVERY_SECONDS)
+      end
+    end
+  end
+
+  -- Continue the loop
+  createEvent(5, "AcklayWorldBossLoot", "broadcastLoop", nil, "")
   return 0
 end
