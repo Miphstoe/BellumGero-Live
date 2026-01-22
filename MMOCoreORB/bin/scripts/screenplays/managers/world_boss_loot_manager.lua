@@ -11,7 +11,7 @@ local Logger = require("utils.logger")
 local LOOT_BOX_TEMPLATE = "object/tangible/container/loot/placable_loot_crate_tech_chest.iff"
 local ELIGIBILITY_RADIUS = 64  -- meters - players must be within this range when boss dies (fallback: all damagers if proximity APIs unavailable)
 local BOX_LIFETIME_SECONDS = 30 * 60  -- 30 minutes
-local DEBUG_LOGS = false  -- Set to true for detailed debugging
+local DEBUG_LOGS = true  -- Set to true for detailed debugging (ENABLED to verify level 350 loot)
 local CREDITS_PER_PLAYER = 5000  -- Credits awarded to each eligible player
 
 -- ===== Globals for tracking =====
@@ -178,33 +178,36 @@ end
 
 -- ===== Damage Tracking =====
 local function trackDamager(pBoss, pAttacker)
-  if pBoss == nil or pAttacker == nil then return end
+  -- Wrap in pcall to prevent crashes from invalid objects
+  pcall(function()
+    if pBoss == nil or pAttacker == nil then return end
 
-  local soBoss = SceneObject(pBoss)
-  if soBoss == nil then return end
+    local soBoss = SceneObject(pBoss)
+    if soBoss == nil then return end
 
-  local bossOID = soBoss:getObjectID()
-  if bossOID == nil then return end
+    local bossOID = soBoss:getObjectID()
+    if bossOID == nil then return end
 
-  local pOwner = isPlayerPtr(pAttacker) and pAttacker or resolvePlayerFromKiller(pAttacker)
-  if not pOwner then return end
+    local pOwner = isPlayerPtr(pAttacker) and pAttacker or resolvePlayerFromKiller(pAttacker)
+    if not pOwner then return end
 
-  local playerOID = getPlayerOID(pOwner)
-  if not playerOID then return end
+    local playerOID = getPlayerOID(pOwner)
+    if not playerOID then return end
 
-  local set = _G.__WB_DAMAGE_TRACKING[bossOID]
-  if set == nil then
-    set = {}
-    _G.__WB_DAMAGE_TRACKING[bossOID] = set
-  end
+    local set = _G.__WB_DAMAGE_TRACKING[bossOID]
+    if set == nil then
+      set = {}
+      _G.__WB_DAMAGE_TRACKING[bossOID] = set
+    end
 
-  -- Only log if this is the first time tracking this player
-  local wasNew = not set[playerOID]
-  set[playerOID] = true
+    -- Only log if this is the first time tracking this player
+    local wasNew = not set[playerOID]
+    set[playerOID] = true
 
-  if wasNew then
-    log("Player OID %s is now eligible for loot from boss OID %s", tostring(playerOID), tostring(bossOID))
-  end
+    if wasNew then
+      log("Player OID %s is now eligible for loot from boss OID %s", tostring(playerOID), tostring(bossOID))
+    end
+  end)
 end
 
 -- ===== Eligibility Collection =====
@@ -255,7 +258,7 @@ local function collectEligiblePlayers(pBoss, bossOID)
 end
 
 -- ===== Loot Box Creation =====
-local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossName)
+local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossName, bossLevel)
   if pBoss == nil then
     log("ERROR: Cannot create loot box - pBoss is nil")
     return nil
@@ -295,6 +298,8 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
     eligiblePlayers = eligiblePlayers,
     lootedPlayers = {},
     lootGroups = lootGroups,
+    bossName = bossName,
+    bossLevel = bossLevel or 1,
     spawnTime = os.time(),
     planet = planet,
     x = x,
@@ -302,9 +307,10 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
     z = z
   }
 
-  log("Loot box OID %s created for boss OID %s with %d eligible players",
+  log("Loot box OID %s created for boss OID %s (level %d) with %d eligible players",
       tostring(boxOID),
       tostring(bossOID),
+      bossLevel or 1,
       (function() local c=0; for _ in pairs(eligiblePlayers) do c=c+1 end return c end)())
 
   createEvent(BOX_LIFETIME_SECONDS * 1000, "WorldBossLootManager", "despawnLootBox", pBox, "")
@@ -313,7 +319,7 @@ local function createLootBox(pBoss, bossOID, eligiblePlayers, lootGroups, bossNa
 end
 
 -- ===== Loot Generation =====
-local function generateLootForPlayer(pPlayer, lootGroups, bossName)
+local function generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel)
   if not isPlayerPtr(pPlayer) then
     log("Player is not valid")
     return false
@@ -323,6 +329,10 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName)
     log("No loot groups available")
     return false
   end
+
+  -- Default to level 1 if not provided (backward compatibility)
+  local lootLevel = tonumber(bossLevel) or 1
+  log("Generating loot at level %d for player", lootLevel)
 
   -- Select a random loot group from the boss's loot tables
   local selectedGroup = lootGroups[math.random(#lootGroups)]
@@ -362,8 +372,15 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName)
 
   log("Selected loot group: %s for player", selectedLootGroup)
 
-  -- Get player's inventory
-  local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+  -- Get player's inventory (protected)
+  local pInventory = nil
+  pcall(function()
+    local creature = CreatureObject(pPlayer)
+    if creature then
+      pInventory = creature:getSlottedObject("inventory")
+    end
+  end)
+
   if pInventory == nil then
     notifyPlayer(pPlayer, "ERROR: Could not access your inventory.")
     log("Failed to get player inventory")
@@ -383,7 +400,19 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName)
 
   -- Use createLoot to generate item from the loot group
   -- Syntax: createLoot(container, lootGroup, level, true)
-  local itemOID = createLoot(pInventory, selectedLootGroup, 1, true)
+  -- Use boss level for proper loot scaling
+  -- Wrap in pcall to prevent crashes from invalid loot groups
+  local itemOID = nil
+  local success = pcall(function()
+    itemOID = createLoot(pInventory, selectedLootGroup, lootLevel, true)
+  end)
+
+  if not success then
+    log("createLoot threw an error for group: %s", selectedLootGroup)
+    itemOID = nil
+  end
+
+  log("createLoot called with level %d, group: %s, result: %s", lootLevel, selectedLootGroup, tostring(itemOID))
 
   if itemOID and itemOID ~= 0 then
     local pItem = getSceneObject(itemOID)
@@ -451,10 +480,11 @@ local function onPlayerOpenLootBox(pBox, pPlayer)
   end
 
   local bossName = boxData.bossName or "the World Boss"
+  local bossLevel = boxData.bossLevel or 1
 
-  if generateLootForPlayer(pPlayer, boxData.lootGroups, bossName) then
+  if generateLootForPlayer(pPlayer, boxData.lootGroups, bossName, bossLevel) then
     boxData.lootedPlayers[playerOID] = true
-    log("Player OID %s successfully looted box OID %s", tostring(playerOID), tostring(boxOID))
+    log("Player OID %s successfully looted box OID %s (level %d loot)", tostring(playerOID), tostring(boxOID), bossLevel)
 
     local totalEligible = 0
     local totalLooted = 0
@@ -495,24 +525,46 @@ function WorldBossLootManager:trackDamage(pBoss, pAttacker)
 end
 
 function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
-  if pBoss == nil then
-    log("ERROR: onBossDeath called with nil pBoss")
+  -- Protect against crashes from invalid boss pointer
+  local bossOID = nil
+  local validBoss = false
+
+  pcall(function()
+    if pBoss == nil then
+      log("ERROR: onBossDeath called with nil pBoss")
+      return
+    end
+
+    local soBoss = SceneObject(pBoss)
+    if soBoss == nil then
+      log("ERROR: Cannot get SceneObject for boss")
+      return
+    end
+
+    bossOID = soBoss:getObjectID()
+    if not bossOID then
+      log("ERROR: Cannot get boss OID")
+      return
+    end
+
+    validBoss = true
+  end)
+
+  if not validBoss or not bossOID then
+    log("ERROR: Boss object validation failed in onBossDeath")
     return nil
   end
 
-  local soBoss = SceneObject(pBoss)
-  if soBoss == nil then
-    log("ERROR: Cannot get SceneObject for boss")
-    return nil
-  end
+  -- Get the boss level for proper loot scaling
+  local bossLevel = 1
+  pcall(function()
+    local coBoss = CreatureObject(pBoss)
+    if coBoss and coBoss.getLevel then
+      bossLevel = coBoss:getLevel() or 1
+    end
+  end)
 
-  local bossOID = soBoss:getObjectID()
-  if not bossOID then
-    log("ERROR: Cannot get boss OID")
-    return nil
-  end
-
-  log("Boss died - OID %s, Name: %s", tostring(bossOID), bossName or "Unknown")
+  log("Boss died - OID %s, Name: %s, Level: %d", tostring(bossOID), bossName or "Unknown", bossLevel)
 
   local eligiblePlayers = collectEligiblePlayers(pBoss, bossOID)
 
@@ -527,31 +579,44 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
     return nil
   end
 
-  log("Distributing loot to %d eligible players", count)
+  log("Distributing loot to %d eligible players at level %d", count, bossLevel)
 
   -- Give loot directly to each eligible player
   for playerOID, _ in pairs(eligiblePlayers) do
-    local pPlayer = getSceneObject(tonumber(playerOID))
-    if pPlayer and isPlayerPtr(pPlayer) then
-      if generateLootForPlayer(pPlayer, lootGroups, bossName) then
-        log("Successfully gave loot to player OID %s", tostring(playerOID))
+    pcall(function()
+      local pPlayer = getSceneObject(tonumber(playerOID))
+      if pPlayer and isPlayerPtr(pPlayer) then
+        if generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel) then
+          log("Successfully gave level %d loot to player OID %s", bossLevel, tostring(playerOID))
+        else
+          log("Failed to give loot to player OID %s", tostring(playerOID))
+        end
       else
-        log("Failed to give loot to player OID %s", tostring(playerOID))
+        log("Could not find player object for OID %s", tostring(playerOID))
       end
-    else
-      log("Could not find player object for OID %s", tostring(playerOID))
-    end
+    end)
   end
 
   -- Clear the boss corpse's loot to prevent double-looting
-  if pBoss then
-    local corpse = SceneObject(pBoss)
-    if corpse then
-      -- Remove all items from the corpse
-      local containerSize = corpse:getContainerObjectsSize()
-      log("Clearing %d items from boss corpse to prevent double-looting", containerSize)
+  -- Wrap everything in pcall to prevent segfaults if objects are being destroyed
+  pcall(function()
+    if not pBoss then return end
 
-      for i = containerSize - 1, 0, -1 do
+    local corpse = SceneObject(pBoss)
+    if not corpse then return end
+
+    -- Remove all items from the corpse (protected)
+    local containerSize = corpse:getContainerObjectsSize()
+    if not containerSize or containerSize <= 0 then
+      log("Boss corpse has no items to clear")
+      return
+    end
+
+    log("Clearing %d items from boss corpse to prevent double-looting", containerSize)
+
+    -- Clear items safely
+    for i = containerSize - 1, 0, -1 do
+      pcall(function()
         local pItem = corpse:getContainerObject(i)
         if pItem then
           local item = SceneObject(pItem)
@@ -560,23 +625,23 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
             item:destroyObjectFromDatabase()
           end
         end
-      end
-
-      -- Clear cash from the corpse using subtractCashCredits (method 4)
-      pcall(function()
-        local creatureCorpse = CreatureObject(pBoss)
-        if creatureCorpse then
-          local currentCash = creatureCorpse:getCashCredits()
-          if currentCash and currentCash > 0 then
-            creatureCorpse:subtractCashCredits(currentCash)
-            log("Cleared %d credits from corpse", currentCash)
-          end
-        end
       end)
-
-      log("Boss corpse cleared - no traditional looting available")
     end
-  end
+
+    -- Clear cash from the corpse
+    pcall(function()
+      local creatureCorpse = CreatureObject(pBoss)
+      if creatureCorpse then
+        local currentCash = creatureCorpse:getCashCredits()
+        if currentCash and currentCash > 0 then
+          creatureCorpse:subtractCashCredits(currentCash)
+          log("Cleared %d credits from corpse", currentCash)
+        end
+      end
+    end)
+
+    log("Boss corpse cleared - no traditional looting available")
+  end)
 
   _G.__WB_DAMAGE_TRACKING[bossOID] = nil
 
