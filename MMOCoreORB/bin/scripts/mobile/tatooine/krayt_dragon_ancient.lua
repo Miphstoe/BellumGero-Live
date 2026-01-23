@@ -33,41 +33,41 @@ krayt_dragon_ancient = Creature:new {
 	lootGroups = {
 	{
         groups = {
-			{group = "krayt_tissue_rare", chance = 3000000},         -- 30.00% of group, 30.00% total
-			{group = "krayt_dragon_common", chance = 3000000},       -- 30.00% of group, 30.00% total
-			{group = "krayt_pearls", chance = 2000000},              -- 20.00% of group, 20.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 10.00% total
+			{group = "krayt_tissue_rare", chance = 4000000},         -- 30.00% of group, 30.00% total
+			--{group = "krayt_dragon_common", chance = 3000000},       -- 30.00% of group, 30.00% total
+			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 20.00% total
+			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 10.00% total
+			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 10.00% total
 		},
 		lootChance = 10000000, -- 100.00% total chance
 	},
 	{
         groups = {
-			{group = "krayt_tissue_rare", chance = 2500000},         -- 25.00% of group, 17.50% total
-			{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
-			{group = "krayt_pearls", chance = 2000000},              -- 20.00% of group, 14.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 7.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 7.00% total
+			{group = "krayt_tissue_rare", chance = 4000000},         -- 25.00% of group, 17.50% total
+			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
+			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
+			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
+			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
 		},
 		lootChance = 7000000, -- 70.00% total chance
 	},
 	{
         groups = {
-			{group = "krayt_tissue_rare", chance = 2500000},         -- 25.00% of group, 12.50% total
-			{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 17.50% total
-			{group = "krayt_pearls", chance = 2000000},              -- 20.00% of group, 10.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 5.00% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 5.00% total
+			{group = "krayt_tissue_rare", chance = 4000000},         -- 25.00% of group, 17.50% total
+			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
+			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
+			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
+			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
 		},
 		lootChance = 5000000, -- 50.00% total chance
 	},
 	{
         groups = {
-			{group = "krayt_tissue_rare", chance = 2500000},         -- 25.00% of group, 6.25% total
-			{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 8.75% total
-			{group = "krayt_pearls", chance = 2000000},              -- 20.00% of group, 5.00% total
-			{group = "armor_attachments", chance = 1000000},         -- 10.00% of group, 2.50% total
-			{group = "clothing_attachments", chance = 1000000},      -- 10.00% of group, 2.50% total
+			{group = "krayt_tissue_rare", chance = 4000000},         -- 25.00% of group, 17.50% total
+			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
+			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
+			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
+			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
 		},
 		lootChance = 2500000, -- 25.00% total chance
 	},
