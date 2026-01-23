@@ -184,6 +184,44 @@ VillageRaids = ScreenPlay:new {
 	uberEnemyLarge = { "uberEnemyLargeData", "uberEnemyLargeList" },
 }
 
+-- Get or calculate the next raid time
+function VillageRaids:getNextRaidTime()
+	local storedTime = readData("VillageRaids:nextRaidTime")
+
+	if storedTime ~= nil and storedTime > 0 and storedTime > os.time() then
+		return storedTime
+	end
+
+	-- No valid stored time, calculate a new one if in Phase 4
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+	if currentPhase ~= 4 then
+		return 0
+	end
+
+	-- Calculate next raid time based on the configured intervals
+	local lastRaidTime = readData("VillageRaids:lastRaidTime")
+
+	if lastRaidTime == nil or lastRaidTime == 0 then
+		-- No last raid recorded, schedule one soon (5 minutes from now)
+		local nextTime = math.floor(os.time() + (5 * 60))
+		writeData("VillageRaids:nextRaidTime", nextTime)
+		return nextTime
+	end
+
+	-- Calculate based on last raid + duration + break
+	local avgBreakTime = (self.raidBreakData.minBreakTime + self.raidBreakData.maxBreakTime) / 2
+	local totalInterval = (self.raidBreakData.raidDuration + avgBreakTime) / 1000  -- Convert to seconds
+	local nextTime = math.floor(lastRaidTime + totalInterval)
+
+	-- If that time is in the past, schedule one soon
+	if nextTime < os.time() then
+		nextTime = math.floor(os.time() + (5 * 60))
+	end
+
+	writeData("VillageRaids:nextRaidTime", nextTime)
+	return nextTime
+end
+
 function VillageRaids:doPhaseInit()
 	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
 
@@ -198,7 +236,14 @@ function VillageRaids:doPhaseInit()
 		local pMaster = VillageJediManagerTownship:getMasterObject()
 		if (pMaster ~= nil) then
 			-- Start first raid in 2 minutes
-			createEvent(2 * 60 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+			local firstRaidDelay = 2 * 60 * 1000
+			local firstRaidTime = math.floor(os.time() + (firstRaidDelay / 1000))
+			writeData("VillageRaids:nextRaidTime", firstRaidTime)
+			writeData("VillageRaids:lastRaidTime", 0)  -- Clear last raid time for new phase
+			createEvent(firstRaidDelay, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+			if firstRaidTime and type(firstRaidTime) == "number" and firstRaidTime > 0 then
+				printLuaError("VillageRaids: Phase 4 initialized, first raid in 2 minutes at " .. os.date("%c", firstRaidTime))
+			end
 		end
 	end
 end
@@ -335,11 +380,23 @@ function VillageRaids:doEnemySpawnPulse()
 		QuestSpawner:createQuestSpawner("VillageRaids", waveInfo[1], waveInfo[2], loc[1], loc[2], loc[3], 0, "dathomir", pMaster)
 	end
 
+	-- Store the current raid start time
+	local currentTime = os.time()
+	writeData("VillageRaids:lastRaidTime", currentTime)
+
 	-- Schedule next raid with break time AFTER this raid ends
 	local totalBreakTime = self.raidBreakData.raidDuration + getRandomNumber(self.raidBreakData.minBreakTime, self.raidBreakData.maxBreakTime)
+	local nextRaidTime = math.floor(currentTime + (totalBreakTime / 1000))  -- Convert milliseconds to seconds and floor to integer
+
+	-- Store the next raid timestamp for /village command display
+	writeData("VillageRaids:nextRaidTime", nextRaidTime)
+
 	createEvent(totalBreakTime, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
-	
+
 	printLuaError("VillageRaids: Raid started, next raid in " .. (totalBreakTime / 60000) .. " minutes (includes " .. (self.raidBreakData.raidDuration / 60000) .. " min raid duration + " .. ((totalBreakTime - self.raidBreakData.raidDuration) / 60000) .. " min break)")
+	if nextRaidTime and type(nextRaidTime) == "number" and nextRaidTime > 0 then
+		printLuaError("VillageRaids: Next raid scheduled for " .. os.date("%c", nextRaidTime))
+	end
 end
 
 function VillageRaids:getPlayersInVillage(pMaster)
@@ -363,23 +420,68 @@ end
 -- Manual kickstart function for testing
 function VillageRaids:kickstartRaidSystem()
 	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
-	
+
 	if (currentPhase ~= 4) then
 		printLuaError("VillageRaids:kickstartRaidSystem() - Village not in Phase 4")
 		return false
 	end
-	
+
 	local pMaster = VillageJediManagerTownship:getMasterObject()
 	if (pMaster == nil) then
 		printLuaError("VillageRaids:kickstartRaidSystem() - Cannot get master village object")
 		return false
 	end
-	
+
 	printLuaError("VillageRaids:kickstartRaidSystem() - Starting raid system...")
-	
+
 	-- Start the first raid in 30 seconds
-	createEvent(30 * 1000, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
-	
-	printLuaError("VillageRaids:kickstartRaidSystem() - First raid will start in 30 seconds")
+	local kickstartDelay = 30 * 1000
+	local kickstartRaidTime = math.floor(os.time() + (kickstartDelay / 1000))
+	writeData("VillageRaids:nextRaidTime", kickstartRaidTime)
+	writeData("VillageRaids:lastRaidTime", 0)
+	createEvent(kickstartDelay, "VillageRaids", "doEnemySpawnPulse", pMaster, "")
+
+	if kickstartRaidTime and type(kickstartRaidTime) == "number" and kickstartRaidTime > 0 then
+		printLuaError("VillageRaids:kickstartRaidSystem() - First raid will start in 30 seconds at " .. os.date("%c", kickstartRaidTime))
+	end
 	return true
+end
+
+-- Get current raid schedule info (for debugging/display)
+function VillageRaids:getRaidScheduleInfo()
+	local currentPhase = VillageJediManagerTownship.getCurrentPhase()
+
+	if (currentPhase ~= 4) then
+		return "Village is not in Phase 4 (current phase: " .. currentPhase .. ")"
+	end
+
+	local nextRaid = self:getNextRaidTime()
+	local lastRaid = readData("VillageRaids:lastRaidTime") or 0
+
+	local info = "=== Village Raid Schedule ===\n"
+
+	if lastRaid and type(lastRaid) == "number" and lastRaid > 0 then
+		info = info .. "Last Raid: " .. os.date("%c", math.floor(lastRaid)) .. "\n"
+	else
+		info = info .. "Last Raid: None recorded\n"
+	end
+
+	if nextRaid and type(nextRaid) == "number" and nextRaid > 0 then
+		local timeLeft = nextRaid - os.time()
+		info = info .. "Next Raid: " .. os.date("%c", math.floor(nextRaid)) .. "\n"
+		if timeLeft > 0 then
+			info = info .. "Time Until Next Raid: " .. math.floor(timeLeft / 60) .. " minutes\n"
+		else
+			info = info .. "Time Until Next Raid: Starting Soon!\n"
+		end
+	else
+		info = info .. "Next Raid: Not Scheduled\n"
+	end
+
+	info = info .. "\nRaid Configuration:\n"
+	info = info .. "- Raid Duration: " .. (self.raidBreakData.raidDuration / 60000) .. " minutes\n"
+	info = info .. "- Break Time: " .. (self.raidBreakData.minBreakTime / 60000) .. "-" .. (self.raidBreakData.maxBreakTime / 60000) .. " minutes\n"
+	info = info .. "- Total Cycle: " .. ((self.raidBreakData.raidDuration + self.raidBreakData.minBreakTime) / 60000) .. "-" .. ((self.raidBreakData.raidDuration + self.raidBreakData.maxBreakTime) / 60000) .. " minutes\n"
+
+	return info
 end

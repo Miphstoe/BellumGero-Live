@@ -216,17 +216,33 @@ function JarJarWorldBossSimple:spawnBoss(_, _)
 end
 
 function JarJarWorldBossSimple:bindAfterSpawn(pBoss, _)
-  if pBoss == nil then return 0 end
+  if pBoss == nil then
+    d("bindAfterSpawn: pBoss is nil, aborting")
+    return 0
+  end
 
   local oid = 0
   local ok = pcall(function()
     local so = SceneObject(pBoss)
     if so and so.getObjectID then oid = so:getObjectID() end
   end)
+
   if not ok or (tonumber(oid) or 0) == 0 then
-    createEvent(500, "JarJarWorldBossSimple", "bindAfterSpawn", pBoss, "")
-    return 0
+    -- Retry up to 5 times before giving up
+    local retryCount = tonumber(readData("JARJAR.bindRetryCount") or 0) or 0
+    if retryCount < 5 then
+      writeData("JARJAR.bindRetryCount", retryCount + 1)
+      createEvent(500, "JarJarWorldBossSimple", "bindAfterSpawn", pBoss, "")
+      return 0
+    else
+      d("bindAfterSpawn: failed after 5 retries, giving up")
+      writeData("JARJAR.bindRetryCount", 0)
+      return 0
+    end
   end
+
+  -- Reset retry counter on success
+  writeData("JARJAR.bindRetryCount", 0)
 
   writeData(self.DATA_BOSS_OID, tonumber(oid))
   self.bossPtr = pBoss
@@ -234,7 +250,12 @@ function JarJarWorldBossSimple:bindAfterSpawn(pBoss, _)
   -- Prime last HP & taunt timer
   pcall(function()
     local co = LuaCreatureObject(pBoss)
-    if co then writeData(self.DATA_LAST_HP, co:getHAM(0) or 0) end
+    if co and co.getHAM then
+      local hp = co:getHAM(0)
+      if hp and type(hp) == "number" then
+        writeData(self.DATA_LAST_HP, hp)
+      end
+    end
   end)
   writeData(self.DATA_LAST_TAUNT, os.time() - (self.TAUNT_INTERVAL_SECONDS or 32))
 
@@ -247,9 +268,13 @@ function JarJarWorldBossSimple:bindAfterSpawn(pBoss, _)
   -- Save initial XY for broadcasts
   pcall(function()
     local so = SceneObject(pBoss)
-    if so then
-      writeData(self.DATA_LAST_X, so:getPositionX() or 0)
-      writeData(self.DATA_LAST_Y, so:getPositionY() or 0)
+    if so and so.getPositionX and so.getPositionY then
+      local px = so:getPositionX()
+      local py = so:getPositionY()
+      if px and py then
+        writeData(self.DATA_LAST_X, px)
+        writeData(self.DATA_LAST_Y, py)
+      end
     end
   end)
 
@@ -269,14 +294,23 @@ function JarJarWorldBossSimple:watchLoop(_, _)
   end
   self.bossPtr = pBoss
 
-  local co = LuaCreatureObject(pBoss)
-  if not co then
+  local co = nil
+  local coSuccess = pcall(function()
+    co = LuaCreatureObject(pBoss)
+  end)
+
+  if not coSuccess or not co then
     createEvent(2000, "JarJarWorldBossSimple", "watchLoop", 0, "")
     return 0
   end
 
-  -- Death handling
-  if co:isDead() then
+  -- Death handling (with pcall protection)
+  local isDead = false
+  pcall(function()
+    isDead = co:isDead()
+  end)
+
+  if isDead then
     d("watchLoop: detected death; scheduling cooldown")
     self.bossPtr = nil
     writeData(self.DATA_BOSS_OID, 0)
@@ -318,7 +352,16 @@ function JarJarWorldBossSimple:watchLoop(_, _)
   local lastTaunt = tonumber(readData(self.DATA_LAST_TAUNT) or 0) or 0
   local lastHP    = tonumber(readData(self.DATA_LAST_HP)    or 0) or 0
   local curHP = lastHP
-  _try(function() curHP = co:getHAM(0) or curHP end)
+
+  -- Safely get current HP
+  if co then
+    pcall(function()
+      local hp = co:getHAM(0)
+      if hp and type(hp) == "number" then
+        curHP = hp
+      end
+    end)
+  end
 
   if curHP < lastHP and (now - lastTaunt) >= (self.TAUNT_INTERVAL_SECONDS or 32) then
     local lines = self.TAUNTS or {}

@@ -905,7 +905,14 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 	mission->setStartPosition(startPos.getX(), startPos.getY(), zone->getZoneName());
 	mission->setCreatorName(nm->makeCreatureName());
 
-	mission->setMissionTargetName("@lair_n:" + lairTemplateObject->getName());
+	// Use customName if available, otherwise use the string table reference
+	String missionTargetName;
+	if (!lairTemplateObject->getCustomName().isEmpty()) {
+		missionTargetName = lairTemplateObject->getCustomName();
+	} else {
+		missionTargetName = "@lair_n:" + lairTemplateObject->getName();
+	}
+	mission->setMissionTargetName(missionTargetName);
 	mission->setTargetTemplate(templateObject);
 	mission->setTargetOptionalTemplate(lairTemplate);
 

@@ -23,8 +23,24 @@ function VillagePlayerSui:showMainPage(pPlayer)
 
 	-- CHANGE: Simplified prompt with only phase and time information
 	local suiPrompt = " \\#pcontrast1 " .. "Current Phase:" .. " \\#pcontrast2 " .. curPhase .. "\n"
-	suiPrompt = suiPrompt .. " \\#pcontrast1 " .. "Next Phase Change: " .. " \\#pcontrast2 " .. os.date("%c", nextPhaseChange)  .. "\n"
+
+	-- Safely format next phase change time
+	if nextPhaseChange and type(nextPhaseChange) == "number" and nextPhaseChange > 0 then
+		suiPrompt = suiPrompt .. " \\#pcontrast1 " .. "Next Phase Change: " .. " \\#pcontrast2 " .. os.date("%c", math.floor(nextPhaseChange))  .. "\n"
+	else
+		suiPrompt = suiPrompt .. " \\#pcontrast1 " .. "Next Phase Change: " .. " \\#pcontrast2 Unknown\n"
+	end
+
 	suiPrompt = suiPrompt .. " \\#pcontrast1 " .. "Phase Time Left: " .. " \\#pcontrast2 " .. phaseTimeLeft
+
+	-- Add next raid time if in Phase 4
+	if (curPhase == 4) then
+		local nextRaidTime = self:getNextRaidTime()
+		local raidTimeLeft = self:getNextRaidTimeLeft()
+
+		suiPrompt = suiPrompt .. "\n\n \\#pcontrast1 " .. "Next Village Raid: " .. " \\#pcontrast2 " .. nextRaidTime
+		suiPrompt = suiPrompt .. "\n \\#pcontrast1 " .. "Raid Time Left: " .. " \\#pcontrast2 " .. raidTimeLeft
+	end
 
 	-- CHANGE: Simple message box instead of list box (no menu options)
 	local sui = SuiMessageBox.new("VillagePlayerSui", "closeCallback")
@@ -60,4 +76,42 @@ function VillagePlayerSui:getTimeString(miliTime)
 	local secondsLeft = math.floor(timeLeft % 60)
 
 	return daysLeft .. "d " .. hoursLeft .. "h " .. minutesLeft .. "m " .. secondsLeft .. "s"
+end
+
+function VillagePlayerSui:getNextRaidTime()
+	-- Use the VillageRaids helper function to get or calculate the next raid time
+	local nextRaidTimestamp = VillageRaids:getNextRaidTime()
+
+	if (nextRaidTimestamp == nil or nextRaidTimestamp == 0 or type(nextRaidTimestamp) ~= "number") then
+		return "Not Scheduled"
+	end
+
+	-- Ensure it's an integer for os.date
+	nextRaidTimestamp = math.floor(nextRaidTimestamp)
+
+	-- Additional safety check
+	if nextRaidTimestamp <= 0 then
+		return "Not Scheduled"
+	end
+
+	return os.date("%c", nextRaidTimestamp)
+end
+
+function VillagePlayerSui:getNextRaidTimeLeft()
+	-- Use the VillageRaids helper function to get or calculate the next raid time
+	local nextRaidTimestamp = VillageRaids:getNextRaidTime()
+
+	if (nextRaidTimestamp == nil or nextRaidTimestamp == 0) then
+		return "Unknown"
+	end
+
+	local currentTime = os.time()
+	local timeLeftSeconds = nextRaidTimestamp - currentTime
+
+	if (timeLeftSeconds < 0) then
+		return "Starting Soon..."
+	end
+
+	-- Convert seconds to milliseconds for getTimeString function
+	return self:getTimeString(timeLeftSeconds * 1000)
 end
