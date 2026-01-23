@@ -582,22 +582,41 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
   log("Distributing loot to %d eligible players at level %d", count, bossLevel)
 
   -- Give loot directly to each eligible player
+  local successCount = 0
+  local failCount = 0
   for playerOID, _ in pairs(eligiblePlayers) do
-    pcall(function()
+    local success, err = pcall(function()
+      log("Attempting to give loot to player OID %s", tostring(playerOID))
       local pPlayer = getSceneObject(tonumber(playerOID))
-      if pPlayer and isPlayerPtr(pPlayer) then
-        if generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel) then
-          log("Successfully gave level %d loot to player OID %s", bossLevel, tostring(playerOID))
-        else
-          log("Failed to give loot to player OID %s", tostring(playerOID))
-        end
+      if not pPlayer then
+        log("ERROR: getSceneObject returned nil for player OID %s", tostring(playerOID))
+        return
+      end
+      if not isPlayerPtr(pPlayer) then
+        log("ERROR: Object is not a player for OID %s", tostring(playerOID))
+        return
+      end
+      log("Player object valid, calling generateLootForPlayer for OID %s", tostring(playerOID))
+      if generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel) then
+        log("SUCCESS: Gave level %d loot to player OID %s", bossLevel, tostring(playerOID))
+        successCount = successCount + 1
       else
-        log("Could not find player object for OID %s", tostring(playerOID))
+        log("FAILED: Could not generate loot for player OID %s", tostring(playerOID))
+        failCount = failCount + 1
       end
     end)
+    if not success then
+      log("ERROR in loot distribution pcall: %s", tostring(err))
+      failCount = failCount + 1
+    end
   end
 
+  log("Loot distribution complete - Success: %d, Failed: %d", successCount, failCount)
+
   -- Clear the boss corpse's loot to prevent double-looting
+  -- Capture bossOID outside the pcall so it's accessible
+  local safeBossOID = bossOID
+
   -- Wrap everything in pcall to prevent segfaults if objects are being destroyed
   pcall(function()
     if not pBoss then return end
@@ -607,40 +626,88 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
 
     -- Remove all items from the corpse (protected)
     local containerSize = corpse:getContainerObjectsSize()
-    if not containerSize or containerSize <= 0 then
-      log("Boss corpse has no items to clear")
-      return
-    end
+    if containerSize and containerSize > 0 then
+      log("Clearing %d items from boss corpse to prevent double-looting", containerSize)
 
-    log("Clearing %d items from boss corpse to prevent double-looting", containerSize)
-
-    -- Clear items safely
-    for i = containerSize - 1, 0, -1 do
-      pcall(function()
-        local pItem = corpse:getContainerObject(i)
-        if pItem then
-          local item = SceneObject(pItem)
-          if item then
-            item:destroyObjectFromWorld()
-            item:destroyObjectFromDatabase()
+      -- Clear items safely
+      for i = containerSize - 1, 0, -1 do
+        pcall(function()
+          local pItem = corpse:getContainerObject(i)
+          if pItem then
+            local item = SceneObject(pItem)
+            if item then
+              item:destroyObjectFromWorld()
+              item:destroyObjectFromDatabase()
+            end
           end
-        end
-      end)
+        end)
+      end
     end
 
-    -- Clear cash from the corpse
+    -- Clear cash from the corpse - AGGRESSIVELY
+    local cashCleared = false
     pcall(function()
       local creatureCorpse = CreatureObject(pBoss)
       if creatureCorpse then
         local currentCash = creatureCorpse:getCashCredits()
+        log("Corpse has %s credits before clearing", tostring(currentCash))
+
         if currentCash and currentCash > 0 then
           creatureCorpse:subtractCashCredits(currentCash)
-          log("Cleared %d credits from corpse", currentCash)
+          log("Subtracted %d credits from corpse", currentCash)
+        end
+
+        -- Set cash to 0 explicitly (multiple attempts)
+        creatureCorpse:setCashCredits(0)
+        creatureCorpse:setCashCredits(0)  -- Double set for safety
+
+        -- Verify it's cleared
+        local finalCash = creatureCorpse:getCashCredits()
+        log("Corpse has %s credits after clearing", tostring(finalCash))
+
+        if finalCash and finalCash == 0 then
+          cashCleared = true
         end
       end
     end)
 
-    log("Boss corpse cleared - no traditional looting available")
+    if cashCleared then
+      log("Successfully cleared all credits from corpse")
+    else
+      log("WARNING: May not have cleared all credits from corpse")
+    end
+
+    -- Try multiple methods to prevent looting
+
+    -- Method 1: Set condition to 0 (completely damaged/destroyed)
+    pcall(function()
+      corpse:setConditionDamage(0, true)
+    end)
+
+    -- Method 2: Make the corpse non-interactive
+    pcall(function()
+      corpse:setOptionsBitmask(0)
+    end)
+
+    -- Method 3: Destroy the corpse completely after a short delay
+    -- Store the OID to safely retrieve the object later
+    local corpseOID = corpse:getObjectID()
+    if corpseOID and corpseOID > 0 and safeBossOID and safeBossOID > 0 then
+      local bossOIDStr = tostring(safeBossOID)
+      local corpseOIDValue = tonumber(corpseOID)
+
+      log("Preparing to schedule corpse destruction - boss OID: %s, corpse OID: %s", bossOIDStr, tostring(corpseOIDValue))
+
+      writeData("WBLootMgr:corpseToDestroy:" .. bossOIDStr, corpseOIDValue)
+      createEvent(5000, "WorldBossLootManager", "destroyCorpse", nil, bossOIDStr)
+
+      log("Scheduled corpse destruction for boss OID %s (corpse OID: %s)", bossOIDStr, tostring(corpseOIDValue))
+    else
+      log("Failed to schedule corpse destruction - bossOID: %s, corpseOID: %s",
+          tostring(safeBossOID), tostring(corpseOID))
+    end
+
+    log("Boss corpse cleared and marked for destruction - no traditional looting available")
   end)
 
   _G.__WB_DAMAGE_TRACKING[bossOID] = nil
@@ -657,9 +724,77 @@ function WorldBossLootManager:despawnLootBox(pBox)
   despawnLootBox(pBox)
 end
 
+-- ===== Corpse Destruction =====
+local function destroyCorpse(bossOIDStr)
+  log("destroyCorpse called with bossOIDStr: %s (type: %s)", tostring(bossOIDStr), type(bossOIDStr))
+
+  if not bossOIDStr or bossOIDStr == "" then
+    log("destroyCorpse called with invalid bossOID - nil or empty string")
+    return
+  end
+
+  local corpseOID = tonumber(readData("WBLootMgr:corpseToDestroy:" .. bossOIDStr))
+  if not corpseOID or corpseOID == 0 then
+    log("No corpse OID stored for boss %s, skipping destruction", bossOIDStr)
+    return
+  end
+
+  -- Clean up the stored OID
+  deleteData("WBLootMgr:corpseToDestroy:" .. bossOIDStr)
+
+  -- Try to get the corpse object
+  local pCorpse = getSceneObject(corpseOID)
+  if not pCorpse then
+    log("Corpse OID %s no longer exists (already cleaned up naturally)", tostring(corpseOID))
+    return
+  end
+
+  -- Verify it's still valid before destroying
+  local isValid = false
+  pcall(function()
+    local so = SceneObject(pCorpse)
+    if so and so.getObjectID then
+      local currentOID = so:getObjectID()
+      if currentOID == corpseOID then
+        isValid = true
+      end
+    end
+  end)
+
+  if not isValid then
+    log("Corpse OID %s is no longer valid, skipping destruction", tostring(corpseOID))
+    return
+  end
+
+  -- Destroy the corpse
+  local destroyed = false
+  pcall(function()
+    local so = SceneObject(pCorpse)
+    if so then
+      log("Destroying boss corpse OID %s to prevent looting", tostring(corpseOID))
+      so:destroyObjectFromWorld()
+      destroyed = true
+    end
+  end)
+
+  if destroyed then
+    -- Also try to destroy from database
+    pcall(function()
+      local so = SceneObject(pCorpse)
+      if so then
+        so:destroyObjectFromDatabase()
+      end
+    end)
+  end
+end
+
 -- ===== Events =====
 function WorldBossLootManager.despawnLootBox(pBox, _)
   despawnLootBox(pBox)
+end
+
+function WorldBossLootManager.destroyCorpse(_, bossOIDStr)
+  destroyCorpse(bossOIDStr)
 end
 
 return WorldBossLootManager

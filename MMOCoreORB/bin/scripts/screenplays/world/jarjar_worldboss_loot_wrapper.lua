@@ -54,6 +54,13 @@ local JARJAR_LOOT_GROUPS = {
   }
 }
 
+-- Prevent double-wrapping
+if rawget(_G, "JARJAR_LOOT_WRAPPER_LOADED") then
+  print("[JARJAR-LOOT] Wrapper already loaded, skipping duplicate load")
+  return
+end
+_G.JARJAR_LOOT_WRAPPER_LOADED = true
+
 -- Store original spawnBoss and watchLoop functions
 local originalSpawnBoss = JarJarWorldBossSimple.spawnBoss
 local originalWatchLoop = JarJarWorldBossSimple.watchLoop
@@ -69,9 +76,15 @@ registerScreenPlay("JarJarLootObserver", true)
 
 -- Damage handler - called by observer
 function JarJarLootObserver:onDamage(pBoss, pAttacker, damage)
-  if pBoss and pAttacker then
-    WorldBossLootManager:trackDamage(pBoss, pAttacker)
+  if not pBoss or not pAttacker then
+    return 0
   end
+
+  -- Safely track damage with error handling
+  pcall(function()
+    WorldBossLootManager:trackDamage(pBoss, pAttacker)
+  end)
+
   return 0
 end
 
@@ -79,8 +92,28 @@ end
 local function attachObservers(pBoss)
   if not pBoss then return end
 
-  local bossOID = SceneObject(pBoss):getObjectID()
+  local bossOID = 0
+  local success = pcall(function()
+    local so = SceneObject(pBoss)
+    if so and so.getObjectID then
+      bossOID = so:getObjectID()
+    end
+  end)
+
+  if not success or not bossOID or bossOID == 0 then
+    print("[JARJAR-LOOT] Failed to get boss OID, skipping observer attach")
+    return
+  end
+
+  -- Check if already attached (local table)
   if observersAttached[bossOID] then
+    return
+  end
+
+  -- Check if already attached (persistent storage to survive script reloads)
+  local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
+  if readData(attachedKey) == "1" then
+    observersAttached[bossOID] = true
     return
   end
 
@@ -95,7 +128,9 @@ local function attachObservers(pBoss)
     end
   end
 
+  -- Mark as attached in both local table and persistent storage
   observersAttached[bossOID] = true
+  writeData(attachedKey, "1")
 end
 
 -- Wrap spawnBoss to attach observers after spawn
@@ -120,25 +155,47 @@ function JarJarWorldBossSimple:watchLoop(_, _)
   local pBoss = self.bossPtr
 
   if pBoss then
-    local bossOID = SceneObject(pBoss):getObjectID()
-
-    -- Attach observers if not already done (handles bosses that were alive before wrapper loaded)
-    if not observersAttached[bossOID] then
-      attachObservers(pBoss)
-    end
-
-    -- Check for death
-    local co = LuaCreatureObject(pBoss)
-    if co and co:isDead() then
-      -- Check if this is the first time we detected death
-      if lastKnownHP[bossOID] then
-        WorldBossLootManager:onBossDeath(pBoss, JARJAR_LOOT_GROUPS, "Jar Jar Binks")
-        lastKnownHP[bossOID] = nil
-        observersAttached[bossOID] = nil
+    local bossOID = 0
+    local oidSuccess = pcall(function()
+      local so = SceneObject(pBoss)
+      if so and so.getObjectID then
+        bossOID = so:getObjectID()
       end
-    elseif co then
-      -- Store HP to detect death on next iteration
-      lastKnownHP[bossOID] = co:getHAM(0) or 0
+    end)
+
+    if oidSuccess and bossOID and bossOID > 0 then
+      -- Attach observers if not already done (handles bosses that were alive before wrapper loaded)
+      if not observersAttached[bossOID] then
+        attachObservers(pBoss)
+      end
+
+      -- Check for death
+      local isDead = false
+      local currentHP = 0
+      pcall(function()
+        local co = LuaCreatureObject(pBoss)
+        if co then
+          isDead = co:isDead()
+          if not isDead then
+            currentHP = co:getHAM(0) or 0
+          end
+        end
+      end)
+
+      if isDead then
+        -- Check if this is the first time we detected death
+        if lastKnownHP[bossOID] then
+          WorldBossLootManager:onBossDeath(pBoss, JARJAR_LOOT_GROUPS, "Jar Jar Binks")
+          lastKnownHP[bossOID] = nil
+          observersAttached[bossOID] = nil
+          -- Clean up persistent observer flag
+          local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
+          deleteData(attachedKey)
+        end
+      else
+        -- Store HP to detect death on next iteration
+        lastKnownHP[bossOID] = currentHP
+      end
     end
   end
 
