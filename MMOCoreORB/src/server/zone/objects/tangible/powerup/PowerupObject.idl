@@ -53,6 +53,12 @@ class PowerupObject extends TangibleObject {
 		return type == "mine";
 	}
 
+	@read
+	public boolean isAll() {
+		return type == "all";
+	}
+
+
 	public void decreaseUses() {
 		uses = uses - 1;
 	}
@@ -69,6 +75,10 @@ class PowerupObject extends TangibleObject {
 	public void setType(final string t) {
 		type = t;
 	}
+
+	// Optional damage type override (0 means none)
+	@read
+	public native int getDamageTypeOverride();
 
 	@read
 	public native float getPowerupStat(final string stat);
@@ -98,6 +108,4 @@ class PowerupObject extends TangibleObject {
 
 	@read
 	private native float getWeaponStat(final string attrib, WeaponObject weapon, boolean withPup);
-
-
 }

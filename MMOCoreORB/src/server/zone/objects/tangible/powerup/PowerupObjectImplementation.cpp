@@ -15,6 +15,15 @@
 
 //#define DEBUG_POWERUPS
 
+int PowerupObjectImplementation::getDamageTypeOverride() const {
+	Reference<PowerupTemplate*> pupTemplate = cast<PowerupTemplate*>(templateObject.get());
+
+	if (pupTemplate == nullptr)
+		return 0;
+
+	return pupTemplate->getDamageTypeOverride();
+}
+
 void PowerupObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
 	TangibleObjectImplementation::fillAttributeList(alm, object);
 
