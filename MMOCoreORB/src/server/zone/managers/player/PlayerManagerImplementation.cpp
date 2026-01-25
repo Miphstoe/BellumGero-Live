@@ -1182,8 +1182,23 @@ int PlayerManagerImplementation::notifyDestruction(TangibleObject* destructor, T
 		destructor->clearCombatState(false);
 	}
 
+	// Ensure the killer (destructor) maintains their TEF during incapacitation/death sequence
+	PlayerObject* destructorGhost = nullptr;
+	bool destructorHadTef = false;
+	if (destructor->isPlayerCreature()) {
+		destructorGhost = destructor->asCreatureObject()->getPlayerObject();
+		if (destructorGhost != nullptr) {
+			destructorHadTef = destructorGhost->hasTef();
+		}
+	}
+
 	if (ghost->getIncapacitationCounter() >= 3) {
 		killPlayer(destructor, playerCreature, 0, isCombatAction);
+
+		// Re-ensure killer's TEF after death (killPlayer also handles this, but double-check)
+		if (destructorHadTef && destructorGhost != nullptr && destructorGhost->hasTef()) {
+			destructorGhost->schedulePvpTefRemovalTask();
+		}
 	} else {
 		playerCreature->setPosture(CreaturePosture::INCAPACITATED, true, true);
 		playerCreature->clearCombatState(false);
@@ -1348,6 +1363,8 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	if (ghost != nullptr) {
 		ghost->resetIncapacitationTimes();
+		// Only remove TEF from the victim who is dying, not from the attacker
+		// The attacker's TEF should persist for the full 5 minutes
 		if (ghost->hasTef()) {
 			ghost->schedulePvpTefRemovalTask(true, true, true);
 		}
@@ -1534,6 +1551,19 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 	player->setTargetID(0, true);
 
 	player->notifyObjectKillObservers(attacker);
+
+	// Ensure the killer maintains their TEF for the full 5 minutes after a PvP kill
+	// Fix for issue where killer's TEF was being removed when victim died
+	if (attacker->isPlayerCreature()) {
+		CreatureObject* attackerCreature = attacker->asCreatureObject();
+		PlayerObject* attackerGhost = attackerCreature->getPlayerObject();
+
+		if (attackerGhost != nullptr && attackerGhost->hasTef()) {
+			// Re-schedule the TEF removal task to ensure it persists correctly
+			// This prevents any race conditions or incorrect removals during death sequence
+			attackerGhost->schedulePvpTefRemovalTask();
+		}
+	}
 }
 
 void PlayerManagerImplementation::sendActivateCloneRequest(CreatureObject* player, int typeofdeath) {
