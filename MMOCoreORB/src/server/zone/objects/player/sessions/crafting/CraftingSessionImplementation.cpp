@@ -228,6 +228,16 @@ int CraftingSessionImplementation::cancelSession() {
 				crafter->removeSkillMod(SkillModManager::STRUCTURE, "private_spec_assembly", stationBonus);
 				crafter->removeSkillMod(SkillModManager::STRUCTURE, "private_spec_experimentation", stationBonus);
 			}
+
+			// Restore hopper visibility when session ends
+			ManagedReference<SceneObject*> ingredientHopper = stationRef->getSlottedObject("ingredient_hopper");
+			if (ingredientHopper != nullptr && crafter != nullptr) {
+				Locker hopperLocker(ingredientHopper, crafter);
+				// Re-enable sending to client
+				ingredientHopper->setSendToClient(true);
+				// Send the hopper back to the client's view
+				ingredientHopper->sendTo(crafter, true);
+			}
 		}
 	}
 return clearSession();
@@ -335,6 +345,19 @@ void CraftingSessionImplementation::closeCraftingWindow(int clientCounter, bool 
 	if (crafterGhost != nullptr && crafterGhost->getDebug()) {
 		crafter->sendSystemMessage("*** Closing crafting window ***");
 	}
+
+	// Restore hopper visibility when closing crafting window
+	ManagedReference<CraftingStation*> station = craftingStation.get();
+	if (station != nullptr) {
+		ManagedReference<SceneObject*> ingredientHopper = station->getSlottedObject("ingredient_hopper");
+		if (ingredientHopper != nullptr) {
+			Locker hopperLocker(ingredientHopper, crafter);
+			// Re-enable sending to client
+			ingredientHopper->setSendToClient(true);
+			// Send the hopper back to the client's view
+			ingredientHopper->sendTo(crafter, true);
+		}
+	}
 }
 
 void CraftingSessionImplementation::sendSlotMessage(int counter, int message) {
@@ -393,6 +416,21 @@ void CraftingSessionImplementation::selectDraftSchematic(int index) {
 				closeCraftingWindow(0, false);
 				cancelSession();
 				return;
+			}
+
+			// Hide the ingredient hopper BEFORE changing crafting state to prevent auto-open
+			ManagedReference<CraftingStation*> station = craftingStation.get();
+			if (station != nullptr) {
+				ManagedReference<SceneObject*> ingredientHopper = station->getSlottedObject("ingredient_hopper");
+				if (ingredientHopper != nullptr) {
+					Locker hopperLocker(ingredientHopper, crafter);
+					// Close any open container first
+					ingredientHopper->closeContainerTo(crafter, false);
+					// Destroy the hopper from client's view to prevent auto-open
+					ingredientHopper->sendDestroyTo(crafter);
+					// Prevent it from being sent back
+					ingredientHopper->setSendToClient(false);
+				}
 			}
 
 			// Dplay9 ********************************************************
