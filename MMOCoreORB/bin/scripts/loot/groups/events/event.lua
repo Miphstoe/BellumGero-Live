@@ -23,15 +23,15 @@ event = {
 { itemTemplate = "painting_vader_victory",          weight = 377084 },
 { itemTemplate = "painting_zabrak_m",               weight = 377084 },
 
--- 8 at 377,082:
-{ itemTemplate = "party_poster",                    weight = 377082 },
-{ itemTemplate = "RIS_diagram",                     weight = 377082 },
-{ itemTemplate = "spitting_rawl_poster",            weight = 377082 },
-{ itemTemplate = "valley_view_painting",            weight = 377082 },
-{ itemTemplate = "bestine_history_quest_painting",  weight = 377082 },
-{ itemTemplate = "color_crystals",                  weight = 377082 },
-{ itemTemplate = "power_crystals",                  weight = 377082 },
-{ itemTemplate = "krayt_pearls",                    weight = 377082 },
+{ itemTemplate = "party_poster",                    weight = 335184 },
+{ itemTemplate = "RIS_diagram",                     weight = 335184 },
+{ itemTemplate = "spitting_rawl_poster",            weight = 335184 },
+{ itemTemplate = "valley_view_painting",            weight = 335184 },
+{ itemTemplate = "bestine_history_quest_painting",  weight = 335184 },
+{ itemTemplate = "color_crystals",                  weight = 335184 },
+{ itemTemplate = "power_crystals",                  weight = 335184 },
+{ itemTemplate = "krayt_pearls",                    weight = 335184 },
+{ itemTemplate = "bg_token_group",                  weight = 335184 },
 
 -- ===================== Rares (10) @ 85,000 =====================
 { itemTemplate = "potted_plants_sml_s02_schematic", weight = 85000 },  -- RARE
