@@ -761,8 +761,8 @@ includeFile("yavin4/egspider_worldboss_loot_wrapper.lua")  -- Add automatic loot
 includeFile("world/infernomaw_boss.lua")
 includeFile("world/infernomaw_boss_loot_wrapper.lua")  -- Add automatic loot distribution
 --includeFile("world/jarjar_worldboss.lua")
---includeFile("world/jarjar_worldboss_simple.lua")
---includeFile("world/jarjar_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
+includeFile("world/jarjar_worldboss_simple.lua")
+includeFile("world/jarjar_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
 -- then load the boss screenplay
 includeFile("boss/djm_random_name_boss.lua")
 -- screenplay LAST so it can spawn after the above are loaded
