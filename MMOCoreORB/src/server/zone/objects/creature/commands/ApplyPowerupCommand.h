@@ -60,14 +60,21 @@ public:
 			return GENERALERROR;
 
 		if (weapon->isJediWeapon())
-			return GENERALERROR;			
+			return GENERALERROR;
 
-		if((weapon->isRangedWeapon() && pup->isRanged()) ||
-				(weapon->isMeleeWeapon() && pup->isMelee()) ||
-				(weapon->isThrownWeapon() && pup->isThrown()) ||
-				(weapon->isMineWeapon() && pup->isMine())) {
+		// Universal ("all") powerups can be applied to melee OR ranged weapons.
+		// Requires PowerupObject.idl to include:
+		// @read public boolean isAll() { return type == "all"; }
+		bool allowed =
+			(pup->isAll() && (weapon->isRangedWeapon() || weapon->isMeleeWeapon())) ||
+			(weapon->isRangedWeapon() && pup->isRanged()) ||
+			(weapon->isMeleeWeapon() && pup->isMelee()) ||
+			(weapon->isThrownWeapon() && pup->isThrown()) ||
+			(weapon->isMineWeapon() && pup->isMine());
 
-			if(!weapon->hasPowerup()) {
+		if (allowed) {
+
+			if (!weapon->hasPowerup()) {
 
 				if (weapon->applyPowerup(creature, pup)) {
 

@@ -984,3 +984,42 @@ object_tangible_powerup_weapon_shared_thrown_wiring = SharedTangibleObjectTempla
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_thrown_wiring, "object/tangible/powerup/weapon/shared_thrown_wiring.iff")
+
+
+------------------------------------
+
+object_tangible_powerup_weapon_shared_damage_type_electricity = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_electricity.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_electricity, "object/tangible/powerup/weapon/shared_damage_type_electricity.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_kinetic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_kinetic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_kinetic, "object/tangible/powerup/weapon/shared_damage_type_kinetic.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_energy = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_energy.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_energy, "object/tangible/powerup/weapon/shared_damage_type_energy.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_blast = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_blast.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_blast, "object/tangible/powerup/weapon/shared_damage_type_blast.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_heat = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_heat.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_heat, "object/tangible/powerup/weapon/shared_damage_type_heat.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_cold = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_cold.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_cold, "object/tangible/powerup/weapon/shared_damage_type_cold.iff")
+
+object_tangible_powerup_weapon_shared_damage_type_acid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/powerup/weapon/shared_damage_type_acid.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_powerup_weapon_shared_damage_type_acid, "object/tangible/powerup/weapon/shared_damage_type_acid.iff")
+

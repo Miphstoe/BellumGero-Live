@@ -62,3 +62,13 @@ includeFile("tangible/powerup/weapon/ranged_stock.lua")
 includeFile("tangible/powerup/weapon/thrown.lua")
 includeFile("tangible/powerup/weapon/thrown_explosive.lua")
 includeFile("tangible/powerup/weapon/thrown_wiring.lua")
+
+
+includeFile("tangible/powerup/weapon/damage_type_electricity.lua")
+includeFile("tangible/powerup/weapon/damage_type_kinetic.lua")
+includeFile("tangible/powerup/weapon/damage_type_energy.lua")
+includeFile("tangible/powerup/weapon/damage_type_blast.lua")
+includeFile("tangible/powerup/weapon/damage_type_heat.lua")
+includeFile("tangible/powerup/weapon/damage_type_cold.lua")
+includeFile("tangible/powerup/weapon/damage_type_acid.lua")
+

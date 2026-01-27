@@ -827,6 +827,14 @@ bool WeaponObjectImplementation::applyPowerup(CreatureObject* player, PowerupObj
 
 	powerupObject = pup;
 
+	// Apply damage type override (if present)
+	if (pup != nullptr) {
+		int overrideDamageType = pup->getDamageTypeOverride();
+		if (overrideDamageType != 0) {
+			damageType = overrideDamageType;
+		}
+	}
+
 	if (pup->getParent() != nullptr) {
 		Locker clocker(pup, player);
 		pup->destroyObjectFromWorld(true);
@@ -837,12 +845,18 @@ bool WeaponObjectImplementation::applyPowerup(CreatureObject* player, PowerupObj
 	return true;
 }
 
+
 Reference<PowerupObject*> WeaponObjectImplementation::removePowerup() {
 	if (!hasPowerup())
 		return nullptr;
 
 	auto pup = powerupObject;
 	powerupObject = nullptr;
+
+	// Restore original damage type from template
+	if (weaponTemplate != nullptr) {
+		damageType = weaponTemplate->getDamageType();
+	}
 
 	removeMagicBit(true);
 

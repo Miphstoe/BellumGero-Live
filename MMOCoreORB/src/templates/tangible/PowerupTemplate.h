@@ -17,6 +17,10 @@ protected:
 	String baseName;
 	String pupType;
 
+	// Optional damage type override for this powerup.
+	// 0 means "no override".
+	int damageTypeOverride = 0;
+
 	Vector<PowerupStat> primaryAttributes;
 	Vector<PowerupStat> secondaryAttributes;
 
@@ -57,6 +61,14 @@ public:
 		return pupType;
 	}
 
+	bool hasDamageTypeOverride() const {
+		return damageTypeOverride != 0;
+	}
+
+	int getDamageTypeOverride() const {
+		return damageTypeOverride;
+	}
+
 	void readObject(LuaObject* templateData) {
 		SharedTangibleObjectTemplate::readObject(templateData);
 
@@ -80,6 +92,7 @@ public:
 				lua_pop(L, 1);
 		}
 	}
+
 	void parseVariableData(const String& varName, LuaObject* data) {
 		lua_State* state = data->getLuaState();
 
@@ -101,6 +114,7 @@ public:
 				mod.pop();
 			}
 			data->pop();
+
 		} else if (varName == "secondary") {
 			secondaryAttributes.removeAll();
 			LuaObject secondary(state);
@@ -119,6 +133,7 @@ public:
 				mod.pop();
 			}
 			data->pop();
+
 		} else if (varName == "baseName") {
 
 			baseName = Lua::getStringParameter(state);
@@ -126,6 +141,11 @@ public:
 		} else if (varName == "pupType") {
 
 			pupType = Lua::getStringParameter(state);
+
+		} else if (varName == "damageType") {
+			// Optional. Example Lua: damageType = ELECTRICITY
+			// (0 means no override)
+			damageTypeOverride = Lua::getIntParameter(state);
 
 		} else {
 			data->pop();

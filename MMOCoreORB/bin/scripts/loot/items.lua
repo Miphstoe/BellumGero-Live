@@ -551,6 +551,7 @@ includeFile("items/loot_schematic/coruscant_clonetrooper_helmet_schematic.lua")
 includeFile("items/loot_schematic/coruscant_clonetrooper_leggings_schematic.lua")
 includeFile("items/loot_schematic/coruscant_clonetrooper_utility_belt_schematic.lua")
 includeFile("items/loot_schematic/couch_blue_schematic.lua")
+includeFile("items/loot_schematic/damage_type_electricity_schematic.lua")
 includeFile("items/loot_schematic/droid_body_schematic.lua")
 includeFile("items/loot_schematic/elegant_cabinet_schematic.lua")
 includeFile("items/loot_schematic/fat_bottle_schematic.lua")
@@ -669,6 +670,16 @@ includeFile("items/painting/party_poster.lua")
 includeFile("items/painting/RIS_diagram.lua")
 includeFile("items/painting/spitting_rawl_poster.lua")
 includeFile("items/painting/valley_view_painting.lua")
+
+--powerup sub-folder
+includeFile("items/powerup/damage_type_electricity_powerup.lua")
+includeFile("items/powerup/damage_type_kinetic_powerup.lua")
+includeFile("items/powerup/damage_type_energy_powerup.lua")
+includeFile("items/powerup/damage_type_blast_powerup.lua")
+includeFile("items/powerup/damage_type_heat_powerup.lua")
+includeFile("items/powerup/damage_type_cold_powerup.lua")
+includeFile("items/powerup/damage_type_acid_powerup.lua")
+
 
 --quest sub-folder
 includeFile("items/quest/camp_frequency_datapad.lua")
