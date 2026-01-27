@@ -15,7 +15,7 @@ rebel_commando_tier_3 = {
 		{groupTemplate = "junk", weight = 5650000},
 		{groupTemplate = "weapons_all", weight = 900000},
 		{groupTemplate = "wearables_all", weight = 900000},
-		{groupTemplate = "crafting_component", weight = 175000},
+		{groupTemplate = "weapon_stock_quest", weight = 175000},
 		{groupTemplate = "crafting_component_advanced", weight = 175000},
 	}
 }
