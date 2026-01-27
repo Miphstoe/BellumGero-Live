@@ -22,6 +22,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Droids", "droid1"},
         {"Tailor", "tailor1"},
         {"Travel", "travel1"},
+        {"Languages", "languages1"},
         {"Advertisement Space", "ad_menu"},
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
@@ -215,15 +216,27 @@ tailor1 = ConvoScreen:new {
     leftDialog = "",
     customDialogText = "Tailor stuff, need anything?",
     stopConversation = "false",
-    options = { 
+    options = {
 --        {"25 Fiberplast Panel - 5k", "option71"},    //not useable in crafting : /
 --        {"25 Reinforced Fiber Panel - 5k", "option70"},
---        {"25 Synthetic Cloth- 5k", "option76"},     
-        
+--        {"25 Synthetic Cloth- 5k", "option76"},
+
       	{"Main menu.", "first_screen"},
     }
 }
 myswg_vendor_conv:addScreen(tailor1);
+
+languages1 = ConvoScreen:new {
+    id = "languages1",
+    leftDialog = "",
+    customDialogText = "I can teach you all languages! This includes comprehension and speech for Basic, Rodian, Trandoshan, Mon Calamari, Wookiee, Bothan, Twi'lek, Zabrak, Lekku, Ithorian, and Sullustan.",
+    stopConversation = "false",
+    options = {
+        {"Teach me all languages - Free", "learn_all_languages"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(languages1);
 
 newbuff1 = ConvoScreen:new {
     id = "newbuff1",
@@ -914,10 +927,17 @@ myswg_vendor_accept_quest = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
-myswg_vendor_accept_quest = ConvoScreen:new {    
+myswg_vendor_accept_quest = ConvoScreen:new {
     id = "option301",
     leftDialog = "",
     customDialogText = "Enjoy!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_accept_quest = ConvoScreen:new {
+    id = "learn_all_languages",
+    leftDialog = "",
+    customDialogText = "You now understand all languages!",
     stopConversation = "true",
     options = { }
 }

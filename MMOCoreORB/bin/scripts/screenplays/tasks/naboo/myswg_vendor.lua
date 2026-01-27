@@ -1622,8 +1622,42 @@ elseif (optionLink == "travel_bsv_teleport") then
     nextConversationScreen = conversation:getScreen("travel_complete")
     return nextConversationScreen
 
+-- LANGUAGES
+elseif (optionLink == "learn_all_languages") then
+    -- Get skill manager
+    local skillManager = LuaSkillManager()
 
-                   
+    -- Award all language skills (both comprehend and speak for each language)
+    -- Pass conversingPlayer directly (raw pointer), not wrapped with CreatureObject()
+    skillManager:awardSkill(conversingPlayer, "social_language_basic_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_basic_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_rodian_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_rodian_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_trandoshan_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_trandoshan_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_moncalamari_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_moncalamari_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_wookiee_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_wookiee_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_bothan_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_bothan_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_twilek_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_twilek_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_zabrak_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_zabrak_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_lekku_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_lekku_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_ithorian_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_ithorian_comprehend")
+    skillManager:awardSkill(conversingPlayer, "social_language_sullustan_speak")
+    skillManager:awardSkill(conversingPlayer, "social_language_sullustan_comprehend")
+
+    creature:sendSystemMessage("You have learned all languages! You can now speak and understand all galactic languages.")
+    nextConversationScreen = conversation:getScreen("learn_all_languages")
+    return nextConversationScreen
+
+
+
 --DROIDS  
                     
                 elseif (optionLink == "option64" and not canAfford(5000)) then
