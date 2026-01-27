@@ -34,39 +34,26 @@ class PowerupObject extends TangibleObject {
 	}
 
 	@read
-	public boolean isRanged() {
-		return type == "ranged";
-	}
+	public native boolean isRanged();
 
 	@read
-	public boolean isMelee() {
-		return type == "melee";
-	}
+	public native boolean isMelee();
 
 	@read
-	public boolean isThrown() {
-		return type == "thrown";
-	}
+	public native boolean isThrown();
 
 	@read
-	public boolean isMine() {
-		return type == "mine";
-	}
+	public native boolean isMine();
 
 	@read
-	public boolean isAll() {
-		return type == "all";
-	}
-
+	public native boolean isAll();
 
 	public void decreaseUses() {
 		uses = uses - 1;
 	}
 
 	@read
-	public int getUses() {
-		return uses;
-	}
+	public native int getUses();
 
 	public void setUses(int i) {
 		uses = i;
@@ -75,6 +62,9 @@ class PowerupObject extends TangibleObject {
 	public void setType(final string t) {
 		type = t;
 	}
+
+	@local
+	public native void ensureInitializedFromTemplate();
 
 	// Optional damage type override (0 means none)
 	@read

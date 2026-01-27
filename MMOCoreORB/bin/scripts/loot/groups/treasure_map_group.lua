@@ -1,17 +1,22 @@
 treasure_map_group = {
 	description = "",
-	minimumLevel = 0,
-	maximumLevel = 0,
+	minimumLevel = 50,
+	maximumLevel = 250,
 	lootItems = {
-		{itemTemplate = "armor_all", weight = 1224603},
-		{itemTemplate = "armor_attachments", weight = 306151},
-		{itemTemplate = "clothing_attachments", weight = 306151},
-		{itemTemplate = "color_crystals", weight = 306151},
-		{itemTemplate = "power_crystals", weight = 306151},
-		{itemTemplate = "junk", weight = 4490385},
-		{itemTemplate = "tailor_components", weight = 509151},
-		{itemTemplate = "weapons_all", weight = 1326654},
-		{itemTemplate = "wearables_all", weight = 1224603}
+		{itemTemplate = "junk",                      weight = 3500000}, 
+
+		{itemTemplate = "armor_attachments",         weight = 800000},  
+		{itemTemplate = "clothing_attachments",      weight = 800000},  
+		{itemTemplate = "color_crystals",            weight = 800000},  
+		{itemTemplate = "house_deeds",               weight = 500000},  
+
+		{itemTemplate = "chemistry_component_advanced", weight = 700000}, 
+		{itemTemplate = "weapon_component_advanced",    weight = 700000}, 
+		{itemTemplate = "loot_kit_parts",            weight = 700000},  
+
+		{itemTemplate = "damage_type_powerups",      weight = 900000},
+		{itemTemplate = "sea_removal_tool_1x",      weight = 500000},  
+		{itemTemplate = "bg_token",                  weight = 100000},  
 	}
 }
 
