@@ -325,6 +325,60 @@ bool ContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* o
 			return false;
 		}
 
+		// Check if this is a stackable junk item
+		if (object->isTangibleObject()) {
+			TangibleObject* tangible = object->asTangibleObject();
+
+			if (tangible != nullptr) {
+				// Get the template path to identify the item type
+				String templatePath = object->getObjectTemplate()->getFullTemplateString();
+				uint32 templateCRC = object->getServerObjectCRC();
+				int junkValue = tangible->getJunkValue();
+
+				// Only stack items that explicitly have a junk value (from the junk loot group)
+				if (junkValue > 0) {
+					// Exclude locked containers, recording rods, and loudspeakers from stacking
+					bool isLockedContainer = templatePath.contains("player_loot_crate");
+					bool isRecordingRod = templatePath.contains("recording_rod");
+					bool isLoudspeaker = templatePath.contains("speaker_s01");
+
+					if (!isLockedContainer && !isRecordingRod && !isLoudspeaker) {
+						// Search for an existing identical item in the container to stack with
+						for (int i = 0; i < containerObjects->size(); ++i) {
+							SceneObject* existingObj = containerObjects->get(i);
+
+							if (existingObj != nullptr && existingObj->isTangibleObject()) {
+								// Check if templates match by CRC (more reliable than string comparison)
+								if (existingObj->getServerObjectCRC() == templateCRC) {
+									TangibleObject* existingTangible = existingObj->asTangibleObject();
+
+									// Stack the items by incrementing useCount
+									// If useCount is 0 or 1, treat it as a single item
+									int existingCount = existingTangible->getUseCount();
+									int incomingCount = tangible->getUseCount();
+
+									// Default single items to count of 1 if useCount is 0
+									if (existingCount <= 0) existingCount = 1;
+									if (incomingCount <= 0) incomingCount = 1;
+
+									int newCount = existingCount + incomingCount;
+
+									existingTangible->setUseCount(newCount, true);
+
+									// Destroy the new item since it's been stacked
+									// Only destroy from database since it's not in the world yet
+									object->destroyObjectFromDatabase(true);
+
+									// Stacking successful, return true
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// Attempt to add the object in the container
 		if (containerObjects->put(object->getObjectID(), object) == -1) {
 			update = false;
