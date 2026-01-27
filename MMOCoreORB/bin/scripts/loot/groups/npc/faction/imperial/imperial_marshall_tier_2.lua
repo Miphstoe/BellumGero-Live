@@ -15,7 +15,7 @@ imperial_marshall_tier_2 = {
 		{groupTemplate = "junk", weight = 5700000},
 		{groupTemplate = "weapons_all", weight = 800000},
 		{groupTemplate = "wearables_all", weight = 800000},
-		{groupTemplate = "crafting_component", weight = 225000},
+		{groupTemplate = "weapon_stock_quest", weight = 225000},
 		{groupTemplate = "crafting_component_advanced", weight = 75000},
 	}
 }

@@ -412,6 +412,12 @@ function VillageGmSui.playerInfo(pPlayer, targetID)
 
 	sui.add("FS Branch Management", "branchManagement" .. targetID)
 
+	if (not Glowing:isGlowing(pTarget)) then
+		sui.add("Grant FS Badges (Make Glowing)", "grantFsBadges" .. targetID)
+	elseif (not VillageJediManagerCommon.isVillageEligible(pTarget)) then
+		sui.add("Unlock Village Access", "unlockVillageAccess" .. targetID)
+	end
+
 	if (CreatureObject(pTarget):hasSkill("force_title_jedi_rank_03")) then
 		sui.add("Manage Player FRS", "frsManagement" .. targetID)
 	elseif (jediState >= 4) then
@@ -1327,6 +1333,122 @@ function VillageGmSui:branchManagementCallback(pPlayer, pSui, eventIndex, args)
 	end
 
 	VillageGmSui.branchManagement(pPlayer, targetID)
+end
+
+function VillageGmSui.grantFsBadges(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	local pGhost = CreatureObject(pTarget):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
+	if (Glowing:isGlowing(pTarget)) then
+		CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " is already Force Sensitive.")
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	local badgesGranted = 0
+
+	-- Grant 3 Jedi Exploration badges
+	local jediExpBadges = getBadgeListByType("exploration_jedi")
+	for i = 1, math.min(3, #jediExpBadges), 1 do
+		if not PlayerObject(pGhost):hasBadge(jediExpBadges[i]) then
+			PlayerObject(pGhost):awardBadge(jediExpBadges[i])
+			badgesGranted = badgesGranted + 1
+		end
+	end
+
+	-- Grant 2 Dangerous Exploration badges
+	local dangerousBadges = getBadgeListByType("exploration_dangerous")
+	for i = 1, math.min(2, #dangerousBadges), 1 do
+		if not PlayerObject(pGhost):hasBadge(dangerousBadges[i]) then
+			PlayerObject(pGhost):awardBadge(dangerousBadges[i])
+			badgesGranted = badgesGranted + 1
+		end
+	end
+
+	-- Grant 5 Easy Exploration badges
+	local easyBadges = getBadgeListByType("exploration_easy")
+	for i = 1, math.min(5, #easyBadges), 1 do
+		if not PlayerObject(pGhost):hasBadge(easyBadges[i]) then
+			PlayerObject(pGhost):awardBadge(easyBadges[i])
+			badgesGranted = badgesGranted + 1
+		end
+	end
+
+	-- Grant 1 Master badge
+	local masterBadges = getBadgeListByType("master")
+	if #masterBadges > 0 and not PlayerObject(pGhost):hasBadge(masterBadges[1]) then
+		PlayerObject(pGhost):awardBadge(masterBadges[1])
+		badgesGranted = badgesGranted + 1
+	end
+
+	-- Grant 3 Content badges
+	local contentBadges = getBadgeListByType("content")
+	for i = 1, math.min(3, #contentBadges), 1 do
+		if not PlayerObject(pGhost):hasBadge(contentBadges[i]) then
+			PlayerObject(pGhost):awardBadge(contentBadges[i])
+			badgesGranted = badgesGranted + 1
+		end
+	end
+
+	-- Set glowing state and start intro
+	VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_GLOWING)
+	FsIntro:startPlayerOnIntro(pTarget)
+
+	CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " has been granted " .. badgesGranted .. " badges and is now Force Sensitive (glowing).")
+	CreatureObject(pTarget):sendSystemMessage("You have been granted Force Sensitive status by a GM.")
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:grantFsBadges on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID .. " granting " .. badgesGranted .. " badges"
+	Logger:log(msg, LT_WARNING)
+
+	VillageGmSui.playerInfo(pPlayer, targetID)
+end
+
+function VillageGmSui.unlockVillageAccess(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	if (not Glowing:isGlowing(pTarget)) then
+		CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " is not Force Sensitive and cannot be granted village access.")
+		return
+	end
+
+	if (VillageJediManagerCommon.isVillageEligible(pTarget)) then
+		CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " already has village access.")
+		VillageGmSui.playerInfo(pPlayer, targetID)
+		return
+	end
+
+	-- Set village access state
+	VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_HAS_VILLAGE_ACCESS)
+
+	-- Complete the village elder quest
+	local QuestManager = require("managers.quest.quest_manager")
+	QuestManager.completeQuest(pTarget, QuestManager.quests.FS_VILLAGE_ELDER)
+
+	-- Grant jedi novice skill if they don't have it
+	if (not CreatureObject(pTarget):hasSkill("force_title_jedi_novice")) then
+		awardSkill(pTarget, "force_title_jedi_novice")
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " has been granted village access.")
+	CreatureObject(pTarget):sendSystemMessage("You have been granted access to the Force Sensitive village by a GM.")
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:unlockVillageAccess on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
+	Logger:log(msg, LT_WARNING)
+
+	VillageGmSui.playerInfo(pPlayer, targetID)
 end
 
 function VillageGmSui.manageCounterStrikeBases(pPlayer)

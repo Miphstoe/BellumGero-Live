@@ -1,6 +1,7 @@
 JediManager = require("managers.jedi.jedi_manager")
 local Logger = require("utils.logger")
 local QuestManager = require("managers.quest.quest_manager")
+VillageJediManagerDestiny = require("screenplays.village.village_jedi_manager_destiny")
 
 jediManagerName = "VillageJediManager"
 
@@ -33,6 +34,9 @@ function VillageJediManager:useItem(pSceneObject, itemType, pPlayer)
 	end
 	if itemType == ITEMTHEATERDATAPAD then
 		SithShadowIntroTheater:useTheaterDatapad(pSceneObject, pPlayer)
+	end
+	if itemType == ITEMHOLOCRONDESTINY then
+		VillageJediManagerDestiny.useHolocronOfDestiny(pSceneObject, pPlayer)
 	end
 end
 
@@ -67,10 +71,11 @@ function VillageJediManager:onPlayerLoggedIn(pPlayer)
 		FsOutro:onLoggedIn(pPlayer)
 	end
 
-	FsPhase1:onLoggedIn(pPlayer)
-	FsPhase2:onLoggedIn(pPlayer)
-	FsPhase3:onLoggedIn(pPlayer)
-	FsPhase4:onLoggedIn(pPlayer)
+	-- Disabled: Village quests are no longer active
+	-- FsPhase1:onLoggedIn(pPlayer)
+	-- FsPhase2:onLoggedIn(pPlayer)
+	-- FsPhase3:onLoggedIn(pPlayer)
+	-- FsPhase4:onLoggedIn(pPlayer)
 
 	if (not VillageCommunityCrafting:isOnActiveCrafterList(pPlayer)) then
 		VillageCommunityCrafting:removeSchematics(pPlayer, 2)
@@ -93,21 +98,40 @@ function VillageJediManager:onPlayerLoggedOut(pPlayer)
 		FsOutro:onLoggedOut(pPlayer)
 	end
 
-	FsPhase1:onLoggedOut(pPlayer)
-	FsPhase2:onLoggedOut(pPlayer)
-	FsPhase3:onLoggedOut(pPlayer)
+	-- Disabled: Village quests are no longer active
+	-- FsPhase1:onLoggedOut(pPlayer)
+	-- FsPhase2:onLoggedOut(pPlayer)
+	-- FsPhase3:onLoggedOut(pPlayer)
 end
 
 --Check for force skill prerequisites
 function VillageJediManager:canLearnSkill(pPlayer, skillName)
 	if string.find(skillName, "force_sensitive") ~= nil then
-		local index = string.find(skillName, "0")
-		if index ~= nil then
-			local skillNameFinal = string.sub(skillName, 1, string.len(skillName) - 3)
-			if CreatureObject(pPlayer):getScreenPlayState("VillageUnlockScreenPlay:" .. skillNameFinal) < 2 then
+		local branchName = string.match(skillName, "^(force_sensitive_.+)_%d%d$")
+		if branchName ~= nil then
+			if not VillageJediManagerCommon.hasUnlockedBranch(pPlayer, branchName) then
 				return false
 			end
+			return true
 		end
+
+		local treePrefix = string.match(skillName, "^(force_sensitive_.+)_novice$")
+		if treePrefix == nil then
+			treePrefix = string.match(skillName, "^(force_sensitive_.+)_master$")
+		end
+		if treePrefix ~= nil then
+			for i = 1, #VillageJediManagerCommon.forceSensitiveBranches, 1 do
+				local branch = VillageJediManagerCommon.forceSensitiveBranches[i]
+				if (string.find(branch, treePrefix .. "_", 1, true) == 1 and VillageJediManagerCommon.hasUnlockedBranch(pPlayer, branch)) then
+					return true
+				end
+			end
+
+			return false
+		end
+
+		-- Default deny for any other force_sensitive skills.
+		return false
 	end
 
 	if skillName == "force_title_jedi_rank_01" and CreatureObject(pPlayer):getForceSensitiveSkillCount(false) < 24 then

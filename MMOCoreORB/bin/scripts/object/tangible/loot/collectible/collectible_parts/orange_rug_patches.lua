@@ -43,6 +43,7 @@
 
 object_tangible_loot_collectible_collectible_parts_orange_rug_patches = object_tangible_loot_collectible_collectible_parts_shared_orange_rug_patches:new {
 
+	useCount = 1,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_collectible_collectible_parts_orange_rug_patches, "object/tangible/loot/collectible/collectible_parts/orange_rug_patches.iff")

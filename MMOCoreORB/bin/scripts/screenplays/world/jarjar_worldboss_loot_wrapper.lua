@@ -66,6 +66,7 @@ local originalSpawnBoss = JarJarWorldBossSimple.spawnBoss
 local originalWatchLoop = JarJarWorldBossSimple.watchLoop
 local lastKnownHP = {}
 local observersAttached = {}
+local attachingInProgress = {} -- Track in-progress attachments to prevent concurrent calls
 
 -- Create a screenplay object for damage tracking
 JarJarLootObserver = ScreenPlay:new {
@@ -105,17 +106,31 @@ local function attachObservers(pBoss)
     return
   end
 
-  -- Check if already attached (local table)
+  local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
+
+  -- Check if attachment is already in progress for this OID
+  if attachingInProgress[bossOID] then
+    return
+  end
+
+  -- Check if already attached (local table) - FIRST
   if observersAttached[bossOID] then
     return
   end
 
-  -- Check if already attached (persistent storage to survive script reloads)
-  local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
-  if readData(attachedKey) == "1" then
+  -- Check if already attached (persistent storage to survive script reloads) - SECOND
+  local persistentFlag = readData(attachedKey)
+  if persistentFlag == "1" or persistentFlag == 1 then
     observersAttached[bossOID] = true
     return
   end
+
+  -- Set lock to prevent concurrent attachments
+  attachingInProgress[bossOID] = true
+
+  -- Mark as attached IMMEDIATELY to prevent race conditions
+  observersAttached[bossOID] = true
+  writeData(attachedKey, "1")
 
   print("[JARJAR-LOOT] Attaching damage observers to Jar Jar OID " .. tostring(bossOID))
 
@@ -128,9 +143,8 @@ local function attachObservers(pBoss)
     end
   end
 
-  -- Mark as attached in both local table and persistent storage
-  observersAttached[bossOID] = true
-  writeData(attachedKey, "1")
+  -- Release lock after attachment complete
+  attachingInProgress[bossOID] = false
 end
 
 -- Wrap spawnBoss to attach observers after spawn
@@ -141,10 +155,21 @@ function JarJarWorldBossSimple:spawnBoss(_, _)
     result = originalSpawnBoss(self, _, _)
   end
 
-  -- Attach observers to the spawned boss
+  -- Attach observers to the spawned boss (only if actually spawned)
   local pBoss = self.bossPtr
   if pBoss then
-    attachObservers(pBoss)
+    local bossOID = 0
+    pcall(function()
+      local so = SceneObject(pBoss)
+      if so and so.getObjectID then
+        bossOID = so:getObjectID()
+      end
+    end)
+
+    -- Only attach if we have a valid OID and not already attached
+    if bossOID > 0 and not observersAttached[bossOID] then
+      attachObservers(pBoss)
+    end
   end
 
   return result
@@ -165,8 +190,17 @@ function JarJarWorldBossSimple:watchLoop(_, _)
 
     if oidSuccess and bossOID and bossOID > 0 then
       -- Attach observers if not already done (handles bosses that were alive before wrapper loaded)
+      -- Only check if not in local table (most efficient check)
       if not observersAttached[bossOID] then
-        attachObservers(pBoss)
+        -- Double-check with persistent storage before attempting attach
+        local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
+        local persistentFlag = readData(attachedKey)
+        if persistentFlag ~= "1" and persistentFlag ~= 1 then
+          attachObservers(pBoss)
+        else
+          -- Update local cache from persistent storage
+          observersAttached[bossOID] = true
+        end
       end
 
       -- Check for death
@@ -185,12 +219,34 @@ function JarJarWorldBossSimple:watchLoop(_, _)
       if isDead then
         -- Check if this is the first time we detected death
         if lastKnownHP[bossOID] then
+          -- Detach observers BEFORE calling onBossDeath to prevent callbacks on dying object
+          pcall(function()
+            local dmgCands = {"DAMAGERECEIVED", "COMBATDAMAGE", "DAMAGE"}
+            for _, nm in ipairs(dmgCands) do
+              local ev = rawget(_G, nm)
+              if type(ev) == "number" then
+                pcall(dropObserver, pBoss, ev)
+              end
+            end
+          end)
+
           WorldBossLootManager:onBossDeath(pBoss, JARJAR_LOOT_GROUPS, "Jar Jar Binks")
+
+          -- Clean up all tracking data for this boss
           lastKnownHP[bossOID] = nil
           observersAttached[bossOID] = nil
+          attachingInProgress[bossOID] = nil
+
           -- Clean up persistent observer flag
           local attachedKey = "jarjar_observers_attached_" .. tostring(bossOID)
           deleteData(attachedKey)
+
+          -- DON'T call original watchLoop after death - let it handle cleanup itself
+          -- The original watchLoop will detect death and schedule respawn
+          if originalWatchLoop then
+            return originalWatchLoop(self, _, _)
+          end
+          return 0
         end
       else
         -- Store HP to detect death on next iteration
@@ -199,7 +255,7 @@ function JarJarWorldBossSimple:watchLoop(_, _)
     end
   end
 
-  -- Call original watchLoop
+  -- Call original watchLoop only if not dead
   if originalWatchLoop then
     return originalWatchLoop(self, _, _)
   end

@@ -1280,6 +1280,12 @@ object_tangible_loot_misc_shared_gungan_signet = SharedTangibleObjectTemplate:ne
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_misc_shared_gungan_signet, "object/tangible/loot/misc/shared_gungan_signet.iff")
 
+object_tangible_loot_misc_shared_holocron_of_destiny = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/misc/shared_holocron_of_destiny.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_misc_shared_holocron_of_destiny, "object/tangible/loot/misc/shared_holocron_of_destiny.iff")
+
 object_tangible_loot_misc_shared_holocron_splinters_sith_s01 = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/loot/misc/shared_holocron_splinters_sith_s01.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
