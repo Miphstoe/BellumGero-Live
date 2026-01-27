@@ -171,7 +171,7 @@ public:
 				default:
 					break;
 			}
-			if (success && cl <= 75) {
+			if (success && cl <= 125) {
 				player->sendSystemMessage("@bio_engineer:harvest_dna_succeed");
 				creature->incDnaSampleCount();
 				award(cl,rollMod,skillMod);

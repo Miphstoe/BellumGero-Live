@@ -94,6 +94,24 @@ public:
 				crafter->sendSystemMessage("@system_msg:prototype_transferred");
 
 				crafter->notifyObservers(ObserverEventType::PROTOTYPECREATED, prototype, 0);
+
+				// Crafting reward system: Drop Holocron of Destiny
+				// 0.1% drop rate (1 in 1000 crafts = 10 out of 10000)
+				int randRoll = System::random(10000); // Roll 0-9999 for precise percentages
+
+				if (randRoll < 10) { // 0.1% chance (0-9 out of 10000)
+					LootManager* lootManager = crafter->getZoneServer()->getLootManager();
+					if (lootManager != nullptr) {
+						TransactionLog trx(TrxCode::CRAFTINGSESSION, crafter, inventory);
+						trx.addState("craftingReward", true);
+						trx.addState("lootGroup", "crafting_rewards");
+
+						if (lootManager->createLoot(trx, inventory, "crafting_rewards", 0, true) > 0) {
+							crafter->sendSystemMessage("The Force flows through your creation! A Holocron of Destiny materializes in your inventory.");
+						}
+					}
+				}
+
 				craftingTool->setReady();
 
 				return;

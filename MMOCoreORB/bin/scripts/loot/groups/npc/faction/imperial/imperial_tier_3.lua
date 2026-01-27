@@ -15,7 +15,7 @@ imperial_tier_3 = {
 		{groupTemplate = "tailor_components", weight = 800000},
 		{groupTemplate = "weapons_all", weight = 600000},
 		{groupTemplate = "wearables_all", weight = 3300000},
-		{groupTemplate = "crafting_component", weight = 175000},
+		{groupTemplate = "weapon_stock_quest", weight = 175000},
 		{groupTemplate = "crafting_component_advanced", weight = 175000},
 	}
 }

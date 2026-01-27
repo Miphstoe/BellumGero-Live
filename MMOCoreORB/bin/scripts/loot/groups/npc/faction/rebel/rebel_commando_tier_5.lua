@@ -14,7 +14,7 @@ rebel_commando_tier_5 = {
 		{groupTemplate = "holocron_light", weight = 100000},
 		{groupTemplate = "junk", weight = 5850000},
 		{groupTemplate = "weapons_all", weight = 900000},
-		{groupTemplate = "wearables_all", weight = 900000},
+		{groupTemplate = "weapon_stock_quest", weight = 900000},
 		{groupTemplate = "crafting_component_advanced", weight = 450000},
 	}
 }

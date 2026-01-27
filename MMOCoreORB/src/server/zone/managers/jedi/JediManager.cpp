@@ -40,6 +40,7 @@ void JediManager::setupLuaValues(Lua* luaEngine) {
 	luaEngine->setGlobalInt("ITEMHOLOCRON", JediManager::ITEMHOLOCRON);
 	luaEngine->setGlobalInt("ITEMWAYPOINTDATAPAD", JediManager::ITEMWAYPOINTDATAPAD);
 	luaEngine->setGlobalInt("ITEMTHEATERDATAPAD", JediManager::ITEMTHEATERDATAPAD);
+	luaEngine->setGlobalInt("ITEMHOLOCRONDESTINY", JediManager::ITEMHOLOCRONDESTINY);
 }
 
 void JediManager::loadConfiguration(Lua* luaEngine) {

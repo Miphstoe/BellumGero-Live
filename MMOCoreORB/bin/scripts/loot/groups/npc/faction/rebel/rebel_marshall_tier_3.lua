@@ -13,7 +13,7 @@ rebel_marshall_tier_3 = {
 		{groupTemplate = "power_crystals", weight = 1100000},
 		{groupTemplate = "ranged_weapons", weight = 3500000},
 		{groupTemplate = "wearables_rare", weight = 700000},
-		{groupTemplate = "crafting_component", weight = 175000},
+		{groupTemplate = "weapon_stock_quest", weight = 175000},
 		{groupTemplate = "crafting_component_advanced", weight = 175000},
 	}
 }

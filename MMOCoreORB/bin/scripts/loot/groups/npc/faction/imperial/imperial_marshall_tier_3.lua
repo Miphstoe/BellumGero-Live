@@ -16,7 +16,7 @@ imperial_marshall_tier_3 = {
 		{groupTemplate = "weapons_all", weight = 3600000},
 		{groupTemplate = "wearables_all", weight = 400000},
 		{groupTemplate = "wearables_rare", weight = 300000},
-		{groupTemplate = "crafting_component", weight = 175000},
+		{groupTemplate = "weapon_stock_quest", weight = 175000},
 		{groupTemplate = "crafting_component_advanced", weight = 175000},
 	}
 }

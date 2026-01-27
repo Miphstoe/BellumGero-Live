@@ -43,6 +43,7 @@
 
 object_tangible_loot_collectible_collectible_parts_fs_tracking_device_case_01 = object_tangible_loot_collectible_collectible_parts_shared_fs_tracking_device_case_01:new {
 
+	useCount = 1,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_collectible_collectible_parts_fs_tracking_device_case_01, "object/tangible/loot/collectible/collectible_parts/fs_tracking_device_case_01.iff")
