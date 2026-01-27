@@ -42,6 +42,7 @@
 
 
 object_tangible_loot_collectible_collectible_parts_blue_rug_adhesive = object_tangible_loot_collectible_collectible_parts_shared_blue_rug_adhesive:new {
+	useCount = 1,
 
 }
 

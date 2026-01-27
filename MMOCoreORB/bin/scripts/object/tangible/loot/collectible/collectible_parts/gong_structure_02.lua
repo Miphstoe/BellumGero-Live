@@ -42,6 +42,7 @@
 
 
 object_tangible_loot_collectible_collectible_parts_gong_structure_02 = object_tangible_loot_collectible_collectible_parts_shared_gong_structure_02:new {
+	useCount = 1,
 
 }
 

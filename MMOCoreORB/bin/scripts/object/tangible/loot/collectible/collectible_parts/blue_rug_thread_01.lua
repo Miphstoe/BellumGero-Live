@@ -42,6 +42,7 @@
 
 
 object_tangible_loot_collectible_collectible_parts_blue_rug_thread_01 = object_tangible_loot_collectible_collectible_parts_shared_blue_rug_thread_01:new {
+	useCount = 1,
 
 }
 

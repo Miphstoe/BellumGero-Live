@@ -43,6 +43,7 @@
 
 object_tangible_loot_collectible_collectible_parts_sculpture_goldinlay_02 = object_tangible_loot_collectible_collectible_parts_shared_sculpture_goldinlay_02:new {
 
+	useCount = 1,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_collectible_collectible_parts_sculpture_goldinlay_02, "object/tangible/loot/collectible/collectible_parts/sculpture_goldinlay_02.iff")
