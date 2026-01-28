@@ -64,8 +64,13 @@ void PowerupObjectImplementation::ensureInitializedFromTemplate() {
 	}
 
 	// IMPORTANT: default uses for spawned pups (admin/loot)
+	// Only damage type powerups get 2500 uses, regular powerups get 500
 	if (uses <= 0) {
-		uses = 2500;
+		if (getDamageTypeOverride() != 0) {
+			uses = 2500;  // Damage type powerups (Electricity, Heat, etc.)
+		} else {
+			uses = 500;   // Regular powerups (Melee, Ranged, etc.)
+		}
 	}
 
 	// Ensure we have at least a primary stat for display/naming consistency.
@@ -307,7 +312,13 @@ void PowerupObjectImplementation::updateCraftingValues(CraftingValues* values, b
 		}
 
 		type = pupTemplate->getType().toLowerCase();
-		uses = 2500;
+
+		// Only damage type powerups get 2500 uses, regular powerups get 500
+		if (getDamageTypeOverride() != 0) {
+			uses = 2500;  // Damage type powerups (Electricity, Heat, etc.)
+		} else {
+			uses = 500;   // Regular powerups (Melee, Ranged, etc.)
+		}
 
 #ifdef DEBUG_POWERUPS
 		info(true) << "Type = " << type << " Uses = " << uses;
@@ -349,12 +360,12 @@ void PowerupObjectImplementation::updateCraftingValues(CraftingValues* values, b
 		for (int i = 0; i < modifiers.size(); ++i) {
 			PowerupStat stat = modifiers.get(i);
 
-			// Primary scales 100%..MAXPRIMARY
+			// Primary scales 0%..MAXPRIMARY (bonus percentage only, not 100 + bonus)
 			if (i == 0) {
-				stat.setValue(Math::getPrecision(100.f + (MAXPRIMARY * ratio), 2));
+				stat.setValue(Math::getPrecision(MAXPRIMARY * ratio, 2));
 			} else {
-				// Secondary scales 100%..MAXSECONDARY
-				stat.setValue(Math::getPrecision(100.f + (MAXSECONDARY * ratio), 2));
+				// Secondary scales 0%..MAXSECONDARY (bonus percentage only, not 100 + bonus)
+				stat.setValue(Math::getPrecision(MAXSECONDARY * ratio, 2));
 			}
 
 			modifiers.set(i, stat);
