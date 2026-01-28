@@ -164,43 +164,11 @@ bool FactoryCrateImplementation::extractObjectToInventory(CreatureObject* player
 	}
 
 	ObjectManager* objectManager = ObjectManager::instance();
-	ZoneServer* zoneServer = getZoneServer();
 
-	// Instead of cloning, create a fresh object from the template to preserve customization capability
-	ManagedReference<TangibleObject*> protoclone = nullptr;
-
-	if (zoneServer != nullptr && prototype != nullptr) {
-		uint32 templateCRC = prototype->getServerObjectCRC();
-		ManagedReference<SceneObject*> newObj = zoneServer->createObject(templateCRC, 1);
-		protoclone = newObj.castTo<TangibleObject*>();
-	}
-
-	// Fallback to cloning if creation failed
-	if (protoclone == nullptr) {
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	}
+	// Clone all items to preserve crafted stats, sockets, and other properties
+	ManagedReference<TangibleObject*> protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
 
 	if (protoclone != nullptr) {
-
-		// Copy attributes from prototype to new object
-		String crafterName = prototype->getCraftersName();
-		protoclone->setCraftersName(crafterName);
-		protoclone->setSerialNumber(prototype->getSerialNumber());
-		protoclone->setUseCount(prototype->getUseCount());
-		protoclone->setMaxCondition(prototype->getMaxCondition());
-		protoclone->setConditionDamage(prototype->getConditionDamage());
-		protoclone->setCustomObjectName(prototype->getCustomObjectName(), false);
-
-		// Copy customization from prototype
-		CustomizationVariables* protoCust = prototype->getCustomizationVariables();
-		if (protoCust != nullptr && protoCust->size() > 0) {
-			for (int i = 0; i < protoCust->size(); ++i) {
-				uint8 type;
-				int16 value;
-				protoCust->getVariable(i, type, value);
-				protoclone->setCustomizationVariable(type, value, false);
-			}
-		}
 
 		if(protoclone->hasAntiDecayKit()){
 			protoclone->removeAntiDecayKit();
@@ -272,46 +240,14 @@ Reference<TangibleObject*> FactoryCrateImplementation::extractObject() {
 	if (objectManager == nullptr)
 		return nullptr;
 
-	ZoneServer* zoneServer = getZoneServer();
-
-	// Instead of cloning, create a fresh object from the template to preserve customization capability
-	Reference<TangibleObject*> protoclone = nullptr;
-
-	if (zoneServer != nullptr && prototype != nullptr) {
-		uint32 templateCRC = prototype->getServerObjectCRC();
-		ManagedReference<SceneObject*> newObj = zoneServer->createObject(templateCRC, 1);
-		protoclone = newObj.castTo<TangibleObject*>();
-	}
-
-	// Fallback to cloning if creation failed
-	if (protoclone == nullptr) {
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	}
+	// Clone all items to preserve crafted stats, sockets, and other properties
+	Reference<TangibleObject*> protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
 
 	if (protoclone == nullptr) {
 		return nullptr;
 	}
 
 	Locker protoLocker(protoclone, _this.getReferenceUnsafeStaticCast());
-
-	// Copy attributes from prototype to new object
-	String crafterName = prototype->getCraftersName();
-	protoclone->setCraftersName(crafterName);
-	protoclone->setSerialNumber(prototype->getSerialNumber());
-	protoclone->setMaxCondition(prototype->getMaxCondition());
-	protoclone->setConditionDamage(prototype->getConditionDamage());
-	protoclone->setCustomObjectName(prototype->getCustomObjectName(), false);
-
-	// Copy customization from prototype
-	CustomizationVariables* protoCust = prototype->getCustomizationVariables();
-	if (protoCust != nullptr && protoCust->size() > 0) {
-		for (int i = 0; i < protoCust->size(); ++i) {
-			uint8 type;
-			int16 value;
-			protoCust->getVariable(i, type, value);
-			protoclone->setCustomizationVariable(type, value, false);
-		}
-	}
 
 	if (protoclone->hasAntiDecayKit()){
 		protoclone->removeAntiDecayKit();
