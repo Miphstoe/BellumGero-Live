@@ -470,35 +470,35 @@ void WeaponObjectImplementation::fillAttributeList(AttributeListMessage* alm, Cr
 
 int WeaponObjectImplementation::getPointBlankAccuracy(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return pointBlankAccuracy + (abs(pointBlankAccuracy) * powerupObject->getPowerupStat("pointBlankAccuracy"));
+		return pointBlankAccuracy + (abs(pointBlankAccuracy) * powerupObject->getPowerupStat("pointBlankAccuracy") / 100.0f);
 
 	return pointBlankAccuracy;
 }
 
 int WeaponObjectImplementation::getPointBlankRange(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return pointBlankRange + (abs(pointBlankRange) * powerupObject->getPowerupStat("pointBlankRange"));
+		return pointBlankRange + (abs(pointBlankRange) * powerupObject->getPowerupStat("pointBlankRange") / 100.0f);
 
 	return pointBlankRange;
 }
 
 int WeaponObjectImplementation::getIdealRange(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return idealRange + (abs(idealRange) * powerupObject->getPowerupStat("idealRange"));
+		return idealRange + (abs(idealRange) * powerupObject->getPowerupStat("idealRange") / 100.0f);
 
 	return idealRange;
 }
 
 int WeaponObjectImplementation::getMaxRange(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return maxRange + (abs(maxRange) * powerupObject->getPowerupStat("maxRange"));
+		return maxRange + (abs(maxRange) * powerupObject->getPowerupStat("maxRange") / 100.0f);
 
 	return maxRange;
 }
 
 int WeaponObjectImplementation::getIdealAccuracy(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return idealAccuracy + (abs(idealAccuracy) * powerupObject->getPowerupStat("idealAccuracy"));
+		return idealAccuracy + (abs(idealAccuracy) * powerupObject->getPowerupStat("idealAccuracy") / 100.0f);
 
 	return idealAccuracy;
 }
@@ -506,7 +506,7 @@ int WeaponObjectImplementation::getIdealAccuracy(bool withPup) const {
 
 int WeaponObjectImplementation::getMaxRangeAccuracy(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return maxRangeAccuracy + (abs(maxRangeAccuracy) * powerupObject->getPowerupStat("maxRangeAccuracy"));
+		return maxRangeAccuracy + (abs(maxRangeAccuracy) * powerupObject->getPowerupStat("maxRangeAccuracy") / 100.0f);
 
 	return maxRangeAccuracy;
 }
@@ -518,7 +518,7 @@ float WeaponObjectImplementation::getAttackSpeed(bool withPup) const {
 		speed *= speedSlice;
 
 	if (powerupObject != nullptr && withPup)
-		speed -= (speed * powerupObject->getPowerupStat("attackSpeed"));
+		speed -= (speed * powerupObject->getPowerupStat("attackSpeed") / 100.0f);
 
 	float calcSpeed = speed + getConditionReduction(speed);
 
@@ -536,7 +536,7 @@ float WeaponObjectImplementation::getMaxDamage(bool withPup) const {
 		damage *= damageSlice;
 
 	if (powerupObject != nullptr && withPup) {
-		damage += (damage * powerupObject->getPowerupStat("maxDamage"));
+		damage += (damage * powerupObject->getPowerupStat("maxDamage") / 100.0f);
 		return damage - getConditionReduction(damage);
 	}
 
@@ -550,7 +550,7 @@ float WeaponObjectImplementation::getMinDamage(bool withPup) const {
 		damage *= damageSlice;
 
 	if (powerupObject != nullptr && withPup) {
-		damage += (damage * powerupObject->getPowerupStat("minDamage"));
+		damage += (damage * powerupObject->getPowerupStat("minDamage") / 100.0f);
 		return damage - getConditionReduction(damage);
 	}
 
@@ -559,14 +559,14 @@ float WeaponObjectImplementation::getMinDamage(bool withPup) const {
 
 float WeaponObjectImplementation::getWoundsRatio(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return woundsRatio + (woundsRatio * powerupObject->getPowerupStat("woundsRatio"));
+		return woundsRatio + (woundsRatio * powerupObject->getPowerupStat("woundsRatio") / 100.0f);
 
 	return woundsRatio;
 }
 
 float WeaponObjectImplementation::getDamageRadius(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return damageRadius + (damageRadius * powerupObject->getPowerupStat("damageRadius"));
+		return damageRadius + (damageRadius * powerupObject->getPowerupStat("damageRadius") / 100.0f);
 
 	return damageRadius;
 }
@@ -574,21 +574,21 @@ float WeaponObjectImplementation::getDamageRadius(bool withPup) const {
 
 int WeaponObjectImplementation::getHealthAttackCost(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return healthAttackCost - (abs(healthAttackCost) * powerupObject->getPowerupStat("healthAttackCost"));
+		return healthAttackCost - (abs(healthAttackCost) * powerupObject->getPowerupStat("healthAttackCost") / 100.0f);
 
 	return healthAttackCost;
 }
 
 int WeaponObjectImplementation::getActionAttackCost(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return actionAttackCost - (abs(actionAttackCost) * powerupObject->getPowerupStat("actionAttackCost"));
+		return actionAttackCost - (abs(actionAttackCost) * powerupObject->getPowerupStat("actionAttackCost") / 100.0f);
 
 	return actionAttackCost;
 }
 
 int WeaponObjectImplementation::getMindAttackCost(bool withPup) const {
 	if (powerupObject != nullptr && withPup)
-		return mindAttackCost - (abs(mindAttackCost) * powerupObject->getPowerupStat("mindAttackCost"));
+		return mindAttackCost - (abs(mindAttackCost) * powerupObject->getPowerupStat("mindAttackCost") / 100.0f);
 
 	return mindAttackCost;
 }
