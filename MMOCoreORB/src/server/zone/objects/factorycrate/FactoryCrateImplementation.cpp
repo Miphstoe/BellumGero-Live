@@ -15,9 +15,6 @@
 #include "server/zone/packets/scene/AttributeListMessage.h"
 #include "server/zone/packets/chat/ChatSystemMessage.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
-#include "server/zone/objects/tangible/powerup/PowerupObject.h"
-#include "server/zone/objects/tangible/wearables/WearableObject.h"
-#include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
 
 void FactoryCrateImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
@@ -167,66 +164,11 @@ bool FactoryCrateImplementation::extractObjectToInventory(CreatureObject* player
 	}
 
 	ObjectManager* objectManager = ObjectManager::instance();
-	ZoneServer* zoneServer = getZoneServer();
 
-	// Instead of cloning, create a fresh object from the template to preserve customization capability
-	// EXCEPT for powerups and clothing with inventory (WearableContainerObject)
-	ManagedReference<TangibleObject*> protoclone = nullptr;
-
-	// Check if this is a powerup by attempting to cast
-	PowerupObject* testPowerup = dynamic_cast<PowerupObject*>(prototype.get());
-	bool isPowerup = (testPowerup != nullptr);
-
-	// Check if this is a WearableContainerObject (clothing with sockets)
-	WearableContainerObject* testWearableContainer = dynamic_cast<WearableContainerObject*>(prototype.get());
-	bool isWearableContainer = (testWearableContainer != nullptr);
-
-	if (isPowerup || isWearableContainer) {
-		// Powerups and clothing must be cloned to preserve stats/sockets
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	} else if (zoneServer != nullptr && prototype != nullptr) {
-		// Other items can be created fresh from template
-		uint32 templateCRC = prototype->getServerObjectCRC();
-		ManagedReference<SceneObject*> newObj = zoneServer->createObject(templateCRC, 1);
-		protoclone = newObj.castTo<TangibleObject*>();
-	}
-
-	// Fallback to cloning if creation failed
-	if (protoclone == nullptr) {
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	}
+	// Clone all items to preserve crafted stats, sockets, and other properties
+	ManagedReference<TangibleObject*> protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
 
 	if (protoclone != nullptr) {
-
-		// Copy attributes from prototype to new object (skip for cloned items)
-		if (!isPowerup && !isWearableContainer) {
-			String crafterName = prototype->getCraftersName();
-			protoclone->setCraftersName(crafterName);
-			protoclone->setSerialNumber(prototype->getSerialNumber());
-			protoclone->setUseCount(prototype->getUseCount());
-			protoclone->setMaxCondition(prototype->getMaxCondition());
-			protoclone->setConditionDamage(prototype->getConditionDamage());
-			protoclone->setCustomObjectName(prototype->getCustomObjectName(), false);
-
-			// Copy customization from prototype
-			CustomizationVariables* protoCust = prototype->getCustomizationVariables();
-			if (protoCust != nullptr && protoCust->size() > 0) {
-				for (int i = 0; i < protoCust->size(); ++i) {
-					uint8 type;
-					int16 value;
-					protoCust->getVariable(i, type, value);
-					protoclone->setCustomizationVariable(type, value, false);
-				}
-			}
-
-			// Copy socket count for armor (WearableObject without inventory)
-			WearableObject* protoWearable = dynamic_cast<WearableObject*>(prototype.get());
-			WearableObject* cloneWearable = dynamic_cast<WearableObject*>(protoclone.get());
-			if (protoWearable != nullptr && cloneWearable != nullptr) {
-				int maxSockets = protoWearable->getMaxSockets();
-				cloneWearable->setMaxSockets(maxSockets);
-			}
-		}
 
 		if(protoclone->hasAntiDecayKit()){
 			protoclone->removeAntiDecayKit();
@@ -298,69 +240,14 @@ Reference<TangibleObject*> FactoryCrateImplementation::extractObject() {
 	if (objectManager == nullptr)
 		return nullptr;
 
-	ZoneServer* zoneServer = getZoneServer();
-
-	// Instead of cloning, create a fresh object from the template to preserve customization capability
-	// EXCEPT for powerups and clothing with inventory (WearableContainerObject)
-	Reference<TangibleObject*> protoclone = nullptr;
-
-	// Check if this is a powerup by attempting to cast
-	PowerupObject* testPowerup = dynamic_cast<PowerupObject*>(prototype.get());
-	bool isPowerup = (testPowerup != nullptr);
-
-	// Check if this is a WearableContainerObject (clothing with sockets)
-	WearableContainerObject* testWearableContainer = dynamic_cast<WearableContainerObject*>(prototype.get());
-	bool isWearableContainer = (testWearableContainer != nullptr);
-
-	if (isPowerup || isWearableContainer) {
-		// Powerups and clothing must be cloned to preserve stats/sockets
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	} else if (zoneServer != nullptr && prototype != nullptr) {
-		// Other items can be created fresh from template
-		uint32 templateCRC = prototype->getServerObjectCRC();
-		ManagedReference<SceneObject*> newObj = zoneServer->createObject(templateCRC, 1);
-		protoclone = newObj.castTo<TangibleObject*>();
-	}
-
-	// Fallback to cloning if creation failed
-	if (protoclone == nullptr) {
-		protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
-	}
+	// Clone all items to preserve crafted stats, sockets, and other properties
+	Reference<TangibleObject*> protoclone = cast<TangibleObject*>(objectManager->cloneObject(prototype));
 
 	if (protoclone == nullptr) {
 		return nullptr;
 	}
 
 	Locker protoLocker(protoclone, _this.getReferenceUnsafeStaticCast());
-
-	// Copy attributes from prototype to new object (skip for cloned items)
-	if (!isPowerup && !isWearableContainer) {
-		String crafterName = prototype->getCraftersName();
-		protoclone->setCraftersName(crafterName);
-		protoclone->setSerialNumber(prototype->getSerialNumber());
-		protoclone->setMaxCondition(prototype->getMaxCondition());
-		protoclone->setConditionDamage(prototype->getConditionDamage());
-		protoclone->setCustomObjectName(prototype->getCustomObjectName(), false);
-
-		// Copy customization from prototype
-		CustomizationVariables* protoCust = prototype->getCustomizationVariables();
-		if (protoCust != nullptr && protoCust->size() > 0) {
-			for (int i = 0; i < protoCust->size(); ++i) {
-				uint8 type;
-				int16 value;
-				protoCust->getVariable(i, type, value);
-				protoclone->setCustomizationVariable(type, value, false);
-			}
-		}
-
-		// Copy socket count for armor (WearableObject without inventory)
-		WearableObject* protoWearable = dynamic_cast<WearableObject*>(prototype.get());
-		WearableObject* cloneWearable = dynamic_cast<WearableObject*>(protoclone.get());
-		if (protoWearable != nullptr && cloneWearable != nullptr) {
-			int maxSockets = protoWearable->getMaxSockets();
-			cloneWearable->setMaxSockets(maxSockets);
-		}
-	}
 
 	if (protoclone->hasAntiDecayKit()){
 		protoclone->removeAntiDecayKit();
