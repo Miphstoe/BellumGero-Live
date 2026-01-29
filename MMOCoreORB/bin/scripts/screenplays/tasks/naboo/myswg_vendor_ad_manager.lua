@@ -291,4 +291,58 @@ function MySwgVendorAdManager:getQueueStatus()
     return result
 end
 
+--[[
+    Get all active ads with full details (for admin SUI)
+    @return Table of active ads with all fields
+]]--
+function MySwgVendorAdManager:getActiveAdsDetailed()
+    local queue = self:loadQueue()
+
+    if queue.ads == nil or #queue.ads == 0 then
+        return {}
+    end
+
+    local currentTime = os.time()
+    local activeAds = {}
+
+    -- Find all active ads
+    for i, ad in ipairs(queue.ads) do
+        if ad ~= nil and ad.active == true and ad.endTime ~= nil and currentTime <= ad.endTime then
+            -- Add index for deletion reference
+            ad.queueIndex = i
+            table.insert(activeAds, ad)
+        end
+    end
+
+    return activeAds
+end
+
+--[[
+    Delete an advertisement by queue index (Admin only)
+    @param queueIndex The index in the queue to delete
+    @return Boolean success, String message
+]]--
+function MySwgVendorAdManager:deleteAd(queueIndex)
+    local queue = self:loadQueue()
+
+    if queue.ads == nil or #queue.ads == 0 then
+        return false, "No advertisements to delete"
+    end
+
+    if queueIndex < 1 or queueIndex > #queue.ads then
+        return false, "Invalid advertisement index"
+    end
+
+    local deletedAd = queue.ads[queueIndex]
+    table.remove(queue.ads, queueIndex)
+
+    local success = self:saveQueue(queue)
+
+    if success then
+        return true, "Advertisement by " .. (deletedAd.playerName or "Unknown") .. " has been deleted"
+    else
+        return false, "Failed to save changes"
+    end
+end
+
 return MySwgVendorAdManager

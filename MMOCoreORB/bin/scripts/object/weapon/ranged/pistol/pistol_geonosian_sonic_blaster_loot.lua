@@ -80,6 +80,8 @@ object_weapon_ranged_pistol_pistol_geonosian_sonic_blaster_loot = object_weapon_
 	-- combat_meleespecialize_twohandlightsaber, combat_meleespecialize_polearmlightsaber, combat_meleespecialize_onehandlightsaber
 	xpType = "combat_rangedspecialize_pistol",
 
+	useCount = 1,
+
 	-- See http://www.ocdsoft.com/files/certifications.xls
 	certificationsRequired = { "doubleTap" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
