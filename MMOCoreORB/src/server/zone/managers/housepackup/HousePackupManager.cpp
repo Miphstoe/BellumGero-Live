@@ -639,32 +639,15 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     if (building == nullptr || requester == nullptr)
         return false;
 
+    // Keep a managed reference to the building to prevent it from being deleted
+    ManagedReference<BuildingObject*> buildingRef = building;
+
+    // Lock the building to prevent concurrent modifications
+    Locker buildingLocker(buildingRef);
+
     // Collect all cells
     Vector< ManagedReference<CellObject*> > cells;
-    listCells(building, cells);
-
-    // Debug: Show what cells and items were found
-    requester->sendSystemMessage("Total cells found: " + String::valueOf((int)cells.size()));
-
-    // Debug: Try to find items using alternative methods
-    for (int ci = 0; ci < cells.size(); ++ci) {
-        ManagedReference<CellObject*> cell = cells.get(ci);
-        if (!cell) continue;
-
-        // Check if cell has ANY children at all
-        if (cell->getContainerObjectsSize() > 0) {
-            requester->sendSystemMessage("Cell " + String::valueOf(ci + 1) +
-                                         " reports " + String::valueOf(cell->getContainerObjectsSize()) +
-                                         " container objects");
-        }
-
-        Vector< ManagedReference<SceneObject*> > contents;
-        listCellContents(cell, contents);
-
-        // Debug: Show cell info
-        requester->sendSystemMessage("Cell " + String::valueOf(ci + 1) + ": " +
-                                     String::valueOf(contents.size()) + " items");
-    }
+    listCells(buildingRef.get(), cells);
 
     // Build payload blob v4: [u8 ver=4][u32 count][per-item...]
     // Per item v4: u32 tpl, u16 cellIndex, u16 parentIndex(0xFFFF=no parent),
@@ -692,18 +675,6 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         // Store contents for later reuse during deletion
         allCellContents.add(contents);
 
-        // Debug: Show exactly what items are found in each cell with coordinates
-        for (int i = 0; i < contents.size(); ++i) {
-            SceneObject* obj = contents.get(i);
-            if (obj != nullptr && !obj->isCreatureObject() && !obj->isTerminal()) {
-                requester->sendSystemMessage("  Found item: " + obj->getDisplayedName() +
-                                             " in cell " + String::valueOf(ci + 1) +
-                                             " at X=" + String::valueOf(obj->getPositionX()) +
-                                             " Y=" + String::valueOf(obj->getPositionY()) +
-                                             " Z=" + String::valueOf(obj->getPositionZ()));
-            }
-        }
-
         for (int i = 0; i < contents.size(); ++i) {
             collectDeep(contents.get(i), (uint16)ci, (uint16)0xFFFF,
                         ordered, orderedCellIndex, orderedParentIndex);
@@ -712,38 +683,24 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
 
     uint32 count = (uint32)ordered.size();
 
-    requester->sendSystemMessage("Items found via cell scanning: " + String::valueOf(count));
-
     // If no items found via cell scanning, try building-wide scan
     if (count == 0) {
-        requester->sendSystemMessage("No items found via cell scanning, trying building-wide scan...");
-
         Vector< ManagedReference<SceneObject*> > allBuildingItems;
-        listAllBuildingContents(building, allBuildingItems);
-
-        requester->sendSystemMessage("Building-wide scan found " +
-                                     String::valueOf(allBuildingItems.size()) + " items");
+        listAllBuildingContents(buildingRef.get(), allBuildingItems);
 
         for (int i = 0; i < allBuildingItems.size(); ++i) {
             SceneObject* obj = allBuildingItems.get(i);
             if (obj != nullptr) {
-                requester->sendSystemMessage("  Found: " + obj->getDisplayedName());
                 collectDeep(obj, 0, (uint16)0xFFFF, ordered, orderedCellIndex, orderedParentIndex);
             }
         }
 
         count = (uint32)ordered.size();
-        requester->sendSystemMessage("After building-wide scan: " + String::valueOf(count) + " items");
 
         // Store building items for deletion
         allCellContents.removeAll();
         allCellContents.add(allBuildingItems);
     }
-
-    requester->sendSystemMessage(
-        "Pack scan: " + String::valueOf((int)cells.size()) + " cells, " +
-        String::valueOf((int)count) + " candidate items."
-    );
 
     // Write count (big-endian u32)
     blob.add((uint8)((count >> 24) & 0xFF));
@@ -821,14 +778,12 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         // This ensures items keep their properties when the house is packed and redeeded
         // serializeObjectState() writes both the length field and the data
         serializeObjectState(obj, blob);
-        // Debug: Show what's being packed
-        requester->sendSystemMessage("  Packing: " + obj->getDisplayedName());
     }
 
     // Remember payload (RAM) and also persist to disk so it survives restarts.
-    rememberPayloadForBuilding(building->getObjectID(), blob);
+    rememberPayloadForBuilding(buildingRef->getObjectID(), blob);
 
-    const String p = pathForBuilding(building->getObjectID());
+    const String p = pathForBuilding(buildingRef->getObjectID());
     bool wrote = writeBlobToFile(p, blob);
 
     // Tell the player exactly what happened so we can verify paths/sizes easily.
@@ -838,38 +793,31 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     );
 
     // Now empty the interior so the core will allow redeed/destruction.
-    if (building && building->getZone() != nullptr) {
-        requester->sendSystemMessage("Deleting items from stored contents");
+    if (buildingRef != nullptr && buildingRef->getZone() != nullptr) {
+        int totalDeleted = 0;
 
         for (int ci = 0; ci < allCellContents.size(); ++ci) {
             Vector< ManagedReference<SceneObject*> > children = allCellContents.get(ci);
 
-            int deletedCount = 0;
             for (int i = 0; i < children.size(); ++i) {
                 ManagedReference<SceneObject*> sobj = children.get(i);
                 if (sobj == nullptr) continue;
 
-                // DO NOT delete players or terminals (e.g., the structure terminal)
-                if (sobj->isCreatureObject() || sobj->isTerminal())
+                // DO NOT delete players, terminals, or deeds
+                if (sobj->isCreatureObject() || sobj->isTerminal() || sobj->isDeedObject())
                     continue;
-
-                requester->sendSystemMessage("  Deleting: " + sobj->getDisplayedName() +
-                    " at X=" + String::valueOf(sobj->getPositionX()) +
-                    " Y=" + String::valueOf(sobj->getPositionY()) +
-                    " Z=" + String::valueOf(sobj->getPositionZ()));
 
                 // Remove from world but KEEP in database so ObjVars are preserved
                 // The objects will be loaded from database during restore, keeping all their properties
                 sobj->destroyObjectFromWorld(true);
                 // DO NOT call destroyObjectFromDatabase(true) - this would lose ObjVars!
                 // Objects stay in the database for restoration later
-                deletedCount++;
+                totalDeleted++;
             }
+        }
 
-            if (deletedCount > 0) {
-                requester->sendSystemMessage("Content group " + String::valueOf(ci + 1) +
-                                             ": deleted " + String::valueOf(deletedCount) + " items");
-            }
+        if (totalDeleted > 0) {
+            requester->sendSystemMessage("Removed " + String::valueOf(totalDeleted) + " items from structure.");
         }
     }
 
@@ -946,9 +894,6 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
     uint8  ver   = rU8(off);   // 1 = flat, 2 = hierarchical, 3 = hierarchical + stable cellNumber
     uint32 count = rU32B(off);
 
-    if (placer) {
-        placer->sendSystemMessage("Restore: Found " + String::valueOf(count) + " items to restore");
-    }
 
     // -------- Collect new building cells + stable number map --------
     Vector< ManagedReference<CellObject*> > cells;
@@ -970,7 +915,6 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         if (!c) continue;
         uint16 num = (uint16)c->getCellNumber();  // stable portal/cell id
         cellsByNumber.put(num, c);
-        if (placer) placer->sendSystemMessage("  Cell " + String::valueOf(i + 1) + " => cellNumber " + String::valueOf((int)num));
     }
 
     // -------- First pass: create objects; place top-level only --------
@@ -1037,9 +981,6 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             // Try to load from database by OID - this preserves all ObjVars
             ManagedReference<SceneObject*> loadedObj = newBuilding->getZone()->getZoneServer()->getObject(savedObjID);
             raw = loadedObj.get();
-            if (raw) {
-                if (placer) placer->sendSystemMessage("  Loaded from database: " + raw->getDisplayedName());
-            }
         }
 
         // Fallback: Create new object if not found in database
@@ -1081,15 +1022,8 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
 
                 // Restore the object's serialized state (colors, attachments, resource names, etc.)
                 if (!stateData.isEmpty()) {
-                    if (placer) placer->sendSystemMessage("  DEBUG: Attempting state restore for: " + raw->getDisplayedName() + ", state size: " + String::valueOf((int)stateData.size()));
                     int stateOffset = 0;
-                    if (deserializeObjectState(raw, stateData, stateOffset)) {
-                        if (placer) placer->sendSystemMessage("  SUCCESS: Restored state for: " + raw->getDisplayedName());
-                    } else {
-                        if (placer) placer->sendSystemMessage("  FAILED: Could not restore state for: " + raw->getDisplayedName());
-                    }
-                } else {
-                    if (placer) placer->sendSystemMessage("  DEBUG: No state data to restore for: " + raw->getDisplayedName());
+                    deserializeObjectState(raw, stateData, stateOffset);
                 }
 
                 restored++;
