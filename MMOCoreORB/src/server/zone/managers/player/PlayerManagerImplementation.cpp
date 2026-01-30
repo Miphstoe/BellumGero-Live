@@ -2753,7 +2753,20 @@ void PlayerManagerImplementation::handleAddItemToTradeWindow(CreatureObject* pla
 		return;
 	}
 
-	if (objectToTrade->isNoTrade()) {
+	// Allow NoTrade items to be traded ONLY to characters on the same account (NoTrade-Shared behavior)
+	bool sameAccountTradeAllowed = ConfigManager::instance()->getBool("Core3.Trade.AllowNoTradeSameAccount", true);
+
+	bool sameAccount = false;
+	PlayerObject* playerGhost = player->getPlayerObject();
+	PlayerObject* receiverGhost = receiver->getPlayerObject();
+
+	if (sameAccountTradeAllowed && playerGhost != nullptr && receiverGhost != nullptr) {
+		uint32 pAcct = playerGhost->getAccountID();
+		uint32 rAcct = receiverGhost->getAccountID();
+		sameAccount = (pAcct != 0 && pAcct == rAcct);
+	}
+
+	if ((objectToTrade->isNoTrade() || objectToTrade->containsNoTradeObjectRecursive()) && !sameAccount) {
 		player->sendSystemMessage("@container_error_message:container26");
 		handleAbortTradeMessage(player);
 		return;
@@ -2763,13 +2776,6 @@ void PlayerManagerImplementation::handleAddItemToTradeWindow(CreatureObject* pla
 	TangibleObject* tangible = cast<TangibleObject*>(objectToTrade.get());
 	if (tangible != nullptr && tangible->canBeDestroyed(player) == 1) {
 		player->sendSystemMessage("This item is locked and cannot be traded. Unlock it first using the radial menu.");
-		handleAbortTradeMessage(player);
-		return;
-	}
-
-	// Containers containing notrade items...
-	if (objectToTrade->containsNoTradeObjectRecursive()) {
-		player->sendSystemMessage("@container_error_message:container26");
 		handleAbortTradeMessage(player);
 		return;
 	}
@@ -2884,6 +2890,14 @@ bool PlayerManagerImplementation::checkTradeItems(CreatureObject* player, Creatu
 	PlayerObject* ghost = player->getPlayerObject();
 	PlayerObject* targetGhost = receiver->getPlayerObject();
 
+	bool sameAccountTradeAllowed = ConfigManager::instance()->getBool("Core3.Trade.AllowNoTradeSameAccount", true);
+	bool sameAccount = false;
+	if (sameAccountTradeAllowed && ghost != nullptr && targetGhost != nullptr) {
+		uint32 pAcct = ghost->getAccountID();
+		uint32 rAcct = targetGhost->getAccountID();
+		sameAccount = (pAcct != 0 && pAcct == rAcct);
+	}
+
 	ManagedReference<TradeSession*> tradeContainer = player->getActiveSession(SessionFacadeType::TRADE).castTo<TradeSession*>();
 	ManagedReference<TradeSession*> receiverContainer = receiver->getActiveSession(SessionFacadeType::TRADE).castTo<TradeSession*>();
 
@@ -2920,7 +2934,7 @@ bool PlayerManagerImplementation::checkTradeItems(CreatureObject* player, Creatu
 	for (int i = 0; i < tradeContainer->getTradeSize(); ++i) {
 		ManagedReference<SceneObject*> scene = tradeContainer->getTradeItem(i);
 
-		if (scene->isNoTrade())
+		if (scene->isNoTrade() && !sameAccount)
 			return false;
 
 		if (scene->isTangibleObject()) {
@@ -2990,7 +3004,7 @@ bool PlayerManagerImplementation::checkTradeItems(CreatureObject* player, Creatu
 	for (int i = 0; i < receiverContainer->getTradeSize(); ++i) {
 		ManagedReference<SceneObject*> scene = receiverContainer->getTradeItem(i);
 
-		if (scene->isNoTrade())
+		if (scene->isNoTrade() && !sameAccount)
 			return false;
 
 		if (scene->isTangibleObject()) {
