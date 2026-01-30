@@ -280,6 +280,15 @@ dantooine_world = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "dantooine_windclaw_raptor_flock_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 20,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 30,
+			size = 25,
+		},
+		{
 			lairTemplateName = "global_corporal_patrol_rebel_none",
 			spawnLimit = -1,
 			minDifficulty = 50,

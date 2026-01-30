@@ -157,53 +157,54 @@ void PowerupObjectImplementation::addPowerupStat(const String& attributeToMod, c
 }
 
 float PowerupObjectImplementation::getWeaponStat(const String& attrib, WeaponObject* weapon, bool withPup) const {
-	float stat = 0;
-
-	// Use methods that exist in your WeaponObject implementation.
-	// Also support both legacy keys and the newer internal keys used by WeaponObjectImplementation.
+	// Use the same getters as the actual weapon math so the display is correct.
 	if (attrib == "attackSpeed" || attrib == "speed") {
-		stat = weapon->getAttackSpeed(false);
+		return weapon->getAttackSpeed(withPup);
 
 	} else if (attrib == "minDamage") {
-		stat = weapon->getMinDamage(false);
+		return weapon->getMinDamage(withPup);
 
 	} else if (attrib == "maxDamage") {
-		stat = weapon->getMaxDamage(false);
+		return weapon->getMaxDamage(withPup);
 
 	} else if (attrib == "damageRadius") {
-		stat = weapon->getDamageRadius(false);
+		return weapon->getDamageRadius(withPup);
 
 	} else if (attrib == "woundsRatio" || attrib == "woundchance") {
-		stat = weapon->getWoundsRatio(false);
+		return weapon->getWoundsRatio(withPup);
 
 	} else if (attrib == "healthAttackCost") {
-		stat = weapon->getHealthAttackCost(false);
+		return (float)weapon->getHealthAttackCost(withPup);
 
 	} else if (attrib == "actionAttackCost" || attrib == "actioncost") {
-		stat = weapon->getActionAttackCost(false);
+		return (float)weapon->getActionAttackCost(withPup);
 
 	} else if (attrib == "mindAttackCost" || attrib == "mindcost") {
-		stat = weapon->getMindAttackCost(false);
+		return (float)weapon->getMindAttackCost(withPup);
 
 	} else if (attrib == "pointBlankAccuracy") {
-		stat = (float)weapon->getPointBlankAccuracy(false);
+		return (float)weapon->getPointBlankAccuracy(withPup);
+
+	} else if (attrib == "pointBlankRange") {
+		return (float)weapon->getPointBlankRange(withPup);
+
+	} else if (attrib == "idealRange") {
+		return (float)weapon->getIdealRange(withPup);
+
+	} else if (attrib == "maxRange") {
+		return (float)weapon->getMaxRange(withPup);
 
 	} else if (attrib == "idealAccuracy") {
-		stat = (float)weapon->getIdealAccuracy(false);
+		return (float)weapon->getIdealAccuracy(withPup);
 
 	} else if (attrib == "maxRangeAccuracy") {
-		stat = (float)weapon->getMaxRangeAccuracy(false);
+		return (float)weapon->getMaxRangeAccuracy(withPup);
 
 	} else if (attrib == "hitpoints") {
-		stat = (float)weapon->getMaxCondition();
+		return (float)weapon->getMaxCondition();
 	}
 
-	// This is only used for display math in fillWeaponAttributeList.
-	if (withPup) {
-		return stat + getPowerupStat(attrib);
-	} else {
-		return stat;
-	}
+	return 0.f;
 }
 
 void PowerupObjectImplementation::fillWeaponAttributeList(AttributeListMessage* alm, WeaponObject* weapon) {
@@ -245,32 +246,36 @@ void PowerupObjectImplementation::addSecondaryStat(CraftingValues* values, Power
 		return;
 	}
 
-	PowerupStat newStat = secondaryStats.get(System::random(secondaryStats.size() - 1));
+	// Build a list of secondary stats that aren't already present.
+	Vector<PowerupStat> availableStats;
 
-	bool foundStat = false;
-	while (!foundStat) {
+	for (int i = 0; i < secondaryStats.size(); ++i) {
+		PowerupStat candidate = secondaryStats.get(i);
 		bool hasStat = false;
 
-		for (int i = 0; i < modifiers.size(); ++i) {
-			PowerupStat stat = modifiers.get(i);
-
-			if (stat.getAttributeToModify() == newStat.getAttributeToModify()) {
+		for (int j = 0; j < modifiers.size(); ++j) {
+			PowerupStat stat = modifiers.get(j);
+			if (stat.getAttributeToModify() == candidate.getAttributeToModify()) {
 				hasStat = true;
+				break;
 			}
 		}
 
 		if (!hasStat) {
-			foundStat = true;
-			modifiers.add(newStat);
+			availableStats.add(candidate);
+		}
+	}
+
+	if (availableStats.size() == 0) {
+		return;
+	}
+
+	PowerupStat newStat = availableStats.get(System::random(availableStats.size() - 1));
+	modifiers.add(newStat);
 
 #ifdef DEBUG_POWERUPS
-			info(true) << "Pup adding stat " << newStat.getAttributeToModify() << " with a value of " << newStat.getValue();
+	info(true) << "Pup adding stat " << newStat.getAttributeToModify() << " with a value of " << newStat.getValue();
 #endif // DEBUG_POWERUPS
-			return;
-		}
-
-		newStat = secondaryStats.get(System::random(secondaryStats.size() - 1));
-	}
 }
 
 void PowerupObjectImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate) {

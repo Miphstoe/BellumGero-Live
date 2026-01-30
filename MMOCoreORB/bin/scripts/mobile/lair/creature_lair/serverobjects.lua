@@ -98,6 +98,7 @@ includeFile("lair/creature_lair/dantooine/dantooine_voritor_jungle_lair_neutral_
 includeFile("lair/creature_lair/dantooine/dantooine_voritor_jungle_lair_neutral_medium_boss_01.lua")
 includeFile("lair/creature_lair/dantooine/dantooine_voritor_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/dantooine/dantooine_voritor_tracker_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/dantooine/dantooine_windclaw_raptor_lair_neutral_medium.lua")
 
 includeFile("lair/creature_lair/dathomir/dathomir_baz_nitch_kinad_neutral_small.lua")
 includeFile("lair/creature_lair/dathomir/dathomir_baz_nitch_lair_neutral_small.lua")
