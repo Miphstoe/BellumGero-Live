@@ -15,6 +15,12 @@ dantooine_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "dantooine_windclaw_raptor_lair_neutral_medium",
+			minDifficulty = 20,
+			maxDifficulty = 24,
+			size = 25,
+		},
+		{
 			lairTemplateName = "dantooine_quenker_lair_neutral_medium",
 			minDifficulty = 21,
 			maxDifficulty = 25,
