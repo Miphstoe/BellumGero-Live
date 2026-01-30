@@ -2240,6 +2240,23 @@ int CombatManager::getHitChance(TangibleObject* attacker, CreatureObject* creoDe
 			if ((attackMask != WeaponType::GRENADEWEAPON) && (attackType == SharedWeaponObjectTemplate::RANGEDATTACK || attackMask == WeaponType::HEAVYWEAPON)) {
 				evadeTotal = evadeSkill = creoDefender->getSkillMod("saber_block");
 
+				// PvP-only saber block tuning:
+				// Saber block can sit extremely high on Jedi, resulting in near-guaranteed ricochets in PvP.
+				// To preserve Jedi PvE performance while improving PvP balance, scale and cap this check
+				// only when BOTH attacker and defender are player creatures.
+				if (attacker->isPlayerCreature() && creoDefender->isPlayerCreature()) {
+					// Tuning knobs (adjust as needed):
+					// - Scale effectiveness to 80% in PvP
+					// - Cap absolute ricochet chance to 80%
+					int scaled = (evadeTotal * 80) / 100; // 80% effectiveness
+					if (scaled > 80)
+						scaled = 80;
+					else if (scaled < 0)
+						scaled = 0;
+
+					evadeTotal = evadeSkill = scaled;
+				}
+
 				if (evadeTotal > 0 && System::random(100) <= evadeTotal) {
 					hitResult = HitStatus::RICOCHET;
 				}
@@ -3189,6 +3206,15 @@ void CombatManager::applyStates(CreatureObject* creature, CreatureObject* target
 
 					targetDefense /= 1.5;
 					targetDefense += playerLevel;
+
+					// PvP-only Jedi state defense tuning: reduce near-immunity without affecting PvE.
+					// Applies only when both attacker and defender are players.
+					if (creature->isPlayerCreature() && targetCreature->isPlayerCreature()) {
+						// Scale down Jedi special state defenses in PvP (default 50%) and cap at 50.
+						targetDefense = floorf(targetDefense * 0.50f);
+						if (targetDefense > 50.f) targetDefense = 50.f;
+						if (targetDefense < 0.f)  targetDefense = 0.f;
+					}
 
 					calc = (int)(accuracyMod - targetDefense);
 
