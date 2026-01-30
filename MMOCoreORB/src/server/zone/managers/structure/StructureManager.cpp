@@ -762,17 +762,38 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
 
     Locker _locker(structureObject);
 
-    ManagedReference<StructureDeed*> deed =
-        server->getObject(structureObject->getDeedObjectID()).castTo<StructureDeed*>();
+    uint64 deedObjectID = structureObject->getDeedObjectID();
+    info(true) << "Attempting to redeed structure. Deed Object ID: " << deedObjectID;
+
+    ManagedReference<StructureDeed*> deed = nullptr;
+
+    // Check if we have a valid deed object ID
+    if (deedObjectID == 0) {
+        info(true) << "ERROR: Deed Object ID is 0 - structure has no deed reference";
+        creature->sendSystemMessage("ERROR: Structure has no deed reference. Please contact an administrator.");
+    } else {
+        deed = server->getObject(deedObjectID).castTo<StructureDeed*>();
+
+        if (deed == nullptr) {
+            info(true) << "ERROR: Failed to retrieve deed object ID " << deedObjectID << " from database";
+            creature->sendSystemMessage("ERROR: Could not retrieve deed from database. Deed ID: " + String::valueOf((int64)deedObjectID));
+        } else {
+            info(true) << "Successfully retrieved deed object. Deed name: " << deed->getDisplayedName();
+        }
+    }
 
     int maint = structureObject->getSurplusMaintenance();
     int redeedCost = structureObject->getRedeedCost();
 
+    bool isRedeedable = structureObject->isRedeedable();
+    info(true) << "Structure redeedable check: " << (isRedeedable ? "YES" : "NO")
+               << " (maintenance: " << maint << ", redeed cost: " << redeedCost << ")";
+
     TransactionLog trx(creature, TrxCode::STRUCTUREDEED, structureObject);
-    trx.addState("subjectIsRedeedable", structureObject->isRedeedable());
+    trx.addState("subjectIsRedeedable", isRedeedable);
     trx.addState("subjectDeedObjectID", deed != nullptr ? deed->getObjectID() : 0);
 
-    if (deed != nullptr && structureObject->isRedeedable()) {
+    if (deed != nullptr && isRedeedable) {
         Locker _lock(deed, structureObject);
 
         ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
@@ -850,8 +871,13 @@ info(true) << "Payload attached successfully";
             destroyStructure(structureObject, /*playEffect*/false, /*refundLots*/true);
 
             // hand deed back to player
+            info(true) << "Transferring deed to player inventory...";
             if (!inventory->transferObject(deed, -1, true)) {
                 trx.abort() << "failed to transfer deed to player inventory";
+                info(true) << "ERROR: Failed to transfer deed to player inventory!";
+                creature->sendSystemMessage("ERROR: Failed to transfer deed to inventory. Please contact an administrator.");
+            } else {
+                info(true) << "Deed successfully transferred to player inventory";
             }
 
             inventory->broadcastObject(deed, true);
@@ -859,6 +885,21 @@ info(true) << "Payload attached successfully";
         }
     } else {
         // not redeedable: normal destroy (refund lots)
+        info(true) << "Structure NOT redeeded. Reason: "
+                   << (deed == nullptr ? "deed is NULL" : "structure not redeedable")
+                   << " (maintenance: " << maint << ", redeed cost: " << redeedCost << ")";
+
+        if (deed == nullptr) {
+            creature->sendSystemMessage("ERROR: Could not return deed - deed object not found in database.");
+            creature->sendSystemMessage("Structure will be destroyed. Please contact an administrator.");
+            info(true) << "CRITICAL: Deed was NULL for structure OID " << structureObject->getObjectID()
+                       << ", stored deed ID was " << deedObjectID;
+        } else if (!isRedeedable) {
+            creature->sendSystemMessage("Structure does not have enough maintenance to be redeeded.");
+            creature->sendSystemMessage("Required: " + String::valueOf(redeedCost) +
+                                       " credits, Available: " + String::valueOf(maint) + " credits.");
+        }
+
         destroyStructure(structureObject, /*playEffect*/false, /*refundLots*/true);
         creature->sendSystemMessage("@player_structure:structure_destroyed");
     }
