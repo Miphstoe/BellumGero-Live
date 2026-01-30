@@ -17,8 +17,8 @@ include templates.tangible.PowerupTemplate;
 @lua
 @json
 class PowerupObject extends TangibleObject {
-	public static final float MAXPRIMARY = 15.0;
-	public static final float MAXSECONDARY = 10.0;
+	public static final float MAXPRIMARY = 45.0;
+	public static final float MAXSECONDARY = 20.0;
 
 	@dereferenced
 	protected PowerupStatVector modifiers;
