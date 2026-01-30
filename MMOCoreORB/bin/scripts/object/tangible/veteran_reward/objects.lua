@@ -1279,3 +1279,69 @@ object_tangible_veteran_reward_shared_resource = SharedTangibleObjectTemplate:ne
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_resource, "object/tangible/veteran_reward/shared_resource.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_corvette = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_corvette.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_corvette, "object/tangible/veteran_reward/shared_frn_vet_holo_corvette.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_darth_vader = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_darth_vader.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_darth_vader, "object/tangible/veteran_reward/shared_frn_vet_holo_darth_vader.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_deathstar = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_deathstar.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_deathstar, "object/tangible/veteran_reward/shared_frn_vet_holo_deathstar.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_imperial_guard = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_imperial_guard.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_imperial_guard, "object/tangible/veteran_reward/shared_frn_vet_holo_imperial_guard.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_jawa = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_jawa.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_jawa, "object/tangible/veteran_reward/shared_frn_vet_holo_jawa.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_lambda = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_lambda.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_lambda, "object/tangible/veteran_reward/shared_frn_vet_holo_lambda.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_leia = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_leia.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_leia, "object/tangible/veteran_reward/shared_frn_vet_holo_leia.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_luke_skywalker = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_luke_skywalker.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_luke_skywalker, "object/tangible/veteran_reward/shared_frn_vet_holo_luke_skywalker.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_sandcrawler = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_sandcrawler.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_sandcrawler, "object/tangible/veteran_reward/shared_frn_vet_holo_sandcrawler.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_starfighter = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_starfighter.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_starfighter, "object/tangible/veteran_reward/shared_frn_vet_holo_starfighter.iff")
+
+object_tangible_veteran_reward_shared_frn_vet_holo_yoda = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_holo_yoda.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_holo_yoda, "object/tangible/veteran_reward/shared_frn_vet_holo_yoda.iff")

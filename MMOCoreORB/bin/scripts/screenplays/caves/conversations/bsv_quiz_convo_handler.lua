@@ -43,6 +43,17 @@ local BSV_REWARD_ITEMS = {
     { template = "object/tangible/furniture/all/frn_all_battle_droid.iff",               weight = 2 },
     { template = "object/tangible/furniture/all/frn_all_21b_surgical_droid.iff",         weight = 2 },
     { template = "object/tangible/furniture/all/frn_all_ito_droid.iff",                  weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_corvette.iff",             weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_darth_vader.iff",          weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_deathstar.iff",            weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_imperial_guard.iff",       weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_jawa.iff",                 weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_lambda.iff",               weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_leia.iff",                 weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_luke_skywalker.iff",       weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_sandcrawler.iff",          weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_starfighter.iff",          weight = 2 },
+    { template = "object/tangible/veteran_reward/frn_vet_holo_yoda.iff",                 weight = 2 },
     -- add more if you like
 }
 
