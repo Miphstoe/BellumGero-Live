@@ -70,6 +70,13 @@ function myswg_vendor:start()
         print("ERROR: Failed to load myswg_vendor_ad_sui: " .. tostring(err))
     end
 
+    success, err = pcall(function()
+        require("screenplays.tasks.naboo.myswg_vendor_ad_admin_sui")
+    end)
+    if not success then
+        print("ERROR: Failed to load myswg_vendor_ad_admin_sui: " .. tostring(err))
+    end
+
     -- Spawn our character into the world, setting pLarry a pointer variable we can use to check or change his state.
     -- The first spawn (Coronet) is the MASTER NPC that stores the ad queue
     local pWeaponsmith = spawnMobile("corellia", "myswg_vendor", 1, -157, 28.0, -4724, 35, 0 )--cnet (MASTER)
@@ -220,6 +227,83 @@ function myswg_vendor:start()
                 
 --    local pLarry = spawnMobile("naboo", "merch_crazy_larry", 1, -4881, 6.0, 4150, 35, 0 )
 end
+
+-- Advertisement Admin SUI Callback
+function myswg_vendor:adAdminCallback(pPlayer, pSui, eventIndex, args)
+    if pPlayer == nil then
+        return
+    end
+
+    local player = LuaCreatureObject(pPlayer)
+    if player == nil then
+        return
+    end
+
+    -- Check if player is privileged admin (level 7+)
+    local pGhost = player:getPlayerObject()
+    if pGhost == nil then
+        player:sendSystemMessage("ERROR: Could not access player ghost.")
+        return
+    end
+
+    if not PlayerObject(pGhost):isPrivileged() then
+        player:sendSystemMessage("You must be a privileged admin (level 7+) to delete advertisements.")
+        return
+    end
+
+    -- Cancel button pressed
+    if eventIndex == 1 then
+        player:sendSystemMessage("Advertisement management cancelled.")
+        return
+    end
+
+    -- Get selected row (args contains the row index) - convert to number
+    local selectedRow = tonumber(args)
+    if selectedRow == nil or selectedRow < 0 then
+        player:sendSystemMessage("No advertisement selected.")
+        return
+    end
+
+    -- Load ad manager if not loaded
+    if not MySwgVendorAdManager then
+        local success, err = pcall(function()
+            require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+        end)
+        if not success then
+            player:sendSystemMessage("ERROR: Failed to load ad manager: " .. tostring(err))
+            return
+        end
+    end
+
+    -- Get the active ads list (same order as displayed in SUI)
+    local activeAds = MySwgVendorAdManager:getActiveAdsDetailed()
+
+    -- selectedRow is 0-based, Lua tables are 1-based
+    local adIndex = selectedRow + 1
+
+    if adIndex < 1 or adIndex > #activeAds then
+        player:sendSystemMessage("ERROR: Invalid selection index.")
+        return
+    end
+
+    local selectedAd = activeAds[adIndex]
+    if selectedAd == nil or selectedAd.queueIndex == nil then
+        player:sendSystemMessage("ERROR: Could not find selected advertisement.")
+        return
+    end
+
+    local queueIndex = selectedAd.queueIndex
+
+    -- Delete the ad
+    local success, message = MySwgVendorAdManager:deleteAd(queueIndex)
+
+    if success then
+        player:sendSystemMessage("SUCCESS: " .. message)
+    else
+        player:sendSystemMessage("ERROR: " .. message)
+    end
+end
+
 myswg_vendor_convo_handler = Object:new {
     tstring = "myconversation"
 }
@@ -1707,34 +1791,69 @@ elseif (optionLink == "learn_all_languages") then
                -- creature:sendSystemMessage("You have been granted Politician Master access!")
 
                 -- Advertisement System Handlers
-                elseif (optionLink == "ad_view_queue") then
-                    -- View the current ad queue - send as system message
-                    if not MySwgVendorAdManager then
+                elseif (optionLink == "ad_view_sui") then
+                    -- View active ads in SUI popup
+                    if not MySwgVendorAdAdminSui then
                         local success, err = pcall(function()
-                            require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+                            require("screenplays.tasks.naboo.myswg_vendor_ad_admin_sui")
                         end)
                         if not success then
-                            print("ERROR: Failed to load ad_manager in ad_view_queue: " .. tostring(err))
+                            print("ERROR: Failed to load ad_admin_sui in ad_view_sui: " .. tostring(err))
+                            creature:sendSystemMessage("ERROR: Advertisement system failed to load.")
+                            return nil
                         end
                     end
 
-                    local queueStatus = "No advertisements currently active.\n\nPurchase your ad space now!"
-                    if MySwgVendorAdManager and type(MySwgVendorAdManager.getQueueStatus) == "function" then
-                        queueStatus = MySwgVendorAdManager:getQueueStatus()
+                    if MySwgVendorAdAdminSui and MySwgVendorAdAdminSui.showAdsPopup then
+                        MySwgVendorAdAdminSui:showAdsPopup(conversingPlayer)
+                    else
+                        creature:sendSystemMessage("ERROR: Advertisement viewer not available.")
                     end
 
-                    -- Send queue status as system messages (split by newlines)
-                    local lines = {}
-                    for line in string.gmatch(queueStatus, "[^\n]+") do
-                        table.insert(lines, line)
+                    -- Close conversation
+                    return nil
+
+                elseif (optionLink == "ad_admin_manage") then
+                    -- Admin advertisement management
+                    local player = LuaCreatureObject(conversingPlayer)
+                    if player == nil then
+                        creature:sendSystemMessage("ERROR: Could not access player object.")
+                        return nil
                     end
 
-                    for _, line in ipairs(lines) do
-                        creature:sendSystemMessage(line)
+                    -- Check if player is privileged admin (level 7+)
+                    local pGhost = player:getPlayerObject()
+                    if pGhost == nil then
+                        creature:sendSystemMessage("ERROR: Could not access player ghost.")
+                        return nil
                     end
 
-                    -- Return to main menu
-                    nextConversationScreen = conversation:getScreen("intro")
+                    if not PlayerObject(pGhost):isPrivileged() then
+                        creature:sendSystemMessage("You must be a privileged admin (level 7+) to manage advertisements.")
+                        nextConversationScreen = conversation:getScreen("ad_menu")
+                        return nextConversationScreen
+                    end
+
+                    -- Load admin SUI module
+                    if not MySwgVendorAdAdminSui then
+                        local success, err = pcall(function()
+                            require("screenplays.tasks.naboo.myswg_vendor_ad_admin_sui")
+                        end)
+                        if not success then
+                            print("ERROR: Failed to load ad_admin_sui: " .. tostring(err))
+                            creature:sendSystemMessage("ERROR: Admin system failed to load.")
+                            return nil
+                        end
+                    end
+
+                    if MySwgVendorAdAdminSui and MySwgVendorAdAdminSui.showAdminMenu then
+                        MySwgVendorAdAdminSui:showAdminMenu(conversingPlayer)
+                    else
+                        creature:sendSystemMessage("ERROR: Admin interface not available.")
+                    end
+
+                    -- Close conversation
+                    return nil
 
                 elseif (optionLink == "ad_purchase_proceed") then
                     -- Purchase advertisement - check if they can afford it first

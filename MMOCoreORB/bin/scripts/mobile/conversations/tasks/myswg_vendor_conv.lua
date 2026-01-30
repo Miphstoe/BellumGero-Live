@@ -975,7 +975,8 @@ myswg_vendor_ad_menu = ConvoScreen:new {
     stopConversation = "false",
     options = {
         {"Purchase Advertisement (100k for 1 week)", "ad_purchase_confirm"},
-        {"View Current Ad Queue", "ad_view_queue"},
+        {"View Active Ads (SUI Popup)", "ad_view_sui"},
+        {"Admin: Manage Advertisements (Level 7+)", "ad_admin_manage"},
         {"Main menu.", "first_screen"},
     }
 }
