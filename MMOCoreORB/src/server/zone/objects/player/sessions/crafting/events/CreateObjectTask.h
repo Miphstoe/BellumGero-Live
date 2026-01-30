@@ -96,10 +96,10 @@ public:
 				crafter->notifyObservers(ObserverEventType::PROTOTYPECREATED, prototype, 0);
 
 				// Crafting reward system: Drop Holocron of Destiny
-				// 0.1% drop rate (1 in 1000 crafts = 10 out of 10000)
+				// 0.4% drop rate (1 in 250 crafts = 40 out of 10000)
 				int randRoll = System::random(10000); // Roll 0-9999 for precise percentages
 
-				if (randRoll < 10) { // 0.1% chance (0-9 out of 10000)
+				if (randRoll < 40) { // 0.4% chance (0-39 out of 10000)
 					LootManager* lootManager = crafter->getZoneServer()->getLootManager();
 					if (lootManager != nullptr) {
 						TransactionLog trx(TrxCode::CRAFTINGSESSION, crafter, inventory);
