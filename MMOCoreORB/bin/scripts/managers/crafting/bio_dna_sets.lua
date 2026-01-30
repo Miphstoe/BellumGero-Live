@@ -1108,5 +1108,38 @@ dnaTests = {
 			-- Special Resists, read as Int
 			specialResists = {1},
 		},
+	},
+
+	-- Test DNA with Plague Strike (creatureareadisease) - Use for testing
+	{"plague_test",
+		-- DNA 1
+		{quality = 1, source = "test creature", level = 50,
+			-- Stats
+			hardiness = 700, fortitude = 600, dexterity = 650, endurance = 500, intellect = 750,
+			cleverness = 550, dependability = 750, courage = 500, fierocity = 100, power = 650,
+
+			-- Armor
+			kinetic = 50,
+			energy = 50,
+			blast = 50,
+			heat = 50,
+			cold = 50,
+			electric = 50,
+			acid = 50,
+			stun = 50,
+			lightsaber = -99,
+
+			-- Armor Rating
+			armorRating = 1,
+
+			-- Special Attacks
+			special1 = "creatureareadisease",
+			special2 = "dizzyattack",
+
+			ranged = false,
+
+			-- Special Resists, read as Int
+			specialResists = {1},
+		},
 	}
 }
