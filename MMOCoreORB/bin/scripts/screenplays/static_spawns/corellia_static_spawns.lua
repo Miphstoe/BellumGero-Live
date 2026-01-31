@@ -148,7 +148,7 @@ function CorelliaStaticSpawnsScreenPlay:spawnMobiles()
 		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn Apprentice Experience Vendor")
 	end
 
-	-- Holocron Village Vendor in Coronet (near starport)
+	-- Holocron Village Vendor in Coronet (near starport) - 2 Holocrons per item
 	local pHolocronVendor = spawnMobile("corellia", "holocron_village_vendor", 0, -177, 28, -4714, 0, 0)
 	if pHolocronVendor ~= nil then
 		local ai = AiAgent(pHolocronVendor)

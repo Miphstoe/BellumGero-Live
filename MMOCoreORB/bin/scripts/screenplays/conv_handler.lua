@@ -1090,7 +1090,7 @@ function conv_handler:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selected
     print("[HOLOCRON-VENDOR] screenId: " .. tostring(screenId))
 
     local screen = LuaConversationScreen(pConvScreen)
-    local requiredHolocrons = 5
+    local requiredHolocrons = 2
 
     -- Get reward info for this item
     local rewardInfo = self:getHolocronReward(screenId)
@@ -1153,7 +1153,7 @@ function conv_handler:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selected
 end
 
 function conv_handler:getHolocronReward(screenId)
-    -- Template mapping for 9 village quest reward items
+    -- Template mapping for 9 village quest reward items (2 Holocrons of Destiny each)
     local rewards = {
         ["give_holo_03"] = {name = "Bacta Tank", template = "object/tangible/item/quest/force_sensitive/bacta_tank.iff"},
         ["give_holo_04"] = {name = "Village Banner Pole", template = "object/tangible/item/quest/force_sensitive/fs_village_bannerpole_s01.iff"},

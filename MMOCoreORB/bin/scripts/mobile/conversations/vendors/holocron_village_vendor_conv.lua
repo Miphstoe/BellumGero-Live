@@ -12,7 +12,7 @@ holocron_village_vendor_conv = ConvoTemplate:new {
 first_screen = ConvoScreen:new {
     id = "first_screen",
     leftDialog = "",
-    customDialogText = "Greetings, traveler. I trade rare village quest rewards for Holocrons of Destiny. Each item costs 5 Holocrons of Destiny. I have 9 authentic village quest reward items - decorations and sculptures that were once only available through the old village quests. Browse my collection!",
+    customDialogText = "Greetings, traveler. I trade rare village quest rewards for Holocrons of Destiny. Each item costs 2 Holocrons of Destiny. I have 9 authentic village quest reward items - decorations and sculptures that were once only available through the old village quests. Browse my collection!",
     stopConversation = "false",
     options = {
         {"View Available Items", "items_menu"},
@@ -26,7 +26,7 @@ holocron_village_vendor_conv:addScreen(first_screen)
 cost_info = ConvoScreen:new {
     id = "cost_info",
     leftDialog = "",
-    customDialogText = "All items in my inventory cost exactly 5 Holocrons of Destiny each. Simply choose an item, confirm the trade, and it's yours!",
+    customDialogText = "All items in my inventory cost exactly 2 Holocrons of Destiny each. Simply choose an item, confirm the trade, and it's yours!",
     stopConversation = "false",
     options = {
         {"Show me the items", "items_menu"},
@@ -39,7 +39,7 @@ holocron_village_vendor_conv:addScreen(cost_info)
 items_menu = ConvoScreen:new {
     id = "items_menu",
     leftDialog = "",
-    customDialogText = "Choose an item (5 Holocrons of Destiny each):\n\nItems 1-5:",
+    customDialogText = "Choose an item (2 Holocrons of Destiny each):\n\nItems 1-5:",
     stopConversation = "false",
     options = {
         {"Item 1 - [Bacta Tank]", "trade_holo_03"},
@@ -57,7 +57,7 @@ holocron_village_vendor_conv:addScreen(items_menu)
 items_menu_2 = ConvoScreen:new {
     id = "items_menu_2",
     leftDialog = "",
-    customDialogText = "Choose an item (5 Holocrons of Destiny each):\n\nItems 6-9:",
+    customDialogText = "Choose an item (2 Holocrons of Destiny each):\n\nItems 6-9:",
     stopConversation = "false",
     options = {
         {"Item 6 - [Village Sculpture 3]", "trade_holo_08"},
@@ -75,7 +75,7 @@ holocron_village_vendor_conv:addScreen(items_menu_2)
 trade_holo_03 = ConvoScreen:new {
     id = "trade_holo_03",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Bacta Tank?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Bacta Tank?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_03"},
@@ -97,7 +97,7 @@ holocron_village_vendor_conv:addScreen(give_holo_03)
 trade_holo_04 = ConvoScreen:new {
     id = "trade_holo_04",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Village Banner Pole?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Village Banner Pole?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_04"},
@@ -119,7 +119,7 @@ holocron_village_vendor_conv:addScreen(give_holo_04)
 trade_holo_05 = ConvoScreen:new {
     id = "trade_holo_05",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for FS Buff Item?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for FS Buff Item?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_05"},
@@ -141,7 +141,7 @@ holocron_village_vendor_conv:addScreen(give_holo_05)
 trade_holo_06 = ConvoScreen:new {
     id = "trade_holo_06",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Village Sculpture 1?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Village Sculpture 1?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_06"},
@@ -163,7 +163,7 @@ holocron_village_vendor_conv:addScreen(give_holo_06)
 trade_holo_07 = ConvoScreen:new {
     id = "trade_holo_07",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Village Sculpture 2?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Village Sculpture 2?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_07"},
@@ -185,7 +185,7 @@ holocron_village_vendor_conv:addScreen(give_holo_07)
 trade_holo_08 = ConvoScreen:new {
     id = "trade_holo_08",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Village Sculpture 3?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Village Sculpture 3?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_08"},
@@ -207,7 +207,7 @@ holocron_village_vendor_conv:addScreen(give_holo_08)
 trade_holo_09 = ConvoScreen:new {
     id = "trade_holo_09",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Village Sculpture 4?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Village Sculpture 4?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_09"},
@@ -229,7 +229,7 @@ holocron_village_vendor_conv:addScreen(give_holo_09)
 trade_holo_12 = ConvoScreen:new {
     id = "trade_holo_12",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Dark Banner?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Dark Banner?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_12"},
@@ -251,7 +251,7 @@ holocron_village_vendor_conv:addScreen(give_holo_12)
 trade_holo_13 = ConvoScreen:new {
     id = "trade_holo_13",
     leftDialog = "",
-    customDialogText = "Confirm: Trade 5 Holocrons of Destiny for Light Banner?",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Light Banner?",
     stopConversation = "false",
     options = {
         {"Yes, make the trade", "give_holo_13"},
