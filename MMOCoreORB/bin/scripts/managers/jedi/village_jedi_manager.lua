@@ -47,6 +47,34 @@ function VillageJediManager:checkForceStatusCommand(pPlayer)
 		return
 	end
 
+	local playerId = SceneObject(pPlayer):getObjectID()
+	local started = readData(playerId .. ":bg_force_path_started")
+	local shrine1 = readData(playerId .. ":bg_force_shrine_1")
+	local shrine2 = readData(playerId .. ":bg_force_shrine_2")
+	local shrine3 = readData(playerId .. ":bg_force_shrine_3")
+	local crystalGiven = readData(playerId .. ":bg_force_crystal_given")
+
+	if (crystalGiven == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You feel the Force running through you, seek out Holocron's of Destiny to learn the way.")
+		return
+	end
+
+	if (started == 1) then
+		if (shrine1 ~= 1) then
+			CreatureObject(pPlayer):sendSystemMessage("Go seek the Shrine of the Call.")
+			return
+		elseif (shrine2 ~= 1) then
+			CreatureObject(pPlayer):sendSystemMessage("Go seek the Shrine of the Vision.")
+			return
+		elseif (shrine3 ~= 1) then
+			CreatureObject(pPlayer):sendSystemMessage("Go seek the Shrine of the Stillness.")
+			return
+		else
+			CreatureObject(pPlayer):sendSystemMessage("You feel Inner Peace, go seek the advice of The Hermit on Dathomir.")
+			return
+		end
+	end
+
 	Glowing:checkForceStatusCommand(pPlayer)
 end
 
