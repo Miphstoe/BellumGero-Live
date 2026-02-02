@@ -18,3 +18,9 @@ includeFile("event/mutant_crazed_geonosian_guard.lua")
 includeFile("event/giant_ewok_warchief.lua")
 includeFile("event/torgas_the_enslaver.lua")
 includeFile("event/wookiee_jedi_event.lua")
+
+--Event Kimogila variants
+includeFile("event/dune_reaver.lua")
+includeFile("event/sandfang_alpha.lua")
+includeFile("event/twin_spine_terror.lua")
+includeFile("event/zerathul_buried_king.lua")
