@@ -35,29 +35,29 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
-  { planet = "lok", template = "dune_reaver", x = 5080, y = 1319, z = 11, heading = 0 },
-  { planet = "lok", template = "dune_reaver", x = 5082, y = 1321, z = 11, heading = 0 },
+  { planet = "lok", template = "dune_reaver", x = 5086, y = 1319, z = 11, heading = 0 },
+  { planet = "lok", template = "dune_reaver", x = 5088, y = 1321, z = 11, heading = 0 },
  -- { planet = "corellia", template = "meatlump_fool", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
   --{ planet = "corellia", template = "meatlump_cretin", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "lok", template = "sandfang_alpha", x = 5080, y = 1319, z = 11, heading = 0 },
+  { planet = "lok", template = "sandfang_alpha", x = 5086, y = 1319, z = 11, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
  -- { planet = "corellia", template = "meatlump_loon", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "lok", template = "twin_spine_terror", x = 5080, y = 1319, z = 11, heading = 0 },
+  { planet = "lok", template = "twin_spine_terror", x = 5086, y = 1319, z = 11, heading = 0 },
  -- { planet = "corellia", template = "meatlump_loon", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
  -- { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "lok", template = "zerathul_buried_king", x = 5080, y = 1319, z = 11, heading = 0 },
+  { planet = "lok", template = "zerathul_buried_king", x = 5086, y = 1319, z = 11, heading = 0 },
   --{ planet = "corellia", template = "wookiee_jedi_event", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
