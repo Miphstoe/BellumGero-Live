@@ -2511,6 +2511,59 @@ void MissionManagerImplementation::failPlayerBountyMission(uint64 bountyHunter, 
 	}
 }
 
+void MissionManagerImplementation::invalidatePlayerBountyMissions(uint64 targetId) {
+	Locker listLocker(&playerBountyListMutex);
+
+	if (!playerBountyList.contains(targetId))
+		return;
+
+	PlayerBounty* bounty = playerBountyList.get(targetId);
+
+	// Copy hunters (sorted vector) into a simple list
+	Vector<uint64> hunters;
+	for (int i = 0; i < bounty->getBountyHunters()->size(); i++) {
+		hunters.add(bounty->getBountyHunters()->get(i));
+	}
+
+	// Fail missions for online hunters immediately
+	for (int i = 0; i < hunters.size(); i++) {
+		uint64 hunterId = hunters.get(i);
+
+		ManagedReference<CreatureObject*> hunter = server->getObject(hunterId).castTo<CreatureObject*>();
+		if (hunter != nullptr) {
+			hunter->sendSystemMessage("Your target has assumed a new identity. The trail has gone cold.");
+		}
+
+		// This fails the mission and removes it from the datapad (for online hunters)
+		failPlayerBountyMission(hunterId, targetId);
+	}
+
+	// Ensure offline hunters get removed from the active hunters list too.
+	// (If they remain here, they'd still be considered an active mission slot and could keep their mission.)
+	bool applyCooldown = ConfigManager::instance()->getBool("Core3.MissionManager.PlayerBountyCooldown", true);
+	Time currentTime;
+	uint64 curTime = currentTime.getMiliTime();
+
+	// bounty pointer may still be valid; re-fetch safely anyway
+	if (!playerBountyList.contains(targetId))
+		return;
+
+	bounty = playerBountyList.get(targetId);
+
+	for (int i = 0; i < hunters.size(); i++) {
+		uint64 hunterId = hunters.get(i);
+
+		if (bounty->hasBountyHunter(hunterId)) {
+			bounty->removeBountyHunter(hunterId);
+
+			// Match existing behavior: per-target cooldown for this hunter
+			if (applyCooldown)
+				bounty->addMissionCooldown(hunterId, curTime);
+		}
+	}
+}
+
+
 Vector<uint64> MissionManagerImplementation::getHuntersHuntingTarget(uint64 targetId) {
 	Vector<uint64> values;
 
