@@ -23,6 +23,7 @@
 #include "server/zone/objects/player/events/StoreSpawnedChildrenTask.h"
 #include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/managers/mission/MissionManager.h"
+#include "server/zone/managers/visibility/VisibilityManager.h"
 
 const char LuaCreatureObject::className[] = "LuaCreatureObject";
 
@@ -127,6 +128,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getSlottedObject", &LuaSceneObject::getSlottedObject},
 		{ "checkCooldownRecovery", &LuaCreatureObject::checkCooldownRecovery},
 		{ "addCooldown", &LuaCreatureObject::addCooldown},
+		{ "clearVisibility", &LuaCreatureObject::clearVisibility},
+		{ "invalidatePlayerBountyMissions", &LuaCreatureObject::invalidatePlayerBountyMissions },
 		{ "isDead", &LuaCreatureObject::isDead},
 		{ "isIncapacitated", &LuaCreatureObject::isIncapacitated },
 		{ "getLevel", &LuaCreatureObject::getLevel},
@@ -922,6 +925,33 @@ int LuaCreatureObject::addCooldown(lua_State* L) {
 
 	return 0;
 }
+
+int LuaCreatureObject::clearVisibility(lua_State* L) {
+	// Only meaningful for player creatures
+	if (realObject == nullptr || !realObject->isPlayerCreature())
+		return 0;
+
+	VisibilityManager::instance()->clearVisibility(realObject);
+	return 0;
+}
+
+int LuaCreatureObject::invalidatePlayerBountyMissions(lua_State* L) {
+	if (realObject == nullptr || !realObject->isPlayerCreature())
+		return 0;
+
+	ZoneServer* zoneServer = realObject->getZoneServer();
+	if (zoneServer == nullptr)
+		return 0;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr)
+		return 0;
+
+	missionManager->invalidatePlayerBountyMissions(realObject->getObjectID());
+	return 0;
+}
+
+
 
 int LuaCreatureObject::isDead(lua_State* L) {
 	bool retVal = realObject->isDead();

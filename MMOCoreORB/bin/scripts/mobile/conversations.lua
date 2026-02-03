@@ -321,6 +321,7 @@ includeFile("conversations/misc/gcw_cave_daily_convo.lua")
 includeFile("conversations/misc/bsv_gate_convo.lua")
 includeFile("conversations/misc/bsv_quiz_convo.lua")
 includeFile("conversations/misc/master_bounty_guild_convo.lua")
+includeFile("conversations/misc/the_path_conv.lua")
 
 -- Junk Dealers
 includeFile("conversations/junk_dealer/junk_dealer_generic_conv.lua")
