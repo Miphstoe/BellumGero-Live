@@ -153,9 +153,12 @@ void PetDeedImplementation::initializeTransientMembers() {
 void PetDeedImplementation::setupAttacks() {
 	attacks.removeAll();
 
+	info(true) << "PetDeed::setupAttacks: special1 = " << special1 << ", special2 = " << special2;
+
 	if (special1 != "none" && special1 != "defaultattack") {
 		String args = "";
 		if (special1.contains("creature") || special1.contains("poison") || special1.contains("disease")) {
+			info(true) << "PetDeed::setupAttacks: Adding special1 attack: " << special1;
 			attacks.addAttack(special1, args);
 		} else if (special1.contains("blind")) {
 			attacks.addAttack(special1, "blindChance=50");
@@ -177,6 +180,7 @@ void PetDeedImplementation::setupAttacks() {
 	if (special2 != "none" && special2 != "defaultattack") {
 		String args = "";
 		if (special2.contains("creature") || special2.contains("poison") || special2.contains("disease")) {
+			info(true) << "PetDeed::setupAttacks: Adding special2 attack: " << special2;
 			attacks.addAttack(special2, args);
 		} else if (special2.contains("blind")) {
 			attacks.addAttack(special2, "blindChance=50");
@@ -309,6 +313,10 @@ void PetDeedImplementation::updateCraftingValues(CraftingValues* values, bool fi
 		special1 = component->getSpecial1();
 		special2 = component->getSpecial2();
 		ranged = component->getRanged();
+
+		// Debug logging
+		info(true) << "PetDeed: Loaded special1 = " << special1;
+		info(true) << "PetDeed: Loaded special2 = " << special2;
 
 		// Attributes
 		cleverness = component->getCleverness();
