@@ -113,40 +113,27 @@ function BgForcePathOfAwakening:getDataKey(pPlayer, key)
 end
 
 function BgForcePathOfAwakening:getNumber(pPlayer, key)
-	local dataKey = self:getDataKey(pPlayer, key)
-	if (dataKey == nil) then
+	if (pPlayer == nil) then
 		return 0
 	end
 
-	local value = readData(dataKey)
-	if (value == nil) then
-		return 0
-	end
-
-	return tonumber(value) or 0
+	return tonumber(readScreenPlayData(pPlayer, "bg_force_path", key)) or 0
 end
 
 function BgForcePathOfAwakening:setNumber(pPlayer, key, value)
-	local dataKey = self:getDataKey(pPlayer, key)
-	if (dataKey == nil) then
+	if (pPlayer == nil) then
 		return
 	end
 
-	writeData(dataKey, value)
+	writeScreenPlayData(pPlayer, "bg_force_path", key, value)
 end
 
 function BgForcePathOfAwakening:getString(pPlayer, key)
-	local dataKey = self:getDataKey(pPlayer, key)
-	if (dataKey == nil) then
+	if (pPlayer == nil) then
 		return ""
 	end
 
-	local value = readData(dataKey)
-	if (value == nil) then
-		return ""
-	end
-
-	return tostring(value)
+	return tostring(readScreenPlayData(pPlayer, "bg_force_path", key) or "")
 end
 
 function BgForcePathOfAwakening:parseMeditationParam(param)
@@ -163,12 +150,11 @@ function BgForcePathOfAwakening:parseMeditationParam(param)
 end
 
 function BgForcePathOfAwakening:setString(pPlayer, key, value)
-	local dataKey = self:getDataKey(pPlayer, key)
-	if (dataKey == nil) then
+	if (pPlayer == nil) then
 		return
 	end
 
-	writeData(dataKey, value)
+	writeScreenPlayData(pPlayer, "bg_force_path", key, value)
 end
 
 function BgForcePathOfAwakening:getShrineIndexById(shrineId)
@@ -194,6 +180,10 @@ function BgForcePathOfAwakening:giveShrineWaypoints(pPlayer)
 	if (pPlayer == nil) then
 		return
 	end
+	if (self:isComplete(pPlayer)) then
+		CreatureObject(pPlayer):sendSystemMessage("The path is already complete.")
+		return
+	end
 
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 	if (pGhost == nil) then
@@ -208,13 +198,13 @@ function BgForcePathOfAwakening:giveShrineWaypoints(pPlayer)
 
 	for i = 1, #waypoints, 1 do
 		local wp = waypoints[i]
-		local wpKey = SceneObject(pPlayer):getObjectID() .. ":" .. wp.key
-		local existingId = readData(wpKey)
+		local wpKey = wp.key
+		local existingId = readScreenPlayData(pPlayer, "bg_force_path", wpKey)
 
 		if (existingId == nil or getSceneObject(existingId) == nil) then
 			local waypointID = PlayerObject(pGhost):addWaypoint(wp.planet, wp.name, wp.desc, wp.x, wp.z, wp.y, WAYPOINT_BLUE, true, true, 0)
 			if (waypointID ~= nil) then
-				writeData(wpKey, waypointID)
+				writeScreenPlayData(pPlayer, "bg_force_path", wpKey, waypointID)
 			end
 		end
 	end
@@ -231,30 +221,27 @@ function BgForcePathOfAwakening:getCrystalKey(pPlayer)
 end
 
 function BgForcePathOfAwakening:getStoredCrystalId(pPlayer)
-	local key = self:getCrystalKey(pPlayer)
-	if (key == nil) then
+	if (pPlayer == nil) then
 		return nil
 	end
 
-	return readData(key)
+	return readScreenPlayData(pPlayer, "bg_force_path", "bg_force_crystal_id")
 end
 
 function BgForcePathOfAwakening:setStoredCrystalId(pPlayer, crystalId)
-	local key = self:getCrystalKey(pPlayer)
-	if (key == nil) then
+	if (pPlayer == nil) then
 		return
 	end
 
-	writeData(key, crystalId)
+	writeScreenPlayData(pPlayer, "bg_force_path", "bg_force_crystal_id", crystalId)
 end
 
 function BgForcePathOfAwakening:clearStoredCrystalId(pPlayer)
-	local key = self:getCrystalKey(pPlayer)
-	if (key == nil) then
+	if (pPlayer == nil) then
 		return
 	end
 
-	deleteData(key)
+	writeScreenPlayData(pPlayer, "bg_force_path", "bg_force_crystal_id", 0)
 end
 
 function BgForcePathOfAwakening:giveForceCrystal(pPlayer)
@@ -306,12 +293,14 @@ function BgForcePathOfAwakening:useForceCrystal(pPlayer, pCrystal)
 	end
 
 	local storedId = self:getStoredCrystalId(pPlayer)
-	if (storedId ~= nil and storedId ~= SceneObject(pCrystal):getObjectID()) then
+	local storedIdNum = tonumber(storedId) or 0
+	if (storedIdNum ~= 0 and storedIdNum ~= SceneObject(pCrystal):getObjectID()) then
 		CreatureObject(pPlayer):sendSystemMessage("The crystal does not respond to you.")
 		return
 	end
 
 	QuestManager.activateQuest(pPlayer, QuestManager.quests.FS_VILLAGE_ELDER)
+	QuestManager.completeQuest(pPlayer, QuestManager.quests.FS_VILLAGE_ELDER)
 	VillageJediManagerCommon.setJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_HAS_VILLAGE_ACCESS)
 	CreatureObject(pPlayer):sendSystemMessage("@quest/force_sensitive/intro:force_sensitive")
 
@@ -332,6 +321,18 @@ function BgForcePathOfAwakening:setStep(pPlayer, step)
 end
 
 function BgForcePathOfAwakening:isComplete(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	if (VillageJediManagerCommon ~= nil and VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_HAS_VILLAGE_ACCESS)) then
+		return true
+	end
+
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_novice")) then
+		return true
+	end
+
 	return self:getNumber(pPlayer, "bg_force_path_complete") == 1
 end
 

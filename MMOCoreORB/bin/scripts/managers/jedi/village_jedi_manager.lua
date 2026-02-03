@@ -47,19 +47,18 @@ function VillageJediManager:checkForceStatusCommand(pPlayer)
 		return
 	end
 
-	local playerId = SceneObject(pPlayer):getObjectID()
-	local started = readData(playerId .. ":bg_force_path_started")
-	local shrine1 = readData(playerId .. ":bg_force_shrine_1")
-	local shrine2 = readData(playerId .. ":bg_force_shrine_2")
-	local shrine3 = readData(playerId .. ":bg_force_shrine_3")
-	local crystalGiven = readData(playerId .. ":bg_force_crystal_given")
+	local started = tonumber(readScreenPlayData(pPlayer, "bg_force_path", "bg_force_path_started")) or 0
+	local shrine1 = tonumber(readScreenPlayData(pPlayer, "bg_force_path", "bg_force_shrine_1")) or 0
+	local shrine2 = tonumber(readScreenPlayData(pPlayer, "bg_force_path", "bg_force_shrine_2")) or 0
+	local shrine3 = tonumber(readScreenPlayData(pPlayer, "bg_force_path", "bg_force_shrine_3")) or 0
+	local crystalGiven = tonumber(readScreenPlayData(pPlayer, "bg_force_path", "bg_force_crystal_given")) or 0
 
 	if (crystalGiven == 1) then
 		CreatureObject(pPlayer):sendSystemMessage("You feel the Force running through you, seek out Holocron's of Destiny to learn the way.")
 		return
 	end
 
-	if (started == 1) then
+	if (started == 1 or shrine1 == 1 or shrine2 == 1 or shrine3 == 1) then
 		if (shrine1 ~= 1) then
 			CreatureObject(pPlayer):sendSystemMessage("Go seek the Shrine of the Call.")
 			return
