@@ -6,7 +6,7 @@ registerScreenPlay("BGTokenVendor", true)
 
 local NPC_CFG = {
   planet = "corellia",
-  x = -141.0, y = 28.0, z = -4726.0,
+  x = -173, y = 28, z = -4714,
   heading = 180, cell = 0,
   template = "bg_token_vendor",   -- MUST match addCreatureTemplate key
   customName = "Bellum Gero Token Vendor"

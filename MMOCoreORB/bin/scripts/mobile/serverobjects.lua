@@ -65,4 +65,7 @@ includeFile("vendors/bg_token_vendor.lua")
 -- BG Token Vendor 2 (75 tokens per item)
 includeFile("vendors/bg_token_vendor_2.lua")
 
+-- Holocron Village Vendor (5 Holocrons of Destiny per item)
+includeFile("vendors/holocron_village_vendor.lua")
+
 
