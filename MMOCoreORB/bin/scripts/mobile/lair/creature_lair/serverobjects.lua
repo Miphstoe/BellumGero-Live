@@ -48,6 +48,8 @@ includeFile("lair/creature_lair/corellia/corellia_mountain_murra_lair_neutral_me
 includeFile("lair/creature_lair/corellia/corellia_murra_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/corellia/corellia_murra_lair_neutral_none.lua")
 includeFile("lair/creature_lair/corellia/corellia_paralope_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/corellia/corellia_giant_paralope_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/corellia/corellia_ancient_paralope_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/corellia/corellia_plumed_rasp_eyrie_neutral_medium.lua")
 includeFile("lair/creature_lair/corellia/corellia_plumed_rasp_nest_neutral_small.lua")
 includeFile("lair/creature_lair/corellia/corellia_razor_cat_pride_neutral_medium.lua")
