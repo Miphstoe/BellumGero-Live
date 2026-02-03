@@ -70,6 +70,11 @@ function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOp
         end
     end
 
+    -- Check if this is a holocron vendor trade screen
+    if string.find(screenId, "give_holo_") then
+        return self:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    end
+
     return pConvScreen
 end
 
@@ -1076,4 +1081,222 @@ function conv_handler:handleApprenticeXpTrade(pConvTemplate, pPlayer, pNpc, sele
         pCreatureObject:sendSystemMessage("Failed to create token. Please try again.")
         return nil
     end
+end
+
+-- ============================= HOLOCRON VILLAGE VENDOR HANDLER =============================
+
+function conv_handler:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    print("[HOLOCRON-VENDOR] === ENTERED handleHolocronTrade ===")
+    print("[HOLOCRON-VENDOR] screenId: " .. tostring(screenId))
+
+    local screen = LuaConversationScreen(pConvScreen)
+    local requiredHolocrons = 2
+
+    -- Get reward info for this item
+    local rewardInfo = self:getHolocronReward(screenId)
+
+    if not rewardInfo then
+        print("[HOLOCRON-VENDOR] ERROR: No reward info found for screenId: " .. screenId)
+        screen:setCustomDialogText("Error: Invalid item selection.")
+        return pConvScreen
+    end
+
+    print("[HOLOCRON-VENDOR] === STARTING " .. rewardInfo.name .. " TRADE ===")
+    print("[HOLOCRON-VENDOR] Required holocrons: " .. requiredHolocrons)
+
+    -- Count holocrons
+    print("[HOLOCRON-VENDOR] About to count holocrons...")
+    local success, holocronCount = pcall(function()
+        return self:countHolocrons(pPlayer)
+    end)
+
+    if not success then
+        print("[HOLOCRON-VENDOR] Error counting holocrons: " .. tostring(holocronCount))
+        screen:setCustomDialogText("Error reading your inventory. Please try again later.")
+        return pConvScreen
+    end
+
+    print("[HOLOCRON-VENDOR] Found " .. holocronCount .. " holocrons")
+
+    if holocronCount < requiredHolocrons then
+        screen:setCustomDialogText("You only have " .. holocronCount .. " Holocrons of Destiny, but need " .. requiredHolocrons .. ". Please collect more!")
+        return pConvScreen
+    end
+
+    -- Remove holocrons
+    print("[HOLOCRON-VENDOR] About to remove holocrons...")
+    local removeSuccess, removedCount = pcall(function()
+        return self:removeHolocrons(pPlayer, requiredHolocrons)
+    end)
+
+    if not removeSuccess or removedCount < requiredHolocrons then
+        print("[HOLOCRON-VENDOR] Error removing holocrons. Removed: " .. (removedCount or 0))
+        screen:setCustomDialogText("Error removing holocrons. Trade cancelled.")
+        return pConvScreen
+    end
+
+    print("[HOLOCRON-VENDOR] Successfully removed " .. removedCount .. " holocrons")
+
+    -- Give reward
+    print("[HOLOCRON-VENDOR] About to give reward...")
+    local rewardSuccess = self:giveReward(pPlayer, rewardInfo.template, rewardInfo.name)
+
+    if rewardSuccess then
+        screen:setCustomDialogText("Trade successful!\n\n" .. removedCount .. " Holocrons of Destiny removed.\n\nYou received: " .. rewardInfo.name .. "\n\nCheck your inventory!")
+        print("[HOLOCRON-VENDOR] Successfully gave " .. rewardInfo.name .. " to player")
+    else
+        screen:setCustomDialogText("Holocrons removed but error giving reward. Contact an admin.")
+        print("[HOLOCRON-VENDOR] Failed to give " .. rewardInfo.name)
+    end
+
+    return pConvScreen
+end
+
+function conv_handler:getHolocronReward(screenId)
+    -- Template mapping for 9 village quest reward items (2 Holocrons of Destiny each)
+    local rewards = {
+        ["give_holo_03"] = {name = "Bacta Tank", template = "object/tangible/item/quest/force_sensitive/bacta_tank.iff"},
+        ["give_holo_04"] = {name = "Village Banner Pole", template = "object/tangible/item/quest/force_sensitive/fs_village_bannerpole_s01.iff"},
+        ["give_holo_05"] = {name = "FS Buff Item", template = "object/tangible/item/quest/force_sensitive/fs_buff_item.iff"},
+        ["give_holo_06"] = {name = "Village Sculpture 1", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_1.iff"},
+        ["give_holo_07"] = {name = "Village Sculpture 2", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_2.iff"},
+        ["give_holo_08"] = {name = "Village Sculpture 3", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_3.iff"},
+        ["give_holo_09"] = {name = "Village Sculpture 4", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_4.iff"},
+        ["give_holo_12"] = {name = "Dark Banner", template = "object/tangible/furniture/jedi/frn_all_banner_dark.iff"},
+        ["give_holo_13"] = {name = "Light Banner", template = "object/tangible/furniture/jedi/frn_all_banner_light.iff"},
+    }
+    return rewards[screenId]
+end
+
+function conv_handler:countHolocrons(pPlayer)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[HOLOCRON-VENDOR] Could not get LuaCreatureObject")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[HOLOCRON-VENDOR] Could not get inventory")
+        return 0
+    end
+
+    local holocronCount = self:countHolocronsInContainer(pInventory)
+
+    print("[HOLOCRON-VENDOR] Counted " .. holocronCount .. " holocrons in inventory and containers")
+    return holocronCount
+end
+
+function conv_handler:countHolocronsInContainer(container)
+    local holocronCount = 0
+    if not container then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    print("[HOLOCRON-VENDOR] Searching container with " .. size .. " items")
+
+    for i = 0, size - 1 do
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                if templateSuccess and template then
+                    local templateLower = string.lower(template)
+
+                    -- Check if it's a Holocron of Destiny
+                    if string.find(templateLower, "holocron_of_destiny") then
+                        holocronCount = holocronCount + 1
+                        print("[HOLOCRON-VENDOR] Found Holocron of Destiny")
+                    else
+                        -- Check if it's a container and recurse
+                        local isContainer = string.find(templateLower, "container/") or
+                                           string.find(templateLower, "backpack/") or
+                                           string.find(templateLower, "wearables/backpack")
+
+                        if isContainer then
+                            print("[HOLOCRON-VENDOR] Checking container recursively...")
+                            holocronCount = holocronCount + self:countHolocronsInContainer(pObject)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return holocronCount
+end
+
+function conv_handler:removeHolocrons(pPlayer, count)
+    local pCreatureObject = LuaCreatureObject(pPlayer)
+    if not pCreatureObject then
+        print("[HOLOCRON-VENDOR] Could not get LuaCreatureObject for removal")
+        return 0
+    end
+
+    local pInventory = pCreatureObject:getSlottedObject("inventory")
+    if not pInventory then
+        print("[HOLOCRON-VENDOR] Could not get inventory for removal")
+        return 0
+    end
+
+    local removed = self:removeHolocronsFromContainer(pInventory, count)
+
+    print("[HOLOCRON-VENDOR] Successfully removed " .. removed .. " holocrons from inventory and containers")
+    return removed
+end
+
+function conv_handler:removeHolocronsFromContainer(container, count)
+    local removed = 0
+    if not container then return 0 end
+
+    local containerObj = LuaSceneObject(container)
+    if not containerObj then return 0 end
+
+    local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeSuccess or not size then return 0 end
+
+    print("[HOLOCRON-VENDOR] Searching container for removal with " .. size .. " items")
+
+    for i = size - 1, 0, -1 do
+        if removed >= count then break end
+
+        local pObject = containerObj:getContainerObject(i)
+        if pObject then
+            local object = LuaSceneObject(pObject)
+            if object then
+                local templateSuccess, template = pcall(function() return object:getTemplateObjectPath() end)
+                if templateSuccess and template then
+                    local templateLower = string.lower(template)
+
+                    -- Check if it's a Holocron of Destiny
+                    if string.find(templateLower, "holocron_of_destiny") then
+                        print("[HOLOCRON-VENDOR] Found holocron to remove")
+
+                        -- Remove the holocron
+                        pcall(function() object:destroyObjectFromWorld(true) end)
+                        pcall(function() object:destroyObjectFromDatabase(true) end)
+                        removed = removed + 1
+                        print("[HOLOCRON-VENDOR] Removed holocron")
+                    else
+                        -- Check if it's a container and recurse
+                        local isContainer = string.find(templateLower, "container/") or
+                                           string.find(templateLower, "backpack/") or
+                                           string.find(templateLower, "wearables/backpack")
+
+                        if isContainer and removed < count then
+                            print("[HOLOCRON-VENDOR] Checking container for removal...")
+                            removed = removed + self:removeHolocronsFromContainer(pObject, count - removed)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return removed
 end

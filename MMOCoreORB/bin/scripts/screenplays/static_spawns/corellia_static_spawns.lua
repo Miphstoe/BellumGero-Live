@@ -137,7 +137,7 @@ function CorelliaStaticSpawnsScreenPlay:spawnMobiles()
 	spawnMobile("corellia", "vicious_slice_hound", 300, getRandomNumber(5) + -7482, 236.8, getRandomNumber(5) + -3955, getRandomNumber(360), 0)
 
 	-- Apprentice Experience Vendor in Coronet (near starport)
-	local pApprenticeVendor = spawnMobile("corellia", "apprentice_coin_vendor", 0, -150.0, 28.0, -4724.0, 0, 0)
+	local pApprenticeVendor = spawnMobile("corellia", "apprentice_coin_vendor", 0, -175, 28, -4715, 0, 0)
 	if pApprenticeVendor ~= nil then
 		local ai = AiAgent(pApprenticeVendor)
 		if ai then
@@ -146,5 +146,17 @@ function CorelliaStaticSpawnsScreenPlay:spawnMobiles()
 		print("[CORELLIA-STATIC-SPAWNS] Apprentice Experience Vendor spawned successfully")
 	else
 		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn Apprentice Experience Vendor")
+	end
+
+	-- Holocron Village Vendor in Coronet (near starport) - 2 Holocrons per item
+	local pHolocronVendor = spawnMobile("corellia", "holocron_village_vendor", 0, -177, 28, -4714, 0, 0)
+	if pHolocronVendor ~= nil then
+		local ai = AiAgent(pHolocronVendor)
+		if ai then
+			ai:setConvoTemplate("holocron_village_vendor_conv")
+		end
+		print("[CORELLIA-STATIC-SPAWNS] Holocron Village Vendor spawned successfully at -177, 28, -4714")
+	else
+		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn Holocron Village Vendor")
 	end
 end

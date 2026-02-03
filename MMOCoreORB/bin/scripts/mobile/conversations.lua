@@ -321,6 +321,7 @@ includeFile("conversations/misc/gcw_cave_daily_convo.lua")
 includeFile("conversations/misc/bsv_gate_convo.lua")
 includeFile("conversations/misc/bsv_quiz_convo.lua")
 includeFile("conversations/misc/master_bounty_guild_convo.lua")
+includeFile("conversations/misc/the_path_conv.lua")
 
 -- Junk Dealers
 includeFile("conversations/junk_dealer/junk_dealer_generic_conv.lua")
@@ -360,3 +361,9 @@ print("Loading conversations.lua - checking bg_token vendor 2...")
 includeFile("conversations/vendors/bg_token_vendor_2_conv.lua")
 includeFile("conversations/bellum/convo_bg_force_hermit.lua")
 print("Finished loading bg_token vendor 2")
+print("Finished loading bg_token vendor 2")
+
+-- HOLOCRON VILLAGE VENDOR
+print("Loading conversations.lua - checking holocron village vendor...")
+includeFile("conversations/vendors/holocron_village_vendor_conv.lua")
+print("Finished loading holocron village vendor")

@@ -183,6 +183,12 @@ corellia_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "corellia_giant_paralope_lair_neutral_medium",
+			minDifficulty = 12,
+			maxDifficulty = 16,
+			size = 25,
+		},
+		{
 			lairTemplateName = "corellia_hidden_daggers_outpost_neutral_medium_theater",
 			minDifficulty = 13,
 			maxDifficulty = 18,
@@ -229,6 +235,12 @@ corellia_destroy_missions = {
 			minDifficulty = 16,
 			maxDifficulty = 20,
 			size = 30,
+		},
+		{
+			lairTemplateName = "corellia_ancient_paralope_lair_neutral_medium",
+			minDifficulty = 16,
+			maxDifficulty = 20,
+			size = 25,
 		},
 		{
 			lairTemplateName = "corellia_lord_nyax_church_neutral_medium_theater",

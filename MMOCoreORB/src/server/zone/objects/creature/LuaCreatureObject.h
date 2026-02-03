@@ -99,6 +99,8 @@ namespace creature {
 		int addDotState(lua_State* L);
 		int checkCooldownRecovery(lua_State* L);
 		int addCooldown(lua_State* L);
+		int clearVisibility(lua_State* L);
+		int invalidatePlayerBountyMissions(lua_State* L);
 		int isIncapacitated(lua_State* L);
 		int isDead(lua_State* L);
 		int getLevel(lua_State* L);

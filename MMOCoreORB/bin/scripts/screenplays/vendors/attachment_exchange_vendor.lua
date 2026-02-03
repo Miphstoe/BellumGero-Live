@@ -5,7 +5,7 @@ registerScreenPlay("AttachmentExchangeVendor", true)
 
 local NPC_CFG = {
   planet = "corellia",
-  x = -140.0, y = 28.0, z = -4727.0,
+  x = -179, y = 28, z = -4711,
   heading = 180, cell = 0,
   template = "attachment_exchange_vendor",   -- MUST match addCreatureTemplate key
   customName = "Attachment Exchange Vendor"
