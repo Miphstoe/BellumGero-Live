@@ -59,6 +59,14 @@ public:
 	 */
 	static void promptRenameObject(CreatureObject* player, TangibleObject* object);
 
+	/**
+	 * Unstacks a stackable item into individual items
+	 * @param sceneObject The stacked object
+	 * @param player The player unstacking the items
+	 * @param tano The tangible object being unstacked
+	 */
+	void unstackItems(SceneObject* sceneObject, CreatureObject* player, TangibleObject* tano) const;
+
 };
 
 

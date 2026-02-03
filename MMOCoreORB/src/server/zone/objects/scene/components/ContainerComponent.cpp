@@ -330,19 +330,32 @@ bool ContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* o
 			TangibleObject* tangible = object->asTangibleObject();
 
 			if (tangible != nullptr) {
+				// Allow container to bypass junk stacking (used by manual unstack)
+				bool skipStackContainer = false;
+				if (sceneObject->isTangibleObject()) {
+					TangibleObject* containerTano = sceneObject->asTangibleObject();
+					if (containerTano != nullptr) {
+						String skipStackContainerValue = containerTano->getLuaStringData("skip_junk_stack");
+						skipStackContainer = !skipStackContainerValue.isEmpty();
+					}
+				}
+
 				// Get the template path to identify the item type
 				String templatePath = object->getObjectTemplate()->getFullTemplateString();
 				uint32 templateCRC = object->getServerObjectCRC();
 				int junkValue = tangible->getJunkValue();
 
 				// Only stack items that explicitly have a junk value (from the junk loot group)
-				if (junkValue > 0) {
-					// Exclude locked containers, recording rods, and loudspeakers from stacking
+				// Allow callers to bypass auto-stacking (e.g., manual unstack).
+				String skipStackIncoming = tangible->getLuaStringData("skip_junk_stack");
+				if (junkValue > 0 && skipStackIncoming.isEmpty() && !skipStackContainer) {
+					// Exclude locked containers, recording rods, loudspeakers, and specific blacklist items from stacking
 					bool isLockedContainer = templatePath.contains("player_loot_crate");
 					bool isRecordingRod = templatePath.contains("recording_rod");
 					bool isLoudspeaker = templatePath.contains("speaker_s01");
+					bool isEyesOfMesra = templatePath.contains("item_eyes_of_mesra");
 
-					if (!isLockedContainer && !isRecordingRod && !isLoudspeaker) {
+					if (!isLockedContainer && !isRecordingRod && !isLoudspeaker && !isEyesOfMesra) {
 						// Search for an existing identical item in the container to stack with
 						for (int i = 0; i < containerObjects->size(); ++i) {
 							SceneObject* existingObj = containerObjects->get(i);
@@ -351,6 +364,13 @@ bool ContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* o
 								// Check if templates match by CRC (more reliable than string comparison)
 								if (existingObj->getServerObjectCRC() == templateCRC) {
 									TangibleObject* existingTangible = existingObj->asTangibleObject();
+
+									// If either item requests skipping stack, do not merge
+									if (existingTangible != nullptr) {
+										String skipStackExisting = existingTangible->getLuaStringData("skip_junk_stack");
+										if (!skipStackExisting.isEmpty())
+											continue;
+									}
 
 									// Stack the items by incrementing useCount
 									// If useCount is 0 or 1, treat it as a single item
@@ -565,4 +585,3 @@ int ContainerComponent::notifyObjectInserted(SceneObject* sceneObject, SceneObje
 int ContainerComponent::notifyObjectRemoved(SceneObject* sceneObject, SceneObject* object, SceneObject* destination) const {
 	return sceneObject->notifyObjectRemoved(object);
 }
-

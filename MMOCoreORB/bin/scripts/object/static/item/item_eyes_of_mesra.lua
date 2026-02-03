@@ -42,7 +42,7 @@
 
 
 object_static_item_item_eyes_of_mesra = object_static_item_shared_item_eyes_of_mesra:new {
-
+	objectMenuComponent = "ObjectMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_static_item_item_eyes_of_mesra, "object/static/item/item_eyes_of_mesra.iff")

@@ -86,6 +86,11 @@ void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 			}
 		}
 	}
+
+	// Add unstack option for stackable items (only if in player's inventory and count > 1)
+	if (sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
+		menuResponse->addRadialMenuItem(48, 3, "Unstack Items"); // Using SPLIT (48) from RadialOptions
+	}
 }
 
 int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
@@ -170,6 +175,12 @@ int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 				}
 			}
 		}
+	} else if (selectedID == 48) { // Unstack Items (using SPLIT radial option)
+		// Only unstack if item is in player's inventory and has count > 1
+		if (sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
+			unstackItems(sceneObject, player, tano);
+			return 0;
+		}
 	}
 
 	return ObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
@@ -233,3 +244,95 @@ void TangibleObjectMenuComponent::promptRenameObject(CreatureObject* player, Tan
 	player->sendMessage(inputBox->generateMessage());
 }
 
+void TangibleObjectMenuComponent::unstackItems(SceneObject* sceneObject, CreatureObject* player, TangibleObject* tano) const {
+	if (player == nullptr || tano == nullptr || sceneObject == nullptr)
+		return;
+
+	int currentCount = tano->getUseCount();
+
+	if (currentCount <= 1) {
+		player->sendSystemMessage("This item cannot be unstacked.");
+		return;
+	}
+
+	// Get the container (inventory)
+	ManagedReference<SceneObject*> container = sceneObject->getParent().get();
+	if (container == nullptr) {
+		player->sendSystemMessage("Unable to unstack items - no valid container.");
+		return;
+	}
+
+	// Get the template path to create new items
+	String templatePath = sceneObject->getObjectTemplate()->getFullTemplateString();
+	if (templatePath.isEmpty()) {
+		player->sendSystemMessage("Unable to unstack items - invalid template.");
+		return;
+	}
+
+	String itemName = sceneObject->getDisplayedName();
+	if (itemName.isEmpty())
+		itemName = sceneObject->getObjectNameStringIdName();
+
+	auto zoneServer = player->getZoneServer();
+	if (zoneServer == nullptr)
+		return;
+
+	int splitCount = currentCount / 2;
+	int remainingCount = currentCount - splitCount;
+
+	if (splitCount < 1 || remainingCount < 1) {
+		player->sendSystemMessage("This item cannot be unstacked.");
+		return;
+	}
+
+	ManagedReference<SceneObject*> newItem = zoneServer->createObject(templatePath.hashCode(), 1);
+	if (newItem == nullptr || !newItem->isTangibleObject()) {
+		player->sendSystemMessage("Unable to unstack items - failed to create new item.");
+		return;
+	}
+
+	TangibleObject* newTano = cast<TangibleObject*>(newItem.get());
+	newTano->setUseCount(splitCount, true);
+
+	// Reduce the original stack before transfer
+	tano->setUseCount(remainingCount, true);
+
+	// Prevent junk auto-stacking during transfer
+	tano->setLuaStringData("skip_junk_stack", "1");
+	newTano->setLuaStringData("skip_junk_stack", "1");
+	if (container->isTangibleObject()) {
+		TangibleObject* containerTano = container->asTangibleObject();
+		if (containerTano != nullptr) {
+			containerTano->setLuaStringData("skip_junk_stack", "1");
+		}
+	}
+
+	if (!container->transferObject(newItem, -1, true)) {
+		// Revert original count and cleanup on failure
+		tano->setUseCount(currentCount, true);
+		tano->deleteLuaStringData("skip_junk_stack");
+		if (container->isTangibleObject()) {
+			TangibleObject* containerTano = container->asTangibleObject();
+			if (containerTano != nullptr) {
+				containerTano->deleteLuaStringData("skip_junk_stack");
+			}
+		}
+		newItem->destroyObjectFromDatabase(true);
+		player->sendSystemMessage("Unable to unstack items - inventory full.");
+		return;
+	}
+
+	// Ensure client receives the new object baselines
+	newItem->sendTo(player, true);
+
+	tano->deleteLuaStringData("skip_junk_stack");
+	newTano->deleteLuaStringData("skip_junk_stack");
+	if (container->isTangibleObject()) {
+		TangibleObject* containerTano = container->asTangibleObject();
+		if (containerTano != nullptr) {
+			containerTano->deleteLuaStringData("skip_junk_stack");
+		}
+	}
+
+	player->sendSystemMessage("Unstacked " + String::valueOf(currentCount) + " " + itemName + " into stacks of " + String::valueOf(remainingCount) + " and " + String::valueOf(splitCount) + ".");
+}
