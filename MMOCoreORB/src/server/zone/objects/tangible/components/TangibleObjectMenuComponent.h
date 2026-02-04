@@ -60,6 +60,16 @@ public:
 	static void promptRenameObject(CreatureObject* player, TangibleObject* object);
 
 	/**
+	 * Returns true if this stack should use the Unstack Items option (junk loot only).
+	 */
+	static bool isJunkStackItem(TangibleObject* object);
+
+	/**
+	 * Returns true if this stack should use the Split option (factory crates/resources).
+	 */
+	static bool isSplitStackItem(SceneObject* object);
+
+	/**
 	 * Unstacks a stackable item into individual items
 	 * @param sceneObject The stacked object
 	 * @param player The player unstacking the items

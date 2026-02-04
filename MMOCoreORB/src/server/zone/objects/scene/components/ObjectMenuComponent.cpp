@@ -54,10 +54,6 @@ void ObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 			menuResponse->addRadialMenuItem(50, 3, "@base_player:set_name"); // Set Name
 		}
 
-		// Add unstack option for stackable items in player inventory
-		if (sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
-			menuResponse->addRadialMenuItem(48, 3, "Unstack Items"); // Using SPLIT (48) from RadialOptions
-		}
 	}
 
 	if (!checkPermissions)
@@ -97,17 +93,6 @@ int ObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 		//String actionName = "transferitemmisc";
 		//player->executeObjectControllerAction(actionName.hashCode(), getObjectID(), "");
 		//transferitem
-		break;
-	}
-	case 48: // Unstack Items
-	{
-		if (sceneObject->isTangibleObject()) {
-			TangibleObject* tano = cast<TangibleObject*>(sceneObject);
-			if (tano != nullptr && sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
-				TangibleObjectMenuComponent menuHelper;
-				menuHelper.unstackItems(sceneObject, player, tano);
-			}
-		}
 		break;
 	}
 	case 50: // Rename decorative object
