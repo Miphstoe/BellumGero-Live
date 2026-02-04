@@ -89,7 +89,11 @@ void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 
 	// Add unstack option for stackable items (only if in player's inventory and count > 1)
 	if (sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
-		menuResponse->addRadialMenuItem(48, 3, "Unstack Items"); // Using SPLIT (48) from RadialOptions
+		if (isJunkStackItem(tano)) {
+			menuResponse->addRadialMenuItem(48, 3, "Unstack Items"); // Using SPLIT (48) from RadialOptions
+		} else if (isSplitStackItem(sceneObject)) {
+			menuResponse->addRadialMenuItem(48, 3, "@ui_radial:split");
+		}
 	}
 }
 
@@ -178,7 +182,9 @@ int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 	} else if (selectedID == 48) { // Unstack Items (using SPLIT radial option)
 		// Only unstack if item is in player's inventory and has count > 1
 		if (sceneObject->isASubChildOf(player) && tano->getUseCount() > 1) {
-			unstackItems(sceneObject, player, tano);
+			if (isJunkStackItem(tano)) {
+				unstackItems(sceneObject, player, tano);
+			}
 			return 0;
 		}
 	}
@@ -223,6 +229,20 @@ bool TangibleObjectMenuComponent::hasRenamePermission(CreatureObject* player, Ta
 	return false;
 }
 
+bool TangibleObjectMenuComponent::isJunkStackItem(TangibleObject* object) {
+	if (object == nullptr)
+		return false;
+
+	return object->getJunkValue() > 0;
+}
+
+bool TangibleObjectMenuComponent::isSplitStackItem(SceneObject* object) {
+	if (object == nullptr)
+		return false;
+
+	return object->isFactoryCrate() || object->isResourceContainer();
+}
+
 void TangibleObjectMenuComponent::promptRenameObject(CreatureObject* player, TangibleObject* object) {
 	if (player == nullptr || object == nullptr)
 		return;
@@ -247,6 +267,11 @@ void TangibleObjectMenuComponent::promptRenameObject(CreatureObject* player, Tan
 void TangibleObjectMenuComponent::unstackItems(SceneObject* sceneObject, CreatureObject* player, TangibleObject* tano) const {
 	if (player == nullptr || tano == nullptr || sceneObject == nullptr)
 		return;
+
+	if (!isJunkStackItem(tano)) {
+		player->sendSystemMessage("This item cannot be unstacked.");
+		return;
+	}
 
 	int currentCount = tano->getUseCount();
 
