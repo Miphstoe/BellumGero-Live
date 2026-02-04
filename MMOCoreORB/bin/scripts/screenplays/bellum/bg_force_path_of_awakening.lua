@@ -352,6 +352,11 @@ function BgForcePathOfAwakening:handleShrineInteract(pPlayer, shrineId)
 		return
 	end
 
+	if (CreatureObject(pPlayer):getPosture() ~= CROUCHED) then
+		CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:show_respect")
+		return
+	end
+
 	if (self:isComplete(pPlayer)) then
 		CreatureObject(pPlayer):sendSystemMessage("You have already completed the Path of Awakening.")
 		return
@@ -425,6 +430,12 @@ function BgForcePathOfAwakening:meditationTick(pPlayer, pParam)
 			return
 		end
 
+		if (CreatureObject(pPlayer):getPosture() ~= CROUCHED) then
+			screenplay:setNumber(pPlayer, "bg_force_meditating", 0)
+			CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:show_respect")
+			return
+		end
+
 		local distance = pPlayerObj:getDistanceTo(pShrine)
 		if (distance > 10) then
 			screenplay:setNumber(pPlayer, "bg_force_meditating", 0)
@@ -471,6 +482,12 @@ function BgForcePathOfAwakening:finishMeditation(pPlayer, pParam)
 		local pShrine = getSceneObject(shrineId)
 		if (pShrine == nil) then
 			screenplay:setNumber(pPlayer, "bg_force_meditating", 0)
+			return
+		end
+
+		if (CreatureObject(pPlayer):getPosture() ~= CROUCHED) then
+			screenplay:setNumber(pPlayer, "bg_force_meditating", 0)
+			CreatureObject(pPlayer):sendSystemMessage("@jedi_trials:show_respect")
 			return
 		end
 
