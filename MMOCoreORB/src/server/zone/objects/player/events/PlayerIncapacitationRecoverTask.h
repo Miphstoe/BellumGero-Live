@@ -81,10 +81,19 @@ public:
 			}
 
 			if (deadRecovery) {
-				player->playEffect("clienteffect/player_clone_compile.cef");
-				player->notifyObservers(ObserverEventType::PLAYERCLONED, player, 0);
-				player->broadcastPvpStatusBitmask();
-			}
+    		// Cloning should clear any lingering negative states.
+    		// Some scripts (like BSV) may set these state bits directly rather than via DOTs,
+    		// which can cause them to persist through cloning unless explicitly cleared here.
+    		player->clearState(CreatureState::POISONED);
+    		player->clearState(CreatureState::DISEASED);
+    		player->clearState(CreatureState::BLEEDING);
+    		player->clearState(CreatureState::ONFIRE);
+
+    		player->playEffect("clienteffect/player_clone_compile.cef");
+    		player->notifyObservers(ObserverEventType::PLAYERCLONED, player, 0);
+    		player->broadcastPvpStatusBitmask();
+		}
+
 		} catch (Exception& e) {
 			player->error("unreported exception caught in PlayerRecoveryEvent::activate");
 		}
