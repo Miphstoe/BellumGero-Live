@@ -98,6 +98,14 @@ function VillageJediManager:onPlayerLoggedIn(pPlayer)
 		FsOutro:onLoggedIn(pPlayer)
 	end
 
+	-- Ensure Aurelia rite is active for eligible players after restarts.
+	if (BgAureliaRiteOfAwakening ~= nil
+		and VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE)
+		and not VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE)
+		and not BgAureliaRiteOfAwakening:isRiteActive(pPlayer)) then
+		BgAureliaRiteOfAwakening:startRite(pPlayer)
+	end
+
 	-- Disabled: Village quests are no longer active
 	-- FsPhase1:onLoggedIn(pPlayer)
 	-- FsPhase2:onLoggedIn(pPlayer)
@@ -205,7 +213,7 @@ function VillageJediManager:onFSTreeCompleted(pPlayer, branch)
 
 	if (VillageJediManagerCommon.getLearnedForceSensitiveBranches(pPlayer) >= NUMBEROFTREESTOMASTER) then
 		VillageJediManagerCommon.setJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE)
-		FsOutro:startOldMan(pPlayer)
+		BgAureliaRiteOfAwakening:startRite(pPlayer)
 	end
 end
 
