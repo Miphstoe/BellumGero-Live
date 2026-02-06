@@ -57,6 +57,9 @@ void PowerupObjectImplementation::ensureInitializedFromTemplate() {
 		return;
 	}
 
+	// Track whether this powerup looks uninitialized (admin/loot spawned).
+	const bool needsInit = type.isEmpty() || modifiers.size() == 0;
+
 	// Non-crafted (admin/loot) powerups don't run updateCraftingValues(),
 	// so ensure key members are initialized from the template.
 	if (type.isEmpty()) {
@@ -65,7 +68,8 @@ void PowerupObjectImplementation::ensureInitializedFromTemplate() {
 
 	// IMPORTANT: default uses for spawned pups (admin/loot)
 	// Only damage type powerups get 2500 uses, regular powerups get 500
-	if (uses <= 0) {
+	// Don't reset uses for crafted powerups that have been depleted.
+	if (uses <= 0 && needsInit) {
 		if (getDamageTypeOverride() != 0) {
 			uses = 2500;  // Damage type powerups (Electricity, Heat, etc.)
 		} else {
