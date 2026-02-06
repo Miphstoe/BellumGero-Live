@@ -27,6 +27,12 @@ endor_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "endor_azure_striped_peko_lair_neutral_medium",
+			minDifficulty = 15,
+			maxDifficulty = 19,
+			size = 25,
+		},
+		{
 			lairTemplateName = "endor_arachne_hatchling_lair_neutral_small",
 			minDifficulty = 16,
 			maxDifficulty = 20,

@@ -46,6 +46,15 @@ endor_world = {
 			size = 15,
 		},
 		{
+			lairTemplateName = "endor_azure_striped_peko_flock_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 15,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 28,
+			size = 25,
+		},
+		{
 			lairTemplateName = "endor_boar_wolf_lair_neutral_small",
 			spawnLimit = -1,
 			minDifficulty = 25,
