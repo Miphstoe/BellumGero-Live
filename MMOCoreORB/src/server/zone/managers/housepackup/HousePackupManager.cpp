@@ -365,7 +365,6 @@ static inline float rF32(const Vector<uint8>& b, int& off) {
     cvt.u = u;
     return cvt.f;
 }
-// Add this new function to HousePackupManager.cpp
 static void listAllBuildingContents(BuildingObject* building, Vector< ManagedReference<SceneObject*> >& out) {
     out.removeAll();
     if (!building) return;
@@ -376,8 +375,8 @@ static void listAllBuildingContents(BuildingObject* building, Vector< ManagedRef
     std::function<void(SceneObject*)> scanObject = [&](SceneObject* obj) {
         if (!obj) return;
         
-        // Add this object if it's not a cell and not a creature/terminal
-        if (!obj->isCellObject() && !obj->isCreatureObject() && !obj->isTerminal()) {
+        // Add this object if it's not the building itself, not a cell, and not a creature/terminal
+        if (obj != building && !obj->isCellObject() && !obj->isCreatureObject() && !obj->isTerminal()) {
             out.add(obj);
         }
 
@@ -803,8 +802,9 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
                 ManagedReference<SceneObject*> sobj = children.get(i);
                 if (sobj == nullptr) continue;
 
-                // DO NOT delete players, terminals, or deeds
-                if (sobj->isCreatureObject() || sobj->isTerminal() || sobj->isDeedObject())
+                // DO NOT delete players, terminals, deeds, or the structure itself
+                if (sobj->isCreatureObject() || sobj->isTerminal() || sobj->isDeedObject() ||
+                    sobj->isStructureObject())
                     continue;
 
                 // Remove from world but KEEP in database so ObjVars are preserved
