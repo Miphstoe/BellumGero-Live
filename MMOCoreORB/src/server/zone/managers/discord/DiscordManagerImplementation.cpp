@@ -116,14 +116,22 @@ void DiscordManagerImplementation::start() {
         
         // Set up event handlers
         discordBot->on_ready([this](const dpp::ready_t& event) {
+            // Check if shutdown was requested before processing
+            {
+                std::lock_guard<std::mutex> lock(discordMutex);
+                if (shutdownRequested) {
+                    return;
+                }
+            }
+
             if (isDebugMode()) {
                 info("Discord on_ready callback triggered", true);
             }
-            
+
             std::lock_guard<std::mutex> lock(discordMutex);
             discordConnected = true;
             info("Discord bot connected and ready!", true);
-            
+
             if (isDebugMode()) {
                 info("Connected as: " + String(discordBot->me.username), true);
                 info("Bot ID: " + String::valueOf(discordBot->me.id), true);
@@ -131,12 +139,20 @@ void DiscordManagerImplementation::start() {
         });
         
         discordBot->on_message_create([this](const dpp::message_create_t& event) {
+            // Check if shutdown was requested before processing
+            {
+                std::lock_guard<std::mutex> lock(discordMutex);
+                if (shutdownRequested) {
+                    return;
+                }
+            }
+
             if (event.msg.author.is_bot()) {
                 return; // Ignore bot messages
             }
-            
+
             handleDiscordMessage(
-                String::valueOf(event.msg.channel_id), 
+                String::valueOf(event.msg.channel_id),
                 event.msg.content,
                 event.msg.author.username,
                 String::valueOf(event.msg.author.id)
@@ -144,6 +160,14 @@ void DiscordManagerImplementation::start() {
         });
         
         discordBot->on_log([this](const dpp::log_t& event) {
+            // Check if shutdown was requested before processing
+            {
+                std::lock_guard<std::mutex> lock(discordMutex);
+                if (shutdownRequested) {
+                    return;
+                }
+            }
+
             if (event.severity >= dpp::ll_error) {
                 handleDiscordError(event.message);
             } else if (isDebugMode() && event.severity >= dpp::ll_debug) {
@@ -186,26 +210,34 @@ void DiscordManagerImplementation::stop() {
     if (!isEnabled()) {
         return;
     }
-    
+
     info("Stopping Discord bot...", true);
-    
+
 #ifdef WITH_DISCORD_INTEGRATION
+    // First, signal shutdown and stop the bot
     {
         std::lock_guard<std::mutex> lock(discordMutex);
         shutdownRequested = true;
         discordConnected = false;
+
+        // Tell DPP to shutdown gracefully
+        if (discordBot) {
+            discordBot->shutdown();
+        }
     }
-    
+
+    // Now wait for the thread to finish
     if (discordThread.joinable()) {
         discordThread.join();
     }
-    
+
+    // Finally, clean up the bot instance
     {
         std::lock_guard<std::mutex> lock(discordMutex);
         discordBot.reset();
     }
 #endif
-    
+
     info("Discord bot stopped.", true);
 }
 
@@ -285,9 +317,13 @@ void DiscordManagerImplementation::sendToDiscord(const String& channel, const St
     try {
         std::lock_guard<std::mutex> lock(discordMutex);
         if (discordBot && discordConnected) {
+            // Create stable string copies to avoid dangling pointer issues
+            std::string channelStr = discordChannelId.toCharArray();
+            std::string messageStr = formattedMessage.toCharArray();
+
             // Send the message asynchronously
             discordBot->message_create(
-                dpp::message(std::stoull(discordChannelId.toCharArray()), formattedMessage.toCharArray())
+                dpp::message(std::stoull(channelStr), messageStr)
             );
         }
     } catch (const std::exception& e) {
