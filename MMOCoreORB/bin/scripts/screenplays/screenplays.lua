@@ -765,6 +765,7 @@ includeFile("yavin4/egspider_worldboss.lua")
 includeFile("yavin4/egspider_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
 includeFile("world/infernomaw_boss.lua")
 includeFile("world/infernomaw_boss_loot_wrapper.lua")  -- Add automatic loot distribution
+includeFile("world/torgas_worldboss.lua")
 --includeFile("world/jarjar_worldboss.lua")
 --includeFile("world/jarjar_worldboss_simple.lua")
 --includeFile("world/jarjar_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
