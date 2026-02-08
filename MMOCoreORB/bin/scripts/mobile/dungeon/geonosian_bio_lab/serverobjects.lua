@@ -1,4 +1,8 @@
 includeFile("dungeon/geonosian_bio_lab/acklay.lua")
+includeFile("dungeon/geonosian_bio_lab/zyrrak_doomclaw.lua")
+includeFile("dungeon/geonosian_bio_lab/threxul_bone_reaper.lua")
+includeFile("dungeon/geonosian_bio_lab/kharzun_dread_sands.lua")
+includeFile("dungeon/geonosian_bio_lab/grathok_devourer.lua")
 includeFile("dungeon/geonosian_bio_lab/alert_droideka.lua")
 includeFile("dungeon/geonosian_bio_lab/biogenic_assistant.lua")
 includeFile("dungeon/geonosian_bio_lab/biogenic_construction.lua")
