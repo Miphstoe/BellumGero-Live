@@ -28,6 +28,12 @@ function FsOutro:setCurrentStep(pPlayer, step)
 end
 
 function FsOutro:isOnOutro(pPlayer)
+	if (BgAureliaRiteOfAwakening ~= nil and BgAureliaRiteOfAwakening.isRiteActive ~= nil) then
+		if (BgAureliaRiteOfAwakening:isRiteActive(pPlayer)) then
+			return false
+		end
+	end
+
 	return VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE) and not VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE)
 end
 
@@ -43,6 +49,16 @@ end
 
 function FsOutro:onLoggedIn(pPlayer)
 	if (not self:isOnOutro(pPlayer)) then
+		-- If the Aurelia rite is the new outro and the player already completed the village,
+		-- make sure the rite is active (helps legacy characters after script changes).
+		if (pPlayer ~= nil
+			and VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE)
+			and not VillageJediManagerCommon.hasJediProgressionScreenPlayState(pPlayer, VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE)
+			and BgAureliaRiteOfAwakening ~= nil
+			and BgAureliaRiteOfAwakening.isRiteActive ~= nil
+			and not BgAureliaRiteOfAwakening:isRiteActive(pPlayer)) then
+			BgAureliaRiteOfAwakening:startRite(pPlayer)
+		end
 		return
 	end
 

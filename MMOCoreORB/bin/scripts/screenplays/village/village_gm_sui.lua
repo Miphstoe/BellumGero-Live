@@ -305,7 +305,8 @@ function VillageGmSui.playerInfo(pPlayer, targetID)
 				promptBuf = promptBuf .. " \\#pcontrast1 " .. "Has Delay Passed: \\#pcontrast2 NO \n"
 			end
 
-			local timeTilVisit = readScreenPlayData(pTarget, "VillageJediProgression", "FsOutroDelay") - os.time()
+			local outroDelay = tonumber(readScreenPlayData(pTarget, "VillageJediProgression", "FsOutroDelay")) or 0
+			local timeTilVisit = outroDelay - os.time()
 
 			if (not PlayerObject(pGhost):isOnline()) then
 				promptBuf = promptBuf .. " \\#pcontrast1 " .. "Time until visit:" .. " \\#pcontrast2 Player Offline\n"
@@ -417,6 +418,10 @@ function VillageGmSui.playerInfo(pPlayer, targetID)
 	elseif (not VillageJediManagerCommon.isVillageEligible(pTarget)) then
 		sui.add("Unlock Village Access", "unlockVillageAccess" .. targetID)
 	end
+
+	sui.add("Force Complete Elder + Aurelia Rite", "forceCompleteElderAndAureliaRite" .. targetID)
+	sui.add("Reset Village Access + Aurelia Rite", "resetVillageAccessAndAureliaRite" .. targetID)
+	sui.add("Force Start Aurelia Rite", "forceStartAureliaRite" .. targetID)
 
 	if (CreatureObject(pTarget):hasSkill("force_title_jedi_rank_03")) then
 		sui.add("Manage Player FRS", "frsManagement" .. targetID)
@@ -1446,6 +1451,105 @@ function VillageGmSui.unlockVillageAccess(pPlayer, targetID)
 	CreatureObject(pTarget):sendSystemMessage("You have been granted access to the Force Sensitive village by a GM.")
 
 	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:unlockVillageAccess on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
+	Logger:log(msg, LT_WARNING)
+
+	VillageGmSui.playerInfo(pPlayer, targetID)
+end
+
+function VillageGmSui.forceCompleteElderAndAureliaRite(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	-- Ensure village access and elder quest completion.
+	VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_HAS_VILLAGE_ACCESS)
+
+	local QuestManager = require("managers.quest.quest_manager")
+	QuestManager.completeQuest(pTarget, QuestManager.quests.FS_VILLAGE_ELDER)
+
+	-- Mark village completed to align with rite gating (if not already).
+	VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE)
+
+	-- Complete Aurelia rite and grant Padawan eligibility (same as Mallichae kill).
+	QuestManager.completeQuest(pTarget, QuestManager.quests.FS_THEATER_FINAL)
+	VillageJediManagerCommon.setJediProgressionScreenPlayState(pTarget, VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE)
+	FsOutro:setCurrentStep(pTarget, 4)
+	PadawanTrials:doPadawanTrialsSetup(pTarget)
+
+	if (BgAureliaRiteOfAwakening ~= nil and BgAureliaRiteOfAwakening.clearRiteData ~= nil) then
+		BgAureliaRiteOfAwakening:clearRiteData(pTarget)
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " has been granted elder completion and the Aurelia rite has been fully completed.")
+	CreatureObject(pTarget):sendSystemMessage("A GM has completed the village elder quest and the Rite of Awakening for you.")
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:forceCompleteElderAndAureliaRite on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
+	Logger:log(msg, LT_WARNING)
+
+	VillageGmSui.playerInfo(pPlayer, targetID)
+end
+
+function VillageGmSui.resetVillageAccessAndAureliaRite(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	-- Clear village progression states.
+	CreatureObject(pTarget):removeScreenPlayState(VILLAGE_JEDI_PROGRESSION_HAS_VILLAGE_ACCESS, VILLAGE_JEDI_PROGRESSION_SCREEN_PLAY_STATE_STRING)
+	CreatureObject(pTarget):removeScreenPlayState(VILLAGE_JEDI_PROGRESSION_COMPLETED_VILLAGE, VILLAGE_JEDI_PROGRESSION_SCREEN_PLAY_STATE_STRING)
+	CreatureObject(pTarget):removeScreenPlayState(VILLAGE_JEDI_PROGRESSION_ACCEPTED_MELLICHAE, VILLAGE_JEDI_PROGRESSION_SCREEN_PLAY_STATE_STRING)
+	CreatureObject(pTarget):removeScreenPlayState(VILLAGE_JEDI_PROGRESSION_DEFEATED_MELLIACHAE, VILLAGE_JEDI_PROGRESSION_SCREEN_PLAY_STATE_STRING)
+
+	-- Reset key quests tied to village access/outro.
+	local QuestManager = require("managers.quest.quest_manager")
+	QuestManager.resetQuest(pTarget, QuestManager.quests.FS_VILLAGE_ELDER)
+	QuestManager.resetQuest(pTarget, QuestManager.quests.FS_THEATER_FINAL)
+	QuestManager.resetQuest(pTarget, QuestManager.quests.OLD_MAN_FINAL)
+
+	-- Reset outro step.
+	FsOutro:setCurrentStep(pTarget, FsOutro.OLDMANWAIT)
+
+	-- Clear Aurelia rite state and despawn Mallichae if needed.
+	if (BgAureliaRiteOfAwakening ~= nil) then
+		if (BgAureliaRiteOfAwakening.cleanupMallichae ~= nil) then
+			BgAureliaRiteOfAwakening:cleanupMallichae(pTarget)
+		end
+		if (BgAureliaRiteOfAwakening.clearRiteData ~= nil) then
+			BgAureliaRiteOfAwakening:clearRiteData(pTarget)
+		end
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(SceneObject(pTarget):getCustomObjectName() .. " has had village access and the Aurelia rite reset.")
+	CreatureObject(pTarget):sendSystemMessage("A GM has reset your village access and the Rite of Awakening. You must re-earn access.")
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:resetVillageAccessAndAureliaRite on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
+	Logger:log(msg, LT_WARNING)
+
+	VillageGmSui.playerInfo(pPlayer, targetID)
+end
+
+function VillageGmSui.forceStartAureliaRite(pPlayer, targetID)
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return
+	end
+
+	if (BgAureliaRiteOfAwakening == nil or BgAureliaRiteOfAwakening.startRite == nil) then
+		CreatureObject(pPlayer):sendSystemMessage("Aurelia rite screenplay not loaded.")
+		return
+	end
+
+	BgAureliaRiteOfAwakening:startRite(pTarget)
+
+	CreatureObject(pPlayer):sendSystemMessage("Aurelia Rite has been started for " .. SceneObject(pTarget):getCustomObjectName() .. ".")
+	CreatureObject(pTarget):sendSystemMessage("A GM has started the Rite of Awakening for you.")
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:forceStartAureliaRite on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
 	Logger:log(msg, LT_WARNING)
 
 	VillageGmSui.playerInfo(pPlayer, targetID)
