@@ -28,6 +28,19 @@ SWGEmu-based Pre-CU server **SWG Bellum Gero** – tailored gameplay, custom con
 - **Troubleshooting (WSL only):** config.lua/config-local.lua for DB; `make -j$(nproc)` in MMOCoreORB.
 - **TRE (Phase 7):** WSL = copy/symlink to `/trefiles`. Shadow = optional asset edit only.
 
+## COMMIT & PUSH WORKFLOW (ORDER MATTERS)
+
+**Reminder:** Commit and push to the **correct branch** in the **correct order**. Dev env goes last.
+
+| What changed | Branch to use | When to commit/push |
+|--------------|---------------|----------------------|
+| **Game code** (Lua, C++, scripts, MMOCoreORB, content) | `Main` or your feature branch (e.g. `Ender_FeatureName`) | **First.** Commit and push code before touching dev env. |
+| **Dev env files** (Cursor rules, skills, `.cursor/` context, workspace READMEs, WORKSPACE_STRUCTURE.md) | **Ender_CursorConfig** only | **Last.** After code is committed and pushed. |
+
+**Work order:** (1) Make and test code on Shadow PC or WSL. (2) Commit and push **code** to the code branch. (3) If you updated rules/context/READMEs for both Shadow and WSL test dev, switch to **Ender_CursorConfig**, add those files, commit and push **last**. Nothing is ready for prod patch until code is tested on WSL dev server; dev env updates support both Shadow dev box and the WSL build/cmake/test server.
+
+**Before you commit:** Confirm which branch you're on and whether you're committing code (code branch) or dev env (Ender_CursorConfig). Don't mix them.
+
 ## GIT / COLLAB (BOTH MACHINES)
 
 1. Branch: `[DeveloperName]_[FeatureName]` (e.g. `Ender_MissingResources`). Never generic names.
@@ -46,6 +59,7 @@ Design/implement features for Bellum Gero: Pre-CU authentic, fun, Lua-first, wit
 
 - **Shadow PC:** Code/assets only. Windows paths. No build/run/WSL. TRE tools: see README / SWG_EXPLORER_SETUP.md.
 - **WSL dev server:** `~/localswgserver`, build, test, run, `/trefiles`, all config/troubleshooting.
+- **Before commit:** Check which branch you're on. Code → code branch first; dev env (rules, .cursor) → **Ender_CursorConfig** last.
 
 ## DOCS
 

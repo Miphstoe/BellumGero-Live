@@ -36,6 +36,11 @@ Use this pattern for **all new branches** in this repo:
 - No spaces; use PascalCase or underscores between words.
 - Avoid special characters except underscore.
 
+## Work order (commit & push)
+
+- **Code changes** → commit and push to the **code branch** (Main or `Ender_FeatureName`) **first**.
+- **Dev env changes** (rules, skills, .cursor READMEs, workspace docs) → commit and push to **Ender_CursorConfig** **last**. See **bellum-gero.mdc** → "COMMIT & PUSH WORKFLOW".
+
 ## Protected branches (do not merge into Main)
 
 These branches are **config / dev-environment only**. Never merge them into `Main`:

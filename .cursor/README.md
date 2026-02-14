@@ -2,11 +2,18 @@
 
 Index for rules, skills, and related docs used in this Cursor workspace.
 
+## Commit workflow reminder
+
+**Where things go:** Game/code changes → **code branch** (Main or `Ender_FeatureName`). Dev env (rules, skills, this README, workspace docs) → **Ender_CursorConfig** only.
+
+**Order:** Commit and push **code first**, then **dev env last**. Before prod: test on WSL dev server; dev env updates support both Shadow dev box and WSL build/test. See [rules/bellum-gero.mdc](rules/bellum-gero.mdc) → "COMMIT & PUSH WORKFLOW".
+
 ## Rules (always or contextually applied)
 
 | File | Purpose |
 |------|--------|
-| [rules/bellum-gero.mdc](rules/bellum-gero.mdc) | SWG Bellum Gero context: Shadow PC vs WSL, Lua-first, paths, Git/collab. Always applied. |
+| [rules/bellum-gero.mdc](rules/bellum-gero.mdc) | SWG Bellum Gero context: Shadow PC vs WSL, Lua-first, paths, **commit workflow (code first, dev env last)**. Always applied. |
+| [rules/branch-naming.mdc](rules/branch-naming.mdc) | Branch naming `[Dev]_[Feature]`, protected branches, work order. Always applied. |
 
 ## Skills (agent skills)
 
