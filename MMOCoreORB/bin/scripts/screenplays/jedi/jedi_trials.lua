@@ -57,6 +57,11 @@ function JediTrials:isEligibleForKnightTrials(pPlayer)
 		return false
 	end
 
+	local playerFaction = CreatureObject(pPlayer):getFaction()
+	if (playerFaction ~= FACTIONREBEL and playerFaction ~= FACTIONIMPERIAL) then
+		return false
+	end
+
 	return CreatureObject(pPlayer):villageKnightPrereqsMet("")
 end
 
@@ -193,16 +198,35 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 		return
 	end
 
-	if (SceneObject(pInventory):isContainerFullRecursive()) then
-		CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
+	-- Calculate how many robes need to be given
+	local robesNeeded = 0
+	if not hasLight then
+		robesNeeded = robesNeeded + 1
+	end
+	if not hasDark then
+		robesNeeded = robesNeeded + 1
+	end
+
+	-- Check if we have enough free slots for all robes needed
+	local containerObjects = SceneObject(pInventory):getContainerObjectsSize()
+	local containerVolumeLimit = SceneObject(pInventory):getContainerVolumeLimit()
+	local freeSlots = containerVolumeLimit - containerObjects
+
+	if (freeSlots < robesNeeded) then
+		if (robesNeeded == 1) then
+			CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
+		else
+			CreatureObject(pPlayer):sendSystemMessage("You need at least " .. robesNeeded .. " free inventory slots to receive your Padawan Robes.")
+		end
 		return
 	end
 
+	-- Give the robes (we know we have space for both)
 	if (not hasLight) then
 		give_socketed(pInventory, lightTemplate, 4)
 	end
 
-	if (not hasDark and not SceneObject(pInventory):isContainerFullRecursive()) then
+	if (not hasDark) then
 		give_socketed(pInventory, darkTemplate, 4)
 	end
 
