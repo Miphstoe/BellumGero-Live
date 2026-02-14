@@ -5,7 +5,7 @@ imperial_marshall_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_all", weight = 500000},
+		{groupTemplate = "radar_topology_screen", weight = 500000},
 		{groupTemplate = "armor_attachments", weight = 400000},
 		{groupTemplate = "clothing_attachments", weight = 400000},
 		{groupTemplate = "color_crystals", weight = 200000},
