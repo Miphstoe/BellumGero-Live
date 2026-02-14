@@ -202,7 +202,7 @@ function BgForcePathOfAwakening:giveShrineWaypoints(pPlayer)
 		local existingId = readScreenPlayData(pPlayer, "bg_force_path", wpKey)
 
 		if (existingId == nil or getSceneObject(existingId) == nil) then
-			local waypointID = PlayerObject(pGhost):addWaypoint(wp.planet, wp.name, wp.desc, wp.x, wp.z, wp.y, WAYPOINT_BLUE, true, true, 0)
+			local waypointID = PlayerObject(pGhost):addWaypoint(wp.planet, wp.name, wp.desc, wp.x, wp.z, wp.y, WAYPOINT_SPACE, true, true, 0)
 			if (waypointID ~= nil) then
 				writeScreenPlayData(pPlayer, "bg_force_path", wpKey, waypointID)
 			end
