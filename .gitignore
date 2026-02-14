@@ -7,3 +7,8 @@ compile_commands.json
 .ccache/
 MMOCoreORB/bin/scripts/managers/ghoutput.xml
 MMOCoreORB/bin/scripts/managers/resource_manager_spawns.lua
+
+# Cursor IDE – on Ender_CursorConfig we only commit rules, skills, README
+.cursor/extensions/
+.cursor/ai-tracking/
+.cursor/projects/

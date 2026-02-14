@@ -1,0 +1,44 @@
+# Block merging Ender_CursorConfig (and other config-only branches) into Main.
+# Config branches are dev/IDE setup only and must never be merged into Main.
+name: Block config branch merge into Main
+
+on:
+  push:
+    branches: [Main]
+
+jobs:
+  block-config-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for merge from protected config branches
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          PROTECTED_BRANCHES="Ender_CursorConfig"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial push to Main, skipping check."
+            exit 0
+          fi
+          # Commits in this push (excluding the range start)
+          for commit in $(git rev-list --first-parent "$BEFORE..$AFTER"); do
+            parents=$(git rev-parse "$commit" --parents 2>/dev/null | wc -w)
+            if [ "$parents" -gt 2 ]; then
+              second_parent=$(git rev-parse "${commit}^2" 2>/dev/null)
+              for CONFIG_BRANCH in $PROTECTED_BRANCHES; do
+                # Merged-in commit = second parent. It must be ON the protected branch, i.e. in that branch's history.
+                # So: second_parent is ancestor of (or equal to) branch tip. --is-ancestor(first, second) = "first ancestor of second".
+                # Correct: ancestor(second_parent, tip) = "we merged from this branch". Wrong: ancestor(tip, second_parent) would miss merges of older commits.
+                if git merge-base --is-ancestor "$second_parent" "origin/$CONFIG_BRANCH" 2>/dev/null; then
+                  echo "::error::Merge from protected branch '$CONFIG_BRANCH' into Main is not allowed. This branch is dev/config only."
+                  exit 1
+                fi
+              done
+            fi
+          done
+          echo "No merge from protected config branches detected."

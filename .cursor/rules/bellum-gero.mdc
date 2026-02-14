@@ -1,0 +1,53 @@
+---
+description: SWG Bellum Gero – project context, Shadow PC vs WSL dev server, Lua-first, Git/collab rules
+alwaysApply: true
+---
+
+# Bellum Gero – AI Context
+
+User may state at session start: **"We're on Shadow PC"** or **"We're on the WSL dev server."** Follow the matching context below.
+However, you can tell by the directory path for Shadow PC 'C:\Users\Shadow' **"We're on Shadow PC"** else **"We're on the WSL dev server."**
+
+## CURRENT CONTEXT
+
+- **Shadow PC (this dev box):** Windows only. No WSL. Coding and asset editing only. Repo path e.g. `C:\Users\Shadow\code\swg-bg`. Do NOT suggest build/run/test here. Use Windows paths. Git/SSH from PowerShell or Git Bash. Optional TRE/map editing; game uses TREs on WSL server.
+- **WSL dev server:** Linux (WSL Debian). Build, run, test Core3. Project root `~/localswgserver`. TREs at `/trefiles`. Database, config, run instructions apply here.
+
+## PROJECT
+
+SWGEmu-based Pre-CU server **SWG Bellum Gero** – tailored gameplay, custom content, lore-appropriate design.
+
+## CORE BEHAVIOR
+
+- **Project location:** WSL = `~/localswgserver`. Shadow PC = cloned repo (e.g. `C:\Users\Shadow\code\swg-bg`), Windows paths.
+- **LUA FIRST:** Add items/NPCs/stats/spawns/loot/conversations/quests via `MMOCoreORB/bin/scripts/` first. C++ only if impossible in Lua. Shadow: `<clone>\MMOCoreORB\bin\scripts\`. WSL: `~/localswgserver/MMOCoreORB/bin/scripts/`.
+- **Database/config (WSL only):** `~/localswgserver/MMOCoreORB/bin/conf/config.lua` and `config-local.lua`.
+- **Local dev guide (WSL only):** `~/localswgserver/LOCAL_DEV_ENV_SETUP.md`.
+- **WSL workflow (WSL only):** Commands in WSL Debian; build in WSL. On Shadow PC: no WSL; Git only from PowerShell/Git Bash.
+- **Build blockers (WSL only):** DPP (pkg-config dpp), GCC -Werror, engine3 submodule in CHANGELOG.
+- **Troubleshooting (WSL only):** config.lua/config-local.lua for DB; `make -j$(nproc)` in MMOCoreORB.
+- **TRE (Phase 7):** WSL = copy/symlink to `/trefiles`. Shadow = optional asset edit only.
+
+## GIT / COLLAB (BOTH MACHINES)
+
+1. Branch: `[DeveloperName]_[FeatureName]` (e.g. `Ender_MissingResources`). Never generic names.
+2. No PRs. Push branch and notify Miphstoe or Hellguard in Discord for manual review.
+3. Test locally on **WSL dev server** before committing (e.g. new mobs: spawn, kill, harvest, verify resource).
+
+## DEV STACK
+
+- C++, Lua. Shadow PC: Windows, Cursor, Git; no build/run. WSL dev server: WSL Debian, build/test/run; deps include build-essential, libmariadb-dev, liblua5.3-dev, cmake, etc.
+
+## YOUR JOB
+
+Design/implement features for Bellum Gero: Pre-CU authentic, fun, Lua-first, with file touchpoints and test plans. Ask up to 7 clarifying questions; then deliver: Design Summary, Pre-CU Checklist, Player Goals, Gameplay Design, World/Dungeon Plan, Encounters, Objects/Loot, Tech Notes, Build+Test Plan (WSL only), Git Steps (branch name, no PR, test on WSL, push + notify). Be decisive; use tables; call out exploits and mitigations.
+
+## REMINDER
+
+- **Shadow PC:** Code/assets only. Windows paths. No build/run/WSL. TRE tools: see README / SWG_EXPLORER_SETUP.md.
+- **WSL dev server:** `~/localswgserver`, build, test, run, `/trefiles`, all config/troubleshooting.
+
+## DOCS
+
+- **This workspace:** `.cursor/README.md` — index of rules, skills, and doc references.
+- **Shadow PC / Bellum Gero:** SWG_EXPLORER_SETUP.md, SHADOW_PC_SETUP_PLAN.md, BELLUM_GERO_PROMPT.md (often in user folder or project root; see .cursor/README.md for typical paths).
