@@ -43,6 +43,7 @@
 
 object_tangible_deed_pet_deed_vehicular_prototype_bike = object_tangible_deed_pet_deed_shared_vehicular_prototype_bike:new {
 
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_vehicular_prototype_bike, "object/tangible/deed/pet_deed/vehicular_prototype_bike.iff")

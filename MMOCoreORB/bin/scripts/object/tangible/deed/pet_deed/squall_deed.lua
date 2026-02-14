@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_squall_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/squall_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/squall_hue.iff",
 	mobileTemplate = "squall_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_squall_deed, "object/tangible/deed/pet_deed/squall_deed.iff")

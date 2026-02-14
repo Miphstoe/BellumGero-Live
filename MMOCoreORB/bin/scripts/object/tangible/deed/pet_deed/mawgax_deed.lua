@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_mawgax_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/mawgax_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/mawgax_hue.iff",
 	mobileTemplate = "mawgax_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_mawgax_deed, "object/tangible/deed/pet_deed/mawgax_deed.iff")

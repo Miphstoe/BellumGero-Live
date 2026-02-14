@@ -56,6 +56,7 @@ object_tangible_deed_pet_deed_bocatt_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/bocatt_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/bocatt_hue.iff",
 	mobileTemplate = "bocatt_be",
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_bocatt_deed, "object/tangible/deed/pet_deed/bocatt_deed.iff")

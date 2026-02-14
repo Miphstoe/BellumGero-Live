@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_huurton_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/huurton_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/huurton_hue.iff",
 	mobileTemplate = "huurton_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_huurton_deed, "object/tangible/deed/pet_deed/huurton_deed.iff")

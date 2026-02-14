@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_vir_vur_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/vir_vur_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/vir_vur_hue.iff",
 	mobileTemplate = "vir_vur_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_vir_vur_deed, "object/tangible/deed/pet_deed/vir_vur_deed.iff")

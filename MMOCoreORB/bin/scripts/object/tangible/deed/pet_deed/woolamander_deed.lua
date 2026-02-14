@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_woolamander_deed = object_tangible_deed_pet_deed_s
 	generatedObjectTemplate = "mobile/pet/woolamander_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/woolamander_hue.iff",
 	mobileTemplate = "woolamander_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_woolamander_deed, "object/tangible/deed/pet_deed/woolamander_deed.iff")

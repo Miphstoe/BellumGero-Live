@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_krahbu_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/krahbu_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/krahbu_hue.iff",
 	mobileTemplate = "krahbu_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_krahbu_deed, "object/tangible/deed/pet_deed/krahbu_deed.iff")

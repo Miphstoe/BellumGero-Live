@@ -56,6 +56,7 @@ object_tangible_deed_pet_deed_blurrg_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/blurrg_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/blurrg_hue.iff",
 	mobileTemplate = "blurrg_be",
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_blurrg_deed, "object/tangible/deed/pet_deed/blurrg_deed.iff")

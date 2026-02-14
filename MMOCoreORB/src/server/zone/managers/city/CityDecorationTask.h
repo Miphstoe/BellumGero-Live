@@ -12,6 +12,10 @@
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/tangible/deed/pet/PetDeed.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/managers/creature/CreatureManager.h"
+#include "templates/params/creature/ObjectFlag.h"
 
 class CityDecorationTask : public Task {
 	ManagedReference<CreatureObject*> mayor;
@@ -21,7 +25,8 @@ class CityDecorationTask : public Task {
 public:
 	enum {
 		PLACE = 0,
-		REMOVE = 1
+		REMOVE = 1,
+		PLACE_PET = 2
 	};
 
 	CityDecorationTask( CreatureObject* creature, TangibleObject* object, byte function) {
@@ -33,12 +38,16 @@ public:
 	void run() {
 
 		switch (option) {
-			case 0:
+			case PLACE:
 				placeDecoration();
 				break;
 
-			case 1:
+			case REMOVE:
 				removeDecoration();
+				break;
+
+			case PLACE_PET:
+				placePetDecoration();
 				break;
 		}
 	}
@@ -129,6 +138,134 @@ public:
 
 	}
 
+	void placePetDecoration() {
+		Locker _lock(mayor);
+
+		ManagedReference<CityRegion*> city = mayor->getCityRegion().get();
+
+		if (city == nullptr) {
+			mayor->sendSystemMessage("@player_structure:cant_place_civic"); // This structure must be placed within the borders of the city in which you are mayor.
+			return;
+		}
+
+		CityManager* cityManager = mayor->getZoneServer()->getCityManager();
+
+		if (!city->isMayor(mayor->getObjectID())) {
+			mayor->sendSystemMessage("@player_structure:cant_place_civic"); // This structure must be placed within the borders of the city in which you are mayor.
+			return;
+		}
+
+		PlayerObject* mayorGhost = mayor->getPlayerObject().get();
+		if (mayorGhost == nullptr) {
+			return;
+		}
+
+		// Check if mayor has the place_pet ability
+		if (!mayorGhost->hasAbility("place_pet")) {
+			mayor->sendSystemMessage("@city/city:no_skill_deco"); // You lack the skill to place this decoration in your city.
+			return;
+		}
+
+		if (!cityManager->canSupportMoreDecorations(city)) {
+			StringIdChatParameter param("city/city", "no_more_decos"); // "Your city can't support any more decorations at its current rank!"
+			mayor->sendSystemMessage(param);
+			return;
+		}
+
+		Zone* zone = mayor->getZone();
+
+		if (zone == nullptr)
+			return;
+
+		ManagedReference<PlanetManager*> planetManager = zone->getPlanetManager();
+		// We don't want players to exploit-block entrances or exits to POI areas & buildings
+		if (!planetManager->isBuildingPermittedAt(mayor->getWorldPositionX(), mayor->getWorldPositionY(), mayor, 0, false)) {
+			StringIdChatParameter msg;
+			msg.setStringId("@player_structure:not_permitted"); // "Building is not permitted here."
+			mayor->sendSystemMessage(msg);
+			return;
+		}
+
+		if (city->getCityTreasury() < 1000) {
+			StringIdChatParameter msg;
+			msg.setStringId("@city/city:action_no_money");
+			msg.setDI(1000);
+			mayor->sendSystemMessage(msg); // "The city treasury must have %DI credits in order to perform that action."
+			return;
+		}
+
+		Locker tlock(obj, mayor);
+
+		if (!obj->isASubChildOf(mayor)) {
+			mayor->sendSystemMessage("@space/quest:not_in_inv"); // The object must be in your inventory
+			return;
+		}
+
+		// Cast to PetDeed to get the mobile template
+		PetDeed* petDeed = cast<PetDeed*>(obj.get());
+		if (petDeed == nullptr) {
+			mayor->sendSystemMessage("Invalid pet deed.");
+			return;
+		}
+
+		String mobileTemplate = petDeed->getTemplateName();
+		if (mobileTemplate.isEmpty()) {
+			mayor->sendSystemMessage("Invalid pet deed template.");
+			return;
+		}
+
+		// Create the creature using CreatureManager
+		CreatureManager* creatureManager = zone->getCreatureManager();
+		if (creatureManager == nullptr) {
+			mayor->sendSystemMessage("Unable to spawn pet decoration.");
+			return;
+		}
+
+		ManagedReference<CreatureObject*> creature = creatureManager->createCreature(mobileTemplate.hashCode(), true, mobileTemplate.hashCode());
+		if (creature == nullptr) {
+			mayor->sendSystemMessage("Unable to create pet decoration.");
+			return;
+		}
+
+		// Position the creature at the mayor's location
+		creature->initializePosition(mayor->getWorldPositionX(), mayor->getWorldPositionZ(), mayor->getWorldPositionY());
+		creature->setDirection(mayor->getDirectionAngle());
+
+		// Cast to AiAgent to set pet decoration properties
+		AiAgent* aiAgent = dynamic_cast<AiAgent*>(creature.get());
+		if (aiAgent != nullptr) {
+			// Apply STATIC flag to make the creature static
+			aiAgent->addObjectFlag(ObjectFlag::STATIC);
+
+			// Disable AI
+			aiAgent->clearOptionBit(OptionBitmask::AIENABLED);
+
+			// Disable PvP
+			aiAgent->setPvpStatusBitmask(0);
+
+			// Store the deed reference in the creature
+			aiAgent->setPetDeed(petDeed);
+		}
+
+		// Transfer creature to the zone
+		if (zone->transferObject(creature, -1, true)) {
+			tlock.release();
+
+			Locker clock(city, mayor);
+			city->addDecoration(creature);
+			city->subtractFromCityTreasury(1000);
+
+			// Destroy the deed from inventory (it's now stored in the creature)
+			obj->destroyObjectFromWorld(true);
+
+			mayor->sendSystemMessage("Pet decoration placed successfully.");
+		} else {
+			// Failed to place, destroy the creature
+			creature->destroyObjectFromWorld(true);
+			mayor->sendSystemMessage("Failed to place pet decoration.");
+		}
+	}
+
 	void removeDecoration() {
 		Locker _lock(mayor);
 
@@ -155,17 +292,48 @@ public:
 			//mayor->sendSystemMessage("@error_message:inv_full"); // You inventory is full
 			mayor->sendSystemMessage("@event_perk:promoter_full_inv"); //"Your inventory is full. Please make some room and try again.");
 			return;
-		} else {
-			Locker tlock(obj, mayor);
+		}
 
-			if (inv->transferObject(obj, -1, true)) {
-				inv->broadcastObject(obj, true);
-				tlock.release();
-				Locker clock(city, mayor);
-				city->removeDecoration(obj);
+		// Check if this is a pet decoration
+		if (obj->isPetDecoration()) {
+			AiAgent* aiAgent = dynamic_cast<AiAgent*>(obj.get());
+			if (aiAgent != nullptr && aiAgent->hasPetDeed()) {
+				ManagedReference<PetDeed*> petDeed = aiAgent->getPetDeed();
 
-				mayor->sendSystemMessage("@city/city:mt_removed"); // The object has been removed from the city.
+				if (petDeed != nullptr) {
+					// Transfer deed back to mayor's inventory
+					Locker deedLock(petDeed, mayor);
+					if (inv->transferObject(petDeed, -1, true)) {
+						inv->broadcastObject(petDeed, true);
+
+						// Destroy the creature
+						Locker tlock(obj, mayor);
+						obj->destroyObjectFromWorld(true);
+						tlock.release();
+
+						Locker clock(city, mayor);
+						city->removeDecoration(obj);
+
+						mayor->sendSystemMessage("Pet decoration removed and deed returned to inventory.");
+						return;
+					} else {
+						mayor->sendSystemMessage("Failed to return deed to inventory.");
+						return;
+					}
+				}
 			}
+		}
+
+		// Regular decoration removal
+		Locker tlock(obj, mayor);
+
+		if (inv->transferObject(obj, -1, true)) {
+			inv->broadcastObject(obj, true);
+			tlock.release();
+			Locker clock(city, mayor);
+			city->removeDecoration(obj);
+
+			mayor->sendSystemMessage("@city/city:mt_removed"); // The object has been removed from the city.
 		}
 	}
 

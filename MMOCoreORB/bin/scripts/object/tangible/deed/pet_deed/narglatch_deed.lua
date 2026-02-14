@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_narglatch_deed = object_tangible_deed_pet_deed_sha
 	generatedObjectTemplate = "mobile/pet/narglatch_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/narglatch_hue.iff",
 	mobileTemplate = "narglatch_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_narglatch_deed, "object/tangible/deed/pet_deed/narglatch_deed.iff")

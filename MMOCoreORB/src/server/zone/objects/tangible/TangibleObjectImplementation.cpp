@@ -1816,6 +1816,14 @@ bool TangibleObjectImplementation::isCityFountain() const {
 	return (templateObject != nullptr && templateObject->getFullTemplateString().contains("object/tangible/furniture/city/fountain"));
 }
 
+bool TangibleObjectImplementation::isPetDecoration() const {
+	if (getGameObjectType() != SceneObjectType::CREATURE)
+		return false;
+
+	AiAgent* agent = dynamic_cast<AiAgent*>(const_cast<TangibleObjectImplementation*>(this));
+	return (agent != nullptr && agent->hasPetDeed());
+}
+
 bool TangibleObjectImplementation::isRebel() const {
 	return faction == Factions::FACTIONREBEL;
 }

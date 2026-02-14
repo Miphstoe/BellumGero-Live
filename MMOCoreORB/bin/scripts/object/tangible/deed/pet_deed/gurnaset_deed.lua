@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_gurnaset_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/gurnaset_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/gurnaset_hue.iff",
 	mobileTemplate = "gurnaset_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_gurnaset_deed, "object/tangible/deed/pet_deed/gurnaset_deed.iff")

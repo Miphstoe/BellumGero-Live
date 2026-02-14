@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kima_deed = object_tangible_deed_pet_deed_shared_k
 	generatedObjectTemplate = "mobile/pet/kima_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kima_hue.iff",
 	mobileTemplate = "kima_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kima_deed, "object/tangible/deed/pet_deed/kima_deed.iff")

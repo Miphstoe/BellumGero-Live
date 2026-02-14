@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_pugoriss_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/pugoriss_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/pugoriss_hue.iff",
 	mobileTemplate = "pugoriss_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_pugoriss_deed, "object/tangible/deed/pet_deed/pugoriss_deed.iff")

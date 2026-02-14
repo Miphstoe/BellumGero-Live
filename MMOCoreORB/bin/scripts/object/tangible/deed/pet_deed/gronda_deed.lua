@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_gronda_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/gronda_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/gronda_hue.iff",
 	mobileTemplate = "gronda_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_gronda_deed, "object/tangible/deed/pet_deed/gronda_deed.iff")

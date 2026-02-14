@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kaadu_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/kaadu_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kaadu_hue.iff",
 	mobileTemplate = "kaadu_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kaadu_deed, "object/tangible/deed/pet_deed/kaadu_deed.iff")

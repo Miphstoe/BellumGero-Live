@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_sharnaff_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/sharnaff_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/sharnaff_hue.iff",
 	mobileTemplate = "sharnaff_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_sharnaff_deed, "object/tangible/deed/pet_deed/sharnaff_deed.iff")
