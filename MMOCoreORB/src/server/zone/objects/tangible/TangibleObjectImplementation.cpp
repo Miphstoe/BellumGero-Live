@@ -1710,6 +1710,15 @@ bool TangibleObjectImplementation::isAttackableBy(CreatureObject* creature) {
 			if (owner == nullptr)
 				return false;
 
+			// Block pets from attacking players in PvP, only allow PvE attacks
+			// TEST: Block ALL pet attacks to verify code is being executed
+			agent->showFlyText("npc_reaction/flytext", "confused", 204, 0, 0); // "?!!?!?!"
+
+			if (isCreatureObject() && isPlayerCreature()) {
+				// Target is a player - block the attack
+				return false;
+			}
+
 			return isAttackableBy(owner);
 		}
 	}
