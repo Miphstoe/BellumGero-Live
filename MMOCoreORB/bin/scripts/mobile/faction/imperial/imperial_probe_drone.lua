@@ -27,6 +27,7 @@ imperial_probe_drone = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/probot.iff"},
+	
 	lootGroups = {},
 	conversationTemplate = "",
 

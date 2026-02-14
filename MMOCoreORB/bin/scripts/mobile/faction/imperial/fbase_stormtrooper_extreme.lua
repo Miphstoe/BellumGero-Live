@@ -34,7 +34,13 @@ fbase_stormtrooper_extreme = Creature:new {
 			groups = {
 				{group = "imperial_stormtrooper_tier_4", chance = 10000000}
 			}
-		}
+		},
+	{
+		groups = {
+			{group = "bg_token_group", chance = 10000000}
+		},
+		lootChance = 250000
+	}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

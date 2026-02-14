@@ -45,6 +45,12 @@ ambush_imperial_storm_commando = Creature:new {
 				{group = "armor_attachments", chance = 1025000}
 			},
 			lootChance = 3500000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

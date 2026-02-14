@@ -28,6 +28,7 @@ dark_trooper_novatrooper = Creature:new {
 	scale = 1.3,
 
 	templates = {"object/mobile/dressed_stormtrooper_black_black.iff"},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
