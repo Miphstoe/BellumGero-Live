@@ -73,6 +73,15 @@ talus_world = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "talus_wild_foreign_bantha_herd_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 18,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 28,
+			size = 25,
+		},
+		{
 			lairTemplateName = "talus_dalyrake_nest_neutral_medium",
 			spawnLimit = -1,
 			minDifficulty = 40,
