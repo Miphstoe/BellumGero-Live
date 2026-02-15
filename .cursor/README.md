@@ -4,7 +4,7 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 
 ## Commit workflow reminder
 
-**Where things go:** Game/code changes → **code branch** (Main or `Ender_FeatureName`). Dev env (rules, skills, this README, workspace docs) → **Ender_CursorConfig** only.
+**Where things go:** Game/code changes → **code branch** (Main or `Ender_FeatureName`). Dev env (rules, skills, **.cursor/context/**, this README, workspace docs) → **Ender_CursorConfig** only.
 
 **Order:** Commit and push **code first**, then **dev env last**. Before prod: test on WSL dev server; dev env updates support both Shadow dev box and WSL build/test. See [rules/bellum-gero.mdc](rules/bellum-gero.mdc) → "COMMIT & PUSH WORKFLOW".
 
@@ -14,6 +14,8 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 |------|--------|
 | [rules/bellum-gero.mdc](rules/bellum-gero.mdc) | SWG Bellum Gero context: Shadow PC vs WSL, Lua-first, paths, **commit workflow (code first, dev env last)**. Always applied. |
 | [rules/branch-naming.mdc](rules/branch-naming.mdc) | Branch naming `[Dev]_[Feature]`, protected branches, work order. Always applied. |
+| [rules/context-files.mdc](rules/context-files.mdc) | Where context files go: **`.cursor/context/`** (same on Shadow PC and WSL). Always applied. |
+| [rules/documentation.mdc](rules/documentation.mdc) | **Document code and scripts thoroughly** (headers, intent, parameters) so others can follow and review. Always applied. |
 
 ## Skills (agent skills)
 
@@ -24,8 +26,19 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 | [skills-cursor/create-subagent/](skills-cursor/create-subagent/) | Create custom subagents |
 | [skills-cursor/migrate-to-skills/](skills-cursor/migrate-to-skills/) | Migrate rules/commands to skills |
 | [skills-cursor/update-cursor-settings/](skills-cursor/update-cursor-settings/) | Modify Cursor/VSCode settings.json |
+| [skills/sync-config-branch/](skills/sync-config-branch/) | Sync dev env to **Ender_CursorConfig** (so you don't forget). Run script on a schedule via Task Scheduler for automatic sync. |
 
 *(Note: `skills-cursor` is Cursor’s built-in skills directory.)*
+
+## Context (workspace structure)
+
+**All context files** (workspace structure, repo layout, AI/contributor context) live in **`.cursor/context/`**. Same path on **Shadow PC** and **WSL build/test dev box** (repo is shared).
+
+| Doc | Path | Purpose |
+|-----|------|--------|
+| **WORKSPACE_STRUCTURE.md** | [context/WORKSPACE_STRUCTURE.md](context/WORKSPACE_STRUCTURE.md) | Folder and file layout of the swg-bg repo (root, .cursor, docker, MMOCoreORB, etc.). |
+
+See [rules/context-files.mdc](rules/context-files.mdc) for the rule that enforces this location.
 
 ## Related docs (Bellum Gero / Shadow PC)
 

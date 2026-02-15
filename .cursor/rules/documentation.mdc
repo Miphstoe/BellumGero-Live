@@ -1,0 +1,39 @@
+---
+description: Document code and scripts thoroughly so others can follow and review later
+alwaysApply: true
+---
+
+# Documentation and Comments
+
+**Be thorough:** Write code and scripts so that future readers (and your future self) can follow the logic, understand intent, and review changes confidently.
+
+## Rule
+
+1. **File-level:** Every script, module, or non-trivial source file should have a short header comment (or block) that states:
+   - What the file does (one or two sentences).
+   - How to run or use it (e.g. usage, entry point, or "see README").
+   - Any important assumptions or requirements (e.g. "Run from repo root", "Requires Git in PATH").
+
+2. **Logic and intent:** Comment non-obvious logic: why something is done, not just what. Include:
+   - Purpose of blocks (e.g. "Stash only dev-env paths so checkout doesn't overwrite").
+   - Non-obvious parameters or constants (e.g. "StateChange 2 = TASK_CONSOLE_DISCONNECT (log off)").
+   - Workarounds or platform quirks (e.g. "schtasks has no ONLOGOFF; we use CIM SessionStateChangeTrigger").
+
+3. **Parameters and options:** For scripts, document parameters briefly (purpose, default, when to change) in a comment block or in a README next to the script.
+
+4. **Review-friendly:** Prefer clear variable names and small, named steps over long uncommented blocks. Comments should make review at a later date straightforward.
+
+## Do
+
+- Add a header block to new scripts and to files that lack one.
+- Explain *why* when the reason isn’t obvious from the code.
+- Point to related docs (e.g. "See .cursor/README.md" or "See bellum-gero.mdc commit workflow").
+
+## Don't
+
+- Don’t leave "magic" numbers or strings unexplained when they affect behavior.
+- Don’t rely on code alone to convey workflow or policy; document intent where it helps reviewers.
+
+## Scope
+
+Applies to all code and scripts in the repo (Lua, C++, PowerShell, shell, etc.). Config and one-line scripts can use a single-line comment; larger files should use header blocks and section comments as needed.

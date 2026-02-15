@@ -39,13 +39,13 @@ Use this pattern for **all new branches** in this repo:
 ## Work order (commit & push)
 
 - **Code changes** → commit and push to the **code branch** (Main or `Ender_FeatureName`) **first**.
-- **Dev env changes** (rules, skills, .cursor READMEs, workspace docs) → commit and push to **Ender_CursorConfig** **last**. See **bellum-gero.mdc** → "COMMIT & PUSH WORKFLOW".
+- **Dev env changes** (rules, skills, **.cursor/context/**, .cursor READMEs, workspace docs) → commit and push to **Ender_CursorConfig** **last**. See **bellum-gero.mdc** → "COMMIT & PUSH WORKFLOW".
 
 ## Protected branches (do not merge into Main)
 
 These branches are **config / dev-environment only**. Never merge them into `Main`:
 
-- **Ender_CursorConfig** — Cursor rules, skills, workspace structure. Dev setup only.
+- **Ender_CursorConfig** — Cursor rules, skills, .cursor/context/, workspace docs. Dev setup only.
 
 If you merge one by accident, revert the merge on `Main`. A GitHub Action may block pushes to `Main` that contain a merge from these branches.
 

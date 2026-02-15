@@ -35,7 +35,7 @@ SWGEmu-based Pre-CU server **SWG Bellum Gero** – tailored gameplay, custom con
 | What changed | Branch to use | When to commit/push |
 |--------------|---------------|----------------------|
 | **Game code** (Lua, C++, scripts, MMOCoreORB, content) | `Main` or your feature branch (e.g. `Ender_FeatureName`) | **First.** Commit and push code before touching dev env. |
-| **Dev env files** (Cursor rules, skills, `.cursor/` context, workspace READMEs, WORKSPACE_STRUCTURE.md) | **Ender_CursorConfig** only | **Last.** After code is committed and pushed. |
+| **Dev env files** (Cursor rules, skills, `.cursor/` context including `.cursor/context/WORKSPACE_STRUCTURE.md`, workspace READMEs) | **Ender_CursorConfig** only | **Last.** After code is committed and pushed. |
 
 **Work order:** (1) Make and test code on Shadow PC or WSL. (2) Commit and push **code** to the code branch. (3) If you updated rules/context/READMEs for both Shadow and WSL test dev, switch to **Ender_CursorConfig**, add those files, commit and push **last**. Nothing is ready for prod patch until code is tested on WSL dev server; dev env updates support both Shadow dev box and the WSL build/cmake/test server.
 
@@ -64,4 +64,5 @@ Design/implement features for Bellum Gero: Pre-CU authentic, fun, Lua-first, wit
 ## DOCS
 
 - **This workspace:** `.cursor/README.md` — index of rules, skills, and doc references.
+- **Context files:** `.cursor/context/` — workspace structure and other AI/contributor context (e.g. `WORKSPACE_STRUCTURE.md`). Same path on Shadow PC and WSL. See **context-files.mdc**.
 - **Shadow PC / Bellum Gero:** SWG_EXPLORER_SETUP.md, SHADOW_PC_SETUP_PLAN.md, BELLUM_GERO_PROMPT.md (often in user folder or project root; see .cursor/README.md for typical paths).

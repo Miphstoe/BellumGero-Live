@@ -1,0 +1,33 @@
+---
+description: Where Cursor/workspace context files live (.cursor/context/) — same on Shadow PC and WSL
+alwaysApply: true
+---
+
+# Context Files Location
+
+**Workspace and AI context docs** (e.g. workspace structure, repo layout, contributor context) live in one place only:
+
+## Rule
+
+- **Directory:** `.cursor/context/`
+- **Canonical path (repo-relative):** `.cursor/context/` (e.g. `WORKSPACE_STRUCTURE.md` → `.cursor/context/WORKSPACE_STRUCTURE.md`).
+- **Same on both machines:** Use this structure on **Shadow PC** (e.g. `C:\Users\Shadow\code\swg-bg\.cursor\context\`) and on the **WSL build/test dev box** (e.g. `~/localswgserver/.cursor/context/`). The repo is shared; keep context files here so both environments stay in sync.
+
+## Do
+
+- Put new workspace-structure, repo-layout, or AI-context docs in `.cursor/context/`.
+- Reference them as `.cursor/context/<filename>` in rules and READMEs.
+- Commit context file changes as **dev env** on **Ender_CursorConfig** (after code; see bellum-gero.mdc).
+
+## Don't
+
+- Do not put context docs at repo root or in ad-hoc locations.
+- Do not create a different context path on WSL; use `.cursor/context/` there too.
+
+## Quick reference
+
+| Item | Path |
+|------|------|
+| Workspace structure | `.cursor/context/WORKSPACE_STRUCTURE.md` |
+| Other context docs | `.cursor/context/` (add new files here) |
+| Index of rules, skills, context | `.cursor/README.md` |
