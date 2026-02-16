@@ -9,7 +9,8 @@ rori_wild_foreign_bantha_herd_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
-	buildingType = "none"
+	buildingType = "none",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
 }
 
 addLairTemplate("rori_wild_foreign_bantha_herd_neutral_none", rori_wild_foreign_bantha_herd_neutral_none)
