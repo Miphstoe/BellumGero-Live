@@ -35,7 +35,8 @@ Use this skill when the user wants to **commit and push dev env changes to the c
    - Switch back to the previous branch if the user was on another branch (e.g. Main or a feature branch).
 
 5. **Optional: run the scheduled script**
-   - If the user prefers one command from the repo, run the PowerShell script: `.cursor/skills/sync-config-branch/scripts/sync-config-branch.ps1` (from repo root). The script does the same workflow and can also be scheduled via Windows Task Scheduler for automatic runs.
+   - **Windows (Shadow PC):** `.cursor/skills/sync-config-branch/scripts/sync-config-branch.ps1` (from repo root). Schedule via `install-scheduled-task.ps1` (Task Scheduler).
+   - **WSL/Linux (dev desktop):** `.cursor/skills/sync-config-branch/scripts/sync-config-branch.sh` (from repo root, e.g. `~/localswgserver`). Schedule via `install-cron.sh` (cron).
 
 ## Safeguards
 
@@ -45,9 +46,9 @@ Use this skill when the user wants to **commit and push dev env changes to the c
 
 ## Scheduled / automatic runs (outside Cursor)
 
-Cursor does **not** run tasks on a schedule. For automatic sync:
+Cursor does **not** run tasks on a schedule. For automatic sync so both envs stay in sync:
 
-- **Windows (Shadow PC):** Use **Task Scheduler** to run the script `.cursor/skills/sync-config-branch/scripts/sync-config-branch.ps1` on a schedule (e.g. daily). See the script folder's README or comments for setup.
-- **WSL:** Use `cron` to run a shell equivalent of the script on the dev server if desired.
+- **Windows (Shadow PC):** Run `.cursor/skills/sync-config-branch/scripts/install-scheduled-task.ps1` once. Task Scheduler runs `sync-config-branch.ps1` daily, at log on, and at log off. See script folder README.
+- **WSL (dev desktop):** Run `.cursor/skills/sync-config-branch/scripts/install-cron.sh` once. Cron runs `sync-config-branch.sh` daily (default 6 PM). Use `-r` for @reboot. Use `-u` to uninstall. See script folder README.
 
-The skill helps when the user remembers to ask; the script + Task Scheduler removes the need to remember for automatic runs.
+The skill helps when the user remembers to ask; the scripts + Task Scheduler/cron keep Ender_CursorConfig in sync on both machines.

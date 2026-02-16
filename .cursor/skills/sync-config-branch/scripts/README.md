@@ -35,6 +35,46 @@ cd C:\Users\Shadow\code\swg-bg
 
 **Manual setup:** Create a task that runs `powershell.exe` with arguments: `-NoProfile -ExecutionPolicy Bypass -File "<repo>\.cursor\skills\sync-config-branch\scripts\sync-config-branch.ps1" -RepoPath "<repo>"`. Run only when user is logged on so Git/SSH credentials are available.
 
-## WSL dev server
+## WSL / Linux (sync-config-branch.sh + cron)
 
-Same idea on Linux: add a cron job or a systemd timer that runs a small script which `cd`s to `~/localswgserver`, then runs the equivalent git steps (checkout Ender_CursorConfig, add .cursor/ and README.md, commit, push, checkout back). You can copy the logic from this PowerShell script into a bash script.
+On the WSL dev desktop (e.g. `~/localswgserver`), the same sync is available so both envs stay in sync when switching between Shadow PC and WSL.
+
+### Run manually
+
+```bash
+cd ~/localswgserver
+.cursor/skills/sync-config-branch/scripts/sync-config-branch.sh
+```
+
+Or from anywhere:
+
+```bash
+.cursor/skills/sync-config-branch/scripts/sync-config-branch.sh ~/localswgserver
+# or
+REPO_PATH=~/localswgserver .cursor/skills/sync-config-branch/scripts/sync-config-branch.sh
+```
+
+### Run on a schedule (cron)
+
+**Install (daily at 6 PM, same as Windows default):**
+
+```bash
+cd ~/localswgserver
+.cursor/skills/sync-config-branch/scripts/install-cron.sh
+```
+
+**Optional: also run once at login (when cron starts):**
+
+```bash
+.cursor/skills/sync-config-branch/scripts/install-cron.sh -r
+```
+
+**Options:** `-h 20` (8 PM), `-m 30`, `-p /path/to/repo`, `-u` to uninstall.
+
+**Uninstall:**
+
+```bash
+.cursor/skills/sync-config-branch/scripts/install-cron.sh -u
+```
+
+Ensure the script is executable: `chmod +x .cursor/skills/sync-config-branch/scripts/sync-config-branch.sh` (install-cron.sh does this if needed). Git/SSH must work in cron (e.g. SSH agent or credential helper); run from your user crontab so keys are available.
