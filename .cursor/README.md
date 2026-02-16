@@ -16,6 +16,14 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 | [rules/branch-naming.mdc](rules/branch-naming.mdc) | Branch naming `[Dev]_[Feature]`, protected branches, work order. Always applied. |
 | [rules/context-files.mdc](rules/context-files.mdc) | Where context files go: **`.cursor/context/`** (same on Shadow PC and WSL). Always applied. |
 | [rules/documentation.mdc](rules/documentation.mdc) | **Document code and scripts thoroughly** (headers, intent, parameters) so others can follow and review. Always applied. |
+| [rules/feature-branch-workflow.mdc](rules/feature-branch-workflow.mdc) | **New feature branches:** Update Ender_CursorConfig from Main first, then create branch from Ender_CursorConfig; .cursor and dev docs ignored on feature branches so they never merge into Main. Always applied. |
+
+## Feature branch workflow (new features)
+
+**Order:** (1) Pull/merge **Main** into **Ender_CursorConfig**. (2) Create the new feature branch **from Ender_CursorConfig**. (3) On the new branch, .cursor and dev docs are in .gitignore and removed from tracking so they never get merged into Main. See [rules/feature-branch-workflow.mdc](rules/feature-branch-workflow.mdc) and [skills/start-new-feature/](skills/start-new-feature/).
+
+**WSL one-liner (after naming your branch):**  
+`.cursor/skills/start-new-feature/scripts/start-new-feature.sh Ender_YourFeatureName`
 
 ## Skills (agent skills)
 
@@ -26,7 +34,8 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 | [skills-cursor/create-subagent/](skills-cursor/create-subagent/) | Create custom subagents |
 | [skills-cursor/migrate-to-skills/](skills-cursor/migrate-to-skills/) | Migrate rules/commands to skills |
 | [skills-cursor/update-cursor-settings/](skills-cursor/update-cursor-settings/) | Modify Cursor/VSCode settings.json |
-| [skills/sync-config-branch/](skills/sync-config-branch/) | Sync dev env to **Ender_CursorConfig** (so you don't forget). Run script on a schedule via Task Scheduler for automatic sync. |
+| [skills/sync-config-branch/](skills/sync-config-branch/) | Sync dev env to **Ender_CursorConfig** (so you don't forget). Run script on a schedule via Task Scheduler/cron for automatic sync. |
+| [skills/start-new-feature/](skills/start-new-feature/) | **Start a new feature branch:** Update Ender_CursorConfig from Main, create branch from Ender_CursorConfig, then add .cursor and dev docs to .gitignore so they never merge into Main. Script: `scripts/start-new-feature.sh Ender_FeatureName`. |
 
 *(Note: `skills-cursor` is Cursor’s built-in skills directory.)*
 

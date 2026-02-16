@@ -1,0 +1,40 @@
+---
+description: New feature branches – update Ender_CursorConfig from Main first, then branch from Ender_CursorConfig; keep .cursor and dev docs out of Main via .gitignore
+alwaysApply: true
+---
+
+# Feature Branch Workflow
+
+When creating a **new feature branch**, follow this order. Use the skill [skills/start-new-feature/](.cursor/skills/start-new-feature/) or the steps below.
+
+## Rule: New features start from Ender_CursorConfig, not Main
+
+1. **Update Ender_CursorConfig from Main** (pull latest live/merged code into the config branch).
+2. **Create the new feature branch from Ender_CursorConfig** (so you have latest code + your .cursor and dev docs locally).
+3. **On the new feature branch, .cursor and dev docs must be ignored** so they are never committed or merged into Main. Only **Ender_CursorConfig** tracks them.
+
+## Why
+
+- **Main** = live game code only. No .cursor, no local dev docs.
+- **Ender_CursorConfig** = Main + .cursor, rules, skills, context docs. Single place that tracks dev env.
+- **Feature branches** (e.g. `Ender_NewFeature`) = branched from Ender_CursorConfig so you have configs locally, but the branch’s **.gitignore** ignores .cursor and dev docs so when you merge the feature into Main, those files never go to Main.
+
+## .gitignore on Main and feature branches
+
+On **Main** and on **every feature branch**, .gitignore must include (so these are never committed or merged into Main):
+
+- **.cursor/** (entire directory)
+- **Dev/context docs:** CHANGELOG.md, LOCAL_DEV_ENV_SETUP.md, SWG_ADMIN_COMMANDS_CONTEXT.md, SWG_CONTEXT.md, SWG_FILE_CODE_STRUCUTRE_CONTEXT.md, cursor_cursor_wsl_extension_project_fol.md, .cursorrules, BELLUM_GERO_*.md (or list as needed)
+
+**Ender_CursorConfig** is the exception: there .gitignore does **not** ignore .cursor (only e.g. .cursor/extensions/, .cursor/ai-tracking/, .cursor/projects/), so that branch can track and commit dev env. When merging **Main → Ender_CursorConfig**, if .gitignore conflicts, keep the version that allows tracking .cursor on Ender_CursorConfig.
+
+## Workflow summary
+
+| Step | Action |
+|------|--------|
+| 1 | Fetch Main; merge Main into Ender_CursorConfig; push Ender_CursorConfig. (Resolve .gitignore by keeping Ender_CursorConfig’s version if conflict.) |
+| 2 | Checkout Ender_CursorConfig, pull. Create new branch: `git checkout -b Ender_FeatureName`. |
+| 3 | On the new branch: add .cursor/ and dev doc paths to .gitignore; `git rm -r --cached .cursor` (and dev docs if tracked); commit so the feature branch no longer tracks them. |
+| 4 | Do feature work. When done: merge feature branch → Main (code only); dev env changes go to Ender_CursorConfig via sync script. |
+
+See **skills/start-new-feature/** for the exact steps and commands.
