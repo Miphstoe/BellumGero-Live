@@ -1,6 +1,7 @@
 -- Wild Foreign Bantha: Rori resource creature. Harvest yields Rori wild meat,
 -- Rori wooly hide, Rori animal bone, and Rori wild milk.
--- Based on bantha; uses bantha_hue.iff. Spawn on Rori only.
+-- Tuned to mission-terminal / Azure-Stripe-Peko band (killable, level ~18).
+-- Uses bantha_hue.iff with mid-range hues. Spawn on Rori only.
 -- See .cursor/context/ and bellum-gero.mdc for project context.
 
 wild_foreign_bantha_rori = Creature:new {
@@ -9,15 +10,15 @@ wild_foreign_bantha_rori = Creature:new {
 	socialGroup = "bantha",
 	faction = "",
 	mobType = MOB_HERBIVORE,
-	level = 65,
+	level = 18,
 	chanceHit = 0.3,
-	damageMin = 150,
-	damageMax = 460,
-	baseXp = 3714,
-	baseHAM = 32000,
-	baseHAMmax = 42400,
-	armor = 15,
-	resists = {0,120,0,120,0,0,0,-1,-1},
+	damageMin = 120,
+	damageMax = 180,
+	baseXp = 1100,
+	baseHAM = 3800,
+	baseHAMmax = 4600,
+	armor = 0,
+	resists = {15,15,15,15,15,15,15,-1,-1},
 	meatType = "meat_wild_rori",
 	meatAmount = 450,
 	hideType = "hide_wooly_rori",
@@ -34,7 +35,7 @@ wild_foreign_bantha_rori = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/bantha_hue.iff"},
-	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
+	hues = { 8, 9, 10, 11, 12, 13, 14, 15 },
 	controlDeviceTemplate = "object/intangible/pet/bantha_hue.iff",
 	lootGroups = {},
 

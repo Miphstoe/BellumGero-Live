@@ -1,5 +1,6 @@
 -- Monstrous Dark Graul: Rori resource creature. Harvest yields Rori wild meat.
--- Based on graul (Dantooine); uses graul_hue.iff. Spawn on Rori only.
+-- Tuned to mission-terminal / Azure-Stripe-Peko band (killable, level ~20).
+-- Uses graul_hue.iff with mid-range hues for a darker look. Spawn on Rori only.
 -- See .cursor/context/ and bellum-gero.mdc for project context.
 
 monstrous_dark_graul = Creature:new {
@@ -8,15 +9,15 @@ monstrous_dark_graul = Creature:new {
 	socialGroup = "graul",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 105,
-	chanceHit = 0.39,
-	damageMin = 290,
-	damageMax = 920,
-	baseXp = 33005,
-	baseHAM = 58400,
-	baseHAMmax = 102200,
-	armor = 30,
-	resists = {150,20,-1,20,20,-1,-1,-1,-1},
+	level = 20,
+	chanceHit = 0.32,
+	damageMin = 180,
+	damageMax = 220,
+	baseXp = 1200,
+	baseHAM = 4000,
+	baseHAMmax = 5000,
+	armor = 0,
+	resists = {25,25,25,25,25,25,25,-1,-1},
 	meatType = "meat_wild_rori",
 	meatAmount = 950,
 	hideType = "hide_leathery",
@@ -32,7 +33,7 @@ monstrous_dark_graul = Creature:new {
 	diet = CARNIVORE,
 
 	templates = {"object/mobile/graul_hue.iff"},
-	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
+	hues = { 8, 9, 10, 11, 12, 13, 14, 15 },
 	controlDeviceTemplate = "object/intangible/pet/graul_hue.iff",
 	lootGroups = {},
 
