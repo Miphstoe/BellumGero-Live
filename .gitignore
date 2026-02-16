@@ -19,12 +19,6 @@ MMOCoreORB/bin/conf/config-local.lua
 # Local dev context/docs (do not commit)
 .cursorrules
 BELLUM_GERO_WINDCLAW_RAPTOR_DANTOOINE_AVIAN_MEAT.md
-CHANGELOG.md
-LOCAL_DEV_ENV_SETUP.md
-SWG_ADMIN_COMMANDS_CONTEXT.md
-SWG_CONTEXT.md
-SWG_FILE_CODE_STRUCUTRE_CONTEXT.md
-cursor_cursor_wsl_extension_project_fol.md
 
 # Junk/temp files
 MMOCoreORB/^C
