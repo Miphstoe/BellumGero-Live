@@ -11,6 +11,7 @@ lok_longclaw_wild_vortor_lizard_pack_neutral_none = Lair:new {
 	buildingsVeryHard = {},
 	buildingType = "none",
 	missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
+	customName = "Longclaw Wild Vortor Lizard",
 }
 
 addLairTemplate("lok_longclaw_wild_vortor_lizard_pack_neutral_none", lok_longclaw_wild_vortor_lizard_pack_neutral_none)
