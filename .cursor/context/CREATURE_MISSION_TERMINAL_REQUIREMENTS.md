@@ -27,13 +27,15 @@ Mission terminals get their target list from **destroy mission groups**, not fro
 Destroy missions need an object to place at the waypoint. If the lair has `buildingType = "none"` and all `buildings*` tables empty, the server will **skip** creating Destroy missions and the Destroy tab will not show.
 
 - **Files**: The lair Lua file(s) for the new creature (e.g. `MMOCoreORB/bin/scripts/mobile/lair/creature_dynamic/<planet>/<lair_name>.lua`)
-- **Action**: Add:
+- **Action**: Add to the Lair table:
   ```lua
   missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
+  customName = "Friendly Display Name Here",
   ```
-  to the Lair table (same small nest used by other creature lairs for missions).
+  - `missionBuilding`: same small nest used by other creature lairs for missions.
+  - `customName`: text shown as the mission **Target** in the mission details (e.g. "Wild Foreign Bantha Rori"). Without it, the client shows the raw key like `lair_n:[template_name]`.
 
-Without this, `getMissionBuilding(difficulty)` returns empty and the mission is aborted, so no Destroy missions appear in the browser.
+Without `missionBuilding`, `getMissionBuilding(difficulty)` returns empty and the mission is aborted, so no Destroy missions appear in the browser.
 
 ---
 
