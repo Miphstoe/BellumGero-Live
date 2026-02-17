@@ -39,6 +39,12 @@ lok_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "lok_longclaw_wild_vortor_lizard_pack_neutral_none",
+			minDifficulty = 17,
+			maxDifficulty = 23,
+			size = 25,
+		},
+		{
 			lairTemplateName = "lok_spinded_snake_lair2_neutral_medium",
 			minDifficulty = 15,
 			maxDifficulty = 19,

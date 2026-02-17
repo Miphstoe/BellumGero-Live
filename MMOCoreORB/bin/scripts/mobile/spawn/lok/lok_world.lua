@@ -118,6 +118,15 @@ lok_world = {
 			size = 15,
 		},
 		{
+			lairTemplateName = "lok_longclaw_wild_vortor_lizard_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 22,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 28,
+			size = 15,
+		},
+		{
 			lairTemplateName = "lok_langlatch_lair_neutral_medium",
 			spawnLimit = -1,
 			minDifficulty = 38,
