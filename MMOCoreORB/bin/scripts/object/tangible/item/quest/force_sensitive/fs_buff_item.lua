@@ -43,6 +43,12 @@
 
 object_tangible_item_quest_force_sensitive_fs_buff_item = object_tangible_item_quest_force_sensitive_shared_fs_buff_item:new {
 	gameObjectType = 8250,
+
+	-- Resurrect and buff item settings
+	reuseTime = 3600000, -- 1 hour cooldown between uses (in milliseconds)
+	buffDuration = 86400, -- 24 hours protection duration (in seconds)
+	maxUses = 5, -- Maximum uses
+	usesRemaining = 5, -- Starting uses
 }
 
 ObjectTemplates:addTemplate(object_tangible_item_quest_force_sensitive_fs_buff_item, "object/tangible/item/quest/force_sensitive/fs_buff_item.iff")

@@ -5,6 +5,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/ai/HelperDroidObject.h"
+#include "server/zone/objects/tangible/misc/FsBuffItem.h"
 #include "templates/params/creature/CreatureState.h"
 #include "templates/params/creature/ObjectFlag.h"
 
@@ -2349,6 +2350,20 @@ void CreatureObjectImplementation::notifyLoadFromDatabase() {
 
 	if (getZone() != nullptr)
 		ghost->setLinkDead();
+
+	// Restore FsBuffItem resurrection observers after restart
+	SceneObject* inventory = getSlottedObject("inventory");
+	if (inventory != nullptr) {
+		for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
+			SceneObject* item = inventory->getContainerObject(i);
+			if (item != nullptr && item->getGameObjectType() == 8250) { // FsBuffItem type
+				FsBuffItem* fsItem = dynamic_cast<FsBuffItem*>(item);
+				if (fsItem != nullptr) {
+					fsItem->restoreObserverOnLogin(asCreatureObject());
+				}
+			}
+		}
+	}
 }
 
 void CreatureObjectImplementation::notifyInsert(TreeEntry* obj) {
