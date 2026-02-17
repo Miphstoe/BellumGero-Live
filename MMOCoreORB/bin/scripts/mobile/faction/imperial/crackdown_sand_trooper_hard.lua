@@ -45,7 +45,13 @@ crackdown_sand_trooper_hard = Creature:new {
 				{group = "stormtrooper_common", chance = 100000},
 				{group = "wearables_rare", chance = 1000000}
 			}
-		}
+		},
+	{
+		groups = {
+			{group = "bg_token_group", chance = 10000000}
+		},
+		lootChance = 250000
+	}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

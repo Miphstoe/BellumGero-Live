@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_gurreck_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/gurreck_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/gurreck_hue.iff",
 	mobileTemplate = "gurreck_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_gurreck_deed, "object/tangible/deed/pet_deed/gurreck_deed.iff")

@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kusak_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/kusak_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kusak_hue.iff",
 	mobileTemplate = "kusak_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kusak_deed, "object/tangible/deed/pet_deed/kusak_deed.iff")

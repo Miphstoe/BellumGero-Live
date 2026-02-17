@@ -50,6 +50,12 @@ crackdown_command_security_guard = Creature:new {
 				{group = "armor_attachments", chance = 25000}
 			},
 			lootChance = 2800000
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

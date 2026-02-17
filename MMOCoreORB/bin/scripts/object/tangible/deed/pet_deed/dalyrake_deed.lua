@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_dalyrake_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/dalyrake_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/dalyrake_hue.iff",
 	mobileTemplate = "dalyrake_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_dalyrake_deed, "object/tangible/deed/pet_deed/dalyrake_deed.iff")

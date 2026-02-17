@@ -14,7 +14,7 @@ rebel_marshall_tier_1 = {
 		{groupTemplate = "junk", weight = 3150000},
 		{groupTemplate = "melee_weapons", weight = 700000},
 		{groupTemplate = "ranged_weapons", weight = 3500000},
-		{groupTemplate = "wearables_common", weight = 400000},
+		{groupTemplate = "radar_topology_screen", weight = 400000},
 		{groupTemplate = "weapon_stock_quest", weight = 250000},
 	}
 }

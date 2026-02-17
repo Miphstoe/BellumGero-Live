@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_roba_deed = object_tangible_deed_pet_deed_shared_r
 	generatedObjectTemplate = "mobile/pet/roba_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/roba_hue.iff",
 	mobileTemplate = "roba_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_roba_deed, "object/tangible/deed/pet_deed/roba_deed.iff")

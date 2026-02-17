@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_dune_lizard_deed = object_tangible_deed_pet_deed_s
 	generatedObjectTemplate = "mobile/pet/dune_lizard_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/dune_lizard_hue.iff",
 	mobileTemplate = "dune_lizard_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_dune_lizard_deed, "object/tangible/deed/pet_deed/dune_lizard_deed.iff")

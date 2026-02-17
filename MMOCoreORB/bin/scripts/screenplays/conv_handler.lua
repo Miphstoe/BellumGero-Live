@@ -1153,7 +1153,7 @@ function conv_handler:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selected
 end
 
 function conv_handler:getHolocronReward(screenId)
-    -- Template mapping for 9 village quest reward items (2 Holocrons of Destiny each)
+    -- Template mapping for 10 village quest reward items (2 Holocrons of Destiny each)
     local rewards = {
         ["give_holo_03"] = {name = "Bacta Tank", template = "object/tangible/item/quest/force_sensitive/bacta_tank.iff"},
         ["give_holo_04"] = {name = "Village Banner Pole", template = "object/tangible/item/quest/force_sensitive/fs_village_bannerpole_s01.iff"},
@@ -1162,6 +1162,7 @@ function conv_handler:getHolocronReward(screenId)
         ["give_holo_07"] = {name = "Village Sculpture 2", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_2.iff"},
         ["give_holo_08"] = {name = "Village Sculpture 3", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_3.iff"},
         ["give_holo_09"] = {name = "Village Sculpture 4", template = "object/tangible/item/quest/force_sensitive/fs_sculpture_4.iff"},
+        ["give_holo_10"] = {name = "Radar Topography Screen", template = "object/tangible/furniture/all/frn_all_desk_radar_topology_screen.iff"},
         ["give_holo_12"] = {name = "Dark Banner", template = "object/tangible/furniture/jedi/frn_all_banner_dark.iff"},
         ["give_holo_13"] = {name = "Light Banner", template = "object/tangible/furniture/jedi/frn_all_banner_light.iff"},
     }

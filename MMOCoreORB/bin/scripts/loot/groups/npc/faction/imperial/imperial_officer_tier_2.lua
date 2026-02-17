@@ -5,7 +5,7 @@ imperial_officer_tier_2 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_all", weight = 1000000},
+		{groupTemplate = "radar_topology_screen", weight = 1000000},
 		{groupTemplate = "armor_attachments", weight = 300000},
 		{groupTemplate = "clothing_attachments", weight = 300000},
 		{groupTemplate = "color_crystals", weight = 100000},

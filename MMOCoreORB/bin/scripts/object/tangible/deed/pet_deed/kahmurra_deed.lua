@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kahmurra_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/kahmurra_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/murra_hue.iff",
 	mobileTemplate = "kahmurra_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kahmurra_deed, "object/tangible/deed/pet_deed/kahmurra_deed.iff")

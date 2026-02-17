@@ -32,6 +32,7 @@ rebel_obscureops_agent = Creature:new {
 		"object/mobile/dressed_assassin_mission_giver_reb_01.iff",
 		"object/mobile/dressed_assassin_mission_giver_reb_02.iff",
 		"object/mobile/dressed_assassin_mission_giver_reb_03.iff"},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

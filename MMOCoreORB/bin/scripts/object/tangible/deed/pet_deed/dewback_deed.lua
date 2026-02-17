@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_dewback_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/dewback_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/dewback_hue.iff",
 	mobileTemplate = "dewback_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_dewback_deed, "object/tangible/deed/pet_deed/dewback_deed.iff")

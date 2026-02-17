@@ -1710,6 +1710,15 @@ bool TangibleObjectImplementation::isAttackableBy(CreatureObject* creature) {
 			if (owner == nullptr)
 				return false;
 
+			// Block pets from attacking players in PvP, only allow PvE attacks
+			// TEST: Block ALL pet attacks to verify code is being executed
+			agent->showFlyText("npc_reaction/flytext", "confused", 204, 0, 0); // "?!!?!?!"
+
+			if (isCreatureObject() && isPlayerCreature()) {
+				// Target is a player - block the attack
+				return false;
+			}
+
 			return isAttackableBy(owner);
 		}
 	}
@@ -1805,6 +1814,14 @@ bool TangibleObjectImplementation::isCityStatue() const {
 
 bool TangibleObjectImplementation::isCityFountain() const {
 	return (templateObject != nullptr && templateObject->getFullTemplateString().contains("object/tangible/furniture/city/fountain"));
+}
+
+bool TangibleObjectImplementation::isPetDecoration() const {
+	if (getGameObjectType() != SceneObjectType::CREATURE)
+		return false;
+
+	AiAgent* agent = dynamic_cast<AiAgent*>(const_cast<TangibleObjectImplementation*>(this));
+	return (agent != nullptr && agent->hasPetDeed());
 }
 
 bool TangibleObjectImplementation::isRebel() const {

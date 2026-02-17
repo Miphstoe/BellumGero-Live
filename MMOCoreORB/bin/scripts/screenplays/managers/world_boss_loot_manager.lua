@@ -13,6 +13,7 @@ local ELIGIBILITY_RADIUS = 64  -- meters - players must be within this range whe
 local BOX_LIFETIME_SECONDS = 30 * 60  -- 30 minutes
 local DEBUG_LOGS = true  -- Set to true for detailed debugging (ENABLED to verify level 350 loot)
 local CREDITS_PER_PLAYER = 5000  -- Credits awarded to each eligible player
+local ITEMS_PER_PLAYER = 3  -- Number of random loot items each player receives
 
 -- ===== Globals for tracking =====
 _G.__WB_LOOT_BOXES = _G.__WB_LOOT_BOXES or {}  -- boxOID -> { bossOID, eligiblePlayers{[playerOID]=true}, lootedPlayers{[playerOID]=true}, lootGroups, spawnTime }
@@ -332,45 +333,7 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel)
 
   -- Default to level 1 if not provided (backward compatibility)
   local lootLevel = tonumber(bossLevel) or 1
-  log("Generating loot at level %d for player", lootLevel)
-
-  -- Select a random loot group from the boss's loot tables
-  local selectedGroup = lootGroups[math.random(#lootGroups)]
-
-  if not selectedGroup or not selectedGroup.groups then
-    log("Invalid loot group structure")
-    return false
-  end
-
-  -- Calculate total weight and select a loot group
-  local totalWeight = 0
-  for _, entry in ipairs(selectedGroup.groups) do
-    totalWeight = totalWeight + (entry.chance or 0)
-  end
-
-  if totalWeight <= 0 then
-    log("No valid loot weights")
-    return false
-  end
-
-  local roll = math.random(totalWeight)
-  local cumulative = 0
-  local selectedLootGroup = nil
-
-  for _, entry in ipairs(selectedGroup.groups) do
-    cumulative = cumulative + (entry.chance or 0)
-    if roll <= cumulative then
-      selectedLootGroup = entry.group
-      break
-    end
-  end
-
-  if not selectedLootGroup then
-    log("Failed to select loot group from roll")
-    return false
-  end
-
-  log("Selected loot group: %s for player", selectedLootGroup)
+  log("Generating %d loot items at level %d for player", ITEMS_PER_PLAYER, lootLevel)
 
   -- Get player's inventory (protected)
   local pInventory = nil
@@ -398,53 +361,112 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel)
     end)
   end
 
-  -- Use createLoot to generate item from the loot group
-  -- Syntax: createLoot(container, lootGroup, level, true)
-  -- Use boss level for proper loot scaling
-  -- Wrap in pcall to prevent crashes from invalid loot groups
-  local itemOID = nil
-  local success = pcall(function()
-    itemOID = createLoot(pInventory, selectedLootGroup, lootLevel, true)
-  end)
+  -- Generate multiple loot items for the player
+  local itemsCreated = {}
+  local itemsSuccessful = 0
+  local itemsFailed = 0
 
-  if not success then
-    log("createLoot threw an error for group: %s", selectedLootGroup)
-    itemOID = nil
+  for i = 1, ITEMS_PER_PLAYER do
+    -- Select a random loot group for each item (can be different each time)
+    local selectedGroupForItem = lootGroups[math.random(#lootGroups)]
+
+    if selectedGroupForItem and selectedGroupForItem.groups then
+      -- Calculate total weight and select a loot group
+      local totalWeight = 0
+      for _, entry in ipairs(selectedGroupForItem.groups) do
+        totalWeight = totalWeight + (entry.chance or 0)
+      end
+
+      if totalWeight > 0 then
+        local roll = math.random(totalWeight)
+        local cumulative = 0
+        local selectedLootGroupForItem = nil
+
+        for _, entry in ipairs(selectedGroupForItem.groups) do
+          cumulative = cumulative + (entry.chance or 0)
+          if roll <= cumulative then
+            selectedLootGroupForItem = entry.group
+            break
+          end
+        end
+
+        if selectedLootGroupForItem then
+          log("Creating item %d/%d from loot group: %s", i, ITEMS_PER_PLAYER, selectedLootGroupForItem)
+
+          -- Use createLoot to generate item from the loot group
+          -- Syntax: createLoot(container, lootGroup, level, true)
+          -- Use boss level for proper loot scaling
+          local itemOID = nil
+          local success = pcall(function()
+            itemOID = createLoot(pInventory, selectedLootGroupForItem, lootLevel, true)
+          end)
+
+          if success and itemOID and itemOID ~= 0 then
+            local pItem = getSceneObject(itemOID)
+            local itemName = "an item"
+            if pItem then
+              local itemSO = SceneObject(pItem)
+              if itemSO then
+                itemName = itemSO:getDisplayedName() or "an item"
+              end
+            end
+            table.insert(itemsCreated, itemName)
+            itemsSuccessful = itemsSuccessful + 1
+            log("Successfully created item %d/%d: %s (OID: %s)", i, ITEMS_PER_PLAYER, itemName, tostring(itemOID))
+          else
+            itemsFailed = itemsFailed + 1
+            log("Failed to create item %d/%d from group: %s", i, ITEMS_PER_PLAYER, selectedLootGroupForItem)
+          end
+        else
+          itemsFailed = itemsFailed + 1
+          log("Failed to select loot group for item %d/%d", i, ITEMS_PER_PLAYER)
+        end
+      else
+        itemsFailed = itemsFailed + 1
+        log("No valid loot weights for item %d/%d", i, ITEMS_PER_PLAYER)
+      end
+    else
+      itemsFailed = itemsFailed + 1
+      log("Invalid loot group structure for item %d/%d", i, ITEMS_PER_PLAYER)
+    end
   end
 
-  log("createLoot called with level %d, group: %s, result: %s", lootLevel, selectedLootGroup, tostring(itemOID))
+  -- Build reward message
+  if itemsSuccessful > 0 or creditsGiven then
+    local rewardMsg = "\\#00FF00You received from " .. (bossName or "the World Boss") .. ": "
 
-  if itemOID and itemOID ~= 0 then
-    local pItem = getSceneObject(itemOID)
-    local itemName = "an item"
-    if pItem then
-      local itemSO = SceneObject(pItem)
-      if itemSO then
-        itemName = itemSO:getDisplayedName() or "an item"
+    if itemsSuccessful > 0 then
+      if itemsSuccessful == 1 then
+        rewardMsg = rewardMsg .. itemsCreated[1]
+      elseif itemsSuccessful == 2 then
+        rewardMsg = rewardMsg .. itemsCreated[1] .. " and " .. itemsCreated[2]
+      else
+        -- For 3+ items, use comma separation
+        for i = 1, itemsSuccessful - 1 do
+          rewardMsg = rewardMsg .. itemsCreated[i] .. ", "
+        end
+        rewardMsg = rewardMsg .. "and " .. itemsCreated[itemsSuccessful]
       end
     end
 
-    -- Build reward message
-    local rewardMsg = "\\#00FF00You received: " .. itemName
     if creditsGiven then
-      rewardMsg = rewardMsg .. " and " .. CREDITS_PER_PLAYER .. " credits"
+      if itemsSuccessful > 0 then
+        rewardMsg = rewardMsg .. ", plus " .. CREDITS_PER_PLAYER .. " credits"
+      else
+        rewardMsg = rewardMsg .. CREDITS_PER_PLAYER .. " credits"
+      end
     end
-    rewardMsg = rewardMsg .. " from " .. (bossName or "the World Boss") .. "!"
+
+    rewardMsg = rewardMsg .. "!"
 
     notifyPlayer(pPlayer, rewardMsg)
-    log("Successfully created loot from group %s (OID: %s) and gave %d credits", selectedLootGroup, tostring(itemOID), CREDITS_PER_PLAYER)
+    log("Loot distribution complete: %d items created, %d failed, credits: %s",
+        itemsSuccessful, itemsFailed, creditsGiven and "yes" or "no")
     return true
   else
-    -- Even if item creation failed, credits might have been given
-    if creditsGiven then
-      notifyPlayer(pPlayer, "\\#00FF00You received " .. CREDITS_PER_PLAYER .. " credits from " .. (bossName or "the World Boss") .. "!")
-      log("Credits given but item creation failed for group: %s", selectedLootGroup)
-      return true
-    else
-      notifyPlayer(pPlayer, "ERROR: Failed to create loot. Your inventory may be full or the loot group is invalid.")
-      log("createLoot failed for group: %s", selectedLootGroup)
-      return false
-    end
+    notifyPlayer(pPlayer, "ERROR: Failed to create loot. Your inventory may be full or the loot group is invalid.")
+    log("All loot creation failed - %d items failed", itemsFailed)
+    return false
   end
 end
 

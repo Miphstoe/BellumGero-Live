@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_brackaset_deed = object_tangible_deed_pet_deed_sha
 	generatedObjectTemplate = "mobile/pet/brackaset_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/brackaset_hue.iff",
 	mobileTemplate = "brackaset_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_brackaset_deed, "object/tangible/deed/pet_deed/brackaset_deed.iff")

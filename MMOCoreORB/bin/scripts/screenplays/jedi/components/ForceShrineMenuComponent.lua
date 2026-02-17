@@ -73,10 +73,15 @@ function ForceShrineMenuComponent:doMeditate(pObject, pPlayer)
 					KnightTrials:showCurrentTrial(pPlayer)
 				end
 			else
-				-- Not eligible yet - show eligibility requirements
+				-- Not eligible yet - show faction-specific guidance when neutral, otherwise generic requirements
+				local playerFaction = CreatureObject(pPlayer):getFaction()
 				local sui = SuiMessageBox.new("JediTrials", "emptyCallback")
 				sui.setTitle("Knight Trials")
-				sui.setPrompt("You are not yet eligible for the Knight Trials.\n\nYou must:\n- Be a Jedi Padawan (Rank 02)\n- Have at least 206 Jedi skill points invested\n- Have completed at least 2 full Force discipline trees\n\nContinue your training, young Padawan.")
+				if (playerFaction ~= FACTIONREBEL and playerFaction ~= FACTIONIMPERIAL) then
+					sui.setPrompt("You must choose a faction before beginning the Knight Trials.\n\nVisit a faction recruiter and align with either:\n- Rebel\n- Imperial\n\nOnce aligned, return to a Force Shrine to begin your trials.")
+				else
+					sui.setPrompt("You are not yet eligible for the Knight Trials.\n\nYou must:\n- Be a Jedi Padawan (Rank 02)\n- Have at least 206 Jedi skill points invested\n- Have completed at least 2 full Force discipline trees\n- Be aligned with the Rebel or Imperial faction\n\nContinue your training, young Padawan.")
+				end
 				sui.setOkButtonText("Close")
 				sui.sendTo(pPlayer)
 			end

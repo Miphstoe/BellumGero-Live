@@ -43,6 +43,7 @@
 
 object_tangible_deed_pet_deed_acklay_deed = object_tangible_deed_pet_deed_shared_acklay_deed:new {
 
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_acklay_deed, "object/tangible/deed/pet_deed/acklay_deed.iff")

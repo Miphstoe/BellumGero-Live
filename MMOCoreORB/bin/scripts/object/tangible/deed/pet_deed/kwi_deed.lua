@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kwi_deed = object_tangible_deed_pet_deed_shared_kw
 	generatedObjectTemplate = "mobile/pet/kwi_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kwi_hue.iff",
 	mobileTemplate = "kwi_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kwi_deed, "object/tangible/deed/pet_deed/kwi_deed.iff")

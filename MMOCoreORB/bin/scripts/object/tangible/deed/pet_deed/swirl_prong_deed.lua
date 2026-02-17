@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_swirl_prong_deed = object_tangible_deed_pet_deed_s
 	generatedObjectTemplate = "mobile/pet/swirl_prong_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/swirl_prong_hue.iff",
 	mobileTemplate = "swirl_prong_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_swirl_prong_deed, "object/tangible/deed/pet_deed/swirl_prong_deed.iff")

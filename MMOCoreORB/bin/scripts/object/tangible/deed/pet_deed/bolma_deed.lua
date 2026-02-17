@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_bolma_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "object/mobile/pet/bolma_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/bolma_hue.iff",
 	mobileTemplate = "bolma_be",
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_bolma_deed, "object/tangible/deed/pet_deed/bolma_deed.iff")

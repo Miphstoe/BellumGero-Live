@@ -27,6 +27,7 @@ at_st = Creature:new {
 	diet = NONE,
 
 	templates = {"object/mobile/atst.iff"},
+	
 	lootGroups = {},
 	conversationTemplate = "",
 	defaultAttack = "defaultdroidattack",

@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_veermok_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/veermok_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/veermok_hue.iff",
 	mobileTemplate = "veermok_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_veermok_deed, "object/tangible/deed/pet_deed/veermok_deed.iff")

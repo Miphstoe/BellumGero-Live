@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_choku_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/choku_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/choku_hue.iff",
 	mobileTemplate = "choku_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_choku_deed, "object/tangible/deed/pet_deed/choku_deed.iff")

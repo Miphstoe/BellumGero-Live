@@ -28,7 +28,7 @@ tamed_gurrcat = Creature:new {
 
 	templates = {"object/mobile/tusk_cat_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
-	lootGroups = {},
+	
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary

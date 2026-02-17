@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_slice_hound_deed = object_tangible_deed_pet_deed_s
 	generatedObjectTemplate = "mobile/pet/slice_hound_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/corellian_slice_hound_hue.iff",
 	mobileTemplate = "slice_hound_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_slice_hound_deed, "object/tangible/deed/pet_deed/slice_hound_deed.iff")

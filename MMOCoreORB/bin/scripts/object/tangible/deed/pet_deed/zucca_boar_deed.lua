@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_zucca_boar_deed = object_tangible_deed_pet_deed_sh
 	generatedObjectTemplate = "mobile/pet/zucca_boar_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/pet_control.iff", -- zucca_boar_hue.iff bugged in client
 	mobileTemplate = "zucca_boar_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_zucca_boar_deed, "object/tangible/deed/pet_deed/zucca_boar_deed.iff")

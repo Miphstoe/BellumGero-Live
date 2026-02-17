@@ -239,7 +239,7 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 				elseif isCrafted then
 				elseif name ~= nil and name ~= "" then
 					-- Item is eligible
-					local value = 1 -- Default value
+					local value = 250 -- Default value for items without a junk value
 
 					-- Safely get junk value
 					if tano.getJunkValue then

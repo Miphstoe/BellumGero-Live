@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_guf_drolg_deed = object_tangible_deed_pet_deed_sha
 	generatedObjectTemplate = "mobile/pet/guf_drolg_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/guf_drolg_hue.iff",
 	mobileTemplate = "guf_drolg_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_guf_drolg_deed, "object/tangible/deed/pet_deed/guf_drolg_deed.iff")

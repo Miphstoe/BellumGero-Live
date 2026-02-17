@@ -31,6 +31,7 @@ crackdown_swamp_trooper = Creature:new {
 	customAiMap = "crackdown",
 
 	templates = {"object/mobile/dressed_swamp_trooper.iff"},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

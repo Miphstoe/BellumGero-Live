@@ -28,6 +28,7 @@ tamed_razor_cat = Creature:new {
 
 	templates = {"object/mobile/tusk_cat_hue.iff"},
 	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

@@ -29,6 +29,7 @@ imperial_recruiter = Creature:new {
 	optionsBitmask = INVULNERABLE + CONVERSABLE,
 
 	templates = { "imperial_officer" },
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

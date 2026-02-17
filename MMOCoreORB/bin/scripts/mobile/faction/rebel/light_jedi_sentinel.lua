@@ -30,6 +30,7 @@ light_jedi_sentinel = Creature:new {
 	customAiMap = "enclaveSentinel",
 
 	templates = { "light_jedi" },
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

@@ -30,6 +30,7 @@ crackdown_imperial_exterminator = Creature:new {
 	customAiMap = "crackdown",
 
 	templates = {"object/mobile/dressed_imperial_officer_m_5.iff"},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

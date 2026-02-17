@@ -44,6 +44,12 @@ crackdown_dark_trooper = Creature:new {
 				{group = "armor_attachments", chance = 25000},
 				{group = "wearables_common", chance = 1000000}
 			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
 		}
 	},
 

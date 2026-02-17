@@ -27,6 +27,7 @@ royal_imperial_guard = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/royal_guard.iff"},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

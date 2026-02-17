@@ -30,7 +30,13 @@ imperial_stealth_operative = Creature:new {
 
 	templates = {"object/mobile/dressed_imperial_soldier_m.iff"},
 	lootGroups = {
-		{}
+		{},
+	{
+		groups = {
+			{group = "bg_token_group", chance = 10000000}
+		},
+		lootChance = 250000
+	}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
