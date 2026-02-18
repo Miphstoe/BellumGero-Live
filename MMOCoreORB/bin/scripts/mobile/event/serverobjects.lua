@@ -30,3 +30,9 @@ includeFile("event/spineclaw_alpha_woolamander.lua")
 includeFile("event/gravejaw_colossus_woolamander.lua")
 includeFile("event/rendhide_overlord_woolamander.lua")
 includeFile("event/fleshrend_matriarch_woolamander.lua")
+
+--Event Gungan Bosses
+includeFile("event/boss_grakk_na_joor.lua")
+includeFile("event/boss_vreego_makk_tarn.lua")
+includeFile("event/boss_rulo_besh_ka.lua")
+includeFile("event/boss_tarko_muu_zenn.lua")
