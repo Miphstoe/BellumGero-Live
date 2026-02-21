@@ -24,3 +24,9 @@ includeFile("event/dune_reaver.lua")
 includeFile("event/sandfang_alpha.lua")
 includeFile("event/twin_spine_terror.lua")
 includeFile("event/zerathul_buried_king.lua")
+
+--Event Woolamander variants
+includeFile("event/spineclaw_alpha_woolamander.lua")
+includeFile("event/gravejaw_colossus_woolamander.lua")
+includeFile("event/rendhide_overlord_woolamander.lua")
+includeFile("event/fleshrend_matriarch_woolamander.lua")

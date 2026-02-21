@@ -58,6 +58,7 @@ object_tangible_deed_pet_deed_angler_deed = object_tangible_deed_pet_deed_shared
 	mobileTemplate = "angler_be",	
 	
 	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_angler_deed, "object/tangible/deed/pet_deed/angler_deed.iff")

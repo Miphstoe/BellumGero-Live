@@ -230,6 +230,18 @@ rori_destroy_missions = {
 			maxDifficulty = 36,
 			size = 30,
 		},
+		{
+			lairTemplateName = "rori_monstrous_dark_graul_pack_neutral_none",
+			minDifficulty = 30,
+			maxDifficulty = 36,
+			size = 25,
+		},
+		{
+			lairTemplateName = "rori_wild_foreign_bantha_herd_neutral_none",
+			minDifficulty = 16,
+			maxDifficulty = 22,
+			size = 25,
+		},
 	}
 }
 

@@ -1,0 +1,23 @@
+/*
+			Copyright <SWGEmu>
+	See file COPYING for copying conditions. */
+
+package server.zone.objects.tangible.misc;
+
+include engine.core.ManagedObject;
+
+import engine.util.Observer;
+import engine.util.Observable;
+import server.zone.objects.tangible.misc.FsBuffItem;
+
+@json
+class FsBuffItemDeathObserver extends Observer {
+	@weakReference
+	protected FsBuffItem item;
+
+	public FsBuffItemDeathObserver(FsBuffItem buffItem) {
+		item = buffItem;
+	}
+
+	public native int notifyObserverEvent(unsigned int eventType, Observable observable, ManagedObject arg1, long arg2);
+}

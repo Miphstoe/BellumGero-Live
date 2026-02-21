@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_rancor_deed = object_tangible_deed_pet_deed_shared
 	generatedObjectTemplate = "mobile/pet/rancor_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/rancor_hue.iff",
 	mobileTemplate = "rancor_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_rancor_deed, "object/tangible/deed/pet_deed/rancor_deed.iff")

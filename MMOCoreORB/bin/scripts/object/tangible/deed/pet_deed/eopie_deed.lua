@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_eopie_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/eopie_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/eopie_hue.iff",
 	mobileTemplate = "eopie_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_eopie_deed, "object/tangible/deed/pet_deed/eopie_deed.iff")

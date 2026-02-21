@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_bageraset_deed = object_tangible_deed_pet_deed_sha
 	controlDeviceObjectTemplate = "object/intangible/pet/bageraset_hue.iff",
 	mobileTemplate = "bageraset_be",	
 	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_bageraset_deed, "object/tangible/deed/pet_deed/bageraset_deed.iff")

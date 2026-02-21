@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_ikopi_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/ikopi_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/ikopi_hue.iff",
 	mobileTemplate = "ikopi_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_ikopi_deed, "object/tangible/deed/pet_deed/ikopi_deed.iff")

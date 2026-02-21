@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_langlatch_deed = object_tangible_deed_pet_deed_sha
 	generatedObjectTemplate = "mobile/pet/langlatch_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/langlatch_hue.iff",
 	mobileTemplate = "langlatch_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_langlatch_deed, "object/tangible/deed/pet_deed/langlatch_deed.iff")

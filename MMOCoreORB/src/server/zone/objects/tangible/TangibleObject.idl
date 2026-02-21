@@ -1013,6 +1013,14 @@ class TangibleObject extends SceneObject {
 	public native boolean isCityFountain();
 
 	@read
+	public native boolean isPetDecoration();
+
+	@dirty
+	public boolean isPetDeedObject() {
+		return false;
+	}
+
+	@read
 	public boolean isInvisible() {
 		return invisible;
 	}

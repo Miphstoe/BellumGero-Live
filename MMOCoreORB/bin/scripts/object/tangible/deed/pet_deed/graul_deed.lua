@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_graul_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/graul_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/graul_hue.iff",
 	mobileTemplate = "graul_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_graul_deed, "object/tangible/deed/pet_deed/graul_deed.iff")

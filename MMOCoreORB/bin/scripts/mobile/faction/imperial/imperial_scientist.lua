@@ -35,6 +35,7 @@ imperial_scientist = Creature:new {
 		"object/mobile/dressed_combatmedic_trainer_rodian_male_01.iff",
 		"object/mobile/dressed_mercenary_medic_rodian_female_01.iff"
 	},
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

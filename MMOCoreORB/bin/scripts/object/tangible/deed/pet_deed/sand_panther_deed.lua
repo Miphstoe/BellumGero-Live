@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_sand_panther_deed = object_tangible_deed_pet_deed_
 	generatedObjectTemplate = "mobile/pet/razor_cat_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/corellian_sand_panther_hue.iff",
 	mobileTemplate = "razor_cat_be",
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_sand_panther_deed, "object/tangible/deed/pet_deed/sand_panther_deed.iff")

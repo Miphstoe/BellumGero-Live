@@ -28,6 +28,7 @@ tamed_slice_hound = Creature:new {
 
 	templates = {"object/mobile/corellian_slice_hound_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
+	
 	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

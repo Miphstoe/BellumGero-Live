@@ -46,7 +46,13 @@ crackdown_storm_commando = Creature:new {
 				{group = "armor_attachments", chance = 25000}
 			},
 			lootChance = 2800000
-		}
+		},
+	{
+		groups = {
+			{group = "bg_token_group", chance = 10000000}
+		},
+		lootChance = 250000
+	}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

@@ -171,6 +171,12 @@ talus_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "talus_wild_foreign_bantha_herd_neutral_none",
+			minDifficulty = 16,
+			maxDifficulty = 22,
+			size = 25,
+		},
+		{
 			lairTemplateName = "talus_lost_aqualish_captain_camp_neutral_large_theater",
 			minDifficulty = 15,
 			maxDifficulty = 20,

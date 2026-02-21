@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_carrion_spat_deed = object_tangible_deed_pet_deed_
 	generatedObjectTemplate = "mobile/pet/carrion_spat_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/carrion_spat_hue.iff",
 	mobileTemplate = "carrion_spat_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_carrion_spat_deed, "object/tangible/deed/pet_deed/carrion_spat_deed.iff")

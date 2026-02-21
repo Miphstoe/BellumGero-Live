@@ -44,7 +44,13 @@ crackdown_rebel_cadet = Creature:new {
 				{group = "wearables_common", chance = 1000000}
 			},
 			lootChance = 3000000
-		}
+		},
+	{
+		groups = {
+			{group = "bg_token_group", chance = 10000000}
+		},
+		lootChance = 250000
+	}
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

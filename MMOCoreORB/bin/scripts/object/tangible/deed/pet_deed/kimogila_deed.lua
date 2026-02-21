@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kimogila_deed = object_tangible_deed_pet_deed_shar
 	generatedObjectTemplate = "mobile/pet/kimogila_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kimogila_hue.iff",
 	mobileTemplate = "kimogila_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kimogila_deed, "object/tangible/deed/pet_deed/kimogila_deed.iff")

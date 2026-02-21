@@ -43,6 +43,7 @@
 
 object_tangible_deed_pet_deed_deed_droid_basic_base = object_tangible_deed_pet_deed_shared_deed_droid_basic_base:new {
 
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_deed_droid_basic_base, "object/tangible/deed/pet_deed/deed_droid_basic_base.iff")

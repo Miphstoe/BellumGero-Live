@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_tybis_deed = object_tangible_deed_pet_deed_shared_
 	generatedObjectTemplate = "mobile/pet/tybis_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/tybis_hue.iff",
 	mobileTemplate = "tybis_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_tybis_deed, "object/tangible/deed/pet_deed/tybis_deed.iff")

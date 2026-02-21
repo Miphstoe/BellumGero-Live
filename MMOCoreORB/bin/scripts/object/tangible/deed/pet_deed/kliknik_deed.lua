@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_kliknik_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/kliknik_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/kliknik_hue.iff",
 	mobileTemplate = "kliknik_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_kliknik_deed, "object/tangible/deed/pet_deed/kliknik_deed.iff")

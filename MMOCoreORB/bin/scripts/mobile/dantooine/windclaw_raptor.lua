@@ -1,5 +1,5 @@
 windclaw_raptor = Creature:new {
-	objectName = "@mob/creature_names:windclaw_raptor",
+	customName = "Windclaw Raptor",
 	socialGroup = "windclaw",
 	faction = "",
 	mobType = MOB_CARNIVORE,

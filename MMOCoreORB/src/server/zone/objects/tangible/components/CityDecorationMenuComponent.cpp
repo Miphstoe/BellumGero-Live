@@ -17,6 +17,12 @@ void CityDecorationMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 
 	ManagedReference<CityRegion*> city = player->getCityRegion().get();
 
+	// Check if this is a pet deed
+	TangibleObject* tano = dynamic_cast<TangibleObject*>(sceneObject);
+	if (tano != nullptr && tano->isPetDeedObject() && isInInventory(sceneObject, player) && player->getParent() == nullptr) {
+		menuResponse->addRadialMenuItem(233, 3, "@city/city:place"); // Place Decoration
+		return; // Pet deeds only show placement option when in inventory
+	}
 
 	if(isInInventory(sceneObject, player) && player->getParent() == nullptr) {
 		menuResponse->addRadialMenuItem(233, 3, "@city/city:place"); // Place Decoration
@@ -42,8 +48,11 @@ int CityDecorationMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 		return 0;
 
 	if ( selectedID == 233 ) {
+		// Check if this is a pet deed - route to PLACE_PET
+		TangibleObject* tano = dynamic_cast<TangibleObject*>(sceneObject);
+		byte taskOption = (tano != nullptr && tano->isPetDeedObject()) ? CityDecorationTask::PLACE_PET : CityDecorationTask::PLACE;
 
-		Reference<CityDecorationTask*> task = new CityDecorationTask(player, cast<TangibleObject*>(sceneObject), CityDecorationTask::PLACE);
+		Reference<CityDecorationTask*> task = new CityDecorationTask(player, cast<TangibleObject*>(sceneObject), taskOption);
 		task->execute();
 		return 0;
 

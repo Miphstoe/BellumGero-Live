@@ -57,6 +57,7 @@ object_tangible_deed_pet_deed_gualama_deed = object_tangible_deed_pet_deed_share
 	generatedObjectTemplate = "mobile/pet/gualama_be.iff",
 	controlDeviceObjectTemplate = "object/intangible/pet/gualama_hue.iff",
 	mobileTemplate = "gualama_be",	
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_pet_deed_gualama_deed, "object/tangible/deed/pet_deed/gualama_deed.iff")
