@@ -27,7 +27,7 @@ function JunkDealer:sendSellJunkSelection(pPlayer, pNpc, dealerType, skipItem)
 
 	-- Add some debugging
 	print("JunkDealer: Found " .. #junkList .. " eligible items")
-	
+
 	local suiManager = LuaSuiManager()
 	-- Restore original 3-button structure: Cancel, Sell All (junk only), Sell (individual any item)
 	suiManager:sendListBox(pNpc, pPlayer, "@loot_dealer:sell_title", "@loot_dealer:sell_prompt", 3, "@cancel", "@loot_dealer:btn_sell_all", "@loot_dealer:btn_sell", "JunkDealer", "sellListSuiCallback", 10, junkList)
@@ -95,6 +95,68 @@ function JunkDealer:isSchematic(pItem)
 
 		-- Check if it's a schematic by name patterns (most schematics have specific naming)
 		if string.find(lowerName, "schematic") or string.find(lowerName, "blueprint") then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:isBactaTank(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	local bactaTankTemplates = {
+		"object/tangible/furniture/all/frn_all_medic_bacta_tank.iff",
+		"object/tangible/furniture/all/frn_all_medic_bacta_tank_large.iff",
+		"object/tangible/furniture/all/frn_all_medic_bacta_tank_advanced.iff",
+		"object/tangible/furniture/all/frn_all_medical_console.iff",
+		"object/tangible/furniture/all/frn_all_organichem_stores.iff",
+		"object/tangible/loot/loot_schematic/chest_plain_schematic.iff",
+		"object/tangible/loot/loot_schematic/chest_technical_schematic.iff",
+		"object/tangible/loot/loot_schematic/armoire_plain_schematic.iff",
+		"object/tangible/loot/loot_schematic/armoire_technical_schematic.iff",
+		"object/tangible/loot/loot_schematic/cabinet_plain_schematic.iff",
+		"object/tangible/loot/loot_schematic/cabinet_technical_schematic.iff"
+	}
+
+	for _, template in ipairs(bactaTankTemplates) do
+		if templatePath == template then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:isVillageResource(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	local villageResourceTemplates = {
+		"object/tangible/loot/quest/endrine.iff",
+		"object/tangible/loot/quest/ostrine.iff",
+		"object/tangible/loot/quest/rudic.iff",
+		"object/tangible/loot/quest/ardanium_ii.iff",
+		"object/tangible/loot/quest/wind_crystal.iff"
+	}
+
+	for _, template in ipairs(villageResourceTemplates) do
+		if templatePath == template then
 			return true
 		end
 	end
@@ -220,7 +282,6 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 					end
 				end
 
-
 				-- Check if item is a schematic
 				local isSchematic = self:isSchematic(pItem)
 				local isTreasureMap = self:isTreasureMap(pItem)
@@ -234,6 +295,13 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 					table.insert(junkList, textTable)
 				elseif isTreasureMap then
 					local textTable = {"[1000] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				elseif self:isBactaTank(pItem) then
+					local textTable = {"[2000] " .. name, sceno:getObjectID()}
+					table.insert(junkList, textTable)
+				elseif self:isVillageResource(pItem) then
+					-- Village resources bypass the resource container keyword filter
+					local textTable = {"[250] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
 				elseif isResourceContainer then
 				elseif isCrafted then
@@ -273,7 +341,8 @@ function JunkDealer:getEligibleJunk(pPlayer, dealerType, skipItem)
 		"Travel Ticket",
 		"Jedi Robe",
 		"Dark Jedi Robe",
-		"Jedi Padawan Robe"
+		"Jedi Padawan Robe",
+		"Holocron of Destiny"
 	}
 
 	-- First scan the main inventory
@@ -350,6 +419,10 @@ function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
 				value = 2000
 			elseif self:isTreasureMap(pItem) then
 				value = 1000
+			elseif self:isBactaTank(pItem) then
+				value = 2000
+			elseif self:isVillageResource(pItem) then
+				value = 250
 			else
 				value = TangibleObject(pItem):getJunkValue()
 			end
@@ -438,7 +511,8 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 		"Travel Ticket",
 		"Jedi Robe",
 		"Dark Jedi Robe",
-		"Jedi Padawan Robe"
+		"Jedi Padawan Robe",
+		"Holocron of Destiny"
 	}
 
 	if itemName ~= nil then
@@ -457,12 +531,18 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	-- Check if this is a schematic - if so, buy for 2000 credits
 	local isSchematic = self:isSchematic(pItem)
 	local isTreasureMap = self:isTreasureMap(pItem)
+	local isBactaTank = self:isBactaTank(pItem)
+	local isVillageResource = self:isVillageResource(pItem)
 
 	local value = 250
 	if isSchematic then
 		value = 2000
 	elseif isTreasureMap then
 		value = 1000
+	elseif isBactaTank then
+		value = 2000
+	elseif isVillageResource then
+		value = 250
 	else
 		value = TangibleObject(pItem):getJunkValue()
 
@@ -471,7 +551,6 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 			value = 250 -- Default value for items without a junk value
 		end
 	end
-
 
 	createEvent(10, "JunkDealer", "destroyItem", pItem, "")
 
