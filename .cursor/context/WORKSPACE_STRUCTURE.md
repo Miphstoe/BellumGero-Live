@@ -34,6 +34,7 @@ Cursor-specific configuration and state. Only the structure relevant to the **pr
 | **rules/** | directory | Workspace rules (e.g. `bellum-gero.mdc`, `branch-naming.mdc`, `context-files.mdc`, `documentation.mdc` — document code thoroughly). |
 | **skills-cursor/** | directory | Cursor built-in agent skills (create-rule, create-skill, update-cursor-settings, etc.). |
 | **skills/** | directory | Project skills (e.g. **sync-config-branch** — sync dev env to Ender_CursorConfig; script can be run on a schedule). |
+| **scripts/** | directory | Workspace helper scripts (for example pre-merge safety checks used before any `git merge`). |
 | **argv.json** | file | IDE argv state. |
 | **ide_state.json** | file | IDE state. |
 | **README.md** | file | Index of rules, skills, and related docs. |

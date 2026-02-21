@@ -181,6 +181,7 @@ See `LOCAL_DEV_ENV_SETUP.md` for the full step-by-step.
 - **Strict builds**: this repo uses `-Werror` (warnings become errors). Fix the warning in code rather than weakening the build.
 - **New creatures and mission terminals**: When adding new creatures that should be targetable via Destroy missions, ask: *"Do you want this creature on the Destroy mission terminal so players can take target missions for it?"* If yes, follow **CREATURE_MISSION_TERMINAL_REQUIREMENTS.md** (add lair to planet `destroy_mission` list + set `missionBuilding` and `customName` on the lair).
 - **Branch split**: Cursor context, rules, and plans (`.cursor/` .md files) live on **Ender_CursorConfig**. Game code (Lua, C++, scripts under `MMOCoreORB/`) stays on feature branches (e.g. WildMeat). When moving Cursor docs from a feature branch into Ender_CursorConfig, use `git checkout <feature-branch> -- .cursor/context/<file>.md` (or specific paths)—do not replace the entire `.cursor/` with the other branch’s version.
+- **Never mix before merge**: Run `premerge` immediately before every `git merge`. It enforces five checks (`git rev-parse --show-toplevel`, `git branch --show-current`, `git status --short`, `git stash list --max-count=3`, `git fetch origin --prune`) and blocks merges on dirty trees. Script locations: `.cursor/scripts/premerge-check.sh` (WSL) and `.cursor/scripts/premerge-check.ps1` (PowerShell on Shadow PC).
 
 ### Quick SWGEmu note
 SWGEmu is an open-source server emulator aiming to recreate **Star Wars Galaxies (Pre-CU)**.

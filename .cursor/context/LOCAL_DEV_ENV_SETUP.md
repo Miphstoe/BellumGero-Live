@@ -70,6 +70,51 @@ git remote -v
 git submodule update --init --recursive
 ```
 
+## Git branch hygiene (Never Mix Again)
+
+This workflow prevents merge failures and accidental mixing of Cursor/dev files with gameplay code.
+
+### Why this exists
+
+- `Main` must stay production code only.
+- `Ender_CursorConfig` tracks `.cursor` rules/skills/context and dev docs.
+- Feature branches track gameplay/code changes.
+- Merges fail or become risky if you merge with a dirty working tree.
+
+### One-time alias setup
+
+#### WSL (Debian)
+
+```bash
+chmod +x ~/localswgserver/.cursor/scripts/premerge-check.sh
+echo "alias premerge='~/localswgserver/.cursor/scripts/premerge-check.sh ~/localswgserver'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Shadow PC (PowerShell)
+
+```powershell
+if (!(Test-Path $PROFILE)) { New-Item -Type File -Path $PROFILE -Force | Out-Null }
+Add-Content $PROFILE 'function premerge { & "C:\Users\Shadow\code\swg-bg\.cursor\scripts\premerge-check.ps1" -RepoPath "C:\Users\Shadow\code\swg-bg" }'
+. $PROFILE
+```
+
+### 5-command pre-merge gate (run before every merge)
+
+```bash
+premerge
+```
+
+`premerge` runs:
+
+1. `git rev-parse --show-toplevel`
+2. `git branch --show-current`
+3. `git status --short`
+4. `git stash list --max-count=3`
+5. `git fetch origin --prune`
+
+If any check fails, do not merge. Fix the issue, rerun `premerge`, then merge.
+
 ## System dependencies (one-time)
 
 ```bash

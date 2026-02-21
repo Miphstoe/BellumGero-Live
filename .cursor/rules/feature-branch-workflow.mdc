@@ -37,4 +37,31 @@ On **Main** and on **every feature branch**, .gitignore must include (so these a
 | 3 | On the new branch: add .cursor/ and dev doc paths to .gitignore; `git rm -r --cached .cursor` (and dev docs if tracked); commit so the feature branch no longer tracks them. |
 | 4 | Do feature work. When done: merge feature branch → Main (code only); dev env changes go to Ender_CursorConfig via sync script. |
 
+## Never Mix Again – pre-merge gate (mandatory)
+
+Before **every** merge, run this 5-command checklist from repo root:
+
+1. `git rev-parse --show-toplevel`
+2. `git branch --show-current`
+3. `git status --short`
+4. `git stash list --max-count=3`
+5. `git fetch origin --prune`
+
+### Pass/Fail rules
+
+- Repo root must be `.../localswgserver`.
+- Current branch must be the branch you intend to merge **into**.
+- `git status --short` must be empty (clean working tree).
+- Review stash output so hidden WIP is not forgotten.
+- Fetch must succeed before merge.
+
+If any check fails: **STOP**. Fix the failure, then rerun all five checks.
+
+### Aliases / shortcuts
+
+- **WSL/bash:** `alias premerge='~/localswgserver/.cursor/scripts/premerge-check.sh ~/localswgserver'`
+- **PowerShell (Shadow PC):** `function premerge { & "C:\Users\Shadow\code\swg-bg\.cursor\scripts\premerge-check.ps1" -RepoPath "C:\Users\Shadow\code\swg-bg" }`
+
+Use `premerge` immediately before any `git merge`.
+
 See **skills/start-new-feature/** for the exact steps and commands.
