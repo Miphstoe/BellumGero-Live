@@ -25,10 +25,26 @@ try {
 }
 
 if ($repoRoot) {
-    if ($repoRoot -match 'localswgserver$') {
-        PassMsg "Repo root is localswgserver."
+    # Keep all allowed repo roots in one list so this check is easy to maintain.
+    $approvedRoots = @(
+        @{
+            Label = "WSL localswgserver"
+            Match = { param([string]$path) $path -match "/localswgserver$" }
+        },
+        @{
+            Label = "Shadow PC clone"
+            Match = { param([string]$path) $path -ieq "c:/users/shadow/code/swg-bg" }
+        }
+    )
+
+    $normalizedRepoRoot = ($repoRoot -replace "\\", "/").TrimEnd("/")
+    $matchedRoot = $approvedRoots | Where-Object { & $_.Match $normalizedRepoRoot } | Select-Object -First 1
+
+    if ($matchedRoot) {
+        PassMsg "Repo root accepted ($($matchedRoot.Label)): $repoRoot"
     } else {
-        FailMsg "Repo root is not localswgserver: $repoRoot"
+        $allowedLabels = ($approvedRoots | ForEach-Object { $_.Label }) -join ", "
+        FailMsg "Repo root is not approved: $repoRoot (allowed: $allowedLabels)"
     }
 }
 
