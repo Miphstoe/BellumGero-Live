@@ -751,6 +751,11 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 			creatureInventory->setContainerOwnerID(ownerID);
 
 			if (lootManager->createLoot(trx, creatureInventory, destructedObject)) {
+				// Roll an additional lootable DNA sample for Bio-Engineer crafting.
+				Creature* destructedCreature = cast<Creature*>(destructedObject);
+				if (destructedCreature != nullptr) {
+					DnaManager::instance()->tryGenerateLootableSample(destructedCreature, creatureInventory);
+				}
 				trx.commit(true);
 			} else if (trx.isEnabled() && !trx.isAborted()) {
 				trx.abort() << "createLoot failed for ai object for unknown reason.";

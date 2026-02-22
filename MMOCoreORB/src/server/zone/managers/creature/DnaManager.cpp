@@ -13,12 +13,48 @@
 #include "server/zone/objects/tangible/deed/pet/PetDeed.h"
 #include "server/zone/managers/crafting/labratories/Genetics.h"
 #include "server/zone/managers/crafting/CraftingManager.h"
+#include "server/zone/objects/creature/ai/variables/CreatureAttackMap.h"
+#include "server/zone/managers/creature/DnaSampleRange.h"
 
 // #define DEBUG_GENETIC_LAB
 // #define DEBUG_GENERATION_SAMPLE
 // #define WRITE_DNA_TABLE
 
 AtomicInteger DnaManager::loadedDnaData;
+
+namespace {
+const char* DNA_SCHEMA_VERSION = "1";
+const int DNA_DROP_CHANCE_PCT = 10;
+
+static bool hasString(const Vector<String>& values, const String& value) {
+	for (int i = 0; i < values.size(); ++i) {
+		if (values.get(i) == value)
+			return true;
+	}
+
+	return false;
+}
+
+static bool isValidDnaAttackName(const String& attackName) {
+	if (attackName.isEmpty())
+		return false;
+
+	if (attackName == "defaultattack" || attackName == "creatureareaattack" || attackName == "none")
+		return false;
+
+	return true;
+}
+
+static int clampDnaStat(int value) {
+	if (value < 1)
+		return 1;
+
+	if (value > 1000)
+		return 1000;
+
+	return value;
+}
+}
 
 DnaManager::DnaManager() : Logger("DnaManager") {
 	lua = new Lua();
@@ -470,6 +506,284 @@ void DnaManager::generateSample(Creature* creature, CreatureObject* player, int 
 	} else {
 		prototype->destroyObjectFromDatabase(true);
 	}
+}
+
+int DnaManager::computeQualityScoreFromLevel(int creatureLevel) const {
+	int base = creatureLevel * 10;
+	int variance = System::random(150) - 75; // -75 .. +75
+	int score = base + variance;
+
+	if (score < 1)
+		score = 1;
+	else if (score > 1000)
+		score = 1000;
+
+	return score;
+}
+
+int DnaManager::qualityTierFromScore(int qualityScore) const {
+	if (qualityScore >= 900)
+		return DnaSampleRange::VHQ;
+	if (qualityScore >= 750)
+		return DnaSampleRange::HQ;
+	if (qualityScore >= 600)
+		return DnaSampleRange::AA;
+	if (qualityScore >= 450)
+		return DnaSampleRange::A;
+	if (qualityScore >= 300)
+		return DnaSampleRange::BA;
+	if (qualityScore >= 150)
+		return DnaSampleRange::LQ;
+
+	return DnaSampleRange::VLQ;
+}
+
+bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop) {
+	if (creature == nullptr || container == nullptr)
+		return false;
+
+	if (!creature->hasDNA() || creature->isBaby() || creature->isPet())
+		return false;
+
+	if (!forceDrop && System::random(99) >= DNA_DROP_CHANCE_PCT)
+		return false;
+
+	auto zoneServer = creature->getZoneServer();
+
+	if (zoneServer == nullptr)
+		return false;
+
+	auto craftingManager = zoneServer->getCraftingManager();
+
+	if (craftingManager == nullptr)
+		return false;
+
+	const CreatureTemplate* creatureTemplate = dynamic_cast<const CreatureTemplate*>(creature->getCreatureTemplate());
+
+	if (creatureTemplate == nullptr)
+		return false;
+
+	int creatureLevel = creature->getLevel();
+	int qualityScore = computeQualityScoreFromLevel(creatureLevel);
+	int qualityTier = qualityTierFromScore(qualityScore);
+
+	if (!qualityTemplates.containsKey(qualityTier))
+		return false;
+
+	ManagedReference<DnaComponent*> prototype = zoneServer->createObject(qualityTemplates.get(qualityTier), 2).castTo<DnaComponent*>();
+
+	if (prototype == nullptr)
+		return false;
+
+	Locker clocker(prototype);
+
+	int ferocity = creatureTemplate->getFerocity();
+	int hardiness = Genetics::hamToValue(creature->getMaxHAM(0), qualityTier);
+	int fortitude = Genetics::resistanceToValue(creature->getEffectiveResist(), creature->getArmor(), qualityTier);
+	int dexterity = Genetics::hamToValue(creature->getMaxHAM(3), qualityTier);
+	int endurance = Genetics::randomizeValue(500, qualityTier);
+	int intellect = Genetics::hamToValue(creature->getMaxHAM(6), qualityTier);
+	float hitChance = creature->getChanceHit();
+	if (hitChance <= 0.0f)
+		hitChance = creatureTemplate->getChanceHit();
+	int cleverness = Genetics::hitChanceToValue(hitChance, qualityTier);
+	int dependability = Genetics::dietToValue(creatureTemplate->getDiet(), qualityTier);
+	int courage = Genetics::meatTypeToValue(creatureTemplate->getMeatType(), qualityTier);
+	int fierceness = Genetics::ferocityToValue(ferocity, qualityTier);
+	float avgDamage = (creature->getDamageMin() + creature->getDamageMax()) / 2.0f;
+	if (avgDamage <= 0.0f)
+		avgDamage = (creatureTemplate->getDamageMin() + creatureTemplate->getDamageMax()) / 2.0f;
+	int power = Genetics::damageToValue(avgDamage, qualityTier);
+
+	// Ensure loot-generated DNA never collapses experiment rows due to zero/negative stat rolls.
+	if (intellect <= 0)
+		intellect = creatureLevel * 6;
+	if (cleverness <= 0)
+		cleverness = creatureLevel * 6;
+	if (fierceness <= 0)
+		fierceness = creatureLevel * 7;
+	if (power <= 0)
+		power = creatureLevel * 8;
+
+	cleverness = clampDnaStat(cleverness);
+	endurance = clampDnaStat(endurance);
+	fierceness = clampDnaStat(fierceness);
+	power = clampDnaStat(power);
+	intellect = clampDnaStat(intellect);
+	courage = clampDnaStat(courage);
+	dependability = clampDnaStat(dependability);
+	dexterity = clampDnaStat(dexterity);
+	fortitude = clampDnaStat(fortitude);
+	hardiness = clampDnaStat(hardiness);
+
+	const StringId* nameId = creature->getObjectName();
+
+	if (nameId->getFile().isEmpty() || nameId->getStringID().isEmpty()) {
+		prototype->setSource(creature->getCreatureName().toString());
+	} else {
+		prototype->setSource(nameId->getFullPath());
+	}
+
+	prototype->setQuality(qualityTier);
+	prototype->setLevel(creatureLevel);
+	prototype->setSerialNumber(craftingManager->generateSerial());
+	prototype->setStats(cleverness, endurance, fierceness, power, intellect, courage, dependability, dexterity, fortitude, hardiness);
+	prototype->setStun(creatureTemplate->getStun());
+	prototype->setKinetic(creatureTemplate->getKinetic());
+	prototype->setEnergy(creatureTemplate->getEnergy());
+	prototype->setBlast(creatureTemplate->getBlast());
+	prototype->setHeat(creatureTemplate->getHeat());
+	prototype->setCold(creatureTemplate->getCold());
+	prototype->setElectric(creatureTemplate->getElectricity());
+	prototype->setAcid(creatureTemplate->getAcid());
+	prototype->setSaber(creatureTemplate->getLightSaber());
+	prototype->setArmorRating(creatureTemplate->getArmor());
+
+	bool hasRanged = false;
+
+	if (creature->isAiAgent()) {
+		auto agent = creature->asAiAgent();
+
+		if (agent != nullptr)
+			hasRanged = agent->hasRangedWeapon();
+	}
+
+	prototype->setRanged(hasRanged);
+
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::STUN))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::STUN);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::KINETIC))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::KINETIC);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::ENERGY))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::ENERGY);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::BLAST))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::BLAST);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::HEAT))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::HEAT);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::COLD))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::COLD);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::ELECTRICITY))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::ELECTRICITY);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::ACID))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::ACID);
+	if (creatureTemplate->isSpecialProtection(SharedWeaponObjectTemplate::LIGHTSABER))
+		prototype->setSpecialResist(SharedWeaponObjectTemplate::LIGHTSABER);
+
+	Vector<String> candidateAttacks;
+
+	const CreatureAttackMap* primary = creatureTemplate->getPrimaryAttacks();
+	const CreatureAttackMap* secondary = creatureTemplate->getSecondaryAttacks();
+
+	if (primary != nullptr) {
+		for (int i = 0; i < primary->size(); ++i) {
+			String cmd = primary->getCommand(i);
+
+			if (isValidDnaAttackName(cmd) && !hasString(candidateAttacks, cmd))
+				candidateAttacks.add(cmd);
+		}
+	}
+
+	if (secondary != nullptr) {
+		for (int i = 0; i < secondary->size(); ++i) {
+			String cmd = secondary->getCommand(i);
+
+			if (isValidDnaAttackName(cmd) && !hasString(candidateAttacks, cmd))
+				candidateAttacks.add(cmd);
+		}
+	}
+
+	int attackCount = 1;
+
+	switch (qualityTier) {
+	case DnaSampleRange::VHQ:
+		attackCount = 3;
+		break;
+	case DnaSampleRange::HQ:
+	case DnaSampleRange::AA:
+		attackCount = (System::random(99) < 70 ? 2 : 3);
+		break;
+	case DnaSampleRange::A:
+	case DnaSampleRange::BA:
+		attackCount = (System::random(99) < 70 ? 1 : 2);
+		break;
+	default:
+		attackCount = 1;
+		break;
+	}
+
+	if (candidateAttacks.size() <= 0) {
+		candidateAttacks.add("defaultattack");
+		attackCount = 1;
+	}
+
+	if (attackCount > candidateAttacks.size())
+		attackCount = candidateAttacks.size();
+
+	Vector<String> selectedAttacks;
+	Vector<String> attackPool = candidateAttacks;
+
+	for (int i = 0; i < attackCount; ++i) {
+		if (attackPool.size() <= 0)
+			break;
+
+		int pickIndex = System::random(attackPool.size() - 1);
+		selectedAttacks.add(attackPool.get(pickIndex));
+		attackPool.remove(pickIndex);
+	}
+
+	if (selectedAttacks.size() <= 0)
+		selectedAttacks.add("defaultattack");
+
+	prototype->setSpecialAttackOne(selectedAttacks.get(0));
+
+	if (selectedAttacks.size() > 1)
+		prototype->setSpecialAttackTwo(selectedAttacks.get(1));
+	else
+		prototype->setSpecialAttackTwo("defaultattack");
+
+	prototype->setLuaStringData("bioengineer.dna.schemaVersion", DNA_SCHEMA_VERSION);
+	prototype->setLuaStringData("bioengineer.dna.creatureLevel", String::valueOf(creatureLevel));
+	prototype->setLuaStringData("bioengineer.dna.qualityScore", String::valueOf(qualityScore));
+
+	String qualityTierName = "VLQ";
+
+	switch (qualityTier) {
+	case DnaSampleRange::VHQ:
+		qualityTierName = "VHQ";
+		break;
+	case DnaSampleRange::HQ:
+		qualityTierName = "HQ";
+		break;
+	case DnaSampleRange::AA:
+		qualityTierName = "AA";
+		break;
+	case DnaSampleRange::A:
+		qualityTierName = "A";
+		break;
+	case DnaSampleRange::BA:
+		qualityTierName = "BA";
+		break;
+	case DnaSampleRange::LQ:
+		qualityTierName = "LQ";
+		break;
+	default:
+		break;
+	}
+
+	prototype->setLuaStringData("bioengineer.dna.qualityTier", qualityTierName);
+	prototype->setLuaStringData("bioengineer.dna.specialAttackCount", String::valueOf(selectedAttacks.size()));
+
+	for (int i = 0; i < selectedAttacks.size(); ++i) {
+		prototype->setLuaStringData("bioengineer.dna.specialAttack." + String::valueOf(i + 1), selectedAttacks.get(i));
+	}
+
+	if (!container->transferObject(prototype, -1, true, false)) {
+		prototype->destroyObjectFromDatabase(true);
+		return false;
+	}
+
+	container->broadcastObject(prototype, true);
+	return true;
 }
 
 float DnaManager::valueForLevel(int type, int level) {

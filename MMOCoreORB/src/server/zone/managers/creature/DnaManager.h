@@ -12,6 +12,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/Creature.h"
 #include "server/zone/objects/tangible/deed/pet/PetDeed.h"
+#include "server/zone/objects/scene/SceneObject.h"
 
 namespace server {
 namespace zone {
@@ -61,6 +62,9 @@ public:
 
 	void generateSample(Creature* creature, CreatureObject* player, int quality);
 	void generationalSample(PetDeed* deed, CreatureObject* player, int quality);
+	bool tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop = false);
+	int computeQualityScoreFromLevel(int creatureLevel) const;
+	int qualityTierFromScore(int qualityScore) const;
 	int levelForScore(int type, float value);
 	float valueForLevel(int type, int level);
 
