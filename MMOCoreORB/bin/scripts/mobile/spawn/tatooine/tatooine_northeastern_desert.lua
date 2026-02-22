@@ -522,6 +522,15 @@ tatooine_northeastern_desert = {
 			weighting = 15,
 			size = 10,
 		},
+		{
+			lairTemplateName = "tatooine_monstrous_giant_sand_beetle_click_neutral_large",
+			spawnLimit = -1,
+			minDifficulty = 68,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 8,
+			size = 20,
+		},
 	}
 }
 

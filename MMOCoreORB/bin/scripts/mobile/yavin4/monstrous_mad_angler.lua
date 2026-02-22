@@ -1,0 +1,42 @@
+monstrous_mad_angler = Creature:new {
+	objectName = "@mob/creature_names:mad_angler",
+	customName = "Monstrous Mad Angler",
+	socialGroup = "angler",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 68,
+	chanceHit = 0.73,
+	damageMin = 620,
+	damageMax = 860,
+	baseXp = 6340,
+	baseHAM = 24000,
+	baseHAMmax = 30000,
+	armor = 1,
+	resists = {45,45,25,20,25,20,20,25,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 8,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER + STALKER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/angler_hue.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	scale = 1.45,
+	lootGroups = {},
+
+	primaryWeapon = "object/weapon/ranged/creature/creature_spit_small_green.iff",
+	secondaryWeapon = "unarmed",
+	conversationTemplate = "",
+	primaryAttacks = {{"strongpoison",""}, {"blindattack",""}},
+	secondaryAttacks = {{"strongpoison",""}, {"blindattack",""}}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_mad_angler, "monstrous_mad_angler")

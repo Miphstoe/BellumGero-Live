@@ -18,6 +18,15 @@ tatooine_medium_bugland_ne = {
 			weighting = 20,
 			size = 15,
 		},
+		{
+			lairTemplateName = "tatooine_monstrous_kreetle_lair_neutral_small",
+			spawnLimit = -1,
+			minDifficulty = 62,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 4,
+			size = 20,
+		},
 	}
 }
 

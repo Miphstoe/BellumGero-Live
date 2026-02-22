@@ -1,0 +1,42 @@
+monstrous_lurking_angler = Creature:new {
+	objectName = "@mob/creature_names:lurking_angler",
+	customName = "Monstrous Lurking Angler",
+	socialGroup = "angler",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 67,
+	chanceHit = 0.71,
+	damageMin = 580,
+	damageMax = 800,
+	baseXp = 6025,
+	baseHAM = 22000,
+	baseHAMmax = 27000,
+	armor = 1,
+	resists = {40,40,25,20,25,20,25,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 7,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + STALKER + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/angler_hue.iff"},
+	hues = {16, 17, 18, 19, 20, 21, 22, 23},
+	scale = 1.3,
+	lootGroups = {},
+
+	primaryWeapon = "object/weapon/ranged/creature/creature_spit_small_green.iff",
+	secondaryWeapon = "unarmed",
+	conversationTemplate = "",
+	primaryAttacks = {{"mediumpoison",""}, {"intimidationattack",""}},
+	secondaryAttacks = {{"mediumpoison",""}, {"intimidationattack",""}}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_lurking_angler, "monstrous_lurking_angler")

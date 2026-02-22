@@ -1,0 +1,42 @@
+monstrous_overkreetle = Creature:new {
+	objectName = "@mob/creature_names:kreetle_over",
+	customName = "Monstrous Overkreetle",
+	socialGroup = "kreetle",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 70,
+	chanceHit = 0.78,
+	damageMin = 680,
+	damageMax = 920,
+	baseXp = 7142,
+	baseHAM = 26000,
+	baseHAMmax = 32000,
+	armor = 1,
+	resists = {45,45,25,20,25,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 8,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/tanc_mite_hue.iff"},
+	hues = {8, 9, 10, 11, 12, 13, 14, 15},
+	scale = 4.4,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"intimidationattack",""}, {"knockdownattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_overkreetle, "monstrous_overkreetle")

@@ -1,5 +1,5 @@
 tatooine_destroy_missions = {
-	minLevelCeiling = 25,
+	minLevelCeiling = 70,
 
 	lairSpawns = {
 		{
@@ -276,6 +276,24 @@ tatooine_destroy_missions = {
 			lairTemplateName = "tatooine_giant_sand_beetle_click_neutral_large",
 			minDifficulty = 28,
 			maxDifficulty = 32,
+			size = 25,
+		},
+		{
+			lairTemplateName = "tatooine_monstrous_kreetle_lair_neutral_small",
+			minDifficulty = 62,
+			maxDifficulty = 67,
+			size = 25,
+		},
+		{
+			lairTemplateName = "tatooine_monstrous_rock_beetle_click_neutral_medium",
+			minDifficulty = 64,
+			maxDifficulty = 68,
+			size = 25,
+		},
+		{
+			lairTemplateName = "tatooine_monstrous_giant_sand_beetle_click_neutral_large",
+			minDifficulty = 68,
+			maxDifficulty = 70,
 			size = 25,
 		},
 		{

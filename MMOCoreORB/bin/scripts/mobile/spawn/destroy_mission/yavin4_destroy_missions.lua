@@ -1,5 +1,5 @@
 yavin4_destroy_missions = {
-	minLevelCeiling = 25,
+	minLevelCeiling = 70,
 
 	lairSpawns = {
 		{
@@ -115,6 +115,24 @@ yavin4_destroy_missions = {
 			lairTemplateName = "yavin4_angler_giant_neutral_medium_boss_01",
 			minDifficulty = 33,
 			maxDifficulty = 37,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_monstrous_tanc_mite_lair_neutral_medium",
+			minDifficulty = 66,
+			maxDifficulty = 70,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_monstrous_angler_lair_neutral_medium",
+			minDifficulty = 67,
+			maxDifficulty = 68,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_monstrous_angler_giant_neutral_medium_boss_01",
+			minDifficulty = 68,
+			maxDifficulty = 70,
 			size = 25,
 		},
 		{

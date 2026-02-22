@@ -1,0 +1,42 @@
+monstrous_tanc_mite_warrior = Creature:new {
+	objectName = "@mob/creature_names:tanc_mite_warrior",
+	customName = "Monstrous Tanc Mite Warrior",
+	socialGroup = "mite",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 66,
+	chanceHit = 0.69,
+	damageMin = 560,
+	damageMax = 760,
+	baseXp = 5760,
+	baseHAM = 20000,
+	baseHAMmax = 25000,
+	armor = 1,
+	resists = {35,45,20,20,20,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 6,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/tanc_mite_hue.iff"},
+	hues = {16, 17, 18, 19, 20, 21, 22, 23},
+	scale = 1.35,
+	lootGroups = {},
+
+	primaryWeapon = "object/weapon/ranged/creature/creature_spit_spray_green.iff",
+	secondaryWeapon = "unarmed",
+	conversationTemplate = "",
+	primaryAttacks = {{"stunattack",""}},
+	secondaryAttacks = {{"stunattack",""}}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_tanc_mite_warrior, "monstrous_tanc_mite_warrior")

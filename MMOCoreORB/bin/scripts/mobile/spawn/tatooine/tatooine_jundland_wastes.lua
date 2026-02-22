@@ -243,6 +243,15 @@ tatooine_jundland_wastes = {
 			weighting = 20,
 			size = 10,
 		},
+		{
+			lairTemplateName = "tatooine_monstrous_rock_beetle_click_neutral_medium",
+			spawnLimit = -1,
+			minDifficulty = 64,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 8,
+			size = 20,
+		},
 	}
 }
 

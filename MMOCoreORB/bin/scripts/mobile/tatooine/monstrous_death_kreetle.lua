@@ -1,0 +1,42 @@
+monstrous_death_kreetle = Creature:new {
+	objectName = "@mob/creature_names:kreetle_death",
+	customName = "Monstrous Death Kreetle",
+	socialGroup = "kreetle",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 67,
+	chanceHit = 0.71,
+	damageMin = 580,
+	damageMax = 790,
+	baseXp = 5935,
+	baseHAM = 21000,
+	baseHAMmax = 26000,
+	armor = 1,
+	resists = {40,40,20,20,20,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 6,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/tanc_mite_hue.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	scale = 2.3,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}, {"knockdownattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_death_kreetle, "monstrous_death_kreetle")

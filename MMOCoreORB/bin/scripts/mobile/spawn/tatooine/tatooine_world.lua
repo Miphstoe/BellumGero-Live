@@ -505,6 +505,15 @@ tatooine_world = {
 			size = 20,
 		},
 		{
+			lairTemplateName = "tatooine_monstrous_rock_beetle_click_neutral_medium",
+			spawnLimit = -1,
+			minDifficulty = 64,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 6,
+			size = 20,
+		},
+		{
 			lairTemplateName = "global_dark_adept_neutral_none",
 			spawnLimit = 5,
 			minDifficulty = 136,
