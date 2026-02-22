@@ -30,3 +30,4 @@ MMOCoreORB/swgemu_grep.txt
 
 # Third party (if you don't want to track it)
 third_party/
+.vscode/
