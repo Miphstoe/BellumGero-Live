@@ -4,15 +4,15 @@ boss_rulo_besh_ka = Creature:new {
 	socialGroup = "gungan",
 	faction = "gungan",
 	mobType = MOB_NPC,
-	level = 350,
+	level = 275,
 	chanceHit = 30.0,
 	damageMin = 2951,
 	damageMax = 5525,
 	baseXp = 42824,
-	baseHAM = 1000000,
-	baseHAMmax = 1200000,
+	baseHAM = 700000,
+	baseHAMmax = 900000,
 	armor = 3,
-	resists = {195,195,195,195,195,195,195,195,140},
+	resists = {195,195,195,195,195,195,195,195,20},
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -96,7 +96,7 @@ boss_rulo_besh_ka = Creature:new {
 	secondaryWeapon = "none",
 	conversationTemplate = "",
 
-	primaryAttacks = { {"creatureareacombo","stateAccuracyBonus=100"}, {"creatureareaknockdown","stateAccuracyBonus=100"} },
+	primaryAttacks = { {"creatureareacombo","stateAccuracyBonus=100"}},
 	secondaryAttacks = { }
 }
 

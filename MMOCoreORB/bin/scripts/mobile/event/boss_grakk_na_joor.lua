@@ -4,15 +4,15 @@ boss_grakk_na_joor = Creature:new {
 	socialGroup = "gungan",
 	faction = "gungan",
 	mobType = MOB_NPC,
-	level = 350,
+	level = 250,
 	chanceHit = 30.0,
 	damageMin = 2951,
 	damageMax = 5525,
 	baseXp = 42824,
-	baseHAM = 1000000,
-	baseHAMmax = 1200000,
+	baseHAM = 500000,
+	baseHAMmax = 600000,
 	armor = 3,
-	resists = {195,195,195,195,195,195,195,195,140},
+	resists = {195,195,195,195,195,195,195,195,10},
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -96,7 +96,7 @@ boss_grakk_na_joor = Creature:new {
 	secondaryWeapon = "none",
 	conversationTemplate = "",
 
-	primaryAttacks = { {"creatureareacombo","stateAccuracyBonus=100"}, {"creatureareaknockdown","stateAccuracyBonus=100"} },
+	primaryAttacks = { {"creatureareacombo","stateAccuracyBonus=100"}},
 	secondaryAttacks = { }
 }
 
