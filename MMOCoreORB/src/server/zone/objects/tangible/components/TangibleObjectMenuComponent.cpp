@@ -24,9 +24,15 @@ void TangibleObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 		return;
 
 	TangibleObject* tano = cast<TangibleObject*>( sceneObject);
+	bool isLockedBriefcase = false;
+	if (tano->getObjectTemplate() != nullptr)
+		isLockedBriefcase = (tano->getObjectTemplate()->getTemplateFileName() == "briefcase_s01");
 
 	// Figure out what the object is and if its able to be Sliced.
-	if(tano->isSliceable() && !tano->isSecurityTerminal()) { // Check to see if the player has the correct skill level
+	if (isLockedBriefcase) {
+		if (player->hasSkill("combat_smuggler_novice"))
+			menuResponse->addRadialMenuItem(69, 3, "@slicing/slicing:slice"); // Slice
+	} else if(tano->isSliceable() && !tano->isSecurityTerminal()) { // Check to see if the player has the correct skill level
 
 		bool hasSkill = true;
 		ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
@@ -100,9 +106,36 @@ int TangibleObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 		return 0;
 
 	TangibleObject* tano = cast<TangibleObject*>( sceneObject);
+	bool isLockedBriefcase = false;
+	if (tano->getObjectTemplate() != nullptr)
+		isLockedBriefcase = (tano->getObjectTemplate()->getTemplateFileName() == "briefcase_s01");
 
+	if (selectedID == 69 && isLockedBriefcase) { // Slice [Locked Briefcase]
+		if (!player->hasSkill("combat_smuggler_novice")) {
+			player->sendSystemMessage("You lack the slicing expertise to crack open this briefcase.");
+			return 0;
+		}
 
-	if (selectedID == 69 && player->hasSkill("combat_smuggler_novice") ) { // Slice [PlayerLootCrate]
+		ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+		if (inventory == nullptr || !inventory->hasObjectInContainer(sceneObject->getObjectID())) {
+			player->sendSystemMessage("The briefcase must be in your inventory to slice it.");
+			return 0;
+		}
+
+		if (player->containsActiveSession(SessionFacadeType::SLICING)) {
+			player->sendSystemMessage("@slicing/slicing:already_slicing");
+			return 0;
+		}
+
+		if (!tano->isSliceable())
+			tano->setSliceable(true);
+
+		//Create Session
+		ManagedReference<SlicingSession*> session = new SlicingSession(player);
+		session->initalizeSlicingMenu(player, tano);
+
+		return 0;
+	} else if (selectedID == 69 && player->hasSkill("combat_smuggler_novice") ) { // Slice [PlayerLootCrate]
 		if (player->containsActiveSession(SessionFacadeType::SLICING)) {
 			player->sendSystemMessage("@slicing/slicing:already_slicing");
 			return 0;

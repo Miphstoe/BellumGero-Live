@@ -85,7 +85,7 @@ class SlicingSession extends Facade {
 			return "weapon_";
 		else if (obj.isArmorObject())
 			return "armor_";
-		else if (obj.isContainerObject() || tangibleObject.getGameObjectType() == 8245)
+		else if (obj.isContainerObject() || tangibleObject.getGameObjectType() == 8245 || (obj.getObjectTemplate() != null && obj.getObjectTemplate().getTemplateFileName() == "briefcase_s01"))
 			return "container_";
 		else
 			return "";

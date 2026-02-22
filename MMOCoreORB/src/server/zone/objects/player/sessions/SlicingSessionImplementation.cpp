@@ -64,8 +64,16 @@ void SlicingSessionImplementation::initalizeSlicingMenu(CreatureObject* pl, Tang
 	if (player == nullptr || tangibleObject == nullptr)
 		return;
 
-	if (!tangibleObject->isSliceable() && !isBaseSlice() && !isKeypadSlice())
+	bool isLockedBriefcase = false;
+	if (tangibleObject->getObjectTemplate() != nullptr)
+		isLockedBriefcase = (tangibleObject->getObjectTemplate()->getTemplateFileName() == "briefcase_s01");
+
+	if (!tangibleObject->isSliceable() && !isBaseSlice() && !isKeypadSlice() && !isLockedBriefcase)
 		return;
+
+	// Ensure legacy/spawned briefcases that are missing runtime sliceable state can still be sliced.
+	if (isLockedBriefcase && !tangibleObject->isSliceable())
+		tangibleObject->setSliceable(true);
 
 	if (tangibleObject->containsActiveSession(SessionFacadeType::SLICING)) {
 		player->sendSystemMessage("@slicing/slicing:slicing_underway");
@@ -576,6 +584,31 @@ void SlicingSessionImplementation::handleSlice(SuiListBox* suiBox) {
 		}
 
 	}
+	else if (tangibleObject->getObjectTemplate() != nullptr && tangibleObject->getObjectTemplate()->getTemplateFileName() == "briefcase_s01") {
+		// Tiered credit reward for Locked Briefcase slicing
+		// Tier 1 - Common     (60%): 1,000 - 10,000 credits
+		// Tier 2 - Rare       (30%): 10,001 - 20,000 credits
+		// Tier 3 - Super Rare (10%): 20,001 - 25,000 credits
+		uint32 tierRoll = System::random(99); // 0-99 inclusive
+		int credits = 0;
+
+		if (tierRoll < 60) {
+			credits = System::random(9000) + 1000;
+			player->sendSystemMessage("You crack open the briefcase and find a Common payout of " + String::valueOf(credits) + " credits!");
+		} else if (tierRoll < 90) {
+			credits = System::random(9999) + 10001;
+			player->sendSystemMessage("You crack open the briefcase revealing a Rare payout of " + String::valueOf(credits) + " credits!");
+		} else {
+			credits = System::random(4999) + 20001;
+			player->sendSystemMessage("Jackpot! The briefcase contains a Super Rare payout of " + String::valueOf(credits) + " credits!");
+		}
+
+		player->addCashCredits(credits, true);
+		playerManager->awardExperience(player, "slicing", 250, true);
+
+		tangibleObject->destroyObjectFromWorld(true);
+		tangibleObject->destroyObjectFromDatabase(true);
+	}
 
 	tangibleObject->notifyObservers(ObserverEventType::SLICED, player, 1);
 
@@ -919,6 +952,17 @@ void SlicingSessionImplementation::handleSliceFailed() {
 
 	if (tangibleObject == nullptr || player == nullptr)
 			return;
+
+	// Locked Briefcase - destroy on failed slice attempt (contents ruined)
+	if (tangibleObject->getObjectTemplate() != nullptr && tangibleObject->getObjectTemplate()->getTemplateFileName() == "briefcase_s01") {
+		player->sendSystemMessage("You botch the slice attempt, destroying the briefcase and its contents!");
+		Locker clocker(tangibleObject, player);
+		tangibleObject->destroyObjectFromWorld(true);
+		tangibleObject->destroyObjectFromDatabase(true);
+		tangibleObject->notifyObservers(ObserverEventType::SLICED, player, 0);
+		endSlicing();
+		return;
+	}
 
 	if (tangibleObject->isMissionTerminal())
 		player->sendSystemMessage("@slicing/slicing:terminal_fail");
