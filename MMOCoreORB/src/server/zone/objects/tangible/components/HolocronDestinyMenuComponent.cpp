@@ -14,13 +14,14 @@
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 
 void HolocronDestinyMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
-	// Call parent implementation first
-	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
+	// Call CityDecorationMenuComponent which adds "Place Decoration" / "Remove" / "Align"
+	// options for mayors, in addition to the standard TangibleObjectMenuComponent items.
+	CityDecorationMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	// Add the Holocron of Destiny specific menu option
 	menuResponse->addRadialMenuItem(20, 3, "Unlock Random Branch");
 
-	// Add lock/unlock options (only for items in player's inventory)
+	// Add lock/unlock options only when in player's inventory
 	if (!sceneObject->isASubChildOf(player))
 		return;
 
@@ -40,53 +41,48 @@ void HolocronDestinyMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 }
 
 int HolocronDestinyMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
-	if (!sceneObject->isASubChildOf(creature))
-		return 0;
-
-	// Handle "Unlock Random Branch" option
+	// Handle "Unlock Random Branch" option — only usable from inventory
 	if (selectedID == 20) {
+		if (!sceneObject->isASubChildOf(creature))
+			return 0;
 		JediManager::instance()->useItem(sceneObject, JediManager::ITEMHOLOCRONDESTINY, creature);
 		return 0;
 	}
 
-	// Handle lock/unlock options
+	// Handle lock/unlock options — only usable from inventory
 	if (selectedID == RADIAL_LOCK_ITEM || selectedID == RADIAL_UNLOCK_ITEM) {
+		if (!sceneObject->isASubChildOf(creature))
+			return 0;
+
 		TangibleObject* tangible = dynamic_cast<TangibleObject*>(sceneObject);
 		if (tangible == nullptr)
 			return 0;
 
 		if (selectedID == RADIAL_LOCK_ITEM) {
-			// Lock the item
 			tangible->setLuaStringData("item_locked", "1");
-
-			// Set yellow highlight to show item is locked
 			tangible->addMagicBit(true);
 
-			// Get item name for message
 			String itemName = sceneObject->getDisplayedName();
 			if (itemName.isEmpty())
 				itemName = sceneObject->getObjectNameStringIdName();
 
 			creature->sendSystemMessage("Holocron locked: " + itemName + " - This item cannot be deleted or traded.");
-
 			return 0;
-		} else if (selectedID == RADIAL_UNLOCK_ITEM) {
-			// Unlock the item
+		} else {
 			tangible->deleteLuaStringData("item_locked");
-
-			// Remove yellow highlight
 			tangible->removeMagicBit(true);
 
-			// Get item name for message
 			String itemName = sceneObject->getDisplayedName();
 			if (itemName.isEmpty())
 				itemName = sceneObject->getObjectNameStringIdName();
 
 			creature->sendSystemMessage("Holocron unlocked: " + itemName + " - This item can now be deleted or traded normally.");
-
 			return 0;
 		}
 	}
 
-	return TangibleObjectMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
+	// Route 233 (Place), 234 (Remove), 74-77 (Align) to CityDecorationMenuComponent.
+	// This also handles the case where the Holocron is placed in the world (not in inventory),
+	// which the old blanket isASubChildOf guard at the top would have silently dropped.
+	return CityDecorationMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
 }
