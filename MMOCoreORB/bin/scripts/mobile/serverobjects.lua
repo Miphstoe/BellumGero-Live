@@ -65,6 +65,9 @@ includeFile("vendors/bg_token_vendor.lua")
 -- BG Token Vendor 2 (75 tokens per item)
 includeFile("vendors/bg_token_vendor_2.lua")
 
+-- BG Token Vendor 3 - Veteran Rewards (75 tokens per item)
+includeFile("vendors/bg_token_vendor_3.lua")
+
 -- Bellum Gero custom mobiles
 includeFile("bellum/bg_force_old_man.lua")
 includeFile("bellum/mallichae_bg_rite.lua")

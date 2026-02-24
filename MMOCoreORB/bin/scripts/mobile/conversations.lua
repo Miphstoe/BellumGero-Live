@@ -363,6 +363,11 @@ includeFile("conversations/bellum/convo_bg_force_hermit.lua")
 print("Finished loading bg_token vendor 2")
 print("Finished loading bg_token vendor 2")
 
+-- BG TOKEN VENDOR 3 - Veteran Rewards
+print("Loading conversations.lua - checking bg_token vendor 3 (veteran rewards)...")
+includeFile("conversations/vendors/bg_token_vendor_3_conv.lua")
+print("Finished loading bg_token vendor 3")
+
 -- HOLOCRON VILLAGE VENDOR
 print("Loading conversations.lua - checking holocron village vendor...")
 includeFile("conversations/vendors/holocron_village_vendor_conv.lua")

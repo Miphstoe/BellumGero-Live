@@ -776,6 +776,7 @@ includeFile("boss/djm_random_name_boss.lua")
 includeFile("vendors/attachment_exchange_vendor.lua")
 includeFile("vendors/bg_token_vendor.lua")
 includeFile("vendors/bg_token_vendor_2.lua")
+includeFile("vendors/bg_token_vendor_3.lua")
 includeFile("vendors/apprentice_coin_vendor.lua")
 
 -- Player Bounty System

@@ -290,6 +290,13 @@ void PetDeedImplementation::updateCraftingValues(CraftingValues* values, bool fi
 		damageMin = component->getMinDamage();
 		damageMax = component->getMaxDamage();
 
+		// Cap crafted pet peak damage.
+		if (damageMax > 1000)
+			damageMax = 1000;
+
+		if (damageMin > damageMax)
+			damageMin = damageMax;
+
 		// Armor
 		armor = component->getArmor();
 
@@ -673,6 +680,13 @@ bool PetDeedImplementation::adjustPetStats(CreatureObject* player, CreatureObjec
 	damageMin = round((dps * 2.0) * 0.5);
 	attackSpeed = 2.0;
 	damageMax = round((dps * 2.0) * 1.5);
+
+	if (damageMax > 1000)
+		damageMax = 1000;
+
+	if (damageMin > damageMax)
+		damageMin = damageMax;
+
 	chanceHit = DnaManager::instance()->valueForLevel(DnaManager::HIT_LEVEL, oldLevel);
 
 	// Adjust Armor Now

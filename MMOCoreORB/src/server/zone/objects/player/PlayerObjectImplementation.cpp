@@ -2505,34 +2505,39 @@ void PlayerObjectImplementation::activateForcePowerRegen() {
 		forceRegenerationEvent = new ForceRegenerationEvent(asPlayerObject());
 	}
 
-	if (!forceRegenerationEvent->isScheduled()) {
-		int forceControlMod = 0, forceManipulationMod = 0;
+	// Always recalculate the regen interval so rank-ups take effect immediately.
+	// Bug fix 1: use force_control_dark (not force_power_dark) for dark side regen.
+	int forceControlMod = 0, forceManipulationMod = 0;
 
-		if (creature->hasSkill("force_rank_light_novice")) {
-			forceControlMod = creature->getSkillMod("force_control_light");
-			forceManipulationMod = creature->getSkillMod("force_manipulation_light");
-		} else if (creature->hasSkill("force_rank_dark_novice")) {
-			forceControlMod = creature->getSkillMod("force_power_dark");
-			forceManipulationMod = creature->getSkillMod("force_manipulation_dark");
-		}
-
-		regen += (forceControlMod + forceManipulationMod) / 10.f;
-
-		int regenMultiplier = creature->getSkillMod("private_force_regen_multiplier");
-		int regenDivisor = creature->getSkillMod("private_force_regen_divisor");
-
-		if (regenMultiplier != 0)
-			regen *= regenMultiplier;
-
-		if (regenDivisor != 0)
-			regen /= regenDivisor;
-
-		float timer = regen / 5.f;
-
-		float scheduledTime = 10 / timer;
-		uint64 miliTime = static_cast<uint64>(scheduledTime * 1000.f);
-		forceRegenerationEvent->schedule(miliTime);
+	if (creature->hasSkill("force_rank_light_novice")) {
+		forceControlMod = creature->getSkillMod("force_control_light");
+		forceManipulationMod = creature->getSkillMod("force_manipulation_light");
+	} else if (creature->hasSkill("force_rank_dark_novice")) {
+		forceControlMod = creature->getSkillMod("force_control_dark");
+		forceManipulationMod = creature->getSkillMod("force_manipulation_dark");
 	}
+
+	regen += (forceControlMod + forceManipulationMod) / 10.f;
+
+	int regenMultiplier = creature->getSkillMod("private_force_regen_multiplier");
+	int regenDivisor = creature->getSkillMod("private_force_regen_divisor");
+
+	if (regenMultiplier != 0)
+		regen *= regenMultiplier;
+
+	if (regenDivisor != 0)
+		regen /= regenDivisor;
+
+	float timer = regen / 5.f;
+
+	float scheduledTime = 10 / timer;
+	uint64 miliTime = static_cast<uint64>(scheduledTime * 1000.f);
+
+	// Cancel any already-running event so the new interval takes effect immediately.
+	if (forceRegenerationEvent->isScheduled())
+		forceRegenerationEvent->cancel();
+
+	forceRegenerationEvent->schedule(miliTime);
 }
 
 void PlayerObjectImplementation::setLinkDead(bool isSafeLogout) {

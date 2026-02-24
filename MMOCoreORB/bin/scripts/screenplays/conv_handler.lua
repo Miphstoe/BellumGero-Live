@@ -60,10 +60,11 @@ function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOp
         return self:handleAttachmentTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
     end
 
-    -- Check if this is a bg_token vendor trade screen (vendor 1 or 2)
+    -- Check if this is a bg_token vendor trade screen (vendor 1, 2, or 3)
     if string.find(screenId, "give_item_") then
-        -- Check if it's vendor 2 (75 tokens) vs vendor 1 (50 tokens)
-        if string.find(screenId, "give_item_2_") then
+        if string.find(screenId, "give_item_3_") then
+            return self:handleBGTokenTrade3(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+        elseif string.find(screenId, "give_item_2_") then
             return self:handleBGTokenTrade2(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
         else
             return self:handleBGTokenTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
@@ -565,6 +566,153 @@ function conv_handler:getBGTokenReward2(screenId)
         ["give_item_2_18"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
         ["give_item_2_19"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
         ["give_item_2_20"] = {name = "Large Potted Plant (Style 3)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s3.iff"},
+    }
+    return rewards[screenId]
+end
+
+-- ============================= BG TOKEN VENDOR 3 HANDLER (75 tokens - Veteran Rewards) =============================
+
+function conv_handler:handleBGTokenTrade3(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    print("[BG-TOKEN-3] === ENTERED handleBGTokenTrade3 ===")
+    print("[BG-TOKEN-3] screenId: " .. tostring(screenId))
+
+    local screen = LuaConversationScreen(pConvScreen)
+    local requiredTokens = 75
+
+    -- Get reward info for this item
+    local rewardInfo = self:getBGTokenReward3(screenId)
+
+    if not rewardInfo then
+        print("[BG-TOKEN-3] ERROR: No reward info found for screenId: " .. screenId)
+        screen:setCustomDialogText("Error: Invalid item selection.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-3] === STARTING " .. rewardInfo.name .. " TRADE ===")
+    print("[BG-TOKEN-3] Required tokens: " .. requiredTokens)
+
+    -- Count bg_tokens
+    print("[BG-TOKEN-3] About to count tokens...")
+    local success, tokenCount = pcall(function()
+        return self:countBGTokens(pPlayer)
+    end)
+
+    if not success then
+        print("[BG-TOKEN-3] Error counting tokens: " .. tostring(tokenCount))
+        screen:setCustomDialogText("Error reading your inventory. Please try again later.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-3] Found " .. tokenCount .. " tokens")
+
+    if tokenCount < requiredTokens then
+        screen:setCustomDialogText("You only have " .. tokenCount .. " Bellum Gero Tokens, but need " .. requiredTokens .. ". Please collect more!")
+        return pConvScreen
+    end
+
+    -- Remove tokens
+    print("[BG-TOKEN-3] About to remove tokens...")
+    local removeSuccess, removedCount = pcall(function()
+        return self:removeBGTokens(pPlayer, requiredTokens)
+    end)
+
+    if not removeSuccess or removedCount < requiredTokens then
+        print("[BG-TOKEN-3] Error removing tokens. Removed: " .. (removedCount or 0))
+        screen:setCustomDialogText("Error removing tokens. Trade cancelled.")
+        return pConvScreen
+    end
+
+    print("[BG-TOKEN-3] Successfully removed " .. removedCount .. " tokens")
+
+    -- Give reward
+    print("[BG-TOKEN-3] About to give reward...")
+    local rewardSuccess = self:giveReward(pPlayer, rewardInfo.template, rewardInfo.name)
+
+    if rewardSuccess then
+        screen:setCustomDialogText("Trade successful!\n\n" .. removedCount .. " Bellum Gero Tokens removed.\n\nYou received: " .. rewardInfo.name .. "\n\nCheck your inventory!")
+        print("[BG-TOKEN-3] Successfully gave " .. rewardInfo.name .. " to player")
+    else
+        screen:setCustomDialogText("Tokens removed but error giving reward. Contact an admin.")
+        print("[BG-TOKEN-3] Failed to give " .. rewardInfo.name)
+    end
+
+    return pConvScreen
+end
+
+function conv_handler:getBGTokenReward3(screenId)
+    -- Template mapping for 75 veteran reward items
+    local rewards = {
+        ["give_item_3_02"] = {name = "Data Terminal Style 1", template = "object/tangible/veteran_reward/data_terminal_s1.iff"},
+        ["give_item_3_03"] = {name = "Data Terminal Style 2", template = "object/tangible/veteran_reward/data_terminal_s2.iff"},
+        ["give_item_3_04"] = {name = "Data Terminal Style 3", template = "object/tangible/veteran_reward/data_terminal_s3.iff"},
+        ["give_item_3_05"] = {name = "Data Terminal Style 4", template = "object/tangible/veteran_reward/data_terminal_s4.iff"},
+        ["give_item_3_06"] = {name = "Protocol Droid Toy", template = "object/tangible/veteran_reward/frn_vet_protocol_droid_toy.iff"},
+        ["give_item_3_07"] = {name = "R2 Unit Toy", template = "object/tangible/veteran_reward/frn_vet_r2_toy.iff"},
+        ["give_item_3_09"] = {name = "Falcon Couch Corner", template = "object/tangible/veteran_reward/frn_couch_falcon_corner_s01.iff"},
+        ["give_item_3_10"] = {name = "Falcon Couch Section", template = "object/tangible/veteran_reward/frn_couch_falcon_section_s01.iff"},
+        ["give_item_3_11"] = {name = "TIE Fighter Toy", template = "object/tangible/veteran_reward/frn_vet_tie_fighter_toy.iff"},
+        ["give_item_3_12"] = {name = "X-Wing Toy", template = "object/tangible/veteran_reward/frn_vet_x_wing_toy.iff"},
+        ["give_item_3_15"] = {name = "SE Goggles Style 1", template = "object/tangible/wearables/goggles/goggles_s01.iff"},
+        ["give_item_3_16"] = {name = "SE Goggles Style 2", template = "object/tangible/wearables/goggles/goggles_s02.iff"},
+        ["give_item_3_17"] = {name = "SE Goggles Style 3", template = "object/tangible/wearables/goggles/goggles_s03.iff"},
+        ["give_item_3_18"] = {name = "SE Goggles Style 4", template = "object/tangible/wearables/goggles/goggles_s04.iff"},
+        ["give_item_3_19"] = {name = "SE Goggles Style 5", template = "object/tangible/wearables/goggles/goggles_s05.iff"},
+        ["give_item_3_20"] = {name = "SE Goggles Style 6", template = "object/tangible/wearables/goggles/goggles_s06.iff"},
+        ["give_item_3_21"] = {name = "Darth Vader Toy", template = "object/tangible/veteran_reward/frn_vet_darth_vader_toy.iff"},
+        ["give_item_3_22"] = {name = "Tech Console Sectional A", template = "object/tangible/veteran_reward/frn_tech_console_sectional_a.iff"},
+        ["give_item_3_23"] = {name = "Tech Console Sectional B", template = "object/tangible/veteran_reward/frn_tech_console_sectional_b.iff"},
+        ["give_item_3_24"] = {name = "Tech Console Sectional C", template = "object/tangible/veteran_reward/frn_tech_console_sectional_c.iff"},
+        ["give_item_3_25"] = {name = "Tech Console Sectional D", template = "object/tangible/veteran_reward/frn_tech_console_sectional_d.iff"},
+        ["give_item_3_26"] = {name = "Jabba Toy", template = "object/tangible/veteran_reward/frn_vet_jabba_toy.iff"},
+        ["give_item_3_27"] = {name = "Stormtrooper Toy", template = "object/tangible/veteran_reward/frn_vet_stormtrooper_toy.iff"},
+        ["give_item_3_28"] = {name = "Camp Center (Small)", template = "object/tangible/camp/camp_spit_s2.iff"},
+        ["give_item_3_29"] = {name = "Camp Center (Large)", template = "object/tangible/camp/camp_spit_s3.iff"},
+        ["give_item_3_30"] = {name = "Gold Ornamental Vase Style 1", template = "object/tangible/furniture/tatooine/frn_tato_vase_style_01.iff"},
+        ["give_item_3_31"] = {name = "Gold Ornamental Vase Style 2", template = "object/tangible/furniture/tatooine/frn_tato_vase_style_02.iff"},
+        ["give_item_3_32"] = {name = "Foodcart", template = "object/tangible/furniture/decorative/foodcart.iff"},
+        ["give_item_3_33"] = {name = "Park Bench", template = "object/tangible/furniture/all/frn_bench_generic.iff"},
+        ["give_item_3_34"] = {name = "Professor Desk", template = "object/tangible/furniture/decorative/professor_desk.iff"},
+        ["give_item_3_35"] = {name = "Diagnostic Screen", template = "object/tangible/furniture/decorative/diagnostic_screen.iff"},
+        ["give_item_3_36"] = {name = "Large Potted Plant Style 2", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s2.iff"},
+        ["give_item_3_37"] = {name = "Large Potted Plant Style 3", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s3.iff"},
+        ["give_item_3_38"] = {name = "Large Potted Plant Style 4", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s4.iff"},
+        ["give_item_3_39"] = {name = "Bar Countertop", template = "object/tangible/furniture/modern/bar_counter_s1.iff"},
+        ["give_item_3_40"] = {name = "Bar Countertop (Curved, Style 1)", template = "object/tangible/furniture/modern/bar_piece_curve_s1.iff"},
+        ["give_item_3_41"] = {name = "Bar Countertop (Curved, Style 2)", template = "object/tangible/furniture/modern/bar_piece_curve_s2.iff"},
+        ["give_item_3_42"] = {name = "Bar Countertop (Straight, Style 1)", template = "object/tangible/furniture/modern/bar_piece_straight_s1.iff"},
+        ["give_item_3_43"] = {name = "Bar Countertop (Straight, Style 2)", template = "object/tangible/furniture/modern/bar_piece_straight_s2.iff"},
+        ["give_item_3_44"] = {name = "Round Cantina Table Style 1", template = "object/tangible/furniture/all/frn_all_table_s01.iff"},
+        ["give_item_3_45"] = {name = "Round Cantina Table Style 2", template = "object/tangible/furniture/all/frn_all_table_s02.iff"},
+        ["give_item_3_46"] = {name = "Round Cantina Table Style 3", template = "object/tangible/furniture/all/frn_all_table_s03.iff"},
+        ["give_item_3_47"] = {name = "Large Cantina Sofa", template = "object/tangible/furniture/tatooine/frn_tatt_chair_cantina_seat_2.iff"},
+        ["give_item_3_48"] = {name = "Cafe Parasol", template = "object/tangible/furniture/tatooine/frn_tato_cafe_parasol.iff"},
+        ["give_item_3_49"] = {name = "Medium Oval Rug", template = "object/tangible/furniture/modern/rug_oval_m_s02.iff"},
+        ["give_item_3_50"] = {name = "Small Oval Rug", template = "object/tangible/furniture/modern/rug_oval_sml_s01.iff"},
+        ["give_item_3_51"] = {name = "Medium Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_m_s01.iff"},
+        ["give_item_3_52"] = {name = "Small Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_sml_s01.iff"},
+        ["give_item_3_53"] = {name = "Medium Round Rug", template = "object/tangible/furniture/modern/rug_rnd_m_s01.iff"},
+        ["give_item_3_54"] = {name = "Small Round Rug", template = "object/tangible/furniture/modern/rug_rnd_sml_s01.iff"},
+        ["give_item_3_55"] = {name = "Bith Skull", template = "object/tangible/loot/misc/loot_skull_bith.iff"},
+        ["give_item_3_56"] = {name = "Human Skull", template = "object/tangible/loot/misc/loot_skull_human.iff"},
+        ["give_item_3_57"] = {name = "Ithorian Skull", template = "object/tangible/loot/misc/loot_skull_ithorian.iff"},
+        ["give_item_3_58"] = {name = "Thune Skull", template = "object/tangible/loot/misc/loot_skull_thune.iff"},
+        ["give_item_3_59"] = {name = "Voritor Lizard Skull", template = "object/tangible/loot/misc/loot_skull_voritor.iff"},
+        ["give_item_3_60"] = {name = "Rebel Endor Helmet", template = "object/tangible/wearables/helmet/helmet_s06.iff"},
+        ["give_item_3_61"] = {name = "Large Rectangular Rug Style 1", template = "object/tangible/furniture/modern/rug_rect_lg_s01.iff"},
+        ["give_item_3_62"] = {name = "Large Rectangular Rug Style 2", template = "object/tangible/furniture/modern/rug_rect_lg_s02.iff"},
+        ["give_item_3_63"] = {name = "Large Oval Rug", template = "object/tangible/furniture/modern/rug_oval_lg_s01.iff"},
+        ["give_item_3_64"] = {name = "Large Round Rug", template = "object/tangible/furniture/modern/rug_rnd_lg_s01.iff"},
+        ["give_item_3_65"] = {name = "Round Data Terminal", template = "object/tangible/furniture/all/frn_all_desk_map_table.iff"},
+        ["give_item_3_66"] = {name = "Nightsister Melee Armguard", template = "object/tangible/wearables/armor/nightsister/armor_nightsister_bicep_r_s01.iff"},
+        ["give_item_3_67"] = {name = "Painting: Cast Wing in Flight", template = "object/tangible/veteran_reward/one_year_anniversary/painting_01.iff"},
+        ["give_item_3_68"] = {name = "Painting: Decimator", template = "object/tangible/veteran_reward/one_year_anniversary/painting_02.iff"},
+        ["give_item_3_69"] = {name = "Painting: Tatooine Dune Speeder", template = "object/tangible/veteran_reward/one_year_anniversary/painting_03.iff"},
+        ["give_item_3_70"] = {name = "Painting: Weapon of War", template = "object/tangible/veteran_reward/one_year_anniversary/painting_04.iff"},
+        ["give_item_3_71"] = {name = "Painting: Fighter Study", template = "object/tangible/veteran_reward/one_year_anniversary/painting_05.iff"},
+        ["give_item_3_72"] = {name = "Painting: Hutt Greed", template = "object/tangible/veteran_reward/one_year_anniversary/painting_06.iff"},
+        ["give_item_3_73"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
+        ["give_item_3_74"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
+        ["give_item_3_75"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
     }
     return rewards[screenId]
 end

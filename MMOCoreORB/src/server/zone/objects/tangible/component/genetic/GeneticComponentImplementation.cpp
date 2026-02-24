@@ -112,14 +112,18 @@ void GeneticComponentImplementation::updateCraftingValues(CraftingValues* values
 	/*if (values->getMinValue("lightsabereffectiveness") > 0)
 		setSpecialResist(SharedWeaponObjectTemplate::LIGHTSABER);*/
 
-	if (fortitude > 500) {
-		armorRating = 1;
-
-	// min - max values
-	} else if (fortitude > 1000) {
+	// Clamp fortitude first, then derive armor rating from the clamped value.
+	if (fortitude > 1000) {
 		fortitude = 1000;
 	} else if (fortitude < 0) {
 		fortitude = 1;
+	}
+
+	// Bio-engineered pets should cap at Medium armor when fortitude breaks 500.
+	if (fortitude > 500) {
+		armorRating = 2;
+	} else {
+		armorRating = 0;
 	}
 
 	if (endurance > 1000) {

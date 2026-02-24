@@ -15,6 +15,131 @@
 
 // #define DEBUG_GENETIC_LAB
 
+namespace {
+static bool parseStrictInt(const String& value, int& outValue) {
+	if (value.isEmpty())
+		return false;
+
+	const char* p = value.toCharArray();
+
+	if (p == nullptr || *p == '\0')
+		return false;
+
+	int sign = 1;
+
+	if (*p == '-') {
+		sign = -1;
+		++p;
+	}
+
+	if (*p == '\0')
+		return false;
+
+	int number = 0;
+
+	while (*p != '\0') {
+		if (*p < '0' || *p > '9')
+			return false;
+
+		number = (number * 10) + (*p - '0');
+		++p;
+	}
+
+	outValue = number * sign;
+	return true;
+}
+
+static int tierNameToValue(const String& tierName) {
+	if (tierName == "VHQ")
+		return 1;
+	if (tierName == "HQ")
+		return 2;
+	if (tierName == "AA")
+		return 3;
+	if (tierName == "A")
+		return 4;
+	if (tierName == "BA")
+		return 5;
+	if (tierName == "LQ")
+		return 6;
+	if (tierName == "VLQ")
+		return 7;
+
+	return 0;
+}
+
+static bool isInvalidBioDnaAttack(const String& attackName) {
+	if (attackName.isEmpty())
+		return true;
+
+	if (attackName == "defaultattack" || attackName == "creatureareaattack" || attackName == "none")
+		return true;
+
+	return false;
+}
+
+static bool validateBioEngineerLootDna(DnaComponent* component) {
+	if (component == nullptr)
+		return false;
+
+	String schemaVersion = component->getLuaStringData("bioengineer.dna.schemaVersion");
+
+	// Backward compatibility for existing legacy DNA samples.
+	if (schemaVersion.isEmpty())
+		return true;
+
+	if (schemaVersion != "1")
+		return false;
+
+	int creatureLevel = 0;
+	int qualityScore = 0;
+	int attackCount = 0;
+
+	if (!parseStrictInt(component->getLuaStringData("bioengineer.dna.creatureLevel"), creatureLevel))
+		return false;
+
+	if (!parseStrictInt(component->getLuaStringData("bioengineer.dna.qualityScore"), qualityScore))
+		return false;
+
+	if (!parseStrictInt(component->getLuaStringData("bioengineer.dna.specialAttackCount"), attackCount))
+		return false;
+
+	if (creatureLevel < 1 || creatureLevel > 350)
+		return false;
+
+	if (qualityScore < 1 || qualityScore > 1000)
+		return false;
+
+	if (attackCount < 1 || attackCount > 3)
+		return false;
+
+	int qualityTier = tierNameToValue(component->getLuaStringData("bioengineer.dna.qualityTier"));
+
+	if (qualityTier == 0)
+		return false;
+
+	String attack1 = component->getLuaStringData("bioengineer.dna.specialAttack.1");
+	String attack2 = component->getLuaStringData("bioengineer.dna.specialAttack.2");
+	String attack3 = component->getLuaStringData("bioengineer.dna.specialAttack.3");
+
+	if (isInvalidBioDnaAttack(attack1))
+		return false;
+
+	if (attackCount > 1 && isInvalidBioDnaAttack(attack2))
+		return false;
+
+	if (attackCount > 2 && isInvalidBioDnaAttack(attack3))
+		return false;
+
+	component->setLevel(creatureLevel);
+	component->setQuality(qualityTier);
+	component->setSpecialAttackOne(attack1);
+	component->setSpecialAttackTwo(attackCount > 1 ? attack2 : "defaultattack");
+
+	return true;
+}
+}
+
 GeneticLabratory::GeneticLabratory() {
 	setLoggingName("GeneticLaboratory");
 }
@@ -293,6 +418,9 @@ void GeneticLabratory::setInitialCraftingValues(TangibleObject* prototype, Manuf
 
 		if (component == nullptr)
 			continue;
+
+		if (!validateBioEngineerLootDna(component))
+			return;
 
 		String slotName = componentSlot->getSlotName();
 

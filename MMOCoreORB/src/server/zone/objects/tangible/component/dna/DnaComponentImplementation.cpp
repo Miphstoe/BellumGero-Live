@@ -82,7 +82,7 @@ void DnaComponentImplementation::fillAttributeList(AttributeListMessage* alm, Cr
 	else if (armorRating == 2)
 		alm->insertAttribute("dna_comp_armor_rating", "@obj_attr_n:armor_pierce_medium");
 	else if (armorRating == 3)
-		alm->insertAttribute("dna_comp_armor_rating", "@obj_attr_n:armor_pierce_none");
+		alm->insertAttribute("dna_comp_armor_rating", "@obj_attr_n:armor_pierce_heavy");
 
 	// Add resists
 	alm->insertAttribute("dna_comp_armor_kinetic", resistValue(kinResist));

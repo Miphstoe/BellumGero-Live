@@ -11,6 +11,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
+#include "server/zone/objects/region/CityRegion.h"
 
 int ContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* object, int containmentType, String& errorDescription) const {
 	if (sceneObject == object) {
@@ -47,8 +48,21 @@ int ContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject* obje
 			ManagedReference<BuildingObject*> buio = cast<BuildingObject*>( containerBuildingParent.get());
 
 			if (buio != nullptr && (buio->getOwnerObjectID() != objPlayerParent->getObjectID() || buio->isCivicStructure())) {
-				errorDescription = "@container_error_message:container28";
-				return TransferErrorCode::CANTADD;
+				// City mayors are permitted to place items (including noTrade items) inside
+				// civic structures that belong to their city (e.g. decorating the city hall).
+				bool mayorAllowed = false;
+				if (buio->isCivicStructure()) {
+					CreatureObject* creature = dynamic_cast<CreatureObject*>(objPlayerParent.get());
+					if (creature != nullptr) {
+						ManagedReference<CityRegion*> playerCity = creature->getCityRegion().get();
+						mayorAllowed = (playerCity != nullptr && playerCity->isMayor(creature->getObjectID()));
+					}
+				}
+
+				if (!mayorAllowed) {
+					errorDescription = "@container_error_message:container28";
+					return TransferErrorCode::CANTADD;
+				}
 			}
 		}
 

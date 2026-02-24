@@ -8,9 +8,9 @@
 #ifndef HOLOCRONDESTINYMENUCOMPONENT_H_
 #define HOLOCRONDESTINYMENUCOMPONENT_H_
 
-#include "TangibleObjectMenuComponent.h"
+#include "CityDecorationMenuComponent.h"
 
-class HolocronDestinyMenuComponent : public TangibleObjectMenuComponent {
+class HolocronDestinyMenuComponent : public CityDecorationMenuComponent {
 public:
 	static const uint8 RADIAL_LOCK_ITEM = 220;
 	static const uint8 RADIAL_UNLOCK_ITEM = 221;
