@@ -1,0 +1,21 @@
+/*
+				Copyright <SWGEmu>
+		See file COPYING for copying conditions.
+*/
+
+package server.zone.managers.city;
+
+import engine.core.ManagedObject;
+import engine.util.Observer;
+import engine.util.Observable;
+
+include engine.log.Logger;
+
+class CityFactionTroopObserver extends Observer implements Logger {
+
+	public CityFactionTroopObserver() {
+		Logger.setLoggingName("CityFactionTroopObserver");
+	}
+
+	public native int notifyObserverEvent(unsigned int eventType, Observable observable, ManagedObject arg1, long arg2);
+}

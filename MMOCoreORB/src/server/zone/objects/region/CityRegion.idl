@@ -131,6 +131,9 @@ class CityRegion extends ManagedObject implements Logger {
 	protected SortedVector<SceneObject> citySkillTrainers;
 
 	@dereferenced
+	protected SortedVector<SceneObject> cityFactionTroops;
+
+	@dereferenced
 	protected transient VectorMap<unsigned long, TangibleObject> bazaars;
 
 	public static final byte RANK_CLIENT = 0;
@@ -582,6 +585,11 @@ class CityRegion extends ManagedObject implements Logger {
 		return citySkillTrainers.size();
 	}
 
+	@dirty
+	public int getFactionTroopCount() {
+		return cityFactionTroops.size();
+	}
+
 	@preLocked
 	public void addMissionTerminal(SceneObject mt) {
 		cityMissionTerminals.put(mt);
@@ -601,6 +609,11 @@ class CityRegion extends ManagedObject implements Logger {
 	}
 
 	@preLocked
+	public void addFactionTroop(SceneObject troop) {
+		cityFactionTroops.put(troop);
+	}
+
+	@preLocked
 	public void removeMissionTerminal(SceneObject mt) {
 		cityMissionTerminals.drop(mt);
 	}
@@ -614,6 +627,11 @@ class CityRegion extends ManagedObject implements Logger {
 	@preLocked
 	public void removeSkillTrainers(SceneObject trainer) {
 		citySkillTrainers.drop(trainer);
+	}
+
+	@preLocked
+	public void removeFactionTroop(SceneObject troop) {
+		cityFactionTroops.drop(troop);
 	}
 
 	@preLocked
@@ -633,6 +651,9 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@preLocked
 	public native void removeAllSkillTrainers();
+
+	@preLocked
+	public native void removeAllFactionTroops();
 
 	@preLocked
 	public native void removeAllTerminals();
@@ -826,6 +847,12 @@ class CityRegion extends ManagedObject implements Logger {
 		return citySkillTrainers.get(indx);
 	}
 
+	@local
+	@dirty
+	public SceneObject getCityFactionTroop(int indx) {
+		return cityFactionTroops.get(indx);
+	}
+
 	public native void transferCivicStructuresToMayor();
 
 	public native void cleanupDuplicateCityStructures(); // TODO: Remove
@@ -835,6 +862,9 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@preLocked
 	public native void removeTrainersOutsideCity(int newRadius);
+
+		@preLocked
+		public native void removeFactionTroopsOutsideCity(int newRadius);
 
 	@preLocked
 	public native void removeTerminalsOutsideCity(int newRadius);
@@ -850,6 +880,7 @@ class CityRegion extends ManagedObject implements Logger {
 		removeStructuresOutsideCity(newRadius);
 		removeDecorationsOutsideCity(newRadius);
 		removeTrainersOutsideCity(newRadius);
+		removeFactionTroopsOutsideCity(newRadius);
 		removeTerminalsOutsideCity(newRadius);
 	}
 

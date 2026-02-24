@@ -60,6 +60,7 @@
 #include "templates/SharedObjectTemplate.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "templates/params/ObserverEventType.h"
+#include "server/zone/managers/city/CityFactionTroopObserver.h"
 #include "server/zone/managers/gcw/observers/ImperialChatObserver.h"
 #include "server/zone/objects/scene/variables/DeltaVector.h"
 #include "server/zone/objects/scene/WorldCoordinates.h"
@@ -157,6 +158,32 @@ void AiAgentImplementation::notifyLoadFromDatabase() {
 				convoTemplateCRC = tempCRC;
 		}
 	}
+
+
+// City Faction Troops:
+// - object menu component does not persist for AI across restart
+// - death observer is transient and must be re-registered
+// - homeLocation is transient; if not reset, these can sprint to (0,0) after restart
+if (npcTemplate != nullptr) {
+	const String& templName = npcTemplate->getTemplateName();
+
+	if (templName.beginsWith("city_imperial_") || templName.beginsWith("city_rebel_")) {
+		setObjectMenuComponent("CityFactionTroopMenuComponent");
+
+		ManagedReference<CityFactionTroopObserver*> observer = new CityFactionTroopObserver();
+		registerObserver(ObserverEventType::OBJECTDESTRUCTION, observer);
+
+		CellObject* cell = getParent().get().castTo<CellObject*>();
+		homeLocation.setPosition(getPositionX(), getPositionZ(), getPositionY());
+		homeLocation.setCell(cell);
+		homeLocation.setReached(true);
+		homeLocation.setDirection(getDirectionAngle());
+
+		clearPatrolPoints();
+		clearSavedPatrolPoints();
+	}
+}
+
 }
 
 void AiAgentImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
