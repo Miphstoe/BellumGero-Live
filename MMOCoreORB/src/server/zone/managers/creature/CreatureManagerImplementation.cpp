@@ -754,7 +754,7 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 				// Roll an additional lootable DNA sample for Bio-Engineer crafting.
 				Creature* destructedCreature = cast<Creature*>(destructedObject);
 				if (destructedCreature != nullptr) {
-					DnaManager::instance()->tryGenerateLootableSample(destructedCreature, creatureInventory);
+					DnaManager::instance()->tryGenerateLootableSample(destructedCreature, creatureInventory, false, player);
 				}
 				trx.commit(true);
 			} else if (trx.isEnabled() && !trx.isAborted()) {
