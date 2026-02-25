@@ -435,10 +435,10 @@ void FishingManagerImplementation::continueFishing(CreatureObject* player) {
 		case WAITING: {
 			int newFish = getFish(player, marker);
 
-			if (chance + poleMod <= MISHAP + vegStat) { // Pole decreases chance of Snag
+			if (chance + poleMod <= MISHAP) { // Pole decreases chance of Snag (vegetation no longer stacks onto snag threshold)
 				fishingProceed(player, nextAction, marker, newFish, boxID, SNAGGED, false, moodString);
 			} else {
-				if (chance - poleMod <= fishDensity * 1.5) { // Nibble
+				if (chance - poleMod <= fishDensity * 2.5) { // Nibble
 					if (nextAction >= TUGUP && nextAction <= REEL) {
 						ManagedReference<SceneObject*> newMarker = updateMarker(player, marker, boxID, false);
 
