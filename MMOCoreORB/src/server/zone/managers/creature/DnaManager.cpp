@@ -24,7 +24,7 @@ AtomicInteger DnaManager::loadedDnaData;
 
 namespace {
 const char* DNA_SCHEMA_VERSION = "1";
-const int DNA_DROP_CHANCE_PCT = 10;
+const int DNA_DROP_CHANCE_PCT = 1; // 0.25% chance (1 in 400)
 
 static bool hasString(const Vector<String>& values, const String& value) {
 	for (int i = 0; i < values.size(); ++i) {
@@ -545,7 +545,7 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 	if (!creature->hasDNA() || creature->isBaby() || creature->isPet())
 		return false;
 
-	if (!forceDrop && System::random(99) >= DNA_DROP_CHANCE_PCT)
+	if (!forceDrop && System::random(399) >= DNA_DROP_CHANCE_PCT)
 		return false;
 
 	auto zoneServer = creature->getZoneServer();
