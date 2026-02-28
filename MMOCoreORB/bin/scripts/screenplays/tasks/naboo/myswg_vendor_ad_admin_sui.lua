@@ -177,7 +177,7 @@ function MySwgVendorAdAdminSui:showAdsPopup(pPlayer)
     end
 
     -- Build message box with all ads
-    local sui = SuiMessageBox.new("MySwgVendorAdAdminSui", "adsPopupCallback")
+    local sui = SuiMessageBox.new("myswg_vendor", "adsPopupCallback")
 
     sui.setTitle("Active Advertisements")
 

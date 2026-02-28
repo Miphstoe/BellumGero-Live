@@ -138,12 +138,30 @@ function MySwgVendorAdManager:checkAndRotateAds()
     local queueChanged = false
     local activeAdExpired = false
 
-    -- Check if current active ad has expired
+    -- Check if current active ad has expired; attempt auto-renewal if enabled
     for i, ad in ipairs(queue.ads) do
         if ad ~= nil and ad.active == true and ad.endTime ~= nil and currentTime >= ad.endTime then
-            ad.active = false
-            activeAdExpired = true
-            queueChanged = true
+            if ad.autoRenew == true and ad.playerObjectId ~= nil and ad.playerObjectId ~= 0 then
+                -- Try to charge the player for another week
+                local charged = self:chargePlayerForRenewal(ad.playerObjectId)
+                if charged then
+                    -- Extend the ad by one more week
+                    ad.endTime = ad.endTime + self.AD_DURATION
+                    queueChanged = true
+                    print("INFO: Auto-renewed ad for player " .. tostring(ad.playerName))
+                else
+                    -- Can't afford renewal - cancel and flag for notification
+                    ad.active = false
+                    ad.renewalFailed = true
+                    activeAdExpired = true
+                    queueChanged = true
+                    print("INFO: Auto-renewal failed for player " .. tostring(ad.playerName) .. " (insufficient credits)")
+                end
+            else
+                ad.active = false
+                activeAdExpired = true
+                queueChanged = true
+            end
         end
     end
 
@@ -177,14 +195,103 @@ function MySwgVendorAdManager:checkAndRotateAds()
 end
 
 --[[
+    Attempt to charge a player for auto-renewal (cash first, bank second).
+    @param playerObjectId  SceneObject ID of the player
+    @return Boolean - true if charge succeeded, false otherwise
+]]--
+function MySwgVendorAdManager:chargePlayerForRenewal(playerObjectId)
+    if playerObjectId == nil or playerObjectId == 0 then
+        return false
+    end
+
+    local pCreature = getSceneObject(playerObjectId)
+    if pCreature == nil then
+        return false
+    end
+
+    local creature = LuaCreatureObject(pCreature)
+    if creature == nil then
+        return false
+    end
+
+    local cost = self.AD_COST
+    local cash = creature:getCashCredits()
+    local bank = creature:getBankCredits()
+
+    if (cash + bank) < cost then
+        return false
+    end
+
+    -- Deduct cash first, then bank for the remainder
+    if cash >= cost then
+        creature:subtractCashCredits(cost)
+    else
+        if cash > 0 then
+            creature:subtractCashCredits(cash)
+        end
+        creature:subtractBankCredits(cost - cash)
+    end
+
+    return true
+end
+
+--[[
+    Get all ads that failed auto-renewal for a given player (by first name).
+    @param playerName  Player's first name
+    @return Table of matching ads
+]]--
+function MySwgVendorAdManager:getFailedRenewalsForPlayer(playerName)
+    local queue = self:loadQueue()
+    local failed = {}
+
+    if queue.ads == nil then
+        return failed
+    end
+
+    for i, ad in ipairs(queue.ads) do
+        if ad ~= nil and ad.renewalFailed == true and ad.playerName == playerName then
+            table.insert(failed, ad)
+        end
+    end
+
+    return failed
+end
+
+--[[
+    Clear the renewalFailed flag for all ads belonging to a player.
+    @param playerName  Player's first name
+]]--
+function MySwgVendorAdManager:clearFailedRenewalsForPlayer(playerName)
+    local queue = self:loadQueue()
+
+    if queue.ads == nil then
+        return
+    end
+
+    local changed = false
+    for i, ad in ipairs(queue.ads) do
+        if ad ~= nil and ad.renewalFailed == true and ad.playerName == playerName then
+            ad.renewalFailed = false
+            changed = true
+        end
+    end
+
+    if changed then
+        self:saveQueue(queue)
+    end
+end
+
+--[[
     Purchase a new advertisement slot
-    @param playerName Name of the player purchasing the ad
-    @param adMessage The advertisement message
-    @param adMood Optional mood for animation
-    @param adAnimation Optional animation name
+    @param playerName       Name of the player purchasing the ad
+    @param adMessage        The advertisement message
+    @param adMood           Optional mood for animation
+    @param adAnimation      Optional animation name
+    @param autoRenew        Boolean - enable weekly auto-renewal
+    @param playerObjectId   SceneObject ID used to charge credits on renewal
     @return Boolean success, String error message
 ]]--
-function MySwgVendorAdManager:purchaseAd(playerName, adMessage, adMood, adAnimation)
+function MySwgVendorAdManager:purchaseAd(playerName, adMessage, adMood, adAnimation, autoRenew, playerObjectId)
     -- Validate message
     if adMessage == nil or adMessage == "" then
         print("ERROR: adMessage is nil or empty in purchaseAd")
@@ -223,7 +330,10 @@ function MySwgVendorAdManager:purchaseAd(playerName, adMessage, adMood, adAnimat
         purchaseTime = currentTime,
         startTime = startTime,
         endTime = endTime,
-        active = isActive
+        active = isActive,
+        autoRenew = autoRenew or false,
+        playerObjectId = playerObjectId or 0,
+        renewalFailed = false,
     }
 
     -- Add to queue

@@ -39,6 +39,7 @@ function conv_handler:getNextConversationScreen(pConvTemplate, pPlayer, selected
         if nextConvScreen == nil then
             nextConvScreen = self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
         end
+
     else
         nextConvScreen = self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
     end
@@ -74,6 +75,14 @@ function conv_handler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOp
     -- Check if this is a holocron vendor trade screen
     if string.find(screenId, "give_holo_") then
         return self:handleHolocronTrade(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
+    end
+
+    if screenId == "procurement_contract_status" then
+        return self:handleArtisanProcurementStatus(pConvScreen, pPlayer)
+    end
+
+    if screenId == "procurement_submit_contract" then
+        return self:handleArtisanProcurementTurnIn(pConvScreen, pPlayer)
     end
 
     return pConvScreen
@@ -1448,4 +1457,96 @@ function conv_handler:removeHolocronsFromContainer(container, count)
     end
 
     return removed
+end
+
+function conv_handler:getArtisanProcurementScreenplay()
+    if ArtisanProcurementVendor ~= nil then
+        return ArtisanProcurementVendor
+    end
+
+    return nil
+end
+
+function conv_handler:handleArtisanProcurementStatus(pConvScreen, pPlayer)
+    if pConvScreen == nil then
+        if pPlayer ~= nil then
+            CreatureObject(pPlayer):sendSystemMessage("Unable to open contract screen. Please try again.")
+        end
+        return pConvScreen
+    end
+    local screen = LuaConversationScreen(pConvScreen)
+    local pClonedScreen = screen:cloneScreen()
+    local cloned = LuaConversationScreen(pClonedScreen)
+    local screenplay = self:getArtisanProcurementScreenplay()
+
+    if screenplay == nil then
+        cloned:setCustomDialogText("Artisan Procurement is currently unavailable.")
+        if pPlayer ~= nil then
+            CreatureObject(pPlayer):sendSystemMessage("Artisan Procurement is currently unavailable.")
+        end
+        return pClonedScreen
+    end
+
+    local ok, text = pcall(function()
+        return screenplay:getStatusDialogText(pPlayer)
+    end)
+
+    if not ok or text == nil or text == "" then
+        text = "Unable to read current contract status. Please try again."
+    end
+    cloned:setCustomDialogText(text)
+
+    if pPlayer ~= nil then
+        CreatureObject(pPlayer):sendSystemMessage(text)
+    end
+
+    return pClonedScreen
+end
+
+function conv_handler:handleArtisanProcurementTurnIn(pConvScreen, pPlayer)
+    if pConvScreen == nil then
+        if pPlayer ~= nil then
+            CreatureObject(pPlayer):sendSystemMessage("Unable to open contract turn-in screen. Please try again.")
+        end
+        return pConvScreen
+    end
+    local screen = LuaConversationScreen(pConvScreen)
+    local pClonedScreen = screen:cloneScreen()
+    local cloned = LuaConversationScreen(pClonedScreen)
+    local screenplay = self:getArtisanProcurementScreenplay()
+
+    if screenplay == nil then
+        cloned:setCustomDialogText("Artisan Procurement is currently unavailable.")
+        if pPlayer ~= nil then
+            CreatureObject(pPlayer):sendSystemMessage("Artisan Procurement is currently unavailable.")
+        end
+        return pClonedScreen
+    end
+
+    local ok, success, message = pcall(function()
+        local turnInSuccess, turnInMessage = screenplay:handleTurnIn(pPlayer)
+        return turnInSuccess, turnInMessage
+    end)
+
+    if not ok then
+        message = "Error while processing contract turn-in. Please try again."
+        cloned:setCustomDialogText(message)
+        if pPlayer ~= nil then
+            CreatureObject(pPlayer):sendSystemMessage(message)
+        end
+        return pClonedScreen
+    end
+
+    if message == nil or message == "" then
+        if success then
+            message = "Contract completed."
+        else
+            message = "Contract turn-in failed."
+        end
+    end
+    cloned:setCustomDialogText(message)
+    if pPlayer ~= nil then
+        CreatureObject(pPlayer):sendSystemMessage(message)
+    end
+    return pClonedScreen
 end

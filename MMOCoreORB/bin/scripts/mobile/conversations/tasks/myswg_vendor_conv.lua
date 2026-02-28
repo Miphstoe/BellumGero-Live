@@ -988,11 +988,24 @@ myswg_vendor_ad_purchase_confirm = ConvoScreen:new {
     customDialogText = "Ready to purchase ad space for 100,000 credits? You'll be prompted to enter your custom advertisement message.",
     stopConversation = "false",
     options = {
-        {"Yes, I want to purchase an ad", "ad_purchase_proceed"},
+        {"Yes, I want to purchase an ad", "ad_autorenew_choice"},
         {"No, go back", "ad_menu"},
     }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_ad_purchase_confirm);
+
+myswg_vendor_ad_autorenew_choice = ConvoScreen:new {
+    id = "ad_autorenew_choice",
+    leftDialog = "",
+    customDialogText = "Would you like to enable auto-renewal? Each week your ad will automatically renew for 100,000 credits, deducted from your cash or bank. Your ad will be cancelled if you cannot afford the renewal.",
+    stopConversation = "false",
+    options = {
+        {"Yes, enable auto-renewal (100k/week)", "ad_purchase_autorenew_yes"},
+        {"No, one-time purchase only",           "ad_purchase_autorenew_no"},
+        {"Cancel, go back",                      "ad_menu"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_ad_autorenew_choice);
 
 myswg_vendor_ad_view_queue = ConvoScreen:new {
     id = "ad_view_queue",

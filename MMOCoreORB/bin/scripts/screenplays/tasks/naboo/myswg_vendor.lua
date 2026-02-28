@@ -304,6 +304,10 @@ function myswg_vendor:adAdminCallback(pPlayer, pSui, eventIndex, args)
     end
 end
 
+-- Ads popup callback - player dismissed the active ads message box, nothing to do
+function myswg_vendor:adsPopupCallback(pPlayer, pSui, eventIndex)
+end
+
 myswg_vendor_convo_handler = Object:new {
     tstring = "myconversation"
 }
@@ -319,6 +323,14 @@ function myswg_vendor_convo_handler:handleAdPurchaseSui(pPlayer, pSui, eventInde
     if player == nil then
         print("ERROR: handleAdPurchaseSui - LuaCreatureObject returned nil")
         return
+    end
+
+    -- Read and clear the pending auto-renewal flag for this player
+    local playerObjId = SceneObject(pPlayer):getObjectID()
+    local autoRenew = false
+    if MySwgVendorAdSui and MySwgVendorAdSui.pendingAutoRenew then
+        autoRenew = MySwgVendorAdSui.pendingAutoRenew[playerObjId] or false
+        MySwgVendorAdSui.pendingAutoRenew[playerObjId] = nil
     end
 
     -- Check if player cancelled
@@ -357,12 +369,14 @@ function myswg_vendor_convo_handler:handleAdPurchaseSui(pPlayer, pSui, eventInde
         return
     end
 
-    -- Check if player can afford it (double-check)
-    local credits = player:getCashCredits()
+    -- Double-check the player can afford it (cash + bank)
+    local cash = player:getCashCredits()
+    local bank = player:getBankCredits()
+    local cost = MySwgVendorAdManager.AD_COST
 
-    if credits < MySwgVendorAdManager.AD_COST then
+    if (cash + bank) < cost then
         print("ERROR: Player cannot afford ad")
-        player:sendSystemMessage("You need " .. MySwgVendorAdManager.AD_COST .. " credits to purchase advertisement space.")
+        player:sendSystemMessage("You need " .. cost .. " credits to purchase advertisement space.")
         return
     end
 
@@ -370,15 +384,25 @@ function myswg_vendor_convo_handler:handleAdPurchaseSui(pPlayer, pSui, eventInde
     local playerName = player:getFirstName()
 
     -- Purchase the ad (this adds it to the queue)
-    local success, message = MySwgVendorAdManager:purchaseAd(playerName, adMessage, "", "")
+    local success, message = MySwgVendorAdManager:purchaseAd(playerName, adMessage, "", "", autoRenew, playerObjId)
 
     -- Send result to player
     if success then
-        -- Only charge credits AFTER successful ad purchase
-        player:subtractCashCredits(MySwgVendorAdManager.AD_COST)
+        -- Charge credits AFTER successful ad purchase: cash first, then bank
+        if cash >= cost then
+            player:subtractCashCredits(cost)
+        else
+            if cash > 0 then
+                player:subtractCashCredits(cash)
+            end
+            player:subtractBankCredits(cost - cash)
+        end
 
         player:sendSystemMessage("@base_player:prose_pay_success")  -- "You successfully make a payment"
         player:sendSystemMessage("Advertisement purchased successfully!")
+        if autoRenew then
+            player:sendSystemMessage("Auto-renewal is ENABLED. Your ad will renew each week for 100,000 credits (cash then bank).")
+        end
         player:sendSystemMessage(message)
     else
         print("ERROR: Ad purchase failed: " .. tostring(message))
@@ -402,8 +426,18 @@ function myswg_vendor_convo_handler:getNextConversationScreen(conversationTempla
                 end         
             end         
             -- Last conversation was nil, so get the first screen
-            if ( lastConversationScreen == nil ) then          
+            if ( lastConversationScreen == nil ) then
                 nextConversationScreen = conversation:getInitialScreen()
+
+                -- Notify the player once if any of their ads failed to auto-renew
+                if MySwgVendorAdManager then
+                    local firstName = creature:getFirstName()
+                    local failed = MySwgVendorAdManager:getFailedRenewalsForPlayer(firstName)
+                    if #failed > 0 then
+                        creature:sendSystemMessage("WARNING: One or more of your advertisements could not be auto-renewed due to insufficient credits and have been cancelled.")
+                        MySwgVendorAdManager:clearFailedRenewalsForPlayer(firstName)
+                    end
+                end
             else
                 -- Start playing the rest of the conversation based on user input               
                 local luaLastConversationScreen = LuaConversationScreen(lastConversationScreen) 
@@ -1884,6 +1918,45 @@ elseif (optionLink == "learn_all_languages") then
 
                         if MySwgVendorAdSui and MySwgVendorAdSui.promptForAd then
                             MySwgVendorAdSui:promptForAd(conversingPlayer)
+                        else
+                            print("ERROR: MySwgVendorAdSui or promptForAd is nil!")
+                            creature:sendSystemMessage("ERROR: Advertisement system not available. Please contact an administrator.")
+                        end
+
+                        -- Close conversation
+                        return nil
+                    end
+
+                elseif (optionLink == "ad_purchase_autorenew_yes") or (optionLink == "ad_purchase_autorenew_no") then
+                    -- Purchase advertisement with auto-renewal choice
+                    local wantsAutoRenew = (optionLink == "ad_purchase_autorenew_yes")
+
+                    if not canAfford(100000) then
+                        nextConversationScreen = conversation:getScreen("insufficient_funds")
+                        creature:sendSystemMessage("You need 100,000 credits to purchase advertisement space.")
+                    else
+                        if not MySwgVendorAdManager then
+                            local success, err = pcall(function()
+                                require("screenplays.tasks.naboo.myswg_vendor_ad_manager")
+                            end)
+                            if not success then
+                                print("ERROR: Failed to load ad_manager: " .. tostring(err))
+                            end
+                        end
+
+                        if not MySwgVendorAdSui then
+                            local success, err = pcall(function()
+                                require("screenplays.tasks.naboo.myswg_vendor_ad_sui")
+                            end)
+                            if not success then
+                                print("ERROR: Failed to load ad_sui: " .. tostring(err))
+                                creature:sendSystemMessage("ERROR: Advertisement system failed to load. Please contact an administrator.")
+                                return nil
+                            end
+                        end
+
+                        if MySwgVendorAdSui and MySwgVendorAdSui.promptForAd then
+                            MySwgVendorAdSui:promptForAd(conversingPlayer, wantsAutoRenew)
                         else
                             print("ERROR: MySwgVendorAdSui or promptForAd is nil!")
                             creature:sendSystemMessage("ERROR: Advertisement system not available. Please contact an administrator.")
