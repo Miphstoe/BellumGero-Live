@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 3, day = 8, hour = 19, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 3, day = 8, hour = 20, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 3, day = 8, hour = 18, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 3, day = 8, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
