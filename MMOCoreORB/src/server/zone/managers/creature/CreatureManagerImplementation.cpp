@@ -1293,7 +1293,7 @@ void CreatureManagerImplementation::milk(Creature* creature, CreatureObject* pla
 
 	Reference<MilkCreatureTask*> task = new MilkCreatureTask(creature, player);
 
-	task->schedule(10000);
+	task->schedule(1000);
 }
 
 void CreatureManagerImplementation::sample(Creature* creature, CreatureObject* player) {
