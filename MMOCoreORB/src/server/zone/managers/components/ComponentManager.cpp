@@ -65,6 +65,7 @@
 #include "server/zone/objects/tangible/components/VehicleCustomKitObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/RentalVehicleObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/DroidCustomKitObjectMenuComponent.h"
+#include "server/zone/objects/tangible/components/SEAToolObjectMenuComponent.h"
 #include "server/zone/objects/tangible/components/SaberInventoryContainerComponent.h"
 #include "server/zone/objects/tangible/components/generic/LootSchematicAttributeListComponent.h"
 #include "server/zone/objects/tangible/components/generic/XpPurchaseAttributeListComponent.h"
@@ -308,6 +309,7 @@ ComponentManager::ComponentManager() {
 	components.put("VehicleCustomKitObjectMenuComponent", new VehicleCustomKitObjectMenuComponent());
 	components.put("RentalVehicleObjectMenuComponent", new RentalVehicleObjectMenuComponent());
 	components.put("DroidCustomKitObjectMenuComponent", new DroidCustomKitObjectMenuComponent());
+	components.put("SEAToolObjectMenuComponent", new SEAToolObjectMenuComponent());
 
 	components.put("FireworkMenuComponent", new FireworkMenuComponent());
 	components.put("FireworkShowMenuComponent", new FireworkShowMenuComponent());

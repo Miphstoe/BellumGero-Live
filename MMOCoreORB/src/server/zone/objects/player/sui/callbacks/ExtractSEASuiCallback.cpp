@@ -144,8 +144,15 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
 
         usingObj->destroyObjectFromWorld(true);
         usingObj->destroyObjectFromDatabase(true);
-        toolSO->destroyObjectFromWorld(true);
-        toolSO->destroyObjectFromDatabase(true);
+        {
+            TangibleObject* toolTano = cast<TangibleObject*>(toolSO);
+            if (toolTano != nullptr && toolTano->getUseCount() > 0)
+                toolTano->decreaseUseCount();
+            else {
+                toolSO->destroyObjectFromWorld(true);
+                toolSO->destroyObjectFromDatabase(true);
+            }
+        }
 
         nudgeInventoryWithItems(player, attachments);
         player->sendSystemMessage("SEA: Extraction complete. Attachments moved to your inventory; the wearable and tool were consumed.");
@@ -230,8 +237,15 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
 
     usingObj->destroyObjectFromWorld(true);
     usingObj->destroyObjectFromDatabase(true);
-    toolSO->destroyObjectFromWorld(true);
-    toolSO->destroyObjectFromDatabase(true);
+    {
+        TangibleObject* toolTano = cast<TangibleObject*>(toolSO);
+        if (toolTano != nullptr && toolTano->getUseCount() > 0)
+            toolTano->decreaseUseCount();
+        else {
+            toolSO->destroyObjectFromWorld(true);
+            toolSO->destroyObjectFromDatabase(true);
+        }
+    }
 
     nudgeInventoryWithItems(player, created);
     player->sendSystemMessage(String("SEA: created ") + String::valueOf(created.size()) + " attachment(s).");
