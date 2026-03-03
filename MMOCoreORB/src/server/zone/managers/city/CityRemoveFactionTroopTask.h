@@ -33,13 +33,13 @@ class CityRemoveFactionTroopTask : public Task {
 		// Must match your placement-cost tiers:
 		// Basic: 1000, Mid: 2500, Elite: 5000
 		if (templ == "city_imperial_stormtrooper" || templ == "city_rebel_trooper")
-			return 1000;
+			return 2000;
 
 		if (templ == "city_imperial_assault_trooper" || templ == "city_rebel_grenadier")
-			return 2500;
+			return 5000;
 
 		if (templ == "city_imperial_dark_trooper" || templ == "city_rebel_specforce_sergeant")
-			return 5000;
+			return 10000;
 
 		// Unknown / future troop type
 		return 0;

@@ -115,17 +115,17 @@ public:
 		suiTroopType->setPromptText("Select the troop type to recruit. The listed cost will be deducted from the city treasury.");
 
 		// Placement costs (city treasury):
-		// - Basic:  1,000
-		// - Mid:    2,500
-		// - Elite:  5,000
+		// - Basic:  2,000
+		// - Mid:    5,000
+		// - Elite:  10,000
 		if (alignment == "imperial") {
-			suiTroopType->addMenuItem("Stormtrooper (1,000c)", 0);
-			suiTroopType->addMenuItem("Assault Trooper (2,500c)", 1);
-			suiTroopType->addMenuItem("Dark Trooper (5,000c)", 2);
+			suiTroopType->addMenuItem("Stormtrooper (2,000c)", 0);
+			suiTroopType->addMenuItem("Assault Trooper (5,000c)", 1);
+			suiTroopType->addMenuItem("Dark Trooper (10,000c)", 2);
 		} else {
-			suiTroopType->addMenuItem("Rebel Trooper (1,000c)", 0);
-			suiTroopType->addMenuItem("Rebel Grenadier (2,500c)", 1);
-			suiTroopType->addMenuItem("Rebel Specforce Sergeant (5,000c)", 2);
+			suiTroopType->addMenuItem("Rebel Trooper (2,000c)", 0);
+			suiTroopType->addMenuItem("Rebel Grenadier (5,000c)", 1);
+			suiTroopType->addMenuItem("Rebel Specforce Sergeant (10,000c)", 2);
 		}
 
 		ghost->addSuiBox(suiTroopType);

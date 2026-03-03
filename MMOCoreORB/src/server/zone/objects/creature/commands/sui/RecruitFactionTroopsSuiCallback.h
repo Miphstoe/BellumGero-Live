@@ -73,15 +73,15 @@ public:
 			switch (option) {
 			case 0:
 				troopTemplatePath = "city_imperial_stormtrooper";
-				recruitCost = 1000;
+				recruitCost = 2000;
 				break;
 			case 1:
 				troopTemplatePath = "city_imperial_assault_trooper";
-				recruitCost = 2500;
+				recruitCost = 5000;
 				break;
 			case 2:
 				troopTemplatePath = "city_imperial_dark_trooper";
-				recruitCost = 5000;
+				recruitCost = 10000;
 				break;
 			default:
 				break;
@@ -90,15 +90,15 @@ public:
 			switch (option) {
 			case 0:
 				troopTemplatePath = "city_rebel_trooper";
-				recruitCost = 1000;
+				recruitCost = 2000;
 				break;
 			case 1:
 				troopTemplatePath = "city_rebel_grenadier";
-				recruitCost = 2500;
+				recruitCost = 5000;
 				break;
 			case 2:
 				troopTemplatePath = "city_rebel_specforce_sergeant";
-				recruitCost = 5000;
+				recruitCost = 10000;
 				break;
 			default:
 				break;
