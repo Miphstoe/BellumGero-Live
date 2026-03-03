@@ -754,7 +754,7 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 				// Roll an additional lootable DNA sample for Bio-Engineer crafting.
 				Creature* destructedCreature = cast<Creature*>(destructedObject);
 				if (destructedCreature != nullptr) {
-					DnaManager::instance()->tryGenerateLootableSample(destructedCreature, creatureInventory);
+					DnaManager::instance()->tryGenerateLootableSample(destructedCreature, creatureInventory, false, player);
 				}
 				trx.commit(true);
 			} else if (trx.isEnabled() && !trx.isAborted()) {
@@ -1293,7 +1293,7 @@ void CreatureManagerImplementation::milk(Creature* creature, CreatureObject* pla
 
 	Reference<MilkCreatureTask*> task = new MilkCreatureTask(creature, player);
 
-	task->schedule(10000);
+	task->schedule(1000);
 }
 
 void CreatureManagerImplementation::sample(Creature* creature, CreatureObject* player) {

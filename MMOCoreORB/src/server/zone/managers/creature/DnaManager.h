@@ -62,7 +62,7 @@ public:
 
 	void generateSample(Creature* creature, CreatureObject* player, int quality);
 	void generationalSample(PetDeed* deed, CreatureObject* player, int quality);
-	bool tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop = false);
+	bool tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop = false, CreatureObject* player = nullptr);
 	int computeQualityScoreFromLevel(int creatureLevel) const;
 	int qualityTierFromScore(int qualityScore) const;
 	int levelForScore(int type, float value);

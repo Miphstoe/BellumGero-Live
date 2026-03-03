@@ -24,7 +24,7 @@ AtomicInteger DnaManager::loadedDnaData;
 
 namespace {
 const char* DNA_SCHEMA_VERSION = "1";
-const int DNA_DROP_CHANCE_PCT = 10;
+const int DNA_DROP_CHANCE_PCT = 1; // 2.5% chance (1 in 40)
 
 static bool hasString(const Vector<String>& values, const String& value) {
 	for (int i = 0; i < values.size(); ++i) {
@@ -538,14 +538,14 @@ int DnaManager::qualityTierFromScore(int qualityScore) const {
 	return DnaSampleRange::VLQ;
 }
 
-bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop) {
+bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* container, bool forceDrop, CreatureObject* player) {
 	if (creature == nullptr || container == nullptr)
 		return false;
 
 	if (!creature->hasDNA() || creature->isBaby() || creature->isPet())
 		return false;
 
-	if (!forceDrop && System::random(99) >= DNA_DROP_CHANCE_PCT)
+	if (!forceDrop && System::random(39) >= DNA_DROP_CHANCE_PCT)
 		return false;
 
 	auto zoneServer = creature->getZoneServer();
@@ -566,6 +566,26 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 	int creatureLevel = creature->getLevel();
 	int qualityScore = computeQualityScoreFromLevel(creatureLevel);
 	int qualityTier = qualityTierFromScore(qualityScore);
+
+	// Cap quality tier based on the looting player's dna_harvesting skill mod.
+	// Higher tier numbers are worse quality (VHQ=1 ... VLQ=7).
+	if (player != nullptr) {
+		int dnaSkill = player->getSkillMod("dna_harvesting");
+		int floorTier;
+		if (dnaSkill == 0)
+			floorTier = DnaSampleRange::VLQ;      // 7 - no skill, VLQ only
+		else if (dnaSkill <= 25)
+			floorTier = DnaSampleRange::BA;        // 5 - box 1
+		else if (dnaSkill <= 50)
+			floorTier = DnaSampleRange::A;         // 4 - box 2
+		else if (dnaSkill <= 75)
+			floorTier = DnaSampleRange::AA;        // 3 - box 3
+		else
+			floorTier = DnaSampleRange::VHQ;       // 1 - box 4, no restriction
+
+		if (qualityTier < floorTier)
+			qualityTier = floorTier;
+	}
 
 	if (!qualityTemplates.containsKey(qualityTier))
 		return false;

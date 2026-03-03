@@ -1,7 +1,7 @@
 object_tangible_item_sea_removal_tool = object_tangible_item_shared_droid_customization:new {
     customName = "SEA Removal Tool",
     templateType = DROIDCUSTOMKIT,
-    objectMenuComponent = "DroidCustomKitObjectMenuComponent",
+    objectMenuComponent = "SEAToolObjectMenuComponent",
     numberExperimentalProperties = {1, 1, 1, 1, 2},
     experimentalProperties = {"XX", "XX", "XX", "XX", "CD", "OQ"},
     experimentalWeights = {1, 1, 1, 1, 1, 1},

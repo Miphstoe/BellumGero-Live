@@ -15,15 +15,19 @@ end
 MySwgVendorAdSui = {}
 _G.MySwgVendorAdSui = MySwgVendorAdSui
 
+-- Holds the pending auto-renewal flag per player (keyed by player objectID) until the SUI callback fires
+MySwgVendorAdSui.pendingAutoRenew = {}
+
 -- Create lowercase version for SUI callback registration
 myswg_vendor_ad_sui = {}
 _G.myswg_vendor_ad_sui = myswg_vendor_ad_sui
 
 --[[
     Show SUI input box to prompt player for advertisement message
-    @param pPlayer Player object pointer
+    @param pPlayer      Player object pointer
+    @param autoRenew    Boolean - whether to enable auto-renewal
 ]]--
-function MySwgVendorAdSui:promptForAd(pPlayer)
+function MySwgVendorAdSui:promptForAd(pPlayer, autoRenew)
     if pPlayer == nil then
         print("ERROR: promptForAd called with nil pPlayer")
         return
@@ -34,6 +38,10 @@ function MySwgVendorAdSui:promptForAd(pPlayer)
         print("ERROR: promptForAd - LuaCreatureObject returned nil")
         return
     end
+
+    -- Store the auto-renewal flag so the SUI callback can read it
+    local playerObjId = SceneObject(pPlayer):getObjectID()
+    MySwgVendorAdSui.pendingAutoRenew[playerObjId] = autoRenew or false
 
     -- Create SUI input box - callback is in myswg_vendor_convo_handler
     local sui = SuiInputBox.new("myswg_vendor_convo_handler", "handleAdPurchaseSui")

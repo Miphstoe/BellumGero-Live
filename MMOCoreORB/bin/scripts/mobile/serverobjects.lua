@@ -63,7 +63,7 @@ includeFile("vendors/attachment_exchange_vendor.lua")
 includeFile("vendors/bg_token_vendor.lua")
 
 -- BG Token Vendor 2 (75 tokens per item)
-includeFile("vendors/bg_token_vendor_2.lua")
+--includeFile("vendors/bg_token_vendor_2.lua")
 
 -- BG Token Vendor 3 - Veteran Rewards (75 tokens per item)
 includeFile("vendors/bg_token_vendor_3.lua")
@@ -74,3 +74,5 @@ includeFile("bellum/mallichae_bg_rite.lua")
 -- Holocron Village Vendor (5 Holocrons of Destiny per item)
 includeFile("vendors/holocron_village_vendor.lua")
 
+-- Artisan Procurement Vendor
+includeFile("vendors/artisan_procurement_vendor.lua")

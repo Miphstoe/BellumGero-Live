@@ -372,3 +372,8 @@ print("Finished loading bg_token vendor 3")
 print("Loading conversations.lua - checking holocron village vendor...")
 includeFile("conversations/vendors/holocron_village_vendor_conv.lua")
 print("Finished loading holocron village vendor")
+
+-- ARTISAN PROCUREMENT VENDOR
+print("Loading conversations.lua - checking artisan procurement vendor...")
+includeFile("conversations/vendors/artisan_procurement_vendor_conv.lua")
+print("Finished loading artisan procurement vendor")
