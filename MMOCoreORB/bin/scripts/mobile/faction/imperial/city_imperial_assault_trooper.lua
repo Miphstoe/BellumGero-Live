@@ -30,7 +30,19 @@ city_imperial_assault_trooper = Creature:new {
 	scale = 1.05,
 
 	templates = {"object/mobile/dressed_stormtrooper_assault_trooper_m.iff"},
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {
+				{group = "imperial_stormtrooper_tier_1", chance = 10000000}
+			}
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000}
+			},
+			lootChance = 250000
+		}
+	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
