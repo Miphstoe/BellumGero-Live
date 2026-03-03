@@ -151,6 +151,7 @@
 #include "server/zone/objects/creature/commands/ReaperShotCommand.h"      //Reaper Shot
 #include "server/zone/objects/creature/commands/ReconnectToTransferServerCommand.h"
 #include "server/zone/objects/creature/commands/RecruitSkillTrainerCommand.h"
+#include "server/zone/objects/creature/commands/RecruitFactionTroopsCommand.h"
 #include "server/zone/objects/creature/commands/RegainConsciousnessCommand.h"
 #include "server/zone/objects/creature/commands/RegenerationCommand.h"
 #include "server/zone/objects/creature/commands/RegisterWithLocationCommand.h"
@@ -456,6 +457,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<ReaperShotCommand>(String("reaperShot").toLowerCase());
 	commandFactory.registerCommand<ReconnectToTransferServerCommand>(String("reconnectToTransferServer").toLowerCase());
 	commandFactory.registerCommand<RecruitSkillTrainerCommand>(String("recruitSkillTrainer").toLowerCase());
+	commandFactory.registerCommand<RecruitFactionTroopsCommand>(String("recruitFactionTroops").toLowerCase());
 	commandFactory.registerCommand<RegainConsciousnessCommand>(String("regainConsciousness").toLowerCase());
 	commandFactory.registerCommand<RegenerationCommand>(String("regeneration").toLowerCase());
 	commandFactory.registerCommand<RegisterWithLocationCommand>(String("registerWithLocation").toLowerCase());

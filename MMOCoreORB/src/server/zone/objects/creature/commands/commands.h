@@ -516,6 +516,7 @@
 #include "RallyCommand.h"
 #include "ReconnectToTransferServerCommand.h"
 #include "RecruitSkillTrainerCommand.h"
+#include "RecruitFactionTroopsCommand.h"
 #include "RegainConsciousnessCommand.h"
 #include "RegenerationCommand.h"
 #include "RegisterWithLocationCommand.h"

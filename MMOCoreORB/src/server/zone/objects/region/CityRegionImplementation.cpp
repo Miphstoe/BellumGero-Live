@@ -91,6 +91,7 @@ void CityRegionImplementation::initialize() {
 
 	cityMissionTerminals.setNoDuplicateInsertPlan();
 	citySkillTrainers.setNoDuplicateInsertPlan();
+	cityFactionTroops.setNoDuplicateInsertPlan();
 
 	bazaars.setNoDuplicateInsertPlan();
 	bazaars.setNullValue(nullptr);
@@ -835,6 +836,20 @@ void CityRegionImplementation::removeAllSkillTrainers() {
 	citySkillTrainers.removeAll();
 }
 
+
+void CityRegionImplementation::removeAllFactionTroops() {
+	for (int i = cityFactionTroops.size() - 1; i >= 0 ; --i) {
+		Reference<SceneObject*> troop = cityFactionTroops.get(i);
+
+		Locker locker(troop);
+
+		troop->destroyObjectFromWorld(false);
+		troop->destroyObjectFromDatabase(true);
+	}
+
+	cityFactionTroops.removeAll();
+}
+
 void CityRegionImplementation::removeAllDecorations() {
 	Locker slocker(&structureListMutex);
 
@@ -1124,6 +1139,25 @@ void CityRegionImplementation::removeTrainersOutsideCity(int newRadius) {
 			//info("need to destroy the skill trainer" + obj->getObjectNameStringIdName(),true);
 
 			removeSkillTrainers(obj);
+			sendDestroyOutsideObjectMail(obj);
+
+			Locker clock(obj, _this.getReferenceUnsafeStaticCast());
+			obj->destroyObjectFromWorld(true);
+			obj->destroyObjectFromDatabase(true);
+		}
+	}
+}
+
+
+void CityRegionImplementation::removeFactionTroopsOutsideCity(int newRadius) {
+	if(cityHall == nullptr)
+		return;
+
+	for(int i = getFactionTroopCount() - 1; i >= 0; i--) {
+		ManagedReference<SceneObject*> obj = getCityFactionTroop(i);
+
+		if(obj != nullptr && !isInsideRadius(obj, newRadius)) {
+			removeFactionTroop(obj);
 			sendDestroyOutsideObjectMail(obj);
 
 			Locker clock(obj, _this.getReferenceUnsafeStaticCast());
