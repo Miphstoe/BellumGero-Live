@@ -280,20 +280,20 @@ tatooine_destroy_missions = {
 		},
 		{
 			lairTemplateName = "tatooine_monstrous_kreetle_lair_neutral_small",
-			minDifficulty = 62,
-			maxDifficulty = 67,
+			minDifficulty = 42,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{
 			lairTemplateName = "tatooine_monstrous_rock_beetle_click_neutral_medium",
-			minDifficulty = 64,
-			maxDifficulty = 68,
+			minDifficulty = 44,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{
 			lairTemplateName = "tatooine_monstrous_giant_sand_beetle_click_neutral_large",
-			minDifficulty = 68,
-			maxDifficulty = 70,
+			minDifficulty = 48,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{

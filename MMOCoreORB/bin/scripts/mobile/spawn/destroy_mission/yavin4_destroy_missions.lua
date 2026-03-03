@@ -119,20 +119,20 @@ yavin4_destroy_missions = {
 		},
 		{
 			lairTemplateName = "yavin4_monstrous_tanc_mite_lair_neutral_medium",
-			minDifficulty = 66,
-			maxDifficulty = 70,
+			minDifficulty = 46,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{
 			lairTemplateName = "yavin4_monstrous_angler_lair_neutral_medium",
-			minDifficulty = 67,
-			maxDifficulty = 68,
+			minDifficulty = 47,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{
 			lairTemplateName = "yavin4_monstrous_angler_giant_neutral_medium_boss_01",
-			minDifficulty = 68,
-			maxDifficulty = 70,
+			minDifficulty = 48,
+			maxDifficulty = 50,
 			size = 25,
 		},
 		{

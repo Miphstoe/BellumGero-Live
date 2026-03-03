@@ -1,0 +1,42 @@
+monstrous_giant_kubaza = Creature:new {
+	objectName = "@mob/creature_names:kreetle_over",
+	customName = "Monstrous Giant Kubaza",
+	socialGroup = "beetle",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 35,
+	chanceHit = 0.39,
+	damageMin = 345,
+	damageMax = 460,
+	baseXp = 3570,
+	baseHAM = 13000,
+	baseHAMmax = 16000,
+	armor = 1,
+	resists = {30,30,15,15,15,15,15,15,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 7,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/tanc_mite_hue.iff"},
+	hues = {8, 9, 10, 11, 12, 13, 14, 15},
+	scale = 3.0,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"intimidationattack",""}, {"knockdownattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_giant_kubaza, "monstrous_giant_kubaza")

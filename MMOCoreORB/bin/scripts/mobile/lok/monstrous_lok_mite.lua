@@ -1,0 +1,42 @@
+monstrous_lok_mite = Creature:new {
+	objectName = "@mob/creature_names:rockmite",
+	customName = "Monstrous Lok Mite",
+	socialGroup = "mite",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 26,
+	chanceHit = 0.27,
+	damageMin = 215,
+	damageMax = 285,
+	baseXp = 2200,
+	baseHAM = 7300,
+	baseHAMmax = 8940,
+	armor = 1,
+	resists = {20,20,10,10,10,10,10,10,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 3,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/rock_mite_hue.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	scale = 0.9,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_lok_mite, "monstrous_lok_mite")

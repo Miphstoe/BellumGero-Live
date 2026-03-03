@@ -159,6 +159,18 @@ lok_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "lok_monstrous_mite_lair_neutral_small",
+			minDifficulty = 26,
+			maxDifficulty = 35,
+			size = 25,
+		},
+		{
+			lairTemplateName = "lok_monstrous_kubaza_lair_neutral_medium",
+			minDifficulty = 30,
+			maxDifficulty = 35,
+			size = 25,
+		},
+		{
 			lairTemplateName = "lok_kimogilla_lair_neutral_medium",
 			minDifficulty = 60,
 			maxDifficulty = 60,

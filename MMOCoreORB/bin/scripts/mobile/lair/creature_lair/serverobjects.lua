@@ -101,6 +101,8 @@ includeFile("lair/creature_lair/dantooine/dantooine_voritor_jungle_lair_neutral_
 includeFile("lair/creature_lair/dantooine/dantooine_voritor_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/dantooine/dantooine_voritor_tracker_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/dantooine/dantooine_windclaw_raptor_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/dantooine/dantooine_monstrous_mite_lair_neutral_small.lua")
+includeFile("lair/creature_lair/dantooine/dantooine_monstrous_beetle_lair_neutral_medium.lua")
 
 includeFile("lair/creature_lair/dathomir/dathomir_baz_nitch_kinad_neutral_small.lua")
 includeFile("lair/creature_lair/dathomir/dathomir_baz_nitch_lair_neutral_small.lua")
@@ -264,6 +266,8 @@ includeFile("lair/creature_lair/lok/lok_spined_snake_lair2_neutral_medium.lua")
 includeFile("lair/creature_lair/lok/lok_spined_snake_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/lok/lok_vesp_lair2_neutral_medium.lua")
 includeFile("lair/creature_lair/lok/lok_vesp_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/lok/lok_monstrous_mite_lair_neutral_small.lua")
+includeFile("lair/creature_lair/lok/lok_monstrous_kubaza_lair_neutral_medium.lua")
 
 includeFile("lair/creature_lair/naboo/naboo_bark_mite_lair_neutral_boss_01.lua")
 includeFile("lair/creature_lair/naboo/naboo_bark_mite_lair_neutral_boss_02.lua")

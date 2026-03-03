@@ -1,0 +1,42 @@
+monstrous_dantooine_beetle = Creature:new {
+	objectName = "@mob/creature_names:sand_beetle",
+	customName = "Monstrous Dantooine Beetle",
+	socialGroup = "beetle",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 40,
+	chanceHit = 0.42,
+	damageMin = 335,
+	damageMax = 455,
+	baseXp = 3460,
+	baseHAM = 11690,
+	baseHAMmax = 14770,
+	armor = 1,
+	resists = {30,30,15,15,15,15,15,15,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 5,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/giant_sand_beetle.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	scale = 1.3,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_dantooine_beetle, "monstrous_dantooine_beetle")
