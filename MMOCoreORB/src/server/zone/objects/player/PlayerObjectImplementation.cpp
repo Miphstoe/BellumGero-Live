@@ -578,8 +578,7 @@ void PlayerObjectImplementation::notifySceneReady() {
 			}
 		}
 
-		// Create or spawn the helper droid
-		createHelperDroid();
+		// Starter helper droid auto-spawn disabled.
 	}
 
 	// Refresh guild title display after scene is ready to prevent titles from disappearing during zone transfers
@@ -3877,6 +3876,9 @@ String PlayerObjectImplementation::getPlayedTimeString(bool verbose) const {
 }
 
 void PlayerObjectImplementation::createHelperDroid() {
+	// Starter helper droid auto-spawn disabled for all players.
+	return;
+
 	// Only spawn droid if character is less than 1 days old
 	if (getCharacterAgeInDays() >= 1 || isPrivileged())
 		return;
