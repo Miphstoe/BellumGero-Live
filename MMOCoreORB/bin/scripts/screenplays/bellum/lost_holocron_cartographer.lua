@@ -413,29 +413,47 @@ function LostHolocronCartographer:giveFragment(pPlayer)
 	return true
 end
 
+function LostHolocronCartographer:isFragmentTemplate(templatePath)
+	if (templatePath == nil or templatePath == "") then
+		return false
+	end
+
+	local templateLower = string.lower(templatePath)
+	return string.find(templateLower, "holocron_splinters_sith_s01") ~= nil
+end
+
 function LostHolocronCartographer:countFragmentsInContainer(pContainer)
 	if (pContainer == nil) then
 		return 0
 	end
 
-	local containerObj = SceneObject(pContainer)
+	local containerObj = LuaSceneObject(pContainer)
 	if (containerObj == nil) then
 		return 0
 	end
 
 	local total = 0
-	local size = containerObj:getContainerObjectsSize()
+	local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+	if (not sizeSuccess or size == nil) then
+		return 0
+	end
 
 	for i = 0, size - 1, 1 do
 		local pItem = containerObj:getContainerObject(i)
 		if (pItem ~= nil) then
-			local itemObj = SceneObject(pItem)
+			local itemObj = LuaSceneObject(pItem)
 			if (itemObj ~= nil) then
-				local template = itemObj:getTemplateObjectPath()
-				if (template == self.FRAGMENT_TEMPLATE) then
+				local templateSuccess, template = pcall(function() return itemObj:getTemplateObjectPath() end)
+				if (not templateSuccess) then
+					template = ""
+				end
+				if (self:isFragmentTemplate(template)) then
 					total = total + 1
-				elseif (itemObj:getContainerObjectsSize() > 0) then
-					total = total + self:countFragmentsInContainer(pItem)
+				else
+					local childSizeSuccess, childSize = pcall(function() return itemObj:getContainerObjectsSize() end)
+					if (childSizeSuccess and childSize ~= nil and childSize > 0) then
+						total = total + self:countFragmentsInContainer(pItem)
+					end
 				end
 			end
 		end
@@ -449,13 +467,16 @@ function LostHolocronCartographer:removeFragmentsFromContainer(pContainer, toRem
 		return 0
 	end
 
-	local containerObj = SceneObject(pContainer)
+	local containerObj = LuaSceneObject(pContainer)
 	if (containerObj == nil) then
 		return 0
 	end
 
 	local removed = 0
-	local size = containerObj:getContainerObjectsSize()
+	local sizeSuccess, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+	if (not sizeSuccess or size == nil) then
+		return 0
+	end
 
 	for i = size - 1, 0, -1 do
 		if (removed >= toRemove) then
@@ -464,15 +485,21 @@ function LostHolocronCartographer:removeFragmentsFromContainer(pContainer, toRem
 
 		local pItem = containerObj:getContainerObject(i)
 		if (pItem ~= nil) then
-			local itemObj = SceneObject(pItem)
+			local itemObj = LuaSceneObject(pItem)
 			if (itemObj ~= nil) then
-				local template = itemObj:getTemplateObjectPath()
-				if (template == self.FRAGMENT_TEMPLATE) then
-					itemObj:destroyObjectFromWorld()
-					itemObj:destroyObjectFromDatabase()
+				local templateSuccess, template = pcall(function() return itemObj:getTemplateObjectPath() end)
+				if (not templateSuccess) then
+					template = ""
+				end
+				if (self:isFragmentTemplate(template)) then
+					pcall(function() itemObj:destroyObjectFromWorld(true) end)
+					pcall(function() itemObj:destroyObjectFromDatabase(true) end)
 					removed = removed + 1
-				elseif (itemObj:getContainerObjectsSize() > 0) then
-					removed = removed + self:removeFragmentsFromContainer(pItem, toRemove - removed)
+				else
+					local childSizeSuccess, childSize = pcall(function() return itemObj:getContainerObjectsSize() end)
+					if (childSizeSuccess and childSize ~= nil and childSize > 0) then
+						removed = removed + self:removeFragmentsFromContainer(pItem, toRemove - removed)
+					end
 				end
 			end
 		end
@@ -730,7 +757,7 @@ function LostHolocronCartographer:tryGrantFinalReward(pPlayer)
 
 	local splinterCount = self:countFragments(pPlayer)
 	if (splinterCount < self.REQUIRED_SPLINTERS) then
-		CreatureObject(pPlayer):sendSystemMessage("You need " .. tostring(self.REQUIRED_SPLINTERS) .. " Holocron Splinters to claim this reward.")
+		CreatureObject(pPlayer):sendSystemMessage("You need " .. tostring(self.REQUIRED_SPLINTERS) .. " Holocron Splinters to claim this reward. You currently have " .. tostring(splinterCount) .. ".")
 		return false
 	end
 
