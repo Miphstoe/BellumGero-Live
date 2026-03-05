@@ -12,10 +12,10 @@ imperial_marshall_tier_1 = {
 		{groupTemplate = "grenades_looted", weight = 800000},
 		{groupTemplate = "holocron_dark", weight = 100000},
 		{groupTemplate = "holocron_light", weight = 100000},
-		{groupTemplate = "junk", weight = 5100000},
+		{groupTemplate = "junk", weight = 5550000},
 		{groupTemplate = "melee_weapons", weight = 350000},
 		{groupTemplate = "ranged_weapons", weight = 1300000},
-		{groupTemplate = "radar_topology_screen", weight = 700000},
+		{groupTemplate = "radar_topology_screen", weight = 250000},
 		{groupTemplate = "weapon_stock_quest", weight = 250000},
 	}
 }
