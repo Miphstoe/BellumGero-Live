@@ -4,6 +4,7 @@
 
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/managers/planet/PlanetManager.h"
+#include "server/zone/objects/region/Region.h"
 
 class ScheduleShuttleTask : public Task, public Logger {
 	ManagedWeakReference<CreatureObject*> shuttleObject;
@@ -15,6 +16,39 @@ public:
 		zone = zon;
 
 		Logger::setLoggingName("ScheduleShuttleTask");
+	}
+
+	/**
+	 * Searches the zone's active area tree for a player (non-client) city region
+	 * at the given position. This is more reliable than getCityRegion() on a
+	 * SceneObject, which can be overwritten by overlapping NPC region notifyEnter
+	 * events firing after the player city region.
+	 */
+	ManagedReference<CityRegion*> findPlayerCityRegionAt(float x, float y) {
+		SortedVector<ManagedReference<ActiveArea*>> areas;
+
+		// getInRangeActiveAreas uses areaTree->getActiveAreas(x, y) — a point
+		// containment query. The z/height param is ignored for ground zones.
+		zone->getInRangeActiveAreas(x, 0.0f, y, &areas, true);
+
+		for (int i = 0; i < areas.size(); ++i) {
+			ManagedReference<ActiveArea*> area = areas.get(i);
+
+			if (area == nullptr || !area->isCityRegion())
+				continue;
+
+			Region* region = dynamic_cast<Region*>(area.get());
+
+			if (region == nullptr)
+				continue;
+
+			ManagedReference<CityRegion*> regionCity = region->getCityRegion().get();
+
+			if (regionCity != nullptr && !regionCity->isClientRegion())
+				return regionCity;
+		}
+
+		return nullptr;
 	}
 
 	void run() {
@@ -51,7 +85,24 @@ public:
 			return;
 		}
 
+		float shuttleX = strongShuttle->getWorldPositionX();
+		float shuttleY = strongShuttle->getWorldPositionY();
+
 		ManagedReference<CityRegion*> cityRegion = strongShuttle->getCityRegion().get();
+
+		ManagedReference<CityRegion*> found = nullptr;
+		if (cityRegion == nullptr || cityRegion->isClientRegion()) {
+			lock.release();
+			found = findPlayerCityRegionAt(shuttleX, shuttleY);
+		}
+
+		// Re-acquire the shuttle lock. If lock was never released above this is a
+		// no-op (isLockedByCurrentThread() returns true → Locker skips lock()).
+		Locker relock(strongShuttle);
+
+		if (found != nullptr) {
+			cityRegion = found;
+		}
 
 		// Player City
 		if ((cityRegion != nullptr) && !cityRegion->isClientRegion()) {
@@ -91,8 +142,28 @@ public:
 					planetManager->scheduleShuttle(strongShuttle, PlanetManager::SHUTTLEPORT);
 				}
 			} else if (oldShuttle != strongShuttle) {
-				strongShuttle->destroyObjectFromWorld(true);
-				strongShuttle->destroyObjectFromDatabase(true);
+				// Only destroy the duplicate if it is not a player city shuttle installation child.
+				// A player city shuttle should never be destroyed here — if city region detection
+				// failed entirely above, we must not corrupt the city's shuttleport data.
+				uint64 ownerID = strongShuttle->getContainerPermissions()->getOwnerID();
+				bool isPlayerCityShuttle = false;
+
+				if (ownerID != 0) {
+					ManagedReference<SceneObject*> parentObj = zoneServer->getObject(ownerID);
+
+					if (parentObj != nullptr && parentObj->isShuttleInstallation()) {
+						isPlayerCityShuttle = true;
+					}
+				}
+
+				if (!isPlayerCityShuttle) {
+					strongShuttle->destroyObjectFromWorld(true);
+					strongShuttle->destroyObjectFromDatabase(true);
+				} else {
+					error() << " Player city shuttle in Zone: " << zone->getZoneName()
+						<< " could not be registered (player city region not resolved). Shuttle OID: "
+						<< strongShuttle->getObjectID() << " was NOT destroyed.";
+				}
 			}
 		}
 	}
