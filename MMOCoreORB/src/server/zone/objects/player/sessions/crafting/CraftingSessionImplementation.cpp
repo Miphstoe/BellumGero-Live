@@ -1557,6 +1557,30 @@ void CraftingSessionImplementation::createManufactureSchematic(int clientCounter
 
 		prototype->destroyObjectFromWorld(0);
 
+		// Strip any randomly-applied bonus mods before saving into the schematic so
+		// factory runs produce clean items.  Only mods defined in the draft schematic
+		// belong in the stored prototype; anything extra was our random craft bonus.
+		if (prototype->isWearableObject()) {
+			ManagedReference<DraftSchematic*> draftSchematic = manufactureSchematic->getDraftSchematic();
+			const VectorMap<String, int>* schematicMods = draftSchematic->getDraftSchematicTemplate()->getSkillMods();
+
+			WearableObject* wearable = prototype.castTo<WearableObject*>();
+			VectorMap<String, int>* wearableMods = wearable->getWearableSkillMods();
+
+			Vector<String> toRemove;
+			for (int i = 0; i < wearableMods->size(); i++) {
+				const String& key = wearableMods->elementAt(i).getKey();
+				if (!schematicMods->contains(key)) {
+					toRemove.add(key);
+				}
+			}
+
+			for (int i = 0; i < toRemove.size(); i++) {
+				wearableMods->drop(toRemove.get(i));
+				prototype->removeMagicBit(false);
+			}
+		}
+
 		manufactureSchematic->setPersistent(2);
 		prototype->setPersistent(2);
 
@@ -1603,7 +1627,9 @@ void CraftingSessionImplementation::addSkillMods() {
 		prototype->addSkillMod(SkillModManager::WEARABLE, mod.getKey(), mod.getValue(), false);
 	}
 
-	// Rare chance for crafted clothing/jewelry/armor to receive a built-in bonus stat
+	// Rare chance for crafted clothing/jewelry/armor to receive a built-in bonus stat.
+	// addSkillMods() is only called from initialAssembly() inside CraftingSession —
+	// factories never call this method, so factory runs cannot produce bonus items.
 	if (prototype->isWearableObject()) {
 		ManagedReference<CreatureObject*> crafter = this->crafter.get();
 
@@ -1625,7 +1651,9 @@ void CraftingSessionImplementation::addSkillMods() {
 					String modName = lootManager->getRandomLootableMod(modPool);
 
 					if (!modName.isEmpty()) {
-						prototype->addSkillMod(SkillModManager::WEARABLE, modName, bonusValue, false);
+						WearableObject* wearable = prototype.castTo<WearableObject*>();
+						VectorMap<String, int>* wearableMods = wearable->getWearableSkillMods();
+						wearableMods->put(modName, bonusValue);
 						prototype->addMagicBit(false);
 
 						crafter->sendSystemMessage("Your craftsmanship produced an item with a rare bonus: +" + String::valueOf(bonusValue) + " " + modName + "!");
