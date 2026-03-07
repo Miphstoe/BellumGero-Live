@@ -1,4 +1,5 @@
 lok_monstrous_kubaza_lair_neutral_medium = Lair:new {
+	customName = "Monstrous Kubaza Colony",
 	mobiles = {{"monstrous_kubaza_beetle",1}},
 	bossMobiles = {{"monstrous_giant_kubaza",1}},
 	spawnLimit = 15,

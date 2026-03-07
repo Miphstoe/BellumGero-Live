@@ -1,4 +1,5 @@
 dantooine_monstrous_mite_lair_neutral_small = Lair:new {
+	customName = "Monstrous Dantooine Mite Nest",
 	mobiles = {{"monstrous_dantooine_mite",1}, {"monstrous_dantooine_beetle",1}},
 	spawnLimit = 15,
 	buildingsVeryEasy = {"object/tangible/lair/base/poi_all_lair_brambles_small.iff"},

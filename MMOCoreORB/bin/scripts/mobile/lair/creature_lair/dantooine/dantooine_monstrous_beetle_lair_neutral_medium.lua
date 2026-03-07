@@ -1,4 +1,5 @@
 dantooine_monstrous_beetle_lair_neutral_medium = Lair:new {
+	customName = "Monstrous Dantooine Beetle Mound",
 	mobiles = {{"monstrous_dantooine_beetle",1}},
 	bossMobiles = {{"monstrous_giant_dantooine_mite",1}},
 	spawnLimit = 15,

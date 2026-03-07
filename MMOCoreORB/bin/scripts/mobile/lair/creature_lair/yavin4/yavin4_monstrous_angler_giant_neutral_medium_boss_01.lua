@@ -1,4 +1,5 @@
 yavin4_monstrous_angler_giant_neutral_medium_boss_01 = Lair:new {
+	customName = "Monstrous Mad Angler Den",
 	mobiles = {{"monstrous_lurking_angler",1}},
 	bossMobiles = {{"monstrous_mad_angler",1}},
 	spawnLimit = 15,

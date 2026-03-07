@@ -1,4 +1,5 @@
 tatooine_monstrous_rock_beetle_click_neutral_medium = Lair:new {
+	customName = "Monstrous Rock Beetle Mound",
 	mobiles = {{"monstrous_rockmite",1}, {"monstrous_sand_beetle",1}},
 	spawnLimit = 15,
 	buildingsVeryEasy = {"object/tangible/lair/base/poi_all_lair_mound_large.iff"},

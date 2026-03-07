@@ -1,4 +1,5 @@
 tatooine_monstrous_giant_sand_beetle_click_neutral_large = Lair:new {
+	customName = "Monstrous Sand Beetle Colony",
 	mobiles = {{"monstrous_sand_beetle",1}},
 	bossMobiles = {{"monstrous_overkreetle",1}},
 	spawnLimit = 15,

@@ -1,4 +1,5 @@
 yavin4_monstrous_angler_lair_neutral_medium = Lair:new {
+	customName = "Monstrous Angler Nest",
 	mobiles = {{"monstrous_lurking_angler",1}},
 	spawnLimit = 15,
 	buildingsVeryEasy = {"object/tangible/lair/base/poi_all_lair_nest_large_evil_fire_red.iff"},

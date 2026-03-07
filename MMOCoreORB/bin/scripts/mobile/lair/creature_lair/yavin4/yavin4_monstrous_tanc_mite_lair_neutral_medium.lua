@@ -1,4 +1,5 @@
 yavin4_monstrous_tanc_mite_lair_neutral_medium = Lair:new {
+	customName = "Monstrous Tanc Mite Colony",
 	mobiles = {{"monstrous_tanc_mite_warrior",1}},
 	bossMobiles = {{"monstrous_giant_tanc_mite",1}},
 	spawnLimit = 15,
