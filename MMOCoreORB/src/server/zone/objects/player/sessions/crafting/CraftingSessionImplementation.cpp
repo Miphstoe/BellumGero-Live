@@ -17,6 +17,8 @@
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/managers/skill/SkillModManager.h"
+#include "server/zone/managers/loot/LootManager.h"
+#include "server/zone/objects/scene/SceneObjectType.h"
 
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
@@ -1599,6 +1601,38 @@ void CraftingSessionImplementation::addSkillMods() {
 		}
 
 		prototype->addSkillMod(SkillModManager::WEARABLE, mod.getKey(), mod.getValue(), false);
+	}
+
+	// Rare chance for crafted clothing/jewelry/armor to receive a built-in bonus stat
+	if (prototype->isWearableObject()) {
+		ManagedReference<CreatureObject*> crafter = this->crafter.get();
+
+		if (crafter != nullptr) {
+			LootManager* lootManager = crafter->getZoneServer()->getLootManager();
+
+			if (lootManager != nullptr) {
+				int roll = System::random(99); // 0-99
+				int bonusValue = 0;
+
+				if (roll == 0) {        // 1% chance: +10 (rarest)
+					bonusValue = 10;
+				} else if (roll <= 5) { // 5% chance: +5 (rare)
+					bonusValue = 5;
+				}
+
+				if (bonusValue > 0) {
+					uint32 modPool = prototype->isArmorObject() ? SceneObjectType::ARMORATTACHMENT : SceneObjectType::CLOTHINGATTACHMENT;
+					String modName = lootManager->getRandomLootableMod(modPool);
+
+					if (!modName.isEmpty()) {
+						prototype->addSkillMod(SkillModManager::WEARABLE, modName, bonusValue, false);
+						prototype->addMagicBit(false);
+
+						crafter->sendSystemMessage("Your craftsmanship produced an item with a rare bonus: +" + String::valueOf(bonusValue) + " " + modName + "!");
+					}
+				}
+			}
+		}
 	}
 }
 
