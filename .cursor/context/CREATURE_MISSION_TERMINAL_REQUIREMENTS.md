@@ -27,15 +27,13 @@ Mission terminals get their target list from **destroy mission groups**, not fro
 Destroy missions need an object to place at the waypoint. If the lair has `buildingType = "none"` and all `buildings*` tables empty, the server will **skip** creating Destroy missions and the Destroy tab will not show.
 
 - **Files**: The lair Lua file(s) for the new creature (e.g. `MMOCoreORB/bin/scripts/mobile/lair/creature_dynamic/<planet>/<lair_name>.lua`)
-- **Action**: Add to the Lair table:
+- **Action**: Add:
   ```lua
   missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
-  customName = "Friendly Display Name Here",
   ```
-  - `missionBuilding`: same small nest used by other creature lairs for missions.
-  - `customName`: text shown as the mission **Target** in the mission details (e.g. "Wild Foreign Bantha Rori"). Without it, the client shows the raw key like `lair_n:[template_name]`.
+  to the Lair table (same small nest used by other creature lairs for missions).
 
-Without `missionBuilding`, `getMissionBuilding(difficulty)` returns empty and the mission is aborted, so no Destroy missions appear in the browser.
+Without this, `getMissionBuilding(difficulty)` returns empty and the mission is aborted, so no Destroy missions appear in the browser.
 
 ---
 
@@ -44,17 +42,9 @@ Without `missionBuilding`, `getMissionBuilding(difficulty)` returns empty and th
 | Step | Where | What |
 |------|--------|------|
 | 1 | `.../spawn/destroy_mission/<planet>_destroy_missions.lua` | Add lair to `lairSpawns` with template name, min/max difficulty, size. |
-| 2 | Lair Lua (e.g. `.../lair/creature_dynamic/<planet>/<name>.lua`) | Add `missionBuilding` and `customName` (see section 2 above). |
+| 2 | Lair Lua (e.g. `.../lair/creature_dynamic/<planet>/<name>.lua`) | Add `missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff"`. |
 
-After changes: **reload server** (`shutdown 0 fast` then `./core3`) so Lua is re-read. Test: Choose Mission Target → select the creature → List Missions → Destroy tab should list missions; open a mission and confirm **Target** shows the friendly name, not `lair_n:[template_name]`.
-
----
-
-## Lessons learned (gotchas)
-
-- **Destroy tab empty or only Deliver shows** → Lair has `buildingType = "none"` and no `missionBuilding`. Add `missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff"` to the lair Lua.
-- **Target shows `lair_n:[rori_wild_foreign_bantha_herd_neutral_none]`** → No string-table entry for that lair; add `customName = "Friendly Display Name"` to the lair so the mission uses it.
-- **Creature not in “Choose Mission Target” list** → Mission list comes from the planet’s **destroy_mission** group, not world spawn. Add the lair to `.../spawn/destroy_mission/<planet>_destroy_missions.lua`.
+After changes: **reload server** (`shutdown 0 fast` then `./core3`) so Lua is re-read. Test: Choose Mission Target → select the creature → List Missions → Destroy tab should list missions for that target.
 
 ---
 

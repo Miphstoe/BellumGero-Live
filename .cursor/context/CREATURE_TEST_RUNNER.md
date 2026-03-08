@@ -58,14 +58,6 @@ Use `/teleport <planet> <x> <y>` (e.g. from SOP_TESTING_NEW_CREATURES.md §2.2) 
 
 ---
 
-## 6. Mission terminal (if creature is on Destroy missions)
-
-- At a **general** mission terminal: **Choose Mission Target** → select the creature → **List Missions**.
-- **Destroy** tab should list missions for that target; take one and open mission details.
-- **Target** should show the friendly name (e.g. *Wild Foreign Bantha Rori*), not `lair_n:[template_name]`. If you see the raw key, add `customName` to the lair (see CREATURE_MISSION_TERMINAL_REQUIREMENTS.md).
-
----
-
 *Plan: SWG Dev Creature Test. Key files: MMOCoreORB/bin/scripts/mobile/{rori,talus,lok}/*.lua, lair/spawn in mobile/lair/ and mobile/spawn/.*
 
 **Mission terminals:** If the creature should appear on Destroy mission terminals, see `.cursor/context/CREATURE_MISSION_TERMINAL_REQUIREMENTS.md` (add to destroy_mission list + set missionBuilding on lair).
