@@ -45,8 +45,10 @@ int SurveyToolImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 		bool hasSurveyAbility = playerObject->hasAbility("survey");
 		bool isRangerNovice = player->hasSkill("outdoors_ranger_novice");
 		bool isCompleteSurveyTool = (surveyType == "all"); // survey_tool_all.iff
+		bool isCreatureSurveyTool = (surveyType == "creature");
+		bool isScoutNovice = player->hasSkill("outdoors_scout_novice");
 
-	if (!hasSurveyAbility && !(isRangerNovice && isCompleteSurveyTool)) {
+	if (!hasSurveyAbility && !(isRangerNovice && isCompleteSurveyTool) && !(isScoutNovice && isCreatureSurveyTool)) {
     	player->sendSystemMessage("@error_message:insufficient_skill");
     	return 0;
 	}
@@ -91,11 +93,18 @@ int SurveyToolImplementation::handleObjectMenuSelect(CreatureObject* player, byt
 }
 
 void SurveyToolImplementation::sendRangeSui(CreatureObject* player) {
-	int surveyMod = player->getSkillMod("surveying");
+	int surveyMod;
+
+	// Creature Survey tool uses creature_knowledge instead of surveying skill.
+	if (surveyType == "creature") {
+		surveyMod = player->getSkillMod("creature_knowledge");
+	} else {
+		surveyMod = player->getSkillMod("surveying");
+	}
 
 	// Ranger bypass for Complete Survey tool: allow range selection without granting surveying mod globally.
     if (surveyMod <= 0 && player->hasSkill("outdoors_ranger_novice") && surveyType == "all") {
-        surveyMod = 120; // gives 64m + 128m options (matches your getRange() fallback)
+        surveyMod = 120;
     }
 
 	ManagedReference<SuiListBox*> suiToolRangeBox = new SuiListBox(player, SuiWindowType::SURVEY_TOOL_RANGE, 0);
@@ -129,12 +138,19 @@ void SurveyToolImplementation::sendRangeSui(CreatureObject* player) {
 
 int SurveyToolImplementation::getRange(CreatureObject* player) {
 
-	int surveyMod = player->getSkillMod("surveying");
+	int surveyMod;
+
+	// Creature Survey tool uses creature_knowledge instead of surveying skill.
+	if (surveyType == "creature") {
+		surveyMod = player->getSkillMod("creature_knowledge");
+	} else {
+		surveyMod = player->getSkillMod("surveying");
+	}
 
 	// Allow Rangers to get a baseline range when using the Complete Survey tool,
 	// without granting them (or stacking) the surveying skillmod globally.
 	if (surveyMod <= 0 && player->hasSkill("outdoors_ranger_novice") && surveyType == "all") {
-    	surveyMod = 120; // 35 -> 128 range via getSkillBasedRange()
+    	surveyMod = 120;
 	}
 
 	int rangeBasedOnSkill = getSkillBasedRange(surveyMod);
