@@ -30,7 +30,7 @@ if type(randomBossName) ~= "function" then
   local POOL = {
     "Humdinger","Hellguard","Slug","Mafo","Adan","Pastorius","Udon",
     "Vinzent","Valmor","Cas-Wan","GrumpyOptimism","Chyna","EnderWookie","Chuckertons","Xyrdren",
-    "Elessar","Sobi","Vinyacam",
+    "Elessar","Sobi","Vinyacam","Nabahe","TraF",
   }
   if not _G.__BOSS_NAME_SEEDED then
     math.randomseed(tonumber(tostring(os.time()):reverse():sub(1,9)))
