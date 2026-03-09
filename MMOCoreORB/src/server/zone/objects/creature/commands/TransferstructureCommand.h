@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/region/CityRegion.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "templates/tangible/SharedStructureObjectTemplate.h"
@@ -149,8 +150,12 @@ public:
 		}
 
 		int lotSize = structure->getLotSize();
+		StructureManager* structureManager = StructureManager::instance();
 
-		if (!targetGhost->hasLotsRemaining(lotSize)) {
+		if (structureManager == nullptr)
+			return GENERALERROR;
+
+		if (structureManager->getAccountLotsUsed(targetCreature) + lotSize > structureManager->getAccountLotCap()) {
 			if ( !bForceTransfer) {
 				StringIdChatParameter params("@player_structure:not_able_to_own"); //%NT is not able to own this structure.
 				params.setTT(targetCreature->getObjectID());

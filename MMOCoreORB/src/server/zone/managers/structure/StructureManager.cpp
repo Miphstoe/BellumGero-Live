@@ -47,6 +47,8 @@
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/objects/installation/harvester/HarvesterObject.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/login/account/AccountManager.h"
+#include "server/login/account/Account.h"
 #include "templates/faction/Factions.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "templates/building/CampStructureTemplate.h"
@@ -88,6 +90,125 @@ StructureManager::StructureManager() : Logger("StructureManager") {
 
 	setGlobalLogging(true);
 	setLogging(false);
+}
+
+int StructureManager::getAccountLotCap() const {
+	// Central account-wide lot cap. Keep this here so later config changes are localized.
+	return 100;
+}
+
+int StructureManager::getAccountLotsUsed(CreatureObject* creature) const {
+	if (creature == nullptr)
+		return 0;
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return 0;
+
+	return getAccountLotsUsed(ghost->getAccountID());
+}
+
+int StructureManager::getAccountLotsUsed(uint32 accountID) const {
+	if (server == nullptr || accountID == 0)
+		return 0;
+
+	ManagedReference<Account*> account = AccountManager::getAccount(accountID);
+
+	if (account == nullptr)
+		return 0;
+
+	Reference<CharacterList*> characters = account->getCharacterList();
+
+	if (characters == nullptr)
+		return 0;
+
+	SortedVector<uint64> accountCharacterIDs;
+	accountCharacterIDs.setNoDuplicateInsertPlan();
+	SortedVector<uint64> onlineCharacterIDs;
+	onlineCharacterIDs.setNoDuplicateInsertPlan();
+
+	const uint32 galaxyID = server->getGalaxyID();
+	int totalLotsUsed = 0;
+
+	for (int i = 0; i < characters->size(); ++i) {
+		const CharacterListEntry& entry = characters->get(i);
+
+		if (entry.getGalaxyID() != galaxyID)
+			continue;
+
+		const uint64 characterID = entry.getObjectID();
+		accountCharacterIDs.put(characterID);
+
+		ManagedReference<CreatureObject*> creature = server->getObject(characterID).castTo<CreatureObject*>();
+
+		if (creature == nullptr || !creature->isPlayerCreature())
+			continue;
+
+		ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+		if (ghost == nullptr || !ghost->isOnline())
+			continue;
+
+		onlineCharacterIDs.put(characterID);
+
+		for (int j = 0; j < ghost->getTotalOwnedStructureCount(); ++j) {
+			ManagedReference<StructureObject*> structure = server->getObject(ghost->getOwnedStructure(j)).castTo<StructureObject*>();
+
+			if (structure != nullptr)
+				totalLotsUsed += structure->getLotSize();
+		}
+	}
+
+	if (accountCharacterIDs.isEmpty())
+		return 0;
+
+	if (onlineCharacterIDs.size() == accountCharacterIDs.size())
+		return totalLotsUsed;
+
+	ObjectDatabase* structureDatabase = ObjectDatabaseManager::instance()->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr)
+		return totalLotsUsed;
+
+	ObjectDatabaseIterator iterator(structureDatabase);
+	ObjectInputStream objectData(2000);
+	uint64 structureID = 0;
+
+	while (iterator.getNextKeyAndValue(structureID, &objectData)) {
+		uint64 ownerID = 0;
+		uint32 serverObjectCRC = 0;
+
+		try {
+			if (!Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerID, &objectData) ||
+			    !Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData)) {
+				objectData.reset();
+				continue;
+			}
+		} catch (...) {
+			objectData.reset();
+			continue;
+		}
+
+		if (!accountCharacterIDs.contains(ownerID) || onlineCharacterIDs.contains(ownerID)) {
+			objectData.reset();
+			continue;
+		}
+
+		Reference<SharedStructureObjectTemplate*> structureTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(serverObjectCRC));
+
+		if (structureTemplate != nullptr)
+			totalLotsUsed += structureTemplate->getLotSize();
+
+		objectData.reset();
+	}
+
+	return totalLotsUsed;
+}
+
+int StructureManager::getAccountLotsRemaining(CreatureObject* creature) const {
+	return getAccountLotCap() - getAccountLotsUsed(creature);
 }
 
 IndexDatabase* StructureManager::createSubIndex() {
@@ -420,9 +541,11 @@ if (ghost != nullptr) {
         return 1;
     }
     
-    int lots = serverTemplate->getLotSize();
-    
-    if (!ghost->hasLotsRemaining(lots)) {
+    const int lots = serverTemplate->getLotSize();
+    const int accountLotsUsed = getAccountLotsUsed(creature);
+    const int accountLotCap = getAccountLotCap();
+
+    if (accountLotsUsed + lots > accountLotCap) {
         StringIdChatParameter param("@player_structure:not_enough_lots");
         param.setDI(lots);
         creature->sendSystemMessage(param);

@@ -6,6 +6,7 @@
 #define SNOOPCOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/managers/mission/MissionManager.h"
@@ -495,12 +496,18 @@ public:
 		if (targetGhost == nullptr || ghost == nullptr)
 			return GENERALERROR;
 
+		StructureManager* structureManager = StructureManager::instance();
+
+		if (structureManager == nullptr)
+			return GENERALERROR;
+
 		int lotsRemaining = targetGhost->getLotsRemaining();
 
 		StringBuffer body;
 
 		body << "Player Name:\t" << target->getFirstName() << endl;
-		body << "Unused Lots:\t" << String::valueOf(lotsRemaining) << endl << endl;
+		body << "Unused Account Lots:\t" << String::valueOf(lotsRemaining) << endl;
+		body << "Account Lot Usage:\t" << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << endl << endl;
 		body << "Player Structures:";
 
 		for (int i = 0; i < targetGhost->getTotalOwnedStructureCount(); i++) {

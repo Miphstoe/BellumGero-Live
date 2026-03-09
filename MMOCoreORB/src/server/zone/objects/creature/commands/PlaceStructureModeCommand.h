@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/packets/player/EnterStructurePlacementModeMessage.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "templates/manager/TemplateManager.h"
 #include "templates/faction/Factions.h"
 // add with other includes
@@ -96,13 +97,19 @@ public:
 		if (serverTemplate == nullptr)
 			return GENERALERROR; //Template is unknown.
 
-		int lots = serverTemplate->getLotSize();
+		const int lots = serverTemplate->getLotSize();
+		StructureManager* structureManager = StructureManager::instance();
 
 // If this deed was from a packed house, free the temporary lot-hold now
 		HousePackupManager::instance()->releaseLotsPlaceholder(deed->getObjectID());
 
-// Now perform the normal lots check
-		if (!ghost->hasLotsRemaining(lots)) {
+		if (structureManager == nullptr)
+			return GENERALERROR;
+
+		const int accountLotsUsed = structureManager->getAccountLotsUsed(creature);
+		const int accountLotCap = structureManager->getAccountLotCap();
+
+		if (accountLotsUsed + lots > accountLotCap) {
     		StringIdChatParameter param("@player_structure:not_enough_lots");
     		param.setDI(lots);
 

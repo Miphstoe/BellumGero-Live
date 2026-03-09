@@ -3144,47 +3144,34 @@ void PlayerObjectImplementation::deleteAllWaypoints() {
 	}
 }
 
+int PlayerObjectImplementation::getLotsUsed() {
+	StructureManager* structureManager = StructureManager::instance();
+
+	if (structureManager == nullptr)
+		return 0;
+
+	CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+
+	if (creature != nullptr)
+		return structureManager->getAccountLotsUsed(creature);
+
+	uint32 accountId = 0;
+
+	{
+		Locker locker(asPlayerObject());
+		accountId = getAccountID();
+	}
+
+	return structureManager->getAccountLotsUsed(accountId);
+}
+
 int PlayerObjectImplementation::getLotsRemaining() {
-    Locker locker(asPlayerObject());
+	StructureManager* structureManager = StructureManager::instance();
 
-    int lotsRemaining = maximumLots;
+	if (structureManager == nullptr)
+		return 0;
 
-    // Subtract lots consumed by placed structures
-    for (int i = 0; i < ownedStructures.size(); ++i) {
-        auto oid = ownedStructures.get(i);
-        Reference<StructureObject*> structure = getZoneServer()->getObject(oid).castTo<StructureObject*>();
-        if (structure != nullptr) {
-            lotsRemaining = lotsRemaining - structure->getLotSize();
-        }
-    }
-
-    /* COMMENTED OUT - Let Core3 handle lots normally
-    // Subtract lots consumed by packed deeds in inventory
-    CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
-    if (creature != nullptr) {
-        SceneObject* inventory = creature->getSlottedObject("inventory");
-        if (inventory != nullptr) {
-            for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
-                SceneObject* item = inventory->getContainerObject(i);
-                if (item != nullptr && item->isDeedObject()) {
-                    if (HousePackupManager::instance()->hasSavedPayloadForDeed(item->getObjectID())) {
-                        StructureDeed* deed = cast<StructureDeed*>(item);
-                        if (deed != nullptr) {
-                            String templatePath = deed->getGeneratedObjectTemplate();
-                            Reference<SharedStructureObjectTemplate*> tmpl = dynamic_cast<SharedStructureObjectTemplate*>(
-                                TemplateManager::instance()->getTemplate(templatePath.hashCode()));
-                            if (tmpl != nullptr) {
-                                lotsRemaining -= tmpl->getLotSize();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    */
-
-    return lotsRemaining;
+	return structureManager->getAccountLotCap() - getLotsUsed();
 }
 
 int PlayerObjectImplementation::getOwnedChatRoomCount() {
