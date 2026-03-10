@@ -6,6 +6,7 @@
 #define FINDMYSTRUCTURECOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
@@ -98,9 +99,14 @@ public:
 		ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::STRUCTURE_STATUS);
 		box->setPromptTitle("My Structures");
 
+		StructureManager* structureManager = StructureManager::instance();
+
+		if (structureManager == nullptr)
+			return GENERALERROR;
+
 		StringBuffer promptText;
 		promptText << "You own " << sortedIndices.size() << " structure(s). Click on a structure to create a waypoint.\n";
-		promptText << "Lot Usage: " << totalLots << " / " << ghost->getLotsRemaining() + totalLots << " lots";
+		promptText << "Account Lot Usage: " << ghost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << " lots";
 
 		box->setPromptText(promptText.toString());
 		box->setUsingObject(creature);

@@ -6,6 +6,7 @@
 #define FINDPLAYERSTRUCTURECOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
@@ -127,11 +128,16 @@ public:
 			}
 		}
 
+		StructureManager* structureManager = StructureManager::instance();
+
+		if (structureManager == nullptr)
+			return GENERALERROR;
+
 		// Build the message box content
 		StringBuffer body;
 		body << "Player: " << targetPlayer->getFirstName() << endl;
 		body << "Total Structures: " << structureCount << endl << endl;
-		body << "Lot Usage: " << totalLots << " / " << targetGhost->getLotsRemaining() + totalLots << " lots" << endl << endl;
+		body << "Account Lot Usage: " << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << " lots" << endl << endl;
 
 		body << "======== STRUCTURES ========" << endl << endl;
 

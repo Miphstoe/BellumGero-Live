@@ -47,6 +47,7 @@ includeFile("tangible/survey_tool/base/serverobjects.lua")
 
 -- Server Objects
 includeFile("tangible/survey_tool/survey_tool_all.lua")
+includeFile("tangible/survey_tool/survey_tool_creature.lua")
 includeFile("tangible/survey_tool/survey_tool_gas.lua")
 includeFile("tangible/survey_tool/survey_tool_inorganic.lua")
 includeFile("tangible/survey_tool/survey_tool_liquid.lua")

@@ -17,6 +17,8 @@
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/managers/skill/SkillModManager.h"
+#include "server/zone/managers/loot/LootManager.h"
+#include "server/zone/objects/scene/SceneObjectType.h"
 
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
@@ -1555,6 +1557,30 @@ void CraftingSessionImplementation::createManufactureSchematic(int clientCounter
 
 		prototype->destroyObjectFromWorld(0);
 
+		// Strip any randomly-applied bonus mods before saving into the schematic so
+		// factory runs produce clean items.  Only mods defined in the draft schematic
+		// belong in the stored prototype; anything extra was our random craft bonus.
+		if (prototype->isWearableObject()) {
+			ManagedReference<DraftSchematic*> draftSchematic = manufactureSchematic->getDraftSchematic();
+			const VectorMap<String, int>* schematicMods = draftSchematic->getDraftSchematicTemplate()->getSkillMods();
+
+			WearableObject* wearable = prototype.castTo<WearableObject*>();
+			VectorMap<String, int>* wearableMods = wearable->getWearableSkillMods();
+
+			Vector<String> toRemove;
+			for (int i = 0; i < wearableMods->size(); i++) {
+				const String& key = wearableMods->elementAt(i).getKey();
+				if (!schematicMods->contains(key)) {
+					toRemove.add(key);
+				}
+			}
+
+			for (int i = 0; i < toRemove.size(); i++) {
+				wearableMods->drop(toRemove.get(i));
+				prototype->removeMagicBit(false);
+			}
+		}
+
 		manufactureSchematic->setPersistent(2);
 		prototype->setPersistent(2);
 
@@ -1599,6 +1625,42 @@ void CraftingSessionImplementation::addSkillMods() {
 		}
 
 		prototype->addSkillMod(SkillModManager::WEARABLE, mod.getKey(), mod.getValue(), false);
+	}
+
+	// Rare chance for crafted clothing/jewelry/armor to receive a built-in bonus stat.
+	// addSkillMods() is only called from initialAssembly() inside CraftingSession —
+	// factories never call this method, so factory runs cannot produce bonus items.
+	if (prototype->isWearableObject()) {
+		ManagedReference<CreatureObject*> crafter = this->crafter.get();
+
+		if (crafter != nullptr) {
+			LootManager* lootManager = crafter->getZoneServer()->getLootManager();
+
+			if (lootManager != nullptr) {
+				int roll = System::random(99); // 0-99
+				int bonusValue = 0;
+
+				if (roll == 0) {        // 1% chance: +10 (rarest)
+					bonusValue = 10;
+				} else if (roll <= 5) { // 5% chance: +5 (rare)
+					bonusValue = 5;
+				}
+
+				if (bonusValue > 0) {
+					uint32 modPool = prototype->isArmorObject() ? SceneObjectType::ARMORATTACHMENT : SceneObjectType::CLOTHINGATTACHMENT;
+					String modName = lootManager->getRandomLootableMod(modPool);
+
+					if (!modName.isEmpty()) {
+						WearableObject* wearable = prototype.castTo<WearableObject*>();
+						VectorMap<String, int>* wearableMods = wearable->getWearableSkillMods();
+						wearableMods->put(modName, bonusValue);
+						prototype->addMagicBit(false);
+
+						crafter->sendSystemMessage("Your craftsmanship produced an item with a rare bonus: +" + String::valueOf(bonusValue) + " " + modName + "!");
+					}
+				}
+			}
+		}
 	}
 }
 

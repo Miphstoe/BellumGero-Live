@@ -8,6 +8,7 @@
 #ifndef GUILDTRANSFERLOTSSUICALLBACK_H_
 #define GUILDTRANSFERLOTSSUICALLBACK_H_
 #include "server/zone/managers/guild/GuildManager.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
 
 class GuildTransferLotsSuiCallback : public SuiCallback {
@@ -52,7 +53,12 @@ public:
 		if (ownerGhost == nullptr || guildObject == nullptr)
 			return;
 
-		if (player->getPlayerObject()->getLotsRemaining() < 5) {
+		StructureManager* structureManager = StructureManager::instance();
+
+		if (structureManager == nullptr)
+			return;
+
+		if (structureManager->getAccountLotsUsed(player) + 5 > structureManager->getAccountLotCap()) {
 			player->sendSystemMessage("@guild:no_lots"); // You don't have enough lots free to take over the PA hall. You need to have 5 free lots.
 			return;
 		}

@@ -447,6 +447,10 @@ function PadawanTrials:notifyKilledForPoints(pPlayer, pVictim)
 		return 0
 	end
 
+	-- Player must be within 32m of the kill to receive credit
+	if not SceneObject(pPlayer):isInRangeWithObject(pVictim, 32) then
+		return 0
+	end
 
 	-- Get creature level and calculate points
 	local creatureLevel = CreatureObject(pVictim):getLevel()

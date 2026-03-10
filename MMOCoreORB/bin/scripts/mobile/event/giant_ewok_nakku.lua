@@ -1,18 +1,17 @@
-giant_ewok_warchief = Creature:new {
-	objectName = "@mob/creature_names:giant_ewok_warchief",
-	customName = "Giant Ewok Warchief",
+giant_ewok_nakku = Creature:new {
+	customName = "Nakku",
 	socialGroup = "gondula_tribe",
 	faction = "gondula_tribe",
 	mobType = MOB_NPC,
-	level = 300,
-	chanceHit = 30.0,
-	damageMin = 1500,
-	damageMax = 2500,
-	baseXp = 500000,
-	baseHAM = 1000000,
-	baseHAMmax = 1200000,
+	level = 250,
+	chanceHit = 24.0,
+	damageMin = 1200,
+	damageMax = 2100,
+	baseXp = 420000,
+	baseHAM = 800000,
+	baseHAMmax = 960000,
 	armor = 2,
-	resists = {65,65,65,65,65,65,65,65,20},
+	resists = {55,55,55,55,55,55,55,55,20},
 	meatType = "",
 	meatAmount = 0,
 	hideType = "",
@@ -26,9 +25,9 @@ giant_ewok_warchief = Creature:new {
 	creatureBitmask = PACK + KILLER + STALKER,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
-	scale = 7,
+	scale = 6,
 
-	templates = {"object/mobile/dressed_ewok_m_04.iff"},
+	templates = {"object/mobile/dressed_ewok_m_11.iff"},
 	lootGroups = {
 		{
 			groups = {
@@ -38,7 +37,7 @@ giant_ewok_warchief = Creature:new {
 			},
 			lootChance = 10000000
 		},
-        {
+		{
 			groups = {
 				{group = "clothing_attachments", chance = 5000000},
 				{group = "armor_attachments", chance = 2500000},
@@ -46,7 +45,7 @@ giant_ewok_warchief = Creature:new {
 			},
 			lootChance = 10000000
 		},
-        {
+		{
 			groups = {
 				{group = "clothing_attachments", chance = 5000000},
 				{group = "armor_attachments", chance = 2500000},
@@ -54,7 +53,7 @@ giant_ewok_warchief = Creature:new {
 			},
 			lootChance = 10000000
 		},
-        {
+		{
 			groups = {
 				{group = "clothing_attachments", chance = 5000000},
 				{group = "armor_attachments", chance = 2500000},
@@ -62,7 +61,7 @@ giant_ewok_warchief = Creature:new {
 			},
 			lootChance = 10000000
 		},
-        {
+		{
 			groups = {
 				{group = "clothing_attachments", chance = 5000000},
 				{group = "armor_attachments", chance = 2500000},
@@ -75,9 +74,9 @@ giant_ewok_warchief = Creature:new {
 	primaryWeapon = "light_jedi_weapons",
 	secondaryWeapon = "none",
 	conversationTemplate = "",
-	
+
 	primaryAttacks = merge(lightsabermaster,fencermaster,swordsmanmaster),
 	secondaryAttacks = { }
 }
 
-CreatureTemplates:addCreatureTemplate(giant_ewok_warchief, "giant_ewok_warchief")
+CreatureTemplates:addCreatureTemplate(giant_ewok_nakku, "giant_ewok_nakku")

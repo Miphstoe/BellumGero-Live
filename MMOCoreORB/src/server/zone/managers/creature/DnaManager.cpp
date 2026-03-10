@@ -569,7 +569,8 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 
 	// Cap quality tier based on the looting player's dna_harvesting skill mod.
 	// Higher tier numbers are worse quality (VHQ=1 ... VLQ=7).
-	if (player != nullptr) {
+	// Creatures level 300+ always yield VHQ regardless of the player's skill.
+	if (player != nullptr && creatureLevel < 300) {
 		int dnaSkill = player->getSkillMod("dna_harvesting");
 		int floorTier;
 		if (dnaSkill == 0)

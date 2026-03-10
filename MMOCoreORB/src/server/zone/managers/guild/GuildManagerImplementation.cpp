@@ -15,6 +15,7 @@
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/name/NameManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 
 #include "server/zone/objects/guild/RenameGuildTask.h"
@@ -938,7 +939,12 @@ void GuildManagerImplementation::sendTransferAckTo(CreatureObject* player, const
 		return;
 	}
 
-	if ( !target->getPlayerObject()->hasLotsRemaining(5) ) {
+	StructureManager* structureManager = StructureManager::instance();
+
+	if (structureManager == nullptr)
+		return;
+
+	if (structureManager->getAccountLotsUsed(target) + 5 > structureManager->getAccountLotCap()) {
 		target->sendSystemMessage("@guild:ml_no_lots_free");  // That person does not have enough free lots to own the PA hall.  PA hall ownership is a requirement be guild leader
 		return;
 	}
