@@ -189,6 +189,18 @@ dantooine_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "dantooine_monstrous_mite_lair_neutral_small",
+			minDifficulty = 36,
+			maxDifficulty = 45,
+			size = 25,
+		},
+		{
+			lairTemplateName = "dantooine_monstrous_beetle_lair_neutral_medium",
+			minDifficulty = 40,
+			maxDifficulty = 45,
+			size = 25,
+		},
+		{
 			lairTemplateName = "global_dark_jedi_master_neutral_none",
 			minDifficulty = 80,
 			maxDifficulty = 80,

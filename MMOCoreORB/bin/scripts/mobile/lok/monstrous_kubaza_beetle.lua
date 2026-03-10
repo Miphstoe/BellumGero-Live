@@ -1,0 +1,42 @@
+monstrous_kubaza_beetle = Creature:new {
+	objectName = "@mob/creature_names:sand_beetle",
+	customName = "Monstrous Kubaza Beetle",
+	socialGroup = "beetle",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 30,
+	chanceHit = 0.31,
+	damageMin = 250,
+	damageMax = 340,
+	baseXp = 2595,
+	baseHAM = 8765,
+	baseHAMmax = 11075,
+	armor = 1,
+	resists = {25,25,10,10,10,10,10,10,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 4,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/giant_sand_beetle.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	scale = 1.2,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_kubaza_beetle, "monstrous_kubaza_beetle")

@@ -1,0 +1,42 @@
+monstrous_giant_dantooine_mite = Creature:new {
+	objectName = "@mob/creature_names:giant_tanc_mite",
+	customName = "Monstrous Giant Dantooine Mite",
+	socialGroup = "mite",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 45,
+	chanceHit = 0.47,
+	damageMin = 380,
+	damageMax = 520,
+	baseXp = 3930,
+	baseHAM = 13700,
+	baseHAMmax = 17025,
+	armor = 1,
+	resists = {35,35,20,20,20,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 6,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/giant_tanc_mite.iff"},
+	hues = {8, 9, 10, 11, 12, 13, 14, 15},
+	scale = 1.5,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"intimidationattack",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_giant_dantooine_mite, "monstrous_giant_dantooine_mite")

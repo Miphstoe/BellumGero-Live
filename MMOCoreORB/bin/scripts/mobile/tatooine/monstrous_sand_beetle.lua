@@ -1,0 +1,42 @@
+monstrous_sand_beetle = Creature:new {
+	objectName = "@mob/creature_names:sand_beetle",
+	customName = "Monstrous Sand Beetle",
+	socialGroup = "beetle",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 45,
+	chanceHit = 0.47,
+	damageMin = 375,
+	damageMax = 510,
+	baseXp = 3890,
+	baseHAM = 13150,
+	baseHAMmax = 16615,
+	armor = 1,
+	resists = {35,35,20,20,20,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 6,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/giant_sand_beetle.iff"},
+	hues = {8, 9, 10, 11, 12, 13, 14, 15},
+	scale = 1.4,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_sand_beetle, "monstrous_sand_beetle")

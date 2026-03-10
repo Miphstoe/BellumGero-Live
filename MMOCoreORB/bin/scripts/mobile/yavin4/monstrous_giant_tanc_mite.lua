@@ -1,0 +1,42 @@
+monstrous_giant_tanc_mite = Creature:new {
+	objectName = "@mob/creature_names:giant_tanc_mite",
+	customName = "Monstrous Giant Tanc Mite",
+	socialGroup = "mite",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 50,
+	chanceHit = 0.54,
+	damageMin = 500,
+	damageMax = 680,
+	baseXp = 5035,
+	baseHAM = 20000,
+	baseHAMmax = 24285,
+	armor = 1,
+	resists = {45,45,25,25,25,20,20,20,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 8,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/giant_tanc_mite.iff"},
+	hues = {24, 25, 26, 27, 28, 29, 30, 31},
+	scale = 1.6,
+	lootGroups = {},
+
+	primaryWeapon = "object/weapon/ranged/creature/creature_spit_small_yellow.iff",
+	secondaryWeapon = "unarmed",
+	conversationTemplate = "",
+	primaryAttacks = {{"intimidationattack",""}, {"strongpoison",""}},
+	secondaryAttacks = {{"intimidationattack",""}, {"strongpoison",""}}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_giant_tanc_mite, "monstrous_giant_tanc_mite")

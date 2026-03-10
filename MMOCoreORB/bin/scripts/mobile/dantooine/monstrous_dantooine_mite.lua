@@ -1,0 +1,42 @@
+monstrous_dantooine_mite = Creature:new {
+	objectName = "@mob/creature_names:mound_mite",
+	customName = "Monstrous Dantooine Mite",
+	socialGroup = "mite",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 36,
+	chanceHit = 0.36,
+	damageMin = 290,
+	damageMax = 395,
+	baseXp = 2900,
+	baseHAM = 9850,
+	baseHAMmax = 12170,
+	armor = 1,
+	resists = {25,25,10,10,10,10,10,10,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 4,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/mound_mite.iff"},
+	hues = {24, 25, 26, 27, 28, 29, 30, 31},
+	scale = 1.1,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_dantooine_mite, "monstrous_dantooine_mite")

@@ -1,0 +1,42 @@
+monstrous_rockmite = Creature:new {
+	objectName = "@mob/creature_names:rockmite",
+	customName = "Monstrous Rockmite",
+	socialGroup = "self",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 44,
+	chanceHit = 0.45,
+	damageMin = 360,
+	damageMax = 480,
+	baseXp = 3720,
+	baseHAM = 12375,
+	baseHAMmax = 15125,
+	armor = 1,
+	resists = {30,30,20,15,20,15,15,15,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 5,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/rock_mite_hue.iff"},
+	hues = {8, 9, 10, 11, 12, 13, 14, 15},
+	scale = 1.0,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_rockmite, "monstrous_rockmite")

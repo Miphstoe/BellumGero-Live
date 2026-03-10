@@ -189,6 +189,24 @@ yavin4_hard_angler_se = {
 			weighting = 25,
 			size = 15,
 		},
+		{
+			lairTemplateName = "yavin4_monstrous_tanc_mite_lair_neutral_medium",
+			spawnLimit = -1,
+			minDifficulty = 66,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 6,
+			size = 15,
+		},
+		{
+			lairTemplateName = "yavin4_monstrous_angler_lair_neutral_medium",
+			spawnLimit = -1,
+			minDifficulty = 67,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 6,
+			size = 15,
+		},
 	}
 }
 

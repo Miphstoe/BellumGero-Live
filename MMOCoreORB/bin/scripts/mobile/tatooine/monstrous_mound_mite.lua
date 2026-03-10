@@ -1,0 +1,42 @@
+monstrous_mound_mite = Creature:new {
+	objectName = "@mob/creature_names:mound_mite",
+	customName = "Monstrous Mound Mite",
+	socialGroup = "self",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 42,
+	chanceHit = 0.42,
+	damageMin = 340,
+	damageMax = 460,
+	baseXp = 3380,
+	baseHAM = 11500,
+	baseHAMmax = 14200,
+	armor = 1,
+	resists = {30,30,15,15,15,15,15,15,-1},
+	meatType = "meat_insect",
+	meatAmount = 299,
+	hideType = "hide_scaley",
+	hideAmount = 299,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 5,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/mound_mite.iff"},
+	hues = {24, 25, 26, 27, 28, 29, 30, 31},
+	scale = 1.15,
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {{"",""}, {"stunattack",""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(monstrous_mound_mite, "monstrous_mound_mite")

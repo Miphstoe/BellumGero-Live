@@ -171,6 +171,15 @@ yavin4_hard_angler_ne = {
 			weighting = 50,
 			size = 15,
 		},
+		{
+			lairTemplateName = "yavin4_monstrous_angler_giant_neutral_medium_boss_01",
+			spawnLimit = -1,
+			minDifficulty = 68,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 6,
+			size = 15,
+		},
 	}
 }
 
