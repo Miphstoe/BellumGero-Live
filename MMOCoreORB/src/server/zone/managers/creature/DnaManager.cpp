@@ -24,7 +24,7 @@ AtomicInteger DnaManager::loadedDnaData;
 
 namespace {
 const char* DNA_SCHEMA_VERSION = "1";
-const int DNA_DROP_CHANCE_PCT = 1; // 2.5% chance (1 in 40)
+const int DNA_DROP_CHANCE_PCT = 2; // 5% chance (1 in 20)
 
 static bool hasString(const Vector<String>& values, const String& value) {
 	for (int i = 0; i < values.size(); ++i) {
