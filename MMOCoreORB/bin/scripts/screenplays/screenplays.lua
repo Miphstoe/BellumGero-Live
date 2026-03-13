@@ -766,6 +766,8 @@ printLuaError("[WBOSS-SC] include: acklay_worldboss_loot.lua (NEW LOOT BOX SYSTE
 includeFile("acklay_worldboss_loot.lua")
 printLuaError("[WBOSS-SC] loader end")
 includeFile("world/gorax_nw_endor.lua")
+includeFile("endor/conversations/dr_kaelen_varr_convo_handler.lua")
+includeFile("endor/geneticist_failed_experiment.lua")
 includeFile("yavin4/egspider_worldboss.lua")
 includeFile("yavin4/egspider_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
 includeFile("world/infernomaw_boss.lua")
