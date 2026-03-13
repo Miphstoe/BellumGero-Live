@@ -807,6 +807,68 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 	return true;
 }
 
+SceneObject* DnaManager::createQuestDnaSample(CreatureObject* player, int quality, int armorRating, const String& customName) {
+	if (player == nullptr || !qualityTemplates.containsKey(quality))
+		return nullptr;
+
+	auto zoneServer = player->getZoneServer();
+	if (zoneServer == nullptr)
+		return nullptr;
+
+	auto craftingManager = zoneServer->getCraftingManager();
+	if (craftingManager == nullptr)
+		return nullptr;
+
+	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+	if (inventory == nullptr || inventory->isContainerFullRecursive())
+		return nullptr;
+
+	ManagedReference<DnaComponent*> prototype = zoneServer->createObject(qualityTemplates.get(quality), 1).castTo<DnaComponent*>();
+	if (prototype == nullptr)
+		return nullptr;
+
+	Locker clocker(prototype);
+
+	// Random VHQ stats in the 750-1000 range
+	auto vhqStat = []() -> int { return static_cast<int>(System::random(250)) + 750; };
+
+	prototype->setSource("Mutated Gurreck Alpha");
+	prototype->setQuality(quality);
+	prototype->setLevel(72);
+	prototype->setSerialNumber(craftingManager->generateSerial());
+	// setStats(cleverness, endurance, fierceness, power, intellect, courage, dependability, dexterity, fortitude, hardiness)
+	prototype->setStats(vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat());
+	prototype->setArmorRating(armorRating);
+
+	// Resistances from mutated_gurreck_alpha: {155,155,40,170,170,40,170,-1,-1}
+	prototype->setKinetic(155.0f);
+	prototype->setEnergy(155.0f);
+	prototype->setBlast(40.0f);
+	prototype->setHeat(170.0f);
+	prototype->setCold(170.0f);
+	prototype->setElectric(40.0f);
+	prototype->setAcid(170.0f);
+	prototype->setSaber(-1.0f);
+	prototype->setStun(-1.0f);
+	prototype->setRanged(false);
+
+	prototype->setSpecialAttackOne("posturedownattack");
+	prototype->setSpecialAttackTwo("intimidationattack");
+
+	if (!customName.isEmpty())
+		prototype->setCustomObjectName(customName, false);
+
+	Locker locker(inventory, prototype);
+	if (inventory->transferObject(prototype, -1, true, false)) {
+		inventory->broadcastObject(prototype, true);
+		prototype->_setUpdated(true);
+		return prototype;
+	}
+
+	prototype->destroyObjectFromDatabase(true);
+	return nullptr;
+}
+
 float DnaManager::valueForLevel(int type, int level) {
 	float rc = 0;
 	switch(type) {

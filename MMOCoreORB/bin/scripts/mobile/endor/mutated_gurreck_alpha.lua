@@ -1,0 +1,46 @@
+mutated_gurreck_alpha = Creature:new {
+	objectName = "",
+	customName = "Mutated Gurreck Alpha",
+	socialGroup = "gurreck",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 72,
+	chanceHit = 0.72,
+	damageMin = 540,
+	damageMax = 760,
+	baseXp = 7200,
+	baseHAM = 18000,
+	baseHAMmax = 22000,
+	armor = 1,
+	resists = {155,155,40,170,170,40,170,-1,-1},
+	meatType = "meat_carnivore",
+	meatAmount = 90,
+	hideType = "hide_wooly",
+	hideAmount = 60,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 8,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/gurreck_hue.iff"},
+	hues = {30, 31},
+	scale = 1.35,
+	lootGroups = {},
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = {
+		{"posturedownattack", ""},
+		{"intimidationattack", ""},
+		{"strongpoison", ""},
+		{"creatureareacombo", ""}
+	},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(mutated_gurreck_alpha, "mutated_gurreck_alpha")
