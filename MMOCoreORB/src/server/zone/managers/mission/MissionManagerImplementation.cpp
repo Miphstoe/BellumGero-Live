@@ -294,6 +294,16 @@ void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionT
 
 	createMissionObjectives(mission, missionTerminal, player);
 
+	// Mando Way of Life — Patch 1: tag BH mission at accept for chapter counting (Chapters 1+)
+	{
+		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+		if (ghost != nullptr && ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1") {
+			if (mission->getTypeCRC() == MissionTypes::BOUNTY) {
+				ghost->setScreenPlayData("MandoWayOfLife", "bhTagged_" + String::valueOf(mission->getObjectID()), "1");
+			}
+		}
+	}
+
 	player->updateToDatabaseAllObjects(false);
 }
 

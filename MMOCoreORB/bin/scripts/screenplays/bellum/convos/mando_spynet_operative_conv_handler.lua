@@ -1,0 +1,74 @@
+-- Mandalorian Spynet Operative Conversation Handler
+-- Routes based on chapter gate state for Chapters 1-4
+
+MandoSpynetOperativeConvoHandler = conv_handler:new {}
+
+function MandoSpynetOperativeConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
+	if (pPlayer == nil) then return nil end
+
+	local convoTemplate = LuaConversationTemplate(pConvTemplate)
+
+	-- Helmet check first
+	if (not MandoWayOfLife:hasFoundlingHelmet(pPlayer)) then
+		return convoTemplate:getScreen("no_helmet")
+	end
+
+	-- Arc must be complete
+	if (not MandoWayOfLife:isArcComplete(pPlayer)) then
+		return convoTemplate:getScreen("no_foundling")
+	end
+
+	-- Novice BH required
+	if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then
+		return convoTemplate:getScreen("no_bh")
+	end
+
+	-- Chapter 4 complete — point to recruiter for Clanbound/FRS
+	if (MandoWayOfLife:readInt(pPlayer, "chapter4Complete") == 1) then
+		return convoTemplate:getScreen("clanbound")
+	end
+
+	-- Private contract currently active
+	if (MandoWayOfLife:readInt(pPlayer, "privateContractActive") == 1) then
+		return convoTemplate:getScreen("trial_active")
+	end
+
+	-- Gate A done (5 BH) — trial available
+	if (MandoWayOfLife:readInt(pPlayer, "needsCustomContract") == 1) then
+		return convoTemplate:getScreen("trial_ready")
+	end
+
+	-- Gate A in progress (counting > 0 but < 5)
+	if (MandoWayOfLife:readInt(pPlayer, "countingEnabled") == 1) then
+		return convoTemplate:getScreen("gate_in_progress")
+	end
+
+	-- Not yet started this gate cycle — offer explanation
+	return convoTemplate:getScreen("gate_explain")
+end
+
+function MandoSpynetOperativeConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
+	if (pPlayer == nil or pConvScreen == nil) then return pConvScreen end
+
+	local screen   = LuaConversationScreen(pConvScreen)
+	local screenID = screen:getScreenID()
+
+	if (screenID == "gate_start") then
+		-- Start the 5 BH terminal counting cycle
+		MandoWayOfLife:startChapterGate(pPlayer)
+		-- Begin polling for gate completion
+		MandoWayOfLife:startGateProgressPoll(pPlayer)
+
+	elseif (screenID == "trial_start") then
+		-- Begin private contract solo enforcement
+		local ok = MandoWayOfLife:beginPrivateContract(pPlayer)
+		if (not ok) then
+			-- beginPrivateContract already sent a system message; close the convo
+			local convoTemplate = LuaConversationTemplate(pConvTemplate)
+			return convoTemplate:getScreen("bye")
+		end
+		-- TODO: spawn private contract mission/lair once contract scripting is complete
+	end
+
+	return pConvScreen
+end

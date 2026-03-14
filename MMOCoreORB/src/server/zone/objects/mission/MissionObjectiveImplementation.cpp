@@ -382,6 +382,47 @@ void MissionObjectiveImplementation::awardReward() {
 	}
 */
 	StatisticsManager::instance()->completeMission(mission->getTypeCRC(), totalRewarded);
+
+	// Mando Way of Life — Patches 2 & 3: mission completion hooks
+	{
+		ManagedReference<PlayerObject*> ghost = owner->getPlayerObject();
+		if (ghost != nullptr) {
+			String missionId = String::valueOf(mission->getObjectID());
+
+			// Patch 2: BH terminal mission counting (Chapters 1+)
+			if (ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "bhTagged_" + missionId) == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId) != "1") {
+
+				int count = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "bhTerminalCount"));
+				if (count < 5) {
+					count++;
+					ghost->setScreenPlayData("MandoWayOfLife", "bhTerminalCount", String::valueOf(count));
+					owner->sendSystemMessage("Spynet contracts: " + String::valueOf(count) + "/5");
+				}
+				ghost->setScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId, "1");
+			}
+
+			// Patch 3: Foundling planet quota counting (Chapter 0)
+			if (ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCountingEnabled") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId) != "1") {
+
+				uint32 typeCRC = mission->getTypeCRC();
+				if (typeCRC == MissionTypes::DESTROY || typeCRC == MissionTypes::DELIVER) {
+					int done = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCompleted"));
+					int target = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetTarget"));
+					done++;
+					ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetCompleted", String::valueOf(done));
+					ghost->setScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId, "1");
+
+					if (done >= target && ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetDone") != "1") {
+						ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetDone", "1");
+						// Lua screenplay polls planetDone and fires the system message + waypoint activation
+					}
+				}
+			}
+		}
+	}
 }
 
 Vector3 MissionObjectiveImplementation::getEndPosition() {

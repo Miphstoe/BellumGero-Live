@@ -71,6 +71,9 @@ includeFile("vendors/bg_token_vendor_3.lua")
 -- Bellum Gero custom mobiles
 includeFile("bellum/bg_force_old_man.lua")
 includeFile("bellum/mallichae_bg_rite.lua")
+includeFile("bellum/mando_trialmaster.lua")
+includeFile("bellum/mando_foundling_informant.lua")
+includeFile("bellum/mando_spynet_operative.lua")
 -- Holocron Village Vendor (5 Holocrons of Destiny per item)
 includeFile("vendors/holocron_village_vendor.lua")
 
