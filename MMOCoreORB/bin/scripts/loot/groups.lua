@@ -103,6 +103,14 @@ includeFile("groups/creature/rancor_common.lua")
 includeFile("groups/creature/sharnaff_common.lua")
 includeFile("groups/creature/voritor_lizard_common.lua")
 
+-- bellum sub-folder (Mandalorian Way of Life)
+includeFile("groups/bellum/mando_contract_kill_reward.lua")
+includeFile("groups/bellum/mando_contract_rare_bonus.lua")
+includeFile("groups/bellum/mando_chapter_loot_1.lua")
+includeFile("groups/bellum/mando_chapter_loot_2.lua")
+includeFile("groups/bellum/mando_chapter_loot_3.lua")
+includeFile("groups/bellum/mando_chapter_loot_4.lua")
+
 -- death_watch_bunker sub-folder
 includeFile("groups/death_watch_bunker/death_watch_bunker_art.lua")
 includeFile("groups/death_watch_bunker/death_watch_bunker_battery.lua")

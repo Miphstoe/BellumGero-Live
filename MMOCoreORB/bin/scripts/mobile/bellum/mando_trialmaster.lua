@@ -5,7 +5,8 @@
 -- TODO: replace template mesh with confirmed Mandalorian-armored client IFF
 
 mando_trialmaster = Creature:new {
-	objectName   = "Mandalorian Recruiter",
+	objectName   = "",
+	customName   = "Mandalorian Recruiter",
 	socialGroup  = "neutral",
 	faction      = "",
 	mobType      = MOB_NPC,

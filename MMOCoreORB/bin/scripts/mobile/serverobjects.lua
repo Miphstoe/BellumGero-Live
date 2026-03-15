@@ -74,6 +74,7 @@ includeFile("bellum/mallichae_bg_rite.lua")
 includeFile("bellum/mando_trialmaster.lua")
 includeFile("bellum/mando_foundling_informant.lua")
 includeFile("bellum/mando_spynet_operative.lua")
+includeFile("bellum/mando_contract_target.lua")
 -- Holocron Village Vendor (5 Holocrons of Destiny per item)
 includeFile("vendors/holocron_village_vendor.lua")
 

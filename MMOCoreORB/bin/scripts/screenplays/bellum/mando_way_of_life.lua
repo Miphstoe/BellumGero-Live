@@ -52,10 +52,17 @@ MandoWayOfLife = ScreenPlay:new {
 	-- --------------------------------------------------------
 	chapterRewards = {
 		[0] = "object/tangible/wearables/armor/mandalorian/custom/foundling_helmet.iff",
-		[1] = "object/tangible/wearables/armor/mandalorian/custom/initiate_chest.iff",
-		[2] = "object/tangible/wearables/armor/mandalorian/custom/hunter_bracers.iff",
-		[3] = "object/tangible/wearables/armor/mandalorian/custom/verdika_boots.iff",
-		[4] = nil, -- Clanbound: no new armor piece; grants alignment access
+		[1] = "object/tangible/wearables/armor/mandalorian/custom/initiate_gloves.iff",
+		[2] = "object/tangible/wearables/armor/mandalorian/custom/hunter_chest.iff",
+		[3] = "object/tangible/wearables/armor/mandalorian/custom/verdika_legs.iff",
+		[4] = {   -- Clanbound: remaining set pieces granted together
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_belt.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_bicep_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_bicep_r.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_bracer_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_bracer_r.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff",
+		},
 	},
 
 	-- Chapter title strings (set via custom badge/title system)
@@ -72,6 +79,9 @@ MandoWayOfLife = ScreenPlay:new {
 
 	-- Solo check interval (ms)
 	SOLO_CHECK_INTERVAL_MS = 30000,
+
+	-- Contract target completion check interval (ms)
+	CONTRACT_CHECK_INTERVAL_MS = 10000,
 
 	-- planetDone poll interval (ms)
 	PLANET_DONE_POLL_MS = 60000,
@@ -217,6 +227,33 @@ function MandoWayOfLife:spawnInformant(pPlayer, index)
 
 		-- Link informant to this player so the conversation knows who to update
 		writeData("mando_way:informant:" .. informantId .. ":player", SceneObject(pPlayer):getObjectID())
+
+		-- Grant waypoint to informant location
+		self:grantInformantWaypoint(pPlayer, data)
+	end
+end
+
+-- Add a datapad waypoint pointing to the current planet's informant
+function MandoWayOfLife:grantInformantWaypoint(pPlayer, data)
+	if (pPlayer == nil or data == nil) then return end
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	if (pGhost == nil) then return end
+
+	-- Clear any previous informant waypoint first
+	local oldWpId = self:readInt(pPlayer, "foundling.waypointId")
+	if (oldWpId ~= 0) then
+		PlayerObject(pGhost):removeWaypoint(oldWpId, true)
+	end
+
+	local wpId = PlayerObject(pGhost):addWaypoint(
+		data.planet,
+		"Mandalorian Informant",
+		"Find your contact and accept your assignment.",
+		data.x, data.z, data.y,
+		WAYPOINT_YELLOW, true, true, 0
+	)
+	if (wpId ~= nil) then
+		self:writeInt(pPlayer, "foundling.waypointId", wpId)
 	end
 end
 
@@ -231,6 +268,16 @@ function MandoWayOfLife:despawnInformant(pPlayer)
 			SceneObject(pInformant):destroyObjectFromWorld()
 		end
 		self:writeStr(pPlayer, "foundling.informantId", "0")
+	end
+
+	-- Remove the informant waypoint from datapad
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	if (pGhost ~= nil) then
+		local wpId = self:readInt(pPlayer, "foundling.waypointId")
+		if (wpId ~= 0) then
+			PlayerObject(pGhost):removeWaypoint(wpId, true)
+			self:writeInt(pPlayer, "foundling.waypointId", 0)
+		end
 	end
 end
 
@@ -441,6 +488,21 @@ function MandoWayOfLife:beginPrivateContract(pPlayer)
 		return false
 	end
 
+	-- Spawn contract target near player's current position
+	local spawnX = SceneObject(pPlayer):getWorldPositionX() + 200
+	local spawnY = SceneObject(pPlayer):getWorldPositionY()
+	local spawnZ = SceneObject(pPlayer):getWorldPositionZ() + 200
+	local planet = SceneObject(pPlayer):getZoneName()
+
+	local pTarget = spawnMobile(planet, "mando_contract_target", 0, spawnX, spawnY, spawnZ, 180, 0)
+	if (pTarget == nil) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"[MandoWayOfLife] ERROR: could not spawn contract target. Contact a GM."
+		)
+		return false
+	end
+	self:writeStr(pPlayer, "contractTargetId", tostring(SceneObject(pTarget):getObjectID()))
+
 	-- Mark contract in progress
 	self:writeInt(pPlayer, "privateContractActive", 1)
 	self:writeInt(pPlayer, "privateContractsToday", todayCount + 1)
@@ -448,6 +510,9 @@ function MandoWayOfLife:beginPrivateContract(pPlayer)
 	-- Start periodic solo + helmet enforcement
 	local playerId = SceneObject(pPlayer):getObjectID()
 	createEvent(self.SOLO_CHECK_INTERVAL_MS, self.screenplayName, "soloCheckEvent", pPlayer, tostring(playerId))
+
+	-- Start contract completion check
+	createEvent(self.CONTRACT_CHECK_INTERVAL_MS, self.screenplayName, "contractCheckEvent", pPlayer, tostring(playerId))
 
 	return true
 end
@@ -483,7 +548,42 @@ function MandoWayOfLife:failPrivateContract(pPlayer, msg)
 	if (pPlayer == nil) then return end
 	self:writeInt(pPlayer, "privateContractActive", 0)
 	CreatureObject(pPlayer):sendSystemMessage(msg)
-	-- TODO: cancel the active mission object when mission scripting is complete
+
+	-- Despawn contract target if still alive
+	local targetId = tonumber(self:readStr(pPlayer, "contractTargetId")) or 0
+	if (targetId ~= 0) then
+		local pTarget = getSceneObject(targetId)
+		if (pTarget ~= nil) then
+			SceneObject(pTarget):destroyObjectFromWorld()
+		end
+		self:writeStr(pPlayer, "contractTargetId", "0")
+	end
+end
+
+-- Periodic check: has the contract target been defeated?
+function MandoWayOfLife:contractCheckEvent(pPlayer, pParam)
+	local player = pPlayer
+	if ((player == nil or SceneObject(player) == nil) and pParam ~= nil and pParam ~= "") then
+		player = getSceneObject(tonumber(pParam))
+	end
+	if (player == nil or SceneObject(player) == nil) then return end
+
+	-- Stop if contract no longer active (failed or player logged off)
+	if (self:readInt(player, "privateContractActive") ~= 1) then return end
+
+	local targetId = tonumber(self:readStr(player, "contractTargetId")) or 0
+	if (targetId == 0) then return end
+
+	local pTarget = getSceneObject(targetId)
+	local isDead = (pTarget == nil or CreatureObject(pTarget):isDead())
+
+	if (isDead) then
+		self:completePrivateContract(player)
+	else
+		-- Target still alive — reschedule
+		local playerId = SceneObject(player):getObjectID()
+		createEvent(self.CONTRACT_CHECK_INTERVAL_MS, self.screenplayName, "contractCheckEvent", player, tostring(playerId))
+	end
 end
 
 -- Called from contract completion trigger when player succeeds
@@ -493,6 +593,7 @@ function MandoWayOfLife:completePrivateContract(pPlayer)
 
 	self:writeInt(pPlayer, "privateContractActive", 0)
 	self:writeInt(pPlayer, "needsCustomContract", 0)
+	self:writeStr(pPlayer, "contractTargetId", "0")
 
 	-- Advance chapter
 	local ch = self:getChapter(pPlayer)
@@ -502,6 +603,11 @@ function MandoWayOfLife:completePrivateContract(pPlayer)
 
 	-- Grant armor reward
 	self:grantReward(pPlayer, ch)
+
+	-- Grant scaling chapter completion loot (Ch1+)
+	if (ch >= 1) then
+		self:grantChapterLoot(pPlayer, ch)
+	end
 
 	local title = self.chapterTitles[ch] or ""
 	CreatureObject(pPlayer):sendSystemMessage(
@@ -517,19 +623,254 @@ end
 
 function MandoWayOfLife:grantReward(pPlayer, chapter)
 	if (pPlayer == nil) then return end
-	local template = self.chapterRewards[chapter]
-	if (template == nil) then return end
+	local reward = self.chapterRewards[chapter]
+	if (reward == nil) then return end
 
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
 	if (pInventory == nil) then return end
 
-	local pItem = giveItem(pInventory, template, -1)
-	if (pItem == nil) then
-		CreatureObject(pPlayer):sendSystemMessage(
-			"[MandoWayOfLife] ERROR: could not grant reward for chapter " .. chapter .. ". Contact a GM."
-		)
+	if (type(reward) == "table") then
+		-- Multiple pieces (e.g. Clanbound set)
+		for _, template in ipairs(reward) do
+			local pItem = giveItem(pInventory, template, -1)
+			if (pItem == nil) then
+				CreatureObject(pPlayer):sendSystemMessage(
+					"[MandoWayOfLife] ERROR: could not grant " .. template .. ". Contact a GM."
+				)
+			end
+		end
+	else
+		local pItem = giveItem(pInventory, reward, -1)
+		if (pItem == nil) then
+			CreatureObject(pPlayer):sendSystemMessage(
+				"[MandoWayOfLife] ERROR: could not grant reward for chapter " .. chapter .. ". Contact a GM."
+			)
+		end
 	end
 end
+
+-- ============================================================
+-- CHAPTER COMPLETION LOOT
+-- ============================================================
+-- Each chapter tier has a dedicated loot group registered in loot/groups/bellum/.
+-- createLoot() runs through the full loot system pipeline — craftingValues stat
+-- randomization (quality tiers, DoTs, skill mods) is applied automatically.
+-- Ch0: nothing (intro only)
+-- Ch1: BH armor schematics (mando_chapter_loot_1)
+-- Ch2: BH + DW Mando armor schematics (mando_chapter_loot_2)
+-- Ch3: Ch2 + jetpack parts + krayt mats (mando_chapter_loot_3)
+-- Ch4: Ch3 + jetpack base + RIS schematic + peko feather + JP stabilizer (mando_chapter_loot_4)
+
+-- Loot level controls stat roll quality (min/max range, exceptional/legendary chance).
+-- Chapters stay in the 30-80 band; FRS endgame reserves level 90-200 (10 per rank).
+MandoWayOfLife.chapterLootGroups = {
+	[1] = { group = "mando_chapter_loot_1", level = 30 },
+	[2] = { group = "mando_chapter_loot_2", level = 45 },
+	[3] = { group = "mando_chapter_loot_3", level = 60 },
+	[4] = { group = "mando_chapter_loot_4", level = 80 },
+}
+
+function MandoWayOfLife:grantChapterLoot(pPlayer, chapter)
+	if (pPlayer == nil) then return end
+	local entry = self.chapterLootGroups[chapter]
+	if (entry == nil) then return end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then return end
+
+	local itemID = createLoot(pInventory, entry.group, entry.level, false)
+	if (itemID ~= nil and itemID ~= 0) then
+		CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Way of Life] Chapter " .. chapter .. " bonus reward granted.")
+	else
+		CreatureObject(pPlayer):sendSystemMessage("[MandoWayOfLife] ERROR: could not grant chapter loot for chapter " .. chapter .. ". Contact a GM.")
+	end
+end
+
+--[[ REPLACED: old manual pool/IFF implementation (chapterLootPools, chapterLootIffMap,
+     resolveChapterLootIff, grantChapterLoot manual weighted-random) — deleted in favour
+     of createLoot() which applies full stat randomization via LootManager.
+MandoWayOfLife.chapterLootPools = {
+	[1] = {
+		{ "bounty_hunter_belt_schematic",        1 },
+		{ "bounty_hunter_bicep_l_schematic",     1 },
+		{ "bounty_hunter_bicep_r_schematic",     1 },
+		{ "bounty_hunter_boots_schematic",       1 },
+		{ "bounty_hunter_bracer_l_schematic",    1 },
+		{ "bounty_hunter_bracer_r_schematic",    1 },
+		{ "bounty_hunter_chest_plate_schematic", 1 },
+		{ "bounty_hunter_gloves_schematic",      1 },
+		{ "bounty_hunter_helmet_schematic",      1 },
+		{ "bounty_hunter_leggings_schematic",    1 },
+	},
+	[2] = {
+		{ "bounty_hunter_belt_schematic",        2 },
+		{ "bounty_hunter_bicep_l_schematic",     2 },
+		{ "bounty_hunter_bicep_r_schematic",     2 },
+		{ "bounty_hunter_boots_schematic",       2 },
+		{ "bounty_hunter_bracer_l_schematic",    2 },
+		{ "bounty_hunter_bracer_r_schematic",    2 },
+		{ "bounty_hunter_chest_plate_schematic", 2 },
+		{ "bounty_hunter_gloves_schematic",      2 },
+		{ "bounty_hunter_helmet_schematic",      2 },
+		{ "bounty_hunter_leggings_schematic",    2 },
+		{ "dw_mando_helmet_schematic",           1 },
+		{ "dw_mando_chest_plate_schematic",      1 },
+		{ "dw_mando_belt_schematic",             1 },
+		{ "dw_mando_boots_schematic",            1 },
+		{ "dw_mando_bracer_l_schematic",         1 },
+		{ "dw_mando_bracer_r_schematic",         1 },
+		{ "dw_mando_bicep_l_schematic",          1 },
+		{ "dw_mando_bicep_r_schematic",          1 },
+		{ "dw_mando_gloves_schematic",           1 },
+		{ "dw_mando_leggings_schematic",         1 },
+		{ "dw_mando_jetpack_schematic",          1 },
+	},
+	[3] = {
+		{ "bounty_hunter_belt_schematic",        2 },
+		{ "bounty_hunter_bicep_l_schematic",     2 },
+		{ "bounty_hunter_bicep_r_schematic",     2 },
+		{ "bounty_hunter_boots_schematic",       2 },
+		{ "bounty_hunter_bracer_l_schematic",    2 },
+		{ "bounty_hunter_bracer_r_schematic",    2 },
+		{ "bounty_hunter_chest_plate_schematic", 2 },
+		{ "bounty_hunter_gloves_schematic",      2 },
+		{ "bounty_hunter_helmet_schematic",      2 },
+		{ "bounty_hunter_leggings_schematic",    2 },
+		{ "dw_mando_helmet_schematic",           2 },
+		{ "dw_mando_chest_plate_schematic",      2 },
+		{ "dw_mando_belt_schematic",             2 },
+		{ "dw_mando_boots_schematic",            2 },
+		{ "dw_mando_bracer_l_schematic",         2 },
+		{ "dw_mando_bracer_r_schematic",         2 },
+		{ "dw_mando_bicep_l_schematic",          2 },
+		{ "dw_mando_bicep_r_schematic",          2 },
+		{ "dw_mando_gloves_schematic",           2 },
+		{ "dw_mando_leggings_schematic",         2 },
+		{ "dw_mando_jetpack_schematic",          2 },
+		{ "fuel_dispersion_unit",                3 },
+		{ "injector_tank",                       3 },
+		{ "ducted_fan",                          3 },
+		{ "krayt_dragon_scales",                 2 },
+		{ "krayt_dragon_tissue_common",          3 },
+		{ "krayt_dragon_tissue_uncommon",        2 },
+		{ "krayt_dragon_tissue_rare",            1 },
+	},
+	[4] = {
+		{ "bounty_hunter_belt_schematic",        2 },
+		{ "bounty_hunter_bicep_l_schematic",     2 },
+		{ "bounty_hunter_bicep_r_schematic",     2 },
+		{ "bounty_hunter_boots_schematic",       2 },
+		{ "bounty_hunter_bracer_l_schematic",    2 },
+		{ "bounty_hunter_bracer_r_schematic",    2 },
+		{ "bounty_hunter_chest_plate_schematic", 2 },
+		{ "bounty_hunter_gloves_schematic",      2 },
+		{ "bounty_hunter_helmet_schematic",      2 },
+		{ "bounty_hunter_leggings_schematic",    2 },
+		{ "dw_mando_helmet_schematic",           3 },
+		{ "dw_mando_chest_plate_schematic",      3 },
+		{ "dw_mando_belt_schematic",             3 },
+		{ "dw_mando_boots_schematic",            3 },
+		{ "dw_mando_bracer_l_schematic",         3 },
+		{ "dw_mando_bracer_r_schematic",         3 },
+		{ "dw_mando_bicep_l_schematic",          3 },
+		{ "dw_mando_bicep_r_schematic",          3 },
+		{ "dw_mando_gloves_schematic",           3 },
+		{ "dw_mando_leggings_schematic",         3 },
+		{ "dw_mando_jetpack_schematic",          3 },
+		{ "fuel_dispersion_unit",                3 },
+		{ "injector_tank",                       3 },
+		{ "ducted_fan",                          3 },
+		{ "krayt_dragon_scales",                 2 },
+		{ "krayt_dragon_tissue_common",          3 },
+		{ "krayt_dragon_tissue_uncommon",        2 },
+		{ "krayt_dragon_tissue_rare",            1 },
+		{ "jet_pack_base",                       1 },
+		{ "acklay_ris_armor_schematic",          1 },
+		{ "peko_albatross_feather",              2 },
+		{ "jetpack_stabilizer",                  2 },
+	},
+}
+
+function MandoWayOfLife:grantChapterLoot(pPlayer, chapter)
+	if (pPlayer == nil) then return end
+	local pool = self.chapterLootPools[chapter]
+	if (pool == nil) then return end
+
+	-- Weighted random pick from pool
+	local totalWeight = 0
+	for _, entry in ipairs(pool) do
+		totalWeight = totalWeight + entry[2]
+	end
+	local roll = math.random(1, totalWeight)
+	local cumulative = 0
+	local chosen = nil
+	for _, entry in ipairs(pool) do
+		cumulative = cumulative + entry[2]
+		if (roll <= cumulative) then
+			chosen = entry[1]
+			break
+		end
+	end
+	if (chosen == nil) then return end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then return end
+
+	-- chapter loot items are loot group item templates, not object templates —
+	-- use giveItem with the directObjectTemplate IFF path
+	local itemPath = self:resolveChapterLootIff(chosen)
+	if (itemPath == nil) then return end
+
+	local pItem = giveItem(pInventory, itemPath, -1)
+	if (pItem ~= nil) then
+		CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Way of Life] Chapter " .. chapter .. " bonus reward granted.")
+	else
+		CreatureObject(pPlayer):sendSystemMessage("[MandoWayOfLife] ERROR: could not grant chapter loot (" .. chosen .. "). Contact a GM.")
+	end
+end
+
+-- Maps loot item template keys to their directObjectTemplate IFF paths
+MandoWayOfLife.chapterLootIffMap = {
+	-- BH schematics (IFF prefix: death_watch_bounty_hunter_*)
+	["bounty_hunter_belt_schematic"]        = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_belt_schematic.iff",
+	["bounty_hunter_bicep_l_schematic"]     = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_bicep_l_schematic.iff",
+	["bounty_hunter_bicep_r_schematic"]     = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_bicep_r_schematic.iff",
+	["bounty_hunter_boots_schematic"]       = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_boots_schematic.iff",
+	["bounty_hunter_bracer_l_schematic"]    = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_bracer_l_schematic.iff",
+	["bounty_hunter_bracer_r_schematic"]    = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_bracer_r_schematic.iff",
+	["bounty_hunter_chest_plate_schematic"] = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_chest_plate_schematic.iff",
+	["bounty_hunter_gloves_schematic"]      = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_gloves_schematic.iff",
+	["bounty_hunter_helmet_schematic"]      = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_helmet_schematic.iff",
+	["bounty_hunter_leggings_schematic"]    = "object/tangible/loot/loot_schematic/death_watch_bounty_hunter_leggings_schematic.iff",
+	-- DW Mando schematics
+	["dw_mando_helmet_schematic"]           = "object/tangible/loot/loot_schematic/death_watch_mandalorian_helmet_schematic.iff",
+	["dw_mando_chest_plate_schematic"]      = "object/tangible/loot/loot_schematic/death_watch_mandalorian_chest_plate_schematic.iff",
+	["dw_mando_belt_schematic"]             = "object/tangible/loot/loot_schematic/death_watch_mandalorian_belt_schematic.iff",
+	["dw_mando_boots_schematic"]            = "object/tangible/loot/loot_schematic/death_watch_mandalorian_boots_schematic.iff",
+	["dw_mando_bracer_l_schematic"]         = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_l_schematic.iff",
+	["dw_mando_bracer_r_schematic"]         = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_r_schematic.iff",
+	["dw_mando_bicep_l_schematic"]          = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff",
+	["dw_mando_bicep_r_schematic"]          = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff",
+	["dw_mando_gloves_schematic"]           = "object/tangible/loot/loot_schematic/death_watch_mandalorian_gloves_schematic.iff",
+	["dw_mando_leggings_schematic"]         = "object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff",
+	["dw_mando_jetpack_schematic"]          = "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff",
+	-- Jetpack parts (dungeon path confirmed from item templates)
+	["fuel_dispersion_unit"]                = "object/tangible/loot/dungeon/death_watch_bunker/fuel_dispersion_unit.iff",
+	["injector_tank"]                       = "object/tangible/loot/dungeon/death_watch_bunker/fuel_injector_tank.iff",
+	["ducted_fan"]                          = "object/tangible/loot/dungeon/death_watch_bunker/ducted_fan.iff",
+	-- Krayt mats (all tissues share the same base IFF; stats vary via loot system)
+	["krayt_dragon_scales"]                 = "object/tangible/component/armor/armor_segment_enhancement_krayt.iff",
+	["krayt_dragon_tissue_common"]          = "object/tangible/component/weapon/blaster_power_handler_enhancement_krayt.iff",
+	["krayt_dragon_tissue_uncommon"]        = "object/tangible/component/weapon/blaster_power_handler_enhancement_krayt.iff",
+	["krayt_dragon_tissue_rare"]            = "object/tangible/component/weapon/blaster_power_handler_enhancement_krayt.iff",
+	-- Ch4 rare tier
+	["jet_pack_base"]                       = "object/tangible/loot/dungeon/death_watch_bunker/jetpack_base.iff",
+	["acklay_ris_armor_schematic"]          = "object/tangible/loot/loot_schematic/geonosian_acklay_muscle_armor_schematic.iff",
+	["peko_albatross_feather"]              = "object/tangible/component/armor/feather_peko_albatross.iff",
+	["jetpack_stabilizer"]                  = "object/tangible/loot/dungeon/death_watch_bunker/jetpack_stabilizer.iff",
+}
+
+-- end of replaced implementation ]]
 
 -- ============================================================
 -- HELMET CHECK

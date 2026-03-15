@@ -6,7 +6,8 @@
 -- TODO: replace template mesh with confirmed Mandalorian-armored client IFF
 
 mando_spynet_operative = Creature:new {
-	objectName   = "Mandalorian Operative",
+	objectName   = "",
+	customName   = "Mandalorian Operative",
 	socialGroup  = "neutral",
 	faction      = "",
 	mobType      = MOB_NPC,

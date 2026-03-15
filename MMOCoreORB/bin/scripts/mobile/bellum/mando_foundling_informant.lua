@@ -5,7 +5,8 @@
 -- TODO: replace template mesh with confirmed Mandalorian-armored client IFF
 
 mando_foundling_informant = Creature:new {
-	objectName   = "Mandalorian Informant",
+	objectName   = "",
+	customName   = "Mandalorian Informant",
 	socialGroup  = "neutral",
 	faction      = "",
 	mobType      = MOB_NPC,
