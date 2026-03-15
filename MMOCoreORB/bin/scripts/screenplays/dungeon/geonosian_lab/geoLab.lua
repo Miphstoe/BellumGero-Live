@@ -305,7 +305,7 @@ function GeonosianLab:spawnMobiles()
 
 	-- largecavehall2 (1627794)
 	spawnMobile("yavin4", "biogenic_construction", 1, -134.5, -21.7, -74.8, 90, 1627794)
-	spawnMobile("yavin4", "enhanced_gaping_spider",3600,-130,-22.1,-85,-180,1627794, true) -- Randomized respawn
+	spawnMobile("yavin4", "enhanced_gaping_spider",2700,-130,-22.1,-85,-180,1627794, true) -- Randomized respawn
 
 	-- hall4 (1627795)
 
