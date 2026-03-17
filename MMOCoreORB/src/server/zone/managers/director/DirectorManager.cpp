@@ -68,6 +68,8 @@
 #include "server/zone/managers/skill/SkillManager.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
+#include "server/zone/managers/creature/DnaManager.h"
+#include "server/zone/objects/tangible/component/dna/DnaComponent.h"
 #include "server/zone/managers/creature/AiMap.h"
 #include "server/chat/LuaStringIdChatParameter.h"
 #include "server/zone/objects/tangible/ticket/TicketObject.h"
@@ -476,6 +478,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("addStartingWeaponsInto", addStartingWeaponsInto);
 	luaEngine->registerFunction("setAuthorizationState", setAuthorizationState);
 	luaEngine->registerFunction("giveItem", giveItem);
+	luaEngine->registerFunction("createQuestDnaSample", createQuestDnaSample);
 	luaEngine->registerFunction("giveControlDevice", giveControlDevice);
 	luaEngine->registerFunction("checkTooManyHirelings", checkTooManyHirelings);
 	luaEngine->registerFunction("checkInt64Lua", checkInt64Lua);
@@ -625,6 +628,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("PROTOTYPECREATED", ObserverEventType::PROTOTYPECREATED);
 	luaEngine->setGlobalInt("SLICED", ObserverEventType::SLICED);
 	luaEngine->setGlobalInt("ABILITYUSED", ObserverEventType::ABILITYUSED);
+	luaEngine->setGlobalInt("DNASAMPLED", ObserverEventType::DNASAMPLED);
 	luaEngine->setGlobalInt("COMBATCOMMANDENQUEUED", ObserverEventType::COMBATCOMMANDENQUEUED);
 	luaEngine->setGlobalInt("FACTIONCHAT", ObserverEventType::FACTIONCHAT);
 	luaEngine->setGlobalInt("NOPLAYERSINRANGE", ObserverEventType::NOPLAYERSINRANGE);
@@ -2494,6 +2498,35 @@ int DirectorManager::giveItem(lua_State* L) {
 	} else {
 		lua_pushnil(L);
 	}
+
+	return 1;
+}
+
+int DirectorManager::createQuestDnaSample(lua_State* L) {
+	if (lua_gettop(L) != 4) {
+		String err = "incorrect number of arguments passed to DirectorManager::createQuestDnaSample";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		lua_pushnil(L);
+		return 1;
+	}
+
+	CreatureObject* player = (CreatureObject*) lua_touserdata(L, -4);
+	int quality            = lua_tointeger(L, -3);
+	int armorRating        = lua_tointeger(L, -2);
+	String customName      = lua_tostring(L, -1);
+
+	if (player == nullptr) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	SceneObject* item = DnaManager::instance()->createQuestDnaSample(player, quality, armorRating, customName);
+
+	if (item != nullptr)
+		lua_pushlightuserdata(L, item);
+	else
+		lua_pushnil(L);
 
 	return 1;
 }

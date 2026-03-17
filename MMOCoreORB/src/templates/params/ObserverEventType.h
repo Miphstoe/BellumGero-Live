@@ -99,6 +99,7 @@ public:
 		SAMPLETAKEN,				// ManagedObject arg1 = ResourceSpawn, long arg2 = amount harvested
 		ABILITYUSED,				// ManagedObject arg1 = null, long arg2 = command CRC
 		HARVESTEDCREATURE,			// ManagedObject arg1 = resource spawn, long arg2 = Total creature resources harvested
+		DNASAMPLED,					// ManagedObject arg1 = sampled creature, long arg2 = generated DNA quality
 		DEPLOYEDCAMP,				// ManagedObject arg1 = camp area, long arg2 = 0
 		IMAGEDESIGNHAIR,			// ManagedObject arg1 = null, long arg2 = 0
 		COMBATCOMMANDENQUEUED,		// ManagedObject arg1 = player, long arg2 = 0

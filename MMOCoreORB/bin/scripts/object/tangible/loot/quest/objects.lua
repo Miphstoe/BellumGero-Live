@@ -3720,3 +3720,16 @@ object_tangible_loot_quest_shared_wind_crystal = SharedTangibleObjectTemplate:ne
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_quest_shared_wind_crystal, "object/tangible/loot/quest/shared_wind_crystal.iff")
+
+object_tangible_loot_quest_shared_rare_mutation_dna_sample = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/dna/shared_dna_sample_very_high.iff",
+	appearanceFilename = "appearance/eqp_comp_dna_sample.apt",
+	objectName = "Rare Mutation DNA Sample",
+	detailedDescription = "A stabilized DNA strand taken from Dr. Varr's failed Endor experiment. It hums with volatile adaptive potential.",
+	gameObjectType = 8211,
+	lookAtText = "string_id_table",
+	snapToTerrain = 1,
+	targetable = 1
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_quest_shared_rare_mutation_dna_sample, "object/tangible/loot/quest/shared_rare_mutation_dna_sample.iff")
