@@ -169,7 +169,13 @@ void SurveySessionImplementation::startSample(const String& resname) {
 		return;
 	}
 
-	// All-tool support: identify “creature” resources to block sampling
+	// Creature survey tool is survey-only — sampling organics is not permitted
+	if (activeSurveyTool->getSurveyType().toLowerCase() == "creature") {
+		surveyer->sendSystemMessage("@error_message:insufficient_skill");
+		return;
+	}
+
+	// All-tool support: identify "creature" resources to block sampling
 	bool isAll = activeSurveyTool->getSurveyType().toLowerCase() == "all";
 	bool isCreature =
 		resourceSpawn->isType("hide")
