@@ -363,6 +363,7 @@ print("Loading conversations.lua - checking bg_token vendor 2...")
 includeFile("conversations/vendors/bg_token_vendor_2_conv.lua")
 includeFile("conversations/bellum/convo_bg_force_hermit.lua")
 includeFile("conversations/bellum/lost_holocron_cartographer_conv.lua")
+includeFile("conversations/bellum/rangers_path_conv.lua")
 print("Finished loading bg_token vendor 2")
 print("Finished loading bg_token vendor 2")
 
