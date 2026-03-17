@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 3, day = 15, hour = 18, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 3, day = 15, hour = 19, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 3, day = 22, hour = 18, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 3, day = 22, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -35,29 +35,29 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
-  { planet = "endor", template = "giant_ewok_graaku", x = -353, y = -4751, z = 15, heading = 0 },
-  { planet = "endor", template = "giant_ewok_graaku", x = -355, y = -4753, z = 15, heading = 0 },
+  { planet = "endor", template = "tactical_unit_bx_77", x = -2496, y = 5294, z = 200, heading = 0 },
+  { planet = "endor", template = "tactical_unit_bx_77", x = -2498, y = 5296, z = 200, heading = 0 },
  -- { planet = "corellia", template = "meatlump_fool", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
   --{ planet = "corellia", template = "meatlump_cretin", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "endor", template = "giant_ewok_torga", x = -353, y = -4751, z = 15, heading = 0 },
+  { planet = "endor", template = "annihilator_unit_kr_9", x = -2496, y = 5294, z = 200, heading = 0 },
   --{ planet = "corellia", template = "meatlump_cretin", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
  -- { planet = "corellia", template = "meatlump_loon", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "endor", template = "giant_ewok_nakku", x = -353, y = -4751, z = 15, heading = 0 },
+  { planet = "endor", template = "execution_droid_kr_44", x = -2496, y = 5294, z = 200, heading = 0 },
  -- { planet = "corellia", template = "meatlump_loon", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
  -- { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "endor", template = "giant_ewok_warchief", x = -353, y = -4751, z = 15, heading = 0 },
+  { planet = "endor", template = "autonomous_war_machine", x = -2496, y = 5294, z = 200, heading = 0 },
   --{ planet = "corellia", template = "wookiee_jedi_event", x = -180, y = -4725, z = 28, heading = 0 },
 }
 

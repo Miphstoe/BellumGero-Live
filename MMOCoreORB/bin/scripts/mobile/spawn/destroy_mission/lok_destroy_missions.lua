@@ -33,6 +33,12 @@ lok_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "lok_domesticated_gurnaset_lair_neutral_medium",
+			minDifficulty = 13,
+			maxDifficulty = 17,
+			size = 25,
+		},
+		{
 			lairTemplateName = "lok_langlatch_lair_neutral_medium",
 			minDifficulty = 13,
 			maxDifficulty = 17,
@@ -106,6 +112,12 @@ lok_destroy_missions = {
 		},
 		{
 			lairTemplateName = "lok_snorbal_lair_neutral_medium",
+			minDifficulty = 28,
+			maxDifficulty = 32,
+			size = 25,
+		},
+		{
+			lairTemplateName = "lok_domesticated_snorbal_lair_neutral_medium",
 			minDifficulty = 28,
 			maxDifficulty = 32,
 			size = 25,
