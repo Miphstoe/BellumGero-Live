@@ -848,16 +848,17 @@ SceneObject* DnaManager::createQuestDnaSample(CreatureObject* player, int qualit
 	// Randomize armor rating: 1 = light, 2 = medium, 3 = heavy
 	prototype->setArmorRating(static_cast<int>(System::random(2)) + 1);
 
-	// Resistances from mutated_gurreck_alpha base values with ±25 variance (blast/electric ±15)
-	prototype->setKinetic(randResist(155.0f, 25));
-	prototype->setEnergy(randResist(155.0f, 25));
-	prototype->setBlast(randResist(40.0f, 15));
-	prototype->setHeat(randResist(170.0f, 25));
-	prototype->setCold(randResist(170.0f, 25));
-	prototype->setElectric(randResist(40.0f, 15));
-	prototype->setAcid(randResist(170.0f, 25));
+	// Resistances capped to crafting system maxima (KINETIC_MAX=60, ENERGY_MAX=60, others=100)
+	// Raw creature values (155/170) exceed 100 and wrap in the crafting attribute system.
+	prototype->setKinetic(randResist(55.0f, 5));    // 50-60  (KINETIC_MAX = 60)
+	prototype->setEnergy(randResist(55.0f, 5));     // 50-60  (ENERGY_MAX = 60)
+	prototype->setBlast(randResist(40.0f, 15));     // 25-55  (within BLAST_MAX = 100)
+	prototype->setHeat(randResist(95.0f, 5));       // 90-100 (HEAT_MAX = 100)
+	prototype->setCold(randResist(95.0f, 5));       // 90-100 (COLD_MAX = 100)
+	prototype->setElectric(randResist(40.0f, 15));  // 25-55  (within ELECTRICITY_MAX = 100)
+	prototype->setAcid(randResist(95.0f, 5));       // 90-100 (ACID_MAX = 100)
 	prototype->setSaber(-1.0f);
-	prototype->setStun(-1.0f);
+	prototype->setStun(0.0f);
 	prototype->setRanged(false);
 
 	// Randomly pick 2 of the 4 mutated gurreck alpha attacks each time
