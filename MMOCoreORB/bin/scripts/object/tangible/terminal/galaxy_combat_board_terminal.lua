@@ -1,4 +1,4 @@
-object_tangible_terminal_galaxy_combat_board_terminal = object_tangible_terminal_shared_terminal_mission_newbie:new {
+object_tangible_terminal_galaxy_combat_board_terminal = object_tangible_terminal_shared_terminal_jukebox:new {
 	objectMenuComponent = "GalaxyCombatBoardTerminalMenuComponent",
 	planetMapCategory = "terminal",
 	planetMapSubCategory = "terminal_mission",
