@@ -1,4 +1,4 @@
-# Cursor workspace – Bellum Gero / Shadow PC
+# Cursor workspace – Bellum Gero
 
 Index for rules, skills, and related docs used in this Cursor workspace.
 
@@ -41,7 +41,7 @@ Index for rules, skills, and related docs used in this Cursor workspace.
 
 ## Context (workspace structure)
 
-**All context files** (workspace structure, repo layout, AI/contributor context) live in **`.cursor/context/`**. Same path on **Shadow PC** and **WSL build/test dev box** (repo is shared).
+**All context files** (workspace structure, repo layout, AI/contributor context) live in **`.cursor/context/`**. Same path on **Shadow PC**, **Main Desktop**, and **Laptop** (repo is shared).
 
 | Doc | Path | Purpose |
 |-----|------|--------|
@@ -68,4 +68,4 @@ These may live in your user folder or project; paths below are typical on Shadow
 
 ## WSL dev server
 
-For build/run/test and server config, use the WSL dev server; see **bellum-gero.mdc** for paths (`~/localswgserver`, config, TREs).
+For build/run/test and server config, use a WSL machine (Main Desktop: `~/localswgserver` or Laptop: `~/workspace/BellumGero-Live`). See **bellum-gero.mdc** and `.cursor/context/DEV_ENVIRONMENTS.md`.

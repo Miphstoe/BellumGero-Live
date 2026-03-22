@@ -1,68 +1,252 @@
 ---
-description: SWG Bellum Gero – project context, Shadow PC vs WSL dev server, Lua-first, Git/collab rules
+description: SWG Bellum Gero – three dev environments (Shadow PC / Main Desktop / Laptop), Lua-first, paths, build, DB, TRE, common pitfalls, commit workflow
 alwaysApply: true
 ---
 
 # Bellum Gero – AI Context
 
-User may state at session start: **"We're on Shadow PC"** or **"We're on the WSL dev server."** Follow the matching context below.
-However, you can tell by the directory path for Shadow PC 'C:\Users\Shadow' **"We're on Shadow PC"** else **"We're on the WSL dev server."**
+## Dev Environment Detection
 
-## CURRENT CONTEXT
+At session start identify which machine you are on. Detect from hostname, directory path, or Windows username.
 
-- **Shadow PC (this dev box):** Windows only. No WSL. Coding and asset editing only. Repo path e.g. `C:\Users\Shadow\code\swg-bg`. Do NOT suggest build/run/test here. Use Windows paths. Git/SSH from PowerShell or Git Bash. Optional TRE/map editing; game uses TREs on WSL server.
-- **WSL dev server:** Linux (WSL Debian). Build, run, test Core3. Project root `~/localswgserver`. TREs at `/trefiles`. Database, config, run instructions apply here.
+| Machine | Detection signal | Role |
+|---------|-----------------|------|
+| **Shadow PC** | Windows path `C:\Users\Shadow` or device `SHADOW-D03EOJBB` | Code/asset editing only — no build/run |
+| **Main Desktop** | WSL hostname `EnderWookie` or Windows path `C:\Users\EnderWookie` | Primary build, test, run |
+| **Laptop (LX15PRO)** | WSL hostname `LX15PRO` or Windows path `C:\Users\Mobile-Wookie` | Dev, test, production |
 
-## PROJECT
+See `.cursor/context/DEV_ENVIRONMENTS.md` for full specs.
 
-SWGEmu-based Pre-CU server **SWG Bellum Gero** – tailored gameplay, custom content, lore-appropriate design.
+---
 
-## CORE BEHAVIOR
+## Per-Environment Paths
 
-- **Project location:** WSL = `~/localswgserver`. Shadow PC = cloned repo (e.g. `C:\Users\Shadow\code\swg-bg`), Windows paths.
-- **LUA FIRST:** Add items/NPCs/stats/spawns/loot/conversations/quests via `MMOCoreORB/bin/scripts/` first. C++ only if impossible in Lua. Shadow: `<clone>\MMOCoreORB\bin\scripts\`. WSL: `~/localswgserver/MMOCoreORB/bin/scripts/`.
-- **Database/config (WSL only):** `~/localswgserver/MMOCoreORB/bin/conf/config.lua` and `config-local.lua`.
-- **Local dev guide (WSL only):** `~/localswgserver/LOCAL_DEV_ENV_SETUP.md`.
-- **WSL workflow (WSL only):** Commands in WSL Debian; build in WSL. On Shadow PC: no WSL; Git only from PowerShell/Git Bash.
-- **Build blockers (WSL only):** DPP (pkg-config dpp), GCC -Werror, engine3 submodule in CHANGELOG.
-- **Troubleshooting (WSL only):** config.lua/config-local.lua for DB; `make -j$(nproc)` in MMOCoreORB.
-- **TRE (Phase 7):** WSL = copy/symlink to `/trefiles`. Shadow = optional asset edit only.
+### Shadow PC
+- Windows project: `C:\Users\Shadow\code\swg-bg`
+- No WSL — no build/run/test commands
+- TRE tools: SWG Explorer (see SWG_EXPLORER_SETUP.md)
 
-## COMMIT & PUSH WORKFLOW (ORDER MATTERS)
+### Main Desktop (`EnderWookie` / `MS-7L91`)
+- WSL project root: `~/localswgserver`
+- TRE path (WSL): `/mnt/c/BellumGero`
+- Config: `~/localswgserver/MMOCoreORB/bin/conf/config.lua`
+- Lua scripts: `~/localswgserver/MMOCoreORB/bin/scripts/`
+- Build: `make build-ninja-debug NINJAFLAGS="-j6"`
 
-**Reminder:** Commit and push to the **correct branch** in the **correct order**. Dev env goes last.
+### Laptop (`LX15PRO` / `Mobile-Wookie`)
+- WSL project root: `~/workspace/BellumGero-Live`
+- TRE path (WSL): `/mnt/c/BellumGero`
+- Config: `~/workspace/BellumGero-Live/MMOCoreORB/bin/conf/config.lua`
+- Lua scripts: `~/workspace/BellumGero-Live/MMOCoreORB/bin/scripts/`
+- Build: `make build-ninja-debug NINJAFLAGS="-j4"`
 
-| What changed | Branch to use | When to commit/push |
-|--------------|---------------|----------------------|
-| **Game code** (Lua, C++, scripts, MMOCoreORB, content) | `Main` or your feature branch (e.g. `Ender_FeatureName`) | **First.** Commit and push code before touching dev env. |
-| **Dev env files** (Cursor rules, skills, `.cursor/` context including `.cursor/context/WORKSPACE_STRUCTURE.md`, workspace READMEs) | **Ender_CursorConfig** only | **Last.** After code is committed and pushed. |
+---
 
-**Work order:** (1) Make and test code on Shadow PC or WSL. (2) Commit and push **code** to the code branch. (3) If you updated rules/context/READMEs for both Shadow and WSL test dev, switch to **Ender_CursorConfig**, add those files, commit and push **last**. Nothing is ready for prod patch until code is tested on WSL dev server; dev env updates support both Shadow dev box and the WSL build/cmake/test server.
+## Project
 
-**Before you commit:** Confirm which branch you're on and whether you're committing code (code branch) or dev env (Ender_CursorConfig). Don't mix them.
+SWGEmu-based Pre-CU server **SWG Bellum Gero** — tailored gameplay, custom content, lore-appropriate design.
 
-## GIT / COLLAB (BOTH MACHINES)
+- **Engine**: engine3 (git submodule at `utils/engine3/`)
+- **Build**: CMake + Ninja
+- **Language**: C++17, Lua 5.3
+- **Database**: MariaDB (`swgemu` database)
+- **Object Store**: Berkeley DB 5.3
+- **Platform**: Linux (WSL2 Debian on Windows 11)
 
-1. Branch: `[DeveloperName]_[FeatureName]` (e.g. `Ender_MissingResources`). Never generic names.
-2. No PRs. Push branch and notify Miphstoe or Hellguard in Discord for manual review.
-3. Test locally on **WSL dev server** before committing (e.g. new mobs: spawn, kill, harvest, verify resource).
+---
 
-## DEV STACK
+## Core Behavior
 
-- C++, Lua. Shadow PC: Windows, Cursor, Git; no build/run. WSL dev server: WSL Debian, build/test/run; deps include build-essential, libmariadb-dev, liblua5.3-dev, cmake, etc.
+- **Lua first:** Add items/NPCs/stats/spawns/loot/conversations/quests via Lua scripts before touching C++. C++ only when impossible in Lua.
+- **Shadow PC:** Code and asset editing only. No build/run/test. No WSL commands.
+- **Build/test/run:** WSL machines only (Main Desktop or Laptop).
+- **TRE files:** Both WSL machines access TREs at `/mnt/c/BellumGero`. Read-only — do not modify.
 
-## YOUR JOB
+---
 
-Design/implement features for Bellum Gero: Pre-CU authentic, fun, Lua-first, with file touchpoints and test plans. Ask up to 7 clarifying questions; then deliver: Design Summary, Pre-CU Checklist, Player Goals, Gameplay Design, World/Dungeon Plan, Encounters, Objects/Loot, Tech Notes, Build+Test Plan (WSL only), Git Steps (branch name, no PR, test on WSL, push + notify). Be decisive; use tables; call out exploits and mitigations.
+## Build System
 
-## REMINDER
+### Commands
 
-- **Shadow PC:** Code/assets only. Windows paths. No build/run/WSL. TRE tools: see README / SWG_EXPLORER_SETUP.md.
-- **WSL dev server:** `~/localswgserver`, build, test, run, `/trefiles`, all config/troubleshooting.
-- **Before commit:** Check which branch you're on. Code → code branch first; dev env (rules, .cursor) → **Ender_CursorConfig** last.
+```bash
+# Standard debug build
+make build-ninja-debug NINJAFLAGS="-j6"   # Main Desktop (64 GB RAM, 6 cores)
+make build-ninja-debug NINJAFLAGS="-j4"   # Laptop (16 GB RAM)
 
-## DOCS
+# Clean build
+rm -rf build/unix/ninja-debug && make build-ninja-debug NINJAFLAGS="-j4"
+```
 
-- **This workspace:** `.cursor/README.md` — index of rules, skills, and doc references.
-- **Context files:** `.cursor/context/` — workspace structure and other AI/contributor context (e.g. `WORKSPACE_STRUCTURE.md`). Same path on Shadow PC and WSL. See **context-files.mdc**.
-- **Shadow PC / Bellum Gero:** SWG_EXPLORER_SETUP.md, SHADOW_PC_SETUP_PLAN.md, BELLUM_GERO_PROMPT.md (often in user folder or project root; see .cursor/README.md for typical paths).
+### Known Build Fixes
+
+| Issue | Fix |
+|-------|-----|
+| WSL2 OOM kills build | Use `-j4` (Laptop) or `-j6` (Main Desktop); ensure `.wslconfig` is applied |
+| `redundant move` errors | Remove `std::move()` from return statements (GCC 14 treats as error) |
+| `crctable` duplicate symbol | Add `add_link_options(-Wl,--allow-multiple-definition)` to CMakeLists.txt |
+| Discord `#ifdef` missing | Wrap `handleDiscordReady/Error` in `#ifdef WITH_DISCORD_INTEGRATION` with `#else` stubs |
+
+### WSL2 Config (`.wslconfig`)
+
+**Laptop** (`C:\Users\Mobile-Wookie\.wslconfig`):
+```ini
+[wsl2]
+memory=6GB
+processors=4
+swap=4GB
+```
+
+**Main Desktop** (`C:\Users\EnderWookie\.wslconfig`):
+```ini
+[wsl2]
+memory=16GB
+processors=6
+swap=4GB
+```
+
+---
+
+## Database (WSL only)
+
+- **Engine**: MariaDB
+- **Database**: `swgemu`
+- **User/Pass**: `swgemu` / `swgemu`
+- **Host**: `127.0.0.1` (NOT `"db"` — that is the Docker default)
+
+### Setup Commands
+
+```bash
+sudo systemctl start mariadb
+sudo mariadb -e "CREATE DATABASE swgemu CHARACTER SET utf8 COLLATE utf8_general_ci;"
+sudo mariadb -e "CREATE USER 'swgemu'@'localhost' IDENTIFIED BY 'swgemu';"
+sudo mariadb -e "GRANT ALL PRIVILEGES ON swgemu.* TO 'swgemu'@'localhost';"
+sudo mariadb -e "FLUSH PRIVILEGES;"
+sudo mariadb swgemu < sql/swgemu.sql
+```
+
+To auto-start MariaDB on WSL boot, add to `~/.bashrc`:
+```bash
+sudo systemctl start mariadb 2>/dev/null
+```
+
+### Key Tables
+
+| Table | Purpose |
+|-------|---------|
+| `accounts` | Player accounts |
+| `characters` | Character data |
+| `galaxy` | Galaxy/server settings |
+| `character_bans` / `account_bans` | Ban management |
+
+---
+
+## TRE Files
+
+| Machine | Windows path | WSL path |
+|---------|-------------|----------|
+| Main Desktop | `C:\BellumGero\` | `/mnt/c/BellumGero` |
+| Laptop | `C:\BellumGero\` | `/mnt/c/BellumGero` |
+
+`config.lua` setting: `TrePath = "/mnt/c/BellumGero"`
+
+---
+
+## Running the Server (WSL only)
+
+```bash
+sudo systemctl start mariadb
+cd MMOCoreORB/bin && ./core3
+```
+
+### Expected Startup Sequence
+1. Config loaded
+2. TRE files scanned (`.exe`/`.dll` errors are harmless on Linux)
+3. Templates loaded
+4. Database connected
+5. Zones initialized
+6. `READY` — server accepting connections
+
+### Non-Fatal Startup Errors
+
+| Error | Fix |
+|-------|-----|
+| `Invalid path: tre.exe` | None needed — harmless on Linux |
+| `Did not find conf/config-local.lua` | `touch bin/conf/config-local.lua` |
+| `Failed to load ad queue file` | `touch bin/custom_scripts/ad_queue.lua` |
+
+---
+
+## Common Pitfalls
+
+1. **Editing autogenerated files** — `src/autogen/` is overwritten on IDL rebuild; never edit manually
+2. **Adding methods to `.idl` without implementing them** — causes linker errors
+3. **Using `discordMutex` outside `#ifdef`** — variables only exist when `WITH_DISCORD_INTEGRATION` is defined
+4. **Too many build jobs in WSL2** — use `-j4` (Laptop) or `-j6` (Main Desktop); default spawns too many processes and gets OOM-killed
+5. **Wrong DBHost** — Docker setups use `"db"`, local dev needs `"127.0.0.1"`
+6. **Wrong project path** — Main Desktop: `~/localswgserver`; Laptop: `~/workspace/BellumGero-Live`
+7. **Committing `config.lua` or generated files** — these are gitignored; if they appear staged, use `git rm --cached`
+
+---
+
+## IDL System (Critical)
+
+- `.idl` files define class structure, fields, and method signatures
+- Generated files go to `src/autogen/` — **never edit these**
+- Implementation goes in `*Implementation.cpp` and `*Implementation.h`
+- If you add a native method to a `.idl`, you MUST implement it in the corresponding `*Implementation.cpp`
+
+---
+
+## Discord Integration
+
+Conditionally compiled via `#ifdef WITH_DISCORD_INTEGRATION`. Flag is commented out by default in `CMakeLists.txt`.
+
+```cpp
+#ifdef WITH_DISCORD_INTEGRATION
+void DiscordManagerImplementation::handleDiscordReady() {
+    std::lock_guard<std::mutex> lock(discordMutex);
+    discordConnected = true;
+}
+#else
+void DiscordManagerImplementation::handleDiscordReady() {
+    // Discord integration not compiled in
+}
+#endif
+```
+
+---
+
+## Commit & Push Workflow (Order Matters)
+
+| What changed | Branch | When |
+|-------------|--------|------|
+| **Game code** (Lua, C++, scripts, content) | `Main` or `Ender_FeatureName` | **First** — commit and push before touching dev env |
+| **Dev env** (rules, skills, `.cursor/`, context docs) | `Ender_CursorConfig` only | **Last** — after code is committed and pushed |
+
+Before committing: confirm which branch you are on. Do not mix game code and dev env in the same commit.
+
+---
+
+## Git / Collab (All Machines)
+
+1. Branch naming: `[DeveloperName]_[FeatureName]` (e.g. `Ender_MandalorianWay`)
+2. No PRs — push branch and notify Miphstoe or Hellguard in Discord for manual review
+3. Test on a WSL machine (Main Desktop or Laptop) before committing
+4. Never commit `bin/conf/config.lua`, `ghoutput.xml`, or `resource_manager_spawns.lua` — gitignored
+
+---
+
+## Code Style & Patterns
+
+- C++17 standard
+- Use `String` (engine type) not `std::string` for game strings
+- Lua scripts in `bin/scripts/` — hot-reloadable without rebuild
+- Manager classes follow `ManagerImplementation.cpp` pattern
+- Use `info()`, `error()`, `warning()` (Logger methods) — not `printf`/`cout`
+- Thread safety: `std::lock_guard<std::mutex>` — mutexes are static file-scope in implementation files
+
+---
+
+## Your Job
+
+Design and implement features for Bellum Gero: Pre-CU authentic, fun, Lua-first. Ask up to 7 clarifying questions; then deliver: Design Summary, Pre-CU Checklist, Player Goals, Gameplay Design, Tech Notes, Build+Test Plan (WSL only), Git Steps (branch name, no PR, test on WSL, push + notify). Be decisive; use tables; call out exploits and mitigations.

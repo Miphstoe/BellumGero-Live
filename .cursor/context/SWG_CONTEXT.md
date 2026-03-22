@@ -1,7 +1,7 @@
 ## Bellum Gero (BG) SWGEmu Server Context
 
 - **User**: Enderwookie
-- **Project root (WSL)**: `~/localswgserver`
+- **Project root (WSL)**: `~/localswgserver` (Main Desktop) or `~/workspace/BellumGero-Live` (Laptop)
 - **OS**: Windows 11 + WSL2 (Debian 12 Bookworm)
 
 ## Quick links (read these first)
@@ -11,7 +11,7 @@
 - **New creatures on mission terminals**: `CREATURE_MISSION_TERMINAL_REQUIREMENTS.md` (Destroy missions checklist + when to ask)
 
 ### File system rules
-- **Codebase (Linux / WSL)**: `/home/Enderwookie/localswgserver/`
+- **Codebase (Linux / WSL)**: `~/localswgserver/` (Main Desktop) or `~/workspace/BellumGero-Live/` (Laptop)
   - **Rule**: all code edits, builds, and server runs happen here (WSL paths).
 - **Game assets (Windows)**: `/mnt/c/SWGEmu/`
   - **Rule**: treat as read-only TRE assets; don’t compile/build here.
@@ -68,7 +68,7 @@ ls -la /trefiles/bottom.tre
 ```
 
 ### Codebase map (high-signal folders)
-Repo root: `~/localswgserver`
+Repo root: `~/localswgserver` (Main Desktop) or `~/workspace/BellumGero-Live` (Laptop)
 - `MMOCoreORB/`: Core3 server source + build system
   - `bin/`: runtime directory (binaries, logs, scripts)
     - `conf/config.lua`: main config (see DB section)

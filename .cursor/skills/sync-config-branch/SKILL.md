@@ -16,7 +16,10 @@ Use this skill when the user wants to **commit and push dev env changes to the c
 ## Instructions
 
 1. **Confirm repo and branch**
-   - Run in the workspace root (e.g. `c:\Users\Shadow\code\swg-bg` on Shadow PC).
+   - Run in the workspace root:
+     - Shadow PC: `C:\Users\Shadow\code\swg-bg`
+     - Main Desktop (WSL): `~/localswgserver`
+     - Laptop (WSL): `~/workspace/BellumGero-Live`
    - Config branch name: **Ender_CursorConfig** (from branch-naming.mdc and bellum-gero.mdc).
 
 2. **Check for dev env changes**
@@ -49,6 +52,7 @@ Use this skill when the user wants to **commit and push dev env changes to the c
 Cursor does **not** run tasks on a schedule. For automatic sync so both envs stay in sync:
 
 - **Windows (Shadow PC):** Run `.cursor/skills/sync-config-branch/scripts/install-scheduled-task.ps1` once. Task Scheduler runs `sync-config-branch.ps1` daily, at log on, and at log off. See script folder README.
-- **WSL (dev desktop):** Run `.cursor/skills/sync-config-branch/scripts/install-cron.sh` once. Cron runs `sync-config-branch.sh` daily (default 6 PM). Use `-r` for @reboot. Use `-u` to uninstall. See script folder README.
+- **Main Desktop (WSL):** Run `.cursor/skills/sync-config-branch/scripts/install-cron.sh` once from `~/localswgserver`.
+- **Laptop (WSL):** Run `.cursor/skills/sync-config-branch/scripts/install-cron.sh` once from `~/workspace/BellumGero-Live`.
 
 The skill helps when the user remembers to ask; the scripts + Task Scheduler/cron keep Ender_CursorConfig in sync on both machines.

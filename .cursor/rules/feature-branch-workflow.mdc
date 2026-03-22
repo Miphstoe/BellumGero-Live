@@ -56,7 +56,7 @@ Before **every** merge, run this 5-command checklist from repo root:
 
 ### Pass/Fail rules
 
-- Repo root must be `.../localswgserver`.
+- Repo root must be `.../localswgserver` (Main Desktop) or `.../BellumGero-Live` (Laptop).
 - Current branch must be the branch you intend to merge **into**.
 - `git status --short` must be empty (clean working tree).
 - Review stash output so hidden WIP is not forgotten.
@@ -66,7 +66,8 @@ If any check fails: **STOP**. Fix the failure, then rerun all five checks.
 
 ### Aliases / shortcuts
 
-- **WSL/bash:** `alias premerge='~/localswgserver/.cursor/scripts/premerge-check.sh ~/localswgserver'`
+- **Main Desktop (WSL):** `alias premerge='~/localswgserver/.cursor/scripts/premerge-check.sh ~/localswgserver'`
+- **Laptop (WSL):**  `alias premerge='~/workspace/BellumGero-Live/.cursor/scripts/premerge-check.sh ~/workspace/BellumGero-Live'`
 - **PowerShell (Shadow PC):** `function premerge { & "C:\Users\Shadow\code\swg-bg\.cursor\scripts\premerge-check.ps1" -RepoPath "C:\Users\Shadow\code\swg-bg" }`
 
 Use `premerge` immediately before any `git merge`.

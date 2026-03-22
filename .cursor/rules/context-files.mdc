@@ -1,5 +1,5 @@
 ---
-description: Where Cursor/workspace context files live (.cursor/context/) — same on Shadow PC and WSL
+description: Where Cursor/workspace context files live (.cursor/context/) — same on all three dev environments
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: true
 
 - **Directory:** `.cursor/context/`
 - **Canonical path (repo-relative):** `.cursor/context/` (e.g. `WORKSPACE_STRUCTURE.md` → `.cursor/context/WORKSPACE_STRUCTURE.md`).
-- **Same on both machines:** Use this structure on **Shadow PC** (e.g. `C:\Users\Shadow\code\swg-bg\.cursor\context\`) and on the **WSL build/test dev box** (e.g. `~/localswgserver/.cursor/context/`). The repo is shared; keep context files here so both environments stay in sync.
+- **Same on all machines:** Use this structure on **Shadow PC** (`C:\Users\Shadow\code\swg-bg\.cursor\context\`), **Main Desktop** (`~/localswgserver/.cursor/context/`), and **Laptop** (`~/workspace/BellumGero-Live/.cursor/context/`). The repo is shared; keep context files here so all environments stay in sync.
 
 ## Do
 
@@ -22,7 +22,7 @@ alwaysApply: true
 ## Don't
 
 - Do not put context docs at repo root or in ad-hoc locations.
-- Do not create a different context path on WSL; use `.cursor/context/` there too.
+- Do not create a different context path on any machine; use `.cursor/context/` everywhere.
 
 ## Quick reference
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# premerge-check.sh — Run before every merge to verify repo state.
+# Usage: ./premerge-check.sh [repo-path]
+# Approved repo roots: ~/localswgserver (Main Desktop), ~/workspace/BellumGero-Live (Laptop)
 set -euo pipefail
 
 REPO_PATH="${1:-$PWD}"
@@ -23,10 +26,10 @@ else
 fi
 
 if [[ -n "$repo_root" ]]; then
-  if [[ "$repo_root" == *"/localswgserver" ]]; then
-    pass "Repo root is localswgserver."
+  if [[ "$repo_root" == *"/localswgserver" ]] || [[ "$repo_root" == *"/BellumGero-Live" ]]; then
+    pass "Repo root accepted: $repo_root"
   else
-    warn "Repo root is not localswgserver: $repo_root"
+    warn "Repo root is not an approved BellumGero path: $repo_root (expected .../localswgserver or .../BellumGero-Live)"
   fi
 fi
 

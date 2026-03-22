@@ -16,14 +16,17 @@ See [rules/feature-branch-workflow.mdc](../../rules/feature-branch-workflow.mdc)
 
 ## Prerequisites
 
-- Repo root: WSL `~/localswgserver` or Shadow `C:\Users\Shadow\code\swg-bg` (or equivalent).
+- Repo root:
+  - Main Desktop (WSL): `~/localswgserver`
+  - Laptop (WSL): `~/workspace/BellumGero-Live`
+  - Shadow PC: `C:\Users\Shadow\code\swg-bg`
 - Get the **feature branch name** from the user (e.g. `Ender_NewFeatureName`). If not given, ask: "What should the feature branch be called? (e.g. Ender_ResourceX)"
 
 ## Instructions
 
 ### Step 1: Update Ender_CursorConfig from Main
 
-Run in repo root (WSL example; use PowerShell on Shadow with same git commands):
+Run in repo root (adjust path for your machine — Main Desktop: `~/localswgserver`, Laptop: `~/workspace/BellumGero-Live`):
 
 ```bash
 git fetch origin Main
@@ -94,12 +97,13 @@ Tell the user:
 ## Safeguards
 
 - Do not create the feature branch from Main; always from Ender_CursorConfig after updating it from Main.
-- If the user is on Shadow PC, use PowerShell and Windows paths; if WSL, use bash and `~/localswgserver`.
+- If on Shadow PC: use PowerShell and Windows paths. If on Main Desktop WSL: use `~/localswgserver`. If on Laptop WSL: use `~/workspace/BellumGero-Live`.
 - If merge Main → Ender_CursorConfig fails (e.g. conflicts), help resolve; prefer keeping Ender_CursorConfig’s .gitignore so .cursor stays tracked there.
 
 ## Scripts (run without agent)
 
-- **WSL:** `.cursor/skills/start-new-feature/scripts/start-new-feature.sh Ender_FeatureName` (from repo root, e.g. `~/localswgserver`).
+- **Main Desktop (WSL):** `.cursor/skills/start-new-feature/scripts/start-new-feature.sh Ender_FeatureName` (from `~/localswgserver`).
+- **Laptop (WSL):** `.cursor/skills/start-new-feature/scripts/start-new-feature.sh Ender_FeatureName` (from `~/workspace/BellumGero-Live`).
 - **Shadow PC (PowerShell):** `.cursor/skills/start-new-feature/scripts/start-new-feature.ps1 -FeatureBranch Ender_FeatureName` (from repo root, e.g. `C:\Users\Shadow\code\swg-bg`). Optional: `-RepoPath "C:\path\to\repo"`.
 
 See `scripts/README.md` in this skill folder.
@@ -107,6 +111,7 @@ See `scripts/README.md` in this skill folder.
 ## Quick reference (WSL)
 
 ```bash
+# Run from repo root (~/localswgserver or ~/workspace/BellumGero-Live)
 git fetch origin Main
 git checkout Ender_CursorConfig && git pull origin Ender_CursorConfig
 git merge origin/Main -m "Merge Main into Ender_CursorConfig"

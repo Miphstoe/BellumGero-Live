@@ -1,6 +1,9 @@
 param(
     [string]$RepoPath = (Get-Location).Path
 )
+# premerge-check.ps1 — Run before every merge on Shadow PC or Windows side.
+# Usage: .\premerge-check.ps1 [-RepoPath "C:\path\to\repo"]
+# Approved repo roots: Shadow PC (C:\Users\Shadow\code\swg-bg), Laptop (C:\Users\Mobile-Wookie\...)
 
 $ErrorActionPreference = "Stop"
 $fail = $false
@@ -25,15 +28,23 @@ try {
 }
 
 if ($repoRoot) {
-    # Keep all allowed repo roots in one list so this check is easy to maintain.
+    # All approved repo roots across all three dev boxes
     $approvedRoots = @(
         @{
-            Label = "WSL localswgserver"
+            Label = "Main Desktop WSL (localswgserver)"
             Match = { param([string]$path) $path -match "/localswgserver$" }
+        },
+        @{
+            Label = "Laptop WSL (BellumGero-Live)"
+            Match = { param([string]$path) $path -match "/BellumGero-Live$" }
         },
         @{
             Label = "Shadow PC clone"
             Match = { param([string]$path) $path -ieq "c:/users/shadow/code/swg-bg" }
+        },
+        @{
+            Label = "Laptop Windows"
+            Match = { param([string]$path) $path -imatch "^c:/users/mobile-wookie" }
         }
     )
 
