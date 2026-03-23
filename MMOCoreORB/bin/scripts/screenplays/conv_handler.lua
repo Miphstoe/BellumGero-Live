@@ -797,7 +797,7 @@ function conv_handler:countBGTokensInContainer(container)
                     print("[BG-TOKEN] Found object: " .. displayedName)
                     if isBellumGeroToken(object) then
                         -- Try to get count, default to 1 if not countable
-                        local countSuccess, count = pcall(function() return object:getCount() end)
+                        local countSuccess, count = pcall(function() return LuaTangibleObject(pObject):getCount() end)
                         if countSuccess and count and count > 0 then
                             print("[BG-TOKEN] Found " .. count .. " tokens in stack")
                             tokenCount = tokenCount + count
@@ -862,7 +862,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
 
                         print("[BG-TOKEN] Found token to remove: " .. displayedName)
                         -- Try to get count
-                        local countSuccess, itemCount = pcall(function() return object:getCount() end)
+                        local countSuccess, itemCount = pcall(function() return LuaTangibleObject(pObject):getCount() end)
                         if countSuccess and itemCount and itemCount > 0 then
                             -- Item is countable (stackable)
                             local needToRemove = count - removed
@@ -875,7 +875,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
                                 print("[BG-TOKEN] Removed stack of " .. itemCount .. " tokens")
                             else
                                 -- Remove partial stack
-                                local setSuccess = pcall(function() object:setCount(itemCount - needToRemove) end)
+                                local setSuccess = pcall(function() LuaTangibleObject(pObject):setCount(itemCount - needToRemove) end)
                                 if setSuccess then
                                     removed = count
                                     print("[BG-TOKEN] Removed " .. needToRemove .. " tokens from stack")
