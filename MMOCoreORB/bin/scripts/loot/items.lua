@@ -613,6 +613,19 @@ includeFile("items/loot_schematic/throw_pillow_schematic.lua")
 
 --misc sub-folder
 includeFile("items/misc/bg_token.lua")
+
+-- veteran_reward holograms
+includeFile("items/veteran_reward/frn_vet_holo_corvette.lua")
+includeFile("items/veteran_reward/frn_vet_holo_darth_vader.lua")
+includeFile("items/veteran_reward/frn_vet_holo_deathstar.lua")
+includeFile("items/veteran_reward/frn_vet_holo_imperial_guard.lua")
+includeFile("items/veteran_reward/frn_vet_holo_jawa.lua")
+includeFile("items/veteran_reward/frn_vet_holo_lambda.lua")
+includeFile("items/veteran_reward/frn_vet_holo_leia.lua")
+includeFile("items/veteran_reward/frn_vet_holo_luke_skywalker.lua")
+includeFile("items/veteran_reward/frn_vet_holo_sandcrawler.lua")
+includeFile("items/veteran_reward/frn_vet_holo_starfighter.lua")
+includeFile("items/veteran_reward/frn_vet_holo_yoda.lua")
 includeFile("items/misc/casual_rug.lua")
 includeFile("items/misc/majestic_rug.lua")
 includeFile("items/misc/radar_topology_screen.lua")
