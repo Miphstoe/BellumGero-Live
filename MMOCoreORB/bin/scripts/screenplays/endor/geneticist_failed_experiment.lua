@@ -35,7 +35,8 @@ GeneticistsFailedExperiment = ScreenPlay:new {
 		["bordok"] = true,
 		["gurreck"] = true,
 		["lantern"] = true,
-		["squall"] = true
+		["squall"] = true,
+		["arachne"] = true
 	},
 	allowedStage1Names = {
 		"bordok",

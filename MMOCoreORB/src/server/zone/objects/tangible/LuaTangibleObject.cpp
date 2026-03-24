@@ -59,6 +59,8 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "getMainDefender", &LuaTangibleObject::getMainDefender},
 		{ "getConditionDamage", &LuaTangibleObject::getConditionDamage},
 		{ "isActivated", &LuaTangibleObject::isActivated},
+		{ "getCount", &LuaTangibleObject::getCount},
+		{ "setCount", &LuaTangibleObject::setCount},
 		{ 0, 0 }
 };
 
@@ -459,4 +461,24 @@ int LuaTangibleObject::isActivated(lua_State* L){
 	lua_pushboolean(L, isActivated);
 
 	return 1;
+}
+
+int LuaTangibleObject::getCount(lua_State* L) {
+	if (realObject == nullptr) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	lua_pushinteger(L, realObject->getUseCount());
+	return 1;
+}
+
+int LuaTangibleObject::setCount(lua_State* L) {
+	int count = lua_tointeger(L, -1);
+
+	if (realObject == nullptr || count < 0)
+		return 0;
+
+	realObject->setUseCount((unsigned int)count, true);
+	return 0;
 }

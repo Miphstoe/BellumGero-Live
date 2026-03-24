@@ -832,28 +832,50 @@ SceneObject* DnaManager::createQuestDnaSample(CreatureObject* player, int qualit
 	// Random VHQ stats in the 750-1000 range
 	auto vhqStat = []() -> int { return static_cast<int>(System::random(250)) + 750; };
 
+	// Resistance helper: base value with +/- variance, clamped to [0, inf)
+	auto randResist = [](float base, int variance) -> float {
+		float val = base + static_cast<float>(System::random(variance * 2)) - static_cast<float>(variance);
+		return val < 0.0f ? 0.0f : val;
+	};
+
 	prototype->setSource("Mutated Gurreck Alpha");
 	prototype->setQuality(quality);
 	prototype->setLevel(72);
 	prototype->setSerialNumber(craftingManager->generateSerial());
 	// setStats(cleverness, endurance, fierceness, power, intellect, courage, dependability, dexterity, fortitude, hardiness)
 	prototype->setStats(vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat());
-	prototype->setArmorRating(armorRating);
 
-	// Resistances from mutated_gurreck_alpha: {155,155,40,170,170,40,170,-1,-1}
-	prototype->setKinetic(155.0f);
-	prototype->setEnergy(155.0f);
-	prototype->setBlast(40.0f);
-	prototype->setHeat(170.0f);
-	prototype->setCold(170.0f);
-	prototype->setElectric(40.0f);
-	prototype->setAcid(170.0f);
+	// Randomize armor rating: 1 = light, 2 = medium, 3 = heavy
+	prototype->setArmorRating(static_cast<int>(System::random(2)) + 1);
+
+	// Resistances capped to crafting system maxima (KINETIC_MAX=60, ENERGY_MAX=60, others=100)
+	// Raw creature values (155/170) exceed 100 and wrap in the crafting attribute system.
+	prototype->setKinetic(randResist(55.0f, 5));    // 50-60  (KINETIC_MAX = 60)
+	prototype->setEnergy(randResist(55.0f, 5));     // 50-60  (ENERGY_MAX = 60)
+	prototype->setBlast(randResist(40.0f, 15));     // 25-55  (within BLAST_MAX = 100)
+	prototype->setHeat(randResist(95.0f, 5));       // 90-100 (HEAT_MAX = 100)
+	prototype->setCold(randResist(95.0f, 5));       // 90-100 (COLD_MAX = 100)
+	prototype->setElectric(randResist(40.0f, 15));  // 25-55  (within ELECTRICITY_MAX = 100)
+	prototype->setAcid(randResist(95.0f, 5));       // 90-100 (ACID_MAX = 100)
 	prototype->setSaber(-1.0f);
-	prototype->setStun(-1.0f);
+	prototype->setStun(0.0f);
 	prototype->setRanged(false);
 
-	prototype->setSpecialAttackOne("posturedownattack");
-	prototype->setSpecialAttackTwo("intimidationattack");
+	// Randomly pick 2 of the 4 mutated gurreck alpha attacks each time
+	Vector<String> questAttackPool;
+	questAttackPool.add("posturedownattack");
+	questAttackPool.add("intimidationattack");
+	questAttackPool.add("strongpoison");
+	questAttackPool.add("creatureareacombo");
+
+	int pickOne = static_cast<int>(System::random(questAttackPool.size() - 1));
+	String questAtk1 = questAttackPool.get(pickOne);
+	questAttackPool.remove(pickOne);
+	int pickTwo = static_cast<int>(System::random(questAttackPool.size() - 1));
+	String questAtk2 = questAttackPool.get(pickTwo);
+
+	prototype->setSpecialAttackOne(questAtk1);
+	prototype->setSpecialAttackTwo(questAtk2);
 
 	if (!customName.isEmpty())
 		prototype->setCustomObjectName(customName, false);

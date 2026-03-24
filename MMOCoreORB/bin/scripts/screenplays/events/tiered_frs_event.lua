@@ -19,8 +19,8 @@ TieredFRSRebelEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in s
 TieredFRSRebelEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredFRSRebelEvent.START_TIME = { year = 2026, month = 3, day = 1, hour = 19, min = 00, sec = 0 }
-TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 3, day = 1, hour = 20, min = 00, sec = 0 }
+TieredFRSRebelEvent.START_TIME = { year = 2026, month = 4, day = 12, hour = 19, min = 00, sec = 0 }
+TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 4, day = 12, hour = 20, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredFRSRebelEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -33,31 +33,35 @@ TieredFRSRebelEvent.WEEKLY_LIST = {
 TieredFRSRebelEvent.CATCH_UP_IF_MISSED = true
 
 -- FRS Reward Configuration per Tier
-TieredFRSRebelEvent.TIER1_FRS_AMOUNT = 200    -- Rebel Soldiers
-TieredFRSRebelEvent.TIER2_FRS_AMOUNT = 250    -- Rebel Commanders
-TieredFRSRebelEvent.TIER3_FRS_AMOUNT = 300   -- Rebel Generals
-TieredFRSRebelEvent.TIER4_FRS_AMOUNT = 350   -- Rebel Surface Marshalls
+TieredFRSRebelEvent.TIER1_FRS_AMOUNT = 100    -- Rebel Soldiers
+TieredFRSRebelEvent.TIER2_FRS_AMOUNT = 100    -- Rebel Commanders
+TieredFRSRebelEvent.TIER3_FRS_AMOUNT = 150   -- Rebel Generals
+TieredFRSRebelEvent.TIER4_FRS_AMOUNT = 150   -- Rebel Surface Marshalls
 TieredFRSRebelEvent.FRS_RANGE_METERS = 64    -- Range for group members to receive credit
 
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes - Rebel Soldiers (200k HAM, 50 FRS)
 TieredFRSRebelEvent.TIER1_NPCS = {
-  { planet = "naboo", template = "boss_grakk_na_joor", x = 218, y = 5428, z = -196, heading = 0 },
+  { planet = "naboo", template = "imperial_traitor", x = -1627, y = 6401, z = -196, heading = 0 },
+  { planet = "naboo", template = "rebel_traitor", x = -1629, y = 6403, z = -196, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes - Rebel Commanders (300k HAM, 75 FRS)
 TieredFRSRebelEvent.TIER2_NPCS = {
-  { planet = "naboo", template = "boss_rulo_besh_ka", x = 218, y = 5428, z = -196, heading = 0 },
+  { planet = "naboo", template = "imperial_traitor", x = -1627, y = 6401, z = -196, heading = 0 },
+  { planet = "naboo", template = "rebel_traitor", x = -1629, y = 6403, z = -196, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes - Rebel Generals (400k HAM, 100 FRS)
 TieredFRSRebelEvent.TIER3_NPCS = {
-  { planet = "naboo", template = "boss_tarko_muu_zenn", x = 218, y = 5428, z = -196, heading = 0 },
+  { planet = "naboo", template = "imperial_traitor_elite", x = -1627, y = 6401, z = -196, heading = 0 },
+  { planet = "naboo", template = "rebel_traitor_elite", x = -1629, y = 6403, z = -196, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes - Rebel Surface Marshalls (500k HAM, 150 FRS)
 TieredFRSRebelEvent.TIER4_NPCS = {
-  { planet = "naboo", template = "boss_vreego_makk_tarn", x = 218, y = 5428, z = -196, heading = 0 },
+  { planet = "naboo", template = "imperial_traitor_elite", x = -1627, y = 6401, z = -196, heading = 0 },
+  { planet = "naboo", template = "rebel_traitor_elite", x = -1629, y = 6403, z = -196, heading = 0 },
 }
 
 -- Tier change times (in seconds from event start)

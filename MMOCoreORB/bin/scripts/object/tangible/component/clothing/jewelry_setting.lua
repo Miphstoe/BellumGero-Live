@@ -43,6 +43,7 @@
 
 object_tangible_component_clothing_jewelry_setting = object_tangible_component_clothing_shared_jewelry_setting:new {
 
+	objectMenuComponent = "BgTokenMenuComponent",
 
 	numberExperimentalProperties = {1, 1, 1},
 	experimentalProperties = {"XX", "XX", "XX"},

@@ -19,6 +19,9 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedIn then
         PlayerBountySystem:onPlayerLoggedIn(pPlayer)
     end
+    if GalaxyCombatBoard and GalaxyCombatBoard.onPlayerLoggedIn then
+        GalaxyCombatBoard:onPlayerLoggedIn(pPlayer)
+    end
 end
 
 function PlayerTriggers:playerLoggedOut(pPlayer)
