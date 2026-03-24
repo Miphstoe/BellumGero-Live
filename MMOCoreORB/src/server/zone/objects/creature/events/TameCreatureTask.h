@@ -4,6 +4,7 @@
 
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/chat/ChatManager.h"
@@ -177,6 +178,21 @@ public:
 			creature->setPvpStatusBitmask(playerPvpStatusBitmask, false);
 		} else {
 			creature->setPvpStatusBitmask(playerPvpStatusBitmask, false);
+		}
+
+		// Only normal baby taming qualifies for profession quest hooks.
+		if (!force && !adult && creature->isBaby()) {
+			Lua* lua = DirectorManager::instance()->getLuaInstance();
+
+			if (lua != nullptr) {
+				Reference<LuaFunction*> tameHook = lua->createFunction("GalacticBeastmasterTrial", "onSuccessfulTame", 0);
+
+				if (tameHook != nullptr) {
+					*tameHook << player.get();
+					*tameHook << creature.get();
+					tameHook->callFunction();
+				}
+			}
 		}
 
 		creature->setBaby(false);
