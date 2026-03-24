@@ -60,6 +60,9 @@ public:
 private:
 	VectorMap<uint32, int> skillModMax;
 	VectorMap<uint32, int> skillModMin;
+	VectorMap<String, uint32> skillModNameType;  // per-name modType filter
+	VectorMap<String, int>   skillModNameMax;    // per-name cap max
+	VectorMap<String, int>   skillModNameMin;    // per-name cap min
 	SortedVector<String> disabledWearableSkillMods;
 public:
 	SkillModManager();
@@ -93,6 +96,24 @@ public:
 
 	inline bool isWearableModDisabled(String mod) {
 		return disabledWearableSkillMods.contains(mod);
+	}
+
+	// Returns true and fills outMin/outMax when a per-name cap is configured
+	// for the given (modName, modType) pair, overriding the type-level cap.
+	inline bool getSkillModLimitByName(const String& modName, uint32 modType, int& outMin, int& outMax) const {
+		if (!skillModNameMax.contains(modName))
+			return false;
+
+		// If a specific modType filter was configured, only apply for that type
+		if (skillModNameType.contains(modName)) {
+			uint32 configuredType = skillModNameType.get(modName);
+			if (configuredType != 0 && configuredType != modType)
+				return false;
+		}
+
+		outMin = skillModNameMin.get(modName);
+		outMax = skillModNameMax.get(modName);
+		return true;
 	}
 };
 

@@ -102,8 +102,11 @@ public:
 
 			if(group->contains(skillMod)) {
 
-				int maxSkill = SkillModManager::instance()->getMaxSkill(modType);
-				int minSkill = SkillModManager::instance()->getMinSkill(modType);
+				int maxSkill, minSkill;
+				if (!SkillModManager::instance()->getSkillModLimitByName(skillMod, modType, minSkill, maxSkill)) {
+					maxSkill = SkillModManager::instance()->getMaxSkill(modType);
+					minSkill = SkillModManager::instance()->getMinSkill(modType);
+				}
 
 				if(modType & SkillModManager::BONUSMOD) {
 					int newSkillBonus = newEntry.getSkillBonus() + group->get(skillMod);
@@ -151,8 +154,11 @@ public:
 			const SkillModGroup* group = &mods.elementAt(i).getValue();
 
 			if (group->contains(skillMod)) {
-				int maxSkill = SkillModManager::instance()->getMaxSkill(modType);
-				int minSkill = SkillModManager::instance()->getMinSkill(modType);
+				int maxSkill, minSkill;
+				if (!SkillModManager::instance()->getSkillModLimitByName(skillMod, modType, minSkill, maxSkill)) {
+					maxSkill = SkillModManager::instance()->getMaxSkill(modType);
+					minSkill = SkillModManager::instance()->getMinSkill(modType);
+				}
 
 				int newSkillBonus = group->get(skillMod);
 
