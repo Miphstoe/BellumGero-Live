@@ -118,6 +118,7 @@ includeFile("dungeon/death_watch_bunker/conversations/deathWatchRescueScientistC
 includeFile("dungeon/death_watch_bunker/conversations/deathWatchTechnicianConvoHandler.lua")
 includeFile("dungeon/death_watch_bunker/conversations/deathWatchWorkshopDroidConvoHandler.lua")
 includeFile("dungeon/geonosian_lab/geoLab.lua")
+includeFile("dungeon/geonosian_lab/geonosian_cave_anti_camping_hybrid.lua")
 includeFile("dungeon/geonosian_lab/geoLabContainerComponents.lua")
 includeFile("dungeon/geonosian_lab/geoLabMenuComponents.lua")
 includeFile("dungeon/geonosian_lab/conversations/biogenicAssistantConvoHandler.lua")
