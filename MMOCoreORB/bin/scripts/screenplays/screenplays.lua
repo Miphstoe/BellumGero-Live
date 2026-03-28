@@ -117,6 +117,8 @@ includeFile("dungeon/death_watch_bunker/conversations/deathWatchMedicalDroidConv
 includeFile("dungeon/death_watch_bunker/conversations/deathWatchRescueScientistConvoHandler.lua")
 includeFile("dungeon/death_watch_bunker/conversations/deathWatchTechnicianConvoHandler.lua")
 includeFile("dungeon/death_watch_bunker/conversations/deathWatchWorkshopDroidConvoHandler.lua")
+includeFile("dungeon/geonosian_lab/conversations/acklay_instance_keeper_conv_handler.lua")
+includeFile("dungeon/geonosian_lab/acklay_private_instance.lua")
 includeFile("dungeon/geonosian_lab/geoLab.lua")
 includeFile("dungeon/geonosian_lab/geonosian_cave_anti_camping_hybrid.lua")
 includeFile("dungeon/geonosian_lab/geoLabContainerComponents.lua")

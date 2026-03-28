@@ -187,6 +187,7 @@ includeFile("conversations/dungeon/warren/phy_hudgen_conv.lua")
 includeFile("conversations/dungeon/warren/warren_worker_conv.lua")
 
 -- Geonosian Lab
+includeFile("conversations/dungeon/geonosian_lab/acklay_instance_keeper_conv.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_assistant_convo.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_construction_convo.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_crazyguy_convo.lua")
