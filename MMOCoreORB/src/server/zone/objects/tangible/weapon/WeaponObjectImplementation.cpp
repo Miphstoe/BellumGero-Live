@@ -745,7 +745,7 @@ void WeaponObjectImplementation::decay(CreatureObject* user) {
 	int chance = 5;
 
 	if (hasPowerup())
-		chance += 10;
+		chance += 2;
 
 	if (roll < chance) {
 		Locker locker(_this.getReferenceUnsafeStaticCast());
