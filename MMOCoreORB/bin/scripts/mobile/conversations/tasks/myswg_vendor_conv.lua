@@ -245,7 +245,7 @@ newbuff1 = ConvoScreen:new {
     stopConversation = "false",
     options = { 
 
-        {"2500 Buffs 2hr - 10k", "buff1"},
+        {"1500 Buffs 2hr - 5k", "buff1"},
         {"Reset Buffs - 2k", "reset_buffs"},
     --    {"300% Doctor Buffs 6hr - 30k", "buff3"},
     --    {"200% Entertainer Buffs 4hr - 10k", "buff4"},
@@ -268,7 +268,7 @@ petbuff1 = ConvoScreen:new {
     customDialogText = "I can enhance your pet with powerful buffs!",
     stopConversation = "false",
     options = {
-        {"Pet 2500 Buffs 2hr - 10k", "petbuff_option1"},
+        {"Pet 2500 Buffs 2hr - 5k", "petbuff_option1"},
         {"Main menu.", "first_screen"},
     }
 }

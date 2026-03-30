@@ -177,6 +177,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "storePets", &LuaCreatureObject::storePets },
 		{ "reset_buffs", &LuaCreatureObject::reset_buffs },
 		{ "enhancePet", &LuaCreatureObject::enhancePet },
+		{ "enhanceCharacterVendor", &LuaCreatureObject::enhanceCharacterVendor },
 
 		// JTL
 		{ "isRebelPilot", &LuaCreatureObject::isRebelPilot },
@@ -1114,6 +1115,13 @@ int LuaCreatureObject::getGroupID(lua_State* L) {
 int LuaCreatureObject::enhanceCharacter(lua_State* L) {
 	PlayerManager* playerManager = realObject->getZoneServer()->getPlayerManager();
 	playerManager->enhanceCharacter(realObject);
+
+	return 0;
+}
+
+int LuaCreatureObject::enhanceCharacterVendor(lua_State* L) {
+	PlayerManager* playerManager = realObject->getZoneServer()->getPlayerManager();
+	playerManager->enhanceCharacterVendor(realObject);
 
 	return 0;
 }
