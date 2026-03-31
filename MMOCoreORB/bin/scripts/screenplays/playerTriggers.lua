@@ -22,6 +22,12 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     if GalaxyCombatBoard and GalaxyCombatBoard.onPlayerLoggedIn then
         GalaxyCombatBoard:onPlayerLoggedIn(pPlayer)
     end
+    if GeonosianCaveAntiCampingHybrid and GeonosianCaveAntiCampingHybrid.onPlayerLoggedIn then
+        GeonosianCaveAntiCampingHybrid:onPlayerLoggedIn(pPlayer)
+    end
+    if AcklayPrivateInstance and AcklayPrivateInstance.handlePlayerLogin then
+        AcklayPrivateInstance:handlePlayerLogin(pPlayer)
+    end
 end
 
 function PlayerTriggers:playerLoggedOut(pPlayer)
@@ -31,5 +37,11 @@ function PlayerTriggers:playerLoggedOut(pPlayer)
     local co = CreatureObject(pPlayer)
     if (co ~= nil and co:hasSkill("force_title_jedi_rank_03")) then
         JediKnightVisibilityEncounter:playerLoggedOut(pPlayer)
+    end
+    if GeonosianCaveAntiCampingHybrid and GeonosianCaveAntiCampingHybrid.onPlayerLoggedOut then
+        GeonosianCaveAntiCampingHybrid:onPlayerLoggedOut(pPlayer)
+    end
+    if AcklayPrivateInstance and AcklayPrivateInstance.onPlayerLoggedOut then
+        AcklayPrivateInstance:onPlayerLoggedOut(pPlayer)
     end
 end

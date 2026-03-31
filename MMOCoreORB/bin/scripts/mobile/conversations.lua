@@ -187,6 +187,7 @@ includeFile("conversations/dungeon/warren/phy_hudgen_conv.lua")
 includeFile("conversations/dungeon/warren/warren_worker_conv.lua")
 
 -- Geonosian Lab
+includeFile("conversations/dungeon/geonosian_lab/acklay_instance_keeper_conv.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_assistant_convo.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_construction_convo.lua")
 includeFile("conversations/dungeon/geonosian_lab/biogenic_crazyguy_convo.lua")
@@ -364,6 +365,8 @@ includeFile("conversations/vendors/bg_token_vendor_2_conv.lua")
 includeFile("conversations/bellum/convo_bg_force_hermit.lua")
 includeFile("conversations/bellum/lost_holocron_cartographer_conv.lua")
 includeFile("conversations/bellum/rangers_path_conv.lua")
+includeFile("conversations/bellum/galactic_beastmaster_trial_conv.lua")
+includeFile("conversations/bellum/galactic_tour_conv.lua")
 print("Finished loading bg_token vendor 2")
 print("Finished loading bg_token vendor 2")
 

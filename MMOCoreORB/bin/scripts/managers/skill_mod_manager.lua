@@ -52,14 +52,20 @@ skillModLimits = {
 	-- Permanent Mods - No limits, so no entries
 	--{257, x, x}, --TEMPLATE - All mods from LUA skillMods
 	--{258, x, x}, -- SKILLBOX
-	
+
 	-- Bonus Mods Wearables / Structure
 	{4097, -25, 25},  --WEARABLE
 	{4098, -125, 125}, -- STRUCTUREMOD
-	
+
 	-- Temp mods, not displayed (on timers or ability bonus)
 	{2711, -125, 125}, -- BUFFMOD
 	{2712, -125, 125}, -- ABILITYBONUSMOD
+}
+
+-- Per-mod-name overrides: checked before skillModLimits type caps.
+-- Format: { "modName", modType, minValue, maxValue }
+skillModNameLimits = {
+	{"jedi_force_power_regen", 4097, -75, 75},  -- WEARABLE cap raised from ±25 to ±75
 }
 
 disabledWearableSkillMods = {

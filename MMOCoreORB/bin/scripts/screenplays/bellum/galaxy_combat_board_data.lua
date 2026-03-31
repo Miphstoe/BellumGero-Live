@@ -83,6 +83,8 @@ GalaxyCombatBoardData = {
 				key = "lord_nyax_followers",
 				targetName = "Lord Nyax Followers",
 				locationHint = "Corellia",
+				allowedSocialGroups = { "followers_of_lord_nyax" },
+				allowedFactions = { "followers_of_lord_nyax" },
 				allowedTemplates = {
 					"disciple_of_lord_nyax",
 					"fanatic_of_lord_nyax",
@@ -165,6 +167,7 @@ GalaxyCombatBoardData = {
 				key = "sand_beetle_clicks",
 				targetName = "Monstrous Giant Sand Beetles",
 				locationHint = "Tatooine",
+				allowedSocialGroups = { "beetle" },
 				allowedTemplates = {
 					"giant_sand_beetle",
 					"monstrous_sand_beetle",

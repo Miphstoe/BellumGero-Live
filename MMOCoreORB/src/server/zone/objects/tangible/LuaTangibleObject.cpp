@@ -11,7 +11,9 @@
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "templates/appearance/PaletteTemplate.h"
 #include "server/zone/objects/player/FactionStatus.h"
+#include "server/zone/objects/tangible/attachment/Attachment.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
+#include "server/zone/managers/skill/SkillModManager.h"
 
 const char LuaTangibleObject::className[] = "LuaTangibleObject";
 
@@ -61,6 +63,8 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "isActivated", &LuaTangibleObject::isActivated},
 		{ "getCount", &LuaTangibleObject::getCount},
 		{ "setCount", &LuaTangibleObject::setCount},
+		{ "addAttachmentSkillModBonus", &LuaTangibleObject::addAttachmentSkillModBonus},
+		{ "addMagicBit", &LuaTangibleObject::addMagicBit},
 		{ 0, 0 }
 };
 
@@ -480,5 +484,45 @@ int LuaTangibleObject::setCount(lua_State* L) {
 		return 0;
 
 	realObject->setUseCount((unsigned int)count, true);
+	return 0;
+}
+
+int LuaTangibleObject::addAttachmentSkillModBonus(lua_State* L) {
+	if (realObject == nullptr)
+		return 0;
+
+	String modName = lua_tostring(L, -2);
+	int value = lua_tointeger(L, -1);
+
+	if (modName.isEmpty() || value == 0)
+		return 0;
+
+	Locker locker(realObject);
+
+	auto attachment = dynamic_cast<Attachment*>(realObject);
+
+	if (attachment != nullptr) {
+		attachment->addSkillMod(modName, value);
+		attachment->addMagicBit(false);
+		return 0;
+	}
+
+	auto wearable = dynamic_cast<WearableObject*>(realObject);
+
+	if (wearable != nullptr) {
+		wearable->addSkillMod(SkillModManager::WEARABLE, modName, value);
+		wearable->addMagicBit(false);
+	}
+
+	return 0;
+}
+
+int LuaTangibleObject::addMagicBit(lua_State* L) {
+	if (realObject == nullptr)
+		return 0;
+
+	bool notifyClient = lua_toboolean(L, -1);
+	realObject->addMagicBit(notifyClient);
+
 	return 0;
 }
