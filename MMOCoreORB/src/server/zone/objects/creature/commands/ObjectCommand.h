@@ -12,6 +12,8 @@
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/objects/tangible/attachment/Attachment.h"
 #include "server/zone/objects/tangible/terminal/characterbuilder/CharacterBuilderTerminal.h"
+#include "server/zone/objects/tangible/wearables/WearableObject.h"
+#include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
 
 
 class ObjectCommand : public QueueCommand {
@@ -105,6 +107,83 @@ public:
 				if (inventory->transferObject(object, -1, true)) {
 					inventory->broadcastObject(object, true);
 					creature->info(true) << "/object createitem " << objectTemplate << " created oid: " << object->getObjectID() << " \"" << object->getDisplayedName() << "\"";
+				} else {
+					object->destroyObjectFromDatabase(true);
+					creature->sendSystemMessage("Error transferring object to inventory.");
+				}
+			} else if (commandType.beginsWith("createwearable")) {
+				// Like createitem, but sets SEA socket count (createitem leaves sockets at 0).
+				String objectTemplate;
+				args.getStringToken(objectTemplate);
+
+				int maxSockets = WearableObject::MAXSOCKETS;
+				if (args.hasMoreTokens())
+					maxSockets = args.getIntToken();
+
+				ManagedReference<CraftingManager*> craftingManager = creature->getZoneServer()->getCraftingManager();
+				if (craftingManager == nullptr) {
+					return GENERALERROR;
+				}
+
+				Reference<SharedObjectTemplate*> shot = TemplateManager::instance()->getTemplate(objectTemplate.hashCode());
+
+				if (shot == nullptr || !shot->isSharedTangibleObjectTemplate()) {
+					creature->sendSystemMessage("Templates must be tangible objects, or descendants of tangible objects, only.");
+					return INVALIDPARAMETERS;
+				}
+
+				ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
+
+				if (inventory == nullptr || inventory->isContainerFullRecursive()) {
+					creature->sendSystemMessage("Your inventory is full, so the item could not be created.");
+					return INVALIDPARAMETERS;
+				}
+
+				ManagedReference<TangibleObject*> object = (server->getZoneServer()->createObject(shot->getServerObjectCRC(), 1)).castTo<TangibleObject*>();
+
+				if (object == nullptr) {
+					creature->sendSystemMessage("The object could not be created because the template could not be found.");
+					return INVALIDPARAMETERS;
+				}
+
+				Locker locker(object);
+
+				object->createChildObjects();
+
+				String name = "Generated with Object Command";
+				object->setCraftersName(name);
+
+				StringBuffer customName;
+				customName << object->getDisplayedName() << " (Socketed)";
+				object->setCustomObjectName(customName.toString(), false);
+
+				String serial = craftingManager->generateSerial();
+				object->setSerialNumber(serial);
+
+				bool socketsApplied = false;
+				if (object->isWearableObject()) {
+					ManagedReference<WearableObject*> wear = object.castTo<WearableObject*>();
+					if (wear != nullptr) {
+						wear->setMaxSockets(maxSockets);
+						socketsApplied = true;
+					}
+				} else if (object->isWearableContainerObject()) {
+					ManagedReference<WearableContainerObject*> wearC = object.castTo<WearableContainerObject*>();
+					if (wearC != nullptr) {
+						wearC->setMaxSockets(maxSockets);
+						socketsApplied = true;
+					}
+				}
+
+				if (!socketsApplied) {
+					creature->sendSystemMessage("Warning: template is not a wearable type; sockets were not applied (item still created).");
+				}
+
+				if (inventory->transferObject(object, -1, true)) {
+					inventory->broadcastObject(object, true);
+					creature->info(true) << "/object createwearable " << objectTemplate << " sockets=" << maxSockets
+						<< " oid: " << object->getObjectID() << " \"" << object->getDisplayedName() << "\"";
+					creature->sendSystemMessage("Created wearable with " + String::valueOf(maxSockets) + " attachment socket(s).");
 				} else {
 					object->destroyObjectFromDatabase(true);
 					creature->sendSystemMessage("Error transferring object to inventory.");

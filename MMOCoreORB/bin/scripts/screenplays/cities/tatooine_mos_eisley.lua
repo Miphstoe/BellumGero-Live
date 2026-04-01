@@ -135,6 +135,7 @@ TatooineMosEisleyScreenPlay = CityScreenPlay:new {
 		{"marco_vahn",60,-9.34,-0.894992,5.66,59.306,1082877, "calm"},
 		{"muftak",60,20.2,-0.9,5,107,1082877, "happy"},
 		{"noble",60,8.49,-0.894992,4.64,128.74,1082877, "conversation"},
+		-- mando_trialmaster: spawned after this loop (see below) — loop clears AIENABLED and breaks that template.
 		{"patron",60,14.2,-0.9,-4.8,67,1082877, "npc_sitting_chair"},
 		{"patron",60,14.7,-0.9,-3,147,1082877, "npc_sitting_chair"},
 		{"patron",60,16.5,-0.9,-4.8,320,1082877, "npc_sitting_chair"},
@@ -405,6 +406,39 @@ function TatooineMosEisleyScreenPlay:spawnMobiles()
 	pNpc = spawnMobile(self.planet, "junk_dealer", 0, -31.1, -0.5, 7.1, 31, 1082887)
 	if pNpc ~= nil then
 		AiAgent(pNpc):setConvoTemplate("junkDealerArmsConvoTemplate")
+	end
+
+	-- Mandalorian recruiter (cantina main hall, cell 1082877): must not use the generic loop above — it calls
+	-- clearOptionBit(AIENABLED) for PvP-neutral mobs; mando_trialmaster needs AIENABLED + CONVERSABLE to behave.
+	local pMandoRecruiter = spawnMobile(self.planet, "mando_trialmaster", 0, 9.2, -0.894992, 4.64, 200, 1082877)
+	if pMandoRecruiter ~= nil then
+		CreatureObject(pMandoRecruiter):setPvpStatusBitmask(0)
+		CreatureObject(pMandoRecruiter):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
+		CreatureObject(pMandoRecruiter):setMoodString("conversation")
+		SceneObject(pMandoRecruiter):setCustomObjectName("Mandalorian Recruiter")
+		AiAgent(pMandoRecruiter):setConvoTemplate("mandoTrialmasterConvoTemplate")
+		AiAgent(pMandoRecruiter):addObjectFlag(AI_STATIC)
+		writeData("mando_way:recruiter_id", SceneObject(pMandoRecruiter):getObjectID())
+		printf("[TATOOINE-MOS-EISLEY] mando_trialmaster spawned in cantina main (cell 1082877).\n")
+	else
+		printf("[TATOOINE-MOS-EISLEY] ERROR: mando_trialmaster spawnMobile returned nil (check template / cell / position).\n")
+	end
+
+	-- Foundling arc contact (world Mos Eisley): placed here like the recruiter — convo-time spawnMobile can fail or be invisible cross-context.
+	-- Waypoint / MandoWayOfLife.planetData[1] must stay in sync with x,z,y below.
+	local pFoundlingInformant = spawnMobile(self.planet, "mando_foundling_informant", 0, 3491, 5, -4782, 135, 0)
+	if pFoundlingInformant ~= nil then
+		CreatureObject(pFoundlingInformant):setPvpStatusBitmask(0)
+		CreatureObject(pFoundlingInformant):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
+		CreatureObject(pFoundlingInformant):setMoodString("conversation")
+		SceneObject(pFoundlingInformant):setCustomObjectName("Mandalorian Informant")
+		AiAgent(pFoundlingInformant):setConvoTemplate("mandoFoundlingInformantConvoTemplate")
+		AiAgent(pFoundlingInformant):addObjectFlag(AI_STATIC)
+		local fid = SceneObject(pFoundlingInformant):getObjectID()
+		writeData("mando_way:foundling_informant_static:tatooine", fid)
+		printf("[TATOOINE-MOS-EISLEY] mando_foundling_informant static hub spawn ok oid=%s (3491,5,-4782).\n", tostring(fid))
+	else
+		printf("[TATOOINE-MOS-EISLEY] ERROR: mando_foundling_informant static hub spawnMobile returned nil.\n")
 	end
 
 	--Creatures

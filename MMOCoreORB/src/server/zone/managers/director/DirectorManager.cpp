@@ -3508,7 +3508,9 @@ void DirectorManager::startScreenPlay(CreatureObject* creatureObject, const Stri
 	LuaFunction startScreenPlay(lua->getLuaState(), screenPlayName, "start", 0);
 	startScreenPlay << creatureObject;
 
-	startScreenPlay.callFunction();
+	if (startScreenPlay.callFunction() == nullptr) {
+		error() << "ScreenPlay \"" << screenPlayName << "\" start() failed (see LuaFunction error above).";
+	}
 }
 
 ConversationScreen* DirectorManager::getNextConversationScreen(const String& luaClass, ConversationTemplate* conversationTemplate, CreatureObject* conversingPlayer, int selectedOption, SceneObject* conversingNPC) {

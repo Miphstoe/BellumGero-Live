@@ -24,6 +24,7 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 
 	-- Arc started but not complete: player is mid-arc
 	if (MandoWayOfLife:readInt(pPlayer, "chapter0Started") == 1) then
+		MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 		return convoTemplate:getScreen("arc_in_progress")
 	end
 
@@ -43,6 +44,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 	local screenID = screen:getScreenID()
 
 	if (screenID == "arc_start") then
+		MandoWayOfLife:logDiagPlayer(pPlayer, "Trialmaster convo: arc_start (Foundling arc).")
 		MandoWayOfLife:startFoundlingArc(pPlayer)
 
 	elseif (screenID == "chapter_gate_ready") then

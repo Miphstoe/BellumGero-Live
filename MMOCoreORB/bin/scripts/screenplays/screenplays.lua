@@ -791,3 +791,9 @@ includeFile("vendors/artisan_procurement_vendor.lua")
 includeFile("player_bounty/player_bounty_system.lua")
 
 includeFile("static_spawns/master_bounty_guild.lua")
+
+-- Mandalorian Way of Life (loaded again after vendors/bounty so start() runs last among globals — original Bellum ordering)
+includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")
+includeFile("bellum/convos/mando_foundling_informant_conv_handler.lua")
+includeFile("bellum/convos/mando_spynet_operative_conv_handler.lua")
+includeFile("bellum/mando_way_of_life.lua")

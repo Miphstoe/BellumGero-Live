@@ -159,4 +159,16 @@ function CorelliaStaticSpawnsScreenPlay:spawnMobiles()
 	else
 		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn Holocron Village Vendor")
 	end
+
+	-- Mandalorian Way of Life: Spynet operative (chapter gate + private trials). Template already includes convo.
+	local pMandoSpy = spawnMobile("corellia", "mando_spynet_operative", 0, -173, 28, -4712, 90, 0)
+	if pMandoSpy ~= nil then
+		CreatureObject(pMandoSpy):setPvpStatusBitmask(0)
+		CreatureObject(pMandoSpy):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
+		AiAgent(pMandoSpy):setConvoTemplate("mandoSpynetOperativeConvoTemplate")
+		AiAgent(pMandoSpy):addObjectFlag(AI_STATIC)
+		print("[CORELLIA-STATIC-SPAWNS] mando_spynet_operative spawned at -173, 28, -4712 (near token vendors)")
+	else
+		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn mando_spynet_operative")
+	end
 end

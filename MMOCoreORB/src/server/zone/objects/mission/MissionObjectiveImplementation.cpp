@@ -17,6 +17,7 @@
 #include "server/zone/objects/group/GroupObject.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/statistics/StatisticsManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/packets/player/PlayMusicMessage.h"
 #include "server/zone/objects/mission/events/FailMissionAfterCertainTimeTask.h"
 #include "events/CompleteMissionObjectiveTask.h"
@@ -403,21 +404,45 @@ void MissionObjectiveImplementation::awardReward() {
 				ghost->setScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId, "1");
 			}
 
-			// Patch 3: Foundling planet quota counting (Chapter 0)
+			// Patch 3: Foundling planet quota counting (Chapter 0).
+			// Count standard mission-terminal completions (not player bounties / Guild work).
 			if (ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCountingEnabled") == "1" &&
 				ghost->getScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId) != "1") {
 
 				uint32 typeCRC = mission->getTypeCRC();
-				if (typeCRC == MissionTypes::DESTROY || typeCRC == MissionTypes::DELIVER) {
+				const bool foundlingCounts =
+					typeCRC != MissionTypes::BOUNTY
+					&& (typeCRC == MissionTypes::DESTROY || typeCRC == MissionTypes::DELIVER
+						|| typeCRC == MissionTypes::HUNTING || typeCRC == MissionTypes::RECON
+						|| typeCRC == MissionTypes::CRAFTING || typeCRC == MissionTypes::SURVEY
+						|| typeCRC == MissionTypes::ESCORT || typeCRC == MissionTypes::ESCORT2ME
+						|| typeCRC == MissionTypes::ESCORTTOCREATOR);
+
+				if (foundlingCounts) {
 					int done = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCompleted"));
 					int target = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetTarget"));
 					done++;
 					ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetCompleted", String::valueOf(done));
 					ghost->setScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId, "1");
 
+					owner->sendSystemMessage("Foundling quota: " + String::valueOf(done) + "/" + String::valueOf(target));
+
 					if (done >= target && ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetDone") != "1") {
 						ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetDone", "1");
 						// Lua screenplay polls planetDone and fires the system message + waypoint activation
+					}
+
+					Lua* lua = DirectorManager::instance()->getLuaInstance();
+					if (lua != nullptr) {
+						Reference<LuaFunction*> luaTracker = lua->createFunction("MandoWayOfLife", "sendFoundlingQuotaTrackerOnMissionComplete", 0);
+						if (luaTracker != nullptr) {
+							*luaTracker << owner.get();
+							try {
+								luaTracker->callFunction();
+							} catch (Exception& e) {
+								// Foundling tracker is cosmetic — do not abort mission completion
+							}
+						}
 					}
 				}
 			}

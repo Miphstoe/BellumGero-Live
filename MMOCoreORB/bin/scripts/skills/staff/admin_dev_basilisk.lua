@@ -37,7 +37,8 @@ admin_dev_basilisk = {
 		"showFactionInformation",
 		"snoop",
 		"listActiveQuests",
-		"listCompletedQuests"
+		"listCompletedQuests",
+		"mandoFoundlingAdmin"
 	},
 	skillModifiers = {},
 	schematicsGranted = {},

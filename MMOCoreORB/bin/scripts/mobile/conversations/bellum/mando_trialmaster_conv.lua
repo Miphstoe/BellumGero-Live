@@ -71,7 +71,7 @@ mandoTrialmasterConvoTemplate:addScreen(arc_in_progress)
 arc_accept = ConvoScreen:new {
 	id = "arc_accept",
 	leftDialog = "",
-	customDialogText = "Ten worlds. Each one will test a different part of you. Complete the work your contact assigns on each planet. Destroy contracts. Deliver contracts. No bounty terminal work — this is not the Guild's business. When the last planet is done, come find me.",
+	customDialogText = "Ten worlds. Each one will test a different part of you. Your contact on each planet will give you work. Destroy missions. Delivery runs. Standard terminals only - this is Mandalorian proving, not Guild business. When the last planet is done, come find me.",
 	stopConversation = "false",
 	options = {
 		{"I accept.", "arc_start"},

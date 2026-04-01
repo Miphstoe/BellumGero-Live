@@ -54,15 +54,15 @@ function MandoSpynetOperativeConvoHandler:runScreenHandlers(pConvTemplate, pPlay
 	local screenID = screen:getScreenID()
 
 	if (screenID == "gate_start") then
-		-- Start the 5 BH terminal counting cycle
+		MandoWayOfLife:logDiagPlayer(pPlayer, "Spynet operative convo: gate_start (BH terminal 0/5 cycle).")
 		MandoWayOfLife:startChapterGate(pPlayer)
-		-- Begin polling for gate completion
 		MandoWayOfLife:startGateProgressPoll(pPlayer)
 
 	elseif (screenID == "trial_start") then
-		-- Begin private contract solo enforcement
+		MandoWayOfLife:logDiagPlayer(pPlayer, "Spynet operative convo: trial_start (private contract).")
 		local ok = MandoWayOfLife:beginPrivateContract(pPlayer)
 		if (not ok) then
+			MandoWayOfLife:logDiagPlayer(pPlayer, "Spynet operative convo: trial_start aborted (preconditions failed).")
 			-- beginPrivateContract already sent a system message; close the convo
 			local convoTemplate = LuaConversationTemplate(pConvTemplate)
 			return convoTemplate:getScreen("bye")

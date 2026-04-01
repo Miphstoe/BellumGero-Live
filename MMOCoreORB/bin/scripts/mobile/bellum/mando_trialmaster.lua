@@ -1,6 +1,7 @@
 -- Mandalorian Trialmaster / Recruiter
--- Static spawn at Mos Eisley Cantina (Tatooine)
--- Spawned by MandoWayOfLife:start()
+-- Mos Eisley cantina main hall: TatooineMosEisleyScreenPlay:spawnMobiles() posts a dedicated spawn (cell 1082877).
+-- Not in the cantina mobiles[] table — that loop clears AIENABLED on neutral NPCs; this mob needs AIENABLED + CONVERSABLE.
+-- Optional duplicate: MandoWayOfLife:start() when SPAWN_RECRUITER_ON_START = true.
 -- Conversation: mandoTrialmasterConvoTemplate
 -- TODO: replace template mesh with confirmed Mandalorian-armored client IFF
 

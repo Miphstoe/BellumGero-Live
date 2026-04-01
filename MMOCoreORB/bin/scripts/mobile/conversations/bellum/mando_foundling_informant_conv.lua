@@ -33,7 +33,7 @@ mandoFoundlingInformantConvoTemplate:addScreen(intro)
 assign = ConvoScreen:new {
 	id = "assign",
 	leftDialog = "",
-	customDialogText = "Destroy contracts. Deliver contracts. Use the mission terminals. No bounty work — that is Guild business, not ours. I will know when you have done enough. Return to this spot when you are finished.",
+	customDialogText = "Use the mission terminals on this planet: destroy, deliver, hunting, recon — honest work. No bounty board contracts — that is Guild business, not ours. I will know when you have done enough. Return here when you are finished.",
 	stopConversation = "false",
 	options = {
 		{"Understood. I will begin.", "assign_confirm"},
@@ -62,6 +62,19 @@ already_assigned = ConvoScreen:new {
 	options = {}
 }
 mandoFoundlingInformantConvoTemplate:addScreen(already_assigned)
+
+-- --------------------------------------------------------
+-- TURN IN CHECK: intercepted by runScreenHandlers; this screen must exist so the engine
+-- has a valid pConvScreen to pass to the handler (which redirects to not_done or turnin).
+-- --------------------------------------------------------
+check_turnin = ConvoScreen:new {
+	id = "check_turnin",
+	leftDialog = "",
+	customDialogText = "",
+	stopConversation = "false",
+	options = {}
+}
+mandoFoundlingInformantConvoTemplate:addScreen(check_turnin)
 
 -- --------------------------------------------------------
 -- TURN IN CHECK: quota not yet met
