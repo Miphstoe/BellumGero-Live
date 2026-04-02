@@ -174,7 +174,9 @@ public:
 			if (success && cl <= 125) {
 				player->sendSystemMessage("@bio_engineer:harvest_dna_succeed");
 				creature->incDnaSampleCount();
-				award(cl,rollMod,skillMod);
+				int quality = award(cl,rollMod,skillMod);
+				// Allow screenplay observers to react to real Bio-Engineer DNA sampling success.
+				player->notifyObservers(ObserverEventType::DNASAMPLED, creature, quality);
 				if (creature->getDnaSampleCount() > 5) {
 					creature->setDnaState(CreatureManager::DNASAMPLED);
 				}
@@ -212,7 +214,7 @@ public:
 		creature->setDnaState(CreatureManager::DNADEATH);
 		player->sendSystemMessage(str);
 	}
-	void award(int cl, float rollMod, int skillMod) {
+	int award(int cl, float rollMod, int skillMod) {
 		int xp = DnaManager::instance()->generateXp(cl);
 		ManagedReference<PlayerManager*> playerManager = player->getZoneServer()->getPlayerManager();
 		if(playerManager != nullptr)
@@ -257,6 +259,7 @@ public:
 		else
 			quality = high;
 		DnaManager::instance()->generateSample(creature,player,quality);
+		return quality;
 	}
 };
 #endif //SAMPLEDNATASK_H_

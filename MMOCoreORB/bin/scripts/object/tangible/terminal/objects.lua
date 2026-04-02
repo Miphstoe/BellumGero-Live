@@ -3344,3 +3344,16 @@ object_tangible_terminal_shared_test = SharedTangibleObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_terminal_shared_test, "object/tangible/terminal/shared_test.iff")
+
+object_tangible_terminal_shared_terminal_syren5_shield_generator = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/terminal/shared_terminal_command_console.iff",
+	appearanceFilename = "appearance/eqp_comp_terminal.apt",
+	objectName = "Research Terminal",
+	detailedDescription = "A reinforced research terminal configured for volatile genetic analysis.",
+	gameObjectType = 16396,
+	lookAtText = "string_id_table",
+	snapToTerrain = 1,
+	targetable = 1
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_terminal_shared_terminal_syren5_shield_generator, "object/tangible/terminal/shared_terminal_syren5_shield_generator.iff")

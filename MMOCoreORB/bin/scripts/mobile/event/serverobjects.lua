@@ -40,3 +40,9 @@ includeFile("event/boss_grakk_na_joor.lua")
 includeFile("event/boss_vreego_makk_tarn.lua")
 includeFile("event/boss_rulo_besh_ka.lua")
 includeFile("event/boss_tarko_muu_zenn.lua")
+
+--Event Droid Strike Force
+includeFile("event/tactical_unit_bx_77.lua")
+includeFile("event/annihilator_unit_kr_9.lua")
+includeFile("event/execution_droid_kr_44.lua")
+includeFile("event/autonomous_war_machine.lua")

@@ -1,0 +1,5 @@
+object_tangible_loot_quest_rare_mutation_dna_sample = object_tangible_loot_quest_shared_rare_mutation_dna_sample:new {
+
+}
+
+ObjectTemplates:addTemplate(object_tangible_loot_quest_rare_mutation_dna_sample, "object/tangible/loot/quest/rare_mutation_dna_sample.iff")

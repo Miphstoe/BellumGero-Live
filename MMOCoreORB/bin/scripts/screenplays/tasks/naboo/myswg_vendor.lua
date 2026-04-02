@@ -1473,16 +1473,16 @@ local MySwgTravelDestinations = {
                     
 --DOCTOR
                     
-                elseif (optionLink == "buff1" and not canAfford(10000)) then
-                    -- Bail if the player doesn’t have enough cash on hand.  
+                elseif (optionLink == "buff1" and not canAfford(5000)) then
+                    -- Bail if the player doesn’t have enough cash on hand.
                     -- Plays a chat box message from the NPC as well as a system message.
                       nextConversationScreen = conversation:getScreen("insufficient_funds")
-                      creature:sendSystemMessage("You have insufficient funds") 
-                elseif (optionLink == "buff1" and canAfford(10000)) then
-                    -- Take 10,000 credits from the player’s cash on hand and give player a speederbike.
-                    charge(10000)
-                   
-										CreatureObject(conversingPlayer):enhanceCharacter()
+                      creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "buff1" and canAfford(5000)) then
+                    -- Take 5,000 credits from the player’s cash on hand and apply vendor buffs.
+                    charge(5000)
+
+										CreatureObject(conversingPlayer):enhanceCharacterVendor()
 										--buffTerminalMenuComponent:logUsage(conversingPlayer, "enhanceCharacter")
                     --giveItem(pInventory, "object/tangible/deed/vehicle_deed/speederbike_deed.iff", -1)
                     --createLoot(pInventory, "junk", 1, false)
@@ -1494,13 +1494,13 @@ local MySwgTravelDestinations = {
                     charge(2000)
                     CreatureObject(conversingPlayer):reset_buffs()
 
-                elseif (optionLink == "petbuff_option1" and not canAfford(10000)) then
+                elseif (optionLink == "petbuff_option1" and not canAfford(5000)) then
                     -- Bail if the player doesn't have enough cash on hand.
                     nextConversationScreen = conversation:getScreen("insufficient_funds")
                     creature:sendSystemMessage("You have insufficient funds")
-                elseif (optionLink == "petbuff_option1" and canAfford(10000)) then
+                elseif (optionLink == "petbuff_option1" and canAfford(5000)) then
                     -- Charge player for pet enhancement
-                    charge(10000)
+                    charge(5000)
                     -- Apply pet enhancement
                     CreatureObject(conversingPlayer):enhancePet()
 

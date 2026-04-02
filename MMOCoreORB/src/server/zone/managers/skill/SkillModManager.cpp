@@ -19,6 +19,9 @@ SkillModManager::SkillModManager()
 		: Logger("SkillModManager") {
 	skillModMin.setNullValue(0);
 	skillModMax.setNullValue(0);
+	skillModNameMin.setNullValue(0);
+	skillModNameMax.setNullValue(0);
+	skillModNameType.setNullValue(0);
 	disabledWearableSkillMods.setNoDuplicateInsertPlan();
 
 	init();
@@ -72,6 +75,28 @@ void SkillModManager::init() {
 		}
 
 		disabledMods.pop();
+	}
+
+	// Per-mod-name cap overrides: { "modName", modType, minValue, maxValue }
+	LuaObject nameLimits = lua->getGlobalObject("skillModNameLimits");
+
+	if (nameLimits.isValidTable()) {
+		for (int i = 1; i <= nameLimits.getTableSize(); ++i) {
+			LuaObject entry = nameLimits.getObjectAt(i);
+
+			String name    = entry.getStringAt(1);
+			uint32 type    = (uint32)entry.getIntAt(2);
+			int    minVal  = entry.getIntAt(3);
+			int    maxVal  = entry.getIntAt(4);
+
+			skillModNameType.put(name, type);
+			skillModNameMin.put(name, minVal);
+			skillModNameMax.put(name, maxVal);
+
+			entry.pop();
+		}
+
+		nameLimits.pop();
 	}
 
 	delete lua;

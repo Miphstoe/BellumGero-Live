@@ -1,0 +1,40 @@
+ranger_razor_cat_alpha = Creature:new {
+	objectName = "Razor Cat Alpha",
+	customName = "Razor Cat Alpha",
+	socialGroup = "panther",
+	faction = "",
+	mobType = MOB_CARNIVORE,
+	level = 28,
+	chanceHit = 0.42,
+	damageMin = 260,
+	damageMax = 310,
+	baseXp = 2600,
+	baseHAM = 8500,
+	baseHAMmax = 10500,
+	armor = 0,
+	resists = {15, 15, 15, 170, 15, -1, -1, -1, -1},
+	meatType = "meat_carnivore",
+	meatAmount = 75,
+	hideType = "hide_bristley",
+	hideAmount = 45,
+	boneType = "bone_mammal",
+	boneAmount = 35,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 6,
+	pvpBitmask = ATTACKABLE,
+	creatureBitmask = PACK + HERD,
+	optionsBitmask = AIENABLED,
+	diet = CARNIVORE,
+
+	templates = {"object/mobile/corellian_sand_panther_hue.iff"},
+	hues = {0, 1, 2, 3, 4, 5, 6, 7},
+	lootGroups = {},
+	weapons = {},
+	conversationTemplate = "",
+
+	primaryAttacks = {{"intimidationattack", ""}, {"stunattack", ""}},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(ranger_razor_cat_alpha, "ranger_razor_cat_alpha")

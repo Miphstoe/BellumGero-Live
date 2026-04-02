@@ -143,6 +143,7 @@ namespace creature {
 		int storePets(lua_State* L);
 		int reset_buffs(lua_State* L);
 		int enhancePet(lua_State* L);
+		int enhanceCharacterVendor(lua_State* L);
 
 		// JTL
 		int isRebelPilot(lua_State* L);

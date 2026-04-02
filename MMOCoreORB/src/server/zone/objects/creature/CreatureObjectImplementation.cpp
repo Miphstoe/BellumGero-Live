@@ -1430,6 +1430,8 @@ void CreatureObjectImplementation::addSkill(Skill* skill, bool notifyClient) {
 			}
 		}
 
+		shouldSpawnHelper = false; // Starter helper droid auto-spawn disabled.
+
 		if (shouldSpawnHelper) {
 			PlayerObject* ghost = getPlayerObject();
 

@@ -68,6 +68,10 @@ namespace tangible {
 		int getMainDefender(lua_State* L);
 		int getConditionDamage(lua_State* L);
 		int isActivated(lua_State* L);
+		int getCount(lua_State* L);
+		int setCount(lua_State* L);
+		int addAttachmentSkillModBonus(lua_State* L);
+		int addMagicBit(lua_State* L);
 
 	protected:
 		TangibleObject* realObject;

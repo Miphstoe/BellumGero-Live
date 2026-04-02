@@ -760,8 +760,12 @@ includeFile("groups/wearables/wearables_uncommon.lua")
 -- ...existing includes...
 --includeFile("groups/worldboss/egspider_boss_sea_tool.lua")
 includeFile("groups/worldboss/sea_removal_tool_1x.lua")
--- events sub-folder
+-- events sub-folder (sub-groups must load before the parent group)
+includeFile("groups/events/event_common.lua")
+includeFile("groups/events/event_rare.lua")
+includeFile("groups/events/event_epic.lua")
 includeFile("groups/events/event.lua")
 
 includeFile("groups/endgame_weapon_schematics.lua")
 includeFile("groups/bg_token_group.lua")
+includeFile("groups/vet_holo_group.lua")

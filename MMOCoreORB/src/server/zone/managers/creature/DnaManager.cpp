@@ -24,7 +24,7 @@ AtomicInteger DnaManager::loadedDnaData;
 
 namespace {
 const char* DNA_SCHEMA_VERSION = "1";
-const int DNA_DROP_CHANCE_PCT = 1; // 2.5% chance (1 in 40)
+const int DNA_DROP_CHANCE_PCT = 2; // 5% chance (1 in 20)
 
 static bool hasString(const Vector<String>& values, const String& value) {
 	for (int i = 0; i < values.size(); ++i) {
@@ -805,6 +805,90 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 
 	container->broadcastObject(prototype, true);
 	return true;
+}
+
+SceneObject* DnaManager::createQuestDnaSample(CreatureObject* player, int quality, int armorRating, const String& customName) {
+	if (player == nullptr || !qualityTemplates.containsKey(quality))
+		return nullptr;
+
+	auto zoneServer = player->getZoneServer();
+	if (zoneServer == nullptr)
+		return nullptr;
+
+	auto craftingManager = zoneServer->getCraftingManager();
+	if (craftingManager == nullptr)
+		return nullptr;
+
+	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+	if (inventory == nullptr || inventory->isContainerFullRecursive())
+		return nullptr;
+
+	ManagedReference<DnaComponent*> prototype = zoneServer->createObject(qualityTemplates.get(quality), 1).castTo<DnaComponent*>();
+	if (prototype == nullptr)
+		return nullptr;
+
+	Locker clocker(prototype);
+
+	// Random VHQ stats in the 750-1000 range
+	auto vhqStat = []() -> int { return static_cast<int>(System::random(250)) + 750; };
+
+	// Resistance helper: base value with +/- variance, clamped to [0, inf)
+	auto randResist = [](float base, int variance) -> float {
+		float val = base + static_cast<float>(System::random(variance * 2)) - static_cast<float>(variance);
+		return val < 0.0f ? 0.0f : val;
+	};
+
+	prototype->setSource("Mutated Gurreck Alpha");
+	prototype->setQuality(quality);
+	prototype->setLevel(72);
+	prototype->setSerialNumber(craftingManager->generateSerial());
+	// setStats(cleverness, endurance, fierceness, power, intellect, courage, dependability, dexterity, fortitude, hardiness)
+	prototype->setStats(vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat(), vhqStat());
+
+	// Randomize armor rating: 1 = light, 2 = medium, 3 = heavy
+	prototype->setArmorRating(static_cast<int>(System::random(2)) + 1);
+
+	// Resistances capped to crafting system maxima (KINETIC_MAX=60, ENERGY_MAX=60, others=100)
+	// Raw creature values (155/170) exceed 100 and wrap in the crafting attribute system.
+	prototype->setKinetic(randResist(55.0f, 5));    // 50-60  (KINETIC_MAX = 60)
+	prototype->setEnergy(randResist(55.0f, 5));     // 50-60  (ENERGY_MAX = 60)
+	prototype->setBlast(randResist(40.0f, 15));     // 25-55  (within BLAST_MAX = 100)
+	prototype->setHeat(randResist(95.0f, 5));       // 90-100 (HEAT_MAX = 100)
+	prototype->setCold(randResist(95.0f, 5));       // 90-100 (COLD_MAX = 100)
+	prototype->setElectric(randResist(40.0f, 15));  // 25-55  (within ELECTRICITY_MAX = 100)
+	prototype->setAcid(randResist(95.0f, 5));       // 90-100 (ACID_MAX = 100)
+	prototype->setSaber(-1.0f);
+	prototype->setStun(0.0f);
+	prototype->setRanged(false);
+
+	// Randomly pick 2 of the 4 mutated gurreck alpha attacks each time
+	Vector<String> questAttackPool;
+	questAttackPool.add("posturedownattack");
+	questAttackPool.add("intimidationattack");
+	questAttackPool.add("strongpoison");
+	questAttackPool.add("creatureareacombo");
+
+	int pickOne = static_cast<int>(System::random(questAttackPool.size() - 1));
+	String questAtk1 = questAttackPool.get(pickOne);
+	questAttackPool.remove(pickOne);
+	int pickTwo = static_cast<int>(System::random(questAttackPool.size() - 1));
+	String questAtk2 = questAttackPool.get(pickTwo);
+
+	prototype->setSpecialAttackOne(questAtk1);
+	prototype->setSpecialAttackTwo(questAtk2);
+
+	if (!customName.isEmpty())
+		prototype->setCustomObjectName(customName, false);
+
+	Locker locker(inventory, prototype);
+	if (inventory->transferObject(prototype, -1, true, false)) {
+		inventory->broadcastObject(prototype, true);
+		prototype->_setUpdated(true);
+		return prototype;
+	}
+
+	prototype->destroyObjectFromDatabase(true);
+	return nullptr;
 }
 
 float DnaManager::valueForLevel(int type, int level) {

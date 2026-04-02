@@ -195,164 +195,157 @@ end
 
 function conv_handler:getTier3Reward(screenId)
     local rewards = {
-        ["give_t3_01"] = {name = "Bacta Tank", template = "object/tangible/item/quest/force_sensitive/bacta_tank.iff"},
-        ["give_t3_02"] = {name = "Hanging Planter", template = "object/tangible/furniture/decorative/hanging_planter.iff"},
-        ["give_t3_03"] = {name = "foodcart", template = "object/tangible/furniture/decorative/foodcart.iff"},
-        ["give_t3_04"] = {name = "Aurillian Banner", template = "object/tangible/item/quest/force_sensitive/fs_village_bannerpole_s01.iff"},
-        ["give_t3_05"] = {name = "Decorative Campfire", template = "object/tangible/furniture/decorative/campfire.iff"},
-        ["give_t3_06"] = {name = "Microphone", template = "object/tangible/furniture/decorative/microphone_s01.iff"},
-        ["give_t3_07"] = {name = "Round Cantina Table (Style 1)", template = "object/tangible/furniture/all/frn_all_table_s01.iff"},
-        ["give_t3_08"] = {name = "Round Cantina Table (Style 2)", template = "object/tangible/furniture/all/frn_all_table_s02.iff"},
-        ["give_t3_09"] = {name = "Round Cantina Table (Style 3)", template = "object/tangible/furniture/all/frn_all_table_s03.iff"},
-        ["give_t3_10"] = {name = "Large Cantina Sofa", template = "object/tangible/furniture/tatooine/frn_tatt_chair_cantina_seat_2.iff"},
-        ["give_t3_11"] = {name = "Bar Countertop", template = "object/tangible/furniture/modern/bar_counter_s1.iff"},
-        ["give_t3_12"] = {name = "Bar Countertop (Curved, Style 1)", template = "object/tangible/furniture/modern/bar_piece_curve_s1.iff"},
-        ["give_t3_13"] = {name = "Bar Countertop (Curved, Style 2)", template = "object/tangible/furniture/modern/bar_piece_curve_s2.iff"},
-        ["give_t3_14"] = {name = "Bar Countertop (Straight, Style 1)", template = "object/tangible/furniture/modern/bar_piece_straight_s1.iff"},
-        ["give_t3_15"] = {name = "Bar Countertop (Straight, Style 2)", template = "object/tangible/furniture/modern/bar_piece_straight_s2.iff"},
+        ["give_t3_02"] = {name = "Data Terminal (Style 1)", template = "object/tangible/veteran_reward/data_terminal_s1.iff"},
+        ["give_t3_03"] = {name = "Data Terminal (Style 2)", template = "object/tangible/veteran_reward/data_terminal_s2.iff"},
+        ["give_t3_04"] = {name = "Data Terminal (Style 3)", template = "object/tangible/veteran_reward/data_terminal_s3.iff"},
+        ["give_t3_05"] = {name = "Data Terminal (Style 4)", template = "object/tangible/veteran_reward/data_terminal_s4.iff"},
+        ["give_t3_06"] = {name = "Protocol Droid Toy", template = "object/tangible/veteran_reward/frn_vet_protocol_droid_toy.iff"},
+        ["give_t3_07"] = {name = "R2 Unit Toy", template = "object/tangible/veteran_reward/frn_vet_r2_toy.iff"},
+        ["give_t3_09"] = {name = "Falcon Couch Corner", template = "object/tangible/veteran_reward/frn_couch_falcon_corner_s01.iff"},
+        ["give_t3_10"] = {name = "Falcon Couch Section", template = "object/tangible/veteran_reward/frn_couch_falcon_section_s01.iff"},
+        ["give_t3_11"] = {name = "TIE Fighter Toy", template = "object/tangible/veteran_reward/frn_vet_tie_fighter_toy.iff"},
+        ["give_t3_12"] = {name = "X-Wing Toy", template = "object/tangible/veteran_reward/frn_vet_x_wing_toy.iff"},
+        ["give_t3_15"] = {name = "SE Goggles (Style 1)", template = "object/tangible/wearables/goggles/goggles_s01.iff"},
+        ["give_t3_16"] = {name = "SE Goggles (Style 2)", template = "object/tangible/wearables/goggles/goggles_s02.iff"},
+        ["give_t3_17"] = {name = "SE Goggles (Style 3)", template = "object/tangible/wearables/goggles/goggles_s03.iff"},
+        ["give_t3_18"] = {name = "SE Goggles (Style 4)", template = "object/tangible/wearables/goggles/goggles_s04.iff"},
+        ["give_t3_19"] = {name = "SE Goggles (Style 5)", template = "object/tangible/wearables/goggles/goggles_s05.iff"},
+        ["give_t3_20"] = {name = "SE Goggles (Style 6)", template = "object/tangible/wearables/goggles/goggles_s06.iff"},
+        ["give_t3_21"] = {name = "Darth Vader Toy", template = "object/tangible/veteran_reward/frn_vet_darth_vader_toy.iff"},
+        ["give_t3_22"] = {name = "Tech Console Sectional A", template = "object/tangible/veteran_reward/frn_tech_console_sectional_a.iff"},
+        ["give_t3_23"] = {name = "Tech Console Sectional B", template = "object/tangible/veteran_reward/frn_tech_console_sectional_b.iff"},
+        ["give_t3_24"] = {name = "Tech Console Sectional C", template = "object/tangible/veteran_reward/frn_tech_console_sectional_c.iff"},
+        ["give_t3_25"] = {name = "Tech Console Sectional D", template = "object/tangible/veteran_reward/frn_tech_console_sectional_d.iff"},
+        ["give_t3_26"] = {name = "Jabba Toy", template = "object/tangible/veteran_reward/frn_vet_jabba_toy.iff"},
+        ["give_t3_27"] = {name = "Stormtrooper Toy", template = "object/tangible/veteran_reward/frn_vet_stormtrooper_toy.iff"},
+        ["give_t3_28"] = {name = "Camp Center (Small)", template = "object/tangible/camp/camp_spit_s2.iff"},
+        ["give_t3_29"] = {name = "Camp Center (Large)", template = "object/tangible/camp/camp_spit_s3.iff"},
+        ["give_t3_30"] = {name = "Gold Ornamental Vase (Style 1)", template = "object/tangible/furniture/tatooine/frn_tato_vase_style_01.iff"},
+        ["give_t3_31"] = {name = "Gold Ornamental Vase (Style 2)", template = "object/tangible/furniture/tatooine/frn_tato_vase_style_02.iff"},
+        ["give_t3_32"] = {name = "Foodcart", template = "object/tangible/furniture/decorative/foodcart.iff"},
+        ["give_t3_33"] = {name = "Park Bench", template = "object/tangible/furniture/all/frn_bench_generic.iff"},
+        ["give_t3_34"] = {name = "Professor Desk", template = "object/tangible/furniture/decorative/professor_desk.iff"},
+        ["give_t3_35"] = {name = "Diagnostic Screen", template = "object/tangible/furniture/decorative/diagnostic_screen.iff"},
+        ["give_t3_36"] = {name = "Large Potted Plant (Style 2)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s2.iff"},
+        ["give_t3_37"] = {name = "Large Potted Plant (Style 3)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s3.iff"},
+        ["give_t3_38"] = {name = "Large Potted Plant (Style 4)", template = "object/tangible/furniture/all/frn_all_plant_potted_lg_s4.iff"},
+        ["give_t3_39"] = {name = "Bar Countertop", template = "object/tangible/furniture/modern/bar_counter_s1.iff"},
+        ["give_t3_40"] = {name = "Bar Countertop (Curved, Style 1)", template = "object/tangible/furniture/modern/bar_piece_curve_s1.iff"},
+        ["give_t3_41"] = {name = "Bar Countertop (Curved, Style 2)", template = "object/tangible/furniture/modern/bar_piece_curve_s2.iff"},
+        ["give_t3_42"] = {name = "Bar Countertop (Straight, Style 1)", template = "object/tangible/furniture/modern/bar_piece_straight_s1.iff"},
+        ["give_t3_43"] = {name = "Bar Countertop (Straight, Style 2)", template = "object/tangible/furniture/modern/bar_piece_straight_s2.iff"},
+        ["give_t3_44"] = {name = "Round Cantina Table (Style 1)", template = "object/tangible/furniture/all/frn_all_table_s01.iff"},
+        ["give_t3_45"] = {name = "Round Cantina Table (Style 2)", template = "object/tangible/furniture/all/frn_all_table_s02.iff"},
+        ["give_t3_46"] = {name = "Round Cantina Table (Style 3)", template = "object/tangible/furniture/all/frn_all_table_s03.iff"},
+        ["give_t3_47"] = {name = "Large Cantina Sofa", template = "object/tangible/furniture/tatooine/frn_tatt_chair_cantina_seat_2.iff"},
+        ["give_t3_48"] = {name = "Cafe Parasol", template = "object/tangible/furniture/tatooine/frn_tato_cafe_parasol.iff"},
+        ["give_t3_49"] = {name = "Medium Oval Rug", template = "object/tangible/furniture/modern/rug_oval_m_s02.iff"},
+        ["give_t3_50"] = {name = "Small Oval Rug", template = "object/tangible/furniture/modern/rug_oval_sml_s01.iff"},
+        ["give_t3_51"] = {name = "Medium Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_m_s01.iff"},
+        ["give_t3_52"] = {name = "Small Rectangular Rug", template = "object/tangible/furniture/modern/rug_rect_sml_s01.iff"},
+        ["give_t3_53"] = {name = "Medium Round Rug", template = "object/tangible/furniture/modern/rug_rnd_m_s01.iff"},
+        ["give_t3_54"] = {name = "Small Round Rug", template = "object/tangible/furniture/modern/rug_rnd_sml_s01.iff"},
+        ["give_t3_55"] = {name = "Bith Skull", template = "object/tangible/loot/misc/loot_skull_bith.iff"},
+        ["give_t3_56"] = {name = "Human Skull", template = "object/tangible/loot/misc/loot_skull_human.iff"},
+        ["give_t3_57"] = {name = "Ithorian Skull", template = "object/tangible/loot/misc/loot_skull_ithorian.iff"},
+        ["give_t3_58"] = {name = "Thune Skull", template = "object/tangible/loot/misc/loot_skull_thune.iff"},
+        ["give_t3_59"] = {name = "Voritor Lizard Skull", template = "object/tangible/loot/misc/loot_skull_voritor.iff"},
+        ["give_t3_60"] = {name = "Rebel Endor Helmet", template = "object/tangible/wearables/helmet/helmet_s06.iff"},
+        ["give_t3_61"] = {name = "Large Rectangular Rug (Style 1)", template = "object/tangible/furniture/modern/rug_rect_lg_s01.iff"},
+        ["give_t3_62"] = {name = "Large Rectangular Rug (Style 2)", template = "object/tangible/furniture/modern/rug_rect_lg_s02.iff"},
+        ["give_t3_63"] = {name = "Large Oval Rug", template = "object/tangible/furniture/modern/rug_oval_lg_s01.iff"},
+        ["give_t3_64"] = {name = "Large Round Rug", template = "object/tangible/furniture/modern/rug_rnd_lg_s01.iff"},
+        ["give_t3_65"] = {name = "Round Data Terminal", template = "object/tangible/furniture/all/frn_all_desk_map_table.iff"},
+        ["give_t3_66"] = {name = "Nightsister Melee Armguard", template = "object/tangible/wearables/armor/nightsister/armor_nightsister_bicep_r_s01.iff"},
+        ["give_t3_67"] = {name = "Painting: Cast Wing in Flight", template = "object/tangible/veteran_reward/one_year_anniversary/painting_01.iff"},
+        ["give_t3_68"] = {name = "Painting: Decimator", template = "object/tangible/veteran_reward/one_year_anniversary/painting_02.iff"},
+        ["give_t3_69"] = {name = "Painting: Tatooine Dune Speeder", template = "object/tangible/veteran_reward/one_year_anniversary/painting_03.iff"},
+        ["give_t3_70"] = {name = "Painting: Weapon of War", template = "object/tangible/veteran_reward/one_year_anniversary/painting_04.iff"},
+        ["give_t3_71"] = {name = "Painting: Fighter Study", template = "object/tangible/veteran_reward/one_year_anniversary/painting_05.iff"},
+        ["give_t3_72"] = {name = "Painting: Hutt Greed", template = "object/tangible/veteran_reward/one_year_anniversary/painting_06.iff"},
+        ["give_t3_73"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
+        ["give_t3_74"] = {name = "Painting: Imperial Oppression", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
+        ["give_t3_75"] = {name = "Painting: Emperor's Eyes", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
     }
     return rewards[screenId]
 end
 
 function conv_handler:countAttachments(pPlayer)
-    local pCreatureObject = LuaCreatureObject(pPlayer)
-    if not pCreatureObject then 
-        return 0 
+    local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+    if pInventory == nil then return 0 end
+
+    local function isAttachment(pItem)
+        if pItem == nil then return false end
+        local ok, path = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
+        if not ok or path == nil then return false end
+        local lp = string.lower(path)
+        return string.find(lp, "tangible/gem/clothing") ~= nil
+            or string.find(lp, "tangible/gem/armor") ~= nil
     end
-    
-    local pInventory = pCreatureObject:getSlottedObject("inventory")
-    if not pInventory then 
-        return 0 
-    end
-    
-    local inventory = LuaSceneObject(pInventory)
-    if not inventory then 
-        return 0 
-    end
-    
+
     local count = 0
-    local size = inventory:getContainerObjectsSize()
-    
-    for i = 0, size - 1 do
-        local pObject = inventory:getContainerObject(i)
-        if pObject then
-            local object = LuaSceneObject(pObject)
-            if object then
-                local template = nil
-                local objectName = nil
-                
-                local success1, result1 = pcall(function() return object:getObjectTemplate() end)
-                if success1 then template = result1 end
-                
-                local success2, result2 = pcall(function() return object:getDisplayedName() end)
-                if success2 then objectName = result2 end
-                
-                local isAttachment = false
-                
-                if template then
-                    local lowerTemplate = string.lower(template)
-                    if string.find(lowerTemplate, "attachment") or 
-                       string.find(lowerTemplate, "skill_buff") or
-                       string.find(lowerTemplate, "skill_enhancement") then
-                        isAttachment = true
+
+    for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
+        local pItem = SceneObject(pInventory):getContainerObject(i)
+        if pItem ~= nil then
+            if isAttachment(pItem) then
+                count = count + 1
+            elseif SceneObject(pItem):getContainerObjectsSize() > 0 then
+                -- Scan inside containers (backpacks)
+                for j = 0, SceneObject(pItem):getContainerObjectsSize() - 1, 1 do
+                    local pSubItem = SceneObject(pItem):getContainerObject(j)
+                    if pSubItem ~= nil and isAttachment(pSubItem) then
+                        count = count + 1
                     end
-                end
-                
-                if objectName then
-                    local lowerName = string.lower(objectName)
-                    if string.find(lowerName, "aa") or
-                       string.find(lowerName, "ca") or
-                       string.find(lowerName, "sea") or
-                       string.find(lowerName, "armor") or
-                       string.find(lowerName, "clothing") or
-                       string.find(lowerName, "attachment") or
-                       string.find(lowerName, "skill") then
-                        isAttachment = true
-                    end
-                end
-                
-                if isAttachment then
-                    count = count + 1
                 end
             end
         end
     end
-    
+
     return count
 end
 
 function conv_handler:removeAttachments(pPlayer, count)
-    local pCreatureObject = LuaCreatureObject(pPlayer)
-    if not pCreatureObject then 
-        return 0 
+    local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+    if pInventory == nil then return 0 end
+
+    local function isAttachment(pItem)
+        if pItem == nil then return false end
+        local ok, path = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
+        if not ok or path == nil then return false end
+        local lp = string.lower(path)
+        return string.find(lp, "tangible/gem/clothing") ~= nil
+            or string.find(lp, "tangible/gem/armor") ~= nil
     end
-    
-    local pInventory = pCreatureObject:getSlottedObject("inventory")
-    if not pInventory then 
-        return 0 
-    end
-    
-    local inventory = LuaSceneObject(pInventory)
-    if not inventory then 
-        return 0 
-    end
-    
-    local removed = 0
-    local size = inventory:getContainerObjectsSize()
-    
-    for i = size - 1, 0, -1 do
-        if removed >= count then break end
-        
-        local pObject = inventory:getContainerObject(i)
-        if pObject then
-            local object = LuaSceneObject(pObject)
-            if object then
-                local template = nil
-                local objectName = nil
-                
-                local success1, result1 = pcall(function() return object:getObjectTemplate() end)
-                if success1 then template = result1 end
-                
-                local success2, result2 = pcall(function() return object:getDisplayedName() end)
-                if success2 then objectName = result2 end
-                
-                local isAttachment = false
-                
-                if template then
-                    local lowerTemplate = string.lower(template)
-                    if string.find(lowerTemplate, "attachment") or 
-                       string.find(lowerTemplate, "skill_buff") or
-                       string.find(lowerTemplate, "skill_enhancement") then
-                        isAttachment = true
-                    end
-                end
-                
-                if objectName then
-                    local lowerName = string.lower(objectName)
-                    if string.find(lowerName, "aa") or
-                       string.find(lowerName, "ca") or
-                       string.find(lowerName, "sea") or
-                       string.find(lowerName, "armor") or
-                       string.find(lowerName, "clothing") or
-                       string.find(lowerName, "attachment") or
-                       string.find(lowerName, "skill") then
-                        isAttachment = true
-                    end
-                end
-                
-                if isAttachment then
-                    local destroySuccess = pcall(function() 
-                        object:destroyObjectFromWorld() 
-                    end)
-                    
-                    if destroySuccess then
-                        removed = removed + 1
+
+    -- Collect all attachment pointers first (inventory + backpacks)
+    local toRemove = {}
+    for i = 0, SceneObject(pInventory):getContainerObjectsSize() - 1, 1 do
+        local pItem = SceneObject(pInventory):getContainerObject(i)
+        if pItem ~= nil then
+            if isAttachment(pItem) then
+                toRemove[#toRemove + 1] = pItem
+            elseif SceneObject(pItem):getContainerObjectsSize() > 0 then
+                for j = 0, SceneObject(pItem):getContainerObjectsSize() - 1, 1 do
+                    local pSubItem = SceneObject(pItem):getContainerObject(j)
+                    if pSubItem ~= nil and isAttachment(pSubItem) then
+                        toRemove[#toRemove + 1] = pSubItem
                     end
                 end
             end
         end
     end
-    
+
+    local removed = 0
+    for _, pItem in ipairs(toRemove) do
+        if removed >= count then break end
+        local ok = pcall(function()
+            SceneObject(pItem):destroyObjectFromWorld()
+            SceneObject(pItem):destroyObjectFromDatabase()
+        end)
+        if ok then removed = removed + 1 end
+    end
+
     return removed
 end
 
@@ -804,7 +797,7 @@ function conv_handler:countBGTokensInContainer(container)
                     print("[BG-TOKEN] Found object: " .. displayedName)
                     if isBellumGeroToken(object) then
                         -- Try to get count, default to 1 if not countable
-                        local countSuccess, count = pcall(function() return object:getCount() end)
+                        local countSuccess, count = pcall(function() return LuaTangibleObject(pObject):getCount() end)
                         if countSuccess and count and count > 0 then
                             print("[BG-TOKEN] Found " .. count .. " tokens in stack")
                             tokenCount = tokenCount + count
@@ -869,7 +862,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
 
                         print("[BG-TOKEN] Found token to remove: " .. displayedName)
                         -- Try to get count
-                        local countSuccess, itemCount = pcall(function() return object:getCount() end)
+                        local countSuccess, itemCount = pcall(function() return LuaTangibleObject(pObject):getCount() end)
                         if countSuccess and itemCount and itemCount > 0 then
                             -- Item is countable (stackable)
                             local needToRemove = count - removed
@@ -882,7 +875,7 @@ function conv_handler:removeBGTokensFromContainer(container, count)
                                 print("[BG-TOKEN] Removed stack of " .. itemCount .. " tokens")
                             else
                                 -- Remove partial stack
-                                local setSuccess = pcall(function() object:setCount(itemCount - needToRemove) end)
+                                local setSuccess = pcall(function() LuaTangibleObject(pObject):setCount(itemCount - needToRemove) end)
                                 if setSuccess then
                                     removed = count
                                     print("[BG-TOKEN] Removed " .. needToRemove .. " tokens from stack")
