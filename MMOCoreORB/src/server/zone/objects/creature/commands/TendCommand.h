@@ -11,6 +11,7 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/objects/player/PlayerObject.h"
 #include "QueueCommand.h"
 
 class TendCommand : public QueueCommand {
@@ -31,6 +32,70 @@ protected:
 	float speed;
 	float range;
 	String effectName;
+
+	bool isGalacticReliefPatient(CreatureObject* creatureTarget) const {
+		if (creatureTarget == nullptr)
+			return false;
+
+		return (creatureTarget->getScreenPlayState("galactic_relief_effort") & 1) != 0;
+	}
+
+	String getReliefPatientCondition(CreatureObject* creature, uint64 targetId) const {
+		if (creature == nullptr || !creature->isPlayerCreature())
+			return "";
+
+		PlayerObject* ghost = creature->getPlayerObject();
+
+		if (ghost == nullptr)
+			return "";
+
+		String targetIdString = String::valueOf(targetId);
+		String countString = ghost->getScreenPlayData("galactic_relief_effort", "activePatientCount");
+		int patientCount = countString.isEmpty() ? 0 : Integer::valueOf(countString);
+
+		for (int i = 1; i <= patientCount; ++i) {
+			String suffix = String::valueOf(i);
+			String objectIdData = ghost->getScreenPlayData("galactic_relief_effort", "activePatient" + suffix + "ObjectId");
+
+			if (objectIdData.isEmpty() || objectIdData != targetIdString)
+				continue;
+
+			String healedData = ghost->getScreenPlayData("galactic_relief_effort", "activePatient" + suffix + "Healed");
+
+			if (!healedData.isEmpty() && Integer::valueOf(healedData) == 1)
+				return "healed";
+
+			return ghost->getScreenPlayData("galactic_relief_effort", "activePatient" + suffix + "Condition");
+		}
+
+		return "";
+	}
+
+	int validateGalacticReliefPatient(CreatureObject* creature, CreatureObject* creatureTarget) const {
+		String requiredCondition = getReliefPatientCondition(creature, creatureTarget->getObjectID());
+
+		if (requiredCondition.isEmpty()) {
+			creature->sendSystemMessage("That patient is not assigned to your current relief circuit.");
+			return GENERALERROR;
+		}
+
+		if (requiredCondition == "healed") {
+			creature->sendSystemMessage("That patient has already been stabilized.");
+			return GENERALERROR;
+		}
+
+		if (requiredCondition == "wound" && !tendWound) {
+			creature->sendSystemMessage("That patient is suffering from wounds. Use /tendWound.");
+			return GENERALERROR;
+		}
+
+		if (requiredCondition == "damage" && !tendDamage) {
+			creature->sendSystemMessage("That patient is suffering from damage. Use /tendDamage.");
+			return GENERALERROR;
+		}
+
+		return SUCCESS;
+	}
 
 public:
 	TendCommand(const String& name, ZoneProcessServer* server)
@@ -175,21 +240,29 @@ public:
 		}
 
 		CreatureObject* creatureTarget = cast<CreatureObject*>(object.get());
+		bool reliefPatientTarget = isGalacticReliefPatient(creatureTarget);
+
+		if (reliefPatientTarget) {
+			int reliefResult = validateGalacticReliefPatient(creature, creatureTarget);
+
+			if (reliefResult != SUCCESS)
+				return reliefResult;
+		}
 
 		Locker clocker(creatureTarget, creature);
 
-		if ((creatureTarget->isAiAgent() && !creatureTarget->isPet()) || creatureTarget->isDroidObject() || creatureTarget->isVehicleObject() || creatureTarget->isDead() || creatureTarget->isRidingMount() || creatureTarget->isAttackableBy(creature))
+		if ((!reliefPatientTarget && creatureTarget->isAiAgent() && !creatureTarget->isPet()) || creatureTarget->isDroidObject() || creatureTarget->isVehicleObject() || creatureTarget->isDead() || creatureTarget->isRidingMount() || creatureTarget->isAttackableBy(creature))
 			creatureTarget = creature;
 
 		if(!checkDistance(creature, creatureTarget, range))
 			return TOOFAR;
 
-		if (creature != creatureTarget && checkForArenaDuel(creatureTarget)) {
+		if (!reliefPatientTarget && creature != creatureTarget && checkForArenaDuel(creatureTarget)) {
 			creature->sendSystemMessage("@jedi_spam:no_help_target"); // You are not permitted to help that target.
 			return GENERALERROR;
 		}
 
-		if (!creatureTarget->isHealableBy(creature)) {
+		if (!reliefPatientTarget && !creatureTarget->isHealableBy(creature)) {
 			creature->sendSystemMessage("@healing:pvp_no_help");  //It would be unwise to help such a patient.
 			return GENERALERROR;
 		}
@@ -199,7 +272,7 @@ public:
 			return GENERALERROR;
 		}
 
-		if (!playerEntryCheck(creature, creatureTarget)) {
+		if (!reliefPatientTarget && !playerEntryCheck(creature, creatureTarget)) {
 			return GENERALERROR;
 		}
 
@@ -234,6 +307,9 @@ public:
 			int healedAction = creatureTarget->healDamage(creature, CreatureAttribute::ACTION, healPower, true, false);
 
 			sendHealMessage(creature, creatureTarget, healedHealth, healedAction);
+
+			if (creatureTarget != creature && (healedHealth > 0 || healedAction > 0))
+				creature->notifyObservers(ObserverEventType::ABILITYUSED, creatureTarget, STRING_HASHCODE("tenddamage"));
 		} else if (tendWound) {
 			uint8 attribute = CreatureAttribute::UNKNOWN;
 
