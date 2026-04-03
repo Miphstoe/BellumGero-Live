@@ -881,7 +881,7 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
         float facMul = 1.0f + (facility / (float)FACILITY_CAP) * FACILITY_MAX_BONUS;
         // ---------------------------------------------------------
 
-        // Calculate flat 1250 + tape bonus for each stat separately
+        // Calculate flat 1250 + tape bonus for the active performance branch only.
         int baseMind  = creature->getBaseHAM(CreatureAttribute::MIND);
         int baseFocus = creature->getBaseHAM(CreatureAttribute::FOCUS);
         int baseWill  = creature->getBaseHAM(CreatureAttribute::WILLPOWER);
@@ -903,21 +903,20 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
         bool isDancePerformance = isDancing();
         bool isMusicPerformance = isPlayingMusic();
 
-        // Apply bonuses: base 1250 to all, plus appropriate tape bonuses
-        float totalMindBuff  = 1250.0f;
-        float totalFocusBuff = 1250.0f;
-        float totalWillBuff  = 1250.0f;
+        float totalMindBuff  = 0.0f;
+        float totalFocusBuff = 0.0f;
+        float totalWillBuff  = 0.0f;
 
-        if (isDancePerformance) {
-            // When dancing: Mind gets dance bonus, Focus/Will get music bonus
-            totalMindBuff  += danceTapeBonus;
-            totalFocusBuff += musicTapeBonus;
-            totalWillBuff  += musicTapeBonus;
-        } else if (isMusicPerformance) {
-            // When playing music: Mind gets dance bonus, Focus/Will get music bonus
-            totalMindBuff  += danceTapeBonus;
-            totalFocusBuff += musicTapeBonus;
-            totalWillBuff  += musicTapeBonus;
+        // A single performance can apply all three buffs, but each stat still
+        // requires its matching enhancer branch to exist on the performer.
+        // Mind requires the dance enhancer; Focus/Willpower require the music enhancer.
+        if ((isDancePerformance || isMusicPerformance) && danceSkillMod > 0.0f) {
+            totalMindBuff = 1250.0f + danceTapeBonus;
+        }
+
+        if ((isDancePerformance || isMusicPerformance) && musicSkillMod > 0.0f) {
+            totalFocusBuff = 1250.0f + musicTapeBonus;
+            totalWillBuff  = 1250.0f + musicTapeBonus;
         }
 
         // ---------- apply facility multiplier to the absolute buffs ----------
@@ -933,32 +932,35 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
         float focusBuffStrength = totalFocusBuff / baseFocus;
         float willBuffStrength  = totalWillBuff  / baseWill;
 
-        // Create the buff objects
         uint32 mindBuffCRC  = STRING_HASHCODE("performance_enhance_dance_mind");
         uint32 focusBuffCRC = STRING_HASHCODE("performance_enhance_music_focus");
         uint32 willBuffCRC  = STRING_HASHCODE("performance_enhance_music_willpower");
 
-        // Remove existing performance buffs so new ones overwrite cleanly
+        // Remove existing performance buffs so the active branch is authoritative.
         if (creature->getBuff(mindBuffCRC)  != nullptr) creature->removeBuff(mindBuffCRC);
         if (creature->getBuff(focusBuffCRC) != nullptr) creature->removeBuff(focusBuffCRC);
         if (creature->getBuff(willBuffCRC)  != nullptr) creature->removeBuff(willBuffCRC);
 
-        // Create new buffs
-        ManagedReference<PerformanceBuff*> mindBuff  = new PerformanceBuff(creature, mindBuffCRC,  mindBuffStrength,  buffDuration * 60, PerformanceBuffType::DANCE_MIND);
-        ManagedReference<PerformanceBuff*> focusBuff = new PerformanceBuff(creature, focusBuffCRC, focusBuffStrength, buffDuration * 60, PerformanceBuffType::MUSIC_FOCUS);
-        ManagedReference<PerformanceBuff*> willBuff  = new PerformanceBuff(creature, willBuffCRC,  willBuffStrength,  buffDuration * 60, PerformanceBuffType::MUSIC_WILLPOWER);
+        if ((isDancePerformance || isMusicPerformance) && totalMindBuff > 0.0f) {
+            ManagedReference<PerformanceBuff*> mindBuff  = new PerformanceBuff(creature, mindBuffCRC,  mindBuffStrength,  buffDuration * 60, PerformanceBuffType::DANCE_MIND);
+            Locker locker3(mindBuff);
+            creature->addBuff(mindBuff);
+            locker3.release();
+        }
 
-        Locker locker3(mindBuff);
-        creature->addBuff(mindBuff);
-        locker3.release();
+        if ((isDancePerformance || isMusicPerformance) && totalFocusBuff > 0.0f) {
+            ManagedReference<PerformanceBuff*> focusBuff = new PerformanceBuff(creature, focusBuffCRC, focusBuffStrength, buffDuration * 60, PerformanceBuffType::MUSIC_FOCUS);
+            Locker locker(focusBuff);
+            creature->addBuff(focusBuff);
+            locker.release();
+        }
 
-        Locker locker(focusBuff);
-        creature->addBuff(focusBuff);
-        locker.release();
-
-        Locker locker2(willBuff);
-        creature->addBuff(willBuff);
-        locker2.release();
+        if ((isDancePerformance || isMusicPerformance) && totalWillBuff > 0.0f) {
+            ManagedReference<PerformanceBuff*> willBuff  = new PerformanceBuff(creature, willBuffCRC,  willBuffStrength,  buffDuration * 60, PerformanceBuffType::MUSIC_WILLPOWER);
+            Locker locker2(willBuff);
+            creature->addBuff(willBuff);
+            locker2.release();
+        }
 
         // Inform player of the buff with details (round down to ints for display)
         String buffMessage = "You have been inspired by the performance! ";
