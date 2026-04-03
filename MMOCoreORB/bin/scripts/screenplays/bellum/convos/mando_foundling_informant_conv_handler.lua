@@ -11,10 +11,16 @@ function MandoFoundlingInformantConvoHandler:getInitialScreen(pPlayer, pNpc, pCo
 	local npcOid    = SceneObject(pNpc):getObjectID()
 	local npcStr    = tostring(npcOid)
 	local storedStr = MandoWayOfLife:readStr(pPlayer, "foundling.informantId")
-	local inArc     = (MandoWayOfLife:readInt(pPlayer, "chapter0Started") == 1
-		and MandoWayOfLife:readInt(pPlayer, "foundling.arcComplete") ~= 1)
+	local ch0          = MandoWayOfLife:readInt(pPlayer, "chapter0Started")
+	local arcComplete  = MandoWayOfLife:readInt(pPlayer, "foundling.arcComplete")
+	local inArc        = (ch0 == 1 and arcComplete ~= 1)
 	local tpl          = AiAgent(pNpc):getCreatureTemplateName()
 	local isInformant  = (tpl == "mando_foundling_informant")
+
+	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+		"Foundling informant getInitialScreen: ch0=%s arcComplete=%s inArc=%s isInformant=%s npcOid=%s",
+		tostring(ch0), tostring(arcComplete), tostring(inArc), tostring(isInformant), tostring(npcOid)
+	))
 
 	if (not inArc) then
 		return nil
@@ -41,36 +47,37 @@ function MandoFoundlingInformantConvoHandler:getInitialScreen(pPlayer, pNpc, pCo
 		return nil
 	end
 
-	if (atStaticHub and not linked) then
-		MandoWayOfLife:writeStr(pPlayer, "foundling.informantId", npcStr)
-		MandoWayOfLife:writeInt(pPlayer, "foundling.informantStatic", 1)
-		MandoWayOfLife:logDiagPlayer(pPlayer,
-			"Foundling informant: re-linked screenplay to static hub NPC (oid mismatch or stale data)."
-		)
-		-- Re-grant waypoint in case it was lost (rezone, relog, etc.)
-		local countingEnabled = MandoWayOfLife:readInt(pPlayer, "foundling.planetCountingEnabled")
-		local planetDone = MandoWayOfLife:readInt(pPlayer, "foundling.planetDone")
-		if (countingEnabled ~= 1) then
-			-- Not yet accepted — restore the "find informant" waypoint
-			local idx = MandoWayOfLife:readInt(pPlayer, "foundling.planetIndex")
-			local pdata = MandoWayOfLife.planetData[idx]
-			if (pdata ~= nil) then
-				MandoWayOfLife:grantInformantWaypoint(pPlayer, pdata)
+	if (not linked) then
+		-- Re-link if: (a) static hub OID matches, or (b) NPC template matches and player is in arc.
+		-- Case (b) handles stale static keys after server restart or spawn failure on any planet.
+		if (atStaticHub or isInformant) then
+			MandoWayOfLife:writeStr(pPlayer, "foundling.informantId", npcStr)
+			MandoWayOfLife:writeInt(pPlayer, "foundling.informantStatic", 1)
+			-- Heal the static key so future lookups work without re-linking
+			writeData(staticKey, npcOid)
+			MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+				"Foundling informant: re-linked to NPC oid=%s planet=%s (atStaticHub=%s isInformant=%s).",
+				npcStr, tostring(curPlanet), tostring(atStaticHub), tostring(isInformant)
+			))
+			-- Re-grant waypoint in case it was lost
+			local countingEnabled = MandoWayOfLife:readInt(pPlayer, "foundling.planetCountingEnabled")
+			local planetDone = MandoWayOfLife:readInt(pPlayer, "foundling.planetDone")
+			if (countingEnabled ~= 1) then
+				local idx = MandoWayOfLife:readInt(pPlayer, "foundling.planetIndex")
+				local pdata = MandoWayOfLife.planetData[idx]
+				if (pdata ~= nil) then
+					MandoWayOfLife:grantInformantWaypoint(pPlayer, pdata)
+				end
+			elseif (planetDone == 1) then
+				MandoWayOfLife:grantReturnToInformantWaypoint(pPlayer)
 			end
-		elseif (planetDone == 1) then
-			MandoWayOfLife:grantReturnToInformantWaypoint(pPlayer)
+			linked = true
 		end
-		linked = true
 	end
 
 	if (not linked) then
-		if (MandoWayOfLife.DEBUG_ALLOW_ANY_FOUNDLING_INFORMANT == true) then
-			MandoWayOfLife:logDiagPlayer(pPlayer,
-				"Foundling informant convo via DEBUG_ALLOW_ANY_FOUNDLING_INFORMANT (no OID link)."
-			)
-		else
-			return nil
-		end
+		MandoWayOfLife:logDiagPlayer(pPlayer, "Foundling informant: no link established — returning nil.")
+		return nil
 	end
 
 	local countingEnabled = MandoWayOfLife:readInt(pPlayer, "foundling.planetCountingEnabled")

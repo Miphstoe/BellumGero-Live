@@ -14,6 +14,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-04-01 — Mando Foundling: Rori informant coords corrected (Narmlex)
+
+- **Summary:** Rori informant (planet index 6) moved from (-5178, 5, -2194) — inside a building — to (-5199, -80, 2185) near Narmlex, verified in-game.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua` (planetData[6] coords)
+- **Notes:** Lua-only; zone reboot or despawn/respawn needed to move the existing informant.
+
+### 2026-04-01 — Mando Foundling: Lok informant coords + stale-link hardening
+
+- **Summary:** Two fixes. (1) Lok informant (planet index 5) coords corrected from (-5537, 5, 300) to (456, 2, 5434) — near Nym's Stronghold as verified in-game. (2) Hardened `getInitialScreen` in the conv handler: previously, if the static key OID was stale (server restart, spawn failure) and the stored `foundling.informantId` didn't match, the handler returned `nil` on all planets, leaving the player with only "Stop Conversing". Now re-links any NPC whose template is `mando_foundling_informant` and player is in arc (or OID matches static key), heals the static key via `writeData` so future lookups work, and re-grants the appropriate waypoint.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua` (planetData[5] coords), `bin/scripts/screenplays/bellum/convos/mando_foundling_informant_conv_handler.lua` (re-link logic)
+- **Notes:** Lua-only; reload scripts or restart zone. Existing spawned informant at old Lok coords will persist until zone reboot.
+
 ### 2026-03-31 — Mando Foundling: fix mission-not-clearing + planet tracker crash
 
 - **Summary:** Two bugs. (1) `sendFoundlingQuotaTrackerOnMissionComplete` threw `LuaPanicException` (IllegalArgumentException) on every quota mission, because `buildAndSendFoundlingPlanetTracker` passed a multi-line string (joined with `\n`) and an em-dash `—` (non-ASCII) to `sendSystemMessage`, both unsupported by SWGEmu's String layer. Fixed by sending each tracker line as a separate `sendSystemMessage` call and replacing `—` with `-`. (2) The exception propagated out of `awardReward()` in `CompleteMissionObjectiveTask`, aborting before `removeMissionFromPlayer()` ran — causing completed missions to stay in the player's datapad. Fixed by wrapping `luaTracker->callFunction()` in a `try/catch (Exception&)` so tracker errors can never abort mission completion.
