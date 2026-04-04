@@ -504,6 +504,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("createLootSet", createLootSet);
 	luaEngine->registerFunction("createLootFromCollection", createLootFromCollection);
 	luaEngine->registerFunction("givePlayerResource", givePlayerResource);
+	luaEngine->registerFunction("getResourceSpawnsByType", getResourceSpawnsByType);
 
 	luaEngine->registerFunction("getRegion", getRegion);
 	luaEngine->registerFunction("writeScreenPlayData", writeScreenPlayData);
@@ -1181,6 +1182,104 @@ int DirectorManager::givePlayerResource(lua_State* L) {
 	trx.commit();
 
 	return 0;
+}
+
+int DirectorManager::getResourceSpawnsByType(lua_State* L) {
+	if (checkArgumentCount(L, 2) == 1) {
+		String err = "incorrect number of arguments passed to DirectorManager::getResourceSpawnsByType";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	const String zoneName = lua_tostring(L, -1);
+	const String typeString = lua_tostring(L, -2);
+
+	lua_newtable(L);
+
+	ZoneServer* zoneServer = ServerCore::getZoneServer();
+	if (zoneServer == nullptr) {
+		return 1;
+	}
+
+	ResourceManager* resourceManager = zoneServer->getResourceManager();
+	if (resourceManager == nullptr) {
+		return 1;
+	}
+
+	int type = 0;
+
+	// TODO: Global resource types
+	// SOLAR = 1; CHEMICAL = 2; FLORA = 3; GAS = 4; GEOTHERMAL = 5; MINERAL = 6; WATER = 7; WIND = 8; FUSION = 9;
+	if (typeString == "organic")
+		type = -1;
+	else if (typeString == "solar")
+		type = 1;
+	else if (typeString == "chemical")
+		type = 2;
+	else if (typeString == "flora")
+		type = 3;
+	else if (typeString == "gas")
+		type = 4;
+	else if (typeString == "geothermal")
+		type = 5;
+	else if (typeString == "mineral")
+		type = 6;
+	else if (typeString == "water")
+		type = 7;
+	else if (typeString == "wind")
+		type = 8;
+	else if (typeString == "fusion")
+		type = 9;
+	else if (typeString == "inorganic")
+		type = 10;
+
+	if (type == 0 || zoneName.isEmpty()) {
+		return 1;
+	}
+
+	Vector<ManagedReference<ResourceSpawn*> > resources;
+	resourceManager->getResourceListByType(resources, type, zoneName);
+
+	int tableIndex = 1;
+
+	for (int i = 0; i < resources.size(); ++i) {
+		ManagedReference<ResourceSpawn*> spawn = resources.get(i);
+
+		if (spawn == nullptr) {
+			continue;
+		}
+
+		lua_newtable(L);
+
+		lua_pushinteger(L, spawn->getObjectID());
+		lua_setfield(L, -2, "spawnId");
+
+		lua_pushstring(L, spawn->getName().toCharArray());
+		lua_setfield(L, -2, "resourceName");
+
+		lua_pushstring(L, spawn->getType().toCharArray());
+		lua_setfield(L, -2, "resourceType");
+
+		lua_pushstring(L, spawn->getFinalClass().toCharArray());
+		lua_setfield(L, -2, "resourceClass");
+
+		lua_pushstring(L, spawn->getFamilyName().toCharArray());
+		lua_setfield(L, -2, "familyName");
+
+		lua_pushstring(L, spawn->getPoolSlot().toCharArray());
+		lua_setfield(L, -2, "poolSlot");
+
+		lua_pushstring(L, spawn->getZoneRestriction().toCharArray());
+		lua_setfield(L, -2, "zoneRestriction");
+
+		lua_pushinteger(L, spawn->getDespawned());
+		lua_setfield(L, -2, "despawned");
+
+		lua_rawseti(L, -2, tableIndex++);
+	}
+
+	return 1;
 }
 
 int DirectorManager::getTimestamp(lua_State* L) {
