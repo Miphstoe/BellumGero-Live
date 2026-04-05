@@ -85,6 +85,10 @@ void ShipComponentImplementation::fillAttributeList(AttributeListMessage* alm, C
 		alm->insertAttribute("serial_number", objectSerial);
 	}
 
+	if (useCount > 1) {
+		alm->insertAttribute("quantity", useCount);
+	}
+
 	StringBuffer msg;
 
 	msg << Math::getPrecision(armor, 1) << "/" << Math::getPrecision(armorMax, 1);
