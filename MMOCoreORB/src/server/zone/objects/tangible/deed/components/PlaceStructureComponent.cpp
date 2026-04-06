@@ -14,6 +14,12 @@
 // Added for restore hook
 #include "server/zone/managers/housepackup/HousePackupManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
+// Added for account-wide admin grant
+#include "server/login/account/AccountManager.h"
+#include "server/login/account/Account.h"
+#include "server/login/objects/CharacterList.h"
+#include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/ZoneServer.h"
 
 int PlaceStructureComponent::placeStructure(StructureDeed* deed, CreatureObject* creature, float x, float y, int angle) const {
     Zone* zone = creature != nullptr ? creature->getZone() : nullptr;
@@ -49,6 +55,38 @@ int PlaceStructureComponent::notifyStructurePlaced(StructureDeed* deed, Creature
             HousePackupManager::instance()->restoreFromDeed(building, deed, creature);
         }
     }
-    
+
+    // Grant ADMIN to all characters on the same account
+    if (creature != nullptr) {
+        ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+        if (ghost != nullptr) {
+            uint32 accountID = ghost->getAccountID();
+            ManagedReference<Account*> account = AccountManager::getAccount(accountID);
+            if (account != nullptr) {
+                Reference<CharacterList*> characters = account->getCharacterList();
+                if (characters != nullptr) {
+                    ZoneServer* zoneServer = creature->getZoneServer();
+                    const uint32 galaxyID = zoneServer != nullptr ? zoneServer->getGalaxyID() : 0;
+                    const uint64 ownerID = creature->getObjectID();
+
+                    for (int i = 0; i < characters->size(); ++i) {
+                        const CharacterListEntry& entry = characters->get(i);
+
+                        if (entry.getGalaxyID() != galaxyID)
+                            continue;
+
+                        uint64 charID = entry.getObjectID();
+
+                        // Owner is already granted ADMIN by StructureManager; skip to avoid duplicate
+                        if (charID == ownerID)
+                            continue;
+
+                        structureObject->grantPermission("ADMIN", charID);
+                    }
+                }
+            }
+        }
+    }
+
     return 0;
 }
