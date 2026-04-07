@@ -81,6 +81,7 @@ namespace scene {
 		int isMissionObject(lua_State* L);
 		int isVehicleObject(lua_State* L);
 		int isSpawnEggObject(lua_State* L);
+		int isResourceContainer(lua_State* L);
 		int getZoneName(lua_State* L);
 		int sendTo(lua_State* L);
 		int getCustomObjectName(lua_State* L);
@@ -89,6 +90,11 @@ namespace scene {
 		int getObjectName(lua_State* L);
 		int setDirectionalHeading(lua_State* L);
 		int getTemplateObjectPath(lua_State* L);
+		int getResourceSpawnID(lua_State* L);
+		int getResourceSpawnName(lua_State* L);
+		int getResourceSpawnType(lua_State* L);
+		int getResourceSpawnFinalClass(lua_State* L);
+		int getResourceSpawnZoneRestriction(lua_State* L);
 		int teleport(lua_State* L);
 		int switchZone(lua_State* L);
 		int setObjectMenuComponent(lua_State* L);

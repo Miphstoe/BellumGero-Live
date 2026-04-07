@@ -34,7 +34,7 @@ SkillManager::SkillManager()
 	apprenticeshipEnabled = false;
 }
 
-bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired) {
+bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired, bool noSkillPointsRequired) {
 	Skill* skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr) {
@@ -60,7 +60,7 @@ bool SkillManager::canLearnSkill(const String& skillName, CreatureObject* creatu
 		}
 
 		//Check if player has enough skill points to learn the skill.
-		if (ghost->getSkillPoints() < skill->getSkillPointsRequired()) {
+		if (!noSkillPointsRequired && ghost->getSkillPoints() < skill->getSkillPointsRequired()) {
 			return false;
 		}
 	} else {

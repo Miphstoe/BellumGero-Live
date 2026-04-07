@@ -5088,6 +5088,26 @@ bool PlayerManagerImplementation::promptTeachableSkills(CreatureObject* teacher,
 bool PlayerManagerImplementation::offerTeaching(CreatureObject* teacher, CreatureObject* student, Skill* skill) {
 	ManagedReference<PlayerObject*> studentGhost = student->getPlayerObject();
 
+	// Check if student lacks skill points before sending the offer
+	if (studentGhost != nullptr && studentGhost->getSkillPoints() < skill->getSkillPointsRequired()) {
+		int pointsNeeded = skill->getSkillPointsRequired() - studentGhost->getSkillPoints();
+
+		StringIdManager* sidman = StringIdManager::instance();
+		String sklname = sidman->getStringId(String("@skl_n:" + skill->getSkillName()).hashCode()).toString();
+
+		StringBuffer teacherMsg;
+		teacherMsg << student->getDisplayedName() << " needs " << pointsNeeded
+		           << " more skill point(s) to learn " << sklname << ". They must drop some skills first.";
+		teacher->sendSystemMessage(teacherMsg.toString());
+
+		StringBuffer studentMsg;
+		studentMsg << teacher->getDisplayedName() << " is trying to teach you " << sklname
+		           << " but you need " << pointsNeeded << " more skill point(s). Drop some skills to free up skill points.";
+		student->sendSystemMessage(studentMsg.toString());
+
+		return false;
+	}
+
 	//Do they have an outstanding teaching offer?
 	if (studentGhost->hasSuiBoxWindowType(SuiWindowType::TEACH_OFFER)) {
 		StringIdChatParameter params("teaching", "student_has_offer_to_learn"); //%TT already has an offer to learn.
@@ -5170,6 +5190,14 @@ bool PlayerManagerImplementation::acceptTeachingOffer(CreatureObject* teacher, C
 			awardExperience(teacher, "apprenticeship", exp, false);
 		}
 	} else {
+		// Check if failure is specifically due to insufficient skill points
+		ManagedReference<PlayerObject*> studentGhost = student->getPlayerObject();
+		if (studentGhost != nullptr && studentGhost->getSkillPoints() < skill->getSkillPointsRequired()) {
+			int pointsNeeded = skill->getSkillPointsRequired() - studentGhost->getSkillPoints();
+			StringBuffer msg;
+			msg << "You need " << pointsNeeded << " more skill point(s) to learn this skill. Drop some skills to free up skill points.";
+			student->sendSystemMessage(msg.toString());
+		}
 		student->sendSystemMessage("@teaching:learning_failed"); //Learning failed.
 		teacher->sendSystemMessage("@teaching:teaching_failed"); //Teaching failed.
 		return false;
@@ -5191,7 +5219,7 @@ SortedVector<String> PlayerManagerImplementation::getTeachableSkills(CreatureObj
 
 		const auto& skillName = skill->getSkillName();
 
-		if (!(skillName.contains("force_sensitive") || skillName.contains("force_rank") || skillName.contains("force_title") || skillName.contains("admin_")) && skillManager->canLearnSkill(skillName, student, false))
+		if (!(skillName.contains("force_sensitive") || skillName.contains("force_rank") || skillName.contains("force_title") || skillName.contains("admin_")) && skillManager->canLearnSkill(skillName, student, false, true))
 			skills.put(skillName);
 	}
 

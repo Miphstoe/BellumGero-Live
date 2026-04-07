@@ -32,6 +32,10 @@ void ShipSubComponentImplementation::fillAttributeList(AttributeListMessage* alm
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
 
+	if (useCount > 1) {
+		alm->insertAttribute("quantity", useCount);
+	}
+
 	for (int i = 0; i < keyList.size(); ++i) {
 		String attribute = keyList.get(i);
 		bool hidden = hiddenMap.get(attribute);

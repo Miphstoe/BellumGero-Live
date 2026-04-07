@@ -15,6 +15,7 @@
 #include "server/zone/managers/director/ScreenPlayTask.h"
 #include "engine/lua/LuaPanicException.h"
 #include "server/zone/objects/tangible/Container.h"
+#include "server/zone/objects/resource/ResourceContainer.h"
 
 const char LuaSceneObject::className[] = "LuaSceneObject";
 
@@ -70,6 +71,7 @@ Luna<LuaSceneObject>::RegType LuaSceneObject::Register[] = {
 		{ "isMissionObject", &LuaSceneObject::isMissionObject },
 		{ "isVehicleObject", &LuaSceneObject::isVehicleObject },
 		{ "isSpawnEggObject", &LuaSceneObject::isSpawnEggObject },
+		{ "isResourceContainer", &LuaSceneObject::isResourceContainer },
 		{ "sendTo", &LuaSceneObject::sendTo },
 		{ "getCustomObjectName", &LuaSceneObject::getCustomObjectName },
 		{ "getDisplayedName", &LuaSceneObject::getDisplayedName },
@@ -77,6 +79,11 @@ Luna<LuaSceneObject>::RegType LuaSceneObject::Register[] = {
 		{ "setDirectionalHeading", &LuaSceneObject::setDirectionalHeading },
 		{ "getZoneName", &LuaSceneObject::getZoneName },
 		{ "getTemplateObjectPath", &LuaSceneObject::getTemplateObjectPath },
+		{ "getResourceSpawnID", &LuaSceneObject::getResourceSpawnID },
+		{ "getResourceSpawnName", &LuaSceneObject::getResourceSpawnName },
+		{ "getResourceSpawnType", &LuaSceneObject::getResourceSpawnType },
+		{ "getResourceSpawnFinalClass", &LuaSceneObject::getResourceSpawnFinalClass },
+		{ "getResourceSpawnZoneRestriction", &LuaSceneObject::getResourceSpawnZoneRestriction },
 		{ "teleport", &LuaSceneObject::teleport },
 		{ "setObjectMenuComponent", &LuaSceneObject::setObjectMenuComponent },
 		{ "setContainerComponent", &LuaSceneObject::setContainerComponent },
@@ -201,6 +208,94 @@ int LuaSceneObject::getTemplateObjectPath(lua_State* L) {
 		lua_pushstring(L, "");
 	}
 
+	return 1;
+}
+
+int LuaSceneObject::isResourceContainer(lua_State* L) {
+	lua_pushboolean(L, realObject != nullptr && realObject->isResourceContainer());
+	return 1;
+}
+
+int LuaSceneObject::getResourceSpawnID(lua_State* L) {
+	uint64 spawnID = 0;
+
+	if (realObject != nullptr && realObject->isResourceContainer()) {
+		auto resourceContainer = dynamic_cast<ResourceContainer*>(realObject.get());
+
+		if (resourceContainer != nullptr) {
+			spawnID = resourceContainer->getSpawnID();
+		}
+	}
+
+	lua_pushinteger(L, spawnID);
+	return 1;
+}
+
+int LuaSceneObject::getResourceSpawnName(lua_State* L) {
+	String spawnName = "";
+
+	if (realObject != nullptr && realObject->isResourceContainer()) {
+		auto resourceContainer = dynamic_cast<ResourceContainer*>(realObject.get());
+
+		if (resourceContainer != nullptr) {
+			spawnName = resourceContainer->getSpawnName();
+		}
+	}
+
+	lua_pushstring(L, spawnName.toCharArray());
+	return 1;
+}
+
+int LuaSceneObject::getResourceSpawnType(lua_State* L) {
+	String spawnType = "";
+
+	if (realObject != nullptr && realObject->isResourceContainer()) {
+		auto resourceContainer = dynamic_cast<ResourceContainer*>(realObject.get());
+
+		if (resourceContainer != nullptr) {
+			spawnType = resourceContainer->getSpawnType();
+		}
+	}
+
+	lua_pushstring(L, spawnType.toCharArray());
+	return 1;
+}
+
+int LuaSceneObject::getResourceSpawnFinalClass(lua_State* L) {
+	String finalClass = "";
+
+	if (realObject != nullptr && realObject->isResourceContainer()) {
+		auto resourceContainer = dynamic_cast<ResourceContainer*>(realObject.get());
+
+		if (resourceContainer != nullptr) {
+			auto spawnObject = resourceContainer->getSpawnObject();
+
+			if (spawnObject != nullptr) {
+				finalClass = spawnObject->getFinalClass();
+			}
+		}
+	}
+
+	lua_pushstring(L, finalClass.toCharArray());
+	return 1;
+}
+
+int LuaSceneObject::getResourceSpawnZoneRestriction(lua_State* L) {
+	String zoneRestriction = "";
+
+	if (realObject != nullptr && realObject->isResourceContainer()) {
+		auto resourceContainer = dynamic_cast<ResourceContainer*>(realObject.get());
+
+		if (resourceContainer != nullptr) {
+			auto spawnObject = resourceContainer->getSpawnObject();
+
+			if (spawnObject != nullptr) {
+				zoneRestriction = spawnObject->getZoneRestriction();
+			}
+		}
+	}
+
+	lua_pushstring(L, zoneRestriction.toCharArray());
 	return 1;
 }
 

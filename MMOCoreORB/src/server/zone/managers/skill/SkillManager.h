@@ -92,9 +92,11 @@ public:
 	 * @param creature the player creature.
 	 * @param noXpRequired XP check is skipped if this is set to true (used for character builder terminals and
 	 * grant skill command).
+	 * @param noSkillPointsRequired skill point check is skipped if this is set to true (used to show teachable
+	 * skills to a teacher even when the student lacks skill points).
 	 * @return true if the player fulfills the requirements.
 	 */
-	bool canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired);
+	bool canLearnSkill(const String& skillName, CreatureObject* creature, bool noXpRequired, bool noSkillPointsRequired = false);
 
 	/**
 	 * Checks if the player fulfills the skill prerequisites and has enough XP for the skill.

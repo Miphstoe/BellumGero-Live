@@ -156,7 +156,6 @@ loot1 = ConvoScreen:new {
     customDialogText = "Would you like to buy some loot drops?",
     stopConversation = "false",
     options = { 
-        {"30k stack Resource Deed - 500k", "option46"},
 --        {"Random lvl 50 Pistol Loot - 15k", "option56"},
 --        {"Random lvl 50 Carbine Loot - 15k", "option57"},
 --        {"Random lvl 50 Rifle Loot - 15k", "option58"},

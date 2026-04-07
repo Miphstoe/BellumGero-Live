@@ -23,7 +23,7 @@ GeonosianCaveAntiCampingHybrid = ScreenPlay:new {
 
 	enhancedGapingSpiderTemplate = "enhanced_gaping_spider",
 	enhancedGapingSpiderRespawnSeconds = 2700,
-	spiderActivationRadius = 48,
+	spiderActivationRadius = 17,
 
 	-- Edit these spawn points to move the randomized Enhanced Gaping Spider locations.
 	-- These points are based on the current Geonosian Lab interior cells in geoLab.lua.
