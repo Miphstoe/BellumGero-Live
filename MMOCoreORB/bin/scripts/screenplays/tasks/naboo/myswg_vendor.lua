@@ -518,6 +518,15 @@ local MySwgTravelDestinations = {
 		z      = 29.8,
 		y      = 759.8,
 		cell   = 0
+	},
+
+	-- Geonosian Cave on Yavin4
+	geonosianCave = {
+		planet = "yavin4",
+		x      = -6513.5,
+		z      = 85.6,
+		y      = -430.5,
+		cell   = 0
 	}
 }
 --========================================================
@@ -1737,6 +1746,28 @@ elseif (optionLink == "travel_bsv_teleport") then
     charge(PRICE)
     SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
     creature:sendSystemMessage("Travelling to the Blue Shadow Virus Bunker on Naboo...")
+    nextConversationScreen = conversation:getScreen("travel_complete")
+    return nextConversationScreen
+
+-- Teleport: Geonosian Cave (Yavin4)
+elseif (optionLink == "travel_geonosian_cave_teleport") then
+    local PRICE = 25000
+    local dest  = MySwgTravelDestinations.geonosianCave
+
+    if not canAfford(PRICE) then
+        nextConversationScreen = conversation:getScreen("insufficient_funds")
+        creature:sendSystemMessage("You have insufficient funds")
+        return nextConversationScreen
+    end
+
+    local player = CreatureObject(conversingPlayer)
+    if player:isRidingMount() then
+        player:dismount()
+    end
+
+    charge(PRICE)
+    SceneObject(conversingPlayer):switchZone(dest.planet, dest.x, dest.z, dest.y, dest.cell or 0)
+    creature:sendSystemMessage("Travelling to the Geonosian Cave on Yavin4...")
     nextConversationScreen = conversation:getScreen("travel_complete")
     return nextConversationScreen
 
