@@ -308,11 +308,26 @@ items_menu_15 = ConvoScreen:new {
         {"Item 73 - [Painting: Smuggler's Run]", "trade_item_3_73"},
         {"Item 74 - [Painting: Imperial Oppression]", "trade_item_3_74"},
         {"Item 75 - [Painting: Emperor's Eyes]", "trade_item_3_75"},
+        {"More items...", "items_menu_16"},
         {"Previous", "items_menu_14"},
         {"Back", "first_screen"},
     }
 }
 bg_token_vendor_3_conv:addScreen(items_menu_15)
+
+-- PAGE 16: Item 76
+items_menu_16 = ConvoScreen:new {
+    id = "items_menu_16",
+    leftDialog = "",
+    customDialogText = "Choose an item (75 Bellum Gero Tokens each):\n\nSpace Veteran Rewards:",
+    stopConversation = "false",
+    options = {
+        {"Item 76 - [SoroSuub Luxury Yacht Deed]", "trade_item_3_76"},
+        {"Previous", "items_menu_15"},
+        {"Back", "first_screen"},
+    }
+}
+bg_token_vendor_3_conv:addScreen(items_menu_16)
 
 -- TRADE SCREENS FOR EACH ITEM
 -- Item 02
@@ -1379,6 +1394,21 @@ trade_item_3_75 = ConvoScreen:new {
 bg_token_vendor_3_conv:addScreen(trade_item_3_75)
 give_item_3_75 = ConvoScreen:new { id = "give_item_3_75", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
 bg_token_vendor_3_conv:addScreen(give_item_3_75)
+
+-- Item 76
+trade_item_3_76 = ConvoScreen:new {
+    id = "trade_item_3_76",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the SoroSuub Luxury Yacht Deed?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_76"},
+        {"No, go back", "items_menu_16"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_76)
+give_item_3_76 = ConvoScreen:new { id = "give_item_3_76", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_76)
 
 -- BYE SCREEN
 bye = ConvoScreen:new {
