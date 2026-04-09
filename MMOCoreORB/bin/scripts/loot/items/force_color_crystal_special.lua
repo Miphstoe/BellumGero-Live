@@ -6,6 +6,7 @@ force_color_crystal_special = {
 	craftingValues = {
 		{"color",12,30,0},
 	},
+	skillMods = {{"jedi_force_power_regen", 25}},
 	customizationStringNames = {},
 	customizationValues = {}
 }

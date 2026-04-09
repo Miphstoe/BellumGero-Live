@@ -42,6 +42,17 @@
 
 
 object_tangible_wearables_robe_robe_inquisitor = object_tangible_wearables_robe_shared_robe_inquisitor:new {
+	gameObjectType = 16777221,
+	jediRobe = true,
+
+	skillMods = {
+		{"jedi_force_power_max", 250},
+		{"jedi_force_power_regen", 10}
+	},
+
+	objectMenuComponent = "RobeObjectMenuComponent",
+	attributeListComponent = "JediRobeAttributeListComponent",
+
 	playerRaces = { "object/creature/player/bothan_male.iff",
 				"object/creature/player/bothan_female.iff",
 				"object/creature/player/human_male.iff",

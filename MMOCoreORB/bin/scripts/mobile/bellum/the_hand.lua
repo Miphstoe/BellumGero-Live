@@ -32,13 +32,12 @@ the_hand = Creature:new {
 		{
 			groups = {
 				{group = "color_crystals", chance = 2000000},
-				{group = "junk", chance = 3000000},
-				{group = "clothing_attachments", chance = 1500000},
-				{group = "armor_attachments", chance = 1500000},
-				{group = "holocron_dark", chance = 1000000},
-				{group = "wearables_common", chance = 1000000}
+				{group = "clothing_attachments", chance = 2500000},
+				{group = "armor_attachments", chance = 2500000},
+				{group = "holocron_dark", chance = 2000000},
+				{group = "the_hand", chance = 1500000}
 			},
-			lootChance = 9000000
+			lootChance = 10000000
 		},
 		{
 			groups = {
