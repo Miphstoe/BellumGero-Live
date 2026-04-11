@@ -52,6 +52,8 @@ ForceArmor1Command = {
 	frsLightExtraForceCostModifier = -0.003,
 	frsLightBuffModifier = 0.25,
 	frsDarkBuffModifier = 0.25,
+	frsLightForceCostModifier = -1.0,
+	frsDarkForceCostModifier = -1.0,
 }
 
 AddCommand(ForceArmor1Command)

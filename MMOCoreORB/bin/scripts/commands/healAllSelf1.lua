@@ -48,6 +48,10 @@ HealAllSelf1Command = {
 	forceCostMultiplier = 0.05,
 	defaultTime = 3,
 	attributesToHeal = HEALTH_ATTRIBUTE + MIND_ATTRIBUTE + ACTION_ATTRIBUTE,
+	frsLightBuffModifier = 5.0,
+	frsDarkBuffModifier = 5.0,
+	frsLightExtraForceCostModifier = -0.001,
+	frsDarkExtraForceCostModifier = -0.001,
 }
 
 AddCommand(HealAllSelf1Command)

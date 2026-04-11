@@ -52,7 +52,11 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 		return GENERALERROR;
 
 	int currentForce = playerObject->getForcePower();
-	int totalCost = forceCost;
+	int totalCost = getFrsModifiedForceCost(creature);
+	float effectiveForceCostMultiplier = getFrsModifiedExtraForceCost(creature, forceCostMultiplier);
+	int frsHealAmount = healAmount > 0 ? getFrsModifiedBuffValue(creature, healAmount) : 0;
+	int frsHealWoundAmount = healWoundAmount > 0 ? getFrsModifiedBuffValue(creature, healWoundAmount) : 0;
+	int frsHealBattleFatigue = healBattleFatigue > 0 ? getFrsModifiedBuffValue(creature, healBattleFatigue) : 0;
 	bool healPerformed = false;
 
 	// Attribute Wound Healing
@@ -64,15 +68,15 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 					uint8 attrib = (i * 3) + j;
 					int woundAmount = targetCreature->getWounds(attrib);
 
-					if (healWoundAmount > 0 && woundAmount > healWoundAmount)
-						woundAmount = healWoundAmount;
+					if (frsHealWoundAmount > 0 && woundAmount > frsHealWoundAmount)
+						woundAmount = frsHealWoundAmount;
 
-					totalCost += woundAmount * forceCostMultiplier;
+					totalCost += woundAmount * effectiveForceCostMultiplier;
 
 					if (totalCost > currentForce) {
 						int forceDiff = totalCost - currentForce;
 						totalCost -= forceDiff;
-						woundAmount -= forceDiff / forceCostMultiplier;
+						woundAmount -= forceDiff / effectiveForceCostMultiplier;
 					}
 
 					if (woundAmount > 0) {
@@ -95,15 +99,15 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 				int maxHam = targetCreature->getMaxHAM(attrib) - targetCreature->getWounds(attrib);
 				int amtToHeal = maxHam - curHam;
 
-				if (healAmount > 0 && amtToHeal > healAmount)
-					amtToHeal = healAmount;
+				if (frsHealAmount > 0 && amtToHeal > frsHealAmount)
+					amtToHeal = frsHealAmount;
 
-				totalCost += amtToHeal * forceCostMultiplier;
+				totalCost += amtToHeal * effectiveForceCostMultiplier;
 
 				if (totalCost > currentForce) {
 					int forceDiff = totalCost - currentForce;
 					totalCost -= forceDiff;
-					amtToHeal -= forceDiff / forceCostMultiplier;
+					amtToHeal -= forceDiff / effectiveForceCostMultiplier;
 				}
 
 				if (amtToHeal > 0) {
@@ -119,15 +123,15 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 	if (totalCost < currentForce && healBattleFatigue != 0) {
 		int battleFatigue = targetCreature->getShockWounds();
 
-		if (healBattleFatigue > 0 && battleFatigue > healBattleFatigue)
-			battleFatigue = healBattleFatigue;
+		if (frsHealBattleFatigue > 0 && battleFatigue > frsHealBattleFatigue)
+			battleFatigue = frsHealBattleFatigue;
 
-		totalCost += battleFatigue * forceCostMultiplier;
+		totalCost += battleFatigue * effectiveForceCostMultiplier;
 
 		if (totalCost > currentForce) {
 			int forceDiff = totalCost - currentForce;
 			totalCost -= forceDiff;
-			battleFatigue -= forceDiff / forceCostMultiplier;
+			battleFatigue -= forceDiff / effectiveForceCostMultiplier;
 		}
 
 		if (battleFatigue > 0) {
