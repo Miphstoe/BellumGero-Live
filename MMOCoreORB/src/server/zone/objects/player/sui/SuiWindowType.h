@@ -96,6 +96,8 @@ public:
 		CITY_ADMIN_CONFIRM_UPDATE_TYPE     = 134,
 		CITY_FACTION                       = 135,
 		CITY_FACTION_CONFIRM               = 136,
+		CITY_UNBAN_CONFIRM                 = 137,
+		CITY_UNBAN_LIST                    = 138,
 
 		//Structure 141 - 170
 		STRUCTURE_STATUS                   = 141,

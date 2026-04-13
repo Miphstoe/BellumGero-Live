@@ -328,6 +328,11 @@ class CityRegion extends ManagedObject implements Logger {
 		return militiaMembers;
 	}
 
+	@local
+	public CitizenList getBannedList() {
+		return bannedList;
+	}
+
 	@read
 	public boolean isRegistered() {
 		return registered;
