@@ -156,7 +156,6 @@ loot1 = ConvoScreen:new {
     customDialogText = "Would you like to buy some loot drops?",
     stopConversation = "false",
     options = { 
-        {"30k stack Resource Deed - 500k", "option46"},
 --        {"Random lvl 50 Pistol Loot - 15k", "option56"},
 --        {"Random lvl 50 Carbine Loot - 15k", "option57"},
 --        {"Random lvl 50 Rifle Loot - 15k", "option58"},
@@ -285,6 +284,7 @@ travel1 = ConvoScreen:new {
         {"Dathomir - Nightsister Rancor Cave [Hard Difficulty] - 25k", "travel_nightsister_cave_confirm"},
         {"Talus - GCW Cave [Medium Difficulty] - 25k", "travel_gcw_cave_confirm"},
         {"Naboo - Blue Shadow Virus Bunker [Medium Difficulty] - 25k", "travel_bsv_confirm"},
+        {"Yavin4 - Geonosian Cave [Medium Difficulty] - 25k", "travel_geonosian_cave_confirm"},
         {"Main menu.", "first_screen"},
     }
 }
@@ -341,6 +341,18 @@ travel_bsv_confirm = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(travel_bsv_confirm)
+
+travel_geonosian_cave_confirm = ConvoScreen:new {
+    id = "travel_geonosian_cave_confirm",
+    leftDialog = "",
+    customDialogText = "Travel to the Geonosian Cave on Yavin4 for 25,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Yes, send me there.", "travel_geonosian_cave_teleport"},
+        {"No, show me travel options.", "travel1"},
+    }
+}
+myswg_vendor_conv:addScreen(travel_geonosian_cave_confirm)
 
 travel_complete = ConvoScreen:new {
     id = "travel_complete",

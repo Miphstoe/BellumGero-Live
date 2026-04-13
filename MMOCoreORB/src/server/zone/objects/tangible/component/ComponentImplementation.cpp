@@ -25,6 +25,10 @@ void ComponentImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
 
+	if (useCount > 1) {
+		alm->insertAttribute("quantity", useCount);
+	}
+
 	StringBuffer displayvalue;
 
 	for (int i = 0; i < keyList.size(); ++i) {

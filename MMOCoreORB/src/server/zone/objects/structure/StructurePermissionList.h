@@ -33,7 +33,7 @@ public:
 	};
 
 	enum {
-		MAX_ENTRIES = 50
+		MAX_ENTRIES = 100
 	};
 
 public:

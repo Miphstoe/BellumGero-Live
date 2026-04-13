@@ -23,6 +23,7 @@ GeonosianCaveAntiCampingHybrid = ScreenPlay:new {
 
 	enhancedGapingSpiderTemplate = "enhanced_gaping_spider",
 	enhancedGapingSpiderRespawnSeconds = 2700,
+	spiderActivationRadius = 17,
 
 	-- Edit these spawn points to move the randomized Enhanced Gaping Spider locations.
 	-- These points are based on the current Geonosian Lab interior cells in geoLab.lua.
@@ -293,6 +294,67 @@ function GeonosianCaveAntiCampingHybrid:ensureEnhancedGapingSpiderSpawned()
 	self:spawnEnhancedGapingSpider()
 end
 
+function GeonosianCaveAntiCampingHybrid:clearSpiderActivationArea()
+	local areaOID = readData(self:getSpiderDataKey("activationAreaOid"))
+
+	if (areaOID ~= 0) then
+		local pArea = getSceneObject(areaOID)
+
+		if (pArea ~= nil) then
+			SceneObject(pArea):destroyObjectFromWorld()
+			SceneObject(pArea):destroyObjectFromDatabase()
+		end
+	end
+
+	deleteData(self:getSpiderDataKey("activationAreaOid"))
+end
+
+function GeonosianCaveAntiCampingHybrid:createSpiderActivationArea(pSpider)
+	if (pSpider == nil) then
+		return
+	end
+
+	self:clearSpiderActivationArea()
+
+	local pArea = spawnActiveArea(
+		self.planet,
+		"object/active_area.iff",
+		SceneObject(pSpider):getWorldPositionX(),
+		SceneObject(pSpider):getWorldPositionZ(),
+		SceneObject(pSpider):getWorldPositionY(),
+		self.spiderActivationRadius,
+		SceneObject(pSpider):getParentID()
+	)
+
+	if (pArea == nil) then
+		printLuaError("GeonosianCaveAntiCampingHybrid: failed to create spider activation area.")
+		return
+	end
+
+	writeData(self:getSpiderDataKey("activationAreaOid"), SceneObject(pArea):getObjectID())
+	createObserver(ENTEREDAREA, self.screenplayName, "notifySpiderActivationAreaEntered", pArea)
+end
+
+function GeonosianCaveAntiCampingHybrid:protectSpiderUntilPlayerArrives(pSpider)
+	if (pSpider == nil) then
+		return
+	end
+
+	CreatureObject(pSpider):setPvpStatusBitmask(0)
+	CreatureObject(pSpider):setOptionBit(INVULNERABLE)
+	self:createSpiderActivationArea(pSpider)
+end
+
+function GeonosianCaveAntiCampingHybrid:activateSpiderForCombat(pSpider)
+	if (pSpider == nil) then
+		return
+	end
+
+	CreatureObject(pSpider):setPvpStatusBitmask(AGGRESSIVE + ATTACKABLE + ENEMY)
+	CreatureObject(pSpider):clearOptionBit(INVULNERABLE)
+	self:clearSpiderActivationArea()
+end
+
 function GeonosianCaveAntiCampingHybrid:spawnEnhancedGapingSpider()
 	local spawnPoint = self:getRandomSpiderSpawnPoint()
 
@@ -309,10 +371,30 @@ function GeonosianCaveAntiCampingHybrid:spawnEnhancedGapingSpider()
 	end
 
 	writeData(self:getSpiderDataKey("oid"), SceneObject(pSpider):getObjectID())
+	self:protectSpiderUntilPlayerArrives(pSpider)
 	createObserver(OBJECTDESTRUCTION, self.screenplayName, "notifyEnhancedGapingSpiderKilled", pSpider)
 end
 
+function GeonosianCaveAntiCampingHybrid:notifySpiderActivationAreaEntered(pArea, pPlayer)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
+		return 0
+	end
+
+	local spiderOID = readData(self:getSpiderDataKey("oid"))
+	local pSpider = getSceneObject(spiderOID)
+
+	if (pSpider == nil) then
+		self:clearSpiderActivationArea()
+		return 1
+	end
+
+	self:activateSpiderForCombat(pSpider)
+
+	return 1
+end
+
 function GeonosianCaveAntiCampingHybrid:notifyEnhancedGapingSpiderKilled(pSpider, pKiller)
+	self:clearSpiderActivationArea()
 	deleteData(self:getSpiderDataKey("oid"))
 	createEvent(self.enhancedGapingSpiderRespawnSeconds * 1000, self.screenplayName, "respawnEnhancedGapingSpider", nil, "")
 
