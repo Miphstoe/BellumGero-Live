@@ -370,6 +370,8 @@ includeFile("conversations/bellum/galactic_tour_conv.lua")
 includeFile("conversations/bellum/artisan_resource_contract_conv.lua")
 includeFile("conversations/bellum/galactic_relief_effort_conv.lua")
 includeFile("conversations/bellum/galactic_relief_patient_conv.lua")
+includeFile("conversations/custom/smuggler/vex_talon_conv.lua")
+includeFile("conversations/custom/smuggler/smuggler_receiver_conv.lua")
 print("Finished loading bg_token vendor 2")
 print("Finished loading bg_token vendor 2")
 

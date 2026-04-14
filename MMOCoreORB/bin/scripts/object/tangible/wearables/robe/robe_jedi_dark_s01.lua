@@ -72,7 +72,6 @@ object_tangible_wearables_robe_robe_jedi_dark_s01 = object_tangible_wearables_ro
 		{"jedi_force_power_regen", 10}
 	},
 
-	noTrade = 1,
 
 	objectMenuComponent = "RobeObjectMenuComponent",
 	certificationsRequired = {"force_rank_dark_novice"},

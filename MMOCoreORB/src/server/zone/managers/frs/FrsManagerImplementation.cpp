@@ -292,21 +292,24 @@ void FrsManagerImplementation::setupEnclaves() {
 }
 
 FrsRank* FrsManagerImplementation::getFrsRank(short councilType, int rank) {
-	if (rank < 0)
+	if (rank <= 0 || managerData == nullptr)
 		return nullptr;
 
 	ManagedReference<FrsRank*> frsRank = nullptr;
+	int index = rank - 1;
 
 	Locker locker(managerData);
 
 	if (councilType == COUNCIL_LIGHT) {
 		Vector<ManagedReference<FrsRank*> >* rankData = managerData->getLightRanks();
 
-		frsRank = rankData->get(rank - 1);
+		if (index < rankData->size())
+			frsRank = rankData->get(index);
 	} else if (councilType == COUNCIL_DARK) {
 		Vector<ManagedReference<FrsRank*> >* rankData = managerData->getDarkRanks();
 
-		frsRank = rankData->get(rank - 1);
+		if (index < rankData->size())
+			frsRank = rankData->get(index);
 	}
 
 	return frsRank;
@@ -654,16 +657,18 @@ void FrsManagerImplementation::removeFromFrs(CreatureObject* player) {
 			}
 		}
 
-		ManagedReference<FrsRank*> rankData = getFrsRank(councilType, curRank + 1);
+		if (curRank < 11) {
+			ManagedReference<FrsRank*> rankData = getFrsRank(councilType, curRank + 1);
 
-		if (rankData != nullptr) {
-			Locker clocker(rankData, player);
+			if (rankData != nullptr) {
+				Locker clocker(rankData, player);
 
-			if (rankData->isOnPetitionerList(playerID)) {
-				if (councilType == COUNCIL_DARK)
-					modifySuddenDeathFlags(player, rankData, true);
+				if (rankData->isOnPetitionerList(playerID)) {
+					if (councilType == COUNCIL_DARK)
+						modifySuddenDeathFlags(player, rankData, true);
 
-				rankData->removeFromPetitionerList(playerID);
+					rankData->removeFromPetitionerList(playerID);
+				}
 			}
 		}
 	}

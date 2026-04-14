@@ -49,6 +49,8 @@ ForceResistBleedingCommand = {
 	clientEffect = "clienteffect/pl_force_resist_bleeding_self.cef",
 	frsLightBuffModifier = 0.35,
 	frsDarkBuffModifier = 0.35,
+	frsLightForceCostModifier = -3.0,
+	frsDarkForceCostModifier = -3.0,
 }
 
 AddCommand(ForceResistBleedingCommand)

@@ -715,6 +715,7 @@ function conv_handler:getBGTokenReward3(screenId)
         ["give_item_3_73"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
         ["give_item_3_74"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
         ["give_item_3_75"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
+        ["give_item_3_76"] = {name = "SoroSuub Luxury Yacht Deed", template = "object/tangible/space/veteran_reward/sorosuub_space_yacht_deed.iff"},
     }
     return rewards[screenId]
 end

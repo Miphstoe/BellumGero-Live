@@ -42,6 +42,7 @@ class ChatManager extends ManagedService implements Logger {
 	ChatRoom groupRoom;
 	ChatRoom guildRoom;
 	ChatRoom auctionRoom;
+	ChatRoom servicesRoom;
 	ChatRoom pvpBroadcastRoom;
 	ChatRoom systemRoom;
 
@@ -369,6 +370,7 @@ class ChatManager extends ManagedService implements Logger {
 	public native void handleGuildChat(CreatureObject player, final unicode message);
 	public native void handlePlanetChat(CreatureObject player, final unicode message);
 	public native void handleAuctionChat(CreatureObject player, final unicode message);
+	public native void handleServicesChat(CreatureObject player, final unicode message);
 	public native void handleChatRoomMessage(CreatureObject sender, final unicode message, unsigned int roomID, unsigned int counter);
 	public native void handleSocialInternalMessage(CreatureObject sender, final unicode arguments);
 	@local
@@ -457,6 +459,13 @@ class ChatManager extends ManagedService implements Logger {
 	 */
 	public ChatRoom getAuctionRoom() {
 		return auctionRoom;
+	}
+
+	/*
+	 * Returns the services chat room
+	 */
+	public ChatRoom getServicesRoom() {
+		return servicesRoom;
 	}
 
 	/*

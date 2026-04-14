@@ -61,6 +61,7 @@
 #include "server/zone/objects/creature/commands/AuctionQueryCommand.h"
 #include "server/zone/objects/creature/commands/AuctionRetrieveCommand.h"
 #include "server/zone/objects/creature/commands/AuctionsayCommand.h"
+#include "server/zone/objects/creature/commands/ServicesayCommand.h"
 #include "server/zone/objects/creature/commands/AvoidIncapacitationCommand.h"
 #include "server/zone/objects/creature/commands/BandFlourishCommand.h"
 #include "server/zone/objects/creature/commands/BattlefieldStatusCommand.h"
@@ -472,6 +473,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<AuctionQueryCommand>(String("auctionQuery").toLowerCase());
 	commandFactory.registerCommand<AuctionRetrieveCommand>(String("auctionRetrieve").toLowerCase());
 	commandFactory.registerCommand<AuctionsayCommand>(String("auctionsay").toLowerCase());
+	commandFactory.registerCommand<ServicesayCommand>(String("servicesay").toLowerCase());
 	commandFactory.registerCommand<AvoidIncapacitationCommand>(String("avoidIncapacitation").toLowerCase());
 	commandFactory.registerCommand<BandFlourishCommand>(String("bandFlourish").toLowerCase());
 	commandFactory.registerCommand<BattlefieldStatusCommand>(String("battlefieldStatus").toLowerCase());

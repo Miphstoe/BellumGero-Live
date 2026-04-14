@@ -49,6 +49,10 @@ HealHealthSelf2Command = {
 	defaultTime = 3,
 	attributesToHeal = HEALTH_ATTRIBUTE,
 	range = 0,
+	frsLightBuffModifier = 5.0,
+	frsDarkBuffModifier = 5.0,
+	frsLightExtraForceCostModifier = -0.001,
+	frsDarkExtraForceCostModifier = -0.001,
 }
 
 AddCommand(HealHealthSelf2Command)
