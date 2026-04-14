@@ -6,6 +6,10 @@
 #define CITYBANCOMMAND_H_
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sui/SuiWindowType.h"
+#include "server/zone/objects/player/sui/callbacks/CityUnbanListSuiCallback.h"
+#include "server/zone/managers/player/PlayerManager.h"
 
 class CitybanCommand : public QueueCommand {
 public:
@@ -25,6 +29,62 @@ public:
 
 		ZoneServer* zserv = creature->getZoneServer();
 
+		ManagedReference<CityRegion*> city = creature->getCityRegion().get();
+
+		// Self-target: mayor opens the banned-players list to pick someone to unban
+		if (target == creature->getObjectID() || target == 0) {
+			if (city == nullptr) {
+				creature->sendSystemMessage("@city/city:not_in_city"); // You must be in a city to use this command.
+				return GENERALERROR;
+			}
+
+			if (!city->isMayor(creature->getObjectID())) {
+				creature->sendSystemMessage("Only the city mayor can manage the ban list. Target another player to ban them.");
+				return GENERALERROR;
+			}
+
+			ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+			if (ghost == nullptr)
+				return GENERALERROR;
+
+			Locker cityLock(city, creature);
+
+			CitizenList* bannedList = city->getBannedList();
+
+			if (bannedList == nullptr || bannedList->size() == 0) {
+				creature->sendSystemMessage("There are no banned players in " + city->getCityRegionName() + ".");
+				return SUCCESS;
+			}
+
+			ManagedReference<PlayerManager*> playerManager = zserv->getPlayerManager();
+
+			ghost->closeSuiWindowType(SuiWindowType::CITY_UNBAN_LIST);
+
+			ManagedReference<SuiListBox*> suiBox = new SuiListBox(creature, SuiWindowType::CITY_UNBAN_LIST);
+			suiBox->setCallback(new CityUnbanListSuiCallback(zserv, city));
+			suiBox->setPromptTitle("Banned Players - " + city->getCityRegionName());
+			suiBox->setPromptText("Select a player to unban:");
+			suiBox->setCancelButton(true, "@cancel");
+			suiBox->setOkButton(true, "Unban");
+
+			for (int i = 0; i < bannedList->size(); ++i) {
+				uint64 oid = bannedList->get(i);
+				String playerName = (playerManager != nullptr) ? playerManager->getPlayerName(oid) : String::valueOf(oid);
+
+				if (playerName.isEmpty())
+					playerName = String::valueOf(oid);
+
+				suiBox->addMenuItem(playerName, oid);
+			}
+
+			ghost->addSuiBox(suiBox);
+			creature->sendMessage(suiBox->generateMessage());
+
+			return SUCCESS;
+		}
+
+		// Normal target-based ban behavior
 		ManagedReference<SceneObject*> targetObject = zserv->getObject(target);
 
 		if (targetObject == nullptr || !targetObject->isPlayerCreature() || targetObject == creature) {
@@ -32,8 +92,6 @@ public:
 		}
 
 		CreatureObject* targetCreature = cast<CreatureObject*>(targetObject.get());
-
-		ManagedReference<CityRegion*> city = creature->getCityRegion().get();
 
 		if (city == nullptr || city != targetObject->getCityRegion().get()) {
 			creature->sendSystemMessage("@city/city:not_in_city"); //You must be in a city to use this command.
