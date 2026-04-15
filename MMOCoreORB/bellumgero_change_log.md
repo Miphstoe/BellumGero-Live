@@ -14,6 +14,448 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-04-14 — Mando Way: Spynet comlink on Jabba badge; post rank Spynet signoff
+
+- **Summary:** When **Jabba themepark** awards badge **105**, **Clanbound** players (chapter 4 complete, chapter 5 not yet) receive a **Spynet comlink** system line directing them to **Mos Eisley** and the **recruiter**. After **`grantMandalorian`** (rank, title, chapter badge), a second **Spynet comlink** line closes the arc (**Continue your Hunt**, FRS deferred). Hook lives in **`ThemeParkLogic:giveBadge`** calling **`MandoWayOfLife:onJabbaThemeparkBadgeEarned`**.
+- **Files:** `bin/scripts/screenplays/themepark/themeParkLogic.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-14 — Mando Way: operative → Tatooine recruiter; "What's next?" Hutt trial copy
+
+- **Summary:** Corellia Spynet operative now tells Clanbound players to return to the **Mandalorian Recruiter in the Mos Eisley cantina (Tatooine)** for the next path. Trialmaster **clanbound** gained a **What's next?** option; **`clanbound_whats_next`** is filled in the handler with the **Hutt / Jabba themepark** final trial text (plus epilogue when chapter 5 is complete). **Clanbound complete** system message and recruiter **no Jabba badge yet** intro line updated to match.
+- **Files:** `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`** or reload conversations.
+
+### 2026-04-06 — Mando armory weapon stat tune (uniform high burst)
+
+- **Summary:** Updated the three new Mandalorian armory weapons to a unified test profile per request: **`minDamage=900`**, **`maxDamage=1200`**, **`attackSpeed=1.5`** on pistol, carbine, and LLC variants.
+- **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_mando_way_geo_blaster.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_mando_way_slugthrower.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_mando_way_lightning.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Crafting experiment ranges are unchanged in this pass.
+
+### 2026-04-06 — Spynet bounty camp: restore yellow Quest waypoint; finish all stuck GoToTheater tasks
+
+- **Summary:** The **yellow Spynet bounty camp** pin lives under the datapad **Quest** tab (**`WAYPOINTQUESTTASK`**). After **relog**, login refresh only nudged the player in chat and **did not re-add** the waypoint if the client dropped it. Added **`restoreSpynetBountyCampQuestWaypoint`** (theater anchor → **`addWaypoint`**) and call it from **`refreshPrivateContractTargetWaypointFromActiveTarget`** (camp mode), **`beginPrivateContract`**, and **`migrateLegacyPrivateContractToBountyCampTheater`**. **`finishActiveSpynetBountyCampTheater`** now **`finish`es every** **`BellumBountyCampChapter*`** task that is still marked started so stale **`Task:start`** “already started” state cannot block a new trial. **`go_to_theater.lua`** logs when **`addWaypoint`** returns nil or ghost is nil.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/quest_tasks/go_to_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. If the pin still never appears, confirm the client shows **Quest/Mission** waypoints and check server log for **`getSpawnArea`** / **`GoToTheater:taskStart`** errors (camp placement can still fail on bad terrain).
+
+### 2026-04-06 — Spynet operative: re-issue waypoint when Task state desyncs; rebuild camp from operative
+
+- **Summary:** **`restoreSpynetBountyCampQuestWaypoint`** previously required **`Task:hasTaskStarted`**. If that flag desynced while the **theater object** still existed, the operative’s **“Remind me how the waypoint works”** path could not place a pin. **`resolveSpynetBountyCampTheaterFromTheaterId`** now finds the camp via **`theaterID`** data like **`GoToTheater:getTheaterObject`**. **`refreshSpynetTrialSupportFromOperative`** (operative convo) calls **`restartSpynetBountyCampTrialFromOperative`** when restore still fails: **`forceTeardownSpynetBountyCampTheaters`** runs **`GoToTheater:taskFinish`** for all three chapter tables + clears **`:taskStarted:`** keys, then **`beginPrivateContract`** places a fresh camp and waypoint.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Rebuild requires **Foundling helmet**, **solo**, and valid terrain for **`getSpawnArea`** (same rules as first accept).
+
+### 2026-04-06 — Mando Way armory: chapter gift weapons + recruiter schematics (hidden certs)
+
+- **Summary:** Added three **high-DPS** Mandalorian weapons gated by **hidden certification skills** granted on **chapter trial completion**: **Initiate** → Geo-style blaster pistol, **Hunter** → Nym slugthrower-style carbine, **Verd’ika** → light lightning cannon. Each chapter grants the **cert + gift weapon** in **`applyChapterAdvanceAfterTrial`**. The **Mandalorian Recruiter** sells matching **loot schematics** (cash, **weaponsmith master** to learn) after the same chapter flag is set, for crafted rerolls. Recruiter access requires **Foundling arc complete** and **Novice BH** (same bar as the Spynet gate).
+- **Files:** `bin/scripts/skills/bellum/mando_armory_certs.lua`, `bin/scripts/skills/serverobjects.lua`, `bin/scripts/object/weapon/ranged/pistol/pistol_mando_way_geo_blaster.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_mando_way_slugthrower.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_mando_way_lightning.lua`, `bin/scripts/object/weapon/ranged/pistol/objects.lua`, `bin/scripts/object/weapon/ranged/carbine/objects.lua`, `bin/scripts/object/weapon/ranged/rifle/objects.lua`, `bin/scripts/object/weapon/ranged/pistol/serverobjects.lua`, `bin/scripts/object/weapon/ranged/carbine/serverobjects.lua`, `bin/scripts/object/weapon/ranged/rifle/serverobjects.lua`, `bin/scripts/object/draft_schematic/weapon/pistol_mando_way_geo_blaster.lua`, `bin/scripts/object/draft_schematic/weapon/carbine_mando_way_slugthrower.lua`, `bin/scripts/object/draft_schematic/weapon/rifle_mando_way_lightning.lua`, `bin/scripts/object/draft_schematic/weapon/objects.lua`, `bin/scripts/object/draft_schematic/weapon/serverobjects.lua`, `bin/scripts/object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.lua`, `bin/scripts/object/tangible/loot/loot_schematic/mando_way_slugthrower_schematic.lua`, `bin/scripts/object/tangible/loot/loot_schematic/mando_way_lightning_schematic.lua`, `bin/scripts/object/tangible/loot/loot_schematic/serverobjects.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** **Certification** is enforced via **`certificationsRequired`** and skills **`mando_way_cert_*`** (commands **`cert_mando_way_geo_blaster`**, **`cert_mando_way_slugthrower_carbine`**, **`cert_mando_way_lightning_cannon`**). This does **not** check that Mandalorian **armor** is equipped; a stricter armor-only rule would need **C++ equip validation** or another mechanism. **Client TRE** may need aliases or rows for new **`shared_*mando_way*.iff`** template strings and new **object .iff** paths if the stock client does not already resolve them (same pattern as other custom Bellum objects). Restart **`core3`**.
+
+### 2026-04-13 — Spynet: reset terminal gate after trial; mark mesh; no stale 5/5 re-trial
+
+- **Summary:** **`applyChapterAdvanceAfterTrial`** now **zeros** **`bhTerminalCount`**, **`needsCustomContract`**, and **`countingEnabled`**, then for **`chNew < 4`** calls **`startChapterGate`** + **`startGateProgressPoll`** so the next rank requires a **new 0/5 BH terminal cycle** (fixes operative **`unlockPrivateTrialGateIfEligible`** re-firing on stale **5/5**). Removed post-trial **`grantPurpleOperativeReturnWaypoint`** (purple only when **5/5**). **`bellum_bounty_mark`** uses **`dressed_criminal_smuggler_human_male_01.iff`** instead of the BH trainer mesh for more reliable death/knockdown client animation.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/bellum/bellum_bounty_mark.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. **`ArrayIndexOutOfBoundsException` in combat** at mark death is separate; redeploy **`LuaObject` `get*At`** hardening if not already live.
+
+### 2026-04-13 — Spynet: fix `beginPrivateContract` nil `todayCount` after daily-cap removal
+
+- **Summary:** **`beginPrivateContract`** success log still used **`todayCount + 1`** (variable removed with **`privateContractsToday`**). Removed **`contractsToday`** from the log line to avoid **`attempt to perform arithmetic on a nil value`** when accepting the private trial.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-12 — Mando Way: BH skill gates per chapter, beskar tune removed, Ch5 Mandalorian title via Jabba Themepark
+
+- **Summary:** Removed the beskar tune system entirely (no more post-trial armor stat bumps). Each chapter 1 through 4 now requires a specific Bounty Hunter specialization column maxed before the Spynet gate opens: Ch1 requires Bounty Pistol Specialization IV, Ch2 requires Bounty Carbine Specialization IV, Ch3 requires Light Lightning Cannon Specialization IV, Ch4 requires Investigation IV and Master Bounty Hunter. Players who do not meet the gate get a clear system message naming the exact skill and trainer. Ch4 reward simplified to the Clanbound 5-piece set only (no prior-tier wardrobe dump; belt, bracers, and biceps removed from the grant). Added Chapter 5 "Mandalorian": after earning Clanbound the Recruiter sends the player to complete Jabba's Themepark (badge 105). On return with the badge the Recruiter grants the Mandalorian title and badge (index 145). New `mando_title_mandalorian` title skill registered.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/skills/bellum/mando_titles.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Badge ID 145 (`bdg_mando_mandalorian`) requires a matching row in the client TRE `badge_map.iff` and `badge_n`/`badge_d` string files before it will display correctly. Title `mando_title_mandalorian` requires a `skl_t.stf` entry in the client TRE or the nameplate will show the raw skill key.
+
+### 2026-04-06 — Mando Way player text: remove Unicode dashes (Spynet gate comma, plain ASCII)
+
+- **Summary:** Replaced Unicode em dashes in **`mando_way_of_life.lua`** and **operative convo** with **commas / periods / semicolons** in player-visible strings so clients do not garble punctuation (e.g. “1/3”). **Spynet gate** lines now use **`Spynet gate, Phase N:`**. Status chapter line uses **parentheses** and plain **1 through 4** wording; **!mando** tips avoid hyphen before “no slash”.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — Mando status: !mando Say alias, Trialmaster convo, clarify slash vs spatial
+
+- **Summary:** **`ChatManagerImplementation`** also treats **`!mando`** / **`!mandostatus`** like **`!foundling`** (spatial Say). **`sendFoundlingStatusReportToPlayer`** tips explain that **`/foundling` fails on stock clients** (slash is rejected locally) and that **`/mandoFoundlingAdmin`** needs a **client command_table** entry. **Trialmaster** (`mando_trialmaster_conv.lua` / handler): **`mando_way_status`** screen + options on **`arc_complete_no_bh`**, **`chapter_gate_ready`**, **`clanbound`** so players can get the same report **without** chat tricks.
+- **Files:** `src/server/chat/ChatManagerImplementation.cpp`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild core3** for the C++ change; Lua reload or restart for convo.
+
+### 2026-04-06 — Spynet: remove private-contract daily cap; !foundling shows chapter + advance hints
+
+- **Summary:** Removed **`PRIVATE_CONTRACT_DAILY_CAP`**, **`resetDailyCapIfNeeded`**, the **`beginPrivateContract`** block that blocked after N starts/day, and the per-accept **`privateContractsToday`** increment. Dropped unused operative convo screen **`daily_cap`**. After the Foundling arc, **`sendFoundlingStatusReportToPlayer`** (`!foundling` / **`!foundlingstatus`**) now prints **stored story chapter** (0–4 + rank name), **5/5 terminal progress**, the same **Phase 0–3** line as gate reminders, and short **how to advance** text (plus staff note for **`/mandoFoundlingAdmin`**).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Legacy **`privateContractsToday`** / **`privateDailyReset`** keys may remain on old characters but are no longer read.
+
+### 2026-04-06 — Mando Way Ch4: grant full custom armor wardrobe (all tiers + Clanbound accessories)
+
+- **Summary:** **`chapterRewards[4]`** now grants **every** `mandalorian/custom/` tier piece (Foundling through Verd’ika, including **`initiate_gloves`**), then the full **Clanbound** set (**helmet, chest, legs, gloves, boots, belt, bracers, biceps**). Earlier chapters unchanged; Ch4 is intentionally cumulative (players may receive duplicate copies of pieces already earned).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** **`grantReward`** still uses **`giveItem`** per template; ensure inventory (or bank) space for **21** items on Ch4 completion.
+
+### 2026-04-06 — Clanbound armor: full resists, **`vulnerability = NONE`**
+
+- **Summary:** **HEAVY** Clanbound kit (**helmet, chest, legs, gloves, boots**): **`electricity = 65`** (was 0) so it matches **`cold`** and the other **65** rows; **`stun = 10`**, **`lightSaber = 10`**; **`vulnerability = NONE`** (no cold/elec/stun/saber holes). **LIGHT** accessories (**bracers, biceps**): **`cold`** and **`electricity`** set to **58** (aligned with kinetic/energy/heat/acid), **`stun`** / **`lightSaber`** to **10**, **`vulnerability = NONE`**.
+- **Files:** `bin/scripts/object/tangible/wearables/armor/mandalorian/custom/clanbound_helmet.lua`, `clanbound_chest.lua`, `clanbound_legs.lua`, `clanbound_gloves.lua`, `clanbound_shoes.lua`, `clanbound_bracer_l.lua`, `clanbound_bracer_r.lua`, `clanbound_bicep_l.lua`, `clanbound_bicep_r.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Uses the same **`NONE`** sentinel as other armor scripts (e.g. Ubese) for an empty vulnerability bitmask.
+
+### 2026-04-06 — Mando Way armor: match design table (cumulative kits, 25–65% resists, LIGHT/MED/HEAVY)
+
+- **Summary:** **`chapterRewards`** now matches the tier table: **Ch0** Foundling helm only; **Ch1** Initiate helm+chest; **Ch2** Hunter helm+chest+legs; **Ch3** Verd’ika helm+chest+legs+gloves; **Ch4** Clanbound helm+chest+legs+gloves+boots (no belt/biceps/bracers in the grant). Resist **steps** use template values **25 / 35 / 45 / 55 / 65** on the listed families (cold remains vulnerability); **rating** is **LIGHT** through Hunter, **MEDIUM** for Verd’ika, **HEAVY** for Clanbound. New templates: **`hunter_legs`**, **`verdika_chest`**, **`verdika_gloves`**, **`clanbound_chest`**, **`clanbound_legs`**, **`clanbound_gloves`**. Existing tier Lua files retuned; **`initiate_gloves`** left as legacy Initiate-tier stats only.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/serverobjects.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/custom/*.lua` (foundling/initiate/hunter/verdika/clanbound pieces listed above), `bellumgero_change_log.md`
+- **Notes:** Lua + object scripts; restart **`core3`**. Client TRE must ship new **`.iff`** paths for added templates.
+
+### 2026-04-06 — Mando Way: 60s camp delay, deferred chapter rewards, tiered helm + armor grants
+
+- **Summary:** **`SPYNET_BOUNTY_CAMP_FINISH_DELAY_MS`** is **60000** (one minute). For **bounty-camp** trials, **chapter advance, armor, loot, title, badge, beskar tuning, and gate waypoints** run only after **`delayedFinishSpynetBountyCampTheater`** ( **`applyChapterAdvanceAfterTrial`** ), not on mark death. Legacy non-camp trials still finalize immediately. **`beginPrivateContract`** blocks while **`privateContract.pendingTrialFinalize`** is set. **`chapterRewards`**: Ch **1** = initiate chest + initiate helmet; **2** = gloves + hunter helmet; **3** = hunter chest + verdika helmet; **4** = verdika legs + clanbound helmet + existing clanbound accessories. New object Lua: **`initiate_chest`**, **`initiate_helmet`**, **`hunter_helmet`**, **`verdika_helmet`**, **`clanbound_helmet`** (registered in **`mandalorian/serverobjects.lua`**). Trial helmet check accepts any **`mandalorian/custom/*_helmet.iff`**. New screenplay keys: **`privateContract.pendingTrialFinalize`**, **`privateContract.postTrialChapter`** (also cleared on fail / migrate / **`consoleResetArc`**).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/serverobjects.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/custom/initiate_chest.lua`, `.../initiate_helmet.lua`, `.../hunter_helmet.lua`, `.../verdika_helmet.lua`, `.../clanbound_helmet.lua`, `.../hunter_chest.lua`, `.../initiate_gloves.lua`, `.../verdika_legs.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua + object scripts; restart **`core3`**. Ensure **client TRE** defines the new **`.iff`** strings (or alias meshes) so clients resolve **`object/tangible/wearables/armor/mandalorian/custom/*_helmet.iff`** and **`initiate_chest.iff`**.
+
+### 2026-04-06 — LuaObject get*At: rawgeti + nil defaults (no rawlen gate)
+
+- **Summary:** **`getIntAt`** / **`getSignedIntAt`** / **`getLongAt`** / **`getBooleanAt`** / **`getStringAt`** / **`getFloatAt`** / **`getDoubleAt`** no longer gate reads on **`lua_rawlen`** (`#t`). That length can be shorter than the highest numeric key on mixed/sparse tables, so skipping **`lua_rawgeti`** could hide real values or diverge from Lua. All **`idx >= 1`** now use **`lua_rawgeti`** and treat **nil** as the type default (no **`ArrayIndexOutOfBoundsException`**). Invalid **`idx < 1`** still logs to **stderr**. **`getObjectAt`** rejects **`idx < 1`** by yielding a nil-valued **`LuaObject`** instead of indexing.
+- **Files:** `utils/engine3/MMOEngine/src/engine/lua/LuaObject.cpp`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild `core3`** (engine / link step must pick up **`LuaObject.cpp`**). If you still see **`ArrayIndexOutOfBoundsException at 16`**, the throw is likely **not** from **`LuaObject`** (grep **`stderr`** for **`[LuaObject::`** vs full stack symbols).
+
+### 2026-04-06 — Spynet chapter gate: phase-labeled progress and login hints
+
+- **Summary:** **`sendChapterGateProgressFooter`** and **`formatChapterGateOperativeStatusLine`** now label the Mandalorian Spynet arc as **Phase 0** (operative / count not opened) through **Phase 3** (private trial, including yellow Quest waypoint vs purple operative pin). Phase 1 keeps the **x/5** terminal count line; Phase 2 and 3 spell out the next action. **`beginPrivateContract`** calls **`sendChapterGateProgressFooter`** after the trial start message so accepting at the operative immediately reinforces Phase 3.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — Spynet operative convo: no duplicate 5/5 progress system line
+
+- **Summary:** **`getInitialScreen`** called **`sendChapterGateProgressFooter`** on **`trial_ready`** after **`unlockPrivateTrialGateIfEligible`**, which already ends with the same footer — two identical **"Mandalorian Operative: 1/1 | Spynet contracts: 5/5 | …"** lines. Footer is sent only when **`unlockPrivateTrialGateIfEligible`** did not transition (player was already trial-ready).
+- **Files:** `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — LuaObject: no throw on get*At table OOB (fixes combat Lua crash)
+
+- **Summary:** **`LuaObject::getIntAt`** / **`getSignedIntAt`** / **`getLongAt`** / **`getBooleanAt`** / **`getStringAt`** / **`getFloatAt`** / **`getDoubleAt`** no longer throw **`ArrayIndexOutOfBoundsException`** when the Lua sequence is shorter than the requested index (e.g. index **16** vs smaller **`#`**). They **`fprintf`** to **stderr** with index and table size and return safe defaults so **`CombatQueueCommand::doCombatAction`** and other paths are not aborted by malformed Lua tables. **`DotEffect::loadDot`** and **`StateEffect::loadState`** only iterate **`defender*`** subtables when **`isValidTable()`**.
+- **Files:** `utils/engine3/MMOEngine/src/engine/lua/LuaObject.cpp`, `src/server/zone/objects/creature/commands/effect/DotEffect.h`, `src/server/zone/objects/creature/commands/effect/StateEffect.h`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild `core3`** (engine + server). After deploy, grep **stderr** / **`core3.log`** for **`[LuaObject::`** to find broken Lua data (often **`dotEffects`** / modifier arrays). Root data should still be fixed when identified.
+
+### 2026-04-06 — Spynet bounty camp: 1500 ms despawn delay + trial complete guard
+
+- **Summary:** Doubled **`SPYNET_BOUNTY_CAMP_FINISH_DELAY_MS`** to **1500** so **`GoToTheater`** teardown runs later after the mark dies (less “frozen upright” corpse). **`notifyBountyMobileKilled`** now requires **`privateContractActive == 1`** before calling **`onSpynetMarkDown`** / **`completePrivateContract`**, and sets **`:campFinished` only after** that path runs so players are not soft-locked with **camp finished** but no chapter advance; inactive kills log **`logDiagPlayer`** and show an operative system line.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — Spynet bounty camp: defer GoToTheater teardown on trial complete
+
+- **Summary:** **`completePrivateContract`** no longer calls **`finishActiveSpynetBountyCampTheater`** synchronously when **`privateContract.useBountyCampTheater`** is set. It schedules **`delayedFinishSpynetBountyCampTheater`** after **`SPYNET_BOUNTY_CAMP_FINISH_DELAY_MS`** so the mark’s death / **`OBJECTDESTRUCTION`** path can finish before **`GoToTheater:taskFinish`** despawns camp mobiles (reduces upright 0-HAM client glitch). **`privateContract.pendingCampTeardown`** gates the delayed run; **`beginPrivateContract`**, **`failPrivateContract`**, **`migrateLegacy`**, and **`consoleResetArc`** clear it so a new trial or reset does not run a stale teardown.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Tune **`SPYNET_BOUNTY_CAMP_FINISH_DELAY_MS`** if needed (now **1500** ms; see follow-up entry above).
+
+### 2026-04-06 — Bounty terminal: optional contract tier menu (like mission direction)
+
+- **Summary:** Bounty hunter terminals gain radial **Choose Bounty Contract Tier** (id **115**), opening Lua **`bounty_contract_tier`** (Sui list). Players persist **`bounty_contract_tier` / `tierChoice`** (`auto`, `1`–`4`): Automatic = legacy skill-based highest tier; fixed tiers map to mission levels **1 / 2 / 3** with gates **Novice / Investigation I / III**; **`4`** uses the same Tier **3** mission pool but requires **Investigation IV**. **`randomizeGenericBountyMission`** reads the preference and falls back to automatic if skills no longer match.
+- **Files:** `src/server/zone/objects/tangible/terminal/mission/MissionTerminalImplementation.cpp`, `src/server/zone/managers/mission/MissionManagerImplementation.cpp`, `bin/scripts/screenplays/tools/bounty_contract_tier.lua`, `bin/scripts/screenplays/screenplays.lua`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild `core3`** and **restart** (C++ + Lua). **Investigation II** does not change Core3 bounty tier math today; Tier 2 still means Investigation **I** as before. **Mando Spynet 5/5** does not read **`tierChoice`**; it still counts **`BOUNTY`** completions with non-empty NPC **`TargetOptionalTemplate`** while **`countingEnabled`**. UI copy + **`startChapterGate`** text clarify that.
+
+### 2026-04-06 — Mando: beskar tune step count + waypoint failure logs
+
+- **Summary:** **`tryApplyArmorBeskarTune`** returns the **C++ apply step count** (not just boolean); **`applyBeskarTuneAfterTrial`** logs **`piecesTuned`** and **`totalC++ApplySteps`**. **`completePrivateContract`** logs when gate or purple waypoint grants fail. Comment on **`logDiagPlayer`** (delegate only) and on waypoints vs theater.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — Bounty tier 4, beskar tune, logging, trial waypoints
+
+- **Summary:** **(1)** **`tierChoice == "4"`** sets **`eliteInvestigationListing`**: same mission level 3 pool as tier 3, but **+10** (cap **50**) to the Jedi / player-bounty roll **`compareValue`** so elite listing is distinct. **(2)** **`logDiagPlayer`** delegates to **`logDiag`** (single printf/logLua path). **(3)** **`applyBellumBeskarTune`** returns **int** count of applied changes; **`applyArmorBeskarTune`** Lua pushes that count; **`tryApplyArmorBeskarTune`** treats **>0** as success so all-vulnerable pieces do not count as tuned. **(4)** **`grantChapterGateBriefingWaypoints`** / **`grantPurpleOperativeReturnWaypoint`** return **boolean**; **`completePrivateContract`** warns if pins fail. Beskar player message and diag log clarify vulnerable skips.
+- **Files:** `src/server/zone/managers/mission/MissionManagerImplementation.cpp`, `src/server/zone/objects/tangible/wearables/ArmorObject.idl`, `ArmorObjectImplementation.cpp`, `LuaTangibleObject.cpp`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/tools/bounty_contract_tier.lua`, `bellumgero_change_log.md`
+- **Notes:** **Full C++ rebuild** (IDL regen). Lua-only callers of gate helpers ignore return values safely.
+
+### 2026-04-06 — Spynet operative: sync 5/5 gate on convo (fix stale gate_in_progress)
+
+- **Summary:** After the 5th NPC bounty, **C++** updates **`bhTerminalCount`** and shows **5/5** immediately, but **`needsCustomContract`** was only set by **`gateProgressEvent`** (15s poll). Until that ran, **`countingEnabled`** stayed **1**, so **`MandoSpynetOperativeConvoHandler`** kept returning **`gate_in_progress`** (keep clearing bounties). Added **`unlockPrivateTrialGateIfEligible`** (shared with **`gateProgressEvent`**) and call it when opening the operative convo so flags, purple waypoint, and **`trial_ready`** match **5/5**.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — Bounty NPC: tier 2 no longer simulates cross-map walk
+
+- **Summary:** **`BountyHunterTargetTask`** only sets **`move=true`** for **mission level 3** (hard). **Tier 2** (standard) now keeps the simulated target at **mission end** coordinates like tier 1, so the datapad waypoint and spawn **256 m** check align. Previously tier 2 walked toward a random planet point (often thousands of meters away), matching logs where **`curPos`** drifted toward **`dest`** while the player stood at the waypoint.
+- **Files:** `src/server/zone/objects/mission/bountyhunter/events/BountyHunterTargetTask.h`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild `core3`**. Tier 3 behavior unchanged (starport / random planet simulation).
+
+### 2026-04-06 — MandoWayOfLife: default Spynet debug verbose off
+
+- **Summary:** **`SPYNET_BOUNTY_DEBUG_VERBOSE`** defaults to **`false`** so production shards are not flooded with **`[SpynetDebug]`** / contract-check heartbeat lines; set **`true`** locally when diagnosing Spynet / bounty camp.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**.
+
+### 2026-04-06 — bounty_contract_tier: ASCII-friendly list labels (no em dash)
+
+- **Summary:** Replaced em dashes (—) in Sui list row labels and prompt with periods and colons so clients that lack that glyph do not show empty boxes.
+- **Files:** `bin/scripts/screenplays/tools/bounty_contract_tier.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`** or reload screenplays as you usually do.
+
+### 2026-04-06 — Mando Spynet: clarify tier menu vs 5/5 gate (copy + comment)
+
+- **Summary:** **`bounty_contract_tier`** Sui prompt and **`startChapterGate`** system message state that contract tier only changes terminal offers, not Spynet **x/5**. C++ comment on **`tierChoice`** block points maintainers at **`MissionObjectiveImplementation`** counting rules.
+- **Files:** `bin/scripts/screenplays/tools/bounty_contract_tier.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `src/server/zone/managers/mission/MissionManagerImplementation.cpp`, `bellumgero_change_log.md`
+
+### 2026-04-06 — Config: enable BountyNpcSpawnDebug for local repro
+
+- **Summary:** Set **`MissionManager.BountyNpcSpawnDebug = true`** in **`bin/conf/config.lua`** so rebuilt **`core3`** emits **`[BountyNpcSpawnDebug]`** logs without a **`config-local`** override. Set back to **`false`** on shards that should not log NPC bounty ticks.
+- **Files:** `bin/conf/config.lua`, `bellumgero_change_log.md`
+
+### 2026-04-06 — Debug: NPC bounty spawn tracing ([BountyNpcSpawnDebug])
+
+- **Summary:** Optional verbose server logging for **terminal NPC bounties**: each **`BountyHunterTargetTask`** tick logs planet match, distance to simulated target, nav adjust pushing past 256 m, and **`spawnTarget`** logs template, X/Y/Z, spawn success (**oid**, **inQuadTree**, world pos) or null. Toggle **`Core3.MissionManager.BountyNpcSpawnDebug`** in **`bin/conf/config.lua`** (default **false**).
+- **Files:** `src/server/zone/objects/mission/bountyhunter/events/BountyHunterTargetTask.h`, `src/server/zone/objects/mission/BountyMissionObjectiveImplementation.cpp`, `bin/conf/config.lua`, `bellumgero_change_log.md`
+- **Notes:** **Rebuild `core3`**. Grep logs for **`[BountyNpcSpawnDebug]`**. Hot path checks config each tick (~10 s per active NPC bounty) when enabled.
+
+### 2026-04-06 — Spynet: tell players bounty camp pin is on datapad Quest tab
+
+- **Summary:** GoToTheater adds **`WAYPOINTQUESTTASK`** pins; they show under the client’s **Quest** (mission) waypoint UI, not the main **Waypoints** list — players saw only the operative/house pins and thought the trial had no mark. Updated **`beginPrivateContract`**, **refresh** (bounty mode), **migrate** system text, and **operative convo** screens to say **Quest tab** explicitly.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Client may label the tab slightly differently; core idea is **task / mission waypoint**.
+
+### 2026-04-06 — Spynet: verbose debug channel ([SpynetDebug])
+
+- **Summary:** Added **`SPYNET_BOUNTY_DEBUG_VERBOSE`** (defaults **`false`** in **`MandoWayOfLife`**; set **`true`** for dev diagnosis) and **`logSpynetDebug`**. Extra lines on **begin/fail/complete private contract**, **refresh waypoint**, **migrate legacy**, **respawn skip**, **contract check (camp heartbeat + which chapter task is started)**, **finishActive camp**, **bounty helper** (mob presentation, observers, kills, mark-down), and **GoToTheater** hooks **`onTheaterCreated` / `onEnteredActiveArea`** on all three chapter camps. **`applyBountyMobPresentation`** now takes **`pPlayer`** for logging.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter3_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** **Restart `core3`**. Filter: **`[SpynetDebug]`**. Camp heartbeat logs every **`CONTRACT_CHECK_INTERVAL_MS`** while trial active (noisy).
+
+### 2026-04-06 — Spynet bounty camp: push theater spawn ring out of cities
+
+- **Summary:** **`GoToTheater`** picks the camp from **`getSpawnArea`** around the player at trial accept; **750–1400 m** often stayed inside Corellian urban **no-spawn** bands. **`minimumDistance` / `maximumDistance`** raised on **`BellumBountyCampChapter1/2/3Theater`** (**1600/3200**, **1700/3400**, **1800/3600**) so the yellow waypoint lands farther in the wild.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_chapter1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter3_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** **Restart `core3`**. Accepting the trial **in town** still uses your position as the ring center — for a shorter ride, step outside the city first.
+
+### 2026-04-06 — Spynet: auto-migrate legacy private trial to bounty camp theater
+
+- **Summary:** Characters still on **pre-theater** Spynet trials (**`privateContract.useBountyCampTheater=0`**, stale **`contractTargetId`**, **`spawnRelinkDone`** blocking **`tryRespawnPrivateContractTargetOnce`**) were stuck on **orange anchor** waypoints. **`migrateLegacyPrivateContractToBountyCampTheater`** clears the legacy OID, resets relink, removes the orange pin, starts **`BellumBountyCampChapter1/2/3Theater`** (same tier rule as **`beginPrivateContract`**), and sets **`useBountyCampTheater=1`**. Invoked from **`onPlayerLoggedIn`** (arc complete branch), **`refreshSpynetTrialSupportFromOperative`**, and **`refreshPrivateContractTargetWaypointFromActiveTarget`** when **respawn after nil resolve** fails. Does **not** increment **`privateContractsToday`**.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Live legacy **`mando_contract_target`** is **destroyed** when migrating.
+
+### 2026-04-06 — Spynet private trial: remove coordinate disk; Mellichae-style bounty camp; lower CL
+
+- **Summary:** **Private trial** no longer grants or uses the **coordinate disk** (legacy disks stripped on fail/complete/reset; old item radial shows a retire message). **`beginPrivateContract`** starts **`BellumBountyCampChapter1/2/3Theater:start`** (tier **`min(3, chapter+1)`**) so the player gets the **yellow GoToTheater waypoint** only; camp spawns on approach; **mark kill** calls **`onSpynetMarkDown` → `MandoWayOfLife:completePrivateContract`**. **`contractCheckEvent`** is a heartbeat in bounty-camp mode. Operative option **Remind me…** → **`refreshSpynetTrialSupportFromOperative`**. **`failPrivateContract` / `consoleResetArc`** call **`finishActiveSpynetBountyCampTheater`**. Reduced combat profile on **`mando_contract_target`**, **`bellum_bounty_mark`**, **`bellum_bounty_henchman`**, and **chapter theater `markLevel`/`henchLevel`**.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter3_theater.lua`, `bin/scripts/screenplays/bellum/mando_spynet_contract_waypoint_disk_menu.lua`, `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bin/scripts/object/tangible/mission/mando_spynet_contract_waypoint_disk.lua`, `bin/scripts/mobile/bellum/mando_contract_target.lua`, `bin/scripts/mobile/bellum/bellum_bounty_mark.lua`, `bin/scripts/mobile/bellum/bellum_bounty_henchman.lua`, `bellumgero_change_log.md`
+- **Notes:** **Restart `core3`**. First-time convo cache may need relog after **`trial_refresh_hint`** replaces **`trial_reissue_disk`**.
+
+### 2026-04-06 — Spynet trial: complete when refresh sees dead mark; reissue disk if trial ended
+
+- **Summary:** **`refreshPrivateContractTargetWaypointFromActiveTarget`** used to **skip** when **`contractTargetId`** resolved but **`isDead()`**, leaving **`privateContractActive=1`** until the next **`contractCheckEvent`** and still granting a **new disk** on operative reissue. It now calls **`completePrivateContract`** in that case. **`reissueSpynetContractWaypointDiskFromOperative`** and **`useSpynetContractWaypointDiskFromItem`** check **`privateContractActive`** after refresh and skip disk / upload with a clear system message if the trial was closed.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**.
+
+### 2026-04-06 — Spynet bounty camps (Mellichae-style theater, simplified)
+
+- **Summary:** Added **three** **`GoToTheater`** screenplays (**Chapter 1–3**) inspired by **`MellichaeOutroTheater`**: same rough **camp decor** (no **`power_shrine` / `power_shrine_red`**). **No** healing pulses or crystal logic. **Two** creature templates (**`bellum_bounty_mark`**, **`bellum_bounty_henchman`**) with **empty `lootGroups`**; **credits** are granted on kill to the **player** who got the killing blow. **Chapter 1** = mark + 2 associates; **2** = +1 associate; **3** = +2 associates, higher levels/credits. Comments on **Ch 2–3** files note where to add green/red shrines later. **Not** wired into **`mando_way_of_life`** yet — start with **`BellumBountyCampChapter1Theater:start(pPlayer)`** (etc.) from a convo or trial step when ready.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_chapter3_theater.lua`, `bin/scripts/mobile/bellum/bellum_bounty_mark.lua`, `bin/scripts/mobile/bellum/bellum_bounty_henchman.lua`, `bin/scripts/mobile/serverobjects.lua`, `bin/scripts/screenplays/screenplays.lua`, `bellumgero_change_log.md`
+- **Notes:** **Restart `core3`**. If **`require("screenplays.bellum.bounty_camp_theater_helpers")`** fails on your fork, fix Lua path or inline the helper into one file.
+
+### 2026-04-09 — Dr. Kaelen Varr: fix convo handler load in CreatureTemplateManager Lua
+
+- **Summary:** **`dr_kaelen_varr_convo_handler.lua`** was **`includeFile`**’d from **`mobile/conversations.lua`**, which runs in the **CreatureTemplateManager** Lua VM **before** screenplays. That VM never defines **`conv_handler`**, so line 1 **`conv_handler:new {}`** errored. The handler is already loaded by **`screenplays/screenplays.lua`** (`endor/conversations/dr_kaelen_varr_convo_handler.lua`) in **DirectorManager** Lua where conversations run. Removed the mobile include and deleted the duplicate **`bin/scripts/mobile/conversations/endor/dr_kaelen_varr_convo_handler.lua`**; **`dr_kaelen_varr_conv.lua`** still registers the template during mobile load.
+- **Files:** `bin/scripts/mobile/conversations.lua`, `bellumgero_change_log.md` (removed `bin/scripts/mobile/conversations/endor/dr_kaelen_varr_convo_handler.lua`)
+- **Notes:** **Restart `core3`**. No change to quest logic; only load order / duplicate file cleanup.
+
+### 2026-04-09 — Mando Spynet: private trial waypoint anchor when getSceneObject(targetId) is nil
+
+- **Summary:** DEBUG logs showed **`refreshPrivateContractTargetWaypoint`** bailing because **`getSceneObject(contractTargetId)`** returned **nil** while the trial was still active (object not in **`ServerCore::getZoneServer()`** map on this process, unload timing, or similar). **`beginPrivateContract`** now persists **`privateContract.anchorPlanet`** and spawn **X/Z/Y** strings; **`refreshPrivateContractTargetWaypointFromActiveTarget`** uses that **anchor** to re-place the **orange mark** when the live NPC cannot be resolved. Anchor cleared on **fail/complete** and **`consoleResetArc`** (empty strings, not **`0`**). **Trial completion** still uses **`getSceneObject`** when the target resolves; if it never resolves, **`contractCheckEvent`** may eventually **fail** the trial after the miss cap.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Mid-trial characters **without** a stored anchor need to **start the trial again** (or reissue after a fresh **`beginPrivateContract`**) to populate anchor data. Watch for log **`ANCHOR FALLBACK`**.
+
+### 2026-04-09 — Mando Spynet: fallback trial completion + TRIAL console lines
+
+- **Summary:** **`resolvePrivateContractTargetById`** tries **`getSceneObject`** then **`getCreatureObject`** (same map today; harmless on unified **`core3`**). **`contractCheckEvent`** logs every tick with **`TRIAL contractCheckEvent:`** (always **`printf`** + **`logLua(1)`** via **`logDiagPlayer`**). If the OID stays unresolvable but the player remains within **`PRIVATE_CONTRACT_FALLBACK_RADIUS_SQ`** (192 m, world **X/Y**) of the stored anchor for **`PRIVATE_CONTRACT_FALLBACK_COMPLETE_NIL_TICKS`** ticks (default **9** × 10 s), the trial **completes** as **`COMPLETE (fallback near anchor + unresolved streak)`** so kills that despawn the corpse still finish the gate. Leaving the anchor wedge resets **`privateContract.fallbackNilStreak`**. **`logDiagPlayer`** now inlines **`printf`** so player lines always hit the terminal even if **`logDiag`** call patterns change.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Tune **`PRIVATE_CONTRACT_FALLBACK_RADIUS_SQ`** / **`PRIVATE_CONTRACT_FALLBACK_COMPLETE_NIL_TICKS`** on the screenplay table if the heuristic is too loose or tight. Grep **`TRIAL contractCheckEvent`**.
+
+### 2026-04-09 — Mando Spynet: heal missing privateContract anchor (legacy trials)
+
+- **Summary:** Characters mid trial with **`privateContractActive`** and **`contractTargetId`** but **no** **`privateContract.anchorPlanet`** (started before anchor save) hit **`resolve nil, no anchor`** on reissue/login. **`ensurePrivateContractSpawnAnchorForLegacyTrial`** stamps anchor at **player X + 200**, same **Z/Y**, same planet (**mirrors `beginPrivateContract`**). Called from **`refreshPrivateContractTargetWaypointFromActiveTarget`** and **`contractCheckEvent`** so waypoint fallback and proximity completion can run.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Log line **`healPrivateContractAnchor`**. If the pin is wrong, abandon/finish and **begin the trial again** for a precise spawn.
+
+### 2026-04-09 — Mando Spynet: respawn contract NPC at anchor when OID does not resolve
+
+- **Summary:** Orange waypoint alone left **no `mando_contract_target` in the world** when **`getSceneObject`/`getCreatureObject`** failed. **`tryRespawnPrivateContractTargetOnce`** runs **`spawnMobile`** at the **stored anchor** (navmesh may adjust), writes new **`contractTargetId`**, refreshes anchor from the mob’s world position, sets **`privateContract.spawnRelinkDone=1`** (one auto-respawn per trial). Invoked from **`refreshPrivateContractTargetWaypointFromActiveTarget`** (reissue/login/disk) and once from **`contractCheckEvent`** if still unresolved. Cleared on **`beginPrivateContract`**, **fail/complete**, **`consoleResetArc`**. Still **one** trial NPC by design (not a group).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Logs **`tryRespawnPrivateContractTargetOnce OK`** / **`FAILED`**. If spawn fails (cliff/building), move to open ground or restart trial.
+
+### 2026-04-09 — Loot: drop missing damage_type_electricity_schematic include
+
+- **Summary:** **`items.lua`** included **`items/loot_schematic/damage_type_electricity_schematic.lua`**, but that file was never added (and no loot groups reference a **`damage_type_electricity_schematic`** template). Electricity weapon tuning uses **`damage_type_electricity_powerup`** in **`damage_type_powerups`** instead. Removed the dead **`includeFile`** so LootManager startup no longer errors.
+- **Files:** `bin/scripts/loot/items.lua`, `bellumgero_change_log.md`
+- **Notes:** **Restart `core3`**. If you later add a real schematic IFF + object template, re-add a matching loot item Lua and this include.
+
+### 2026-04-07 — Mando Spynet: coordinate disk for private trial waypoint
+
+- **Summary:** Added **`object/tangible/mission/mando_spynet_contract_waypoint_disk.iff`** (mission datadisk appearance) with Lua **`MandoSpynetContractWaypointDiskMenuComponent`**: radial **Upload Coordinates** calls **`MandoWayOfLife:useSpynetContractWaypointDiskFromItem`**, which re-places the **orange contract mark** on the datapad from the live **`mando_contract_target`**. **`beginPrivateContract`** grants one disk (strips duplicates); **`failPrivateContract` / `completePrivateContract` / `consoleResetArc`** remove disks. Operative **`trial_active`** offers **I need a new coordinate disk** → **`trial_reissue_disk`** → **`reissueSpynetContractWaypointDiskFromOperative`** (refreshes waypoint + new disk).
+- **Files:** `bin/scripts/object/tangible/mission/mando_spynet_contract_waypoint_disk.lua`, `bin/scripts/object/tangible/mission/serverobjects.lua`, `bin/scripts/screenplays/bellum/mando_spynet_contract_waypoint_disk_menu.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones**. Server template inherits **`shared_mission_datadisk`** client appearance. If a custom client TRE is required for the new IFF path, add it to your pack; many setups resolve via server object template alone.
+
+### 2026-04-07 — Mando Spynet: disk + waypoint grant hardening
+
+- **Summary:** **`grantPrivateContractMarkWaypointAt`** now treats **`addWaypoint`** return **0** or **nil** as failure (matches **`RangersPath`** pattern), logs diagnostics, and tells the player to use the coordinate disk. **`grantSpynetContractWaypointDisk`** falls back to **`mission_datadisk.iff`** with **custom name** + **`MandoSpynetContractWaypointDiskMenuComponent`** if the custom **`mando_spynet_contract_waypoint_disk`** template cannot be created; cleanup uses **`isSpynetContractDiskObject`** so only tagged fallbacks are removed.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/mando_spynet_contract_waypoint_disk_menu.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones**. If you still see no disk and no pin, check server log for **`grantSpynetContractWaypointDisk FAILED`** or **`grantPrivateContractMarkWaypointAt FAILED`**.
+
+### 2026-04-07 — Mando Spynet: trial disk first, overload giveItem, fix nil target completing trial
+
+- **Summary:** **`beginPrivateContract`** now grants the **coordinate disk before** the datapad waypoint so waypoint failures still leave the disk + **Upload Coordinates**. **`grantSpynetContractWaypointDisk`** retries **`giveItem(..., true)`** (overload) like other Bellum rewards, and sends a clear line if the inventory slot is nil. **`grantPrivateContractMarkWaypointAt`** no longer fails silently when **ghost** is nil. **`contractCheckEvent`** no longer treats **`getSceneObject` nil** as a kill (that could strip disk/waypoint and **complete the chapter**); it reschedules and only **fails the trial** after many misses (**`privateContractTargetResolveMisses`**, cleared on success/fail/complete/`consoleResetArc`).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`** so this loads. If you still get nothing, confirm you see the final **`trial_start`** convo line and watch for **`[Spynet trial]`** system messages.
+
+### 2026-04-07 — Mando Spynet: DEBUG printf/log lines for trial disk and waypoint
+
+- **Summary:** Added **`DEBUG`** lines via **`logDiag` / `logDiagPlayer`** (console **`printf`** + **`logLua(1, …)`**) on **`beginPrivateContract`**, per-**`giveItem`** attempt in **`grantSpynetContractWaypointDisk`**, **`grantPrivateContractMarkWaypointAt`** entry/success, **`refreshPrivateContractTargetWaypointFromActiveTarget`** early exits + success, **`reissueSpynetContractWaypointDiskFromOperative`**, **`useSpynetContractWaypointDiskFromItem`**, throttled **`contractCheckEvent`** nil-target resolves, and **`trial_start`** handler **`beginPrivateContract`** return value.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart `core3`**. Grep logs for **`DEBUG grantSpynet`**, **`DEBUG beginPrivateContract`**, **`DEBUG reissueSpynetDisk`**, **`DEBUG useSpynetDiskFromItem`**. Remove or gate behind a flag once the issue is found.
+
+### 2026-04-06 — Mando Spynet: private trial datapad pin + footer hardening
+
+- **Summary:** The private trial never created a **BH terminal mission**, so “details in your datapad” was misleading. **`beginPrivateContract`** now grants an **orange datapad waypoint** to the spawned mark (**`chapterGate.contractMarkWpId`**), sends a **system line** with planet + rough coordinates, and **login** refreshes that pin if **`privateContractActive`**. Cleared on **fail/complete** and **`consoleResetArc`**. **`sendChapterGateProgressReminder`** is wrapped in **`pcall`**; Spynet footer uses **string concat** (no `string.format` on mixed tails). Operative **`trial_start`** line updated to match.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones**. This is still **not** a mission journal entry — only waypoint + system text.
+
+### 2026-04-06 — Mando client text: no hyphen or em dash separators
+
+- **Summary:** Some clients box **hyphen-minus** and **em dash** in chat, waypoints, and convo. Swept **Mando Way of Life** player-facing strings to use **periods, commas, colons, pipes, and parentheses** instead (e.g. **chain code**, **Mission terminal**, **Mandalorian Operative (private trial)**). Same for **Trialmaster**, **Foundling informant**, **Spynet operative** convos and **`MissionObjectiveImplementation`** Spynet hint line.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/mobile/conversations/bellum/mando_foundling_informant_conv.lua`, `src/server/zone/objects/mission/MissionObjectiveImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** **C++ rebuild** for the `.cpp` tweak; **restart zones** for Lua. Comments and server-only log strings may still use dashes.
+
+### 2026-04-07 — Mando Spynet: purple operative waypoint at 5/5 and after each trial
+
+- **Summary:** Chapter-gate **blue** operative pins could go **stale** (NPC moved) and nothing re-placed a trial return marker. Added **`chapterGate.trialPurpleWpId`**: **`WAYPOINT_PURPLE`** datapad waypoint at **`chapterGateBriefingConfig`** operative coords when **Spynet hits 5/5** (`gateProgressEvent`), **after each private trial** (`completePrivateContract`), and on **login** if **`needsCustomContract`**. Cleared when opening a new Spynet count (`startChapterGate`) or **accepting** a trial (`beginPrivateContract`). **`grantChapterGateBriefingWaypoints`** gains optional **`suppressSystemMessages`** so trial/login refresh does not fake a recruiter line. Reminder/footer + operative convo copy updated for purple.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones**. Yellow **BH hub** waypoint unchanged.
+
+### 2026-04-07 — Mando Way: Foundling helmet detection (hat slot + template path)
+
+- **Summary:** **`hasFoundlingHelmet`** only queried **`getSlottedObject("helmet")`** and **`getObjectTemplate()`** (not a **`LuaSceneObject`** method), so players wearing the real Foundling helm in the usual **`hat`** slot always failed checks and saw **“No helm. No chain-code. No work.”** Detection now tries **`hat`** then **`helmet`** and matches **`foundling_helmet`** via **`getTemplateObjectPath()`**.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones** loading these scripts. **`hair`** slot also scanned (strict **`foundling_helmet`** path only) for rare species/slot setups.
+
+### 2026-04-07 — Mando Spynet operative: Corellia spawn + briefing waypoint (27, 28, -4712)
+
+- **Summary:** Moved **`mando_spynet_operative`** from **(-173, 28, -4712)** to **(27, 28, -4712)** on Corellia and aligned **`chapterGateBriefingConfig`** operative waypoint coords so recruiter/datapad markers match the NPC.
+- **Files:** `bin/scripts/screenplays/static_spawns/corellia_static_spawns.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zones** (or reload static spawns if your process supports it). If the NPC clips or floats, adjust **`operativeZ`** in both files after a quick `/getMapLocation` or similar in-world.
+
+### 2026-04-07 — Mando Spynet: explain BH completions that do not advance 5/5
+
+- **Summary:** Spynet **only** increments for **NPC** terminal bounties while **`countingEnabled`** is on (after the Corellia operative’s **gate_start**). Player/Jedi marks use an empty optional template and never count — completions looked “silent.” **`MissionObjectiveImplementation`** now sends a **system message** after a **Bounty** completes when the player is on the Mando chapter path but that mission **did not** get a **`bhCounted_`** stamp (Spynet not open, or player mark, or both).
+- **Files:** `src/server/zone/objects/mission/MissionObjectiveImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** **C++ rebuild** required. Messages are suppressed while **`needsCustomContract`** (5/5, return to operative) or **`privateContractActive`** is set, and after **`chapter4Complete`**.
+
+### 2026-04-06 — Mando Way: beskar armor tune after each trial gate (chapters 1–4)
+
+- **Summary:** After each private trial completes (`completePrivateContract`, chapters **1–4**), the screenplay scans the player’s **equipped slots + shallow inventory** for Mandalorian **custom** armor (`object/.../mandalorian/custom/`) and applies stacking **kinetic / energy / blast / heat / acid** bonuses plus **max condition** via new **`ArmorObject::applyBellumBeskarTune`** and Lua **`TangibleObject:applyArmorBeskarTune`**. Non-vulnerable types only (matches existing BH-style vuln on those templates). A **beskar / Guild** congratulations system message runs before the existing rank line.
+- **Files:** `src/server/zone/objects/tangible/wearables/ArmorObject.idl`, `src/server/zone/objects/tangible/wearables/ArmorObjectImplementation.cpp`, `src/server/zone/objects/tangible/LuaTangibleObject.h`, `src/server/zone/objects/tangible/LuaTangibleObject.cpp`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** **Full C++ rebuild** required (IDL regenerates `ArmorObject` stubs). Restart zones after deploy. If `applyArmorBeskarTune` is missing on an old binary, the `pcall` in Lua fails safely and no stats change. **`applyBellumBeskarTune`** locks with **`Locker(_this.getReferenceUnsafeStaticCast())`** (not `asArmorObject()`, which is not in scope on the implementation class).
+
+### 2026-04-05 — Mando chapter gate: Operative visit 0/1 vs 1/1 reminders
+
+- **Summary:** Added **Mandalorian Operative (Corellia)** checklist-style system lines: **0/1** until the player opens the Spynet count with the operative, **1/1** afterward, plus a **Spynet contracts x/5** footer where relevant. Wired into recruiter gate brief + waypoint refresh, **login** (Foundling arc complete), **operative conversation** open (`gate_explain` / `gate_in_progress` / `trial_ready`), **`startChapterGate`**, **`gateProgressEvent` (5/5)**, and a **C++ → Lua** call after each counted Spynet bounty completion (`sendChapterGateProgressReminder`).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_spynet_operative_conv_handler.lua`, `src/server/zone/objects/mission/MissionObjectiveImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** **C++ rebuild** required for the bounty-completion footer callback. Lua-only paths (briefing, login, operative convo, gate events) apply after zone restart / script reload.
+
+### 2026-04-05 — Mando chapter gate: Spynet BH progress without accept-time tag
+
+- **Summary:** Spynet **5/5** counting only incremented when **`bhTagged_<missionId>`** was set at mission accept. Bounties accepted **before** the operative opened the count (or any accept path that skipped tagging) never got a tag, so **`MissionObjectiveImplementation::awardReward`** never sent **“Spynet contracts: x/5”** on completion. Completion now counts **NPC-mark bounties** whenever **`countingEnabled`** is on: **`MissionTypes::BOUNTY`** and **non-empty `getTargetOptionalTemplate()`** (player bounties use an empty template). **`startChapterGate`** system text notes that in-flight datapad missions can count.
+- **Files:** `src/server/zone/objects/mission/MissionObjectiveImplementation.cpp`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Requires **C++ rebuild** and zone restart. Accept-time tagging in **`MissionManagerImplementation.cpp`** is now optional/redundant for this gate; left in place for clarity.
+
+### 2026-04-05 — Travel: `purchaseTicket` command blocked by characterAbility (silent fail)
+
+- **Summary:** Ground/spaceport ticket purchase is driven by the **`purchaseticket`** queue command. If **`command_tables_shared*.iff`** assigns a **`characterAbility`** the player does not have, **`ObjectControllerImplementation::activateCommand`** clears the action with **no system message**, so buying tickets appears to do nothing. **`purchaseTicket.lua`** now sets **`characterAbility = ""`** after IFF load so the command is not ability-gated (matches common SWGEmu practice of fixing this in Lua).
+- **Files:** `bin/scripts/commands/purchaseTicket.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; **restart zone processes** so CommandConfigManager reloads — no C++ rebuild required for this fix. If ticket purchase still misbehaves after that, see the **next** changelog entry (C++ kiosk / range / messaging); that part needs a **rebuilt binary** to take effect. If you prefer gating (e.g. only after a tutorial skill), grant that ability via skills instead of re-adding a non-empty `characterAbility` here.
+
+### 2026-04-05 — Travel: PurchaseTicket ignored kiosks + in-range fallback + terminal error message
+
+- **Summary:** **`PurchaseTicketCommand`** only treated **`SceneObjectType::TRAVELTERMINAL`** as valid; many templates still expose travel kiosks as generic interactive terminals while the C++ class is **`TravelTerminal`**, so the command never saw a terminal in **`closeObjects`** and the client looked completely dead. Detection now also accepts objects whose template path contains **`terminal_travel`**, adds a **`Zone::getInRangeObjects`** fallback when close-objects are empty/stale, and null-checks **`getCloseObjects()`**. **`TravelTerminalImplementation`** now sends a **system message** when no **`PlanetTravelPoint`** resolves (previously only **`error()`** to log).
+- **Files:** `src/server/zone/objects/creature/commands/PurchaseTicketCommand.h`, `src/server/zone/objects/tangible/terminal/travel/TravelTerminalImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** **Not live until you rebuild and deploy the zone/core binary** — restarting processes alone does **not** pick up C++ changes; only a new binary does. Contrast the Lua **`purchaseTicket`** entry above: a **restart** there is enough for the script override. After you ship this build, restart zones as usual. If players still see the new “could not match shuttle route” line, fix **`planet_manager.lua`** travel point positions vs actual terminal/shuttle world positions (or **`ScheduleShuttleTask`** 128 m link).
+
+### 2026-04-05 — Mando chapter gate: recruiter briefing, Corellia waypoints, clearer Spynet copy
+
+- **Summary:** The Mandalorian Recruiter’s **chapter gate** screen now explains the real order of operations (operative first → five **Bounty Hunter mission terminal** NPC bounties → one private trial), grants **two datapad waypoints** (operative at Corellia static spawn coords matching `mando_spynet_operative`, Tyrena BH guild reference for terminals), and sends a **system-message checklist**. Returning while mid-count or post-5/5 gets **short NPC lines** plus waypoint refresh without repeating the full brief. Spynet operative conversation strings and `startChapterGate` / `gateProgressEvent` system lines were aligned with **BOUNTY** terminal counting (C++). **`consoleResetArc`** now clears chapter-gate waypoint keys, removes those waypoints, snapshots IDs **before** zeroing screenplay data (fix), and resets **`needsCustomContract`**.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/mobile/conversations/bellum/mando_spynet_operative_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart zones loading these scripts. Verify in-world that Tyrena guild terminals exist near the BH trainer waypoint; adjust `chapterGateBriefingConfig` if your shard places terminals elsewhere.
+
+### 2026-04-04 — Mando Way of Life: chapter badge indices (badge_map 140–144)
+
+- **Summary:** Set **`MandoWayOfLife.chapterBadgeIds`** for chapters **0–4** to **140–144**, matching custom **`badge_map.iff`** rows (`bdg_mando_*`) shipped in **`bg_custom1.tre`** with **`badge_n` / `badge_d`** (and title strings in **`skl_t` / `skl_n` / `skl_d`**). Chapter milestones call **`tryAwardChapterBadge`** with these indices.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; **restart zones** that run the screenplay. Server and client must load the same **`badge_map`** override **last** in the TRE list. Smoke-test with **`/grantBadge 140`** … **`144`** if needed.
+
+### 2026-04-04 — Foundling: remove shared static Tatooine informant (Mos Eisley)
+
+- **Summary:** Removed the world `mando_foundling_informant` spawn from **`TatooineMosEisleyScreenPlay`** (was duplicating / conflicting with **per-player** `spawnInformant()` at `planetData[1]`). On city load, **`deleteData("mando_way:foundling_informant_static:tatooine")`** clears the legacy hub key. Set **`planetData[1].citySpawn = false`** so optional **`spawnStaticInformants()`** can include Tatooine like other planets if used.
+- **Files:** `bin/scripts/screenplays/cities/tatooine_mos_eisley.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only. **Restart Tatooine zone** (or full server) to despawn any old shared informant still in the world from prior boots.
+
+### 2026-04-04 — Mando Way of Life: rank title skills + Lua `PlayerObject:setTitle`
+
+- **Summary:** Wired **Foundling → Clanbound** ranks as **title skills** (`mando_title_*` in `skills/bellum/mando_titles.lua`, registered from `skills/serverobjects.lua`). On chapter milestones, `MandoWayOfLife` calls **`awardSkill`** and **`PlayerObject:setTitle`** so the rank appears in the Community title list and is **auto-equipped** (addresses “logged but not shown”: `setTitle` was not exposed to Lua). **Badges** remain **optional**: `chapterBadgeIds` defaults to **nil** per chapter until you assign numeric indices that exist in **`datatables/badge/badge_map.iff`** and match **client** `badge_n.stf` (per Titles/Badges system notes).
+- **Files:** `bin/scripts/skills/bellum/mando_titles.lua`, `bin/scripts/skills/serverobjects.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `src/server/zone/objects/player/LuaPlayerObject.h`, `src/server/zone/objects/player/LuaPlayerObject.cpp`
+- **Notes:** Requires **C++ rebuild** for `setTitle`. **Lua-only** skill definitions: restart zones / server so SkillManager reloads. Without **skl_n.stf** patch, titles may show as raw skill names (e.g. `mando_title_foundling`). For badges after TRE work, set `MandoWayOfLife.chapterBadgeIds[ch]` and use `/grantBadge <id>` to validate IDs.
+
+### 2026-04-04 — Foundling: `!foundling` spatial chat status (replaces broken `/foundlingStatus`)
+
+- **Summary:** Removed **`/foundlingStatus`** queue command — stock SWG clients reject unknown slash commands locally (`No such command, mood, chat type`) so the server never sees them. Added **`ChatManagerImplementation::broadcastChatMessage`** hook: if a player sends spatial chat exactly **`!foundling`** or **`!foundlingstatus`** (trimmed, case-insensitive), call Lua **`mandoFoundlingStatusRun`** → **`sendFoundlingStatusReportToPlayer`** and **do not broadcast** that line to others. Status output includes a tip to use **`!foundling`** again. Optional later: add **`foundlingStatus`** to client `command_table` IFF if you want a true slash.
+- **Files:** `src/server/chat/ChatManagerImplementation.cpp`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`; removed `FoundlingStatusCommand.h`, `bin/scripts/commands/foundlingStatus.lua`, `SkillManager` ability stub, `CommandConfigManager3` / `commands.h` registrations, `onPlayerLoggedIn` ability grant.
+- **Notes:** Requires **C++ rebuild**. In-game: open **Say**, type **`!foundling`**, Enter (not `/foundlingStatus`).
+
+### 2026-04-04 — Mando Trialmaster: Foundling mid-arc status + contact resync
+
+- **Summary:** Replaced dead-end `arc_in_progress` convo (no options) with choices: **What is my status?** (prints planet, quota phase, informant spawn state via separate `sendSystemMessage` lines) and **Reset contact** (`despawnInformant` + `ensureFoundlingInformant` to respawn private informant and waypoints). `getInitialScreen` still calls `ensureFoundlingInformant` on open as a light safety net.
+- **Files:** `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload conversations + screenplays. Use reset on Tatooine cantina recruiter, then travel to current planet if needed.
+
+### 2026-04-04 — Mando Foundling: Dathomir informant coords (Science Outpost, player HUD)
+
+- **Summary:** Moved Foundling informant `planetData[9]` from `(-3800, 5, 1100)` to player-verified Science Outpost: `(-123, 18, -1609)` as `spawnMobile(x, z, y)`.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload Dathomir zone / relog so the informant respawns at the new point.
+
+### 2026-04-04 — Mando Foundling: Endor informant coords (outpost); Talus stays Dearic
+
+- **Summary:** Moved Foundling informant `planetData[8]` (Endor) to `(3220, 24, -3430)` as `spawnMobile(x, z, y)` — player HUD near an outpost (same numeric fix was briefly applied to Talus by mistake). Restored `planetData[7]` (Talus) to Dearic `(455, 6, -3120)`.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload Endor zone / relog. Endor coords sit near existing `myswg_vendor` research spawn (~3201, 24, -3501).
+
+### 2026-04-04 — Mando Foundling: Talus informant coords (outpost, player HUD)
+
+- **Summary:** Moved Foundling informant `planetData[7]` from Dearic `(455, 6, -3120)` to player HUD near an outpost: `(3220, 24, -3430)` as `spawnMobile(x, z, y)` so the contact is not isolated in the wilderness.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload scripts or zone / relog so the informant respawns at the new point.
+
+### 2026-04-04 — Mando Foundling: Talus informant coords (Dearic, player HUD)
+
+- **Summary:** Moved Foundling informant `planetData[7]` from `(551, 5, -2906)` to player-verified open ground in Dearic: `(455, 6, -3120)` as `spawnMobile(x, z, y)` to avoid building/unreachable spawn and `NpcConversationStart` cell/LoS issues.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload scripts or zone / relog so dynamic informant respawns at the new point.
+
+### 2026-04-04 — Mando Foundling: Rori informant coords (Narmle, player HUD)
+
+- **Summary:** Moved Foundling informant `planetData[6]` to open-ground coordinates taken from in-game HUD at Narmle: `(-5185, 80, -2197)` in `spawnMobile` order `(x, z, y)`, replacing `(-5199, 80, -2186)` near a building porch to reduce `NpcConversationStart` failures (different parent cell / LoS).
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; reload scripts or re-enter zone / relog so `ensureFoundlingInformant` / `advanceToPlanet` spawns the new position.
+
+### 2026-04-04 — Mando Way: document AIENABLED; centralize informant post-spawn; fix recruiter start() fallback
+
+- **Summary:** Added file-header + inline comments describing `AIENABLED` (`OptionBitmask::AIENABLED` in `src/templates/params/OptionBitmask.h`) and that `setOptionsBitmask` replaces the full mask. Introduced `configureFoundlingInformantMobile()` so dynamic + GM static informant paths share one implementation. Fixed `start()` recruiter fallback when `SPAWN_RECRUITER_ON_START=true` to match `tatooine_mos_eisley.lua` (set `AIENABLED + INVULNERABLE + CONVERSABLE`, stop clearing `AIENABLED`). Commented city/Corellia Mandalorian spawns for the same policy. Clarified conv handler comment: re-asserting template does not replace missing `AIENABLED` on the creature.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/cities/tatooine_mos_eisley.lua`, `bin/scripts/screenplays/static_spawns/corellia_static_spawns.lua`, `bin/scripts/screenplays/bellum/convos/mando_foundling_informant_conv_handler.lua`
+- **Notes:** Lua-only. We do not set options on “every NPC” globally — only Bellum/scripted post-spawn overrides; stock mobiles keep template defaults unless a screenplay replaces the mask.
+
+### 2026-04-04 — Mando Foundling: informant spawn — AIENABLED + converse diagnostics
+
+- **Summary:** Dynamic (and GM `spawnStaticInformants`) informant NPCs now use `AIENABLED + INVULNERABLE + CONVERSABLE` and `setMoodString("conversation")`, matching the working Mos Eisley hub spawn. `INVULNERABLE + CONVERSABLE` alone was suspected of leaving radial/converse unreliable on some setups. Added spawn log line with `parentId` (cell) and a reminder that `NpcConversationStart` requires same cell as the NPC outdoors within ~6m with line-of-sight — otherwise the client often shows no dialog and Lua `getInitialScreen` never runs.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only. If conversation still fails outdoors, verify `planetData` height (`z`) so the NPC is not floating above terrain (LoS failure).
+
+### 2026-04-04 — Mando Foundling: dynamic per-player informant spawn (replaces static)
+
+- **Summary:** Rewrote the foundling informant spawn model from shared static NPCs (one per planet at boot) to per-player dynamic NPCs (spawned when a player advances to a planet, destroyed on turn-in). Root cause of "informant not talking / nothing happens": `setConvoTemplate` is runtime-only and was wiped by zone restarts, leaving the shared static NPC with no conversation binding. Dynamic spawn eliminates the shared static key entirely — no `_MANDO_LOAD_FLAG` race, no zone-restart wipe. Key changes: (1) `spawnInformant` now does a `spawnMobile` + configure NPC + write per-player ownership key; (2) `ensureFoundlingInformant` now calls `spawnInformant` instead of `tryLinkStaticFoundlingInformant` — handles relog, NPC death, and zone restarts; (3) `onPlayerLoggedIn` simplified to single `ensureFoundlingInformant` call; (4) `start()` no longer calls `spawnStaticInformants()` — function kept for GM use; (5) conv handler re-asserts `setConvoTemplate` on every conversation open (Option 1 safety); (6) conv handler ownership guard prevents Player B from hijacking Player A's NPC when both are on the same planet.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_foundling_informant_conv_handler.lua`
+- **Notes:** Lua-only — no C++ rebuild needed. On next server restart all players in arc will have their informant re-spawned dynamically via `onPlayerLoggedIn`. Existing static NPCs from previous boots will remain in-world but are inert (ownership guard prevents linking). `tryLinkStaticFoundlingInformant` and `spawnStaticInformants` kept in codebase for future Option 5 GM respawn command.
+
 ### 2026-04-01 — Mando Foundling: Rori informant coords corrected (Narmlex)
 
 - **Summary:** Rori informant (planet index 6) moved from (-5178, 5, -2194) — inside a building — to (-5199, -80, 2185) near Narmlex, verified in-game.
@@ -73,6 +515,24 @@ User-confirmed changes only. Commit this file with the related code when you lan
 ### Tooling / repo-adjacent
 
 *(Editor rules, CI, docs-only, etc.)*
+
+### 2026-04-07 — Cursor rule: no ASCII hyphen in player-visible game text
+
+- **Summary:** Added **`.cursor/rules/no-ascii-hyphen-game-text.mdc`**: when working under **`MMOCoreORB`**, avoid **hyphen-minus (U+002D)** and Unicode dashes in **convo, system messages, waypoint text, and other client-displayed strings**; use commas, periods, colons, pipes, parentheses instead. Documents allowed exceptions (code, comments, server-only logs, STF key paths).
+- **Files:** `~/.cursor/rules/no-ascii-hyphen-game-text.mdc`, `bellumgero_change_log.md` (this file)
+- **Notes:** Rule is **glob-scoped** to `workspace/BellumGero-Live/MMOCoreORB/**/*`, not `alwaysApply`.
+
+### 2026-04-05 — Mando titles: comment — client skl_t.stf vs skl_n
+
+- **Summary:** Corrected header comment in **`mando_titles.lua`**: floating title uses **`skl_t`**, not **`skl_n`** (matches in-game `(skl_t:[...])` when STF is missing); noted optional **`skl_n`/`skl_d`** and client skill datatables for Community title list.
+- **Files:** `bin/scripts/skills/bellum/mando_titles.lua`
+- **Notes:** Server Lua already calls **`awardSkill`** + **`setTitle`**; broken nameplate is a **client TRE** fix.
+
+### 2026-04-05 — Docs: SWG_CONTEXT scoped to mobile laptop + Dev-BG / BellumGero
+
+- **Summary:** `.cursor/context/SWG_CONTEXT.md` documents **this dev laptop only** (banner + paths): WSL repo at **`~/workspace/BellumGero-Live`**, TRE sync from **`/mnt/c/Dev-BG/`** to **`/trefiles`**, **`/mnt/c/BellumGero/`** for prod-style client on the same machine — not team-wide canonical paths; removed stale **`/mnt/c/SWGEmu`** examples for this PC.
+- **Files:** `.cursor/context/SWG_CONTEXT.md`
+- **Notes:** On this laptop: `sudo cp -f /mnt/c/Dev-BG/bg_custom1.tre /trefiles/` then restart Core3.
 
 ### 2026-03-29 — Cursor rules: confirm-before-changes + mandatory changelog
 

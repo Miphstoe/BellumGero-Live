@@ -6,6 +6,11 @@ MandoFoundlingInformantConvoHandler = conv_handler:new {}
 function MandoFoundlingInformantConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	if (pPlayer == nil or pNpc == nil) then return nil end
 
+	-- Option 1 safety: re-assert conv template every open (AiAgentImplementation::setConvoTemplate in C++).
+	-- Runtime-only; zone processes can lose the CRC — without it sendConversationStartTo bails (convoTemplateCRC == 0).
+	-- Does not fix missing AIENABLED on the creature; that must be set at spawn via full setOptionsBitmask.
+	AiAgent(pNpc):setConvoTemplate("mandoFoundlingInformantConvoTemplate")
+
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 
 	local npcOid    = SceneObject(pNpc):getObjectID()
@@ -48,16 +53,24 @@ function MandoFoundlingInformantConvoHandler:getInitialScreen(pPlayer, pNpc, pCo
 	end
 
 	if (not linked) then
-		-- Re-link if: (a) static hub OID matches, or (b) NPC template matches and player is in arc.
-		-- Case (b) handles stale static keys after server restart or spawn failure on any planet.
-		if (atStaticHub or isInformant) then
+		-- Ownership guard: for dynamic NPCs, only re-link if this player owns it.
+		-- Prevents player B from hijacking player A's private informant NPC when both
+		-- are on the same planet. Static hub (atStaticHub) bypasses ownership check.
+		local dynOwner    = tostring(tonumber(readData("mando_way:informant:" .. npcStr .. ":player")) or 0)
+		local playerOidStr = tostring(SceneObject(pPlayer):getObjectID())
+		local isOwnedByPlayer = (dynOwner == playerOidStr)
+
+		if (atStaticHub or (isInformant and isOwnedByPlayer)) then
 			MandoWayOfLife:writeStr(pPlayer, "foundling.informantId", npcStr)
-			MandoWayOfLife:writeInt(pPlayer, "foundling.informantStatic", 1)
-			-- Heal the static key so future lookups work without re-linking
-			writeData(staticKey, npcOid)
+			-- Mark static only if this is the registered static hub; dynamic NPC = informantStatic 0
+			MandoWayOfLife:writeInt(pPlayer, "foundling.informantStatic", atStaticHub and 1 or 0)
+			if (atStaticHub) then
+				-- Heal static key so future hub lookups work without re-linking
+				writeData(staticKey, npcOid)
+			end
 			MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
-				"Foundling informant: re-linked to NPC oid=%s planet=%s (atStaticHub=%s isInformant=%s).",
-				npcStr, tostring(curPlanet), tostring(atStaticHub), tostring(isInformant)
+				"Foundling informant: re-linked to NPC oid=%s planet=%s (atStaticHub=%s isOwnedByPlayer=%s).",
+				npcStr, tostring(curPlanet), tostring(atStaticHub), tostring(isOwnedByPlayer)
 			))
 			-- Re-grant waypoint in case it was lost
 			local countingEnabled = MandoWayOfLife:readInt(pPlayer, "foundling.planetCountingEnabled")

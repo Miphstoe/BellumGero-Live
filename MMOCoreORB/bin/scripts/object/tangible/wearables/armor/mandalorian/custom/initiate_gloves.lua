@@ -1,5 +1,4 @@
--- Mandalorian Way of Life — Chapter 1 reward
--- Granted on completion of the first 5+1 gate cycle
+-- Mandalorian Way of Life — Initiate-tier gloves (legacy template; Ch1+ grants use initiate chest/helm per design table)
 
 object_tangible_wearables_armor_mandalorian_custom_initiate_gloves = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_gloves:new {
 	templateType = ARMOROBJECT,
@@ -70,14 +69,14 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_gloves = object_tang
 	rating = LIGHT,
 	maxCondition = 28000,
 
-	kinetic = 29,
-	energy = 29,
+	kinetic = 35,
+	energy = 35,
 	electricity = 0,
 	stun = 0,
-	blast = 33,
-	heat = 29,
+	blast = 0,
+	heat = 35,
 	cold = 0,
-	acid = 29,
+	acid = 0,
 	lightSaber = 0,
 }
 

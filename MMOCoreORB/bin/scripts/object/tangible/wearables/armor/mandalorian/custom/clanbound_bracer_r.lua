@@ -1,4 +1,4 @@
--- Mandalorian Way of Life — Chapter 4 (Clanbound) reward, part 5 of 6
+-- Mandalorian Way of Life — Chapter 4 (Clanbound) reward, part 5 of 6; LIGHT slot stats aligned (58% + blast 65), 10 stun/saber, no vulnerability bitmask
 
 object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_r = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_bracer_r:new {
 	templateType = ARMOROBJECT,
@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_r = object_t
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = NONE,
 
 	healthEncumbrance = 50,
 	actionEncumbrance = 48,
@@ -71,13 +71,13 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_r = object_t
 
 	kinetic = 58,
 	energy = 58,
-	electricity = 0,
-	stun = 0,
+	electricity = 58,
+	stun = 10,
 	blast = 65,
 	heat = 58,
-	cold = 0,
+	cold = 58,
 	acid = 58,
-	lightSaber = 0,
+	lightSaber = 10,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_r, "object/tangible/wearables/armor/mandalorian/custom/clanbound_bracer_r.iff")

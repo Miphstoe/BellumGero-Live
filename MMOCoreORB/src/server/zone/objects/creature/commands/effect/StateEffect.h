@@ -71,24 +71,30 @@ public:
 
 		LuaObject defTimers = state.getObjectField("defenderExclusionTimers");
 
-		for (int i = 1; i <= defTimers.getTableSize(); ++i) {
-			defenderExclusionTimers.add(defTimers.getStringAt(i));
+		if (defTimers.isValidTable()) {
+			for (int i = 1; i <= defTimers.getTableSize(); ++i) {
+				defenderExclusionTimers.add(defTimers.getStringAt(i));
+			}
 		}
 
 		defTimers.pop();
 
 		LuaObject defMods = state.getObjectField("defenderStateDefenseModifiers");
 
-		for (int i = 1; i <= defMods.getTableSize(); ++i) {
-			defenderStateDefenseModifiers.add(defMods.getStringAt(i));
+		if (defMods.isValidTable()) {
+			for (int i = 1; i <= defMods.getTableSize(); ++i) {
+				defenderStateDefenseModifiers.add(defMods.getStringAt(i));
+			}
 		}
 
 		defMods.pop();
 
 		LuaObject jediMods = state.getObjectField("defenderJediStateDefenseModifiers");
 
-		for (int i = 1; i <= jediMods.getTableSize(); ++i) {
-			defenderJediStateDefenseModifiers.add(jediMods.getStringAt(i));
+		if (jediMods.isValidTable()) {
+			for (int i = 1; i <= jediMods.getTableSize(); ++i) {
+				defenderJediStateDefenseModifiers.add(jediMods.getStringAt(i));
+			}
 		}
 
 		jediMods.pop();

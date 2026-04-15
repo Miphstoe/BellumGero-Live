@@ -1,6 +1,6 @@
 -- Mandalorian Spynet Operative Conversation Template
 -- Chapters 1-4: manages the 5+1 gate cycle
--- Requires Foundling Helmet equipped + countingEnabled state
+-- Requires Foundling Helmet equipped (hat or helmet slot) + gate state
 -- Handler: MandoSpynetOperativeConvoHandler (in bellum/convos/)
 
 mandoSpynetOperativeConvoTemplate = ConvoTemplate:new {
@@ -31,7 +31,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(intro)
 no_helmet = ConvoScreen:new {
 	id = "no_helmet",
 	leftDialog = "",
-	customDialogText = "No helm. No chain-code. No work.",
+	customDialogText = "No helm. No chain code. No work.",
 	stopConversation = "true",
 	options = {}
 }
@@ -68,7 +68,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(no_bh)
 gate_explain = ConvoScreen:new {
 	id = "gate_explain",
 	leftDialog = "",
-	customDialogText = "Five spynet contracts through the standard bounty terminals. When those are done, one private trial — solo, helmet on, no group. Fail either condition and you start the trial over. Understand?",
+	customDialogText = "I will open your Spynet count. You must then complete five NPC bounty missions accepted from Bounty Hunter mission terminals. Those boards list bounties on NPC marks, not generic destroy or deliver work. When your datapad shows five confirmed, come back for one private trial: solo, Foundling helmet on, no group. Break the rules and you start over. Ready?",
 	stopConversation = "false",
 	options = {
 		{"I understand. Begin the count.", "gate_start"},
@@ -80,7 +80,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(gate_explain)
 gate_start = ConvoScreen:new {
 	id = "gate_start",
 	leftDialog = "",
-	customDialogText = "Spynet count is open. Five bounty terminal missions. The count is live.",
+	customDialogText = "Spynet count is open. Pull five NPC bounties from Bounty Hunter mission terminals and finish them. Watch your system messages for Spynet contracts x/5.",
 	stopConversation = "true",
 	options = {}
 }
@@ -92,7 +92,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(gate_start)
 gate_in_progress = ConvoScreen:new {
 	id = "gate_in_progress",
 	leftDialog = "",
-	customDialogText = "Keep working the terminals. Come back when you have five contracts confirmed.",
+	customDialogText = "Keep clearing NPC bounties from Bounty Hunter mission terminals until you see five Spynet contracts confirmed. A purple datapad waypoint will mark this spot when you are ready to return for the trial.",
 	stopConversation = "true",
 	options = {}
 }
@@ -105,7 +105,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(gate_in_progress)
 trial_ready = ConvoScreen:new {
 	id = "trial_ready",
 	leftDialog = "",
-	customDialogText = "Five confirmed. Now the real work. One private contract — solo, helmet on. Leave your group, or the trial is void the moment you accept. You have one chance.",
+	customDialogText = "Five confirmed. Follow the purple waypoint on your datapad if you need to find me again. Now the real work: one private contract, solo, helmet on. Leave your group, or the trial is void the moment you accept. You have one chance.",
 	stopConversation = "false",
 	options = {
 		{"I am ready. Begin the trial.", "trial_start"},
@@ -117,7 +117,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(trial_ready)
 trial_start = ConvoScreen:new {
 	id = "trial_start",
 	leftDialog = "",
-	customDialogText = "Good. The contract details are in your datapad. Stay alone. Stay armed. Finish it.",
+	customDialogText = "Good. A yellow Spynet bounty camp waypoint is on your datapad under the Quest tab (task waypoint), not the regular Waypoints list. Activate it there, travel to it, and enter the marked area. The camp appears when you arrive. Eliminate the marked outlaw. Stay alone. Stay armed. Helmet on until it is done.",
 	stopConversation = "true",
 	options = {}
 }
@@ -129,23 +129,23 @@ mandoSpynetOperativeConvoTemplate:addScreen(trial_start)
 trial_active = ConvoScreen:new {
 	id = "trial_active",
 	leftDialog = "",
-	customDialogText = "Your trial is already running. Finish it.",
-	stopConversation = "true",
-	options = {}
+	customDialogText = "Your trial is already running. Finish it. The yellow Spynet bounty camp waypoint is under your datapad Quest tab. Activate it there, then enter that area to load the camp.",
+	stopConversation = "false",
+	options = {
+		{"Remind me how the waypoint works.", "trial_refresh_hint"},
+		{"Understood.", "bye"},
+	}
 }
 mandoSpynetOperativeConvoTemplate:addScreen(trial_active)
 
--- --------------------------------------------------------
--- DAILY CAP REACHED
--- --------------------------------------------------------
-daily_cap = ConvoScreen:new {
-	id = "daily_cap",
+trial_refresh_hint = ConvoScreen:new {
+	id = "trial_refresh_hint",
 	leftDialog = "",
-	customDialogText = "You have reached today's contract limit. Rest. Return tomorrow.",
+	customDialogText = "Open your datapad Quest tab (mission waypoints). Select and activate the yellow Spynet bounty camp waypoint. Go there on foot or speeder, cross into the highlighted radius, and the camp will spawn. Kill the marked outlaw to close the contract. Solo. Helmet on.",
 	stopConversation = "true",
 	options = {}
 }
-mandoSpynetOperativeConvoTemplate:addScreen(daily_cap)
+mandoSpynetOperativeConvoTemplate:addScreen(trial_refresh_hint)
 
 -- --------------------------------------------------------
 -- CLANBOUND (Chapter 4 complete)
@@ -153,7 +153,7 @@ mandoSpynetOperativeConvoTemplate:addScreen(daily_cap)
 clanbound = ConvoScreen:new {
 	id = "clanbound",
 	leftDialog = "",
-	customDialogText = "You have done the work. The alignment choice is yours when you are ready. Speak to the recruiter.",
+	customDialogText = "You have done the work. Return to the Mandalorian Recruiter in the Mos Eisley cantina on Tatooine. They will set your next path when you are ready.",
 	stopConversation = "true",
 	options = {}
 }

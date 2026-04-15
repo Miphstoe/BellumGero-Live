@@ -390,9 +390,13 @@ void MissionObjectiveImplementation::awardReward() {
 		if (ghost != nullptr) {
 			String missionId = String::valueOf(mission->getObjectID());
 
-			// Patch 2: BH terminal mission counting (Chapters 1+)
+			// Patch 2: BH terminal mission counting (Chapters 1+).
+			// Count NPC-mark bounties completed while the gate is open. Do not require bhTagged_* at
+			// accept time — missions pulled before the operative opens the count were never tagged,
+			// so completions were silent. Player bounties use an empty target optional template; exclude those.
 			if (ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1" &&
-				ghost->getScreenPlayData("MandoWayOfLife", "bhTagged_" + missionId) == "1" &&
+				mission->getTypeCRC() == MissionTypes::BOUNTY &&
+				mission->getTargetOptionalTemplate() != "" &&
 				ghost->getScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId) != "1") {
 
 				int count = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "bhTerminalCount"));
@@ -400,8 +404,44 @@ void MissionObjectiveImplementation::awardReward() {
 					count++;
 					ghost->setScreenPlayData("MandoWayOfLife", "bhTerminalCount", String::valueOf(count));
 					owner->sendSystemMessage("Spynet contracts: " + String::valueOf(count) + "/5");
+
+					Lua* lua = DirectorManager::instance()->getLuaInstance();
+					if (lua != nullptr) {
+						Reference<LuaFunction*> luaSpynetFooter = lua->createFunction("MandoWayOfLife", "sendChapterGateProgressReminder", 0);
+						if (luaSpynetFooter != nullptr) {
+							*luaSpynetFooter << owner.get();
+							*luaSpynetFooter << count;
+							try {
+								luaSpynetFooter->callFunction();
+							} catch (Exception& e) {
+								// Spynet footer is cosmetic — do not abort mission completion
+							}
+						}
+					}
 				}
 				ghost->setScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId, "1");
+			}
+
+			// Spynet hints: BH mission finished but did not advance 5/5 (wrong mark type or count not opened).
+			if (mission->getTypeCRC() == MissionTypes::BOUNTY &&
+				ghost->getScreenPlayData("MandoWayOfLife", "foundling.arcComplete") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "chapter4Complete") != "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "privateContractActive") != "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "needsCustomContract") != "1") {
+
+				const bool countingOn = ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1";
+				const bool npcMark = mission->getTargetOptionalTemplate() != "";
+				const bool spynetStamped = ghost->getScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId) == "1";
+
+				if (!spynetStamped) {
+					if (countingOn && !npcMark) {
+						owner->sendSystemMessage("This mark does not count toward Mandalorian Spynet (player mark). Use NPC bounties from a Bounty Hunter mission terminal.");
+					} else if (!countingOn && npcMark) {
+						owner->sendSystemMessage("Spynet is not open. On Corellia, talk to the Mandalorian Operative and open your Spynet count. Then NPC terminal bounties will report Spynet contracts x/5 when completed.");
+					} else if (!countingOn && !npcMark) {
+						owner->sendSystemMessage("Player marks do not count toward Mandalorian Spynet, and your Spynet count is not open. See the Mandalorian Operative on Corellia, then take NPC terminal bounties.");
+					}
+				}
 			}
 
 			// Patch 3: Foundling planet quota counting (Chapter 0).

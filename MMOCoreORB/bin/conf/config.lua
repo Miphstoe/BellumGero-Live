@@ -266,6 +266,8 @@ Core3 = {
 		PlayerBountyCooldown = false, -- Set to true to enable cooldown between bounty missions on same target
 		PlayerBountyCooldownTime = 86400000, -- Cooldown time in milliseconds (default 24 hours)
 		MaxBountiesPerJedi = 5, -- Maximum number of concurrent bounty missions per target
+		-- Verbose server log for NPC bounty spawn (BountyHunterTargetTask + spawnTarget); search logs for [BountyNpcSpawnDebug]
+		BountyNpcSpawnDebug = true,
 	},
 }
 

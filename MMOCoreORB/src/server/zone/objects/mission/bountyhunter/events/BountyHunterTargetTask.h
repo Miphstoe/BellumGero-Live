@@ -11,6 +11,7 @@
 #include "server/zone/managers/collision/PathFinderManager.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/Zone.h"
+#include "conf/ConfigManager.h"
 
 namespace server {
 namespace zone {
@@ -46,7 +47,11 @@ public:
 		currentPosition.setY(mission->getEndPositionY());
 		currentPosition.setZ(0);
 
-		if (mission->getMissionLevel() > 1) {
+		// Only hard (tier 3) simulates travel / starport / random planet. Standard (tier 2) used to
+		// walk toward getRandomBountyTargetPosition() anywhere on the planet, often kilometers from
+		// the mission waypoint, so players could not spawn the NPC until they intercepted the moving
+		// point. Tier 1 and 2: stay at mission end XY like pre-move behavior.
+		if (mission->getMissionLevel() > 2) {
 			move = true;
 		} else {
 			move = false;
@@ -57,27 +62,42 @@ public:
 	}
 
 	void run() {
+		const bool bountySpawnDbg = ConfigManager::instance()->getBool("Core3.MissionManager.BountyNpcSpawnDebug", false);
+
 		ManagedReference<BountyMissionObjective*> objectiveRef = objective.get();
 
-		if (objectiveRef == nullptr)
+		if (objectiveRef == nullptr) {
+			if (bountySpawnDbg)
+				info(true) << "[BountyNpcSpawnDebug] run: objectiveRef is null";
 			return;
+		}
 
 		ManagedReference<CreatureObject*> playerRef = player.get();
 
-		if (playerRef == nullptr)
+		if (playerRef == nullptr) {
+			if (bountySpawnDbg)
+				info(true) << "[BountyNpcSpawnDebug] run: playerRef is null";
 			return;
+		}
 
 		ZoneServer* zoneServer = playerRef->getZoneServer();
 
 		Zone* zone = zoneServer->getZone(zoneName);
 
-		if (zone == nullptr)
+		if (zone == nullptr) {
+			if (bountySpawnDbg)
+				info(true) << "[BountyNpcSpawnDebug] run: mission zone not loaded zoneName=" << zoneName
+					<< " player=" << playerRef->getObjectID();
 			return;
+		}
 
 		ManagedReference<MissionObject*> strongMissionRef = mission.get();
 
-		if (strongMissionRef == nullptr)
+		if (strongMissionRef == nullptr) {
+			if (bountySpawnDbg)
+				info(true) << "[BountyNpcSpawnDebug] run: mission object null player=" << playerRef->getObjectID();
 			return;
+		}
 
 		if (destination == Vector3(0, 0, 0)) {
 			ManagedReference<PlanetManager*> planetManager = zone->getPlanetManager();
@@ -99,18 +119,54 @@ public:
 
 		Zone* playerZone = playerRef->getZone();
 
+		if (bountySpawnDbg && !targetSpawned) {
+			String pz = (playerZone != nullptr) ? playerZone->getZoneName() : String("null");
+			info(true) << "[BountyNpcSpawnDebug] tick player=" << playerRef->getObjectID()
+				<< " mission=" << strongMissionRef->getObjectID()
+				<< " missionLevel=" << strongMissionRef->getMissionLevel()
+				<< " move=" << (move ? "1" : "0")
+				<< " taskZone=" << zoneName << " playerZone=" << pz
+				<< " curPos=" << currentPosition.getX() << "," << currentPosition.getY()
+				<< " dest=" << destination.getX() << "," << destination.getY()
+				<< " template=" << strongMissionRef->getTargetOptionalTemplate();
+		}
+
 		if (!targetSpawned && playerZone != nullptr && playerZone->getZoneName() == zoneName) {
 			Vector3 playerPosition = playerRef->getWorldPosition();
 			playerPosition.setZ(0);
 
-			if (playerPosition.distanceTo(currentPosition) < 256.0f) {
+			const float distBefore = playerPosition.distanceTo(currentPosition);
+
+			if (distBefore < 256.0f) {
+				const float xBefore = currentPosition.getX();
+				const float yBefore = currentPosition.getY();
 				updateToSpawnableTargetPosition();
-				if (playerPosition.distanceTo(currentPosition) < 256.0f) {
+				const float distAfter = playerPosition.distanceTo(currentPosition);
+
+				if (distAfter < 256.0f) {
+					if (bountySpawnDbg)
+						info(true) << "[BountyNpcSpawnDebug] spawnTarget: player=" << playerRef->getObjectID()
+							<< " distBefore=" << distBefore << " distAfter=" << distAfter
+							<< " posAdjust=" << (currentPosition.getX() - xBefore) << "," << (currentPosition.getY() - yBefore)
+							<< " spawnXY=" << currentPosition.getX() << "," << currentPosition.getY();
 					targetSpawned = true;
 					Locker olocker(objectiveRef);
 					objectiveRef->spawnTarget(zoneName);
+				} else if (bountySpawnDbg) {
+					info(true) << "[BountyNpcSpawnDebug] navAdjust pushed out of range: player=" << playerRef->getObjectID()
+						<< " distBefore=" << distBefore << " distAfter=" << distAfter
+						<< " (need <256)";
 				}
+			} else if (bountySpawnDbg) {
+				info(true) << "[BountyNpcSpawnDebug] waiting player in range: player=" << playerRef->getObjectID()
+					<< " dist=" << distBefore << " (need <256) curPos=" << currentPosition.getX() << "," << currentPosition.getY();
 			}
+		} else if (bountySpawnDbg && !targetSpawned) {
+			if (playerZone == nullptr)
+				info(true) << "[BountyNpcSpawnDebug] player has no zone; taskZone=" << zoneName;
+			else if (playerZone->getZoneName() != zoneName)
+				info(true) << "[BountyNpcSpawnDebug] wrong planet: player on " << playerZone->getZoneName()
+					<< " mission task expects " << zoneName << " player=" << playerRef->getObjectID();
 		}
 
 		reschedule(10 * 1000);
@@ -142,8 +198,11 @@ private:
 				ZoneServer* zoneServer = player->getZoneServer();
 				Zone* zone = zoneServer->getZone(zoneName);
 
-				if (zone == nullptr)
+				if (zone == nullptr) {
+					if (ConfigManager::instance()->getBool("Core3.MissionManager.BountyNpcSpawnDebug", false))
+						info(true) << "[BountyNpcSpawnDebug] updatePosition: new zone null after planet roll zoneName=" << zoneName;
 					return;
+				}
 
 				ManagedReference<MissionObject*> strongMissionRef = mission.get();
 

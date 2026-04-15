@@ -1929,6 +1929,12 @@ function ThemeParkLogic:giveBadge(pConversingPlayer, badge)
 	end
 
 	PlayerObject(pGhost):awardBadge(badge)
+
+	-- Mandalorian Way: Jabba themepark badge earned; Spynet comlink nudge to Tatooine recruiter.
+	if (MandoWayOfLife ~= nil and MandoWayOfLife.JABBA_THEMEPARK_BADGE ~= nil and badge == MandoWayOfLife.JABBA_THEMEPARK_BADGE
+			and MandoWayOfLife.onJabbaThemeparkBadgeEarned ~= nil) then
+		MandoWayOfLife:onJabbaThemeparkBadgeEarned(pConversingPlayer)
+	end
 end
 
 function ThemeParkLogic:giveLoot(pConversingPlayer, lootGroup)

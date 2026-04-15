@@ -161,13 +161,14 @@ function CorelliaStaticSpawnsScreenPlay:spawnMobiles()
 	end
 
 	-- Mandalorian Way of Life: Spynet operative (chapter gate + private trials). Template already includes convo.
-	local pMandoSpy = spawnMobile("corellia", "mando_spynet_operative", 0, -173, 28, -4712, 90, 0)
+	local pMandoSpy = spawnMobile("corellia", "mando_spynet_operative", 0, 27, 28, -4712, 90, 0)
 	if pMandoSpy ~= nil then
 		CreatureObject(pMandoSpy):setPvpStatusBitmask(0)
+		-- Bellum conversable NPC: AIENABLED + CONVERSE (CONVERSABLE) after setOptionsBitmask full replace — see OptionBitmask.h.
 		CreatureObject(pMandoSpy):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
 		AiAgent(pMandoSpy):setConvoTemplate("mandoSpynetOperativeConvoTemplate")
 		AiAgent(pMandoSpy):addObjectFlag(AI_STATIC)
-		print("[CORELLIA-STATIC-SPAWNS] mando_spynet_operative spawned at -173, 28, -4712 (near token vendors)")
+		print("[CORELLIA-STATIC-SPAWNS] mando_spynet_operative spawned at 27, 28, -4712 (near token vendors)")
 	else
 		print("[CORELLIA-STATIC-SPAWNS] ERROR: Failed to spawn mando_spynet_operative")
 	end

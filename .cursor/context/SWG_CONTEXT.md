@@ -1,7 +1,9 @@
 ## Bellum Gero (BG) SWGEmu Server Context
 
+> **Machine scope:** This file describes **this mobile laptop dev PC only** (paths, `Dev-BG` vs `BellumGero`, `/trefiles` workflow). Other computers or teammates may use different folders — do not treat this as global project truth.
+
 - **User**: Enderwookie
-- **Project root (WSL)**: `~/localswgserver`
+- **Project root (WSL, this laptop)**: `~/workspace/BellumGero-Live/`
 - **OS**: Windows 11 + WSL2 (Debian 12 Bookworm)
 
 ## Quick links (read these first)
@@ -10,11 +12,12 @@
 - **Project structure snapshot**: `SWG_FILE_CODE_STRUCUTRE_CONTEXT.md`
 - **New creatures on mission terminals**: `CREATURE_MISSION_TERMINAL_REQUIREMENTS.md` (Destroy missions checklist + when to ask)
 
-### File system rules
-- **Codebase (Linux / WSL)**: `/home/Enderwookie/localswgserver/`
-  - **Rule**: all code edits, builds, and server runs happen here (WSL paths).
-- **Game assets (Windows)**: `/mnt/c/SWGEmu/`
-  - **Rule**: treat as read-only TRE assets; don’t compile/build here.
+### File system rules (this laptop only)
+- **Codebase (WSL)**: `/home/Enderwookie/workspace/BellumGero-Live/`
+  - Edits, builds, and running Core3 from WSL use this tree.
+- **`C:\Dev-BG\`** → **`/mnt/c/Dev-BG/`** on this machine: **local dev** client folder — SIE output, **`bg_custom1.tre`** you iterate on.
+  - Copy **`bg_custom1.tre` from here** into WSL **`/trefiles/`** when testing the dev server on this laptop.
+- **`C:\BellumGero\`** → **`/mnt/c/BellumGero/`** on this machine: **prod-style** install (client + TREs for production play). Not the default source for day-to-day **`/trefiles`** sync on this box unless you mean to test prod assets.
 
 ### Portal / client assets: provide TRE files
 Core3 needs access to the client `.tre` files.
@@ -22,17 +25,13 @@ Core3 needs access to the client `.tre` files.
 This repo’s current `config.lua` uses `TrePath = "/trefiles"`, so set up `/trefiles` in WSL.
 
 #### Option A (common BG dev workflow): copy TREs into WSL
-Before copying, confirm the `.tre` files exist on your machine (WSL view of your Windows install):
+On **this laptop**, confirm `.tre` files exist:
 
 ```bash
-ls -la /mnt/c/SWGEmu/*.tre | head
+ls -la /mnt/c/Dev-BG/*.tre | head
 ```
 
-If that returns “No such file”, your SWG client (and its `.tre` files) is in a different Windows folder—find that folder first, then copy from that location instead.
-
-Example (one possible dev layout):
-- Windows: `C:\home\enderwookie\Desktop\SWGEmu`
-- WSL: `/mnt/c/home/enderwookie/Desktop/SWGEmu`
+If that fails, your client may live under a different path on this PC — adjust commands accordingly.
 
 One-time setup:
 
@@ -43,13 +42,13 @@ sudo mkdir -p /trefiles
 Copy ALL `.tre` files (simple, a bit slower):
 
 ```bash
-sudo cp -f /mnt/c/SWGEmu/*.tre /trefiles/
+sudo cp -f /mnt/c/Dev-BG/*.tre /trefiles/
 ```
 
 Copy ONLY the BG custom tre (fast iteration, recommended if that’s all you change):
 
 ```bash
-sudo cp -f /mnt/c/SWGEmu/bg_custom1.tre /trefiles/
+sudo cp -f /mnt/c/Dev-BG/bg_custom1.tre /trefiles/
 ```
 
 Verify:
@@ -63,12 +62,12 @@ Instead of copying, you can symlink the Windows files into `/trefiles`:
 
 ```bash
 sudo mkdir -p /trefiles
-sudo ln -s /mnt/c/SWGEmu/*.tre /trefiles/ 2>/dev/null || true
+sudo ln -s /mnt/c/Dev-BG/*.tre /trefiles/ 2>/dev/null || true
 ls -la /trefiles/bottom.tre
 ```
 
 ### Codebase map (high-signal folders)
-Repo root: `~/localswgserver`
+Repo root (this laptop): `~/workspace/BellumGero-Live`
 - `MMOCoreORB/`: Core3 server source + build system
   - `bin/`: runtime directory (binaries, logs, scripts)
     - `conf/config.lua`: main config (see DB section)
@@ -97,8 +96,8 @@ pkg-config --modversion dpp
 If `libdpp-dev` is not available in your Debian repos, build and install DPP from source (then rerun the `pkg-config` command above):
 
 ```bash
-mkdir -p ~/localswgserver/third_party
-cd ~/localswgserver/third_party
+mkdir -p ~/workspace/BellumGero-Live/third_party
+cd ~/workspace/BellumGero-Live/third_party
 git clone https://github.com/brainboxdotcc/DPP.git
 cd DPP
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -110,33 +109,33 @@ sudo ldconfig
 Build (recommended dev build):
 
 ```bash
-cd ~/localswgserver/MMOCoreORB
+cd ~/workspace/BellumGero-Live/MMOCoreORB
 make build-ninja-debug
 ```
 
 Build (production-style):
 
 ```bash
-cd ~/localswgserver/MMOCoreORB
+cd ~/workspace/BellumGero-Live/MMOCoreORB
 make -j"$(nproc)"
 ```
 
 Run:
 
 ```bash
-cd ~/localswgserver/MMOCoreORB/bin
+cd ~/workspace/BellumGero-Live/MMOCoreORB/bin
 ./core3
 ```
 
 Debug run:
 
 ```bash
-cd ~/localswgserver/MMOCoreORB/bin
+cd ~/workspace/BellumGero-Live/MMOCoreORB/bin
 gdb ./core3
 ```
 
 ### Database configuration (what Core3 will use)
-**Config source of truth**: `~/localswgserver/MMOCoreORB/bin/conf/config.lua`
+**Config source of truth**: `~/workspace/BellumGero-Live/MMOCoreORB/bin/conf/config.lua`
 
 Current main DB values in that file:
 - **DBHost**: `"db"`
@@ -150,7 +149,7 @@ Override behavior:
 - For WSL-local MariaDB (non-docker), you’ll typically create `conf/config-local.lua` to override **just** the connection host/user/pass (example without secrets):
 
 ```lua
--- ~/localswgserver/MMOCoreORB/bin/conf/config-local.lua
+-- ~/workspace/BellumGero-Live/MMOCoreORB/bin/conf/config-local.lua
 DBHost = "127.0.0.1"
 DBPort = 3306
 DBName = "swgemu"
@@ -159,9 +158,9 @@ DBUser = "swgemu"
 ```
 
 DB schema/data sources in this repo:
-- `~/localswgserver/MMOCoreORB/sql/swgemu.sql` (main schema/data)
-- `~/localswgserver/MMOCoreORB/sql/datatables.sql` (extra tables)
-- `~/localswgserver/MMOCoreORB/sql/mantis.sql` (mantis schema)
+- `~/workspace/BellumGero-Live/MMOCoreORB/sql/swgemu.sql` (main schema/data)
+- `~/workspace/BellumGero-Live/MMOCoreORB/sql/datatables.sql` (extra tables)
+- `~/workspace/BellumGero-Live/MMOCoreORB/sql/mantis.sql` (mantis schema)
 
 ### Current known-good local status (2026-02-01)
 

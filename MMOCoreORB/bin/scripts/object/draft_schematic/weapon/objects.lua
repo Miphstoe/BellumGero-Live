@@ -3434,6 +3434,24 @@ object_draft_schematic_weapon_shared_rifle_lightning = SharedDraftSchematicObjec
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_rifle_lightning, "object/draft_schematic/weapon/shared_rifle_lightning.iff")
 
+object_draft_schematic_weapon_shared_pistol_mando_way_geo_blaster = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_pistol_geo_sonic_blaster.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_pistol_mando_way_geo_blaster, "object/draft_schematic/weapon/shared_pistol_mando_way_geo_blaster.iff")
+
+object_draft_schematic_weapon_shared_carbine_mando_way_slugthrower = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_nym_slugthrower.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_carbine_mando_way_slugthrower, "object/draft_schematic/weapon/shared_carbine_mando_way_slugthrower.iff")
+
+object_draft_schematic_weapon_shared_rifle_mando_way_lightning = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_rifle_lightning.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_rifle_mando_way_lightning, "object/draft_schematic/weapon/shared_rifle_mando_way_lightning.iff")
+
 object_draft_schematic_weapon_shared_rifle_projectile_tusken = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/weapon/shared_rifle_projectile_tusken.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

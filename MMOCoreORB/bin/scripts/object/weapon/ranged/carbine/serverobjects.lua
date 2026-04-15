@@ -60,5 +60,6 @@ includeFile("weapon/ranged/carbine/carbine_bellum_bowcaster_stats.lua")
 includeFile("weapon/ranged/carbine/carbine_elite.lua")
 includeFile("weapon/ranged/carbine/carbine_laser.lua")
 includeFile("weapon/ranged/carbine/carbine_nym_slugthrower.lua")
+includeFile("weapon/ranged/carbine/carbine_mando_way_slugthrower.lua")
 
 includeFile("weapon/ranged/carbine/carbine_e5.lua")

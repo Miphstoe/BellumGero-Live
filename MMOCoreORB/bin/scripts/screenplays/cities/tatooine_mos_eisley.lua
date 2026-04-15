@@ -413,6 +413,8 @@ function TatooineMosEisleyScreenPlay:spawnMobiles()
 	local pMandoRecruiter = spawnMobile(self.planet, "mando_trialmaster", 0, 9.2, -0.894992, 4.64, 200, 1082877)
 	if pMandoRecruiter ~= nil then
 		CreatureObject(pMandoRecruiter):setPvpStatusBitmask(0)
+		-- AIENABLED = OptionBitmask::AIENABLED (src/templates/params/OptionBitmask.h). setOptionsBitmask replaces
+		-- the entire mask — include AIENABLED + CONVERSABLE (Lua CONVERSABLE) for radial Converse + AI agent hooks.
 		CreatureObject(pMandoRecruiter):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
 		CreatureObject(pMandoRecruiter):setMoodString("conversation")
 		SceneObject(pMandoRecruiter):setCustomObjectName("Mandalorian Recruiter")
@@ -424,22 +426,9 @@ function TatooineMosEisleyScreenPlay:spawnMobiles()
 		printf("[TATOOINE-MOS-EISLEY] ERROR: mando_trialmaster spawnMobile returned nil (check template / cell / position).\n")
 	end
 
-	-- Foundling arc contact (world Mos Eisley): placed here like the recruiter — convo-time spawnMobile can fail or be invisible cross-context.
-	-- Waypoint / MandoWayOfLife.planetData[1] must stay in sync with x,z,y below.
-	local pFoundlingInformant = spawnMobile(self.planet, "mando_foundling_informant", 0, 3491, 5, -4782, 135, 0)
-	if pFoundlingInformant ~= nil then
-		CreatureObject(pFoundlingInformant):setPvpStatusBitmask(0)
-		CreatureObject(pFoundlingInformant):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
-		CreatureObject(pFoundlingInformant):setMoodString("conversation")
-		SceneObject(pFoundlingInformant):setCustomObjectName("Mandalorian Informant")
-		AiAgent(pFoundlingInformant):setConvoTemplate("mandoFoundlingInformantConvoTemplate")
-		AiAgent(pFoundlingInformant):addObjectFlag(AI_STATIC)
-		local fid = SceneObject(pFoundlingInformant):getObjectID()
-		writeData("mando_way:foundling_informant_static:tatooine", fid)
-		printf("[TATOOINE-MOS-EISLEY] mando_foundling_informant static hub spawn ok oid=%s (3491,5,-4782).\n", tostring(fid))
-	else
-		printf("[TATOOINE-MOS-EISLEY] ERROR: mando_foundling_informant static hub spawnMobile returned nil.\n")
-	end
+	-- Foundling informant: not spawned here — MandoWayOfLife spawns a per-player NPC at planetData[1] when the arc advances.
+	-- Clear any legacy shared-hub key so the convo handler does not treat a stale OID as the Tatooine hub.
+	deleteData("mando_way:foundling_informant_static:tatooine")
 
 	--Creatures
 	--[[

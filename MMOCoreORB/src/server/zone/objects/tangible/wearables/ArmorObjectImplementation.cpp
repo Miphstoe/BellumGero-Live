@@ -523,3 +523,40 @@ void ArmorObjectImplementation::setProtectionValue(int type, float value) {
 	if (type & SharedWeaponObjectTemplate::ELECTRICITY)
 		setElectricity(value);
 }
+
+int ArmorObjectImplementation::applyBellumBeskarTune(float kineticDelta, float energyDelta, float blastDelta, float heatDelta, float acidDelta, int maxConditionBonus) {
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+
+	int applied = 0;
+
+	if (!isVulnerable(SharedWeaponObjectTemplate::KINETIC)) {
+		setKinetic(kinetic + kineticDelta);
+		applied++;
+	}
+	if (!isVulnerable(SharedWeaponObjectTemplate::ENERGY)) {
+		setEnergy(energy + energyDelta);
+		applied++;
+	}
+	if (!isVulnerable(SharedWeaponObjectTemplate::BLAST)) {
+		setBlast(blast + blastDelta);
+		applied++;
+	}
+	if (!isVulnerable(SharedWeaponObjectTemplate::HEAT)) {
+		setHeat(heat + heatDelta);
+		applied++;
+	}
+	if (!isVulnerable(SharedWeaponObjectTemplate::ACID)) {
+		setAcid(acid + acidDelta);
+		applied++;
+	}
+
+	if (maxConditionBonus > 0) {
+		int newMax = maxCondition + maxConditionBonus;
+		if (newMax > 0) {
+			setMaxCondition(newMax);
+			applied++;
+		}
+	}
+
+	return applied;
+}

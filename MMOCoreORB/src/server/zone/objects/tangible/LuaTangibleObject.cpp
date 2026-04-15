@@ -13,6 +13,7 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/objects/tangible/attachment/Attachment.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
+#include "server/zone/objects/tangible/wearables/ArmorObject.h"
 #include "server/zone/managers/skill/SkillModManager.h"
 
 const char LuaTangibleObject::className[] = "LuaTangibleObject";
@@ -65,6 +66,7 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "setCount", &LuaTangibleObject::setCount},
 		{ "addAttachmentSkillModBonus", &LuaTangibleObject::addAttachmentSkillModBonus},
 		{ "addMagicBit", &LuaTangibleObject::addMagicBit},
+		{ "applyArmorBeskarTune", &LuaTangibleObject::applyArmorBeskarTune},
 		{ 0, 0 }
 };
 
@@ -525,4 +527,35 @@ int LuaTangibleObject::addMagicBit(lua_State* L) {
 	realObject->addMagicBit(notifyClient);
 
 	return 0;
+}
+
+int LuaTangibleObject::applyArmorBeskarTune(lua_State* L) {
+	if (realObject == nullptr) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	float kineticDelta = lua_tonumber(L, 2);
+	float energyDelta = lua_tonumber(L, 3);
+	float blastDelta = lua_tonumber(L, 4);
+	float heatDelta = lua_tonumber(L, 5);
+	float acidDelta = lua_tonumber(L, 6);
+	int maxConditionBonus = lua_tointeger(L, 7);
+
+	Locker locker(realObject);
+
+	if (!realObject->isArmorObject()) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	ArmorObject* armor = cast<ArmorObject*>(realObject);
+	if (armor == nullptr) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	int applied = armor->applyBellumBeskarTune(kineticDelta, energyDelta, blastDelta, heatDelta, acidDelta, maxConditionBonus);
+	lua_pushinteger(L, applied);
+	return 1;
 }

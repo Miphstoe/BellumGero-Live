@@ -33,7 +33,7 @@ mandoFoundlingInformantConvoTemplate:addScreen(intro)
 assign = ConvoScreen:new {
 	id = "assign",
 	leftDialog = "",
-	customDialogText = "Use the mission terminals on this planet: destroy, deliver, hunting, recon — honest work. No bounty board contracts — that is Guild business, not ours. I will know when you have done enough. Return here when you are finished.",
+	customDialogText = "Use the mission terminals on this planet: destroy, deliver, hunting, recon, honest work. No bounty board contracts. That is Guild business, not ours. I will know when you have done enough. Return here when you are finished.",
 	stopConversation = "false",
 	options = {
 		{"Understood. I will begin.", "assign_confirm"},

@@ -68,17 +68,18 @@ object_tangible_wearables_armor_mandalorian_custom_foundling_helmet = object_tan
 	actionEncumbrance = 15,
 	mindEncumbrance = 80,
 
+	-- Design table Ch0: LIGHT — 25% Kinetic & Energy only (other families 0; cold is vulnerability).
 	rating = LIGHT,
 	maxCondition = 25000,
 
-	kinetic = 23,
-	energy = 23,
+	kinetic = 25,
+	energy = 25,
 	electricity = 0,
 	stun = 0,
-	blast = 26,
-	heat = 23,
+	blast = 0,
+	heat = 0,
 	cold = 0,
-	acid = 23,
+	acid = 0,
 	lightSaber = 0,
 }
 

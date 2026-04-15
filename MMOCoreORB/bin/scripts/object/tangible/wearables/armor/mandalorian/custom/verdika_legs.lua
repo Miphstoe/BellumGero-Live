@@ -1,5 +1,4 @@
--- Mandalorian Way of Life — Chapter 3 reward
--- Granted on completion of the third 5+1 gate cycle
+-- Mandalorian Way of Life — Verd'ika tier (Ch3): MEDIUM, 55% Kinetic / Energy / Heat / Cold / Blast
 
 object_tangible_wearables_armor_mandalorian_custom_verdika_legs = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_leggings:new {
 	templateType = ARMOROBJECT,
@@ -67,17 +66,17 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_legs = object_tangibl
 	actionEncumbrance = 145,
 	mindEncumbrance = 45,
 
-	rating = LIGHT,
-	maxCondition = 37000,
+	rating = MEDIUM,
+	maxCondition = 46000,
 
-	kinetic = 46,
-	energy = 46,
+	kinetic = 55,
+	energy = 55,
 	electricity = 0,
 	stun = 0,
-	blast = 52,
-	heat = 46,
-	cold = 0,
-	acid = 46,
+	blast = 55,
+	heat = 55,
+	cold = 55,
+	acid = 0,
 	lightSaber = 0,
 }
 

@@ -1,4 +1,4 @@
--- Mandalorian Way of Life — Chapter 4 (Clanbound) reward, part 6 of 6
+-- Mandalorian Way of Life — Clanbound tier (Ch4): HEAVY, 65% kinetic/energy/heat/cold/blast/acid/electricity; 10 stun/saber; no vulnerability bitmask (boots slot)
 
 object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_shoes:new {
 	templateType = ARMOROBJECT,
@@ -60,24 +60,24 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes = object_tang
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = NONE,
 
 	healthEncumbrance = 75,
 	actionEncumbrance = 96,
 	mindEncumbrance = 78,
 
-	rating = LIGHT,
-	maxCondition = 40000,
+	rating = HEAVY,
+	maxCondition = 52000,
 
-	kinetic = 58,
-	energy = 58,
-	electricity = 0,
-	stun = 0,
+	kinetic = 65,
+	energy = 65,
+	electricity = 65,
+	stun = 10,
 	blast = 65,
-	heat = 58,
-	cold = 0,
-	acid = 58,
-	lightSaber = 0,
+	heat = 65,
+	cold = 65,
+	acid = 65,
+	lightSaber = 10,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes, "object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff")

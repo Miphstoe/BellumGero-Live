@@ -1,5 +1,4 @@
--- Mandalorian Way of Life — Chapter 2 reward
--- Granted on completion of the second 5+1 gate cycle
+-- Mandalorian Way of Life — Hunter tier (Ch2): LIGHT, 45% Kinetic / Energy / Heat / Cold
 
 object_tangible_wearables_armor_mandalorian_custom_hunter_chest = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_chest_plate:new {
 	templateType = ARMOROBJECT,
@@ -68,16 +67,16 @@ object_tangible_wearables_armor_mandalorian_custom_hunter_chest = object_tangibl
 	mindEncumbrance = 35,
 
 	rating = LIGHT,
-	maxCondition = 35000,
+	maxCondition = 36000,
 
-	kinetic = 41,
-	energy = 41,
+	kinetic = 45,
+	energy = 45,
 	electricity = 0,
 	stun = 0,
-	blast = 46,
-	heat = 41,
-	cold = 0,
-	acid = 41,
+	blast = 0,
+	heat = 45,
+	cold = 45,
+	acid = 0,
 	lightSaber = 0,
 }
 

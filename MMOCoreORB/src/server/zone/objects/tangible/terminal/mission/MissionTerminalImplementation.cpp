@@ -40,6 +40,10 @@ void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* m
         menuResponse->addRadialMenuItem(113, 3, "Choose Mission Direction");
 		menuResponse->addRadialMenuItem(114, 3, "Choose Mission Target");
     }
+
+	if (terminalType == "bounty" && player->hasSkill("combat_bountyhunter_novice")) {
+		menuResponse->addRadialMenuItem(115, 3, "Choose Bounty Contract Tier");
+	}
 }
 
 int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
@@ -193,7 +197,17 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
     fn->callFunction();
 
     return 0;
-}
+	} else if (selectedID == 115) {
+		if (!isBountyTerminal() || !player->hasSkill("combat_bountyhunter_novice"))
+			return 0;
+
+		Lua* lua = DirectorManager::instance()->getLuaInstance();
+		Reference<LuaFunction*> fn = lua->createFunction("bounty_contract_tier", "openWindow", 0);
+		*fn << player;
+		fn->callFunction();
+
+		return 0;
+	}
 
 	return TangibleObjectImplementation::handleObjectMenuSelect(player, selectedID);
 }
