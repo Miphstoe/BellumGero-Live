@@ -516,6 +516,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 *(Editor rules, CI, docs-only, etc.)*
 
+### 2026-04-14 — Repo: drop tracked `.cursor/` and root `docs/` reports from branch
+
+- **Summary:** Removed **`.cursor/context`** and **`.cursor/plans`** and repo-root **`docs/`** (cantina placement reports) from version control so other developers only need the shared tree (**`MMOCoreORB`**, **docker**, **linux**, **wsl2**, etc.). Added **`.cursor/`** to **`.gitignore`** so local Cursor context stays untracked.
+- **Files:** `.gitignore`, `bellumgero_change_log.md` (this file); deleted `.cursor/**`, `docs/all_cantina_npc_placement_report.md`, `docs/mos_eisley_cantina_npc_report.md`
+- **Notes:** **`MMOCoreORB/docs/`** remains for optional server admin notes.
+
 ### 2026-04-07 — Cursor rule: no ASCII hyphen in player-visible game text
 
 - **Summary:** Added **`.cursor/rules/no-ascii-hyphen-game-text.mdc`**: when working under **`MMOCoreORB`**, avoid **hyphen-minus (U+002D)** and Unicode dashes in **convo, system messages, waypoint text, and other client-displayed strings**; use commas, periods, colons, pipes, parentheses instead. Documents allowed exceptions (code, comments, server-only logs, STF key paths).

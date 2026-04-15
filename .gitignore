@@ -9,6 +9,7 @@ MMOCoreORB/bin/scripts/managers/ghoutput.xml
 MMOCoreORB/bin/scripts/managers/resource_manager_spawns.lua
 
 # Local dev tooling
+.cursor/
 .claude/
 .mcp.json
 .vscode/
