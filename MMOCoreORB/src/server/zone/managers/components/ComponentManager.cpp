@@ -20,6 +20,8 @@
 #include "server/zone/objects/tangible/components/vendor/VendorZoneComponent.h"
 #include "server/zone/objects/tangible/components/vendor/VendorMenuComponent.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/TurretControlTerminalDataComponent.h"
@@ -258,6 +260,7 @@ ComponentManager::ComponentManager() {
 	components.put("DroidContainerComponent", new DroidContainerComponent());
 	components.put("DroidDatapadContainerComponent", new DroidDatapadContainerComponent());
 	components.put("VendorMenuComponent", new VendorMenuComponent());
+	components.put("DoctorBuffDroidMenuComponent", new DoctorBuffDroidMenuComponent());
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());
@@ -266,6 +269,7 @@ ComponentManager::ComponentManager() {
 	components.put("ScannerZoneComponent", new ScannerZoneComponent());
 
 	dataObjectFactory.registerObject<VendorDataComponent>("VendorDataComponent");
+	dataObjectFactory.registerObject<DoctorBuffDroidDataComponent>("DoctorBuffDroidDataComponent");
 	dataObjectFactory.registerObject<AuctionTerminalDataComponent>("AuctionTerminalDataComponent");
 	dataObjectFactory.registerObject<SecurityTerminalDataComponent>("SecurityTerminalDataComponent");
 	dataObjectFactory.registerObject<GamblingTerminalDataComponent>("GamblingTerminalDataComponent");

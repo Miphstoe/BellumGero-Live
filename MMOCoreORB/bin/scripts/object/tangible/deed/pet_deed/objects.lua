@@ -5881,3 +5881,9 @@ object_tangible_deed_pet_deed_shared_zucca_boar_deed = SharedTangibleObjectTempl
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_zucca_boar_deed, "object/tangible/deed/pet_deed/shared_zucca_boar_deed.iff")
+
+object_tangible_deed_pet_deed_shared_doctor_buff_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/pet_deed/shared_doctor_buff_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_doctor_buff_droid, "object/tangible/deed/pet_deed/shared_doctor_buff_droid.iff")

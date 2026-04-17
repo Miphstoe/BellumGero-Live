@@ -18,6 +18,18 @@
 #include "server/zone/objects/player/sessions/TradeSession.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/scene/components/DataObjectComponentReference.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
+
+namespace {
+bool isDoctorBuffDroid(TangibleObject* controlledObject) {
+	if (controlledObject == nullptr)
+		return false;
+
+	DataObjectComponentReference* dataRef = controlledObject->getDataObjectComponent();
+	return dataRef != nullptr && dataRef->get() != nullptr && dataRef->get()->isDoctorBuffDroidData();
+}
+}
 
 void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) {
 	if (player->isDead() || player->isIncapacitated())
@@ -26,14 +38,29 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 	if (!isASubChildOf(player))
 		return;
 
-	if (player->getParent() != nullptr || player->isInCombat()) {
+	ManagedReference<TangibleObject*> controlledObject = this->controlledObject.get();
+
+	if (controlledObject == nullptr)
+		return;
+
+	bool droid = isDoctorBuffDroid(controlledObject);
+
+	// Droid is already deployed if it has a zone (outdoor) or a parent (indoor cell)
+	if (controlledObject->getLocalZone() != nullptr || (droid && controlledObject->getParent() != nullptr))
+		return;
+
+	if (!droid && (player->getParent() != nullptr || player->isInCombat())) {
 		player->sendSystemMessage("@pet/pet_menu:cant_call_vehicle"); // You can only unpack vehicles while Outside and not in Combat.
 		return;
 	}
 
-	ManagedReference<TangibleObject*> controlledObject = this->controlledObject.get();
+	if (droid && player->isInCombat()) {
+		player->sendSystemMessage("You cannot deploy a Doctor Buff Droid while in combat.");
+		return;
+	}
 
-	if (controlledObject == nullptr || controlledObject->getLocalZone() != nullptr) {
+	if (droid && !player->hasSkill("science_doctor_master")) {
+		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
 		return;
 	}
 
@@ -86,7 +113,12 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 
 			ManagedReference<SceneObject*> vehicle = device->getControlledObject();
 
-			if (vehicle != nullptr && vehicle->isInQuadTree()) {
+			if (vehicle != nullptr && (vehicle->getLocalZone() != nullptr || vehicle->getParent() != nullptr)) {
+				if (droid && vehicle != controlledObject) {
+					player->sendSystemMessage("Only one Doctor Buff Droid may be active at a time.");
+					return;
+				}
+
 				if (++currentlySpawned > 2)
 					player->sendSystemMessage("@pet/pet_menu:has_max_vehicle");
 
@@ -95,7 +127,7 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 		}
 	}
 
-	if (player->getCurrentCamp() == nullptr && player->getCityRegion() == nullptr && !ghost->isPrivileged()) {
+	if (!droid && player->getCurrentCamp() == nullptr && player->getCityRegion() == nullptr && !ghost->isPrivileged()) {
 		Reference<CallMountTask*> callMount = new CallMountTask(_this.getReferenceUnsafeStaticCast(), player, "call_mount");
 
 		StringIdChatParameter message("pet/pet_menu", "call_vehicle_delay");
@@ -128,14 +160,21 @@ void VehicleControlDeviceImplementation::spawnObject(CreatureObject* player) {
 	if (!isASubChildOf(player))
 		return;
 
-	if (player->getParent() != nullptr || player->isInCombat()) {
+	bool droid = isDoctorBuffDroid(controlledObject);
+
+	if (droid && !player->hasSkill("science_doctor_master")) {
+		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
+		return;
+	}
+
+	if (!droid && (player->getParent() != nullptr || player->isInCombat())) {
 		player->sendSystemMessage("@pet/pet_menu:cant_call_vehicle"); // You can only unpack vehicles while Outside and not in Combat.
 		return;
 	}
 
 	auto zone = player->getZone();
 
-	if (zone == nullptr || !zone->isGroundZone()) {
+	if (zone == nullptr || (!droid && !zone->isGroundZone())) {
 		return;
 	}
 
@@ -145,23 +184,33 @@ void VehicleControlDeviceImplementation::spawnObject(CreatureObject* player) {
 		server->getZoneServer()->getPlayerManager()->handleAbortTradeMessage(player);
 	}
 
-	Vector3 playerWorld = player->getWorldPosition();
-
-	controlledObject->initializePosition(playerWorld.getX(), playerWorld.getZ(), playerWorld.getY());
 	ManagedReference<CreatureObject*> vehicle = nullptr;
+	ManagedReference<SceneObject*> playerParent = player->getParent().get();
 
-	if (controlledObject->isCreatureObject()) {
-		vehicle = cast<CreatureObject*>(controlledObject.get());
-		vehicle->setCreatureLink(player);
-		vehicle->setControlDevice(_this.getReferenceUnsafeStaticCast());
+	if (droid && playerParent != nullptr) {
+		// Player is inside a building — spawn the droid in the same cell
+		Vector3 localPos = player->getPosition();
+		controlledObject->initializePosition(localPos.getX(), localPos.getZ(), localPos.getY());
+		playerParent->transferObject(controlledObject, -1, true);
+	} else {
+		Vector3 playerWorld = player->getWorldPosition();
+		controlledObject->initializePosition(playerWorld.getX(), playerWorld.getZ(), playerWorld.getY());
+
+		if (controlledObject->isCreatureObject()) {
+			vehicle = cast<CreatureObject*>(controlledObject.get());
+			vehicle->setCreatureLink(player);
+			vehicle->setControlDevice(_this.getReferenceUnsafeStaticCast());
+		}
+
+		zone->transferObject(controlledObject, -1, true);
 	}
 
-	zone->transferObject(controlledObject, -1, true);
+	if (!isDoctorBuffDroid(controlledObject)) {
+		Reference<VehicleDecayTask*> decayTask = new VehicleDecayTask(controlledObject);
 
-	Reference<VehicleDecayTask*> decayTask = new VehicleDecayTask(controlledObject);
-
-	if (decayTask != nullptr) {
-		decayTask->execute();
+		if (decayTask != nullptr) {
+			decayTask->execute();
+		}
 	}
 
 	if (vehicle != nullptr && controlledObject->getServerObjectCRC() == 0x32F87A54) { // Jetpack

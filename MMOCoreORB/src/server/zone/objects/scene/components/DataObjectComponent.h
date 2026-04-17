@@ -132,6 +132,10 @@ public:
 		return false;
 	}
 
+	virtual bool isDoctorBuffDroidData() {
+		return false;
+	}
+
 };
 
 #endif /* DATAOBJECTCOMPONENT_H_ */
