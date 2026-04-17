@@ -382,23 +382,17 @@ void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, Doct
 		return;
 
 	StringBuffer msg;
-
-	int buffStock = data->getStock(DoctorBuffDroidDataComponent::SERVICE_BUFFS);
-	msg << "Doctor Buff Droid stock - Buffs: " << buffStock << " use(s)";
+	msg << "Doctor Buff Droid stock:";
 
 	uint32 attrMask = data->getLoadedBuffAttributes();
-	if (buffStock > 0 && attrMask != 0) {
-		msg << " [";
-		bool first = true;
+	if (attrMask == 0) {
+		msg << " Buffs: 0 use(s)";
+	} else {
 		for (uint8 attr = 0; attr < 9; ++attr) {
-			if (attrMask & (1u << attr)) {
-				if (!first)
-					msg << ", ";
-				msg << BuffAttribute::getName(attr, true);
-				first = false;
-			}
+			int stock = data->getBuffStockByAttr(attr);
+			if (stock > 0)
+				msg << " " << BuffAttribute::getName(attr, true) << ": " << stock << " use(s)";
 		}
-		msg << "]";
 	}
 
 	msg << " | Poison resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON)
@@ -556,7 +550,8 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 		return false;
 	}
 
-	if (data->getStock(DoctorBuffDroidDataComponent::SERVICE_BUFFS) <= 0) {
+	uint32 attrMask = data->getLoadedBuffAttributes();
+	if (attrMask == 0) {
 		player->sendSystemMessage("This Doctor Buff Droid is out of buff supplies.");
 		return false;
 	}
@@ -567,44 +562,31 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 		return false;
 	}
 
-	if (!data->consumeStock(DoctorBuffDroidDataComponent::SERVICE_BUFFS)) {
-		player->sendSystemMessage("This Doctor Buff Droid ran out of buff supplies.");
-		return false;
-	}
-
 	sendFoodWarnings(player);
 
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 	if (playerManager != nullptr) {
-		// Pack power falls back to a flat 500 for droids loaded before this update
-		float packPower = data->getPackPower(DoctorBuffDroidDataComponent::SERVICE_BUFFS);
-		if (packPower <= 0.0f)
-			packPower = 500.0f;
-
 		int envMod = getDroidEnvironmentalMedRating(sceneObject);
 		int healMod = getOwnerHealingWoundTreatment(sceneObject, data, player);
-		int buffAmount = calculateDroidBuffPower(packPower, envMod, healMod);
 
-		float buffDuration = data->getPackDuration(DoctorBuffDroidDataComponent::SERVICE_BUFFS);
-		if (buffDuration <= 0.0f)
-			buffDuration = 7200.f;
+		for (uint8 attr = 0; attr < 9; ++attr) {
+			if (!(attrMask & (1u << attr)))
+				continue;
+			if (data->getBuffStockByAttr(attr) <= 0)
+				continue;
 
-		uint32 attrMask = data->getLoadedBuffAttributes();
+			float packPower = data->getBuffPackPowerByAttr(attr);
+			if (packPower <= 0.0f)
+				packPower = 500.0f;
 
-		if (attrMask == 0) {
-			// Fallback for droids loaded before attribute tracking: buff all 6 HAM stats
-			playerManager->healEnhance(player, player, BuffAttribute::HEALTH, buffAmount, buffDuration, 0);
-			playerManager->healEnhance(player, player, BuffAttribute::ACTION, buffAmount, buffDuration, 0);
-			playerManager->healEnhance(player, player, BuffAttribute::STRENGTH, buffAmount, buffDuration, 0);
-			playerManager->healEnhance(player, player, BuffAttribute::CONSTITUTION, buffAmount, buffDuration, 0);
-			playerManager->healEnhance(player, player, BuffAttribute::QUICKNESS, buffAmount, buffDuration, 0);
-			playerManager->healEnhance(player, player, BuffAttribute::STAMINA, buffAmount, buffDuration, 0);
-		} else {
-			// Only buff the stats whose packs were actually loaded
-			for (uint8 attr = 0; attr < 9; ++attr) {
-				if (attrMask & (1u << attr))
-					playerManager->healEnhance(player, player, attr, buffAmount, buffDuration, 0);
-			}
+			float buffDuration = data->getBuffPackDurationByAttr(attr);
+			if (buffDuration <= 0.0f)
+				buffDuration = 7200.f;
+
+			int buffAmount = calculateDroidBuffPower(packPower, envMod, healMod);
+
+			playerManager->healEnhance(player, player, attr, buffAmount, buffDuration, 0);
+			data->consumeBuffStock(attr);
 		}
 	}
 

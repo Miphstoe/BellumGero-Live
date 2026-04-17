@@ -34,17 +34,17 @@ private:
 	bool poisonEnabled;
 	bool diseaseEnabled;
 
-	// Weighted-average pack effectiveness and duration, updated when supplies are loaded
-	float buffPackPower;
+	// Per-stat buff storage — index is BuffAttribute value (0=Health … 8=Willpower)
+	int buffStockPerAttr[9];
+	float buffPackPowerPerAttr[9];
+	float buffPackDurationPerAttr[9];
+
+	// Weighted-average pack effectiveness and duration for poison/disease
 	float poisonPackPower;
 	float diseasePackPower;
 
-	float buffPackDuration;
 	float poisonPackDuration;
 	float diseasePackDuration;
-
-	// Bitmask of BuffAttribute values (bit N = attribute N loaded), cleared when buffStock hits 0
-	uint32 loadedBuffAttributes;
 
 	// Cached owner healing_wound_treatment skill mod, updated when supplies are loaded
 	int ownerHealingMod;
@@ -65,17 +65,26 @@ public:
 	void setOwnerId(uint64 id);
 	uint64 getOwnerId() const;
 
+	// Returns total charges for BUFFS (sum across all attrs), or stock for POISON/DISEASE
 	int getStock(ServiceType type) const;
-	// effectiveness/duration from the pack; weighted averages stored for buff calculation
-	// attr = BuffAttribute value (0-8 for HAM stats); ignored for non-BUFFS types
+	// attr = BuffAttribute value (0-8); used for SERVICE_BUFFS to track per-stat stock
 	void addStock(ServiceType type, int amount, float effectiveness = 0.0f, byte attr = 0, float duration = 0.0f);
-	bool consumeStock(ServiceType type, int amount = 1);
 
+	// Per-stat buff queries (attr = BuffAttribute value 0-8)
+	int getBuffStockByAttr(byte attr) const;
+	float getBuffPackPowerByAttr(byte attr) const;
+	float getBuffPackDurationByAttr(byte attr) const;
+	bool consumeBuffStock(byte attr, int amount = 1);
+
+	// Bitmask of which attrs have stock > 0; bit N set ↔ buffStockPerAttr[N] > 0
 	uint32 getLoadedBuffAttributes() const;
+
+	// Poison/disease only — returns the stored weighted-average pack effectiveness
+	float getPackPower(ServiceType type) const;
 	float getPackDuration(ServiceType type) const;
 
-	// Returns the stored weighted-average pack effectiveness for a service type
-	float getPackPower(ServiceType type) const;
+	// Consume stock for POISON or DISEASE (not BUFFS — use consumeBuffStock for those)
+	bool consumeStock(ServiceType type, int amount = 1);
 
 	int getOwnerHealingMod() const;
 	void setOwnerHealingMod(int mod);

@@ -1,4 +1,5 @@
 #include "DoctorBuffDroidDataComponent.h"
+#include <cstdio>
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
@@ -7,7 +8,12 @@
 DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectComponent(), dataMutex() {
 	ownerId = 0;
 
-	buffStock = 0;
+	for (int i = 0; i < 9; ++i) {
+		buffStockPerAttr[i] = 0;
+		buffPackPowerPerAttr[i] = 0.0f;
+		buffPackDurationPerAttr[i] = 0.0f;
+	}
+
 	poisonStock = 0;
 	diseaseStock = 0;
 	earningsBalance = 0;
@@ -25,17 +31,24 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	poisonEnabled = true;
 	diseaseEnabled = true;
 
-	buffPackPower = 0.0f;
 	poisonPackPower = 0.0f;
 	diseasePackPower = 0.0f;
-	buffPackDuration = 0.0f;
 	poisonPackDuration = 0.0f;
 	diseasePackDuration = 0.0f;
-	loadedBuffAttributes = 0;
-	ownerHealingMod = 100; // Reasonable default for a Master Doctor
+	ownerHealingMod = 100;
 
 	addSerializableVariable("ownerId", &ownerId);
-	addSerializableVariable("buffStock", &buffStock);
+	{
+		char name[32];
+		for (int i = 0; i < 9; ++i) {
+			snprintf(name, sizeof(name), "buffStockAttr%d", i);
+			addSerializableVariable(name, &buffStockPerAttr[i]);
+			snprintf(name, sizeof(name), "buffPowerAttr%d", i);
+			addSerializableVariable(name, &buffPackPowerPerAttr[i]);
+			snprintf(name, sizeof(name), "buffDurationAttr%d", i);
+			addSerializableVariable(name, &buffPackDurationPerAttr[i]);
+		}
+	}
 	addSerializableVariable("poisonStock", &poisonStock);
 	addSerializableVariable("diseaseStock", &diseaseStock);
 	addSerializableVariable("earningsBalance", &earningsBalance);
@@ -49,13 +62,10 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	addSerializableVariable("woundsEnabled", &woundsEnabled);
 	addSerializableVariable("poisonEnabled", &poisonEnabled);
 	addSerializableVariable("diseaseEnabled", &diseaseEnabled);
-	addSerializableVariable("buffPackPower", &buffPackPower);
 	addSerializableVariable("poisonPackPower", &poisonPackPower);
 	addSerializableVariable("diseasePackPower", &diseasePackPower);
-	addSerializableVariable("buffPackDuration", &buffPackDuration);
 	addSerializableVariable("poisonPackDuration", &poisonPackDuration);
 	addSerializableVariable("diseasePackDuration", &diseasePackDuration);
-	addSerializableVariable("loadedBuffAttributes", &loadedBuffAttributes);
 	addSerializableVariable("ownerHealingMod", &ownerHealingMod);
 }
 
@@ -63,7 +73,11 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	DataObjectComponent::writeJSON(j);
 
 	SERIALIZE_JSON_MEMBER(ownerId);
-	SERIALIZE_JSON_MEMBER(buffStock);
+	for (int i = 0; i < 9; ++i) {
+		j["buffStockAttr" + std::to_string(i)] = buffStockPerAttr[i];
+		j["buffPowerAttr" + std::to_string(i)] = buffPackPowerPerAttr[i];
+		j["buffDurationAttr" + std::to_string(i)] = buffPackDurationPerAttr[i];
+	}
 	SERIALIZE_JSON_MEMBER(poisonStock);
 	SERIALIZE_JSON_MEMBER(diseaseStock);
 	SERIALIZE_JSON_MEMBER(earningsBalance);
@@ -77,13 +91,10 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(woundsEnabled);
 	SERIALIZE_JSON_MEMBER(poisonEnabled);
 	SERIALIZE_JSON_MEMBER(diseaseEnabled);
-	SERIALIZE_JSON_MEMBER(buffPackPower);
 	SERIALIZE_JSON_MEMBER(poisonPackPower);
 	SERIALIZE_JSON_MEMBER(diseasePackPower);
-	SERIALIZE_JSON_MEMBER(buffPackDuration);
 	SERIALIZE_JSON_MEMBER(poisonPackDuration);
 	SERIALIZE_JSON_MEMBER(diseasePackDuration);
-	SERIALIZE_JSON_MEMBER(loadedBuffAttributes);
 	SERIALIZE_JSON_MEMBER(ownerHealingMod);
 }
 
@@ -109,8 +120,12 @@ int DoctorBuffDroidDataComponent::getStock(ServiceType type) const {
 	Locker locker(&dataMutex);
 
 	switch (type) {
-	case SERVICE_BUFFS:
-		return buffStock;
+	case SERVICE_BUFFS: {
+		int total = 0;
+		for (int i = 0; i < 9; ++i)
+			total += buffStockPerAttr[i];
+		return total;
+	}
 	case SERVICE_POISON:
 		return poisonStock;
 	case SERVICE_DISEASE:
@@ -125,8 +140,6 @@ float DoctorBuffDroidDataComponent::getPackDuration(ServiceType type) const {
 	Locker locker(&dataMutex);
 
 	switch (type) {
-	case SERVICE_BUFFS:
-		return buffPackDuration;
 	case SERVICE_POISON:
 		return poisonPackDuration;
 	case SERVICE_DISEASE:
@@ -138,7 +151,43 @@ float DoctorBuffDroidDataComponent::getPackDuration(ServiceType type) const {
 
 uint32 DoctorBuffDroidDataComponent::getLoadedBuffAttributes() const {
 	Locker locker(&dataMutex);
-	return loadedBuffAttributes;
+	uint32 mask = 0;
+	for (uint8 i = 0; i < 9; ++i) {
+		if (buffStockPerAttr[i] > 0)
+			mask |= (1u << i);
+	}
+	return mask;
+}
+
+int DoctorBuffDroidDataComponent::getBuffStockByAttr(byte attr) const {
+	if (attr >= 9)
+		return 0;
+	Locker locker(&dataMutex);
+	return buffStockPerAttr[attr];
+}
+
+float DoctorBuffDroidDataComponent::getBuffPackPowerByAttr(byte attr) const {
+	if (attr >= 9)
+		return 0.0f;
+	Locker locker(&dataMutex);
+	return buffPackPowerPerAttr[attr];
+}
+
+float DoctorBuffDroidDataComponent::getBuffPackDurationByAttr(byte attr) const {
+	if (attr >= 9)
+		return 0.0f;
+	Locker locker(&dataMutex);
+	return buffPackDurationPerAttr[attr];
+}
+
+bool DoctorBuffDroidDataComponent::consumeBuffStock(byte attr, int amount) {
+	if (attr >= 9 || amount <= 0)
+		return true;
+	Locker locker(&dataMutex);
+	if (buffStockPerAttr[attr] < amount)
+		return false;
+	buffStockPerAttr[attr] -= amount;
+	return true;
 }
 
 void DoctorBuffDroidDataComponent::addStock(ServiceType type, int amount, float effectiveness, byte attr, float duration) {
@@ -147,32 +196,51 @@ void DoctorBuffDroidDataComponent::addStock(ServiceType type, int amount, float 
 
 	Locker locker(&dataMutex);
 
+	if (type == SERVICE_BUFFS) {
+		if (attr >= 9)
+			return;
+
+		int& stock   = buffStockPerAttr[attr];
+		float& power = buffPackPowerPerAttr[attr];
+		float& dur   = buffPackDurationPerAttr[attr];
+
+		if (effectiveness > 0.0f) {
+			if (stock == 0 || power == 0.0f)
+				power = effectiveness;
+			else
+				power = ((stock * power) + (amount * effectiveness)) / (stock + amount);
+		}
+
+		if (duration > 0.0f) {
+			if (stock == 0 || dur == 0.0f)
+				dur = duration;
+			else
+				dur = ((stock * dur) + (amount * duration)) / (stock + amount);
+		}
+
+		stock += amount;
+		return;
+	}
+
 	int* stock = nullptr;
 	float* power = nullptr;
 	float* dur = nullptr;
 
 	switch (type) {
-	case SERVICE_BUFFS:
-		stock = &buffStock;
-		power = &buffPackPower;
-		dur = &buffPackDuration;
-		break;
 	case SERVICE_POISON:
 		stock = &poisonStock;
 		power = &poisonPackPower;
-		dur = &poisonPackDuration;
+		dur   = &poisonPackDuration;
 		break;
 	case SERVICE_DISEASE:
 		stock = &diseaseStock;
 		power = &diseasePackPower;
-		dur = &diseasePackDuration;
+		dur   = &diseasePackDuration;
 		break;
-	case SERVICE_WOUNDS:
 	default:
 		return;
 	}
 
-	// Weighted average: blend new pack effectiveness with existing stored power
 	if (effectiveness > 0.0f) {
 		if (*stock == 0 || *power == 0.0f)
 			*power = effectiveness;
@@ -180,7 +248,6 @@ void DoctorBuffDroidDataComponent::addStock(ServiceType type, int amount, float 
 			*power = ((*stock * *power) + (amount * effectiveness)) / (*stock + amount);
 	}
 
-	// Weighted average: blend new pack duration with existing stored duration
 	if (duration > 0.0f) {
 		if (*stock == 0 || *dur == 0.0f)
 			*dur = duration;
@@ -189,18 +256,12 @@ void DoctorBuffDroidDataComponent::addStock(ServiceType type, int amount, float 
 	}
 
 	*stock += amount;
-
-	// Track which buff attributes have been loaded so we only apply those stats
-	if (type == SERVICE_BUFFS && attr < 32)
-		loadedBuffAttributes |= (1u << attr);
 }
 
 float DoctorBuffDroidDataComponent::getPackPower(ServiceType type) const {
 	Locker locker(&dataMutex);
 
 	switch (type) {
-	case SERVICE_BUFFS:
-		return buffPackPower;
 	case SERVICE_POISON:
 		return poisonPackPower;
 	case SERVICE_DISEASE:
@@ -228,16 +289,12 @@ bool DoctorBuffDroidDataComponent::consumeStock(ServiceType type, int amount) {
 	int* stock = nullptr;
 
 	switch (type) {
-	case SERVICE_BUFFS:
-		stock = &buffStock;
-		break;
 	case SERVICE_POISON:
 		stock = &poisonStock;
 		break;
 	case SERVICE_DISEASE:
 		stock = &diseaseStock;
 		break;
-	case SERVICE_WOUNDS:
 	default:
 		return true;
 	}
@@ -246,11 +303,6 @@ bool DoctorBuffDroidDataComponent::consumeStock(ServiceType type, int amount) {
 		return false;
 
 	*stock -= amount;
-
-	// When buff stock empties, reset the attribute bitmask so the next load starts fresh
-	if (type == SERVICE_BUFFS && buffStock == 0)
-		loadedBuffAttributes = 0;
-
 	return true;
 }
 
