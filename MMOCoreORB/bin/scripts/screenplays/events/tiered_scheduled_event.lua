@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 4, day = 19, hour = 18, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 4, day = 19, hour = 19, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 4, day = 26, hour = 18, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 4, day = 26, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -35,30 +35,30 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
-  { planet = "rori", template = "field_captain_rax_vorn", x = -1241, y = 3848, z = 75, heading = 0 },
-  { planet = "rori", template = "field_captain_rax_vorn", x = -1242, y = 3849, z = 75, heading = 0 },
-  { planet = "rori", template = "field_captain_rax_vorn", x = -1243, y = 3850, z = 75, heading = 0 },
-  { planet = "rori", template = "field_captain_rax_vorn", x = -1244, y = 3851, z = 75, heading = 0 },
+  { planet = "corellia", template = "savage_rend_grak", x = -179, y = -4719, z = 28, heading = 0 },
+  { planet = "corellia", template = "savage_rend_grak", x = -181, y = -4721, z = 28, heading = 0 },
+  { planet = "corellia", template = "savage_rend_grak", x = -183, y = -4723, z = 28, heading = 0 },
+  { planet = "corellia", template = "savage_rend_grak", x = -185, y = -4725, z = 28, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
-  { planet = "rori", template = "war_general_kael_draxus", x = -1241, y = 3848, z = 75, heading = 0 },
-  { planet = "rori", template = "war_general_kael_draxus", x = -1242, y = 3849, z = 75, heading = 0 },
-  { planet = "rori", template = "war_general_kael_draxus", x = -1243, y = 3850, z = 75, heading = 0 },
+  { planet = "corellia", template = "dreadmaw_devourer_grak", x = -179, y = -4719, z = 28, heading = 0 },
+  { planet = "corellia", template = "dreadmaw_devourer_grak", x = -181, y = -4721, z = 28, heading = 0 },
+  { planet = "corellia", template = "dreadmaw_devourer_grak", x = -183, y = -4723, z = 28, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
  -- { planet = "corellia", template = "meatlump_loon", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "rori", template = "high_strategist_velkor_thane", x = -1241, y = 3848, z = 75, heading = 0 },
-  { planet = "rori", template = "high_strategist_velkor_thane", x = -1242, y = 3849, z = 75, heading = 0 },
+  { planet = "corellia", template = "apex_ravager_grak", x = -179, y = -4719, z = 28, heading = 0 },
+  { planet = "corellia", template = "apex_ravager_grak", x = -181, y = -4721, z = 28, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
  -- { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "rori", template = "supreme_warlord_darth_malvek", x = -1241, y = 3848, z = 75, heading = 0 },
+  { planet = "corellia", template = "primordial_warlord_grak", x = -179, y = -4719, z = 28, heading = 0 },
   --{ planet = "corellia", template = "wookiee_jedi_event", x = -180, y = -4725, z = 28, heading = 0 },
 }
 
