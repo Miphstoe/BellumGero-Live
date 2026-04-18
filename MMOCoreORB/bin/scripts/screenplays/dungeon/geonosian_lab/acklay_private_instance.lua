@@ -23,6 +23,19 @@ AcklayPrivateInstance = ScreenPlay:new {
 	-- Edit this if you want a different Acklay mobile template.
 	acklayTemplate = "acklay",
 
+	-- Outdoor spawn safety tuning.
+	acklaySpawnHeightTolerance = 8,
+	defaultAcklaySpawnOffsets = {
+		{ x = 34, y = 0, heading = 180 },
+		{ x = 26, y = 20, heading = -135 },
+		{ x = 0, y = 34, heading = -90 },
+		{ x = -26, y = 20, heading = -45 },
+		{ x = -34, y = 0, heading = 0 },
+		{ x = -26, y = -20, heading = 45 },
+		{ x = 0, y = -34, heading = 90 },
+		{ x = 26, y = -20, heading = 135 }
+	},
+
 	-- PUBLIC ENTRANCE / EXIT LOCATION
 	-- Used for timeout ejections, completion ejections, login cleanup, and unauthorized entry removal.
 	publicExit = {
@@ -56,30 +69,50 @@ AcklayPrivateInstance = ScreenPlay:new {
 		[1] = {
 			label = "Acklay Wild Room NE",
 			room = { planet = "yavin4", x = 4625.0, z = 78.0, y = -4380.0, cell = 0, heading = 180 },
-			acklaySpawn = { planet = "yavin4", x = 4652.0, z = 78.0, y = -4362.0, cell = 0, heading = -135 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
 			accessArea = { planet = "yavin4", x = 4625.0, z = 78.0, y = -4380.0, cell = 0, radius = 96 }
 		},
 		[2] = {
 			label = "Acklay Wild Room NW",
 			room = { planet = "yavin4", x = -4380.0, z = 92.0, y = -4275.0, cell = 0, heading = 90 },
-			acklaySpawn = { planet = "yavin4", x = -4352.0, z = 92.0, y = -4248.0, cell = 0, heading = 45 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
 			accessArea = { planet = "yavin4", x = -4380.0, z = 92.0, y = -4275.0, cell = 0, radius = 96 }
 		},
 		[3] = {
 			label = "Acklay Wild Room SW",
 			room = { planet = "yavin4", x = -4525.0, z = 67.0, y = 4310.0, cell = 0, heading = 0 },
-			acklaySpawn = { planet = "yavin4", x = -4490.0, z = 67.0, y = 4332.0, cell = 0, heading = 135 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
 			accessArea = { planet = "yavin4", x = -4525.0, z = 67.0, y = 4310.0, cell = 0, radius = 96 }
 		},
 		[4] = {
 			label = "Acklay Wild Room SE",
 			room = { planet = "yavin4", x = 4475.0, z = 70.0, y = 4185.0, cell = 0, heading = -90 },
-			acklaySpawn = { planet = "yavin4", x = 4502.0, z = 70.0, y = 4216.0, cell = 0, heading = 180 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
 			accessArea = { planet = "yavin4", x = 4475.0, z = 70.0, y = 4185.0, cell = 0, radius = 96 }
+		},
+		[5] = {
+			label = "Acklay Wild Room NE 2",
+			room = { planet = "yavin4", x = 4910.0, z = 81.0, y = -4045.0, cell = 0, heading = 135 },
+			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
+			accessArea = { planet = "yavin4", x = 4910.0, z = 81.0, y = -4045.0, cell = 0, radius = 96 }
+		},
+		[6] = {
+			label = "Acklay Wild Room NW 2",
+			room = { planet = "yavin4", x = -4720.0, z = 94.0, y = -3955.0, cell = 0, heading = 45 },
+			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
+			accessArea = { planet = "yavin4", x = -4720.0, z = 94.0, y = -3955.0, cell = 0, radius = 96 }
+		},
+		[7] = {
+			label = "Acklay Wild Room SW 2",
+			room = { planet = "yavin4", x = -4860.0, z = 69.0, y = 3985.0, cell = 0, heading = -45 },
+			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
+			accessArea = { planet = "yavin4", x = -4860.0, z = 69.0, y = 3985.0, cell = 0, radius = 96 }
+		},
+		[8] = {
+			label = "Acklay Wild Room SE 2",
+			room = { planet = "yavin4", x = 4815.0, z = 73.0, y = 3875.0, cell = 0, heading = -135 },
+			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
+			accessArea = { planet = "yavin4", x = 4815.0, z = 73.0, y = 3875.0, cell = 0, radius = 96 }
 		}
 	},
 
@@ -131,6 +164,15 @@ function AcklayPrivateInstance:initializeRooms()
 	self.rooms = {}
 
 	for roomId, config in pairs(self.roomConfigs) do
+		local acklaySpawn = config.acklaySpawn or {
+			planet = config.room.planet,
+			x = config.room.x + 34,
+			z = config.room.z,
+			y = config.room.y,
+			cell = config.room.cell,
+			heading = 180
+		}
+
 		self.rooms[roomId] = {
 			roomId = roomId,
 			label = config.label or ("Acklay Room " .. roomId),
@@ -153,13 +195,14 @@ function AcklayPrivateInstance:initializeRooms()
 				cell = config.room.cell,
 				heading = config.room.heading or 0
 			},
+			spawnOffsets = config.spawnOffsets or self.defaultAcklaySpawnOffsets,
 			acklaySpawn = {
-				planet = config.acklaySpawn.planet,
-				x = config.acklaySpawn.x,
-				z = config.acklaySpawn.z,
-				y = config.acklaySpawn.y,
-				cell = config.acklaySpawn.cell,
-				heading = config.acklaySpawn.heading or 0
+				planet = acklaySpawn.planet,
+				x = acklaySpawn.x,
+				z = acklaySpawn.z,
+				y = acklaySpawn.y,
+				cell = acklaySpawn.cell,
+				heading = acklaySpawn.heading or 0
 			},
 			exit = {
 				planet = config.exit.planet,
@@ -178,6 +221,73 @@ function AcklayPrivateInstance:initializeRooms()
 			}
 		}
 	end
+end
+
+function AcklayPrivateInstance:shuffleArray(values)
+	local copy = {}
+
+	for i = 1, #values, 1 do
+		copy[i] = values[i]
+	end
+
+	for i = #copy, 2, -1 do
+		local swapIndex = getRandomNumber(1, i)
+		copy[i], copy[swapIndex] = copy[swapIndex], copy[i]
+	end
+
+	return copy
+end
+
+function AcklayPrivateInstance:getGroundZ(point)
+	if (point == nil) then
+		return 0
+	end
+
+	if ((point.cell or 0) ~= 0) then
+		return point.z
+	end
+
+	return getWorldFloor(point.x, point.y, point.planet)
+end
+
+function AcklayPrivateInstance:getAcklaySpawnCandidates(room)
+	if (room == nil) then
+		return {}
+	end
+
+	local candidates = {}
+	local baseZ = self:getGroundZ(room.room)
+	local offsets = room.spawnOffsets or self.defaultAcklaySpawnOffsets
+	local shuffledOffsets = self:shuffleArray(offsets)
+
+	for i = 1, #shuffledOffsets, 1 do
+		local offset = shuffledOffsets[i]
+		local candidate = {
+			planet = room.room.planet,
+			x = room.room.x + (offset.x or 0),
+			y = room.room.y + (offset.y or 0),
+			z = room.room.z,
+			cell = room.room.cell or 0,
+			heading = offset.heading or 0
+		}
+
+		candidate.z = self:getGroundZ(candidate)
+
+		if ((candidate.cell or 0) ~= 0 or math.abs(candidate.z - baseZ) <= self.acklaySpawnHeightTolerance) then
+			table.insert(candidates, candidate)
+		end
+	end
+
+	table.insert(candidates, {
+		planet = room.acklaySpawn.planet,
+		x = room.acklaySpawn.x,
+		y = room.acklaySpawn.y,
+		z = self:getGroundZ(room.acklaySpawn),
+		cell = room.acklaySpawn.cell or 0,
+		heading = room.acklaySpawn.heading or 0
+	})
+
+	return candidates
 end
 
 function AcklayPrivateInstance:ensureRoomsReady()
@@ -634,7 +744,19 @@ function AcklayPrivateInstance:spawnAcklayForRoom(roomId)
 		return getSceneObject(room.acklayId)
 	end
 
-	local pAcklay = spawnMobile(room.acklaySpawn.planet, self.acklayTemplate, 0, room.acklaySpawn.x, room.acklaySpawn.z, room.acklaySpawn.y, room.acklaySpawn.heading, room.acklaySpawn.cell)
+	local pAcklay = nil
+	local spawnPoint = nil
+	local candidates = self:getAcklaySpawnCandidates(room)
+
+	for i = 1, #candidates, 1 do
+		local candidate = candidates[i]
+		pAcklay = spawnMobile(candidate.planet, self.acklayTemplate, 0, candidate.x, candidate.z, candidate.y, candidate.heading, candidate.cell)
+
+		if (pAcklay ~= nil) then
+			spawnPoint = candidate
+			break
+		end
+	end
 
 	if (pAcklay == nil) then
 		self:failRoom(roomId, "The Acklay could not be spawned for your private run.")
@@ -650,7 +772,7 @@ function AcklayPrivateInstance:spawnAcklayForRoom(roomId)
 	local pCreature = CreatureObject(pAcklay)
 	if (pCreature ~= nil and pCreature.setHomeLocation ~= nil) then
 		pcall(function()
-			pCreature:setHomeLocation(room.acklaySpawn.x, room.acklaySpawn.z, room.acklaySpawn.y, math.max(24, room.accessArea.radius))
+			pCreature:setHomeLocation(spawnPoint.x, spawnPoint.z, spawnPoint.y, math.max(24, room.accessArea.radius))
 		end)
 	end
 
