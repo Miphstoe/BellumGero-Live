@@ -81,6 +81,7 @@ void ChatManagerImplementation::stop() {
 	groupRoom = nullptr;
 	guildRoom = nullptr;
 	auctionRoom = nullptr;
+	servicesRoom = nullptr;
 	pvpBroadcastRoom = nullptr;
 	gameRooms.removeAll();
 }
@@ -324,6 +325,11 @@ void ChatManagerImplementation::initiateRooms() {
 	auctionRoom = createRoom("Auction", galaxyRoom);
 	auctionRoom->setCanEnter(true);
 	auctionRoom->setChatRoomType(ChatRoom::AUCTION);
+
+	servicesRoom = createRoom("Services", galaxyRoom);
+	servicesRoom->setCanEnter(true);
+	servicesRoom->setChatRoomType(ChatRoom::CUSTOM);
+	servicesRoom->setTitle("BellumGero Services Chat");
 
 	if (ConfigManager::instance()->isPvpBroadcastChannelEnabled()) {
 		pvpBroadcastRoom = createRoom("PvPBroadcasts", galaxyRoom);
@@ -1822,6 +1828,44 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 		auctionRoom->broadcastMessageCheckIgnore(msg, name);
 	}
 
+}
+
+void ChatManagerImplementation::handleServicesChat(CreatureObject* sender, const UnicodeString& message) {
+	String name = sender->getFirstName();
+	String fullName = "";
+
+	if (sender->isPlayerCreature()) {
+		ManagedReference<PlayerObject*> senderGhost = sender->getPlayerObject();
+
+		if (senderGhost == nullptr)
+			return;
+
+		if (senderGhost->isMuted()) {
+			String reason = senderGhost->getMutedReason();
+
+			if (reason != "")
+				sender->sendSystemMessage("Your chat abilities are currently disabled by Customer Support for '" + reason + "'.");
+			else
+				sender->sendSystemMessage("Your chat abilities are currently disabled by Customer Support.");
+
+			return;
+		}
+
+		fullName = getTaggedName(senderGhost, name);
+	}
+
+	StringTokenizer args(message.toString());
+	if (!args.hasMoreTokens()) {
+		sender->sendSystemMessage("@ui:im_no_message"); // You need to include a message!
+		return;
+	}
+
+	UnicodeString formattedMessage(formatMessage(message));
+
+	if (servicesRoom != nullptr) {
+		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, servicesRoom->getRoomID());
+		servicesRoom->broadcastMessageCheckIgnore(msg, name);
+	}
 }
 
 void ChatManagerImplementation::sendMail(const String& sendername, const UnicodeString& header, const UnicodeString& body, const String& name) {

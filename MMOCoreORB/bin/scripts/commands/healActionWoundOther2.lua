@@ -49,6 +49,10 @@ HealActionWoundOther2Command = {
 	defaultTime = 6,
 	woundAttributesToHeal = ACTION_ATTRIBUTE,
 	range = 32,
+	frsLightBuffModifier = 5.0,
+	frsDarkBuffModifier = 5.0,
+	frsLightExtraForceCostModifier = -0.001,
+	frsDarkExtraForceCostModifier = -0.001,
 }
 
 AddCommand(HealActionWoundOther2Command)

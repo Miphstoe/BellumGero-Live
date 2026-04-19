@@ -52,6 +52,8 @@ ForceShield2Command = {
 	frsLightExtraForceCostModifier = -0.003,
 	frsLightBuffModifier = 0.35,
 	frsDarkBuffModifier = 0.35,
+	frsLightForceCostModifier = -2.0,
+	frsDarkForceCostModifier = -2.0,
 }
 
 AddCommand(ForceShield2Command)

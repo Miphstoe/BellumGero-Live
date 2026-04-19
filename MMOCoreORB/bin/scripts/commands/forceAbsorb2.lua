@@ -50,6 +50,8 @@ ForceAbsorb2Command = {
 	buffClass = SINGLE_USE_BUFF,
 	frsDarkExtraForceCostModifier = 0.002,
 	frsLightExtraForceCostModifier = 0.002,
+	frsLightForceCostModifier = -2.0,
+	frsDarkForceCostModifier = -2.0,
 }
 
 AddCommand(ForceAbsorb2Command)
