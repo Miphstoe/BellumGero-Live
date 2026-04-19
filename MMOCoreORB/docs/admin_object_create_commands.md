@@ -27,6 +27,9 @@ Wearables spawn with display suffix **`(Socketed)`** when using `createwearable`
 ```text
 /object createitem object/weapon/ranged/pistol/pistol_bellum_bowcaster_stats.iff
 /object createitem object/weapon/ranged/carbine/carbine_bellum_bowcaster_stats.iff
+/object createitem object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.iff
+/object createitem object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.iff
+/object createitem object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.iff
 ```
 
 ---

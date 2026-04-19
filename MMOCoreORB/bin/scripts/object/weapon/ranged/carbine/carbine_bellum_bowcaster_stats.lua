@@ -31,7 +31,7 @@ object_weapon_ranged_carbine_carbine_bellum_bowcaster_stats = object_weapon_rang
 
 	xpType = "combat_rangedspecialize_carbine",
 
-	certificationsRequired = { "cert_carbine_ee3" },
+	certificationsRequired = {},
 	creatureAccuracyModifiers = { "carbine_accuracy" },
 
 	creatureAimModifiers = { "carbine_aim", "aim" },

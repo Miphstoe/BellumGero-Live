@@ -1,7 +1,9 @@
 --Copyright (C) 2010 <SWGEmu>
--- Bellum: DL-44 appearance with rifle_bowcaster combat stats (all species).
+-- Bellum: Foundling kit. CDEF certification, Beskar naming, recruiter grant on arc start.
 
-object_weapon_ranged_pistol_pistol_bellum_bowcaster_stats = object_weapon_ranged_pistol_shared_pistol_dl44:new {
+object_weapon_ranged_pistol_pistol_foundling_cdef_beskar = object_weapon_ranged_pistol_shared_pistol_cdef:new {
+	customObjectName = "Foundling Beskar CDEF Pistol",
+
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",
 		"object/creature/player/bothan_female.iff",
@@ -28,41 +30,31 @@ object_weapon_ranged_pistol_pistol_bellum_bowcaster_stats = object_weapon_ranged
 	attackType = RANGEDATTACK,
 	damageType = ENERGY,
 	armorPiercing = NONE,
-
 	xpType = "combat_rangedspecialize_pistol",
 
-	certificationsRequired = {},
+	certificationsRequired = { "cert_pistol_cdef" },
 	creatureAccuracyModifiers = { "pistol_accuracy" },
-
 	creatureAimModifiers = { "pistol_aim", "aim" },
-
 	defenderDefenseModifiers = { "ranged_defense" },
-
 	defenderSecondaryDefenseModifiers = { "dodge" },
-
 	speedModifiers = { "pistol_speed" },
+	damageModifiers = {},
 
-	damageModifiers = { },
-
-	healthAttackCost = 26,
-	actionAttackCost = 26,
-	mindAttackCost = 37,
+	healthAttackCost = 10,
+	actionAttackCost = 15,
+	mindAttackCost = 10,
 	forceCost = 0,
 
 	pointBlankRange = 0,
-	pointBlankAccuracy = -30,
-
-	idealRange = 45,
-	idealAccuracy = 0,
-
+	pointBlankAccuracy = 20,
+	idealRange = 15,
+	idealAccuracy = 50,
 	maxRange = 64,
 	maxRangeAccuracy = -80,
 
-	minDamage = 1100,
-	maxDamage = 1800,
-
-	attackSpeed = 1.3,
-
+	minDamage = 666,
+	maxDamage = 666,
+	attackSpeed = 0.6,
 	woundsRatio = 13,
 
 	numberExperimentalProperties = {1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2},
@@ -70,10 +62,10 @@ object_weapon_ranged_pistol_pistol_bellum_bowcaster_stats = object_weapon_ranged
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 77, 131, 8, 9, 30, 750, -30, -80, 45, -5, 34, 34, 48},
-	experimentalMax = {0, 0, 130, 234, 5, 17, 65, 1500, -30, -80, 45, 5, 18, 18, 26},
+	experimentalMin = {0, 0, 666, 666, 0.6, 9, 30, 750, 0, -80, 15, 35, 10, 22, 10},
+	experimentalMax = {0, 0, 666, 666, 0.6, 17, 65, 1500, 0, -80, 15, 65, 7, 15, 7},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
 
-ObjectTemplates:addTemplate(object_weapon_ranged_pistol_pistol_bellum_bowcaster_stats, "object/weapon/ranged/pistol/pistol_bellum_bowcaster_stats.iff")
+ObjectTemplates:addTemplate(object_weapon_ranged_pistol_pistol_foundling_cdef_beskar, "object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.iff")

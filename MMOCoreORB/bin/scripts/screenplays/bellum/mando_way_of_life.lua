@@ -460,6 +460,47 @@ function MandoWayOfLife:startFoundlingArc(pPlayer)
 
 	-- Advance to planet 1 (Tatooine)
 	self:advanceToPlanet(pPlayer, 1)
+	self:grantFoundlingBeskarCdefKit(pPlayer)
+end
+
+-- Foundling arc start: recruiter kit (CDEF appearance family, species CDEF certs, tuned combat).
+function MandoWayOfLife:grantFoundlingBeskarCdefKit(pPlayer)
+	if (pPlayer == nil or SceneObject(pPlayer) == nil) then return end
+
+	local iffs = {
+		"object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.iff",
+	}
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		self:logDiagPlayer(pPlayer, "grantFoundlingBeskarCdefKit: no inventory.")
+		return
+	end
+
+	for i = 1, #iffs do
+		if (SceneObject(pInventory):isContainerFullRecursive()) then
+			CreatureObject(pPlayer):sendSystemMessage(
+				"Your inventory is full. I could not pass you the full Foundling Beskar arm. Clear at least three slots and contact staff if you need the kit."
+			)
+			self:logDiagPlayer(pPlayer, "grantFoundlingBeskarCdefKit: inventory full before kit complete.")
+			return
+		end
+		local pItem = giveItem(pInventory, iffs[i], -1)
+		if (pItem == nil) then
+			CreatureObject(pPlayer):sendSystemMessage(
+				"Something blocked your Foundling Beskar transfer. Clear bag space and contact staff if this repeats."
+			)
+			self:logDiagPlayer(pPlayer, string.format("grantFoundlingBeskarCdefKit: giveItem failed at index %s.", tostring(i)))
+			return
+		end
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(
+		"You carry Foundling Beskar CDEF arms now. Use what fits your stance. Your contact on Tatooine is waiting."
+	)
+	self:logDiagPlayer(pPlayer, "grantFoundlingBeskarCdefKit: all three weapons granted.")
 end
 
 -- Advance to next planet in the arc

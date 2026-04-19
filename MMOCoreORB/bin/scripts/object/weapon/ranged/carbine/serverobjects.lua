@@ -47,6 +47,7 @@ includeFile("weapon/ranged/carbine/base/serverobjects.lua")
 
 -- Server Objects
 includeFile("weapon/ranged/carbine/carbine_cdef.lua")
+includeFile("weapon/ranged/carbine/carbine_foundling_cdef_beskar.lua")
 includeFile("weapon/ranged/carbine/carbine_cdef_corsec.lua")
 includeFile("weapon/ranged/carbine/carbine_dh17.lua")
 includeFile("weapon/ranged/carbine/carbine_dh17_black.lua")

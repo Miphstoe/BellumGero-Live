@@ -14,6 +14,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-04-18 — Foundling Beskar CDEF kit from recruiter on arc start
+
+- **Summary:** Added three weapon templates (**pistol / rifle / carbine** `*_foundling_cdef_beskar`) with **CDEF** certifications, display names **Foundling Beskar CDEF …**, combat profile **666 min/max damage** and **0.6 attack speed**. **`MandoWayOfLife:startFoundlingArc`** calls **`grantFoundlingBeskarCdefKit`** after the first planet advance so new recruits receive the kit when the recruiter sends them to the Tatooine informant.
+- **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/pistol/serverobjects.lua`, `bin/scripts/object/weapon/ranged/rifle/serverobjects.lua`, `bin/scripts/object/weapon/ranged/carbine/serverobjects.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `docs/admin_object_create_commands.md`, `bellumgero_change_log.md`
+- **Notes:** Rebuild **`core3`** (new IFF templates). Requires **three free inventory slots** at accept; species **CDEF** certs unchanged from stock (**species** skills on default DB).
+
+### 2026-04-18 — Bellum bowcaster-stat pistol/carbine: no certification required
+
+- **Summary:** Cleared **`certificationsRequired`** on **`pistol_bellum_bowcaster_stats`** and **`carbine_bellum_bowcaster_stats`** so adventure or staff-spawned copies equip without Marksman box certs (temporary until certs are revisited).
+- **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_bellum_bowcaster_stats.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_bellum_bowcaster_stats.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only; restart **`core3`**. Stock **`rifle_bowcaster.iff`** still requires **`cert_rifle_bowcaster`** unless changed separately.
+
 ### 2026-04-14 — Mando Way: Spynet comlink on Jabba badge; post rank Spynet signoff
 
 - **Summary:** When **Jabba themepark** awards badge **105**, **Clanbound** players (chapter 4 complete, chapter 5 not yet) receive a **Spynet comlink** system line directing them to **Mos Eisley** and the **recruiter**. After **`grantMandalorian`** (rank, title, chapter badge), a second **Spynet comlink** line closes the arc (**Continue your Hunt**, FRS deferred). Hook lives in **`ThemeParkLogic:giveBadge`** calling **`MandoWayOfLife:onJabbaThemeparkBadgeEarned`**.
@@ -593,3 +605,15 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** DL-44 and EE-3 appearance templates with combat stats aligned to `rifle_bowcaster.lua`; all species on pistol; same certs as base DL-44 / EE-3.
 - **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_bellum_bowcaster_stats.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_bellum_bowcaster_stats.lua`, `bin/scripts/object/weapon/ranged/pistol/serverobjects.lua`, `bin/scripts/object/weapon/ranged/carbine/serverobjects.lua`
 - **Notes:** Spawn IFFs end in `pistol_bellum_bowcaster_stats.iff` / `carbine_bellum_bowcaster_stats.iff`.
+
+### 2026-04-16 — Docs: Mandalorian project player perspective overview
+
+- **Summary:** Added a player facing overview for the Mandalorian project that consolidates what the arc includes, major updates, current flow, and active direction using the existing changelog history.
+- **Files:** `docs/mandalorian_project_player_perspective.md`, `bellumgero_change_log.md`
+- **Notes:** Documentation only. No code or runtime behavior changed.
+
+### 2026-04-16 — Docs: remove non working chat command references from Mandalorian overview
+
+- **Summary:** Removed `!foundling` and `!mando` references from the player perspective overview so the guide does not direct players to commands that are not working on this shard.
+- **Files:** `docs/mandalorian_project_player_perspective.md`, `bellumgero_change_log.md`
+- **Notes:** Documentation only. No gameplay logic changes.
