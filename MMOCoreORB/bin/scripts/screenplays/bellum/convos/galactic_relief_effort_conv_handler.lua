@@ -17,6 +17,10 @@ function GalacticReliefEffortConvoHandler:getInitialScreen(pPlayer, pNpc, pConvT
 		text = "This network is not a sightseeing charter. Only medics trained to use both /tendDamage and /tendWound may undertake a relief circuit."
 	elseif (state == "reward_pending") then
 		text = "Your relief circuit is complete. I have your compensation ready.\n\n" .. GalacticReliefEffort:buildProgressReportText(pPlayer) .. "\n\nSelect the assignment option and I will process your debrief and reward."
+
+		if (GalacticReliefEffort:shouldGrantBonusReward(pPlayer)) then
+			text = text .. "\n\nYour one-time doctor buff droid deed is also ready for issue."
+		end
 	elseif (state == "in_progress") then
 		text = "Your relief circuit remains active.\n\n" .. GalacticReliefEffort:buildProgressReportText(pPlayer) .. "\n\nIf you lost the route, ask for a progress report and I will refresh your waypoint."
 	elseif (state == "cooldown") then
@@ -37,9 +41,16 @@ function GalacticReliefEffortConvoHandler:runScreenHandlers(pConvTemplate, pPlay
 
 	if (screenID == "start_assignment") then
 		if (GalacticReliefEffort:isRewardPending(pPlayer)) then
+			local shouldGrantBonusReward = GalacticReliefEffort:shouldGrantBonusReward(pPlayer)
 			local success, message = GalacticReliefEffort:grantReward(pPlayer)
 			if (success) then
-				CreatureObject(pPlayer):sendSystemMessage("Reward granted: 150,000 credits and 1 Holocron of Destiny.")
+				local summaryMessage = "Reward granted: 150,000 credits and 1 Holocron of Destiny."
+
+				if (shouldGrantBonusReward) then
+					summaryMessage = "Reward granted: 150,000 credits, 1 Holocron of Destiny, and your one-time doctor buff droid deed."
+				end
+
+				CreatureObject(pPlayer):sendSystemMessage(summaryMessage)
 			end
 			return self:buildScreen(pConvTemplate, "claim_reward", message)
 		end

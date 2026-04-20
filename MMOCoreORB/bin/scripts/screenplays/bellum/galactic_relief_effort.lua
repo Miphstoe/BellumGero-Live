@@ -19,6 +19,7 @@ GalacticReliefEffort.NPC_HEADING = 95
 
 GalacticReliefEffort.REWARD_CREDITS = 150000
 GalacticReliefEffort.REWARD_ITEM_TEMPLATE = "object/tangible/loot/misc/holocron_of_destiny.iff"
+GalacticReliefEffort.BONUS_REWARD_ITEM_TEMPLATE = "object/tangible/deed/vehicle_deed/doctor_buff_droid_deed.iff"
 GalacticReliefEffort.COOLDOWN_SECONDS = 20 * 60 * 60
 GalacticReliefEffort.ASSIGNED_CITIES_PER_RUN = 5
 GalacticReliefEffort.PATIENTS_REQUIRED_PER_CITY = 5
@@ -255,6 +256,14 @@ end
 
 function GalacticReliefEffort:isRewardLocked(pPlayer)
 	return self:getNumber(pPlayer, "reward_lock") == 1
+end
+
+function GalacticReliefEffort:hasClaimedBonusReward(pPlayer)
+	return self:getNumber(pPlayer, "doctor_buff_droid_deed_claimed") == 1
+end
+
+function GalacticReliefEffort:shouldGrantBonusReward(pPlayer)
+	return not self:hasClaimedBonusReward(pPlayer)
 end
 
 function GalacticReliefEffort:getCurrentCityIndex(pPlayer)
@@ -790,7 +799,13 @@ function GalacticReliefEffort:finalizeQuestReady(pPlayer)
 	self:refreshObservers(pPlayer)
 	self:updateWaypoint(pPlayer)
 
-	CreatureObject(pPlayer):sendSystemMessage("All five worlds are stabilized. Return to Relief Coordinator Teren Vahl for payment and a Holocron of Destiny.")
+	local rewardText = "All five worlds are stabilized. Return to Relief Coordinator Teren Vahl for payment and a Holocron of Destiny."
+
+	if (self:shouldGrantBonusReward(pPlayer)) then
+		rewardText = rewardText .. " Your one-time doctor buff droid deed is also ready."
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(rewardText)
 end
 
 function GalacticReliefEffort:advanceToNextCityEvent(pPlayer)
@@ -999,8 +1014,20 @@ function GalacticReliefEffort:canGrantReward(pPlayer)
 		return false, "I cannot locate your inventory manifest."
 	end
 
-	if (SceneObject(pInventory):isContainerFullRecursive()) then
-		return false, "Make room in your inventory before I hand over the Holocron of Destiny."
+	local inventory = SceneObject(pInventory)
+	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	local requiredSlots = 1
+
+	if (self:shouldGrantBonusReward(pPlayer)) then
+		requiredSlots = 2
+	end
+
+	if (freeSlots < requiredSlots) then
+		if (requiredSlots == 1) then
+			return false, "Make room in your inventory before I hand over the Holocron of Destiny."
+		end
+
+		return false, "Make room for at least two inventory items before I hand over your Holocron of Destiny and one-time doctor buff droid deed."
 	end
 
 	return true, ""
@@ -1027,6 +1054,22 @@ function GalacticReliefEffort:grantReward(pPlayer)
 
 	SceneObject(pReward):setCustomObjectName("Holocron of Destiny")
 
+	local grantedBonusReward = false
+
+	if (self:shouldGrantBonusReward(pPlayer)) then
+		local pBonusReward = giveItem(pInventory, self.BONUS_REWARD_ITEM_TEMPLATE, -1, true)
+		if (pBonusReward == nil) then
+			SceneObject(pReward):destroyObjectFromWorld()
+			SceneObject(pReward):destroyObjectFromDatabase()
+			self:setNumber(pPlayer, "reward_lock", 0)
+			self:setNumber(pPlayer, "cooldown_until", 0)
+			return false, "I could not place your one-time doctor buff droid deed into your inventory. Free enough space and speak to me again."
+		end
+
+		grantedBonusReward = true
+		self:setNumber(pPlayer, "doctor_buff_droid_deed_claimed", 1)
+	end
+
 	CreatureObject(pPlayer):addBankCredits(self.REWARD_CREDITS, true)
 	self:cleanupCityPatients(pPlayer, self:getCurrentCityIndex(pPlayer))
 	self:clearWaypoint(pPlayer)
@@ -1034,5 +1077,11 @@ function GalacticReliefEffort:grantReward(pPlayer)
 	self:setNumber(pPlayer, "cooldown_until", now + self.COOLDOWN_SECONDS)
 	self:refreshObservers(pPlayer)
 
-	return true, "Your relief circuit is complete. The Alliance of medics across the stars recognizes your service.\n\nRewarded:\n- 150,000 credits\n- 1 Holocron of Destiny"
+	local rewardMessage = "Your relief circuit is complete. The Alliance of medics across the stars recognizes your service.\n\nRewarded:\n- 150,000 credits\n- 1 Holocron of Destiny"
+
+	if (grantedBonusReward) then
+		rewardMessage = rewardMessage .. "\n- 1 Doctor Buff Droid Deed"
+	end
+
+	return true, rewardMessage
 end
