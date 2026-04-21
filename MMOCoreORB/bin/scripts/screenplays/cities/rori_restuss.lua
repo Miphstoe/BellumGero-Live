@@ -321,5 +321,30 @@ function RoriRestussScreenPlay:spawnMobiles()
 	spawnMobile(self.planet, "gundark_hooligan", 300,getRandomNumber(5) + 5108.7, 80.0,getRandomNumber(12) + 5624, getRandomNumber(360), 0)
 	spawnMobile(self.planet, "gundark_hooligan", 300,getRandomNumber(5) + 5108.7, 80.0,getRandomNumber(12) + 5624, getRandomNumber(360), 0)
 
-	spawnMobile(self.planet, "the_hand", 2700, 5316, 80, 5652, getRandomNumber(360), 0)
+	-- Respawn managed manually so the loot wrapper can re-register observers each cycle.
+	self:spawnTheHand()
+end
+
+function RoriRestussScreenPlay:spawnTheHand()
+	local pTheHand = spawnMobile(self.planet, "the_hand", 0, 5316, 80, 5652, getRandomNumber(360), 0)
+	if pTheHand == nil then return end
+
+	createObserver(DAMAGERECEIVED,   self.screenplayName, "onHandDamage",   pTheHand)
+	createObserver(OBJECTDESTRUCTION, self.screenplayName, "onTheHandKilled", pTheHand)
+end
+
+-- Stub — overridden by the_hand_boss_loot_wrapper.lua
+function RoriRestussScreenPlay:onHandDamage(pBoss, pAttacker, damage)
+	return 0
+end
+
+-- Stub — overridden by the_hand_boss_loot_wrapper.lua
+function RoriRestussScreenPlay:onTheHandKilled(pVictim, pKiller)
+	createEvent(2700000, self.screenplayName, "respawnTheHand", pVictim, "")
+	return 1
+end
+
+function RoriRestussScreenPlay:respawnTheHand(pObj, param)
+	self:spawnTheHand()
+	return 1
 end

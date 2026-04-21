@@ -28,24 +28,7 @@ the_hand = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/dressed_dark_jedi_human_female_01.iff"},
-	lootGroups = {
-		{
-			groups = {
-				{group = "color_crystals", chance = 2000000},
-				{group = "clothing_attachments", chance = 2500000},
-				{group = "armor_attachments", chance = 2500000},
-				{group = "holocron_dark", chance = 2000000},
-				{group = "the_hand", chance = 1500000}
-			},
-			lootChance = 10000000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 500000
-		}
-	},
+	lootGroups = {},
 
 	primaryWeapon = "dark_jedi_weapons_gen4",
 	secondaryWeapon = "none",
