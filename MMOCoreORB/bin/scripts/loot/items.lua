@@ -634,6 +634,7 @@ includeFile("items/veteran_reward/frn_vet_holo_starfighter.lua")
 includeFile("items/veteran_reward/frn_vet_holo_yoda.lua")
 includeFile("items/misc/casual_rug.lua")
 includeFile("items/misc/majestic_rug.lua")
+includeFile("items/misc/potted_plants_sml_s05.lua")
 includeFile("items/misc/radar_topology_screen.lua")
 includeFile("items/misc/tato_small_table_style_03.lua")
 
