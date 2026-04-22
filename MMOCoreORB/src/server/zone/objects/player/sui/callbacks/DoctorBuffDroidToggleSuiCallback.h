@@ -42,6 +42,7 @@ public:
 			return;
 		}
 
+		droid->updateToDatabase();
 		player->sendSystemMessage("Doctor Buff Droid service state updated.");
 	}
 };

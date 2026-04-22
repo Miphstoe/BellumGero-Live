@@ -11,6 +11,7 @@
 #include "server/zone/objects/intangible/VehicleControlDevice.h"
 #include "server/zone/objects/scene/components/DataObjectComponentReference.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
+#include "server/zone/objects/tangible/consumable/Consumable.h"
 #include "server/zone/objects/tangible/pharmaceutical/EnhancePack.h"
 #include "server/zone/objects/tangible/pharmaceutical/PharmaceuticalObject.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -26,6 +27,8 @@
 
 namespace {
 const String kDoctorSkill = "science_doctor_master";
+const uint32 kBivoliBuffCRC = 0x2114D76D;
+const String kBivoliSkillMod = "healing_wound_treatment";
 
 bool isMasterDoctor(CreatureObject* player) {
 	return player != nullptr && player->hasSkill(kDoctorSkill);
@@ -65,6 +68,35 @@ bool deductCredits(CreatureObject* player, int amount) {
 	}
 
 	return true;
+}
+
+Consumable* getConsumable(SceneObject* item) {
+	if (item == nullptr)
+		return nullptr;
+
+	if (item->isFactoryCrate()) {
+		FactoryCrate* crate = cast<FactoryCrate*>(item);
+		if (crate == nullptr || !crate->isValidFactoryCrate())
+			return nullptr;
+
+		item = crate->getPrototype();
+		if (item == nullptr)
+			return nullptr;
+	}
+
+	if (!item->isTangibleObject())
+		return nullptr;
+
+	TangibleObject* tangible = cast<TangibleObject*>(item);
+	if (tangible == nullptr || !tangible->isConsumable())
+		return nullptr;
+
+	return cast<Consumable*>(tangible);
+}
+
+bool isBivoliSupply(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	return consumable != nullptr && consumable->getBuffCRC() == kBivoliBuffCRC;
 }
 
 DoctorBuffDroidDataComponent::ServiceType getSupplyType(SceneObject* item) {
@@ -107,6 +139,9 @@ bool isValidSupply(SceneObject* item) {
 	if (item == nullptr)
 		return false;
 
+	if (isBivoliSupply(item))
+		return true;
+
 	if (item->isFactoryCrate()) {
 		FactoryCrate* crate = cast<FactoryCrate*>(item);
 		if (crate == nullptr || !crate->isValidFactoryCrate() || crate->getUseCount() <= 0)
@@ -145,6 +180,27 @@ int getSupplyAmount(SceneObject* item) {
 		return 0;
 
 	return Math::max(1, cast<TangibleObject*>(item)->getUseCount());
+}
+
+float getBivoliStrength(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	if (consumable == nullptr)
+		return 0.0f;
+
+	return consumable->getCurrentNutrition();
+}
+
+float getBivoliDuration(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	if (consumable == nullptr)
+		return 0.0f;
+
+	float duration = consumable->getDuration();
+
+	if (duration > 0.0f && consumable->getSpeciesRestriction().isEmpty())
+		return duration;
+
+	return duration;
 }
 
 // Returns the BuffAttribute byte for a buff pack (or its crate prototype).
@@ -278,10 +334,19 @@ int getOwnerHealingWoundTreatment(SceneObject* droid, DoctorBuffDroidDataCompone
 		return 100;
 
 	uint64 ownerId = data->getOwnerId();
+	Time now;
+	uint64 nowMs = now.getMiliTime();
+	int droidBivoliBonus = data->getActiveBivoliBonus(nowMs);
 
 	// Owner is the buyer — already locked, read directly
-	if (buyer != nullptr && buyer->getObjectID() == ownerId)
-		return buyer->getSkillMod("healing_wound_treatment");
+	if (buyer != nullptr && buyer->getObjectID() == ownerId) {
+		int healMod = buyer->getSkillMod(kBivoliSkillMod);
+		Buff* manualBivoli = buyer->getBuff(kBivoliBuffCRC);
+		if (manualBivoli != nullptr)
+			healMod -= manualBivoli->getSkillModifierValue(kBivoliSkillMod);
+
+		return Math::max(0, healMod) + droidBivoliBonus;
+	}
 
 	// Owner is someone else — cross-lock to get their current stats
 	if (droid != nullptr) {
@@ -291,13 +356,18 @@ int getOwnerHealingWoundTreatment(SceneObject* droid, DoctorBuffDroidDataCompone
 			if (ownerObj != nullptr && ownerObj->isCreatureObject()) {
 				CreatureObject* owner = cast<CreatureObject*>(ownerObj.get());
 				Locker ownerLocker(owner, buyer);
-				return owner->getSkillMod("healing_wound_treatment");
+				int healMod = owner->getSkillMod(kBivoliSkillMod);
+				Buff* manualBivoli = owner->getBuff(kBivoliBuffCRC);
+				if (manualBivoli != nullptr)
+					healMod -= manualBivoli->getSkillModifierValue(kBivoliSkillMod);
+
+				return Math::max(0, healMod) + droidBivoliBonus;
 			}
 		}
 	}
 
 	// Owner is offline — use value cached at last supply load
-	return data->getOwnerHealingMod();
+	return Math::max(0, data->getOwnerHealingMod()) + droidBivoliBonus;
 }
 
 // Final buff power: mirrors EnhancePack::calculatePower using droid-sourced values.
@@ -333,6 +403,31 @@ void sendFoodWarnings(CreatureObject* player) {
 	} else if (shortestDuration <= 300.f) {
 		player->sendSystemMessage("Doctor Buff Droid notice: one or more food or drink buffs are close to expiring.");
 	}
+}
+
+bool ensureBivoliBuffActive(SceneObject* droid, DoctorBuffDroidDataComponent* data) {
+	if (data == nullptr)
+		return false;
+
+	Time now;
+	uint64 nowMs = now.getMiliTime();
+
+	if (data->getActiveBivoliBonus(nowMs) > 0)
+		return true;
+
+	float strength = 0.0f;
+	float duration = 0.0f;
+
+	if (!data->consumeBivoliStock(1, strength, duration))
+		return false;
+
+	data->activateBivoli(strength, duration, nowMs);
+	return data->getActiveBivoliBonus(nowMs) > 0;
+}
+
+void persistDroidState(SceneObject* droid) {
+	if (droid != nullptr)
+		droid->updateToDatabase();
 }
 }
 
@@ -381,6 +476,9 @@ void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, Doct
 	if (player == nullptr || data == nullptr)
 		return;
 
+	Time now;
+	uint64 nowMs = now.getMiliTime();
+
 	StringBuffer msg;
 	msg << "Doctor Buff Droid stock:";
 
@@ -397,7 +495,19 @@ void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, Doct
 
 	msg << " | Poison resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON)
 		<< " use(s) | Disease resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_DISEASE)
-		<< " use(s).";
+		<< " use(s) | Bivoli: " << data->getBivoliStock() << " charge(s)";
+
+	int activeBivoliBonus = data->getActiveBivoliBonus(nowMs);
+	if (activeBivoliBonus > 0) {
+		float secondsRemainingFloat = data->getActiveBivoliTimeRemaining(nowMs);
+		int secondsRemaining = (int) secondsRemainingFloat;
+		if ((float) secondsRemaining < secondsRemainingFloat)
+			secondsRemaining++;
+
+		msg << " | Active Bivoli: +" << activeBivoliBonus << " wound treatment for " << secondsRemaining << "s";
+	}
+
+	msg << ".";
 
 	player->sendSystemMessage(msg.toString());
 }
@@ -460,6 +570,19 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 		if (amount <= 0)
 			continue;
 
+		if (isBivoliSupply(item)) {
+			float strength = getBivoliStrength(item);
+			float duration = getBivoliDuration(item);
+
+			if (strength <= 0.0f || duration <= 0.0f)
+				continue;
+
+			data->addBivoliStock(amount, strength, duration);
+			destroyLoadedSupply(item);
+			loaded += amount;
+			continue;
+		}
+
 		float effectiveness = getPackEffectiveness(item);
 		float duration = getPackDuration(item);
 		byte attr = getPackAttribute(item);
@@ -475,6 +598,7 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 
 	// Cache owner's healing skill mod so buff power calculation doesn't need an owner lock at buff time
 	data->setOwnerHealingMod(player->getSkillMod("healing_wound_treatment"));
+	persistDroidState(sceneObject);
 
 	player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " valid supply units into the Doctor Buff Droid.");
 	sendStockSummary(player, data);
@@ -566,6 +690,8 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 	if (playerManager != nullptr) {
+		ensureBivoliBuffActive(sceneObject, data);
+
 		int envMod = getDroidEnvironmentalMedRating(sceneObject);
 		int healMod = getOwnerHealingWoundTreatment(sceneObject, data, player);
 
@@ -591,6 +717,7 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 	}
 
 	data->addEarnings(price);
+	persistDroidState(sceneObject);
 	player->playEffect("clienteffect/healing_healenhance.cef", "");
 	player->sendSystemMessage("Doctor Buff Droid medical buffs applied.");
 	return true;
@@ -627,6 +754,7 @@ bool DoctorBuffDroidMenuComponent::performWoundHealing(SceneObject* sceneObject,
 	}
 
 	data->addEarnings(price);
+	persistDroidState(sceneObject);
 	player->playEffect("clienteffect/healing_healwound.cef", "");
 	player->sendSystemMessage("Doctor Buff Droid wound healing complete.");
 	return true;
@@ -659,6 +787,8 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 	if (playerManager != nullptr) {
+		ensureBivoliBuffActive(sceneObject, data);
+
 		int attribute = type == DoctorBuffDroidDataComponent::SERVICE_POISON ? BuffAttribute::POISON : BuffAttribute::DISEASE;
 
 		// Resistance pack power falls back to 60 for droids loaded before this update
@@ -678,6 +808,7 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 	}
 
 	data->addEarnings(price);
+	persistDroidState(sceneObject);
 	player->playEffect("clienteffect/healing_healenhance.cef", "");
 	player->sendSystemMessage("Doctor Buff Droid " + getServiceName(type).toLowerCase() + " applied.");
 	return true;

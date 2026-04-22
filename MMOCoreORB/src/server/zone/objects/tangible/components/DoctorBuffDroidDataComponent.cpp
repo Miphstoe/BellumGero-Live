@@ -1,9 +1,28 @@
 #include "DoctorBuffDroidDataComponent.h"
-#include <cstdio>
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/scene/SceneObject.h"
+
+namespace {
+const char* const kBuffStockAttrNames[9] = {
+	"buffStockAttr0", "buffStockAttr1", "buffStockAttr2",
+	"buffStockAttr3", "buffStockAttr4", "buffStockAttr5",
+	"buffStockAttr6", "buffStockAttr7", "buffStockAttr8"
+};
+
+const char* const kBuffPowerAttrNames[9] = {
+	"buffPowerAttr0", "buffPowerAttr1", "buffPowerAttr2",
+	"buffPowerAttr3", "buffPowerAttr4", "buffPowerAttr5",
+	"buffPowerAttr6", "buffPowerAttr7", "buffPowerAttr8"
+};
+
+const char* const kBuffDurationAttrNames[9] = {
+	"buffDurationAttr0", "buffDurationAttr1", "buffDurationAttr2",
+	"buffDurationAttr3", "buffDurationAttr4", "buffDurationAttr5",
+	"buffDurationAttr6", "buffDurationAttr7", "buffDurationAttr8"
+};
+}
 
 DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectComponent(), dataMutex() {
 	ownerId = 0;
@@ -36,18 +55,17 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	poisonPackDuration = 0.0f;
 	diseasePackDuration = 0.0f;
 	ownerHealingMod = 100;
+	bivoliStock = 0;
+	bivoliStrength = 0.0f;
+	bivoliDuration = 0.0f;
+	activeBivoliBonus = 0;
+	activeBivoliExpiresAt = 0;
 
 	addSerializableVariable("ownerId", &ownerId);
-	{
-		char name[32];
-		for (int i = 0; i < 9; ++i) {
-			snprintf(name, sizeof(name), "buffStockAttr%d", i);
-			addSerializableVariable(name, &buffStockPerAttr[i]);
-			snprintf(name, sizeof(name), "buffPowerAttr%d", i);
-			addSerializableVariable(name, &buffPackPowerPerAttr[i]);
-			snprintf(name, sizeof(name), "buffDurationAttr%d", i);
-			addSerializableVariable(name, &buffPackDurationPerAttr[i]);
-		}
+	for (int i = 0; i < 9; ++i) {
+		addSerializableVariable(kBuffStockAttrNames[i], &buffStockPerAttr[i]);
+		addSerializableVariable(kBuffPowerAttrNames[i], &buffPackPowerPerAttr[i]);
+		addSerializableVariable(kBuffDurationAttrNames[i], &buffPackDurationPerAttr[i]);
 	}
 	addSerializableVariable("poisonStock", &poisonStock);
 	addSerializableVariable("diseaseStock", &diseaseStock);
@@ -67,6 +85,11 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	addSerializableVariable("poisonPackDuration", &poisonPackDuration);
 	addSerializableVariable("diseasePackDuration", &diseasePackDuration);
 	addSerializableVariable("ownerHealingMod", &ownerHealingMod);
+	addSerializableVariable("bivoliStock", &bivoliStock);
+	addSerializableVariable("bivoliStrength", &bivoliStrength);
+	addSerializableVariable("bivoliDuration", &bivoliDuration);
+	addSerializableVariable("activeBivoliBonus", &activeBivoliBonus);
+	addSerializableVariable("activeBivoliExpiresAt", &activeBivoliExpiresAt);
 }
 
 void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
@@ -96,6 +119,11 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(poisonPackDuration);
 	SERIALIZE_JSON_MEMBER(diseasePackDuration);
 	SERIALIZE_JSON_MEMBER(ownerHealingMod);
+	SERIALIZE_JSON_MEMBER(bivoliStock);
+	SERIALIZE_JSON_MEMBER(bivoliStrength);
+	SERIALIZE_JSON_MEMBER(bivoliDuration);
+	SERIALIZE_JSON_MEMBER(activeBivoliBonus);
+	SERIALIZE_JSON_MEMBER(activeBivoliExpiresAt);
 }
 
 void DoctorBuffDroidDataComponent::initializeTransientMembers() {
@@ -279,6 +307,95 @@ int DoctorBuffDroidDataComponent::getOwnerHealingMod() const {
 void DoctorBuffDroidDataComponent::setOwnerHealingMod(int mod) {
 	Locker locker(&dataMutex);
 	ownerHealingMod = mod;
+}
+
+int DoctorBuffDroidDataComponent::getBivoliStock() const {
+	Locker locker(&dataMutex);
+	return bivoliStock;
+}
+
+void DoctorBuffDroidDataComponent::addBivoliStock(int amount, float strength, float duration) {
+	if (amount <= 0)
+		return;
+
+	Locker locker(&dataMutex);
+
+	if (strength > 0.0f) {
+		if (bivoliStock == 0 || bivoliStrength == 0.0f)
+			bivoliStrength = strength;
+		else
+			bivoliStrength = ((bivoliStock * bivoliStrength) + (amount * strength)) / (bivoliStock + amount);
+	}
+
+	if (duration > 0.0f) {
+		if (bivoliStock == 0 || bivoliDuration == 0.0f)
+			bivoliDuration = duration;
+		else
+			bivoliDuration = ((bivoliStock * bivoliDuration) + (amount * duration)) / (bivoliStock + amount);
+	}
+
+	bivoliStock += amount;
+}
+
+bool DoctorBuffDroidDataComponent::consumeBivoliStock(int amount, float& strength, float& duration) {
+	strength = 0.0f;
+	duration = 0.0f;
+
+	if (amount <= 0)
+		return true;
+
+	Locker locker(&dataMutex);
+
+	if (bivoliStock < amount)
+		return false;
+
+	strength = bivoliStrength;
+	duration = bivoliDuration;
+	bivoliStock -= amount;
+
+	if (bivoliStock <= 0) {
+		bivoliStock = 0;
+		bivoliStrength = 0.0f;
+		bivoliDuration = 0.0f;
+	}
+
+	return true;
+}
+
+void DoctorBuffDroidDataComponent::activateBivoli(float strength, float duration, uint64 nowMs) {
+	Locker locker(&dataMutex);
+
+	activeBivoliBonus = Math::max(0, (int) (strength + 0.5f));
+	activeBivoliExpiresAt = (duration > 0.0f && nowMs > 0) ? nowMs + (uint64) (duration * 1000.0f + 0.5f) : 0;
+
+	if (activeBivoliExpiresAt == 0)
+		activeBivoliBonus = 0;
+}
+
+int DoctorBuffDroidDataComponent::getActiveBivoliBonus(uint64 nowMs) const {
+	Locker locker(&dataMutex);
+
+	if (activeBivoliBonus <= 0 || activeBivoliExpiresAt == 0)
+		return 0;
+
+	if (nowMs > 0 && nowMs >= activeBivoliExpiresAt)
+		return 0;
+
+	return activeBivoliBonus;
+}
+
+uint64 DoctorBuffDroidDataComponent::getActiveBivoliExpiresAt() const {
+	Locker locker(&dataMutex);
+	return activeBivoliExpiresAt;
+}
+
+float DoctorBuffDroidDataComponent::getActiveBivoliTimeRemaining(uint64 nowMs) const {
+	Locker locker(&dataMutex);
+
+	if (activeBivoliBonus <= 0 || activeBivoliExpiresAt == 0 || nowMs >= activeBivoliExpiresAt)
+		return 0.0f;
+
+	return (activeBivoliExpiresAt - nowMs) / 1000.0f;
 }
 
 bool DoctorBuffDroidDataComponent::consumeStock(ServiceType type, int amount) {

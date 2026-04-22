@@ -49,6 +49,13 @@ private:
 	// Cached owner healing_wound_treatment skill mod, updated when supplies are loaded
 	int ownerHealingMod;
 
+	// Loaded Bivoli Tempari charges are stored separately from medpacks.
+	int bivoliStock;
+	float bivoliStrength;
+	float bivoliDuration;
+	int activeBivoliBonus;
+	uint64 activeBivoliExpiresAt;
+
 	mutable Mutex dataMutex;
 
 public:
@@ -88,6 +95,14 @@ public:
 
 	int getOwnerHealingMod() const;
 	void setOwnerHealingMod(int mod);
+
+	int getBivoliStock() const;
+	void addBivoliStock(int amount, float strength, float duration);
+	bool consumeBivoliStock(int amount, float& strength, float& duration);
+	void activateBivoli(float strength, float duration, uint64 nowMs);
+	int getActiveBivoliBonus(uint64 nowMs) const;
+	uint64 getActiveBivoliExpiresAt() const;
+	float getActiveBivoliTimeRemaining(uint64 nowMs) const;
 
 	int getPrice(ServiceType type) const;
 	void setPrice(ServiceType type, int value);

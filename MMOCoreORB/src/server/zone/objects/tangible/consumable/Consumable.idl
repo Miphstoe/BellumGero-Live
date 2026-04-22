@@ -163,6 +163,19 @@ class Consumable extends TangibleObject {
 	}
 
 	@read
+	public float getCurrentNutrition() {
+		if (newNutrition > 0.f)
+			return newNutrition;
+
+		return nutrition;
+	}
+
+	@read
+	public unsigned int getBuffCRC() {
+		return buffCRC;
+	}
+
+	@read
 	public string getSpeciesRestriction() {
 		return speciesRestriction;
 	}

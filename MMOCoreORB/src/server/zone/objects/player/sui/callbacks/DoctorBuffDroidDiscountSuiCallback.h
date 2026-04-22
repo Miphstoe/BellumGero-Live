@@ -26,6 +26,7 @@ public:
 		try {
 			int discount = Integer::valueOf(args->get(0).toString());
 			data->setGuildDiscountPercent(discount);
+			droid->updateToDatabase();
 			player->sendSystemMessage("Doctor Buff Droid guild discount updated.");
 		} catch (Exception& e) {
 			player->sendSystemMessage("Invalid discount entered.");

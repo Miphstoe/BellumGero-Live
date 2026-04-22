@@ -28,6 +28,7 @@ public:
 		try {
 			int price = Integer::valueOf(args->get(0).toString());
 			data->setPrice(service, price);
+			droid->updateToDatabase();
 			player->sendSystemMessage("Doctor Buff Droid price updated.");
 		} catch (Exception& e) {
 			player->sendSystemMessage("Invalid price entered.");
