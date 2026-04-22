@@ -10,7 +10,8 @@ public:
 		SERVICE_BUFFS = 0,
 		SERVICE_WOUNDS = 1,
 		SERVICE_POISON = 2,
-		SERVICE_DISEASE = 3
+		SERVICE_DISEASE = 3,
+		SERVICE_JANTA = 4
 	};
 
 private:
@@ -25,6 +26,7 @@ private:
 	int woundPrice;
 	int poisonPrice;
 	int diseasePrice;
+	int jantaPrice;
 
 	int guildDiscountPercent;
 	int minimumPriceFloor;
@@ -33,11 +35,15 @@ private:
 	bool woundsEnabled;
 	bool poisonEnabled;
 	bool diseaseEnabled;
+	bool jantaEnabled;
 
 	// Per-stat buff storage — index is BuffAttribute value (0=Health … 8=Willpower)
 	int buffStockPerAttr[9];
 	float buffPackPowerPerAttr[9];
 	float buffPackDurationPerAttr[9];
+	int jantaBuffStockPerAttr[9];
+	float jantaBuffPackPowerPerAttr[9];
+	float jantaBuffPackDurationPerAttr[9];
 
 	// Weighted-average pack effectiveness and duration for poison/disease
 	float poisonPackPower;
@@ -55,6 +61,12 @@ private:
 	float bivoliDuration;
 	int activeBivoliBonus;
 	uint64 activeBivoliExpiresAt;
+
+	int jantaStock;
+	float jantaStrength;
+	float jantaDuration;
+	int activeJantaBonus;
+	uint64 activeJantaExpiresAt;
 
 	mutable Mutex dataMutex;
 
@@ -82,9 +94,14 @@ public:
 	float getBuffPackPowerByAttr(byte attr) const;
 	float getBuffPackDurationByAttr(byte attr) const;
 	bool consumeBuffStock(byte attr, int amount = 1);
+	int getJantaBuffStockByAttr(byte attr) const;
+	float getJantaBuffPackPowerByAttr(byte attr) const;
+	float getJantaBuffPackDurationByAttr(byte attr) const;
+	bool consumeJantaBuffStock(byte attr, int amount = 1);
 
 	// Bitmask of which attrs have stock > 0; bit N set ↔ buffStockPerAttr[N] > 0
 	uint32 getLoadedBuffAttributes() const;
+	uint32 getLoadedJantaBuffAttributes() const;
 
 	// Poison/disease only — returns the stored weighted-average pack effectiveness
 	float getPackPower(ServiceType type) const;
@@ -103,6 +120,14 @@ public:
 	int getActiveBivoliBonus(uint64 nowMs) const;
 	uint64 getActiveBivoliExpiresAt() const;
 	float getActiveBivoliTimeRemaining(uint64 nowMs) const;
+
+	int getJantaStock() const;
+	void addJantaStock(int amount, float strength, float duration);
+	bool consumeJantaStock(int amount, float& strength, float& duration);
+	void activateJanta(float strength, float duration, uint64 nowMs);
+	int getActiveJantaBonus(uint64 nowMs) const;
+	uint64 getActiveJantaExpiresAt() const;
+	float getActiveJantaTimeRemaining(uint64 nowMs) const;
 
 	int getPrice(ServiceType type) const;
 	void setPrice(ServiceType type, int value);

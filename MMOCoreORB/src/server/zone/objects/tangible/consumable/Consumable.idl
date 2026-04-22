@@ -176,6 +176,19 @@ class Consumable extends TangibleObject {
 	}
 
 	@read
+	public boolean hasModifier(string modifierName) {
+		return modifiers.contains(modifierName);
+	}
+
+	@read
+	public float getModifierValue(string modifierName) {
+		if (modifiers.contains(modifierName))
+			return modifiers.get(modifierName);
+
+		return 0.f;
+	}
+
+	@read
 	public string getSpeciesRestriction() {
 		return speciesRestriction;
 	}

@@ -26,12 +26,15 @@ public:
 			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_BUFFS);
 			break;
 		case 1:
-			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_WOUNDS);
+			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_JANTA);
 			break;
 		case 2:
-			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_POISON);
+			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_WOUNDS);
 			break;
 		case 3:
+			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_POISON);
+			break;
+		case 4:
 			DoctorBuffDroidMenuComponent::promptPriceInput(droid, player, DoctorBuffDroidDataComponent::SERVICE_DISEASE);
 			break;
 		default:

@@ -14,6 +14,7 @@
 #include "server/zone/objects/tangible/consumable/Consumable.h"
 #include "server/zone/objects/tangible/pharmaceutical/EnhancePack.h"
 #include "server/zone/objects/tangible/pharmaceutical/PharmaceuticalObject.h"
+#include "server/zone/objects/tangible/pharmaceutical/WoundPack.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/managers/city/CitySpecialization.h"
@@ -28,7 +29,7 @@
 namespace {
 const String kDoctorSkill = "science_doctor_master";
 const uint32 kBivoliBuffCRC = 0x2114D76D;
-const String kBivoliSkillMod = "healing_wound_treatment";
+const String kWoundTreatmentSkillMod = "healing_wound_treatment";
 
 bool isMasterDoctor(CreatureObject* player) {
 	return player != nullptr && player->hasSkill(kDoctorSkill);
@@ -43,6 +44,9 @@ String getServiceName(DoctorBuffDroidDataComponent::ServiceType type) {
 	case DoctorBuffDroidDataComponent::SERVICE_POISON:
 		return "Poison Resistance";
 	case DoctorBuffDroidDataComponent::SERVICE_DISEASE:
+		return "Disease Resistance";
+	case DoctorBuffDroidDataComponent::SERVICE_JANTA:
+		return "Janta Buffs";
 	default:
 		return "Disease Resistance";
 	}
@@ -99,6 +103,77 @@ bool isBivoliSupply(SceneObject* item) {
 	return consumable != nullptr && consumable->getBuffCRC() == kBivoliBuffCRC;
 }
 
+bool isJantaSupply(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	if (consumable == nullptr || consumable->getBuffCRC() == kBivoliBuffCRC)
+		return false;
+
+	String modifierName = kWoundTreatmentSkillMod;
+	return consumable->hasModifier(modifierName);
+}
+
+float getMedicalPackEffectiveness(SceneObject* item) {
+	if (item == nullptr)
+		return 0.0f;
+
+	if (item->isFactoryCrate()) {
+		FactoryCrate* crate = cast<FactoryCrate*>(item);
+		if (crate == nullptr || !crate->isValidFactoryCrate())
+			return 0.0f;
+		item = crate->getPrototype();
+		if (item == nullptr)
+			return 0.0f;
+	}
+
+	if (!item->isPharmaceuticalObject())
+		return 0.0f;
+
+	PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(item);
+	if (pharma == nullptr)
+		return 0.0f;
+
+	if (pharma->isEnhancePack())
+		return cast<EnhancePack*>(pharma)->getEffectiveness();
+
+	if (pharma->isWoundPack())
+		return cast<WoundPack*>(pharma)->getEffectiveness();
+
+	return 0.0f;
+}
+
+// Returns true for medical packs we want to route into the separate Janta stock path.
+// User requirement: treat packs with crafted power above 1000 as Janta-tier.
+bool isJantaMedicalPack(SceneObject* item) {
+	if (item == nullptr)
+		return false;
+
+	if (item->isFactoryCrate()) {
+		FactoryCrate* crate = cast<FactoryCrate*>(item);
+		if (crate == nullptr || !crate->isValidFactoryCrate())
+			return false;
+		item = crate->getPrototype();
+		if (item == nullptr)
+			return false;
+	}
+
+	if (!item->isPharmaceuticalObject())
+		return false;
+
+	PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(item);
+	if (pharma == nullptr)
+		return false;
+
+	if (pharma->isEnhancePack()) {
+		EnhancePack* pack = cast<EnhancePack*>(pharma);
+		return pack != nullptr && (pack->getAbsorption() > 0.0f || pack->getEffectiveness() >= 1000.0f);
+	}
+
+	if (pharma->isWoundPack())
+		return getMedicalPackEffectiveness(item) >= 1000.0f;
+
+	return false;
+}
+
 DoctorBuffDroidDataComponent::ServiceType getSupplyType(SceneObject* item) {
 	if (item == nullptr)
 		return DoctorBuffDroidDataComponent::SERVICE_WOUNDS;
@@ -139,7 +214,7 @@ bool isValidSupply(SceneObject* item) {
 	if (item == nullptr)
 		return false;
 
-	if (isBivoliSupply(item))
+	if (isBivoliSupply(item) || isJantaSupply(item) || isJantaMedicalPack(item))
 		return true;
 
 	if (item->isFactoryCrate()) {
@@ -201,6 +276,41 @@ float getBivoliDuration(SceneObject* item) {
 		return duration;
 
 	return duration;
+}
+
+float getJantaStrength(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	if (consumable != nullptr)
+		return consumable->getCurrentNutrition();
+
+	float effectiveness = getMedicalPackEffectiveness(item);
+	if (effectiveness < 1000.0f)
+		return 0.0f;
+
+	return 25.0f + ((effectiveness - 1000.0f) / 100.0f);
+}
+
+float getJantaDuration(SceneObject* item) {
+	Consumable* consumable = getConsumable(item);
+	if (consumable != nullptr)
+		return consumable->getDuration();
+
+	if (item != nullptr && item->isFactoryCrate()) {
+		FactoryCrate* crate = cast<FactoryCrate*>(item);
+		if (crate != nullptr && crate->isValidFactoryCrate())
+			item = crate->getPrototype();
+	}
+
+	if (item != nullptr && item->isPharmaceuticalObject()) {
+		PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(item);
+		if (pharma != nullptr && pharma->isEnhancePack()) {
+			float duration = cast<EnhancePack*>(pharma)->getDuration();
+			if (duration > 0.0f)
+				return duration;
+		}
+	}
+
+	return 1800.0f;
 }
 
 // Returns the BuffAttribute byte for a buff pack (or its crate prototype).
@@ -326,26 +436,43 @@ int getDroidEnvironmentalMedRating(SceneObject* droid) {
 	return cityMed + structureMod;
 }
 
-// Reads the owner's current healing_wound_treatment at buff time so food buffs (e.g. Bivoli)
-// are always reflected. Falls back to the cached value only if the owner is offline.
+int getManualFoodWoundTreatmentBonus(CreatureObject* creature) {
+	if (creature == nullptr)
+		return 0;
+
+	const BuffList* buffList = creature->getBuffList();
+	if (buffList == nullptr)
+		return 0;
+
+	int total = 0;
+
+	for (int i = 0; i < buffList->getBuffListSize(); ++i) {
+		Buff* buff = buffList->getBuffByIndex(i);
+		if (buff == nullptr || buff->getBuffType() != BuffType::FOOD)
+			continue;
+
+		total += buff->getSkillModifierValue(kWoundTreatmentSkillMod);
+	}
+
+	return total;
+}
+
+// Reads the owner's current healing_wound_treatment at buff time while replacing manual food
+// buffs with the droid-managed consumable bonus selected for this service.
 // buyer must already be locked by the calling context.
-int getOwnerHealingWoundTreatment(SceneObject* droid, DoctorBuffDroidDataComponent* data, CreatureObject* buyer) {
+int getOwnerHealingWoundTreatment(SceneObject* droid, DoctorBuffDroidDataComponent* data, CreatureObject* buyer, bool useJanta = false) {
 	if (data == nullptr)
 		return 100;
 
 	uint64 ownerId = data->getOwnerId();
 	Time now;
 	uint64 nowMs = now.getMiliTime();
-	int droidBivoliBonus = data->getActiveBivoliBonus(nowMs);
+	int droidFoodBonus = data->getActiveBivoliBonus(nowMs);
 
 	// Owner is the buyer — already locked, read directly
 	if (buyer != nullptr && buyer->getObjectID() == ownerId) {
-		int healMod = buyer->getSkillMod(kBivoliSkillMod);
-		Buff* manualBivoli = buyer->getBuff(kBivoliBuffCRC);
-		if (manualBivoli != nullptr)
-			healMod -= manualBivoli->getSkillModifierValue(kBivoliSkillMod);
-
-		return Math::max(0, healMod) + droidBivoliBonus;
+		int healMod = buyer->getSkillMod(kWoundTreatmentSkillMod) - getManualFoodWoundTreatmentBonus(buyer);
+		return Math::max(0, healMod) + droidFoodBonus;
 	}
 
 	// Owner is someone else — cross-lock to get their current stats
@@ -356,18 +483,14 @@ int getOwnerHealingWoundTreatment(SceneObject* droid, DoctorBuffDroidDataCompone
 			if (ownerObj != nullptr && ownerObj->isCreatureObject()) {
 				CreatureObject* owner = cast<CreatureObject*>(ownerObj.get());
 				Locker ownerLocker(owner, buyer);
-				int healMod = owner->getSkillMod(kBivoliSkillMod);
-				Buff* manualBivoli = owner->getBuff(kBivoliBuffCRC);
-				if (manualBivoli != nullptr)
-					healMod -= manualBivoli->getSkillModifierValue(kBivoliSkillMod);
-
-				return Math::max(0, healMod) + droidBivoliBonus;
+				int healMod = owner->getSkillMod(kWoundTreatmentSkillMod) - getManualFoodWoundTreatmentBonus(owner);
+				return Math::max(0, healMod) + droidFoodBonus;
 			}
 		}
 	}
 
 	// Owner is offline — use value cached at last supply load
-	return Math::max(0, data->getOwnerHealingMod()) + droidBivoliBonus;
+	return Math::max(0, data->getOwnerHealingMod()) + droidFoodBonus;
 }
 
 // Final buff power: mirrors EnhancePack::calculatePower using droid-sourced values.
@@ -425,6 +548,26 @@ bool ensureBivoliBuffActive(SceneObject* droid, DoctorBuffDroidDataComponent* da
 	return data->getActiveBivoliBonus(nowMs) > 0;
 }
 
+bool ensureJantaBuffActive(SceneObject* droid, DoctorBuffDroidDataComponent* data) {
+	if (data == nullptr)
+		return false;
+
+	Time now;
+	uint64 nowMs = now.getMiliTime();
+
+	if (data->getActiveJantaBonus(nowMs) > 0)
+		return true;
+
+	float strength = 0.0f;
+	float duration = 0.0f;
+
+	if (!data->consumeJantaStock(1, strength, duration))
+		return false;
+
+	data->activateJanta(strength, duration, nowMs);
+	return data->getActiveJantaBonus(nowMs) > 0;
+}
+
 void persistDroidState(SceneObject* droid) {
 	if (droid != nullptr)
 		droid->updateToDatabase();
@@ -456,6 +599,7 @@ void DoctorBuffDroidMenuComponent::sendPriceSummary(CreatureObject* player, Doct
 	if (data->isOwner(player)) {
 		// Show configured prices so the owner can verify what they actually set
 		msg << "Doctor Buff Droid prices (configured) - Buffs: " << data->getPrice(DoctorBuffDroidDataComponent::SERVICE_BUFFS)
+			<< ", Janta Buffs: " << data->getPrice(DoctorBuffDroidDataComponent::SERVICE_JANTA)
 			<< ", Wounds: " << data->getPrice(DoctorBuffDroidDataComponent::SERVICE_WOUNDS)
 			<< ", Poison: " << data->getPrice(DoctorBuffDroidDataComponent::SERVICE_POISON)
 			<< ", Disease: " << data->getPrice(DoctorBuffDroidDataComponent::SERVICE_DISEASE)
@@ -463,6 +607,7 @@ void DoctorBuffDroidMenuComponent::sendPriceSummary(CreatureObject* player, Doct
 	} else {
 		// Show what this player will actually pay
 		msg << "Doctor Buff Droid prices - Buffs: " << data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_BUFFS, player)
+			<< ", Janta Buffs: " << data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_JANTA, player)
 			<< ", Wounds: " << data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_WOUNDS, player)
 			<< ", Poison: " << data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_POISON, player)
 			<< ", Disease: " << data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_DISEASE, player)
@@ -493,9 +638,24 @@ void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, Doct
 		}
 	}
 
+	uint32 jantaAttrMask = data->getLoadedJantaBuffAttributes();
+	if (jantaAttrMask == 0) {
+		msg << " | Janta Buffs: 0 use(s)";
+	} else {
+		msg << " | Janta Buffs:";
+		for (uint8 attr = 0; attr < 9; ++attr) {
+			int stock = data->getJantaBuffStockByAttr(attr);
+			if (stock > 0)
+				msg << " " << BuffAttribute::getName(attr, true) << ": " << stock << " use(s)";
+		}
+	}
+
 	msg << " | Poison resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON)
 		<< " use(s) | Disease resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_DISEASE)
 		<< " use(s) | Bivoli: " << data->getBivoliStock() << " charge(s)";
+
+	if (data->getJantaStock() > 0)
+		msg << " | Legacy Janta food: " << data->getJantaStock() << " charge(s)";
 
 	int activeBivoliBonus = data->getActiveBivoliBonus(nowMs);
 	if (activeBivoliBonus > 0) {
@@ -549,7 +709,7 @@ bool DoctorBuffDroidMenuComponent::storeDroid(SceneObject* sceneObject, Creature
 	return false;
 }
 
-bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data) {
+bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, LoadMode mode) {
 	if (sceneObject == nullptr || player == nullptr || data == nullptr)
 		return false;
 
@@ -564,13 +724,23 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 		if (!isValidSupply(item))
 			continue;
 
+		bool bivoliSupply = isBivoliSupply(item);
+		bool jantaSupply = isJantaSupply(item);
+		bool jantaPack = !bivoliSupply && !jantaSupply && isJantaMedicalPack(item);
+
+		if (mode == LOAD_JANTA_ONLY && !jantaSupply && !jantaPack)
+			continue;
+
+		if (mode == LOAD_STANDARD && (jantaSupply || jantaPack))
+			continue;
+
 		DoctorBuffDroidDataComponent::ServiceType service = getSupplyType(item);
 		int amount = getSupplyAmount(item);
 
 		if (amount <= 0)
 			continue;
 
-		if (isBivoliSupply(item)) {
+		if (bivoliSupply) {
 			float strength = getBivoliStrength(item);
 			float duration = getBivoliDuration(item);
 
@@ -578,6 +748,33 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 				continue;
 
 			data->addBivoliStock(amount, strength, duration);
+			destroyLoadedSupply(item);
+			loaded += amount;
+			continue;
+		}
+
+		if (jantaSupply) {
+			float strength = getJantaStrength(item);
+			float duration = getJantaDuration(item);
+
+			if (strength <= 0.0f || duration <= 0.0f)
+				continue;
+
+			data->addJantaStock(amount, strength, duration);
+			destroyLoadedSupply(item);
+			loaded += amount;
+			continue;
+		}
+
+		if (jantaPack) {
+			float effectiveness = getMedicalPackEffectiveness(item);
+			float duration = getJantaDuration(item);
+			byte attr = getPackAttribute(item);
+
+			if (effectiveness <= 0.0f || duration <= 0.0f || attr >= 9)
+				continue;
+
+			data->addStock(DoctorBuffDroidDataComponent::SERVICE_JANTA, amount, effectiveness, attr, duration);
 			destroyLoadedSupply(item);
 			loaded += amount;
 			continue;
@@ -592,15 +789,21 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 	}
 
 	if (loaded <= 0) {
-		player->sendSystemMessage("No valid Doctor Buff Droid supplies were found in your inventory.");
+		if (mode == LOAD_JANTA_ONLY)
+			player->sendSystemMessage("No valid Janta Doctor Buff Droid supplies were found in your inventory.");
+		else
+			player->sendSystemMessage("No valid Doctor Buff Droid supplies were found in your inventory.");
 		return false;
 	}
 
 	// Cache owner's healing skill mod so buff power calculation doesn't need an owner lock at buff time
-	data->setOwnerHealingMod(player->getSkillMod("healing_wound_treatment"));
+	data->setOwnerHealingMod(player->getSkillMod(kWoundTreatmentSkillMod));
 	persistDroidState(sceneObject);
 
-	player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " valid supply units into the Doctor Buff Droid.");
+	if (mode == LOAD_JANTA_ONLY)
+		player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " Janta supply units into the Doctor Buff Droid.");
+	else
+		player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " valid supply units into the Doctor Buff Droid.");
 	sendStockSummary(player, data);
 	return true;
 }
@@ -615,6 +818,7 @@ void DoctorBuffDroidMenuComponent::promptPriceSelection(SceneObject* sceneObject
 	box->setPromptText("Select a service to update its price.");
 	box->setCallback(new DoctorBuffDroidPriceSuiCallback(player->getZoneServer(), sceneObject));
 	box->addMenuItem("Medical Buffs (" + String::valueOf(data->getPrice(DoctorBuffDroidDataComponent::SERVICE_BUFFS)) + ")");
+	box->addMenuItem("Janta Buffs (" + String::valueOf(data->getPrice(DoctorBuffDroidDataComponent::SERVICE_JANTA)) + ")");
 	box->addMenuItem("Heal Wounds (" + String::valueOf(data->getPrice(DoctorBuffDroidDataComponent::SERVICE_WOUNDS)) + ")");
 	box->addMenuItem("Poison Resistance (" + String::valueOf(data->getPrice(DoctorBuffDroidDataComponent::SERVICE_POISON)) + ")");
 	box->addMenuItem("Disease Resistance (" + String::valueOf(data->getPrice(DoctorBuffDroidDataComponent::SERVICE_DISEASE)) + ")");
@@ -658,6 +862,7 @@ void DoctorBuffDroidMenuComponent::promptToggleSelection(SceneObject* sceneObjec
 	box->setPromptText("Select a service to toggle.");
 	box->setCallback(new DoctorBuffDroidToggleSuiCallback(player->getZoneServer(), sceneObject));
 	box->addMenuItem("Medical Buffs (" + String(data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_BUFFS) ? "Enabled" : "Disabled") + ")");
+	box->addMenuItem("Janta Buffs (" + String(data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_JANTA) ? "Enabled" : "Disabled") + ")");
 	box->addMenuItem("Heal Wounds (" + String(data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_WOUNDS) ? "Enabled" : "Disabled") + ")");
 	box->addMenuItem("Poison Resistance (" + String(data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_POISON) ? "Enabled" : "Disabled") + ")");
 	box->addMenuItem("Disease Resistance (" + String(data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_DISEASE) ? "Enabled" : "Disabled") + ")");
@@ -665,61 +870,77 @@ void DoctorBuffDroidMenuComponent::promptToggleSelection(SceneObject* sceneObjec
 	player->sendMessage(box->generateMessage());
 }
 
-bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data) {
+bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta) {
 	if (sceneObject == nullptr || player == nullptr || data == nullptr)
 		return false;
 
-	if (!data->isServiceEnabled(DoctorBuffDroidDataComponent::SERVICE_BUFFS)) {
-		player->sendSystemMessage("This Doctor Buff Droid currently has medical buffs disabled.");
+	DoctorBuffDroidDataComponent::ServiceType service = useJanta ? DoctorBuffDroidDataComponent::SERVICE_JANTA : DoctorBuffDroidDataComponent::SERVICE_BUFFS;
+	const char* serviceLabel = useJanta ? "Janta buffs" : "medical buffs";
+
+	if (!data->isServiceEnabled(service)) {
+		player->sendSystemMessage("This Doctor Buff Droid currently has that buff service disabled.");
 		return false;
 	}
 
-	uint32 attrMask = data->getLoadedBuffAttributes();
+	uint32 attrMask = useJanta ? data->getLoadedJantaBuffAttributes() : data->getLoadedBuffAttributes();
 	if (attrMask == 0) {
-		player->sendSystemMessage("This Doctor Buff Droid is out of buff supplies.");
+		if (useJanta)
+			player->sendSystemMessage("This Doctor Buff Droid is out of Janta buff pack supplies.");
+		else
+			player->sendSystemMessage("This Doctor Buff Droid is out of buff pack supplies.");
 		return false;
 	}
 
-	int price = data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_BUFFS, player);
+	Time now;
+	uint64 nowMs = now.getMiliTime();
+
+	sendFoodWarnings(player);
+
+	if (!ensureBivoliBuffActive(sceneObject, data)) {
+		player->sendSystemMessage("This Doctor Buff Droid is out of Bivoli supplies.");
+		return false;
+	}
+
+	int price = data->getDiscountedPrice(service, player);
 	if (!deductCredits(player, price)) {
 		player->sendSystemMessage("You do not have enough credits to purchase Doctor Buff Droid buffs.");
 		return false;
 	}
 
-	sendFoodWarnings(player);
-
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 	if (playerManager != nullptr) {
-		ensureBivoliBuffActive(sceneObject, data);
-
 		int envMod = getDroidEnvironmentalMedRating(sceneObject);
-		int healMod = getOwnerHealingWoundTreatment(sceneObject, data, player);
+		int healMod = getOwnerHealingWoundTreatment(sceneObject, data, player, useJanta);
 
 		for (uint8 attr = 0; attr < 9; ++attr) {
 			if (!(attrMask & (1u << attr)))
 				continue;
-			if (data->getBuffStockByAttr(attr) <= 0)
+			int stock = useJanta ? data->getJantaBuffStockByAttr(attr) : data->getBuffStockByAttr(attr);
+			if (stock <= 0)
 				continue;
 
-			float packPower = data->getBuffPackPowerByAttr(attr);
+			float packPower = useJanta ? data->getJantaBuffPackPowerByAttr(attr) : data->getBuffPackPowerByAttr(attr);
 			if (packPower <= 0.0f)
 				packPower = 500.0f;
 
-			float buffDuration = data->getBuffPackDurationByAttr(attr);
+			float buffDuration = useJanta ? data->getJantaBuffPackDurationByAttr(attr) : data->getBuffPackDurationByAttr(attr);
 			if (buffDuration <= 0.0f)
 				buffDuration = 7200.f;
 
 			int buffAmount = calculateDroidBuffPower(packPower, envMod, healMod);
 
 			playerManager->healEnhance(player, player, attr, buffAmount, buffDuration, 0);
-			data->consumeBuffStock(attr);
+			if (useJanta)
+				data->consumeJantaBuffStock(attr);
+			else
+				data->consumeBuffStock(attr);
 		}
 	}
 
 	data->addEarnings(price);
 	persistDroidState(sceneObject);
 	player->playEffect("clienteffect/healing_healenhance.cef", "");
-	player->sendSystemMessage("Doctor Buff Droid medical buffs applied.");
+	player->sendSystemMessage("Doctor Buff Droid " + String(serviceLabel) + " applied.");
 	return true;
 }
 
@@ -826,6 +1047,7 @@ void DoctorBuffDroidMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 
 	menuResponse->addRadialMenuItem(MENU_ROOT, 3, "Doctor Buff Droid");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_BUFFS, 3, "Get Buffs");
+	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_JANTA_BUFFS, 3, "Get Janta Buffs");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_WOUNDS, 3, "Heal Wounds");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_POISON, 3, "Buy Poison Resist");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_DISEASE, 3, "Buy Disease Resist");
@@ -835,6 +1057,7 @@ void DoctorBuffDroidMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 		return;
 
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_LOAD, 3, "Load Supplies");
+	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_LOAD_JANTA, 3, "Load Janta Supplies");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_STOCK, 3, "View Stock");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_CONFIG_PRICES, 3, "Configure Prices");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_CONFIG_DISCOUNT, 3, "Configure Discounts");
@@ -856,6 +1079,9 @@ int DoctorBuffDroidMenuComponent::handleObjectMenuSelect(SceneObject* sceneObjec
 	case MENU_BUFFS:
 		performMedicalBuff(sceneObject, player, data);
 		return 0;
+	case MENU_JANTA_BUFFS:
+		performMedicalBuff(sceneObject, player, data, true);
+		return 0;
 	case MENU_WOUNDS:
 		performWoundHealing(sceneObject, player, data);
 		return 0;
@@ -874,6 +1100,13 @@ int DoctorBuffDroidMenuComponent::handleObjectMenuSelect(SceneObject* sceneObjec
 			return 0;
 		}
 		loadSupplies(sceneObject, player, data);
+		return 0;
+	case MENU_LOAD_JANTA:
+		if (!data->isOwner(player) || !isMasterDoctor(player)) {
+			sendOwnerOnlyMessage(player);
+			return 0;
+		}
+		loadSupplies(sceneObject, player, data, LOAD_JANTA_ONLY);
 		return 0;
 	case MENU_STOCK:
 		if (!data->isOwner(player)) {
