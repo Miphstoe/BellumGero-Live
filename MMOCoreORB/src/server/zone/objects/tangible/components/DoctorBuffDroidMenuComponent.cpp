@@ -501,33 +501,6 @@ int calculateDroidBuffPower(float packPower, int environmentMod, int healingWoun
 	return Math::max(1, (int)(packPower * (environmentMod / 100.0f) * (100.0f + healingWoundTreatment) / 100.0f));
 }
 
-void sendFoodWarnings(CreatureObject* player) {
-	if (player == nullptr)
-		return;
-
-	const BuffList* buffList = player->getBuffList();
-	if (buffList == nullptr)
-		return;
-
-	int foodBuffCount = 0;
-	float shortestDuration = std::numeric_limits<float>::max();
-
-	for (int i = 0; i < buffList->getBuffListSize(); ++i) {
-		Buff* buff = buffList->getBuffByIndex(i);
-		if (buff == nullptr || buff->getBuffType() != BuffType::FOOD)
-			continue;
-
-		foodBuffCount++;
-		shortestDuration = Math::min(shortestDuration, buff->getTimeLeft());
-	}
-
-	if (foodBuffCount == 0) {
-		player->sendSystemMessage("Doctor Buff Droid notice: no active food or drink buffs detected.");
-	} else if (shortestDuration <= 300.f) {
-		player->sendSystemMessage("Doctor Buff Droid notice: one or more food or drink buffs are close to expiring.");
-	}
-}
-
 bool ensureBivoliBuffActive(SceneObject* droid, DoctorBuffDroidDataComponent* data) {
 	if (data == nullptr)
 		return false;
@@ -893,8 +866,6 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 
 	Time now;
 	uint64 nowMs = now.getMiliTime();
-
-	sendFoodWarnings(player);
 
 	if (!ensureBivoliBuffActive(sceneObject, data)) {
 		player->sendSystemMessage("This Doctor Buff Droid is out of Bivoli supplies.");
