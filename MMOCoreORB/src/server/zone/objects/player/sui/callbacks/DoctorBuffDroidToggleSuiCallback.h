@@ -30,18 +30,22 @@ public:
 			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_BUFFS);
 			break;
 		case 1:
-			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_WOUNDS);
+			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_JANTA);
 			break;
 		case 2:
-			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_POISON);
+			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_WOUNDS);
 			break;
 		case 3:
+			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_POISON);
+			break;
+		case 4:
 			data->toggleService(DoctorBuffDroidDataComponent::SERVICE_DISEASE);
 			break;
 		default:
 			return;
 		}
 
+		droid->updateToDatabase();
 		player->sendSystemMessage("Doctor Buff Droid service state updated.");
 	}
 };

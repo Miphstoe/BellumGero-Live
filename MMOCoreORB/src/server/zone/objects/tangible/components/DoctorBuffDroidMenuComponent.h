@@ -20,7 +20,14 @@ public:
 		MENU_TOGGLE_SERVICES = 80,
 		MENU_EARNINGS = 81,
 		MENU_WITHDRAW = 82,
-		MENU_STORE = 83
+		MENU_STORE = 83,
+		MENU_JANTA_BUFFS = 84,
+		MENU_LOAD_JANTA = 85
+	};
+
+	enum LoadMode {
+		LOAD_STANDARD = 0,
+		LOAD_JANTA_ONLY = 1
 	};
 
 	static DoctorBuffDroidDataComponent* getDroidData(SceneObject* sceneObject);
@@ -29,12 +36,12 @@ public:
 	static void sendStockSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static void sendEarningsSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static bool storeDroid(SceneObject* sceneObject, CreatureObject* player);
-	static bool loadSupplies(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
+	static bool loadSupplies(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, LoadMode mode = LOAD_STANDARD);
 	static void promptPriceSelection(SceneObject* sceneObject, CreatureObject* player);
 	static void promptPriceInput(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent::ServiceType service);
 	static void promptDiscountInput(SceneObject* sceneObject, CreatureObject* player);
 	static void promptToggleSelection(SceneObject* sceneObject, CreatureObject* player);
-	static bool performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
+	static bool performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta = false);
 	static bool performWoundHealing(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static bool performResistance(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType type);
 
