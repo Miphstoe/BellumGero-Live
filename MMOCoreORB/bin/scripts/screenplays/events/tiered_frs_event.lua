@@ -19,8 +19,8 @@ TieredFRSRebelEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in s
 TieredFRSRebelEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredFRSRebelEvent.START_TIME = { year = 2026, month = 4, day = 12, hour = 19, min = 00, sec = 0 }
-TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 4, day = 12, hour = 20, min = 00, sec = 0 }
+TieredFRSRebelEvent.START_TIME = { year = 2026, month = 5, day = 3, hour = 18, min = 00, sec = 0 }
+TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 5, day = 3, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredFRSRebelEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -42,26 +42,26 @@ TieredFRSRebelEvent.FRS_RANGE_METERS = 64    -- Range for group members to recei
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes - Rebel Soldiers (200k HAM, 50 FRS)
 TieredFRSRebelEvent.TIER1_NPCS = {
-  { planet = "naboo", template = "imperial_traitor", x = -1627, y = 6401, z = -196, heading = 0 },
-  { planet = "naboo", template = "rebel_traitor", x = -1629, y = 6403, z = -196, heading = 0 },
+  { planet = "dantooine", template = "tusken_chief", x = 960, y = 1359, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_captain", x = 962, y = 1361, z = 1, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes - Rebel Commanders (300k HAM, 75 FRS)
 TieredFRSRebelEvent.TIER2_NPCS = {
-  { planet = "naboo", template = "imperial_traitor", x = -1627, y = 6401, z = -196, heading = 0 },
-  { planet = "naboo", template = "rebel_traitor", x = -1629, y = 6403, z = -196, heading = 0 },
+  { planet = "dantooine", template = "tusken_chief", x = 960, y = 1359, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_captain", x = 962, y = 1361, z = 1, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes - Rebel Generals (400k HAM, 100 FRS)
 TieredFRSRebelEvent.TIER3_NPCS = {
-  { planet = "naboo", template = "imperial_traitor_elite", x = -1627, y = 6401, z = -196, heading = 0 },
-  { planet = "naboo", template = "rebel_traitor_elite", x = -1629, y = 6403, z = -196, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 960, y = 1359, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 962, y = 1361, z = 1, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes - Rebel Surface Marshalls (500k HAM, 150 FRS)
 TieredFRSRebelEvent.TIER4_NPCS = {
-  { planet = "naboo", template = "imperial_traitor_elite", x = -1627, y = 6401, z = -196, heading = 0 },
-  { planet = "naboo", template = "rebel_traitor_elite", x = -1629, y = 6403, z = -196, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 960, y = 1359, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 962, y = 1361, z = 1, heading = 0 },
 }
 
 -- Tier change times (in seconds from event start)
