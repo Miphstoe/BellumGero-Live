@@ -103,7 +103,8 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 		return;
 	}
 
-	int currentlySpawned = 0;
+	bool activeDoctorBuffDroid = false;
+	bool activeNormalVehicle = false;
 
 	for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
 		ManagedReference<SceneObject*> object = datapad->getContainerObject(i);
@@ -114,17 +115,26 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 			ManagedReference<SceneObject*> vehicle = device->getControlledObject();
 
 			if (vehicle != nullptr && (vehicle->getLocalZone() != nullptr || vehicle->getParent() != nullptr)) {
-				if (droid && vehicle != controlledObject) {
-					player->sendSystemMessage("Only one Doctor Buff Droid may be active at a time.");
-					return;
+				bool activeIsDoctorBuffDroid = isDoctorBuffDroid(cast<TangibleObject*>(vehicle.get()));
+
+				if (activeIsDoctorBuffDroid) {
+					if (vehicle != controlledObject)
+						activeDoctorBuffDroid = true;
+				} else {
+					activeNormalVehicle = true;
 				}
-
-				if (++currentlySpawned > 2)
-					player->sendSystemMessage("@pet/pet_menu:has_max_vehicle");
-
-				return;
 			}
 		}
+	}
+
+	if (droid && activeDoctorBuffDroid) {
+		player->sendSystemMessage("Only one Doctor Buff Droid may be active at a time.");
+		return;
+	}
+
+	if (!droid && activeNormalVehicle) {
+		player->sendSystemMessage("@pet/pet_menu:has_max_vehicle");
+		return;
 	}
 
 	if (!droid && player->getCurrentCamp() == nullptr && player->getCityRegion() == nullptr && !ghost->isPrivileged()) {
