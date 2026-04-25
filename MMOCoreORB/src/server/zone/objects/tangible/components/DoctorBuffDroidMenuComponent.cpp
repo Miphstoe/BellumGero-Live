@@ -165,11 +165,18 @@ bool isJantaMedicalPack(SceneObject* item) {
 
 	if (pharma->isEnhancePack()) {
 		EnhancePack* pack = cast<EnhancePack*>(pharma);
-		return pack != nullptr && (pack->getAbsorption() > 0.0f || pack->getEffectiveness() >= 1000.0f);
+		if (pack == nullptr)
+			return false;
+
+		byte attr = pack->getAttribute();
+		if (attr == BuffAttribute::POISON || attr == BuffAttribute::DISEASE)
+			return false;
+
+		return pack->getAbsorption() > 0.0f || pack->getEffectiveness() >= 1000.0f;
 	}
 
 	if (pharma->isWoundPack())
-		return getMedicalPackEffectiveness(item) >= 1000.0f;
+		return true;
 
 	return false;
 }
@@ -332,10 +339,16 @@ byte getPackAttribute(SceneObject* item) {
 		return 0;
 
 	PharmaceuticalObject* pharma = cast<PharmaceuticalObject*>(item);
-	if (pharma == nullptr || !pharma->isEnhancePack())
+	if (pharma == nullptr)
 		return 0;
 
-	return cast<EnhancePack*>(pharma)->getAttribute();
+	if (pharma->isEnhancePack())
+		return cast<EnhancePack*>(pharma)->getAttribute();
+
+	if (pharma->isWoundPack())
+		return cast<WoundPack*>(pharma)->getAttribute();
+
+	return 0;
 }
 
 void destroyLoadedSupply(SceneObject* item) {
