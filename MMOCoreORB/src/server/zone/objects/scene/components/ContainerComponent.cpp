@@ -210,6 +210,10 @@ bool ContainerComponent::checkContainerPermission(SceneObject* sceneObject, Crea
 		return true;
 	}
 
+	if (ghost->hasSnoopAccess(sceneObject) && permission != ContainerPermissions::WALKIN) {
+		return true;
+	}
+
 	ManagedReference<SceneObject*> parent = sceneObject->getParent().get();
 
 	if (permission != ContainerPermissions::MOVECONTAINER && permissions->hasInheritPermissionsFromParent() && parent != nullptr && parent != sceneObject) {
