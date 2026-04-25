@@ -168,6 +168,7 @@ loot1 = ConvoScreen:new {
   --      {"Random lvl 300 Clothing Loot - 100k", "option47"},
         {"Random lvl 100 Armor Loot - 100k", "option48"},
         {"Random lvl 100 Weapon Loot - 100k", "option49"},
+        {"Crate of Resource Deed - 1mil", "option90"},
        	--{"Jedi Holocron - 10mil", "option5"},
         {"Main menu.", "first_screen"},
     }

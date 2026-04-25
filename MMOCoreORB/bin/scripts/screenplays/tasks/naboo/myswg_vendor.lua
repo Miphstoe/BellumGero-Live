@@ -1036,6 +1036,13 @@ local MySwgTravelDestinations = {
                     charge(100000)
                     local pItem = giveItem(pInventory, "object/tangible/survey_tool/survey_tool_all.iff", -1)    
 
+                elseif (optionLink == "option90" and not canAfford(1000000)) then
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "option90" and canAfford(1000000)) then
+                    charge(1000000)
+                    local pItem = giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
+
                 elseif (optionLink == "option66" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
