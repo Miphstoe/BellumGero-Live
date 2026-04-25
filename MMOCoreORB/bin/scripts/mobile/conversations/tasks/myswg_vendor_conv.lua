@@ -23,6 +23,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Tailor", "tailor1"},
         {"Travel", "travel1"},
         {"Languages", "languages1"},
+        {"Special NPC Status", "special_npc1"},
         {"Advertisement Space", "ad_menu"},
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
@@ -273,6 +274,24 @@ petbuff1 = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(petbuff1);
+
+special_npc1 = ConvoScreen:new {
+    id = "special_npc1",
+    leftDialog = "",
+    customDialogText = "I can check whether these special NPCs are currently alive or already killed. Each lookup costs 1,000 credits.",
+    stopConversation = "false",
+    options = {
+        {"Check The Hand - 1k", "special_npc_hand"},
+        {"Check Geo Cave Acklay - 1k", "special_npc_acklay"},
+        {"Check Geo Cave Fire Spider - 1k", "special_npc_fire_spider"},
+        {"Check Worldboss Acklay - 1k", "special_npc_wb_acklay"},
+        {"Check Worldboss Fire Spider - 1k", "special_npc_wb_fire_spider"},
+        {"Check Torgas the Enslaver - 1k", "special_npc_torgas"},
+        {"Check Bird of Prey - 1k", "special_npc_bird_of_prey"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(special_npc1);
 
 travel1 = ConvoScreen:new {
     id = "travel1",
@@ -954,6 +973,62 @@ myswg_vendor_accept_quest = ConvoScreen:new {
     stopConversation = "true",
     options = { }
 }
+myswg_vendor_special_npc_hand = ConvoScreen:new {
+    id = "special_npc_hand",
+    leftDialog = "",
+    customDialogText = "Checking The Hand...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_hand);
+myswg_vendor_special_npc_acklay = ConvoScreen:new {
+    id = "special_npc_acklay",
+    leftDialog = "",
+    customDialogText = "Checking Acklay...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_acklay);
+myswg_vendor_special_npc_fire_spider = ConvoScreen:new {
+    id = "special_npc_fire_spider",
+    leftDialog = "",
+    customDialogText = "Checking Fire Spider...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_fire_spider);
+myswg_vendor_special_npc_wb_acklay = ConvoScreen:new {
+    id = "special_npc_wb_acklay",
+    leftDialog = "",
+    customDialogText = "Checking Worldboss Acklay...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_wb_acklay);
+myswg_vendor_special_npc_wb_fire_spider = ConvoScreen:new {
+    id = "special_npc_wb_fire_spider",
+    leftDialog = "",
+    customDialogText = "Checking Worldboss Fire Spider...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_wb_fire_spider);
+myswg_vendor_special_npc_torgas = ConvoScreen:new {
+    id = "special_npc_torgas",
+    leftDialog = "",
+    customDialogText = "Checking Torgas the Enslaver...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_torgas);
+myswg_vendor_special_npc_bird_of_prey = ConvoScreen:new {
+    id = "special_npc_bird_of_prey",
+    leftDialog = "",
+    customDialogText = "Checking Bird of Prey...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_bird_of_prey);
 myswg_vendor_conv:addScreen(myswg_vendor_accept_quest);
 myswg_vendor_deny_quest = ConvoScreen:new {
     id = "deny_quest",
