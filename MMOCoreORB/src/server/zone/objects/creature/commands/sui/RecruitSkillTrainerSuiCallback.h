@@ -36,7 +36,8 @@ public:
 		if (city == nullptr || cityManager == nullptr)
 			return;
 
-		if (!city->isMayor(player->getObjectID()))
+		if (!city->isMayor(player->getObjectID()) &&
+				!city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_RECRUIT_SKILL_TRAINER))
 			return;
 
 		if (!cityManager->canSupportMoreTrainers(city)) {

@@ -36,7 +36,8 @@ public:
 		if (city == nullptr)
 			return GENERALERROR;
 
-		if (!city->isMayor(creature->getObjectID()))
+		if (!city->isMayor(creature->getObjectID()) &&
+				!city->hasMilitiaPermission(creature->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_MISSION_TERMINAL))
 			return GENERALERROR;
 
 		ManagedReference<SuiListBox*> suiTerminalType = new SuiListBox(creature, SuiWindowType::INSTALL_MISSION_TERMINAL, 0);

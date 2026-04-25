@@ -88,6 +88,8 @@ void CityRegionImplementation::initialize() {
 
 	zoningRights.setAllowOverwriteInsertPlan();
 	zoningRights.setNullValue(0);
+	militiaPermissions.setAllowOverwriteInsertPlan();
+	militiaPermissions.setNullValue(0);
 
 	cityMissionTerminals.setNoDuplicateInsertPlan();
 	citySkillTrainers.setNoDuplicateInsertPlan();
@@ -501,9 +503,7 @@ bool CityRegionImplementation::hasZoningRights(uint64 objectid) {
 	if (getMayorID() != 0 && objectid == getMayorID())
 		return true;
 
-	// New: militia always have zoning rights while they are militia
-	// (Order matters only to be crystal clear that the mayor path above remains unchanged.)
-	if (isMilitiaMember(objectid))
+	if (hasMilitiaPermission(objectid, MILITIA_PERMISSION_PLACE_CIVIC))
 		return true;
 
 	// Original time-boxed zoning token logic (unchanged)
