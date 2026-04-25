@@ -27,6 +27,8 @@ public:
 
 	bool hasChosenVeteranReward(const String& rewardTemplate) const;
 
+	int getExtraCharacterSlots() const;
+
 	void clearVeteranReward(uint32 milestone);
 
 	bool toBinaryStream(ObjectOutputStream* stream);
