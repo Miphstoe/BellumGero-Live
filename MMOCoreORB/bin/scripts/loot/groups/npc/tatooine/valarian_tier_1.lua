@@ -16,7 +16,7 @@ valarian_tier_1 = {
 		{groupTemplate = "clothing_attachments", weight = 300000},
 		{groupTemplate = "power_crystals", weight = 300000},
 		{groupTemplate = "color_crystals", weight = 100000},
-		{groupTemplate = "crafting_component", weight = 250000},
+		{groupTemplate = "potted_plants_sml_s05", weight = 250000},
 		{groupTemplate = "melee_weapons_common", weight = 1000000},
 		{groupTemplate = "ranged_weapons_common", weight = 1000000},
 	}

@@ -252,7 +252,14 @@ function GeonosianCaveAntiCampingHybrid:onPlayerLoggedIn(pPlayer)
 		return
 	end
 
-	if (self:isPlayerInCave(pPlayer)) then
+	local loggedOutInCave = tonumber(readScreenPlayData(pPlayer, self.screenplayName, "loggedOutInCave")) or 0
+	writeScreenPlayData(pPlayer, self.screenplayName, "loggedOutInCave", 0)
+
+	-- Only eject if the player was confirmed inside the cave when they logged out.
+	-- Checking isPlayerInCave alone can produce false positives during the login
+	-- sequence (e.g. for Jedi Enclave players) because the parent chain may not
+	-- yet be fully settled when this callback fires.
+	if (loggedOutInCave == 1) then
 		self:clearPlayerTimer(pPlayer)
 		self:returnPlayerToEntrance(pPlayer)
 		CreatureObject(pPlayer):sendSystemMessage("You were returned to the Geonosian Cave entrance because you logged out inside the cave.")
@@ -265,6 +272,12 @@ end
 function GeonosianCaveAntiCampingHybrid:onPlayerLoggedOut(pPlayer)
 	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return
+	end
+
+	if (self:isPlayerInCave(pPlayer)) then
+		writeScreenPlayData(pPlayer, self.screenplayName, "loggedOutInCave", 1)
+	else
+		writeScreenPlayData(pPlayer, self.screenplayName, "loggedOutInCave", 0)
 	end
 
 	self:clearPlayerTimer(pPlayer)
