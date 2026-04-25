@@ -29,6 +29,17 @@ bool isDoctorBuffDroid(TangibleObject* controlledObject) {
 	DataObjectComponentReference* dataRef = controlledObject->getDataObjectComponent();
 	return dataRef != nullptr && dataRef->get() != nullptr && dataRef->get()->isDoctorBuffDroidData();
 }
+
+bool isInsideBuildingOrCamp(CreatureObject* player) {
+	if (player == nullptr)
+		return false;
+
+	if (player->getCurrentCamp() != nullptr)
+		return true;
+
+	ManagedReference<SceneObject*> rootParent = player->getRootParent();
+	return rootParent != nullptr && rootParent->isBuildingObject();
+}
 }
 
 void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) {
@@ -61,6 +72,11 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 
 	if (droid && !player->hasSkill("science_doctor_master")) {
 		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
+		return;
+	}
+
+	if (droid && !isInsideBuildingOrCamp(player)) {
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
 		return;
 	}
 
@@ -174,6 +190,11 @@ void VehicleControlDeviceImplementation::spawnObject(CreatureObject* player) {
 
 	if (droid && !player->hasSkill("science_doctor_master")) {
 		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
+		return;
+	}
+
+	if (droid && !isInsideBuildingOrCamp(player)) {
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
 		return;
 	}
 
