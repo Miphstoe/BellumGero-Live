@@ -42,26 +42,26 @@ TieredFRSRebelEvent.FRS_RANGE_METERS = 64    -- Range for group members to recei
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes - Rebel Soldiers (200k HAM, 50 FRS)
 TieredFRSRebelEvent.TIER1_NPCS = {
-  { planet = "dantooine", template = "tusken_chief", x = 960, y = 1359, z = 1, heading = 0 },
-  { planet = "dantooine", template = "tusken_captain", x = 962, y = 1361, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_chief", x = 924, y = -1287, z = 0, heading = 0 },
+  { planet = "dantooine", template = "tusken_captain", x = 926, y = -1289, z = 0, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes - Rebel Commanders (300k HAM, 75 FRS)
 TieredFRSRebelEvent.TIER2_NPCS = {
-  { planet = "dantooine", template = "tusken_chief", x = 960, y = 1359, z = 1, heading = 0 },
-  { planet = "dantooine", template = "tusken_captain", x = 962, y = 1361, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_chief", x = 924, y = -1287, z = 0, heading = 0 },
+  { planet = "dantooine", template = "tusken_captain", x = 926, y = -1289, z = 0, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes - Rebel Generals (400k HAM, 100 FRS)
 TieredFRSRebelEvent.TIER3_NPCS = {
-  { planet = "dantooine", template = "tusken_executioner", x = 960, y = 1359, z = 1, heading = 0 },
-  { planet = "dantooine", template = "tusken_executioner", x = 962, y = 1361, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 924, y = -1287, z = 0, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 926, y = -1289, z = 0, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes - Rebel Surface Marshalls (500k HAM, 150 FRS)
 TieredFRSRebelEvent.TIER4_NPCS = {
-  { planet = "dantooine", template = "tusken_executioner", x = 960, y = 1359, z = 1, heading = 0 },
-  { planet = "dantooine", template = "tusken_executioner", x = 962, y = 1361, z = 1, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 924, y = -1287, z = 0, heading = 0 },
+  { planet = "dantooine", template = "tusken_executioner", x = 926, y = -1289, z = 0, heading = 0 },
 }
 
 -- Tier change times (in seconds from event start)
