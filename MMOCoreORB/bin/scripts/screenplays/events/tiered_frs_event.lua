@@ -33,8 +33,8 @@ TieredFRSRebelEvent.WEEKLY_LIST = {
 TieredFRSRebelEvent.CATCH_UP_IF_MISSED = true
 
 -- FRS Reward Configuration per Tier
-TieredFRSRebelEvent.TIER1_FRS_AMOUNT = 100    -- Rebel Soldiers
-TieredFRSRebelEvent.TIER2_FRS_AMOUNT = 100    -- Rebel Commanders
+TieredFRSRebelEvent.TIER1_FRS_AMOUNT = 50    -- Rebel Soldiers
+TieredFRSRebelEvent.TIER2_FRS_AMOUNT = 50    -- Rebel Commanders
 TieredFRSRebelEvent.TIER3_FRS_AMOUNT = 150   -- Rebel Generals
 TieredFRSRebelEvent.TIER4_FRS_AMOUNT = 150   -- Rebel Surface Marshalls
 TieredFRSRebelEvent.FRS_RANGE_METERS = 64    -- Range for group members to receive credit
