@@ -107,7 +107,7 @@ public:
 			return GENERALERROR;
 
 		const int accountLotsUsed = structureManager->getAccountLotsUsed(creature);
-		const int accountLotCap = structureManager->getAccountLotCap();
+		const int accountLotCap = structureManager->getAccountLotCap(creature);
 
 		if (accountLotsUsed + lots > accountLotCap) {
     		StringIdChatParameter param("@player_structure:not_enough_lots");

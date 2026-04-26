@@ -38,6 +38,8 @@
 #include "server/zone/objects/player/sui/callbacks/NameStructureSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructurePayMaintenanceSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureWithdrawMaintenanceSuiCallback.h"
+#include "server/login/account/AccountManager.h"
+#include "server/login/account/Account.h"
 #include "server/zone/objects/player/sui/callbacks/ViewHouseStorageSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureSelectSignSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
@@ -95,6 +97,38 @@ StructureManager::StructureManager() : Logger("StructureManager") {
 int StructureManager::getAccountLotCap() const {
 	// Central account-wide lot cap. Keep this here so later config changes are localized.
 	return 100;
+}
+
+int StructureManager::getAccountLotCap(CreatureObject* creature) const {
+	if (creature == nullptr)
+		return getAccountLotCap();
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return getAccountLotCap();
+
+	return getAccountLotCap(ghost->getAccountID());
+}
+
+int StructureManager::getAccountLotCap(uint32 accountID) const {
+	int lotCap = getAccountLotCap();
+
+	if (accountID == 0 || server == nullptr)
+		return lotCap;
+
+	ManagedReference<Account*> account = AccountManager::getAccount(accountID);
+
+	if (account == nullptr)
+		return lotCap;
+
+	GalaxyAccountInfo* galaxyInfo = account->getGalaxyAccountInfo(server->getGalaxyName());
+
+	if (galaxyInfo != nullptr) {
+		lotCap += galaxyInfo->getExtraCharacterSlots() * 10;
+	}
+
+	return lotCap;
 }
 
 int StructureManager::getAccountLotsUsed(CreatureObject* creature) const {
@@ -208,7 +242,7 @@ int StructureManager::getAccountLotsUsed(uint32 accountID) const {
 }
 
 int StructureManager::getAccountLotsRemaining(CreatureObject* creature) const {
-	return getAccountLotCap() - getAccountLotsUsed(creature);
+	return getAccountLotCap(creature) - getAccountLotsUsed(creature);
 }
 
 IndexDatabase* StructureManager::createSubIndex() {
@@ -543,7 +577,7 @@ if (ghost != nullptr) {
     
     const int lots = serverTemplate->getLotSize();
     const int accountLotsUsed = getAccountLotsUsed(creature);
-    const int accountLotCap = getAccountLotCap();
+    const int accountLotCap = getAccountLotCap(creature);
 
     if (accountLotsUsed + lots > accountLotCap) {
         StringIdChatParameter param("@player_structure:not_enough_lots");

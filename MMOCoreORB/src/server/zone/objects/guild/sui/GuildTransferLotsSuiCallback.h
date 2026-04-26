@@ -58,7 +58,7 @@ public:
 		if (structureManager == nullptr)
 			return;
 
-		if (structureManager->getAccountLotsUsed(player) + 5 > structureManager->getAccountLotCap()) {
+		if (structureManager->getAccountLotsUsed(player) + 5 > structureManager->getAccountLotCap(player)) {
 			player->sendSystemMessage("@guild:no_lots"); // You don't have enough lots free to take over the PA hall. You need to have 5 free lots.
 			return;
 		}

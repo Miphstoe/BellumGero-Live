@@ -944,7 +944,7 @@ void GuildManagerImplementation::sendTransferAckTo(CreatureObject* player, const
 	if (structureManager == nullptr)
 		return;
 
-	if (structureManager->getAccountLotsUsed(target) + 5 > structureManager->getAccountLotCap()) {
+	if (structureManager->getAccountLotsUsed(target) + 5 > structureManager->getAccountLotCap(target)) {
 		target->sendSystemMessage("@guild:ml_no_lots_free");  // That person does not have enough free lots to own the PA hall.  PA hall ownership is a requirement be guild leader
 		return;
 	}

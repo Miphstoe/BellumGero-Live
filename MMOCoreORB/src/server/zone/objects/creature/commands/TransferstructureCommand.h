@@ -155,7 +155,7 @@ public:
 		if (structureManager == nullptr)
 			return GENERALERROR;
 
-		if (structureManager->getAccountLotsUsed(targetCreature) + lotSize > structureManager->getAccountLotCap()) {
+		if (structureManager->getAccountLotsUsed(targetCreature) + lotSize > structureManager->getAccountLotCap(targetCreature)) {
 			if ( !bForceTransfer) {
 				StringIdChatParameter params("@player_structure:not_able_to_own"); //%NT is not able to own this structure.
 				params.setTT(targetCreature->getObjectID());

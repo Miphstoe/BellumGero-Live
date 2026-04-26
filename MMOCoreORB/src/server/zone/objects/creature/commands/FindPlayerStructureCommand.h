@@ -137,7 +137,7 @@ public:
 		StringBuffer body;
 		body << "Player: " << targetPlayer->getFirstName() << endl;
 		body << "Total Structures: " << structureCount << endl << endl;
-		body << "Account Lot Usage: " << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << " lots" << endl << endl;
+		body << "Account Lot Usage: " << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap(target) << " lots" << endl << endl;
 
 		body << "======== STRUCTURES ========" << endl << endl;
 

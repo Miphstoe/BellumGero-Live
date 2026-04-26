@@ -3171,7 +3171,19 @@ int PlayerObjectImplementation::getLotsRemaining() {
 	if (structureManager == nullptr)
 		return 0;
 
-	return structureManager->getAccountLotCap() - getLotsUsed();
+	CreatureObject* creature = dynamic_cast<CreatureObject*>(parent.get().get());
+
+	if (creature != nullptr)
+		return structureManager->getAccountLotCap(creature) - getLotsUsed();
+
+	uint32 accountId = 0;
+
+	{
+		Locker locker(asPlayerObject());
+		accountId = getAccountID();
+	}
+
+	return structureManager->getAccountLotCap(accountId) - getLotsUsed();
 }
 
 int PlayerObjectImplementation::getOwnedChatRoomCount() {
