@@ -2073,6 +2073,25 @@ if (type == MissionTypes::DESTROY && player != nullptr) {
 }
 // --- END: Mission Target Lock (Bellum Gero) ---
 
+	// Bellum custom shard behavior:
+	// Destroy missions should always be available from the active mission group
+	// and must not be filtered out by player or group level.
+	if (type == MissionTypes::DESTROY) {
+		LairSpawn* randomDestroy = availableLairList->get(System::random(availableLairList->size() - 1));
+		if (randomDestroy != nullptr) {
+			return randomDestroy;
+		}
+
+		for (int i = 0; i < availableLairList->size(); i++) {
+			LairSpawn* fallbackDestroy = availableLairList->get(i);
+			if (fallbackDestroy != nullptr) {
+				return fallbackDestroy;
+			}
+		}
+
+		return nullptr;
+	}
+
 	LairSpawn* lairSpawn = nullptr;
 
 	//Cap the minLevel to prevent a group from being too high to get missions on a planet
