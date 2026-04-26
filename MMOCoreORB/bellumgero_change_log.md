@@ -14,6 +14,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-04-25 — Mando title nameplate: document client wrap / orphan ")"
+
+- **Summary:** Documented that the floating **skill title** line is resolved and wrapped entirely on the **client** from `string/en/skl_t.stf` (skill id such as `mando_title_foundling`). Long `skl_t` values can leave a lone closing parenthesis on the next line; shorten the STF string or use a no-break space before `)` in the client TRE (e.g. `bg_custom1.tre`).
+- **Files:** `bin/scripts/skills/bellum/mando_titles.lua`, `bellumgero_change_log.md`
+- **Notes:** No server restart required for the comment alone. Changing the visible title still requires editing and shipping the **client** STF override.
+
+### 2026-04-20 — Mission terminals: disable destroy mission level gating
+
+- **Summary:** Updated destroy mission selection so mission terminals always pick from the active destroy mission group without filtering by player or group level. This keeps destroy contracts available on custom shard planets such as Yavin, even for lower-level characters.
+- **Files:** `src/server/zone/managers/mission/MissionManagerImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** Requires rebuild and restart of `core3` (C++ change).
+
 ### 2026-04-18 — Foundling Beskar CDEF kit from recruiter on arc start
 
 - **Summary:** Added three weapon templates (**pistol / rifle / carbine** `*_foundling_cdef_beskar`) with **CDEF** certifications, display names **Foundling Beskar CDEF …**, combat profile **666 min/max damage** and **0.6 attack speed**. **`MandoWayOfLife:startFoundlingArc`** calls **`grantFoundlingBeskarCdefKit`** after the first planet advance so new recruits receive the kit when the recruiter sends them to the Tatooine informant.
@@ -617,3 +629,15 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Removed `!foundling` and `!mando` references from the player perspective overview so the guide does not direct players to commands that are not working on this shard.
 - **Files:** `docs/mandalorian_project_player_perspective.md`, `bellumgero_change_log.md`
 - **Notes:** Documentation only. No gameplay logic changes.
+
+### 2026-04-25 — Foundling weapon naming and chapter gate LLC perk
+
+- **Summary:** Renamed Foundling starter weapon display names from CDEF phrasing to `Foundling Pistol`, `Foundling Carbine`, and `Foundling Rifle`; added a new `Foundling Light Lightning Cannon` weapon tuned to the same Foundling combat profile and granted once per player when the post-Foundling Novice Bounty Hunter chapter gate opens.
+- **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_foundling_light_lightning_cannon.lua`, `bin/scripts/object/weapon/ranged/rifle/serverobjects.lua`, `bin/scripts/object/weapon/ranged/rifle/objects.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** New perk uses `cert_mando_way_lightning_cannon` and grants the hidden cert skill at perk time so the weapon is immediately usable when unlocked.
+
+### 2026-04-25 — Foundling weapons renamed to Beskar Polished format
+
+- **Summary:** Updated Foundling weapon display names to the requested `Beskar Polished <weapon type>` format for pistol, carbine, rifle, and Lightning Cannon.
+- **Files:** `bin/scripts/object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.lua`, `bin/scripts/object/weapon/ranged/rifle/rifle_foundling_light_lightning_cannon.lua`, `bellumgero_change_log.md`
+- **Notes:** Naming only. No stat or progression logic changes.

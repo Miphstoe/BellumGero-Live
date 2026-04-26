@@ -498,9 +498,49 @@ function MandoWayOfLife:grantFoundlingBeskarCdefKit(pPlayer)
 	end
 
 	CreatureObject(pPlayer):sendSystemMessage(
-		"You carry Foundling Beskar CDEF arms now. Use what fits your stance. Your contact on Tatooine is waiting."
+		"You carry Foundling arms now. Use what fits your stance. Your contact on Tatooine is waiting."
 	)
 	self:logDiagPlayer(pPlayer, "grantFoundlingBeskarCdefKit: all three weapons granted.")
+end
+
+-- One-time chapter gate perk: grant Foundling Light Lightning Cannon and cert once Foundling + Novice BH unlocks next step.
+function MandoWayOfLife:grantFoundlingChapterGatePerkIfEligible(pPlayer)
+	if (pPlayer == nil or SceneObject(pPlayer) == nil) then return end
+	if (self:readInt(pPlayer, "foundling.lightningPerkGranted") == 1) then return end
+	if (not self:isArcComplete(pPlayer)) then return end
+	if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then return end
+
+	if (not CreatureObject(pPlayer):hasSkill("mando_way_cert_lightning_cannon")) then
+		awardSkill(pPlayer, "mando_way_cert_lightning_cannon")
+	end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		self:logDiagPlayer(pPlayer, "grantFoundlingChapterGatePerkIfEligible: no inventory.")
+		return
+	end
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"Your inventory is full. I could not pass you the Foundling Light Lightning Cannon. Free a slot and speak to the recruiter again."
+		)
+		self:logDiagPlayer(pPlayer, "grantFoundlingChapterGatePerkIfEligible: inventory full.")
+		return
+	end
+
+	local pItem = giveItem(pInventory, "object/weapon/ranged/rifle/rifle_foundling_light_lightning_cannon.iff", -1)
+	if (pItem == nil) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"Something blocked your Foundling Light Lightning Cannon transfer. Free bag space and contact staff if this repeats."
+		)
+		self:logDiagPlayer(pPlayer, "grantFoundlingChapterGatePerkIfEligible: giveItem failed.")
+		return
+	end
+
+	self:writeInt(pPlayer, "foundling.lightningPerkGranted", 1)
+	CreatureObject(pPlayer):sendSystemMessage(
+		"[Mandalorian Way] Perk unlocked: Foundling Light Lightning Cannon granted for your next step."
+	)
+	self:logDiagPlayer(pPlayer, "grantFoundlingChapterGatePerkIfEligible: perk granted.")
 end
 
 -- Advance to next planet in the arc
@@ -1910,6 +1950,8 @@ function MandoWayOfLife:startChapterGate(pPlayer)
 		)
 		return
 	end
+
+	self:grantFoundlingChapterGatePerkIfEligible(pPlayer)
 
 	-- Already gating
 	if (self:readInt(pPlayer, "countingEnabled") == 1) then

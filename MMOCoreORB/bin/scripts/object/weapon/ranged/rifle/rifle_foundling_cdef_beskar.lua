@@ -2,7 +2,7 @@
 -- Bellum: Foundling kit. CDEF certification, Beskar naming, recruiter grant on arc start.
 
 object_weapon_ranged_rifle_rifle_foundling_cdef_beskar = object_weapon_ranged_rifle_shared_rifle_cdef:new {
-	customObjectName = "Foundling Beskar CDEF Rifle",
+	customObjectName = "Beskar Polished Rifle",
 
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",

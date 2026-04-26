@@ -929,6 +929,12 @@ object_weapon_ranged_rifle_shared_rifle_mando_way_lightning = SharedWeaponObject
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_mando_way_lightning, "object/weapon/ranged/rifle/shared_rifle_mando_way_lightning.iff")
 
+object_weapon_ranged_rifle_shared_rifle_foundling_light_lightning_cannon = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_lightning.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_foundling_light_lightning_cannon, "object/weapon/ranged/rifle/shared_rifle_foundling_light_lightning_cannon.iff")
+
 object_weapon_ranged_rifle_shared_rifle_sg82 = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_sg82.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
