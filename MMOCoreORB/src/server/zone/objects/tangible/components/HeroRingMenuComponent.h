@@ -2,6 +2,7 @@
 #define HERORINGMENUCOMPONENT_H_
 
 #include "TangibleObjectMenuComponent.h"
+#include "server/zone/objects/tangible/wearables/WearableObject.h"
 
 class HeroRingMenuComponent : public TangibleObjectMenuComponent {
 public:
@@ -24,7 +25,10 @@ public:
 	 */
 	virtual int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const;
 
-	virtual String getCooldownString(uint32 delta) const;
+	static WearableObject* getEquippedHeroRing(CreatureObject* player);
+	static bool canActivateHeroRing(CreatureObject* player, WearableObject* ring, bool sendMessages = false);
+	static bool activateHeroRing(CreatureObject* player, WearableObject* ring, bool sendMessages = false);
+	static String getCooldownString(uint32 delta);
 
 };
 
