@@ -21,6 +21,12 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
+		PlayerObject* ghost = creature->getPlayerObject();
+
+		if (ghost != nullptr) {
+			ghost->setSnoopedPlayerID(0);
+		}
+
 		return SUCCESS;
 	}
 

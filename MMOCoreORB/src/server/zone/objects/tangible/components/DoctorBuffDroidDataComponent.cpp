@@ -58,11 +58,11 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	diseaseStock = 0;
 	earningsBalance = 0;
 
-	buffPrice = 5000;
+	buffPrice = 10000;
 	woundPrice = 1000;
 	poisonPrice = 2500;
 	diseasePrice = 2500;
-	jantaPrice = 7500;
+	jantaPrice = 25000;
 
 	guildDiscountPercent = 0;
 	minimumPriceFloor = 100;

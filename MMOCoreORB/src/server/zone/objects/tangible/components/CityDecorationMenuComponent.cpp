@@ -28,7 +28,9 @@ void CityDecorationMenuComponent::fillObjectMenuResponse(SceneObject* sceneObjec
 		menuResponse->addRadialMenuItem(233, 3, "@city/city:place"); // Place Decoration
 	}
 
-	if(city != nullptr && sceneObject->getParent() == nullptr && sceneObject->getCityRegion() == city && city->isMayor(player->getObjectID()) ) {
+	if(city != nullptr && sceneObject->getParent() == nullptr && sceneObject->getCityRegion() == city &&
+			(city->isMayor(player->getObjectID()) ||
+			city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_DECORATION)) ) {
 		menuResponse->addRadialMenuItem(234, 3, "@city/city:mt_remove"); // Remove
 
 		menuResponse->addRadialMenuItem(73, 3, "@city/city:align"); // Align
@@ -65,6 +67,9 @@ int CityDecorationMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 	} else if (selectedID == 74 || selectedID == 75 || selectedID == 76 || selectedID == 77) {
 		ManagedReference<CityRegion*> city = player->getCityRegion().get();
 
+		if (city == nullptr || !city->isMayor(player->getObjectID()))
+			return 0;
+
 		CityManager* cityManager = sceneObject->getZoneServer()->getCityManager();
 		cityManager->alignAmenity(city, player, sceneObject, selectedID - 74);
 
@@ -77,7 +82,6 @@ int CityDecorationMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject
 bool CityDecorationMenuComponent::isInInventory(SceneObject* sceneObject, CreatureObject* player) const {
 	return sceneObject->isASubChildOf(player);
 }
-
 
 
 

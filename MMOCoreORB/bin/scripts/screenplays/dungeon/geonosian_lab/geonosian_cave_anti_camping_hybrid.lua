@@ -384,6 +384,7 @@ function GeonosianCaveAntiCampingHybrid:spawnEnhancedGapingSpider()
 	end
 
 	writeData(self:getSpiderDataKey("oid"), SceneObject(pSpider):getObjectID())
+	writeData(self:getSpiderDataKey("nextRespawnAt"), 0)
 	self:protectSpiderUntilPlayerArrives(pSpider)
 	createObserver(OBJECTDESTRUCTION, self.screenplayName, "notifyEnhancedGapingSpiderKilled", pSpider)
 end
@@ -409,6 +410,7 @@ end
 function GeonosianCaveAntiCampingHybrid:notifyEnhancedGapingSpiderKilled(pSpider, pKiller)
 	self:clearSpiderActivationArea()
 	deleteData(self:getSpiderDataKey("oid"))
+	writeData(self:getSpiderDataKey("nextRespawnAt"), os.time() + self.enhancedGapingSpiderRespawnSeconds)
 	createEvent(self.enhancedGapingSpiderRespawnSeconds * 1000, self.screenplayName, "respawnEnhancedGapingSpider", nil, "")
 
 	return 1

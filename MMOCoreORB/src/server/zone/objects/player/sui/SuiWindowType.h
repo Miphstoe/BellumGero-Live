@@ -98,6 +98,7 @@ public:
 		CITY_FACTION_CONFIRM               = 136,
 		CITY_UNBAN_CONFIRM                 = 137,
 		CITY_UNBAN_LIST                    = 138,
+		CITY_MILITIA_MEMBER_PERMISSIONS    = 139,
 
 		//Structure 141 - 170
 		STRUCTURE_STATUS                   = 141,

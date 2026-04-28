@@ -29,6 +29,17 @@ bool isDoctorBuffDroid(TangibleObject* controlledObject) {
 	DataObjectComponentReference* dataRef = controlledObject->getDataObjectComponent();
 	return dataRef != nullptr && dataRef->get() != nullptr && dataRef->get()->isDoctorBuffDroidData();
 }
+
+bool isInsideBuildingOrCamp(CreatureObject* player) {
+	if (player == nullptr)
+		return false;
+
+	if (player->getCurrentCamp() != nullptr)
+		return true;
+
+	ManagedReference<SceneObject*> rootParent = player->getRootParent();
+	return rootParent != nullptr && rootParent->isBuildingObject();
+}
 }
 
 void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) {
@@ -61,6 +72,11 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 
 	if (droid && !player->hasSkill("science_doctor_master")) {
 		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
+		return;
+	}
+
+	if (droid && !isInsideBuildingOrCamp(player)) {
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
 		return;
 	}
 
@@ -103,7 +119,8 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 		return;
 	}
 
-	int currentlySpawned = 0;
+	bool activeDoctorBuffDroid = false;
+	bool activeNormalVehicle = false;
 
 	for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
 		ManagedReference<SceneObject*> object = datapad->getContainerObject(i);
@@ -114,17 +131,26 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 			ManagedReference<SceneObject*> vehicle = device->getControlledObject();
 
 			if (vehicle != nullptr && (vehicle->getLocalZone() != nullptr || vehicle->getParent() != nullptr)) {
-				if (droid && vehicle != controlledObject) {
-					player->sendSystemMessage("Only one Doctor Buff Droid may be active at a time.");
-					return;
+				bool activeIsDoctorBuffDroid = isDoctorBuffDroid(cast<TangibleObject*>(vehicle.get()));
+
+				if (activeIsDoctorBuffDroid) {
+					if (vehicle != controlledObject)
+						activeDoctorBuffDroid = true;
+				} else {
+					activeNormalVehicle = true;
 				}
-
-				if (++currentlySpawned > 2)
-					player->sendSystemMessage("@pet/pet_menu:has_max_vehicle");
-
-				return;
 			}
 		}
+	}
+
+	if (droid && activeDoctorBuffDroid) {
+		player->sendSystemMessage("Only one Doctor Buff Droid may be active at a time.");
+		return;
+	}
+
+	if (!droid && activeNormalVehicle) {
+		player->sendSystemMessage("@pet/pet_menu:has_max_vehicle");
+		return;
 	}
 
 	if (!droid && player->getCurrentCamp() == nullptr && player->getCityRegion() == nullptr && !ghost->isPrivileged()) {
@@ -164,6 +190,11 @@ void VehicleControlDeviceImplementation::spawnObject(CreatureObject* player) {
 
 	if (droid && !player->hasSkill("science_doctor_master")) {
 		player->sendSystemMessage("Only Master Doctors may deploy a Doctor Buff Droid.");
+		return;
+	}
+
+	if (droid && !isInsideBuildingOrCamp(player)) {
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
 		return;
 	}
 

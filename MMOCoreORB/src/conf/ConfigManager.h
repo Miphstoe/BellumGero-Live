@@ -739,6 +739,19 @@ namespace conf {
 			return cachedMinSpawnDelay;
 		}
 
+		inline int getLairNoSpawnDuration() {
+			static uint32 cachedVersion = 0;
+			static int cachedLairNoSpawnDuration;
+
+			if (configVersion.get() > cachedVersion) {
+				Locker guard(&mutex);
+				cachedLairNoSpawnDuration = getInt("Core3.Regions.lairNoSpawnDuration", 120000);
+				cachedVersion = configVersion.get();
+			}
+
+			return cachedLairNoSpawnDuration;
+		}
+
 		inline int getMinSpaceSpawnInterval() {
 			static uint32 cachedVersion = 0;
 			static int cachedMinSpaceSpawnDelay;

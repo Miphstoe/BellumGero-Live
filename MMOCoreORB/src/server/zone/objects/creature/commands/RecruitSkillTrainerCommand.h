@@ -38,7 +38,8 @@ public:
 		if (city == nullptr)
 			return GENERALERROR;
 
-		if (!city->isMayor(creature->getObjectID()))
+		if (!city->isMayor(creature->getObjectID()) &&
+				!city->hasMilitiaPermission(creature->getObjectID(), CityRegion::MILITIA_PERMISSION_RECRUIT_SKILL_TRAINER))
 			return GENERALERROR;
 
 		ManagedReference<SuiListBox*> suiTrainerType = new SuiListBox(creature, SuiWindowType::RECRUIT_SKILL_TRAINER, 0);

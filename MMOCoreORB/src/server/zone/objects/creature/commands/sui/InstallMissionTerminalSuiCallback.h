@@ -36,7 +36,8 @@ public:
 		if (city == nullptr || cityManager == nullptr)
 			return;
 
-		if (!city->isMayor(player->getObjectID()))
+		if (!city->isMayor(player->getObjectID()) &&
+				!city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_MISSION_TERMINAL))
 			return;
 
 		if (!cityManager->canSupportMoreMissionTerminals(city)) {

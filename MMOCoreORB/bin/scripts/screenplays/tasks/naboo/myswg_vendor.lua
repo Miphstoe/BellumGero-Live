@@ -409,6 +409,118 @@ function myswg_vendor_convo_handler:handleAdPurchaseSui(pPlayer, pSui, eventInde
         player:sendSystemMessage("Failed to purchase advertisement: " .. message)
     end
 end
+
+local function formatVendorDuration(secondsRemaining)
+    local seconds = math.max(0, math.floor(tonumber(secondsRemaining) or 0))
+    if seconds < 60 then
+        return "less than a minute"
+    end
+
+    local days = math.floor(seconds / 86400)
+    seconds = seconds % 86400
+    local hours = math.floor(seconds / 3600)
+    seconds = seconds % 3600
+    local minutes = math.floor(seconds / 60)
+    local parts = {}
+
+    if days > 0 then
+        table.insert(parts, days .. "d")
+    end
+    if hours > 0 then
+        table.insert(parts, hours .. "h")
+    end
+    if minutes > 0 and days == 0 then
+        table.insert(parts, minutes .. "m")
+    end
+
+    return table.concat(parts, " ")
+end
+
+local function isVendorTrackedBossAlive(dataKey)
+    local bossOID = tonumber(readData(dataKey) or 0) or 0
+    if bossOID <= 0 then
+        return false
+    end
+
+    return getSceneObject(bossOID) ~= nil
+end
+
+local function getVendorRespawnMessage(dataKey)
+    local respawnAt = tonumber(readData(dataKey) or 0) or 0
+    if respawnAt <= 0 then
+        return "The tracker reports it as unavailable or already killed."
+    end
+
+    local secondsRemaining = respawnAt - os.time()
+    if secondsRemaining <= 0 then
+        return "Respawn window is open now."
+    end
+
+    return "Killed already. Estimated respawn in " .. formatVendorDuration(secondsRemaining) .. "."
+end
+
+local function getVendorTrackedLocation(xKey, yKey)
+    local x = tonumber(readData(xKey) or 0) or 0
+    local y = tonumber(readData(yKey) or 0) or 0
+    return x, y
+end
+
+function myswg_vendor_convo_handler:getSpecialNpcStatusMessage(optionLink)
+    if optionLink == "special_npc_hand" then
+        if isVendorTrackedBossAlive("RoriRestuss:TheHand:bossOID") then
+            return "The Hand is AVAILABLE on Rori near Restuss at approximately 5316, 5652."
+        end
+        return "The Hand on Rori: " .. getVendorRespawnMessage("RoriRestuss:TheHand:nextRespawnAt")
+    end
+
+    if optionLink == "special_npc_acklay" then
+        if isVendorTrackedBossAlive("geoLab:acklay:oid") then
+            return "Geonosian Cave Acklay is AVAILABLE on Yavin4 in the large end cave at approximately 101, -322."
+        end
+        return "Geonosian Cave Acklay on Yavin4: " .. getVendorRespawnMessage("geoLab:acklay:nextRespawnAt")
+    end
+
+    if optionLink == "special_npc_fire_spider" then
+        if isVendorTrackedBossAlive("geoCave:enhancedGapingSpider:oid") then
+            return "Geonosian Cave Fire Spider is AVAILABLE on Yavin4 inside the Geonosian Cave."
+        end
+        return "Geonosian Cave Fire Spider on Yavin4: " .. getVendorRespawnMessage("geoCave:enhancedGapingSpider:nextRespawnAt")
+    end
+
+    if optionLink == "special_npc_wb_acklay" then
+        if isVendorTrackedBossAlive("AcklayWorldBossLoot:bossOID") then
+            return "Worldboss Acklay is AVAILABLE on Yavin4 at approximately -7020, 5150."
+        end
+        return "Worldboss Acklay on Yavin4: " .. getVendorRespawnMessage("AcklayWorldBossLoot:nextSpawnAt")
+    end
+
+    if optionLink == "special_npc_wb_fire_spider" then
+        if isVendorTrackedBossAlive("EGSPIDER.bossOID") then
+            local x, y = getVendorTrackedLocation("EGSPIDER.lastX", "EGSPIDER.lastY")
+            return string.format("Worldboss Fire Spider is AVAILABLE on Yavin4 at approximately %.0f, %.0f.", x, y)
+        end
+        return "Worldboss Fire Spider on Yavin4: " .. getVendorRespawnMessage("EGSPIDER.nextSpawnAt")
+    end
+
+    if optionLink == "special_npc_torgas" then
+        if isVendorTrackedBossAlive("TORGAS.bossOID") then
+            local x, y = getVendorTrackedLocation("TORGAS.lastX", "TORGAS.lastY")
+            return string.format("Torgas the Enslaver is AVAILABLE on Tatooine at approximately %.0f, %.0f.", x, y)
+        end
+        return "Torgas the Enslaver on Tatooine: " .. getVendorRespawnMessage("TORGAS.nextSpawnAt")
+    end
+
+    if optionLink == "special_npc_bird_of_prey" then
+        if isVendorTrackedBossAlive("PEKO.bossOID") then
+            local x, y = getVendorTrackedLocation("PEKO.lastX", "PEKO.lastY")
+            return string.format("Bird of Prey is AVAILABLE on Naboo at approximately %.0f, %.0f.", x, y)
+        end
+        return "Bird of Prey on Naboo: " .. getVendorRespawnMessage("PEKO.nextSpawnAt")
+    end
+
+    return "Unknown Special NPC tracker request."
+end
+
 function myswg_vendor_convo_handler:getNextConversationScreen(conversationTemplate, conversingPlayer, selectedOption)            
         -- Assign the player to variable creature for use inside this function.
         local creature = LuaCreatureObject(conversingPlayer)
@@ -532,6 +644,19 @@ local MySwgTravelDestinations = {
 --========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
+                if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" then
+                    if not canAfford(1000) then
+                        nextConversationScreen = conversation:getScreen("insufficient_funds")
+                        creature:sendSystemMessage("You need 1,000 credits to use the Special NPC tracker.")
+                        return nextConversationScreen
+                    end
+
+                    charge(1000)
+                    creature:sendSystemMessage(self:getSpecialNpcStatusMessage(optionLink))
+                    nextConversationScreen = conversation:getScreen("first_screen")
+                    return nextConversationScreen
+                end
+
                 -- Take action when the player makes a purchase.
                 --if (inventory:hasFullContainerObjects() == true) then -- removed, does not work
                 if (SceneObject(pInventory):isContainerFullRecursive()) then
@@ -1035,6 +1160,13 @@ local MySwgTravelDestinations = {
                 elseif (optionLink == "option89" and canAfford(100000)) then
                     charge(100000)
                     local pItem = giveItem(pInventory, "object/tangible/survey_tool/survey_tool_all.iff", -1)    
+
+                elseif (optionLink == "option90" and not canAfford(1000000)) then
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "option90" and canAfford(1000000)) then
+                    charge(1000000)
+                    local pItem = giveItem(pInventory, "object/tangible/veteran_reward/resource.iff", -1)
 
                 elseif (optionLink == "option66" and not canAfford(10000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  

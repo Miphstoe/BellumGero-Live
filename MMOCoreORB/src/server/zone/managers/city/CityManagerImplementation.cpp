@@ -24,6 +24,7 @@
 #include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
 #include "server/zone/objects/player/sui/callbacks/CityTreasuryDepositSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/CityManageMilitiaSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/CityMilitiaPermissionsSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/CityAddMilitiaMemberSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/CityRegisterSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/CityMayoralVoteSuiCallback.h"
@@ -1570,6 +1571,88 @@ void CityManagerImplementation::sendManageMilitia(CityRegion* city, CreatureObje
 
 	ghost->addSuiBox(listbox);
 	creature->sendMessage(listbox->generateMessage());
+}
+
+void CityManagerImplementation::sendMilitiaMemberPermissions(CityRegion* city, CreatureObject* mayor, uint64 militiaid, SceneObject* terminal) {
+	PlayerObject* ghost = mayor->getPlayerObject();
+
+	if (ghost == nullptr)
+		return;
+
+	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+		return;
+
+	if (!city->isMilitiaMember(militiaid) || city->isMayor(militiaid))
+		return;
+
+	ManagedReference<SceneObject*> militiaMember = zoneServer->getObject(militiaid);
+
+	if (militiaMember == nullptr || !militiaMember->isPlayerCreature())
+		return;
+
+	ghost->closeSuiWindowType(SuiWindowType::CITY_MILITIA_MEMBER_PERMISSIONS);
+
+	ManagedReference<SuiListBox*> listbox = new SuiListBox(mayor, SuiWindowType::CITY_MILITIA_MEMBER_PERMISSIONS);
+	listbox->setPromptTitle("Militia Member Permissions");
+
+	StringBuffer prompt;
+	prompt << "Manage permissions for " << militiaMember->getDisplayedName() << ". Select an option and press OK.";
+
+	listbox->setPromptText(prompt.toString());
+	listbox->setUsingObject(terminal);
+	listbox->setForceCloseDistance(16.f);
+	listbox->setCallback(new CityMilitiaPermissionsSuiCallback(zoneServer, city));
+	listbox->setCancelButton(true, "@cancel");
+
+	listbox->addMenuItem(String("Place Civic Structures: ") + (city->hasMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_CIVIC) ? "ON" : "OFF"), militiaid);
+	listbox->addMenuItem(String("Place Decorations: ") + (city->hasMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_DECORATION) ? "ON" : "OFF"), militiaid);
+	listbox->addMenuItem(String("Place Mission Terminals: ") + (city->hasMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_MISSION_TERMINAL) ? "ON" : "OFF"), militiaid);
+	listbox->addMenuItem(String("Recruit Skill Trainers: ") + (city->hasMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_RECRUIT_SKILL_TRAINER) ? "ON" : "OFF"), militiaid);
+	listbox->addMenuItem("Remove Militia Member", militiaid);
+
+	ghost->addSuiBox(listbox);
+	mayor->sendMessage(listbox->generateMessage());
+}
+
+void CityManagerImplementation::handleMilitiaMemberPermission(CityRegion* city, CreatureObject* mayor, uint64 militiaid, int action, SceneObject* terminal) {
+	PlayerObject* ghost = mayor->getPlayerObject();
+
+	if (ghost == nullptr)
+		return;
+
+	if (!city->isMayor(mayor->getObjectID()) && !ghost->isAdmin())
+		return;
+
+	Locker locker(city, mayor);
+
+	if (!city->isMilitiaMember(militiaid) || city->isMayor(militiaid))
+		return;
+
+	switch (action) {
+	case 0:
+		city->toggleMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_CIVIC);
+		sendMilitiaMemberPermissions(city, mayor, militiaid, terminal);
+		break;
+	case 1:
+		city->toggleMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_DECORATION);
+		sendMilitiaMemberPermissions(city, mayor, militiaid, terminal);
+		break;
+	case 2:
+		city->toggleMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_PLACE_MISSION_TERMINAL);
+		sendMilitiaMemberPermissions(city, mayor, militiaid, terminal);
+		break;
+	case 3:
+		city->toggleMilitiaPermission(militiaid, CityRegion::MILITIA_PERMISSION_RECRUIT_SKILL_TRAINER);
+		sendMilitiaMemberPermissions(city, mayor, militiaid, terminal);
+		break;
+	case 4:
+		locker.release();
+		removeMilitiaMember(city, mayor, militiaid);
+		sendManageMilitia(city, mayor, terminal);
+		break;
+	default:
+		break;
+	}
 }
 
 void CityManagerImplementation::promptAddMilitiaMember(CityRegion* city, CreatureObject* creature, SceneObject* terminal) {

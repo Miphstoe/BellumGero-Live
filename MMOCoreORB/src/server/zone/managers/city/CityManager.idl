@@ -163,6 +163,10 @@ class CityManager extends ManagedService implements Logger {
 
 	public native void removeMilitiaMember(CityRegion city, CreatureObject mayor, unsigned long militiaid);
 
+	public native void sendMilitiaMemberPermissions(CityRegion city, CreatureObject mayor, unsigned long militiaid, SceneObject terminal = null);
+
+	public native void handleMilitiaMemberPermission(CityRegion city, CreatureObject mayor, unsigned long militiaid, int action, SceneObject terminal = null);
+
 	public native void sendCityAdvancement(CityRegion city, CreatureObject creature, SceneObject terminal = null);
 
 	public native string getNextUpdateTimeString(CityRegion city);
