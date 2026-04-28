@@ -70,7 +70,7 @@ baseStoredShips = 3
 -----------------------------------
 --VETERAN REWARDS CONFIG
 -----------------------------------
-veteranRewardMilestones = {2, 4, 8, 12, 16, 20, 30, 45, 60, 75, 90, 105} --days, must be sorted low to high
+veteranRewardMilestones = {2, 4, 8, 12, 16, 20, 30, 45, 60, 75, 90, 105, 365} --days, must be sorted low to high
 
 veteranRewardAdditionalMilestones = 15 --frequency, in days, of additional milestones (beyond the established ones)
 
@@ -174,6 +174,9 @@ veteranRewards = {
 	{templateFile = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff", milestone=105, oneTime=false, description="Painting: Smuggler's Run", jtlReward = false},
 	{templateFile = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff", milestone=105, oneTime=false, description="Painting: Imperial Oppression (TIE Oppressor)", jtlReward = false},
 	{templateFile = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff", milestone=105, oneTime=false, description="Painting: Emperor's Eyes (TIE Sentinel)", jtlReward = false},
+
+	-- 365 Day Reward
+	{templateFile = "reward:special/character_slot_unlock", milestone=365, oneTime=true, description="Unlock 1 additional character slot on this galaxy (One-Time Choice Reward)", jtlReward = false},
 }
 
 -- { "stringId", "songFilePath" }

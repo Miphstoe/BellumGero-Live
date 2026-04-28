@@ -28,6 +28,18 @@ bool GalaxyAccountInfo::hasChosenVeteranReward(const String& rewardTemplate) con
 	return false;
 }
 
+int GalaxyAccountInfo::getExtraCharacterSlots() const {
+	int extraSlots = 0;
+
+	for (int i = 0; i < chosenVeteranRewards.size(); i++) {
+		if (chosenVeteranRewards.get(i).beginsWith("reward:special/character_slot_unlock")) {
+			++extraSlots;
+		}
+	}
+
+	return extraSlots;
+}
+
 void GalaxyAccountInfo::addChosenVeteranReward( uint32 milestone, const String& rewardTemplate ) {
 	chosenVeteranRewards.put(milestone, rewardTemplate);
 }
@@ -48,5 +60,4 @@ bool GalaxyAccountInfo::toBinaryStream(ObjectOutputStream* stream) {
 void to_json(nlohmann::json& j, const GalaxyAccountInfo& p) {
 	j["chosenVeteranRewards"] = p.chosenVeteranRewards.getMapUnsafe();
 }
-
 

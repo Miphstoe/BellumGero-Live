@@ -59,6 +59,8 @@ public:
 	// Account-wide structure lots are centralized here so placement, transfers,
 	// and reporting all use the same pool calculation.
 	int getAccountLotCap() const;
+	int getAccountLotCap(CreatureObject* creature) const;
+	int getAccountLotCap(uint32 accountID) const;
 	int getAccountLotsUsed(CreatureObject* creature) const;
 	int getAccountLotsUsed(uint32 accountID) const;
 	int getAccountLotsRemaining(CreatureObject* creature) const;

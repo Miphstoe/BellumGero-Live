@@ -10,6 +10,7 @@
 #include "server/chat/ChatManager.h"
 #include "server/chat/room/ChatRoom.h"
 #include "server/login/account/Account.h"
+#include "server/login/account/AccountManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/packets/charcreation/ClientCreateCharacterCallback.h"
@@ -318,9 +319,25 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 	auto client = callback->getClient();
 	auto maxchars = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.MaxCharactersPerGalaxy", 10);
+	int allowedCharacters = maxchars;
 
-	if (client->getCharacterCount(zoneServer.get()->getGalaxyID()) >= maxchars) {
-		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to 10 characters per galaxy.", 0x0);
+	ManagedReference<Account*> account = AccountManager::getAccount(client->getAccountID(), true);
+
+	if (account != nullptr) {
+		Locker alocker(account);
+
+		GalaxyAccountInfo* galaxyInfo = account->getGalaxyAccountInfo(zoneServer.get()->getGalaxyName());
+
+		if (galaxyInfo != nullptr) {
+			allowedCharacters += galaxyInfo->getExtraCharacterSlots();
+		}
+	}
+
+	if (client->getCharacterCount(zoneServer.get()->getGalaxyID()) >= allowedCharacters) {
+		StringBuffer error;
+		error << "You are limited to " << allowedCharacters << " characters per galaxy.";
+
+		ErrorMessage* errMsg = new ErrorMessage("Create Error", error.toString(), 0x0);
 		client->sendMessage(errMsg);
 
 		return false;

@@ -513,7 +513,7 @@ public:
 
 		body << "Player Name:\t" << target->getFirstName() << endl;
 		body << "Unused Account Lots:\t" << String::valueOf(lotsRemaining) << endl;
-		body << "Account Lot Usage:\t" << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << endl << endl;
+		body << "Account Lot Usage:\t" << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap(target) << endl << endl;
 		body << "Player Structures:";
 
 		for (int i = 0; i < targetGhost->getTotalOwnedStructureCount(); i++) {
