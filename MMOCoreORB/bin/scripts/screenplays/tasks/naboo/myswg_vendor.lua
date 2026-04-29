@@ -518,6 +518,13 @@ function myswg_vendor_convo_handler:getSpecialNpcStatusMessage(optionLink)
         return "Bird of Prey on Naboo: " .. getVendorRespawnMessage("PEKO.nextSpawnAt")
     end
 
+    if optionLink == "special_npc_grak" then
+        if isVendorTrackedBossAlive("GRAK.bossOID") then
+            return "Primordial Warlord Grak is AVAILABLE on Endor at approximately 4656, 1181."
+        end
+        return "Primordial Warlord Grak on Endor: " .. getVendorRespawnMessage("GRAK.nextSpawnAt")
+    end
+
     return "Unknown Special NPC tracker request."
 end
 
@@ -644,7 +651,7 @@ local MySwgTravelDestinations = {
 --========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
-                if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" then
+                if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" or optionLink == "special_npc_grak" then
                     if not canAfford(1000) then
                         nextConversationScreen = conversation:getScreen("insufficient_funds")
                         creature:sendSystemMessage("You need 1,000 credits to use the Special NPC tracker.")
