@@ -96,7 +96,6 @@ includeFile("conversations/events/syren/neutral_tyla_jinn_conv.lua")
 includeFile("conversations/events/syren/rebel_veega_madish_conv.lua")
 includeFile("conversations/events/syren/imperial_jevan_monsul_conv.lua")
 includeFile("conversations/events/syren/doctor_edvar_vang_conv.lua")
-includeFile("conversations/endor/dr_kaelen_varr_convo_handler.lua")
 includeFile("conversations/endor/dr_kaelen_varr_conv.lua")
 includeFile("conversations/events/syren/kaila_min_conv.lua")
 includeFile("conversations/events/syren/tovar_blackmoor_conv.lua")
@@ -388,4 +387,9 @@ print("Finished loading holocron village vendor")
 -- ARTISAN PROCUREMENT VENDOR
 print("Loading conversations.lua - checking artisan procurement vendor...")
 includeFile("conversations/vendors/artisan_procurement_vendor_conv.lua")
+
+-- PAINTING EXCHANGE CURATOR
+print("Loading conversations.lua - checking painting exchange curator...")
+includeFile("conversations/bellum/painting_exchange_curator_conv.lua")
+print("Finished loading painting exchange curator")
 print("Finished loading artisan procurement vendor")
