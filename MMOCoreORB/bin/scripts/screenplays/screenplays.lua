@@ -813,3 +813,7 @@ includeFile("vendors/artisan_procurement_vendor.lua")
 includeFile("player_bounty/player_bounty_system.lua")
 
 includeFile("static_spawns/master_bounty_guild.lua")
+
+-- Painting Exchange Vendor
+includeFile("bellum/painting_exchange_vendor.lua")
+includeFile("bellum/convos/painting_exchange_vendor_conv_handler.lua")

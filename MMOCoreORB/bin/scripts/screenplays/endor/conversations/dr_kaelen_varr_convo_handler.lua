@@ -38,6 +38,36 @@ function dr_kaelen_varr_convo_handler:runScreenHandlers(pConvTemplate, pPlayer, 
 		conversation:addOption("Refresh the mutation's last known location.", "repeat_stage4")
 	end
 
+	if (screenID == "objective_reminder") then
+		local state = GeneticistsFailedExperiment:getState(pPlayer)
+		local text
+
+		if (state == GeneticistsFailedExperiment.STAGE_1_COLLECT_DNA) then
+			local collected = GeneticistsFailedExperiment:getDataNumber(pPlayer, "dnaCount")
+			text = "You need DNA samples from Endor wildlife — bordoks, gurrecks, lantern birds, venom-filled arachne, or squalls. You have collected " .. collected .. " of 5 samples."
+		elseif (state == GeneticistsFailedExperiment.STAGE_1_COMPLETE) then
+			text = "Bring me the DNA samples you have collected. I am waiting here."
+		elseif (state == GeneticistsFailedExperiment.STAGE_2_ANALYZE_DNA) then
+			text = "Use the research terminal outside and run a full genetic stability scan on the samples."
+		elseif (state == GeneticistsFailedExperiment.STAGE_2_COMPLETE) then
+			text = "Return to me with the results of the genetic stability scan."
+		elseif (state == GeneticistsFailedExperiment.STAGE_3_CRAFT_COMPONENT) then
+			text = "Craft an experimental defensive tissue component at a crafting station and bring it to me."
+		elseif (state == GeneticistsFailedExperiment.STAGE_3_COMPLETE) then
+			text = "Bring me the experimental component you crafted."
+		elseif (state == GeneticistsFailedExperiment.STAGE_4_HUNT_EXPERIMENT and GeneticistsFailedExperiment:getDataNumber(pPlayer, "mutationKilled") == 0) then
+			text = "The mutated gurreck alpha is still out there. Hunt it down before it reaches the settlement."
+		elseif (state == GeneticistsFailedExperiment.STAGE_4_HUNT_EXPERIMENT) then
+			text = "The mutation has been neutralized. Return to me."
+		else
+			text = "Stay focused. Finish the current objective and return when the work is complete."
+		end
+
+		conversation:setCustomDialogText(text)
+		GeneticistsFailedExperiment:sendObjective(pPlayer)
+		return clonedScreen
+	end
+
 	if (screenID == "accept_quest") then
 		GeneticistsFailedExperiment:beginQuest(pPlayer)
 	elseif (screenID == "stage1_reward") then

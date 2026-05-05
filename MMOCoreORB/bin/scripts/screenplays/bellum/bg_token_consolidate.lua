@@ -1,6 +1,6 @@
 -- BG Token Consolidate Menu Component
 -- Adds a "Consolidate Tokens" right-click option to Bellum Gero Tokens.
--- When selected, all BG tokens in the player's inventory (including sub-bags)
+-- When selected, all BG tokens in the player's main inventory
 -- are merged into the clicked token via useCount (getCount/setCount).
 -- Only appears on items named "Bellum Gero Token" — actual jewelry settings
 -- used by crafters are unaffected.
@@ -36,8 +36,17 @@ local function isBgToken(pObject)
     return BG_TOKEN_TEMPLATE_SET[string.lower(tmpl)] == true
 end
 
--- Returns total count of all BG tokens found in the container (recursive).
-local function countTokensInContainer(container)
+local function isDirectChildOfInventory(pObject, pInventory)
+    if pObject == nil or pInventory == nil then return false end
+
+    local object = SceneObject(pObject)
+    if object == nil then return false end
+
+    return object:getParent() == pInventory
+end
+
+-- Returns total count of all BG tokens found directly in the main inventory.
+local function countTokensInInventory(container)
     local total = 0
     local containerObj = LuaSceneObject(container)
     if containerObj == nil then return 0 end
@@ -51,15 +60,44 @@ local function countTokensInContainer(container)
             if isBgToken(pObj) then
                 local cntOk, cnt = pcall(function() return LuaTangibleObject(pObj):getCount() end)
                 total = total + ((cntOk and cnt and cnt > 0) and cnt or 1)
-            else
-                total = total + countTokensInContainer(pObj)
             end
         end
     end
     return total
 end
 
--- Destroys all BG tokens in the container except the one with keeperOID.
+-- Returns true if any BG tokens are found in subcontainers of the main inventory.
+local function hasTokensInSubcontainers(container)
+    local containerObj = LuaSceneObject(container)
+    if containerObj == nil then return false end
+
+    local sizeOk, size = pcall(function() return containerObj:getContainerObjectsSize() end)
+    if not sizeOk or size == nil or size == 0 then return false end
+
+    for i = 0, size - 1 do
+        local pObj = containerObj:getContainerObject(i)
+        if pObj and not isBgToken(pObj) then
+            local childObj = LuaSceneObject(pObj)
+            if childObj then
+                local childSizeOk, childSize = pcall(function() return childObj:getContainerObjectsSize() end)
+                if childSizeOk and childSize and childSize > 0 then
+                    for j = 0, childSize - 1 do
+                        local pChild = childObj:getContainerObject(j)
+                        if pChild then
+                            if isBgToken(pChild) or hasTokensInSubcontainers(pChild) then
+                                return true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+-- Destroys all BG tokens in the main inventory except the one with keeperOID.
 -- Iterates backwards so destruction doesn't shift indices.
 local function destroyTokensExceptKeeper(container, keeperOID)
     local containerObj = LuaSceneObject(container)
@@ -78,8 +116,6 @@ local function destroyTokensExceptKeeper(container, keeperOID)
                         pcall(function() obj:destroyObjectFromWorld(true) end)
                         pcall(function() obj:destroyObjectFromDatabase(true) end)
                     end
-                else
-                    destroyTokensExceptKeeper(pObj, keeperOID)
                 end
             end
         end
@@ -106,7 +142,7 @@ function BgTokenMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedI
 
     if not isBgToken(pObject) then return 0 end
 
-    -- Verify the item is actually in the player's inventory tree
+    -- Verify the item is actually somewhere in the player's inventory tree
     if not SceneObject(pObject):isASubChildOf(pPlayer) then
         CreatureObject(pPlayer):sendSystemMessage("The token must be in your inventory.")
         return 0
@@ -118,10 +154,20 @@ function BgTokenMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedI
     local pInventory = pCreature:getSlottedObject("inventory")
     if pInventory == nil then return 0 end
 
+    if not isDirectChildOfInventory(pObject, pInventory) then
+        CreatureObject(pPlayer):sendSystemMessage("Bellum Gero Tokens must be in your main inventory to consolidate.")
+        return 0
+    end
+
+    if hasTokensInSubcontainers(pInventory) then
+        CreatureObject(pPlayer):sendSystemMessage("Bellum Gero Tokens must be in your main inventory to consolidate.")
+        return 0
+    end
+
     local keeperOID = SceneObject(pObject):getObjectID()
 
-    -- Count every BG token in inventory (including sub-bags)
-    local total = countTokensInContainer(pInventory)
+    -- Count every BG token directly in the main inventory only
+    local total = countTokensInInventory(pInventory)
 
     if total <= 1 then
         CreatureObject(pPlayer):sendSystemMessage("You have no other Bellum Gero Tokens to consolidate.")

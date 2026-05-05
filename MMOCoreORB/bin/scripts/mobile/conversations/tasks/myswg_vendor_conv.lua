@@ -288,6 +288,7 @@ special_npc1 = ConvoScreen:new {
         {"Check Worldboss Fire Spider - 1k", "special_npc_wb_fire_spider"},
         {"Check Torgas the Enslaver - 1k", "special_npc_torgas"},
         {"Check Bird of Prey - 1k", "special_npc_bird_of_prey"},
+        {"Check Primordial Warlord Grak - 1k", "special_npc_grak"},
         {"Main menu.", "first_screen"},
     }
 }
@@ -1029,6 +1030,14 @@ myswg_vendor_special_npc_bird_of_prey = ConvoScreen:new {
     options = { }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_special_npc_bird_of_prey);
+myswg_vendor_special_npc_grak = ConvoScreen:new {
+    id = "special_npc_grak",
+    leftDialog = "",
+    customDialogText = "Checking Primordial Warlord Grak...",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_grak);
 myswg_vendor_conv:addScreen(myswg_vendor_accept_quest);
 myswg_vendor_deny_quest = ConvoScreen:new {
     id = "deny_quest",
