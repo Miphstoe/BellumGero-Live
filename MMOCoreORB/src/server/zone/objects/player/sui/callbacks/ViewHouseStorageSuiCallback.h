@@ -28,6 +28,11 @@ public:
 		if (listBox == nullptr || building == nullptr)
 			return;
 
+		if (!building->isOnAdminList(player)) {
+			player->sendSystemMessage("@player_structure:admin_move_only");
+			return;
+		}
+
 		// Get selected index from args
 		if (args == nullptr || args->size() == 0)
 			return;
@@ -117,11 +122,15 @@ public:
 			);
 
 			if (transferSuccess) {
+				String itemName = selectedItem->getDisplayedName();
+				if (itemName.isEmpty())
+					itemName = "Unknown Item";
+
 				StringBuffer message;
 				if (selectedItem->isContainerObject()) {
-					message << "You retrieved '" << selectedItem->getDisplayedName() << "' to your datapad.";
+					message << "You retrieved '" << itemName << "' to your datapad.";
 				} else {
-					message << "You retrieved '" << selectedItem->getDisplayedName() << "' to your inventory.";
+					message << "You retrieved '" << itemName << "' to your inventory.";
 				}
 				player->sendSystemMessage(message.toString());
 
