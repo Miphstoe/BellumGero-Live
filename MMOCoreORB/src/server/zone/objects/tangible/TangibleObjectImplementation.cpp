@@ -1834,6 +1834,7 @@ bool TangibleObjectImplementation::isDecorativeObject() {
 	return (templatePath.contains("/furniture/") ||
 			templatePath.contains("/painting/") ||
 			templatePath.contains("/crafting/station/") ||
+			templatePath.contains("droid_chassis") ||
 			gameType == SceneObjectType::FURNITURE ||
 			gameType == SceneObjectType::CRAFTINGSTATION ||
 			gameType == SceneObjectType::LIGHTOBJECT);
