@@ -64,8 +64,11 @@ public:
 
 		CityManager* cityManager = mayor->getZoneServer()->getCityManager();
 
-		if(!city->isMayor(mayor->getObjectID())) {
-			mayor->sendSystemMessage("@player_structure:cant_place_civic"); //This structure must be placed within the borders of the city in which you are mayor.
+		bool isMayor = city->isMayor(mayor->getObjectID());
+		bool isMilitiaWithRights = city->hasMilitiaPermission(mayor->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_DECORATION);
+
+		if (!isMayor && !isMilitiaWithRights) {
+			mayor->sendSystemMessage("You do not have permission to place city decorations in this city.");
 			return;
 		}
 
@@ -150,8 +153,11 @@ public:
 
 		CityManager* cityManager = mayor->getZoneServer()->getCityManager();
 
-		if (!city->isMayor(mayor->getObjectID())) {
-			mayor->sendSystemMessage("@player_structure:cant_place_civic"); // This structure must be placed within the borders of the city in which you are mayor.
+		bool isMayor = city->isMayor(mayor->getObjectID());
+		bool isMilitiaWithRights = city->hasMilitiaPermission(mayor->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_DECORATION);
+
+		if (!isMayor && !isMilitiaWithRights) {
+			mayor->sendSystemMessage("You do not have permission to place city decorations in this city.");
 			return;
 		}
 
@@ -274,7 +280,8 @@ public:
 		if(city == nullptr)
 			return;
 
-		if(!city->isMayor(mayor->getObjectID())) {
+		if (!city->isMayor(mayor->getObjectID()) &&
+				!city->hasMilitiaPermission(mayor->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_DECORATION)) {
 			return;
 		}
 

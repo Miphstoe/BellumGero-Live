@@ -93,6 +93,7 @@ includeFile("bellum/field_captain_rax_vorn.lua")
 includeFile("bellum/war_general_kael_draxus.lua")
 includeFile("bellum/high_strategist_velkor_thane.lua")
 includeFile("bellum/supreme_warlord_darth_malvek.lua")
+includeFile("bellum/painting_exchange_curator.lua")
 -- Holocron Village Vendor (5 Holocrons of Destiny per item)
 includeFile("vendors/holocron_village_vendor.lua")
 

@@ -1015,6 +1015,12 @@ function AcklayPrivateInstance:ejectPlayerFromRoom(roomId, message)
 		return false
 	end
 
+	-- Skip the eject teleport if the player already left the instance planet on their own
+	-- (e.g., used a travel ticket). Teleporting them back would fight with their travel.
+	if (SceneObject(pPlayer):getZoneName() ~= self.planet) then
+		return false
+	end
+
 	if (message ~= nil and message ~= "") then
 		CreatureObject(pPlayer):sendSystemMessage(message)
 	end
@@ -1363,9 +1369,18 @@ function AcklayPrivateInstance:onPlayerLoggedOut(pPlayer)
 		return
 	end
 
-	self:setPlayerDataNumber(pPlayer, "loggedOutInside", 1)
+	-- Check BEFORE cleanup whether the player is actually inside the instance area.
+	-- If they left via travel ticket or other means, their zone/position already changed,
+	-- so we skip the loggedOutInside flag and just clean up the room.
+	local insideRoom = self:isPlayerInsideManagedRoom(pPlayer) or
+	                   (roomId ~= 0 and self:isPlayerInsideSpecificRoom(pPlayer, roomId))
 
 	if (roomId ~= 0) then
 		self:cleanupRoom(roomId)
+	end
+
+	-- Write AFTER cleanupRoom so clearPlayerData (called inside cleanup) doesn't overwrite it.
+	if (insideRoom) then
+		self:setPlayerDataNumber(pPlayer, "loggedOutInside", 1)
 	end
 end

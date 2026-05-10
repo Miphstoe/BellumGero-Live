@@ -164,14 +164,16 @@ int SpawnAreaImplementation::notifyObserverEvent(unsigned int eventType, Observa
 
 			Locker locker(area);
 
-			area->setRadius(ConfigManager::instance()->getSpawnCheckRange());
+			float noSpawnRadius = sceneO->getTemplateRadius() + ConfigManager::instance()->getSpawnCheckRange();
+
+			area->setRadius(noSpawnRadius);
 			area->addAreaFlag(ActiveArea::NOSPAWNAREA);
 			area->initializePosition(sceneO->getPositionX(), sceneO->getPositionZ(), sceneO->getPositionY());
 
 			thisZone->transferObject(area, -1, true);
 
 			Reference<Task*> task = new RemoveNoSpawnAreaTask(area);
-			task->schedule(30000);
+			task->schedule(ConfigManager::instance()->getLairNoSpawnDuration());
 		}
 	}
 

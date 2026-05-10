@@ -31,6 +31,7 @@ AcklayWorldBossLoot = ScreenPlay:new {
   FIRST_BROADCAST_DELAY = 240,      -- 4 minutes after spawn
   REPEAT_EVERY_SECONDS  = 10800,    -- every 3 hours
   DATA_BOSS_OID         = "AcklayWorldBossLoot:bossOID",
+  DATA_NEXT_SPAWN       = "AcklayWorldBossLoot:nextSpawnAt",
   DATA_NEXT_BCAST_AT    = "AcklayWorldBossLoot:nextBcastAt",
   DATA_LOOP_STARTED     = "AcklayWorldBossLoot:loopStarted",
 
@@ -117,6 +118,9 @@ function AcklayWorldBossLoot:spawnBoss()
     local oid = boss:getObjectID()
     if writeData then writeData(self.DATA_BOSS_OID, oid) end
   end
+  if writeData then
+    writeData(self.DATA_NEXT_SPAWN, 0)
+  end
 
   -- Schedule first galaxy broadcast
   if writeData then
@@ -185,6 +189,7 @@ function AcklayWorldBossLoot:onBossDeath(pBoss, pKiller)
   if writeData then
     writeData(self.DATA_NEXT_BCAST_AT, 0)
     writeData(self.DATA_BOSS_OID, 0)
+    writeData(self.DATA_NEXT_SPAWN, os.time() + self.respawnSeconds)
   end
   self.bossPtr = nil
 

@@ -390,4 +390,9 @@ print("Finished loading holocron village vendor")
 -- ARTISAN PROCUREMENT VENDOR
 print("Loading conversations.lua - checking artisan procurement vendor...")
 includeFile("conversations/vendors/artisan_procurement_vendor_conv.lua")
+
+-- PAINTING EXCHANGE CURATOR
+print("Loading conversations.lua - checking painting exchange curator...")
+includeFile("conversations/bellum/painting_exchange_curator_conv.lua")
+print("Finished loading painting exchange curator")
 print("Finished loading artisan procurement vendor")

@@ -3,6 +3,9 @@ local ObjectManager = require("managers.object.object_manager")
 GeonosianLab = ScreenPlay:new {
 	keypadCodes = { 32281, 12872, 51892, 12753, 86332, 11380, 52577, 78660 },
 	lockedCells = { 1627785, 1627786, 1627790, 1627805, 1627812, 1627815, 1627822, 1627823 },
+	geoCaveAcklayTemplate = "acklay",
+	geoCaveAcklayRespawnSeconds = 2700,
+	geoCaveAcklaySpawn = { planet = "yavin4", x = 101.1, z = -34.3, y = -321.6, heading = -136, cell = 1627823 },
 
 	trapLocs = {
 		{ "object/tangible/theme_park/invisible_object.iff", -0.25, 1.86, -26.1, 1627783 }, -- hall2
@@ -252,6 +255,40 @@ function GeonosianLab:spawnSceneObjects()
 	end
 end
 
+function GeonosianLab:getAcklayDataKey(suffix)
+	return "geoLab:acklay:" .. suffix
+end
+
+function GeonosianLab:spawnTrackedAcklay()
+	local spawn = self.geoCaveAcklaySpawn
+	local pAcklay = spawnMobile(spawn.planet, self.geoCaveAcklayTemplate, 0, spawn.x, spawn.z, spawn.y, spawn.heading, spawn.cell, true)
+
+	if (pAcklay == nil) then
+		printLuaError("GeonosianLab: failed to spawn tracked cave Acklay.")
+		return nil
+	end
+
+	writeData(self:getAcklayDataKey("oid"), SceneObject(pAcklay):getObjectID())
+	writeData(self:getAcklayDataKey("nextRespawnAt"), 0)
+	createObserver(OBJECTDESTRUCTION, "GeonosianLab", "notifyTrackedAcklayKilled", pAcklay)
+
+	return pAcklay
+end
+
+function GeonosianLab:notifyTrackedAcklayKilled(pAcklay, pKiller)
+	deleteData(self:getAcklayDataKey("oid"))
+	writeData(self:getAcklayDataKey("nextRespawnAt"), os.time() + self.geoCaveAcklayRespawnSeconds)
+	createEvent(self.geoCaveAcklayRespawnSeconds * 1000, "GeonosianLab", "respawnTrackedAcklay", nil, "")
+
+	return 1
+end
+
+function GeonosianLab:respawnTrackedAcklay()
+	self:spawnTrackedAcklay()
+
+	return 0
+end
+
 function GeonosianLab:spawnMobiles()
 	-- cave_entrance (1627781)
 	spawnMobile("yavin4", "biogenic_crazyguy", 1, -2.8, 10.8, 10.2, 69, 1627781)
@@ -421,7 +458,7 @@ function GeonosianLab:spawnMobiles()
 	spawnMobile("yavin4", "cavern_spider",180,13.4,-22.0,-337.3,-179,1627822)
 
 	-- largeendcave (1627823)
-	spawnMobile("yavin4", "acklay", 2700, 101.1, -34.3, -321.6, -136, 1627823, true)--Randomized respawn
+	self:spawnTrackedAcklay()
 	spawnMobile("yavin4", "enhanced_kwi",180,48.0,-34.0,-334.4,0,1627823)
 	spawnMobile("yavin4", "cavern_spider",180,91.2,-33.9,-347.9,5,1627823)
 	spawnMobile("yavin4", "enhanced_kliknik",180,98.0,-34.1,-334.4,-53,1627823)

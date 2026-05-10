@@ -329,6 +329,10 @@ function RoriRestussScreenPlay:spawnTheHand()
 	local pTheHand = spawnMobile(self.planet, "the_hand", 0, 5316, 80, 5652, getRandomNumber(360), 0)
 	if pTheHand == nil then return end
 
+	local bossOID = SceneObject(pTheHand):getObjectID()
+	writeData("RoriRestuss:TheHand:bossOID", bossOID)
+	writeData("RoriRestuss:TheHand:nextRespawnAt", 0)
+
 	createObserver(DAMAGERECEIVED,   self.screenplayName, "onHandDamage",   pTheHand)
 	createObserver(OBJECTDESTRUCTION, self.screenplayName, "onTheHandKilled", pTheHand)
 end
@@ -340,6 +344,8 @@ end
 
 -- Stub — overridden by the_hand_boss_loot_wrapper.lua
 function RoriRestussScreenPlay:onTheHandKilled(pVictim, pKiller)
+	writeData("RoriRestuss:TheHand:bossOID", 0)
+	writeData("RoriRestuss:TheHand:nextRespawnAt", os.time() + 2700)
 	createEvent(2700000, self.screenplayName, "respawnTheHand", pVictim, "")
 	return 1
 end

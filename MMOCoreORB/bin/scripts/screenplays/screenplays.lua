@@ -204,6 +204,7 @@ includeFile("village/phase2/fs_sad_1_theaters/fs_sad_1_theater_1.lua")
 includeFile("bellum/bg_force_path_of_awakening.lua")
 includeFile("bellum/bg_aurelia_rite_of_awakening.lua")
 includeFile("bellum/bg_token_consolidate.lua")
+includeFile("bellum/bg_sunday_dantooine_event.lua")
 includeFile("bellum/galaxy_combat_board_data.lua")
 includeFile("bellum/galaxy_combat_board_handler.lua")
 includeFile("bellum/galaxy_combat_board.lua")
@@ -801,6 +802,8 @@ includeFile("yavin4/egspider_worldboss_loot_wrapper.lua")  -- Add automatic loot
 includeFile("world/infernomaw_boss.lua")
 includeFile("world/infernomaw_boss_loot_wrapper.lua")  -- Add automatic loot distribution
 includeFile("world/torgas_worldboss.lua")
+includeFile("world/primordial_warlord_grak_worldboss.lua")
+includeFile("world/primordial_warlord_grak_loot_wrapper.lua")
 --includeFile("world/jarjar_worldboss.lua")
 --includeFile("world/jarjar_worldboss_simple.lua")
 --includeFile("world/jarjar_worldboss_loot_wrapper.lua")  -- Add automatic loot distribution
@@ -819,6 +822,10 @@ includeFile("vendors/artisan_procurement_vendor.lua")
 includeFile("player_bounty/player_bounty_system.lua")
 
 includeFile("static_spawns/master_bounty_guild.lua")
+
+-- Painting Exchange Vendor
+includeFile("bellum/painting_exchange_vendor.lua")
+includeFile("bellum/convos/painting_exchange_vendor_conv_handler.lua")
 
 -- Mandalorian Way of Life (loaded again after vendors/bounty so start() runs last among globals — original Bellum ordering)
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")

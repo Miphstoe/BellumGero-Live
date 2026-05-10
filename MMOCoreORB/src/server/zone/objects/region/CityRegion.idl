@@ -63,6 +63,9 @@ class CityRegion extends ManagedObject implements Logger {
 	protected CitizenList militiaMembers;
 
 	@dereferenced
+	protected VectorMap<unsigned long, byte> militiaPermissions;
+
+	@dereferenced
 	protected CitizenList citizenList;
 
 	@dereferenced
@@ -150,6 +153,12 @@ class CityRegion extends ManagedObject implements Logger {
 	public static final byte TAX_TRAVEL = 3;
 	public static final byte TAX_GARAGE = 4;
 
+	public static final byte MILITIA_PERMISSION_NONE = 0x00;
+	public static final byte MILITIA_PERMISSION_PLACE_CIVIC = 0x01;
+	public static final byte MILITIA_PERMISSION_PLACE_DECORATION = 0x02;
+	public static final byte MILITIA_PERMISSION_PLACE_MISSION_TERMINAL = 0x04;
+	public static final byte MILITIA_PERMISSION_RECRUIT_SKILL_TRAINER = 0x08;
+
 	public CityRegion(boolean newCity = false) {
 		loaded = newCity;
 
@@ -206,10 +215,12 @@ class CityRegion extends ManagedObject implements Logger {
 
 	public void addMilitiaMember(unsigned long objectid) {
 		militiaMembers.put(objectid);
+		militiaPermissions.put(objectid, MILITIA_PERMISSION_NONE);
 	}
 
 	public void removeMilitiaMember(unsigned long objectid) {
 		militiaMembers.drop(objectid);
+		militiaPermissions.drop(objectid);
 	}
 
 	@dirty
@@ -227,6 +238,30 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@dirty
 	public native boolean hasZoningRights(unsigned long objectid);
+
+	@dirty
+	public boolean hasMilitiaPermission(unsigned long objectid, byte permission) {
+		if (mayorID == objectid)
+			return true;
+
+		if (!militiaMembers.contains(objectid))
+			return false;
+
+		return (militiaPermissions.get(objectid) & permission) != 0;
+	}
+
+	@preLocked
+	public void toggleMilitiaPermission(unsigned long objectid, byte permission) {
+		if (!militiaMembers.contains(objectid))
+			return;
+
+		byte current = militiaPermissions.get(objectid);
+
+		if ((current & permission) != 0)
+			militiaPermissions.put(objectid, current - permission);
+		else
+			militiaPermissions.put(objectid, current + permission);
+	}
 
 	@read
 	public boolean containsPoint(float x, float y) {

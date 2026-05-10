@@ -47,7 +47,18 @@ public:
 		if (ghost == nullptr)
 			return GENERALERROR;
 
-		if (!ghost->isOwnedStructure(structure) && !ghost->isStaff()) {
+		bool canDestroyCityCivic = false;
+
+		if (structure->isCivicStructure()) {
+			ManagedReference<CityRegion*> city = structure->getCityRegion().get();
+
+			if (city != nullptr && structure->getCityRegion() == creature->getCityRegion() &&
+					city->hasMilitiaPermission(creature->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC)) {
+				canDestroyCityCivic = true;
+			}
+		}
+
+		if (!ghost->isOwnedStructure(structure) && !ghost->isStaff() && !canDestroyCityCivic) {
 			creature->sendSystemMessage("@player_structure:destroy_must_be_owner"); //You must be the owner to destroy a structure.
 			return INVALIDTARGET;
 		}

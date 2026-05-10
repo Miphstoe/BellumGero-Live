@@ -610,8 +610,8 @@ SceneObject* ObjectManager::cloneObject(SceneObject* object, bool makeTransient)
 
 	Locker locker(clonedObject);
 
-	clonedObject->readObject(&objectInput);
 	clonedObject->createComponents();
+	clonedObject->readObject(&objectInput);
 	clonedObject->setParent(nullptr);
 
 	VectorMap<String, ManagedReference<SceneObject*> > slottedObjects;

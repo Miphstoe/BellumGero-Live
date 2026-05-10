@@ -93,6 +93,8 @@ public:
 			return GENERALERROR;
 		}
 
+		ghost->setSnoopedPlayerID(0);
+
 		String container = "";
 
 		if (args.hasMoreTokens()) {
@@ -102,6 +104,7 @@ public:
 		container = container.toLowerCase();
 
 		if (container == "equipment") {
+			ghost->setSnoopedPlayerID(targetCreature->getObjectID());
 			targetCreature->sendWithoutParentTo(creature);
 			targetCreature->openContainerTo(creature);
 		} else if (container == "datapad") {
@@ -111,6 +114,7 @@ public:
 				return GENERALERROR;
 			}
 
+			ghost->setSnoopedPlayerID(targetCreature->getObjectID());
 			creatureDatapad->sendWithoutParentTo(creature);
 			creatureDatapad->openContainerTo(creature);
 		} else if (container == "bank") {
@@ -119,6 +123,7 @@ public:
 			if (creatureBank == nullptr)
 				return GENERALERROR;
 
+			ghost->setSnoopedPlayerID(targetCreature->getObjectID());
 			creatureBank->sendWithoutParentTo(creature);
 			creatureBank->openContainerTo(creature);
 		} else if (container == "credits") {
@@ -241,6 +246,7 @@ public:
 			if (creatureInventory == nullptr)
 				return GENERALERROR;
 
+			ghost->setSnoopedPlayerID(targetCreature->getObjectID());
 			creatureInventory->sendWithoutParentTo(creature);
 			creatureInventory->openContainerTo(creature);
 		}
@@ -507,7 +513,7 @@ public:
 
 		body << "Player Name:\t" << target->getFirstName() << endl;
 		body << "Unused Account Lots:\t" << String::valueOf(lotsRemaining) << endl;
-		body << "Account Lot Usage:\t" << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << endl << endl;
+		body << "Account Lot Usage:\t" << targetGhost->getLotsUsed() << " / " << structureManager->getAccountLotCap(target) << endl << endl;
 		body << "Player Structures:";
 
 		for (int i = 0; i < targetGhost->getTotalOwnedStructureCount(); i++) {

@@ -31,6 +31,7 @@ object_tangible_wearables_robe_robe_chronicle_master = object_tangible_wearables
 	},
 
 	objectMenuComponent = "RobeObjectMenuComponent",
+	certificationsRequired = {"force_title_jedi_rank_03"},
 	attributeListComponent = "JediRobeAttributeListComponent",
 }
 

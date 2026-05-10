@@ -51,6 +51,7 @@ object_tangible_wearables_robe_robe_inquisitor = object_tangible_wearables_robe_
 	},
 
 	objectMenuComponent = "RobeObjectMenuComponent",
+	certificationsRequired = {"force_title_jedi_rank_03"},
 	attributeListComponent = "JediRobeAttributeListComponent",
 
 	playerRaces = { "object/creature/player/bothan_male.iff",

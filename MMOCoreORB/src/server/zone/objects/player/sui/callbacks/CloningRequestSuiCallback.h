@@ -11,6 +11,7 @@
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/objects/tangible/components/HeroRingMenuComponent.h"
 
 class CloningRequestSuiCallback : public SuiCallback {
 	int typeofdeath;
@@ -40,8 +41,20 @@ public:
 			return;
 		}
 
+		uint64 selectedObjectID = listbox->getMenuObjectID(index);
+		WearableObject* heroRing = HeroRingMenuComponent::getEquippedHeroRing(player);
+
+		if (heroRing != nullptr && heroRing->getObjectID() == selectedObjectID) {
+			if (!HeroRingMenuComponent::activateHeroRing(player, heroRing, true)) {
+				PlayerManager* playerManager = server->getPlayerManager();
+				playerManager->sendActivateCloneRequest(player, typeofdeath);
+			}
+
+			return;
+		}
+
 		PlayerManager* playerManager = server->getPlayerManager();
-		playerManager->sendPlayerToCloner(player, listbox->getMenuObjectID(index), typeofdeath);
+		playerManager->sendPlayerToCloner(player, selectedObjectID, typeofdeath);
 	}
 };
 

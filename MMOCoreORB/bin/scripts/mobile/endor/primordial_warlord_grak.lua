@@ -31,68 +31,10 @@ primordial_warlord_grak = Creature:new {
 
 	templates = {"object/mobile/bull_rancor.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
-	lootGroups = {
-		{
-			groups = {
-				{group = "krayt_tissue_rare", chance = 4000000},
-				{group = "krayt_pearls", chance = 3000000},
-				{group = "armor_attachments", chance = 1500000},
-				{group = "clothing_attachments", chance = 1500000}
-			},
-			lootChance = 10000000
-		},
-		{
-			groups = {
-				{group = "krayt_tissue_rare", chance = 4000000},
-				{group = "krayt_pearls", chance = 3000000},
-				{group = "armor_attachments", chance = 1500000},
-				{group = "clothing_attachments", chance = 1500000}
-			},
-			lootChance = 7000000
-		},
-		{
-			groups = {
-				{group = "krayt_tissue_rare", chance = 4000000},
-				{group = "krayt_pearls", chance = 3000000},
-				{group = "armor_attachments", chance = 1500000},
-				{group = "clothing_attachments", chance = 1500000}
-			},
-			lootChance = 5000000
-		},
-		{
-			groups = {
-				{group = "krayt_tissue_rare", chance = 4000000},
-				{group = "krayt_pearls", chance = 3000000},
-				{group = "armor_attachments", chance = 1500000},
-				{group = "clothing_attachments", chance = 1500000}
-			},
-			lootChance = 2500000
-		},
-		{
-			groups = {
-				{group = "krayt_pearls", chance = 10000000}
-			},
-			lootChance = 1500000
-		},
-		{
-			groups = {
-				{group = "krayt_pearls", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "endgame_weapon_schematics", chance = 10000000}
-			},
-			lootChance = 1500000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 350000
-		}
-	},
+	-- Corpse loot disabled; the world boss screenplay distributes shared rewards.
+	lootGroups = {},
+	cashMin = 0,
+	cashMax = 0,
 
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",

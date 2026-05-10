@@ -13,7 +13,8 @@ void CityFactionTroopMenuComponent::fillObjectMenuResponse(SceneObject* sceneObj
 
 	ManagedReference<CityRegion*> city = sceneObject->getCityRegion().get();
 
-	if (city != nullptr && city->isMayor(player->getObjectID()))
+	if (city != nullptr && (city->isMayor(player->getObjectID())
+			|| city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC)))
 		menuResponse->addRadialMenuItem(72, 3, "@city/city:mt_remove"); // Remove
 }
 
@@ -21,7 +22,8 @@ int CityFactionTroopMenuComponent::handleObjectMenuSelect(SceneObject* sceneObje
 	if (selectedID == 72) {
 		ManagedReference<CityRegion*> city = sceneObject->getCityRegion().get();
 
-		if (city != nullptr && city->isMayor(player->getObjectID())) {
+		if (city != nullptr && (city->isMayor(player->getObjectID())
+				|| city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC))) {
 			CityRemoveFactionTroopTask* task = new CityRemoveFactionTroopTask(sceneObject, city);
 			task->execute();
 			player->sendSystemMessage("@city/city:mt_removed"); // The object has been removed from the city.

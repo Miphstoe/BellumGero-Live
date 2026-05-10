@@ -817,7 +817,8 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 	// Check if this is a civic structure and the player is the mayor
 	if (isCivicStructure()) {
 		ManagedReference<CityRegion*> city = const_cast<ManagedWeakReference<CityRegion*>&>(cityRegion).get();
-		if (city != nullptr && city->isMayor(player->getObjectID()))
+		if (city != nullptr && (city->isMayor(player->getObjectID())
+				|| city->hasMilitiaPermission(player->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC)))
 			return true;
 	}
 

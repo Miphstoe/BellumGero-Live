@@ -106,7 +106,7 @@ public:
 
 		StringBuffer promptText;
 		promptText << "You own " << sortedIndices.size() << " structure(s). Click on a structure to create a waypoint.\n";
-		promptText << "Account Lot Usage: " << ghost->getLotsUsed() << " / " << structureManager->getAccountLotCap() << " lots";
+		promptText << "Account Lot Usage: " << ghost->getLotsUsed() << " / " << structureManager->getAccountLotCap(creature) << " lots";
 
 		box->setPromptText(promptText.toString());
 		box->setUsingObject(creature);

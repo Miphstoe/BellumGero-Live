@@ -10,7 +10,6 @@
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/creature/CreatureObject.h"
-#include "server/zone/objects/player/sessions/CityRemoveMilitiaSession.h"
 
 void CityManageMilitiaSuiCallback::run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
 	bool cancelPressed = (eventIndex == 1);
@@ -27,7 +26,7 @@ void CityManageMilitiaSuiCallback::run(CreatureObject* player, SuiBox* suiBox, u
 
 	SuiListBox* listBox = cast<SuiListBox*>(suiBox);
 
-	if (index < 0 || index > listBox->getMenuSize())
+	if (index < 0 || index >= listBox->getMenuSize())
 		return;
 
 	uint64 objectid = listBox->getMenuObjectID(index);
@@ -37,8 +36,6 @@ void CityManageMilitiaSuiCallback::run(CreatureObject* player, SuiBox* suiBox, u
 	if (objectid == 0) { //Add militia member dialog
 		cityManager->promptAddMilitiaMember(city, player, suiBox->getUsingObject().get());
 	} else {
-		ManagedReference<CityRemoveMilitiaSession*> session = new CityRemoveMilitiaSession(player, city, objectid);
-		player->addActiveSession(SessionFacadeType::CITYMILITIA, session);
-		session->initializeSession();
+		cityManager->sendMilitiaMemberPermissions(city, player, objectid, suiBox->getUsingObject().get());
 	}
 }

@@ -15,6 +15,7 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/managers/city/CityRemoveAmenityTask.h"
 
 void BankTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (creature == nullptr)
@@ -33,6 +34,13 @@ void BankTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject,
 	menuResponse->addRadialMenuItemToRadialID(20, 71, 3, "@sui:bank_join");
 	// Quit Bank - no checks here since there are error message stfs
 	menuResponse->addRadialMenuItemToRadialID(20, 72, 3, "@sui:bank_quit");
+
+	ManagedReference<CityRegion*> city = sceneObject->getCityRegion().get();
+	if (city != nullptr && sceneObject->getParent().get() == nullptr &&
+			(city->isMayor(creature->getObjectID())
+			|| city->hasMilitiaPermission(creature->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC))) {
+		menuResponse->addRadialMenuItem(74, 3, "@city/city:mt_remove"); // Remove
+	}
 
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, creature);
 }
@@ -153,9 +161,17 @@ int BankTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 		creature->addCashCredits(cash);
 
 		return 0;
+	} else if (selectedID == 74) {
+		if (region != nullptr && (region->isMayor(creature->getObjectID())
+				|| region->hasMilitiaPermission(creature->getObjectID(), CityRegion::MILITIA_PERMISSION_PLACE_CIVIC))) {
+			CityRemoveAmenityTask* task = new CityRemoveAmenityTask(sceneObject, region);
+			task->execute();
+			creature->sendSystemMessage("@city/city:mt_removed");
+		}
+
+		return 0;
 	} else
 		return TangibleObjectMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
 
 	return 0;
 }
-

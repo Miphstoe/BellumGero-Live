@@ -75,8 +75,13 @@
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/objects/player/sui/callbacks/CloningRequestSuiCallback.h"
+#include "server/zone/objects/tangible/components/HeroRingMenuComponent.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/objects/tangible/tool/CraftingTool.h"
+
+namespace {
+	const String EXTRA_CHARACTER_SLOT_REWARD = "reward:special/character_slot_unlock";
+}
 
 #include "server/zone/Zone.h"
 #include "server/zone/managers/player/creation/PlayerCreationManager.h"
@@ -1676,6 +1681,11 @@ void PlayerManagerImplementation::sendActivateCloneRequest(CreatureObject* playe
 
 	if (preDesignatedFacility != nullptr && preDesignatedFacility->getZone() == zone)
 		cloneMenu->addMenuItem("@base_player:revive_bind", preDesignatedFacility->getObjectID());
+
+	WearableObject* heroRing = HeroRingMenuComponent::getEquippedHeroRing(player);
+
+	if (HeroRingMenuComponent::canActivateHeroRing(player, heroRing))
+		cloneMenu->addMenuItem("@quest/hero_of_tatooine/system_messages:menu_restore", heroRing->getObjectID());
 
 	for (int i = 0; i < locations.size(); i++) {
 		ManagedReference<SceneObject*> loc = locations.get(i);
@@ -5871,12 +5881,10 @@ void PlayerManagerImplementation::claimVeteranRewards(CreatureObject* player) {
 
 		SharedObjectTemplate* rewardTemplate = TemplateManager::instance()->getTemplate(reward.getTemplateFile().hashCode());
 
-		if (rewardTemplate != nullptr) {
-			if (reward.getDescription().isEmpty()) {
-				box->addMenuItem(rewardTemplate->getDetailedDescription(), i);
-			} else {
-				box->addMenuItem(reward.getDescription(), i);
-			}
+		if (!reward.getDescription().isEmpty()) {
+			box->addMenuItem(reward.getDescription(), i);
+		} else if (rewardTemplate != nullptr) {
+			box->addMenuItem(rewardTemplate->getDetailedDescription(), i);
 		}
 	}
 
@@ -5993,29 +6001,34 @@ void PlayerManagerImplementation::generateVeteranReward(CreatureObject* player) 
 	}
 
 	VeteranReward reward = veteranRewards.get(rewardSession->getSelectedRewardIndex());
-	Reference<SceneObject*> rewardSceno = server->createObject(reward.getTemplateFile().hashCode(), 1);
 
-	if (rewardSceno == nullptr) {
-		player->sendSystemMessage("@veteran:reward_error"); //	The reward could not be granted.
-		cancelVeteranRewardSession(player);
-		return;
-	}
+	if (reward.getTemplateFile() == EXTRA_CHARACTER_SLOT_REWARD) {
+		player->sendSystemMessage("Your account has unlocked 1 additional character slot on this galaxy.");
+	} else {
+		Reference<SceneObject*> rewardSceno = server->createObject(reward.getTemplateFile().hashCode(), 1);
 
-	{
-		TransactionLog trx(TrxCode::VETERANREWARD, player, rewardSceno);
-
-		// Transfer to player
-		if (!inventory->transferObject(rewardSceno, -1, false, true)) { // Allow overflow
-			trx.abort() << "Failed to transfer to player inventory";
+		if (rewardSceno == nullptr) {
 			player->sendSystemMessage("@veteran:reward_error"); //	The reward could not be granted.
-			rewardSceno->destroyObjectFromDatabase(true);
 			cancelVeteranRewardSession(player);
 			return;
 		}
-	}
 
-	inventory->broadcastObject(rewardSceno, true);
-	player->sendSystemMessage("@veteran:reward_given");  // Your reward has been placed in your inventory.
+		{
+			TransactionLog trx(TrxCode::VETERANREWARD, player, rewardSceno);
+
+			// Transfer to player
+			if (!inventory->transferObject(rewardSceno, -1, false, true)) { // Allow overflow
+				trx.abort() << "Failed to transfer to player inventory";
+				player->sendSystemMessage("@veteran:reward_error"); //	The reward could not be granted.
+				rewardSceno->destroyObjectFromDatabase(true);
+				cancelVeteranRewardSession(player);
+				return;
+			}
+		}
+
+		inventory->broadcastObject(rewardSceno, true);
+		player->sendSystemMessage("@veteran:reward_given");  // Your reward has been placed in your inventory.
+	}
 
 	// Record reward in all characters registered to the account
 	GalaxyAccountInfo* accountInfo = account->getGalaxyAccountInfo(player->getZoneServer()->getGalaxyName());

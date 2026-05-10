@@ -325,6 +325,7 @@ class PlayerObject extends IntangibleObject {
 	protected transient unsigned long sessionStatsTotalMovement;
 	protected transient unsigned long sessionStatsTotalCredits;
 	protected transient string sessionStatsIPAddress;
+	protected transient unsigned long snoopedPlayerID;
 
 	public static final int ONLINE = 1;
 	public static final int OFFLINE = 2;
@@ -381,6 +382,7 @@ class PlayerObject extends IntangibleObject {
 		chosenVeteranRewards.setNoDuplicateInsertPlan();
 
 		accountID = 0;
+		snoopedPlayerID = 0;
 
 		clientLastMovementStamp = 0;
 
@@ -1404,6 +1406,28 @@ class PlayerObject extends IntangibleObject {
 	@read
 	public boolean isAdmin() {
 		return (adminLevel == 15 && hasAbility("admin"));
+	}
+
+	public void setSnoopedPlayerID(unsigned long id) {
+		snoopedPlayerID = id;
+	}
+
+	@read
+	public unsigned long getSnoopedPlayerID() {
+		return snoopedPlayerID;
+	}
+
+	@read
+	public boolean hasSnoopAccess(SceneObject sceneObject) {
+		if (!isPrivileged() || snoopedPlayerID == 0 || sceneObject == null) {
+			return false;
+		}
+
+		if (sceneObject.getObjectID() == snoopedPlayerID) {
+			return true;
+		}
+
+		return sceneObject.getRootParent().getObjectID() == snoopedPlayerID;
 	}
 
 	public native boolean setPlayerBit(unsigned int bit, boolean notifyClient = false);
