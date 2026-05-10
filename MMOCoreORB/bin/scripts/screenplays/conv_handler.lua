@@ -1317,6 +1317,7 @@ function conv_handler:getHolocronReward(screenId)
         ["give_holo_12"] = {name = "Dark Banner", template = "object/tangible/furniture/jedi/frn_all_banner_dark.iff"},
         ["give_holo_13"] = {name = "Light Banner", template = "object/tangible/furniture/jedi/frn_all_banner_light.iff"},
         ["give_holo_11"] = {name = "30k Stack Resource Deed", template = "object/tangible/veteran_reward/resource.iff"},
+        ["give_holo_14"] = {name = "Small Aurillian Plant", template = "object/tangible/loot/plant_grow/plant_stage_1.iff"},
     }
     return rewards[screenId]
 end
