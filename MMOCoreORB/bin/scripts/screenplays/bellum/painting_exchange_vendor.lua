@@ -208,7 +208,10 @@ function PaintingExchangeVendor:countEligiblePaintings(pPlayer)
 		if (pItem ~= nil) then
 			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
 			if (templateOk and tmpl ~= nil and self.acceptedPaintings[tmpl] == true) then
-				total = total + 1
+				local crafterOk, crafter = pcall(function() return TangibleObject(pItem):getCraftersName() end)
+				if (crafterOk and (crafter == nil or crafter == "")) then
+					total = total + 1
+				end
 			end
 		end
 	end
@@ -239,7 +242,10 @@ function PaintingExchangeVendor:getEligiblePaintingObjects(pPlayer)
 		if (pItem ~= nil) then
 			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
 			if (templateOk and tmpl ~= nil and self.acceptedPaintings[tmpl] == true) then
-				found[#found + 1] = pItem
+				local crafterOk, crafter = pcall(function() return TangibleObject(pItem):getCraftersName() end)
+				if (crafterOk and (crafter == nil or crafter == "")) then
+					found[#found + 1] = pItem
+				end
 			end
 		end
 	end
