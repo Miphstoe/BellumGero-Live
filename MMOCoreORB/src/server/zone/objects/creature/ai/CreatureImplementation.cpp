@@ -357,6 +357,25 @@ bool CreatureImplementation::hasBeenMilked() const {
 	return milkState == CreatureManager::ALREADYMILKED;
 }
 
+bool CreatureImplementation::canDroidMilkMe(CreatureObject* owner, CreatureObject* droid) {
+	if (getMilk() <= 0)
+		return false;
+
+	if (milkState == CreatureManager::ALREADYMILKED || milkState == CreatureManager::BEINGMILKED)
+		return false;
+
+	if (_this.getReferenceUnsafeStaticCast()->isInCombat() || _this.getReferenceUnsafeStaticCast()->isDead() || isPet())
+		return false;
+
+	if (droid == nullptr || droid->isInCombat() || droid->isDead() || droid->isIncapacitated())
+		return false;
+
+	if (!isInRange(droid, 32.0f))
+		return false;
+
+	return true;
+}
+
 bool CreatureImplementation::hasSkillToSampleMe(CreatureObject* player) {
 
 	if(!player->hasSkill("outdoors_bio_engineer_novice"))
