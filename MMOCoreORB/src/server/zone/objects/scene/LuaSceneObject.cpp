@@ -557,7 +557,14 @@ int LuaSceneObject::getRootParent(lua_State* L) {
 }
 
 int LuaSceneObject::getContainerObject(lua_State* L) {
-	int idx = lua_tonumber(L, -1);
+	const int idx = (int)lua_tointeger(L, -1);
+
+	// VectorMap::get(int) is sorted-slot index, not object id; out-of-range indexes throw in C++.
+	const int n = realObject->getContainerObjectsSize();
+	if (idx < 0 || idx >= n) {
+		lua_pushnil(L);
+		return 1;
+	}
 
 	SceneObject* obj = realObject->getContainerObject(idx);
 

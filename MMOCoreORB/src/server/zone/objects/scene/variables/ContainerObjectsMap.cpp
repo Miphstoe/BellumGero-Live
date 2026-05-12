@@ -236,6 +236,10 @@ ManagedReference<SceneObject*> ContainerObjectsMap::get(int index) {
 
 	ReadLocker locker(containerLock);
 
+	// Slot index, not OID. Out-of-range must not throw — Lua/C++ callers can race or pass stale indexes.
+	if (index < 0 || index >= containerObjects.size())
+		return nullptr;
+
 	return containerObjects.get(index);
 }
 
