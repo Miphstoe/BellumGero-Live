@@ -3,6 +3,7 @@
 
 #include "server/zone/objects/scene/components/DataObjectComponent.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "system/util/VectorMap.h"
 
 class DoctorBuffDroidDataComponent : public DataObjectComponent {
 public:
@@ -68,9 +69,16 @@ private:
 	int activeJantaBonus;
 	uint64 activeJantaExpiresAt;
 
+	// Ad barking
+	SerializableString adBarkText;
+	bool adBarkEnabled;
+	VectorMap<uint64, uint64> barkCooldowns; // transient: playerOid -> last bark time (ms)
+
 	mutable Mutex dataMutex;
 
 public:
+	static constexpr float BARK_RANGE = 20.0f;
+	static constexpr uint64 BARK_COOLDOWN_MS = 60000ULL;
 	DoctorBuffDroidDataComponent();
 
 	void writeJSON(nlohmann::json& j) const override;
@@ -145,6 +153,13 @@ public:
 	int withdrawEarnings();
 
 	int getMinimumPriceFloor() const;
+
+	String getAdBarkText() const;
+	void setAdBarkText(const String& text);
+	bool isAdBarkEnabled() const;
+	void setAdBarkEnabled(bool enabled);
+	bool canBarkAtPlayer(uint64 playerOid, uint64 nowMs) const;
+	void recordBark(uint64 playerOid, uint64 nowMs);
 };
 
 #endif

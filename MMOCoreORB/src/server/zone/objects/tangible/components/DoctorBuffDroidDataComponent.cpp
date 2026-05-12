@@ -89,6 +89,9 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	activeJantaBonus = 0;
 	activeJantaExpiresAt = 0;
 
+	adBarkText = "";
+	adBarkEnabled = false;
+
 	addSerializableVariable("ownerId", &ownerId);
 	for (int i = 0; i < 9; ++i) {
 		addSerializableVariable(kBuffStockAttrNames[i], &buffStockPerAttr[i]);
@@ -128,6 +131,8 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	addSerializableVariable("jantaDuration", &jantaDuration);
 	addSerializableVariable("activeJantaBonus", &activeJantaBonus);
 	addSerializableVariable("activeJantaExpiresAt", &activeJantaExpiresAt);
+	addSerializableVariable("adBarkText", &adBarkText);
+	addSerializableVariable("adBarkEnabled", &adBarkEnabled);
 }
 
 void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
@@ -172,6 +177,8 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(jantaDuration);
 	SERIALIZE_JSON_MEMBER(activeJantaBonus);
 	SERIALIZE_JSON_MEMBER(activeJantaExpiresAt);
+	SERIALIZE_JSON_MEMBER(adBarkText);
+	SERIALIZE_JSON_MEMBER(adBarkEnabled);
 }
 
 void DoctorBuffDroidDataComponent::initializeTransientMembers() {
@@ -795,4 +802,37 @@ int DoctorBuffDroidDataComponent::withdrawEarnings() {
 int DoctorBuffDroidDataComponent::getMinimumPriceFloor() const {
 	Locker locker(&dataMutex);
 	return minimumPriceFloor;
+}
+
+String DoctorBuffDroidDataComponent::getAdBarkText() const {
+	Locker locker(&dataMutex);
+	return adBarkText;
+}
+
+void DoctorBuffDroidDataComponent::setAdBarkText(const String& text) {
+	Locker locker(&dataMutex);
+	adBarkText = text;
+}
+
+bool DoctorBuffDroidDataComponent::isAdBarkEnabled() const {
+	Locker locker(&dataMutex);
+	return adBarkEnabled;
+}
+
+void DoctorBuffDroidDataComponent::setAdBarkEnabled(bool enabled) {
+	Locker locker(&dataMutex);
+	adBarkEnabled = enabled;
+}
+
+bool DoctorBuffDroidDataComponent::canBarkAtPlayer(uint64 playerOid, uint64 nowMs) const {
+	Locker locker(&dataMutex);
+	if (!barkCooldowns.contains(playerOid))
+		return true;
+	uint64 lastTime = barkCooldowns.get(playerOid);
+	return (nowMs - lastTime) >= BARK_COOLDOWN_MS;
+}
+
+void DoctorBuffDroidDataComponent::recordBark(uint64 playerOid, uint64 nowMs) {
+	Locker locker(&dataMutex);
+	barkCooldowns.put(playerOid, nowMs);
 }
