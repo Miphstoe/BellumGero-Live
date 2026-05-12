@@ -79,6 +79,7 @@
 #include "server/zone/objects/creature/commands/MindShot2Command.h"
 #include "server/zone/objects/creature/commands/MinefieldAttackCommand.h"
 #include "server/zone/objects/creature/commands/MandoFoundlingAdminCommand.h"
+#include "server/zone/objects/creature/commands/MandoStatusCommand.h"
 #include "server/zone/objects/creature/commands/MoneyCommand.h"
 #include "server/zone/objects/creature/commands/MountCommand.h"
 #include "server/zone/objects/creature/commands/MoveFurnitureCommand.h"
@@ -387,6 +388,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<MindShot2Command>(String("mindShot2").toLowerCase());
 	commandFactory.registerCommand<MinefieldAttackCommand>(String("minefieldAttack").toLowerCase());
 	commandFactory.registerCommand<MandoFoundlingAdminCommand>(String("mandoFoundlingAdmin").toLowerCase());
+	commandFactory.registerCommand<MandoStatusCommand>(String("mandoStatus").toLowerCase());
 	commandFactory.registerCommand<MoneyCommand>(String("money").toLowerCase());
 	commandFactory.registerCommand<MountCommand>(String("mount").toLowerCase());
 	commandFactory.registerCommand<MoveFurnitureCommand>(String("moveFurniture").toLowerCase());

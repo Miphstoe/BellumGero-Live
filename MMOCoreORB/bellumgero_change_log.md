@@ -14,6 +14,30 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-05-11 — Mando Way: finish `/mandoStatus` end-to-end dispatch wiring
+
+- **Summary:** Closed the last gap so `/mandoStatus` works end-to-end on the server. Added the Lua master-include line in `commands.lua` so `mandoStatus.lua` is loaded at boot, and registered `MandoStatusCommand` in the **commandFactory** (`CommandConfigManager::registerCommands3`) so the engine can construct the C++ `QueueCommand` instance when the action CRC dispatches. Companion to the earlier `CommandList` Option B registration in `CommandConfigManager::registerSpecialCommands`; both the factory and the CommandList are required for the slash command to dispatch cleanly.
+- **Files:** `bin/scripts/commands/commands.lua`, `src/server/zone/managers/objectcontroller/command/CommandConfigManager3.cpp`, `bellumgero_change_log.md`
+- **Notes:** Requires a `core3` rebuild + zone restart. Verified after rebuild — no `Invalid enqueueCommand` errors for `/mandoStatus`.
+
+### 2026-05-11 — Lightning special attacks: whitelist Foundling/Mando lightning rifle templates
+
+- **Summary:** The five lightning special-attack `QueueCommands` (`FireLightningCone1Command`, `FireLightningCone2Command`, `FireLightningSingle1Command`, `FireLightningSingle2Command`, `LightningBarrageCommand`) gated on `weapon->isLightningRifle()` or `tplPath == "object/weapon/ranged/rifle/rifle_lightning_heavy.iff"`. Custom Foundling/Mando lightning rifle templates don't carry the `isLightningRifle` IFF binding, so equipping them previously returned `INVALIDWEAPON` for every lightning special. Extended each command's `isLightningWeapon` check to additionally accept `rifle_foundling_light_lightning_cannon.iff` and `rifle_mando_way_lightning.iff`. Net effect: the Mando Light Lightning Cannon and the Foundling lightning cannon now unlock the full lightning special-attack suite.
+- **Files:** `src/server/zone/objects/creature/commands/FireLightningCone1Command.h`, `src/server/zone/objects/creature/commands/FireLightningCone2Command.h`, `src/server/zone/objects/creature/commands/FireLightningSingle1Command.h`, `src/server/zone/objects/creature/commands/FireLightningSingle2Command.h`, `src/server/zone/objects/creature/commands/LightningBarrageCommand.h`, `bellumgero_change_log.md`
+- **Notes:** Requires a `core3` rebuild. Cleaner long-term fix is to bind `isLightningRifle` on the custom IFFs so the explicit template-path whitelist can be retired; that work is deferred.
+
+### 2026-05-11 — Spynet Chapter 1 bounty camp: tighten max spawn radius to 2200m
+
+- **Summary:** Reduced `BellumBountyCampChapter1Theater.maximumDistance` from `3200` to `2200` in `bounty_camp_chapter1_theater.lua`. The 1600m floor is preserved (keeps camps out of city cores), but the upper bound was too generous — playtesting showed Chapter 1 camps occasionally landing across rivers or in adjacent biomes / no-spawn shells. Tightening to 2200m keeps the contract feeling local while still respecting the per-planet no-spawn shells the `GoToTheater` framework reads. Chapter 2 / Chapter 3 theaters are unchanged.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_chapter1_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** No `core3` rebuild needed (Lua only). Active camps spawned before the restart keep their original anchor; the new ring only applies to camps spawned after reload.
+
+### 2026-05-11 — SceneObject container access: bounds-check slot index in Lua + C++ paths
+
+- **Summary:** `ContainerObjectsMap::get(int)` is backed by `VectorMap::get(int)` which throws on out-of-range slot indexes. The Lua binding `SceneObject:getContainerObject(idx)` exposed that throw to script code, so any stale or racing slot index from Lua could blow up the underlying C++. Added two defensive bounds checks: at the Lua boundary in `LuaSceneObject::getContainerObject` (returns Lua `nil` on miss; also switched `lua_tonumber` → `lua_tointeger` so non-integer Lua values truncate cleanly), and at the underlying C++ method in `ContainerObjectsMap::get` (returns `nullptr` on miss). Belt-and-suspenders — neither path now raises an exception for OOR slot ids.
+- **Files:** `src/server/zone/objects/scene/LuaSceneObject.cpp`, `src/server/zone/objects/scene/variables/ContainerObjectsMap.cpp`, `bellumgero_change_log.md`
+- **Notes:** Requires a `core3` rebuild. Note: callers that previously relied on a thrown exception to detect OOR access must now handle `nil`/`nullptr` returns explicitly; existing call sites already null-check the returned `SceneObject*`/Lua value, so no follow-up changes were needed in this pass.
+
 ### 2026-05-11 — Mando Way: restore lost trialqa fast-path and re-register custom slash commands
 
 - **Summary:** Several files had been removed from the working tree (unstaged deletions), which is why `mandoFoundlingAdminRun` resolved to `nil` and `village_jedi_manager.lua` saw `Glowing` as `nil`. Restored `bellumgero_change_log.md`, `bin/scripts/commands/mandoFoundlingAdmin.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/screenplays.lua`, and `src/server/zone/managers/objectcontroller/command/CommandConfigManager.cpp` from HEAD. Re-applied **Option B** in `CommandConfigManager::registerSpecialCommands` to register `mandoFoundlingAdmin` and `mandoStatus` in `CommandList` directly so server dispatch works without server-side `command_tables_shared*.iff` rows. Re-applied the **trialqa** privileged-admin fast-path in `mando_way_of_life.lua` (lost when the unstaged trialqa work was wiped during file restore): new `DEBUG_ADMIN_TRIAL_CAMP_QA` toggle in the script-level config table, new `MandoWayOfLife:adminTrialCampQaApply` / `adminTrialCampQaFromTokens` helpers, and a `trialqa` route inside `MandoWayOfLife:adminFoundlingCommand` so `/mandoFoundlingAdmin trialqa <start|restart|end|status> [playerName]` invokes the corresponding bounty-camp lifecycle function (`beginPrivateContract`, `restartSpynetBountyCampTrialFromOperative`, `finishActiveSpynetBountyCampTheater`).
