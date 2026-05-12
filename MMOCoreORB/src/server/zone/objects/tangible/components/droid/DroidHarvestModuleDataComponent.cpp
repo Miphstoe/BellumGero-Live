@@ -7,6 +7,7 @@
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/objects/creature/events/DroidHarvestTask.h"
+#include "server/zone/objects/creature/events/DroidMilkScanTask.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/creature/sui/SelectHarvestTypeSuiCallback.h"
@@ -74,6 +75,8 @@ void DroidHarvestModuleDataComponent::fillAttributeList(AttributeListMessage* al
 		alm->insertAttribute("pet_command_21", "@pet/droid_modules:interest_set_hide");
 	if (interest == INTEREST_RANDOM)
 		alm->insertAttribute("pet_command_21", "@pet/droid_modules:interest_set_random");
+	if (interest == INTEREST_MILK)
+		alm->insertAttribute("pet_command_21", "Harvest Interest: Milk");
 	if (active) {
 		alm->insertAttribute("pet_command_21", "Auto Harvest");
 	}
@@ -94,18 +97,47 @@ void DroidHarvestModuleDataComponent::fillObjectMenuResponse(SceneObject* droidO
 }
 
 void DroidHarvestModuleDataComponent::setHarvestInterest(CreatureObject* player, int option) {
+	// Handle live mode switching without re-locking the droid
+	// (caller holds crosslock(droid, player) so droid is already locked)
+	if (active) {
+		bool wasMilk = (interest == INTEREST_MILK);
+		bool willBeMilk = (option == INTEREST_MILK);
+
+		if (wasMilk && !willBeMilk) {
+			// Switching from milk mode to harvest mode
+			if (milkScanTask != nullptr) {
+				milkScanTask->cancel();
+				milkScanTask = nullptr;
+			}
+			// Register kill observer (player already locked by crosslock)
+			if (observer == nullptr) {
+				observer = new DroidHarvestObserver(this);
+				observer->deploy();
+			}
+			player->registerObserver(ObserverEventType::KILLEDCREATURE, observer);
+		} else if (!wasMilk && willBeMilk) {
+			// Switching from harvest mode to milk mode
+			player->dropObserver(ObserverEventType::KILLEDCREATURE, observer);
+			harvestTargets.removeAll(0, 10);
+			if (milkScanTask == nullptr) {
+				milkScanTask = new DroidMilkScanTask(this);
+			}
+			milkScanTask->reschedule(10000);
+		}
+	}
+
 	interest = option;
+
 	if (option == INTEREST_BONE) {
 		player->sendSystemMessage("@pet/droid_modules:interest_set_bone");
-	}
-	if (option == INTEREST_MEAT) {
+	} else if (option == INTEREST_MEAT) {
 		player->sendSystemMessage("@pet/droid_modules:interest_set_meat");
-	}
-	if (option == INTEREST_HIDE) {
+	} else if (option == INTEREST_HIDE) {
 		player->sendSystemMessage("@pet/droid_modules:interest_set_hide");
-	}
-	if (option == INTEREST_RANDOM) {
+	} else if (option == INTEREST_RANDOM) {
 		player->sendSystemMessage("@pet/droid_modules:interest_set_random");
+	} else if (option == INTEREST_MILK) {
+		player->sendSystemMessage("Harvest Interest: Milk");
 	}
 
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
@@ -140,6 +172,7 @@ int DroidHarvestModuleDataComponent::handleObjectMenuSelect(CreatureObject* play
 		box->addMenuItem("@pet/droid_modules:set_interest_bone", INTEREST_BONE);
 		box->addMenuItem("@pet/droid_modules:set_interest_meat", INTEREST_MEAT);
 		box->addMenuItem("@pet/droid_modules:set_interest_hide", INTEREST_HIDE);
+		box->addMenuItem("Milk", INTEREST_MILK);
 		box->setUsingObject(droid);
 		player->getPlayerObject()->addSuiBox(box);
 		player->sendMessage(box->generateMessage());
@@ -171,6 +204,12 @@ int DroidHarvestModuleDataComponent::getBatteryDrain() {
 void DroidHarvestModuleDataComponent::deactivate(bool onStore) {
 	if (!onStore) {
 		active = false;
+	}
+
+	// Cancel milk scan task if running
+	if (milkScanTask != nullptr) {
+		milkScanTask->cancel();
+		milkScanTask = nullptr;
 	}
 
 	auto droid = getDroidObject();
@@ -223,13 +262,19 @@ bool DroidHarvestModuleDataComponent::activate() {
 		return false;
 	}
 
-	if (observer == nullptr) {
-		observer = new DroidHarvestObserver(this);
-		observer->deploy();
+	if (interest == INTEREST_MILK) {
+		milkScanTask = new DroidMilkScanTask(this);
+		milkScanTask->schedule(10000);
+	} else {
+		if (observer == nullptr) {
+			observer = new DroidHarvestObserver(this);
+			observer->deploy();
+		}
+
+		Locker plock(player);
+		player->registerObserver(ObserverEventType::KILLEDCREATURE, observer);
 	}
 
-	Locker plock(player);
-	player->registerObserver(ObserverEventType::KILLEDCREATURE, observer);
 	active = true;
 
 	return true;

@@ -12,7 +12,7 @@ holocron_village_vendor_conv = ConvoTemplate:new {
 first_screen = ConvoScreen:new {
     id = "first_screen",
     leftDialog = "",
-    customDialogText = "Greetings, traveler. I trade rare village quest rewards for Holocrons of Destiny. Each item costs 2 Holocrons of Destiny. I have 11 items available - decorations, sculptures, and resource deeds that were once only available through the old village quests. Browse my collection!",
+    customDialogText = "Greetings, traveler. I trade rare village quest rewards for Holocrons of Destiny. Each item costs 2 Holocrons of Destiny. I have 12 items available - decorations, sculptures, plants, and resource deeds that were once only available through the old village quests. Browse my collection!",
     stopConversation = "false",
     options = {
         {"View Available Items", "items_menu"},
@@ -26,7 +26,7 @@ holocron_village_vendor_conv:addScreen(first_screen)
 cost_info = ConvoScreen:new {
     id = "cost_info",
     leftDialog = "",
-    customDialogText = "All 11 items in my inventory cost exactly 2 Holocrons of Destiny each. Simply choose an item, confirm the trade, and it's yours!",
+    customDialogText = "All 12 items in my inventory cost exactly 2 Holocrons of Destiny each. Simply choose an item, confirm the trade, and it's yours!",
     stopConversation = "false",
     options = {
         {"Show me the items", "items_menu"},
@@ -57,7 +57,7 @@ holocron_village_vendor_conv:addScreen(items_menu)
 items_menu_2 = ConvoScreen:new {
     id = "items_menu_2",
     leftDialog = "",
-    customDialogText = "Choose an item (2 Holocrons of Destiny each):\n\nItems 6-11:",
+    customDialogText = "Choose an item (2 Holocrons of Destiny each):\n\nItems 6-12:",
     stopConversation = "false",
     options = {
         {"Item 6 - [Village Sculpture 3]", "trade_holo_08"},
@@ -66,6 +66,7 @@ items_menu_2 = ConvoScreen:new {
         {"Item 9 - [Light Banner]", "trade_holo_13"},
         {"Item 10 - [Radar Topography Screen]", "trade_holo_10"},
         {"Item 11 - [30k Stack Resource Deed]", "trade_holo_11"},
+        {"Item 12 - [Small Aurillian Plant]", "trade_holo_14"},
         {"Previous", "items_menu"},
         {"Back", "first_screen"},
     }
@@ -314,6 +315,28 @@ give_holo_11 = ConvoScreen:new {
     options = { }
 }
 holocron_village_vendor_conv:addScreen(give_holo_11)
+
+-- Item 12 (Small Aurillian Plant)
+trade_holo_14 = ConvoScreen:new {
+    id = "trade_holo_14",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 2 Holocrons of Destiny for Small Aurillian Plant?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_holo_14"},
+        {"No, go back", "items_menu_2"}
+    }
+}
+holocron_village_vendor_conv:addScreen(trade_holo_14)
+
+give_holo_14 = ConvoScreen:new {
+    id = "give_holo_14",
+    leftDialog = "",
+    customDialogText = "Processing trade...",
+    stopConversation = "true",
+    options = { }
+}
+holocron_village_vendor_conv:addScreen(give_holo_14)
 
 -- BYE SCREEN
 bye = ConvoScreen:new {

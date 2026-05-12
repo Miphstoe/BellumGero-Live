@@ -101,6 +101,8 @@ class Creature extends AiAgent {
 
 	public native boolean canMilkMe(CreatureObject player);
 
+	public native boolean canDroidMilkMe(CreatureObject owner, CreatureObject droid);
+
 	public native boolean canCollectDna(CreatureObject player);
 
 	public native boolean hasSkillToSampleMe(CreatureObject player);

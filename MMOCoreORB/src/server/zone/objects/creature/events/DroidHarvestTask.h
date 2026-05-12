@@ -58,6 +58,13 @@ public:
 		int harvestInterest = module->getHarvestInterest();
 		int bonus = module->getHarvestPower();
 
+		// Milk mode uses DroidMilkScanTask, not dead-creature harvesting
+		if (harvestInterest == DroidHarvestModuleDataComponent::INTEREST_MILK) {
+			droid->setFollowObject(owner);
+			droid->storeFollowObject();
+			return;
+		}
+
 		// we have all the info we need form the droid for now.
 		Locker tpLock(tarCreo, droid);
 

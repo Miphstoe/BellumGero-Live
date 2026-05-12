@@ -54,8 +54,10 @@ object_building_player_city_cantina_tatooine = object_building_player_city_share
 	abilityRequired = "place_cantina",
 	skillMods = {
 		{"private_buff_mind", 125},
-		{"private_medical_rating", 100},
+		{"private_medical_rating", 125},
 		{"private_med_battle_fatigue", 10},
+		{"private_med_wound_health", 125},
+		{"private_med_wound_action", 125},
 		{"private_safe_logout", 1}
 	},
 	groundZoneComponent = "StructureZoneComponent",
