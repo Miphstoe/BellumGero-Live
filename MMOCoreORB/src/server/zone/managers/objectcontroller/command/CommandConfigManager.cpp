@@ -399,6 +399,12 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	// Structure location commands
 	createCommand(String("findmystructure").toLowerCase());
 	createCommand(String("findplayerstructure").toLowerCase());
+
+	// Bellum / Mandalorian Way custom slash commands. Registered here so they
+	// reach the CommandList even when the server-side command_tables_shared*.iff
+	// has no row for them (client command_table.iff still drives dispatch).
+	createCommand(String("mandoFoundlingAdmin").toLowerCase());
+	createCommand(String("mandoStatus").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {

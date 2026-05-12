@@ -227,6 +227,9 @@ MandoWayOfLife = ScreenPlay:new {
 	DEBUG_ALLOW_ANY_FOUNDLING_INFORMANT = false,
 	-- Extra printf/logLua lines for Spynet private trial + bounty camp GoToTheater (grep [SpynetDebug]). Default false; set true on dev shards when diagnosing.
 	SPYNET_BOUNTY_DEBUG_VERBOSE = false,
+	-- Master switch for /mandoFoundlingAdmin trialqa subcommands (start | restart | end | status of the Spynet bounty camp trial).
+	-- Off on live shards; flip true on dev/QA shards to enable the privileged-admin fast-path.
+	DEBUG_ADMIN_TRIAL_CAMP_QA = false,
 }
 
 registerScreenPlay("MandoWayOfLife", true)
@@ -3124,6 +3127,92 @@ local function _mandoAdminTrim(s)
 	return (tostring(s):gsub("^%s*(.-)%s*$", "%1"))
 end
 
+-- /mandoFoundlingAdmin trialqa <sub> [playerName]
+-- subcommands: start | restart | end | status
+-- Caller (adminFoundlingCommand) has already enforced the privileged-admin check.
+local function _mandoAdminTrialQaResolveTarget(pStaff, name)
+	if (name == nil or name == "") then return pStaff end
+	local p = getPlayerByName(name)
+	if (p == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] trialqa: no online player named '" .. tostring(name) .. "'."
+		)
+		return nil
+	end
+	return p
+end
+
+function MandoWayOfLife:adminTrialCampQaApply(pStaff, sub, pTarget)
+	if (pStaff == nil or pTarget == nil) then return end
+	sub = tostring(sub or ""):lower()
+	local tgtName = CreatureObject(pTarget):getFirstName()
+
+	if (sub == "start") then
+		local ok = self:beginPrivateContract(pTarget)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] trialqa start on %s: %s",
+			tgtName,
+			ok and "OK (camp deploying)" or "FAILED (see core3 log / [SpynetDebug])"
+		))
+		return
+	end
+
+	if (sub == "restart") then
+		local ok = self:restartSpynetBountyCampTrialFromOperative(pTarget)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] trialqa restart on %s: %s",
+			tgtName,
+			ok and "OK (camp redeploying)" or "FAILED (see core3 log / [SpynetDebug])"
+		))
+		return
+	end
+
+	if (sub == "end" or sub == "finish") then
+		self:finishActiveSpynetBountyCampTheater(pTarget)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] trialqa end on %s: teardown requested.",
+			tgtName
+		))
+		return
+	end
+
+	if (sub == "status") then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] trialqa status %s: privateContractActive=%s useBountyCampTheater=%s spawnRelinkDone=%s contractTargetId=%s",
+			tgtName,
+			tostring(self:readInt(pTarget, "privateContractActive")),
+			tostring(self:readInt(pTarget, "privateContract.useBountyCampTheater")),
+			tostring(self:readInt(pTarget, "privateContract.spawnRelinkDone")),
+			tostring(self:readInt(pTarget, "contractTargetId"))
+		))
+		return
+	end
+
+	CreatureObject(pStaff):sendSystemMessage(
+		"[MandoAdmin] trialqa: unknown sub '" .. sub .. "'. Usage: /mandoFoundlingAdmin trialqa <start|restart|end|status> [playerName]"
+	)
+end
+
+function MandoWayOfLife:adminTrialCampQaFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+	if (self.DEBUG_ADMIN_TRIAL_CAMP_QA ~= true) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] trialqa is disabled. Set MandoWayOfLife.DEBUG_ADMIN_TRIAL_CAMP_QA = true on a dev shard."
+		)
+		return
+	end
+	local sub = (tokens[2] ~= nil) and tostring(tokens[2]):lower() or ""
+	if (sub == "") then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] trialqa: usage: /mandoFoundlingAdmin trialqa <start|restart|end|status> [playerName]"
+		)
+		return
+	end
+	local pTarget = _mandoAdminTrialQaResolveTarget(pStaff, tokens[3])
+	if (pTarget == nil) then return end
+	self:adminTrialCampQaApply(pStaff, sub, pTarget)
+end
+
 function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	if (pStaff == nil) then return end
 	local sGhost = CreatureObject(pStaff):getPlayerObject()
@@ -3138,6 +3227,12 @@ function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	local tokens = {}
 	for w in string.gmatch(line, "%S+") do
 		tokens[#tokens + 1] = w
+	end
+
+	-- trialqa subcommand fast-path: gated by DEBUG_ADMIN_TRIAL_CAMP_QA inside the helper.
+	if (#tokens >= 1 and tokens[1]:lower() == "trialqa") then
+		self:adminTrialCampQaFromTokens(pStaff, tokens)
+		return
 	end
 
 	if (#tokens == 1) then
