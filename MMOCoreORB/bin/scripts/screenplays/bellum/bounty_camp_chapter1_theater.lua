@@ -8,7 +8,7 @@ BellumBountyCampChapter1Theater = GoToTheater:new {
 	taskName = "BellumBountyCampChapter1Theater",
 	-- Wide ring from the player at trial accept: keeps camps out of city cores / no-spawn shells (Corellia, etc.).
 	minimumDistance = 1600,
-	maximumDistance = 3200,
+	maximumDistance = 2200,
 	theater = BountyCamp.CAMP_DECOR,
 	waypointDescription = "Spynet bounty camp (Chapter 1)",
 	markIndex = 1,
