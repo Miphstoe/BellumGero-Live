@@ -1135,9 +1135,13 @@ void StructureManager::promptViewHouseStorage(CreatureObject* creature, Structur
 	if (building == nullptr)
 		return;
 
-	// Collect all items from the building
-	VectorMap<String, Vector<ManagedReference<SceneObject*>>> itemsByName; // Item name -> list of instances
-	int totalItems = 0;
+	// Collect all placeable items from the building as a flat list so the SUI index maps
+	// directly to the selected object. This makes the terminal reliable for recovering
+	// house items whose client appearance is hard to target.
+	Vector<ManagedReference<SceneObject*>> storedItems;
+
+	// Create the SUI ListBox up front so entries can be appended as items are discovered.
+	ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::STRUCTURE_STATUS);
 
 	// Lock the building to safely access its contents
 	Locker buildingLocker(building);
@@ -1151,8 +1155,6 @@ void StructureManager::promptViewHouseStorage(CreatureObject* creature, Structur
 		CellObject* cell = cast<CellObject*>(containerObj.get());
 		if (cell == nullptr)
 			continue;
-
-		String cellLocation = "Cell " + String::valueOf(cell->getCellNumber());
 
 		// Get all items in this cell
 		for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
@@ -1169,51 +1171,32 @@ void StructureManager::promptViewHouseStorage(CreatureObject* creature, Structur
 			if (itemName.isEmpty())
 				itemName = "Unknown Item";
 
-			// Add to map
-			if (!itemsByName.contains(itemName)) {
-				itemsByName.put(itemName, Vector<ManagedReference<SceneObject*>>());
+			StringBuffer displayString;
+			displayString << itemName << " [Cell " << cell->getCellNumber() << "]";
+
+			if (childObject->isContainerObject()) {
+				displayString << " (container, " << childObject->getContainerObjectsSize() << " items)";
 			}
-			itemsByName.get(itemName).add(childObject);
-			totalItems++;
+
+			box->addMenuItem(displayString.toString());
+			storedItems.add(childObject);
 		}
 	}
 
-	// Create the SUI ListBox
-	ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::STRUCTURE_STATUS);
 	box->setPromptTitle("@player_structure:structure_status_t - House Storage");
 
 	StringBuffer promptText;
-	promptText << "Total Items: " << totalItems << "\n";
-	promptText << "Unique Item Types: " << itemsByName.size() << "\n\n";
-	promptText << "Select an item type to see details and move items.";
+	promptText << "Stored Items: " << storedItems.size() << "\n\n";
+	promptText << "Select an item to move it to your inventory or datapad.\n";
+	promptText << "This can be used to recover house items that cannot be targeted directly.";
 	box->setPromptText(promptText.toString());
 
 	box->setUsingObject(structure);
 	box->setForceCloseDisabled();
 
-	// Add each unique item type to the list with quantity
-	for (int i = 0; i < itemsByName.size(); ++i) {
-		String itemName = itemsByName.elementAt(i).getKey();
-		Vector<ManagedReference<SceneObject*>>& itemInstances = itemsByName.elementAt(i).getValue();
-
-		StringBuffer displayString;
-		displayString << itemName << " x" << itemInstances.size();
-
-		box->addMenuItem(displayString.toString());
-	}
-
 	// Set callback to handle item selection
 	ViewHouseStorageSuiCallback* callback = new ViewHouseStorageSuiCallback(server, building);
-
-	// Convert collected items to a flat vector for the callback
-	Vector<ManagedReference<SceneObject*>> allItems;
-	for (int i = 0; i < itemsByName.size(); ++i) {
-		Vector<ManagedReference<SceneObject*>>& items = itemsByName.elementAt(i).getValue();
-		for (int j = 0; j < items.size(); ++j) {
-			allItems.add(items.elementAt(j));
-		}
-	}
-	callback->setStoredItems(allItems);
+	callback->setStoredItems(storedItems);
 
 	box->setCallback(callback);
 

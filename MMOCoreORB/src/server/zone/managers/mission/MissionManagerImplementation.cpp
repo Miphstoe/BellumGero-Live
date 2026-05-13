@@ -1172,16 +1172,22 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 			mission->setTargetOptionalTemplate("");
 
 			ManagedReference<CreatureObject*> creature = server->getObject(target->getTargetPlayerID()).castTo<CreatureObject*>();
-			String name = "";
+			// Jedi targets show "Anonymous"; other player targets show a consistent numeric ID
+			String name;
+			if (creature != nullptr) {
+				ManagedReference<PlayerObject*> ghostCheck = creature->getPlayerObject();
+				if (ghostCheck != nullptr && ghostCheck->getJediState() >= 2)
+					name = "Anonymous";
+				else {
+					int anonymousID = (int)(target->getTargetPlayerID() % 100000);
+					name = "Mark-" + String::valueOf(anonymousID);
+				}
+			} else {
+				int anonymousID = (int)(target->getTargetPlayerID() % 100000);
+				name = "Mark-" + String::valueOf(anonymousID);
+			}
 
 			if (creature != nullptr && ConfigManager::instance()->getBool("Core3.MissionManager.AnonymousBountyTerminals", false)) {
-				if (creature->getFaction() == Factions::FACTIONIMPERIAL)
-					name = "Imperial Jedi";
-				else if (creature->getFaction() == Factions::FACTIONREBEL)
-					name = "Rebel Jedi";
-				else
-					name = "Neutral Jedi";
-
 				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 				int rewardCreds = 0;
@@ -1198,11 +1204,8 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 					mission->setBonusCredits(bonusCreds);
 			} else {
 				if (creature != nullptr) {
-					name = creature->getFirstName() + " " + creature->getLastName();
-					name = name.trim();
+					mission->setRewardCredits(getRealBountyReward(creature, target));
 				}
-
-				mission->setRewardCredits(getRealBountyReward(creature, target));
 			}
 
 			mission->setMissionTargetName(name);

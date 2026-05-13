@@ -84,6 +84,94 @@ static inline String reservedForPrettyName(AuctionItem* item) {
     return extractReserveeFromText(desc);
 }
 
+static inline int getAuctionSearchPrice(CreatureObject* player, AuctionItem* item, bool includeEntranceFee) {
+	if (item == nullptr)
+		return 0;
+
+	int itemPrice = item->getPrice();
+
+	if (!includeEntranceFee || player == nullptr)
+		return itemPrice;
+
+	ManagedReference<SceneObject*> itemVendor = player->getZoneServer()->getObject(item->getVendorID());
+
+	if (itemVendor == nullptr || !itemVendor->isVendor())
+		return itemPrice;
+
+	int accessFee = 0;
+	ManagedReference<SceneObject*> parent = itemVendor->getRootParent();
+
+	if (parent != nullptr && parent->isBuildingObject()) {
+		BuildingObject* building = cast<BuildingObject*>(parent.get());
+
+		if (building != nullptr)
+			accessFee = building->getAccessFee();
+	}
+
+	return itemPrice + accessFee;
+}
+
+static inline bool matchesAuctionSearchText(AuctionItem* item, const String& lowerFilter) {
+	if (item == nullptr || lowerFilter.isEmpty())
+		return true;
+
+	String itemName = stripColorCodes(item->getItemName()).toLowerCase();
+
+	if (itemName.indexOf(lowerFilter) != -1)
+		return true;
+
+	String description = stripColorCodes(item->getItemDescription()).toLowerCase();
+
+	if (description.indexOf(lowerFilter) != -1)
+		return true;
+
+	String ownerName = item->getOwnerName().toLowerCase();
+
+	if (ownerName.indexOf(lowerFilter) != -1)
+		return true;
+
+	String bidderName = item->getBidderName().toLowerCase();
+
+	if (bidderName.indexOf(lowerFilter) != -1)
+		return true;
+
+	String vendorUid = item->getVendorUID().toLowerCase();
+
+	if (vendorUid.indexOf(lowerFilter) != -1)
+		return true;
+
+	return false;
+}
+
+static inline bool matchesAuctionSearchFilters(CreatureObject* player, AuctionItem* item, uint32 itemCategory, const String& lowerFilter, int minPrice, int maxPrice, bool includeEntranceFee) {
+	if (item == nullptr)
+		return false;
+
+	int itemType = item->getItemType();
+	bool isCrate = item->isFactoryCrate();
+	int cratedItemType = item->getCratedItemType();
+
+	if (itemCategory & 255) { // Searching a sub category
+		if (itemType != (int)itemCategory && (!isCrate || cratedItemType <= 0 || cratedItemType != (int)itemCategory))
+			return false;
+	} else if (itemCategory != 0) {
+		bool matchesMainCategory = (itemType & itemCategory) || (isCrate && cratedItemType > 0 && (cratedItemType & itemCategory));
+		bool matchesSpecialCategory = (itemCategory == 8192) && (itemType < 256 || (isCrate && cratedItemType < 256));
+
+		if (!matchesMainCategory && !matchesSpecialCategory)
+			return false;
+	}
+
+	if ((minPrice != 0 || maxPrice != 0)) {
+		int itemPrice = getAuctionSearchPrice(player, item, includeEntranceFee);
+
+		if ((minPrice != 0 && itemPrice < minPrice) || (maxPrice != 0 && itemPrice > maxPrice))
+			return false;
+	}
+
+	return matchesAuctionSearchText(item, lowerFilter);
+}
+
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
 
@@ -1657,6 +1745,8 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 #endif // DEBUG_AUCTION_SEARCH
 
 	String pname = player->getFirstName().toLowerCase();
+	String lowerFilter = filterText.toString().toLowerCase();
+	lowerFilter.trim();
 	uint32 now = time(0);
 	int displaying = 0;
 
@@ -1711,42 +1801,8 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					}
 					case ST_ALL: { // All Auctions (Bazaar)
 						if (item->getStatus() == AuctionItem::FORSALE) {
-							if (!checkItemCategory(itemCategory, item)) {
+							if (!matchesAuctionSearchFilters(player, item, itemCategory, lowerFilter, minPrice, maxPrice, includeEntranceFee))
 								continue;
-							}
-
-							if (minPrice != 0 || maxPrice != 0) {
-								int itemPrice = item->getPrice();
-
-								if (includeEntranceFee) {
-									ManagedReference<SceneObject*> itemVendor = player->getZoneServer()->getObject(item->getVendorID());
-
-									if (itemVendor != nullptr && itemVendor->isVendor()) {
-										int accessFee = 0;
-										ManagedReference<SceneObject*> parent = itemVendor->getRootParent();
-
-										if (parent != nullptr && parent->isBuildingObject()) {
-											BuildingObject* building = cast<BuildingObject*>(parent.get());
-
-											if (building != nullptr)
-												accessFee = building->getAccessFee();
-										}
-
-										itemPrice += accessFee;
-									}
-								}
-
-								if ((minPrice != 0 && itemPrice < minPrice) || (maxPrice != 0 && itemPrice > maxPrice))
-									continue;
-							}
-
-							if (!filterText.isEmpty()) {
-								String lowerFilter = filterText.toString().toLowerCase();
-								String itemName = item->getItemName().toLowerCase();
-
-								if (itemName.indexOf(lowerFilter) == -1)
-									continue;
-							}
 
 							if (displaying >= offset) {
 								reply->addItemToList(item);
@@ -1758,7 +1814,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					}
 					case ST_PLAYER_SALES: { // My auctions/sales
 						if (item->getStatus() == AuctionItem::FORSALE && (item->getOwnerID() == player->getObjectID())) {
-							if (checkItemCategory(itemCategory, item)) {
+							if (matchesAuctionSearchFilters(player, item, itemCategory, lowerFilter, minPrice, maxPrice, includeEntranceFee)) {
 								if (displaying >= offset) {
 									reply->addItemToList(item);
 								}
@@ -1782,7 +1838,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					}
 					case ST_VENDOR_OFFERS: { // Offers to Vendor (vendor owner)
 						if (item->getStatus() == AuctionItem::OFFERED && item->getOfferToID() == player->getObjectID()) {
-							if (checkItemCategory(itemCategory, item)) {
+							if (matchesAuctionSearchFilters(player, item, itemCategory, lowerFilter, minPrice, maxPrice, includeEntranceFee)) {
 								if (displaying >= offset) {
 									reply->addItemToList(item);
 								}
@@ -1794,7 +1850,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					}
 					case ST_VENDOR_STOCKROOM: { // Stockroom
 						if ((item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID()) || (item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID())) {
-							if (checkItemCategory(itemCategory, item)) {
+							if (matchesAuctionSearchFilters(player, item, itemCategory, lowerFilter, minPrice, maxPrice, includeEntranceFee)) {
 								if (displaying >= offset) {
 									reply->addItemToList(item);
 								}
@@ -1806,7 +1862,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					}
 					case ST_PLAYER_OFFERS_TO_VENDOR: { // Offers to vendor (browsing player)
 						if (item->getStatus() == AuctionItem::OFFERED && item->getOwnerID() == player->getObjectID()) {
-							if (checkItemCategory(itemCategory, item)) {
+							if (matchesAuctionSearchFilters(player, item, itemCategory, lowerFilter, minPrice, maxPrice, includeEntranceFee)) {
 								if (displaying >= offset) {
 									reply->addItemToList(item);
 								}

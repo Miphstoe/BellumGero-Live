@@ -24,12 +24,14 @@ protected:
 	bool active;
 	ManagedReference<DroidHarvestObserver*> observer;
 	Vector<uint64> harvestTargets;
+	Reference<Task*> milkScanTask;
 public:
 	enum {
 		INTEREST_RANDOM,
 		INTEREST_BONE,
 		INTEREST_MEAT,
-		INTEREST_HIDE
+		INTEREST_HIDE,
+		INTEREST_MILK
 	};
 
 	DroidHarvestModuleDataComponent();
