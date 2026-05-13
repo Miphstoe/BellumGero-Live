@@ -1,4 +1,6 @@
 object_weapon_ranged_pistol_pistol_mando_way_geo_blaster = object_weapon_ranged_pistol_shared_pistol_mando_way_geo_blaster:new {
+	customObjectName = "Mandalorian Geonosian Blaster Pistol",
+
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",
 		"object/creature/player/bothan_female.iff",
@@ -47,8 +49,8 @@ object_weapon_ranged_pistol_pistol_mando_way_geo_blaster = object_weapon_ranged_
 	maxRange = 50,
 	maxRangeAccuracy = 12,
 
-	minDamage = 900,
-	maxDamage = 1200,
+	minDamage = 666,
+	maxDamage = 999,
 	attackSpeed = 1.5,
 	woundsRatio = 14,
 
@@ -57,8 +59,8 @@ object_weapon_ranged_pistol_pistol_mando_way_geo_blaster = object_weapon_ranged_
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "expRange", "null", "null", "null", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 45, 120, 4.2, 10, 18, 600, 5, -70, 18, 12, 28, 38, 16},
-	experimentalMax = {0, 0, 115, 220, 2.6, 20, 55, 1300, 5, -70, 18, 32, 12, 18, 6},
+	experimentalMin = {0, 0, 700, 1000, 4.2, 10, 18, 600, 5, -70, 18, 12, 28, 38, 16},
+	experimentalMax = {0, 0, 1100, 1500, 2.6, 20, 55, 1300, 5, -70, 18, 32, 12, 18, 6},
 	experimentalPrecision = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }

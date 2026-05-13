@@ -2,6 +2,8 @@
 -- Bellum: EE-3 appearance with rifle_bowcaster combat stats (all species).
 
 object_weapon_ranged_carbine_carbine_bellum_bowcaster_stats = object_weapon_ranged_carbine_shared_carbine_ee3:new {
+	customObjectName = "Bellum Bowcaster Carbine",
+
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",
 		"object/creature/player/bothan_female.iff",

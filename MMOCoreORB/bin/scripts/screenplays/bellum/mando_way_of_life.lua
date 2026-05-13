@@ -176,17 +176,17 @@ MandoWayOfLife = ScreenPlay:new {
 		[1] = {
 			certSkill = "mando_way_cert_geo_blaster",
 			weaponIff = "object/weapon/ranged/pistol/pistol_mando_way_geo_blaster.iff",
-			giftMsg = "[Mandalorian Way] Armory gift: Mandalorian Geonosian blaster pistol. Only those who hold your certifications can fire it.",
+			giftMsg = "[Mandalorian Way] With your success and advancement forward, the guild wishes you well and grants you a gift of the Mandalorian Geonosian Blaster Pistol. This is a great investment into your further success. This weapon, made with the purest beskar metal for the trigger mechanisms, you will see the min dmg which stands for the beginning of you bringing destruction to your targets. Plus, the closing of your max dmg which signifies your completion of your latest success through your trials. Go forth and remember, 'This is the way!'",
 		},
 		[2] = {
 			certSkill = "mando_way_cert_slugthrower_carbine",
 			weaponIff = "object/weapon/ranged/carbine/carbine_mando_way_slugthrower.iff",
-			giftMsg = "[Mandalorian Way] Armory gift: Mandalorian Nym slugthrower carbine. Your trials earned the right to carry it.",
+			giftMsg = "[Mandalorian Way] With your success and advancement forward, the guild wishes you well and grants you a gift of the Mandalorian Nym Slugthrower Carbine. This is a great investment into your further success. This weapon, made with the purest beskar metal for the trigger mechanisms, you will see the min dmg which stands for the beginning of you bringing destruction to your targets. Plus, the closing of your max dmg which signifies your completion of your latest success through your trials. Go forth and remember, 'This is the way!'",
 		},
 		[3] = {
 			certSkill = "mando_way_cert_lightning_cannon",
 			weaponIff = "object/weapon/ranged/rifle/rifle_mando_way_lightning.iff",
-			giftMsg = "[Mandalorian Way] Armory gift: Mandalorian light lightning cannon. Respect the charge.",
+			giftMsg = "[Mandalorian Way] With your success and advancement forward, the guild wishes you well and grants you a gift of the Mandalorian Light Lightning Cannon. This is a great investment into your further success. This weapon, made with the purest beskar metal for the trigger mechanisms, you will see the min dmg which stands for the beginning of you bringing destruction to your targets. Plus, the closing of your max dmg which signifies your completion of your latest success through your trials. Go forth and remember, 'This is the way!'",
 		},
 	},
 	mandoWayArmorySchematicSales = {
