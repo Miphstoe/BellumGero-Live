@@ -1,0 +1,36 @@
+hot_emplacement_generator = Creature:new {
+	objectName = "",
+	customName = "Pirate Shield Generator",
+	socialGroup = "pirate",
+	faction = "",
+	mobType = MOB_DROID,
+	level = 92,
+	chanceHit = 0.5,
+	damageMin = 0,
+	damageMax = 0,
+	baseXp = 6800,
+	baseHAM = 46000,
+	baseHAMmax = 56000,
+	armor = 1,
+	resists = {105,105,65,40,40,35,35,20,-1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = NONE,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+
+	templates = {"object/mobile/eg6_power_droid.iff"},
+	lootGroups = {},
+	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
+	defaultAttack = "attack"
+}
+
+CreatureTemplates:addCreatureTemplate(hot_emplacement_generator, "hot_emplacement_generator")

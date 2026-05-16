@@ -1,0 +1,36 @@
+hot_emplacement_turret = Creature:new {
+	objectName = "",
+	customName = "Pirate Defense Turret",
+	socialGroup = "pirate",
+	faction = "",
+	mobType = MOB_DROID,
+	level = 90,
+	chanceHit = 0.55,
+	damageMin = 0,
+	damageMax = 0,
+	baseXp = 6500,
+	baseHAM = 42000,
+	baseHAMmax = 52000,
+	armor = 1,
+	resists = {95,95,55,35,35,30,30,20,-1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = NONE,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+
+	templates = {"object/mobile/droideka.iff"},
+	lootGroups = {},
+	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
+	defaultAttack = "attack"
+}
+
+CreatureTemplates:addCreatureTemplate(hot_emplacement_turret, "hot_emplacement_turret")

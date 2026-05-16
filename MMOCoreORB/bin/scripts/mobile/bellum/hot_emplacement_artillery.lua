@@ -1,0 +1,36 @@
+hot_emplacement_artillery = Creature:new {
+	objectName = "",
+	customName = "Pirate Artillery Cannon",
+	socialGroup = "pirate",
+	faction = "",
+	mobType = MOB_DROID,
+	level = 94,
+	chanceHit = 0.58,
+	damageMin = 0,
+	damageMax = 0,
+	baseXp = 7000,
+	baseHAM = 50000,
+	baseHAMmax = 60000,
+	armor = 1,
+	resists = {95,90,70,35,35,30,30,20,-1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = NONE,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+
+	templates = {"object/mobile/super_battle_droid.iff"},
+	lootGroups = {},
+	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
+	defaultAttack = "attack"
+}
+
+CreatureTemplates:addCreatureTemplate(hot_emplacement_artillery, "hot_emplacement_artillery")
