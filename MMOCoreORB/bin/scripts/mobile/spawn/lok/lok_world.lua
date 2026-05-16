@@ -127,6 +127,15 @@ lok_world = {
 			size = 15,
 		},
 		{
+			lairTemplateName = "lok_ender_projectmanager_dune_scale_langlatch_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 24,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
+		{
 			lairTemplateName = "lok_langlatch_lair_neutral_medium",
 			spawnLimit = -1,
 			minDifficulty = 38,

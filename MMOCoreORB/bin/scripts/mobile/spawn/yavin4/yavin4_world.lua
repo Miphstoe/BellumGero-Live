@@ -559,6 +559,15 @@ yavin4_world = {
 			size = 25
 		},
 		{
+			lairTemplateName = "yavin4_ender_projectmanager_spineback_puc_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 28,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
+		{
 			lairTemplateName = "yavin4_monstrous_tanc_mite_lair_neutral_medium",
 			spawnLimit = -1,
 			minDifficulty = 66,

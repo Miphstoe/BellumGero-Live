@@ -82,6 +82,15 @@ rori_world = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "rori_ender_projectmanager_ironscale_langlatch_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 16,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
+		{
 			lairTemplateName = "rori_dashing_vir_vur_pack_neutral_none",
 			spawnLimit = -1,
 			minDifficulty = 25,

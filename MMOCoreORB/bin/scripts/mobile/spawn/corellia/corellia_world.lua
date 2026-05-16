@@ -405,6 +405,15 @@ corellia_world = {
 			weighting = 15,
 			size = 15,
 		},
+		{
+			lairTemplateName = "corellia_ender_projectmanager_scale_tabage_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 18,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
 	}
 }
 

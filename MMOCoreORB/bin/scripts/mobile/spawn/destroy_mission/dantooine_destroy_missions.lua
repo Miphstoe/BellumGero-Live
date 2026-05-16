@@ -201,6 +201,12 @@ dantooine_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "dantooine_ender_projectmanager_voritor_stalker_pack_neutral_none",
+			minDifficulty = 28,
+			maxDifficulty = 34,
+			size = 25,
+		},
+		{
 			lairTemplateName = "global_dark_jedi_master_neutral_none",
 			minDifficulty = 80,
 			maxDifficulty = 80,

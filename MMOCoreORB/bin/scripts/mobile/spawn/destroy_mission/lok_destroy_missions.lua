@@ -171,6 +171,12 @@ lok_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "lok_ender_projectmanager_dune_scale_langlatch_pack_neutral_none",
+			minDifficulty = 22,
+			maxDifficulty = 28,
+			size = 25,
+		},
+		{
 			lairTemplateName = "lok_monstrous_mite_lair_neutral_small",
 			minDifficulty = 26,
 			maxDifficulty = 35,

@@ -684,6 +684,15 @@ dathomir_world = {
 			weighting = 3,
 			size = 25
 		},
+		{
+			lairTemplateName = "dathomir_ender_projectmanager_reptilian_hunter_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 26,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
 	}
 }
 

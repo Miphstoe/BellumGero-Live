@@ -93,6 +93,12 @@ yavin4_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "yavin4_ender_projectmanager_spineback_puc_pack_neutral_none",
+			minDifficulty = 28,
+			maxDifficulty = 34,
+			size = 25,
+		},
+		{
 			lairTemplateName = "yavin4_crazed_geonosian_guard_lair_neutral_medium",
 			minDifficulty = 65,
 			maxDifficulty = 65,

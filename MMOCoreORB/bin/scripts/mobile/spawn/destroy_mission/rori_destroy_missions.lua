@@ -242,6 +242,12 @@ rori_destroy_missions = {
 			maxDifficulty = 22,
 			size = 25,
 		},
+		{
+			lairTemplateName = "rori_ender_projectmanager_ironscale_langlatch_pack_neutral_none",
+			minDifficulty = 16,
+			maxDifficulty = 22,
+			size = 25,
+		},
 	}
 }
 

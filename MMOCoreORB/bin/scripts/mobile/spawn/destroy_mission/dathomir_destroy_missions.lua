@@ -188,6 +188,12 @@ dathomir_destroy_missions = {
 			maxDifficulty = 125,
 			size = 25,
 		},
+		{
+			lairTemplateName = "dathomir_ender_projectmanager_reptilian_hunter_pack_neutral_none",
+			minDifficulty = 26,
+			maxDifficulty = 32,
+			size = 25,
+		},
 	}
 }
 

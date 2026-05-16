@@ -314,6 +314,12 @@ corellia_destroy_missions = {
 			maxDifficulty = 34,
 			size = 35,
 		},
+		{
+			lairTemplateName = "corellia_ender_projectmanager_scale_tabage_pack_neutral_none",
+			minDifficulty = 18,
+			maxDifficulty = 22,
+			size = 25,
+		},
 	}
 }
 

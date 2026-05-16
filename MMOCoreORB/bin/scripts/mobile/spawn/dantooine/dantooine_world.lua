@@ -612,6 +612,15 @@ dantooine_world = {
 			weighting = 1,
 			size = 20
 		},
+		{
+			lairTemplateName = "dantooine_ender_projectmanager_voritor_stalker_pack_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 28,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 22,
+			size = 25,
+		},
 	}
 }
 
