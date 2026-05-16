@@ -11,31 +11,6 @@
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/objects/player/sui/callbacks/TravelCouponUseSuiCallback.h"
-#include "server/zone/Zone.h"
-#include "templates/SharedObjectTemplate.h"
-
-namespace PurchaseTicketCommandNamespace {
-/**
- * Stock check only matched SceneObjectType::TRAVELTERMINAL (0x4012). Many IFF/TRE templates
- * still publish travel kiosks as INTERACTIVETERMINAL (0x400C) while the server object remains
- * a TravelTerminal — then close-object scans never see a "travel terminal" and purchase silently
- * fails (client shows no ticket flow). Accept explicit type or terminal_travel template path.
- */
-inline bool isTravelTicketKiosk(SceneObject* object) {
-	if (object == nullptr)
-		return false;
-
-	if (object->getGameObjectType() == SceneObjectType::TRAVELTERMINAL)
-		return true;
-
-	Reference<SharedObjectTemplate*> tmpl = object->getObjectTemplate();
-
-	if (tmpl != nullptr && tmpl->getTemplateFileName().contains("terminal_travel"))
-		return true;
-
-	return false;
-}
-} // namespace PurchaseTicketCommandNamespace
 
 class PurchaseTicketCommand : public QueueCommand {
 public:
@@ -49,48 +24,23 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
+		SortedVector<TreeEntry*> closeObjects;
+		CloseObjectsVector* vec = (CloseObjectsVector*) creature->getCloseObjects();
+		vec->safeCopyTo(closeObjects);
+
 		bool nearTravelTerminal = false;
 		SceneObject* travelTerminal = nullptr;
 
-		auto considerObject = [&](SceneObject* object) {
-			if (object == nullptr || !PurchaseTicketCommandNamespace::isTravelTicketKiosk(object) || !checkDistance(creature, object, 128.f))
-				return;
+		for (int i = 0; i < closeObjects.size(); i++) {
+			SceneObject* object = cast<SceneObject*>( closeObjects.get(i));
+
+			if (object == nullptr || (object->getGameObjectType() != SceneObjectType::TRAVELTERMINAL) || !checkDistance(creature, object, 128.f)) {
+				continue;
+			}
 
 			nearTravelTerminal = true;
 			travelTerminal = object;
-		};
-
-		CloseObjectsVector* vec = (CloseObjectsVector*) creature->getCloseObjects();
-
-		if (vec != nullptr) {
-			SortedVector<TreeEntry*> closeObjects;
-			vec->safeCopyTo(closeObjects);
-
-			for (int i = 0; i < closeObjects.size(); i++) {
-				SceneObject* object = cast<SceneObject*>(closeObjects.get(i));
-				considerObject(object);
-
-				if (nearTravelTerminal)
-					break;
-			}
-		}
-
-		if (!nearTravelTerminal) {
-			Zone* zone = creature->getZone();
-
-			if (zone != nullptr) {
-				SortedVector<ManagedReference<TreeEntry*> > inRange;
-				zone->getInRangeObjects(creature->getWorldPositionX(), creature->getWorldPositionZ(), creature->getWorldPositionY(),
-						96.f, &inRange, true);
-
-				for (int i = 0; i < inRange.size(); ++i) {
-					SceneObject* object = cast<SceneObject*>(inRange.get(i).get());
-					considerObject(object);
-
-					if (nearTravelTerminal)
-						break;
-				}
-			}
+			break;
 		}
 
 		if (!nearTravelTerminal) {

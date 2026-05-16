@@ -293,17 +293,6 @@ object_weapon_ranged_rifle_shared_rifle_bowcaster = SharedWeaponObjectTemplate:n
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_bowcaster, "object/weapon/ranged/rifle/shared_rifle_bowcaster.iff")
 
--- Client TRE: pack `shared_rifle_kashyyyk_tribal_master_bowcaster.iff` (clone of stock bowcaster shared
--- IFF). Point objectName / detailedDescription / lookAtText at stock weapon STFs (same pattern as
--- `rifle_bowcaster`): `@weapon_name:rifle_kashyyyk_tribal_master_bowcaster`,
--- `@weapon_detail:rifle_kashyyyk_tribal_master_bowcaster`, `@weapon_lookat:rifle_kashyyyk_tribal_master_bowcaster`
--- → `string/en/weapon_name.stf`, `string/en/weapon_detail.stf`, `string/en/weapon_lookat.stf`.
-object_weapon_ranged_rifle_shared_rifle_kashyyyk_tribal_master_bowcaster = SharedWeaponObjectTemplate:new {
-	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_kashyyyk_tribal_master_bowcaster.iff"
-}
-
-ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_kashyyyk_tribal_master_bowcaster, "object/weapon/ranged/rifle/shared_rifle_kashyyyk_tribal_master_bowcaster.iff")
-
 object_weapon_ranged_rifle_shared_rifle_cdef = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_cdef.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

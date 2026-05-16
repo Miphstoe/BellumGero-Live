@@ -17,11 +17,8 @@ int TravelTerminalImplementation::handleObjectMenuSelect(CreatureObject* player,
 	Reference<PlanetTravelPoint*> ptp = getPlanetTravelPoint();
 
 	// Complain loudly if we failed to find a travel point for this terminal
-	if (ptp == nullptr) {
+	if(ptp == nullptr) {
 		error("TravelTerminalImplementation::handleObjectMenuSelect(" + String::valueOf(getObjectID()) + " Could not determine related PlanetTravelPoint");
-		player->sendSystemMessage(
-			"Travel services are unavailable at this terminal. The server could not match it to a shuttle route (PlanetTravelPoint). "
-			"If this persists, ask staff to verify planet travel point coordinates in planet_manager.lua for this planet.");
 		return 0;
 	}
 

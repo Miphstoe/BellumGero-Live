@@ -42,12 +42,7 @@
 --true = 1, false = 0
 
 PurchaseTicketCommand = {
-	name = "purchaseticket",
-	-- Command tables (IFF) often set a characterAbility gate; without the matching
-	-- ability on the player, activateCommand drops the queue action with no feedback,
-	-- so ticket purchase appears to "never trigger". Travel UIs still send
-	-- purchaseticket — this clears the gate after IFF load (see CommandConfigManager::addCommand).
-	characterAbility = "",
+        name = "purchaseticket",
 }
 
 AddCommand(PurchaseTicketCommand)

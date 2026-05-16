@@ -100,7 +100,7 @@ object_tangible_wearables_armor_ris_armor_ris_boots = object_tangible_wearables_
 	-- Damage types in WeaponObject
 	vulnerability = ACID + STUN + LIGHTSABER,
 
-	-- Baseline resists for non-crafted spawns (was Blue Frog 15%). ~composite-tier on main types; 0 on RIS vulnerabilities (acid/stun/LS).
+	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
 	actionEncumbrance = 1,
 	mindEncumbrance = 1,
@@ -108,14 +108,14 @@ object_tangible_wearables_armor_ris_armor_ris_boots = object_tangible_wearables_
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 
-	kinetic = 60,
-	energy = 60,
-	electricity = 60,
-	stun = 10,
-	blast = 60,
-	heat = 60,
-	cold = 60,
-	acid = 10,
+	kinetic = 15,
+	energy = 15,
+	electricity = 15,
+	stun = 15,
+	blast = 15,
+	heat = 15,
+	cold = 15,
+	acid = 15,
 	lightSaber = 0,
 
 	numberExperimentalProperties = {1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 2, 1},
