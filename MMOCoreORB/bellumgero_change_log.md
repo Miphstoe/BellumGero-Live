@@ -600,6 +600,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 *(Editor rules, CI, docs-only, etc.)*
 
+### 2026-05-16 — PR: restore `.cursor/` from Main (no Mando diff on context files)
+
+- **Summary:** Re-checked out **`.cursor/context`** and **`.cursor/plans`** from **`origin/Main`** so **`Ender_MandalorianWay`** no longer proposes deleting them in the PR. Local **`.cursor/`** remains in **`.gitignore`** for dev-only edits; Mando work stays in **`MMOCoreORB`**.
+- **Files:** `.cursor/context/CREATURE_MISSION_TERMINAL_REQUIREMENTS.md`, `.cursor/context/CREATURE_TEST_RUNNER.md`, `.cursor/context/SWG_CONTEXT.md`, `.cursor/plans/creature_testing_procedure_eee15654.plan.md`, `bellumgero_change_log.md`
+- **Notes:** Prior commit `85da21c045` had removed these from the branch tree; restoring aligns with Main and drops ~384 lines of red PR noise.
+
 ### 2026-04-14 — Repo: drop tracked `.cursor/` and root `docs/` reports from branch
 
 - **Summary:** Removed **`.cursor/context`** and **`.cursor/plans`** and repo-root **`docs/`** (cantina placement reports) from version control so other developers only need the shared tree (**`MMOCoreORB`**, **docker**, **linux**, **wsl2**, etc.). Added **`.cursor/`** to **`.gitignore`** so local Cursor context stays untracked.
