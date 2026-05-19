@@ -17,6 +17,7 @@
 #include "server/zone/objects/group/GroupObject.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/statistics/StatisticsManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/packets/player/PlayMusicMessage.h"
 #include "server/zone/objects/mission/events/FailMissionAfterCertainTimeTask.h"
 #include "events/CompleteMissionObjectiveTask.h"
@@ -382,6 +383,111 @@ void MissionObjectiveImplementation::awardReward() {
 	}
 */
 	StatisticsManager::instance()->completeMission(mission->getTypeCRC(), totalRewarded);
+
+	// Mando Way of Life — Patches 2 & 3: mission completion hooks
+	{
+		ManagedReference<PlayerObject*> ghost = owner->getPlayerObject();
+		if (ghost != nullptr) {
+			String missionId = String::valueOf(mission->getObjectID());
+
+			// Patch 2: BH terminal mission counting (Chapters 1+).
+			// Count NPC-mark bounties completed while the gate is open. Do not require bhTagged_* at
+			// accept time — missions pulled before the operative opens the count were never tagged,
+			// so completions were silent. Player bounties use an empty target optional template; exclude those.
+			if (ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1" &&
+				mission->getTypeCRC() == MissionTypes::BOUNTY &&
+				mission->getTargetOptionalTemplate() != "" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId) != "1") {
+
+				int count = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "bhTerminalCount"));
+				if (count < 5) {
+					count++;
+					ghost->setScreenPlayData("MandoWayOfLife", "bhTerminalCount", String::valueOf(count));
+					owner->sendSystemMessage("Spynet contracts: " + String::valueOf(count) + "/5");
+
+					Lua* lua = DirectorManager::instance()->getLuaInstance();
+					if (lua != nullptr) {
+						Reference<LuaFunction*> luaSpynetFooter = lua->createFunction("MandoWayOfLife", "sendChapterGateProgressReminder", 0);
+						if (luaSpynetFooter != nullptr) {
+							*luaSpynetFooter << owner.get();
+							*luaSpynetFooter << count;
+							try {
+								luaSpynetFooter->callFunction();
+							} catch (Exception& e) {
+								// Spynet footer is cosmetic — do not abort mission completion
+							}
+						}
+					}
+				}
+				ghost->setScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId, "1");
+			}
+
+			// Spynet hints: BH mission finished but did not advance 5/5 (wrong mark type or count not opened).
+			if (mission->getTypeCRC() == MissionTypes::BOUNTY &&
+				ghost->getScreenPlayData("MandoWayOfLife", "foundling.arcComplete") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "chapter4Complete") != "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "privateContractActive") != "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "needsCustomContract") != "1") {
+
+				const bool countingOn = ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1";
+				const bool npcMark = mission->getTargetOptionalTemplate() != "";
+				const bool spynetStamped = ghost->getScreenPlayData("MandoWayOfLife", "bhCounted_" + missionId) == "1";
+
+				if (!spynetStamped) {
+					if (countingOn && !npcMark) {
+						owner->sendSystemMessage("This mark does not count toward Mandalorian Spynet (player mark). Use NPC bounties from a Bounty Hunter mission terminal.");
+					} else if (!countingOn && npcMark) {
+						owner->sendSystemMessage("Spynet is not open. On Corellia, talk to the Mandalorian Operative and open your Spynet count. Then NPC terminal bounties will report Spynet contracts x/5 when completed.");
+					} else if (!countingOn && !npcMark) {
+						owner->sendSystemMessage("Player marks do not count toward Mandalorian Spynet, and your Spynet count is not open. See the Mandalorian Operative on Corellia, then take NPC terminal bounties.");
+					}
+				}
+			}
+
+			// Patch 3: Foundling planet quota counting (Chapter 0).
+			// Count standard mission-terminal completions (not player bounties / Guild work).
+			if (ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCountingEnabled") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId) != "1") {
+
+				uint32 typeCRC = mission->getTypeCRC();
+				const bool foundlingCounts =
+					typeCRC != MissionTypes::BOUNTY
+					&& (typeCRC == MissionTypes::DESTROY || typeCRC == MissionTypes::DELIVER
+						|| typeCRC == MissionTypes::HUNTING || typeCRC == MissionTypes::RECON
+						|| typeCRC == MissionTypes::CRAFTING || typeCRC == MissionTypes::SURVEY
+						|| typeCRC == MissionTypes::ESCORT || typeCRC == MissionTypes::ESCORT2ME
+						|| typeCRC == MissionTypes::ESCORTTOCREATOR);
+
+				if (foundlingCounts) {
+					int done = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCompleted"));
+					int target = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetTarget"));
+					done++;
+					ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetCompleted", String::valueOf(done));
+					ghost->setScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId, "1");
+
+					owner->sendSystemMessage("Foundling quota: " + String::valueOf(done) + "/" + String::valueOf(target));
+
+					if (done >= target && ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetDone") != "1") {
+						ghost->setScreenPlayData("MandoWayOfLife", "foundling.planetDone", "1");
+						// Lua screenplay polls planetDone and fires the system message + waypoint activation
+					}
+
+					Lua* lua = DirectorManager::instance()->getLuaInstance();
+					if (lua != nullptr) {
+						Reference<LuaFunction*> luaTracker = lua->createFunction("MandoWayOfLife", "sendFoundlingQuotaTrackerOnMissionComplete", 0);
+						if (luaTracker != nullptr) {
+							*luaTracker << owner.get();
+							try {
+								luaTracker->callFunction();
+							} catch (Exception& e) {
+								// Foundling tracker is cosmetic — do not abort mission completion
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 Vector3 MissionObjectiveImplementation::getEndPosition() {

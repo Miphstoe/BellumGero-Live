@@ -42,6 +42,7 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "hasPermissionGroup", &LuaPlayerObject::hasPermissionGroup },
 		{ "awardBadge", &LuaPlayerObject::awardBadge },
 		{ "hasBadge", &LuaPlayerObject::hasBadge },
+		{ "setTitle", &LuaPlayerObject::setTitle },
 		{ "addHologrindProfession", &LuaPlayerObject::addHologrindProfession },
 		{ "getHologrindProfessions", &LuaPlayerObject::getHologrindProfessions },
 		{ "getForcePower", &LuaPlayerObject::getForcePower },
@@ -367,6 +368,19 @@ int LuaPlayerObject::hasBadge(lua_State* L){
 	lua_pushboolean(L, realObject->hasBadge(badgeId));
 
 	return 1;
+}
+
+int LuaPlayerObject::setTitle(lua_State* L) {
+	const char* str = lua_tostring(L, -1);
+
+	if (str == nullptr) {
+		return 0;
+	}
+
+	String title(str);
+	realObject->setTitle(title, true);
+
+	return 0;
 }
 
 int LuaPlayerObject::addHologrindProfession(lua_State* L){

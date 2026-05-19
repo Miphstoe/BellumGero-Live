@@ -29,7 +29,8 @@ admin_player_management_01 = {
 		"setFactionStanding",
 		"setRank",
 		"setTEF",
-		"showFactionInformation"
+		"showFactionInformation",
+		"mandoFoundlingAdmin"
 	},
 	skillModifiers = {},
 	schematicsGranted = {},

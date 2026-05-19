@@ -84,7 +84,12 @@ function GoToTheater:taskStart(pPlayer)
 		local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
 		if (pGhost ~= nil) then
-			PlayerObject(pGhost):addWaypoint(zoneName, self.waypointDescription, "", spawnPoint[1], 0, spawnPoint[3], WAYPOINT_YELLOW, true, true, WAYPOINTQUESTTASK)
+			local wpId = PlayerObject(pGhost):addWaypoint(zoneName, self.waypointDescription, "", spawnPoint[1], 0, spawnPoint[3], WAYPOINT_YELLOW, true, true, WAYPOINTQUESTTASK)
+			if (wpId == nil) then
+				printLuaError("GoToTheater:taskStart addWaypoint returned nil for task " .. self.taskName .. " (quest tab pin may be missing until restore).")
+			end
+		else
+			printLuaError("GoToTheater:taskStart player ghost nil; cannot add quest waypoint for task " .. self.taskName .. ".")
 		end
 	end
 

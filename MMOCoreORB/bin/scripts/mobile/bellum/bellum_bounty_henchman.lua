@@ -1,0 +1,41 @@
+-- Bellum Spynet bounty camp — associate / thief (level set at spawn by screenplay)
+bellum_bounty_henchman = Creature:new {
+	objectName = "",
+	customName = "",
+	socialGroup = "criminal",
+	faction = "",
+	mobType = MOB_NPC,
+	level = 40,
+	chanceHit = 0.50,
+	damageMin = 330,
+	damageMax = 500,
+	baseXp = 1500,
+	baseHAM = 19000,
+	baseHAMmax = 24000,
+	armor = 0,
+	resists = {5, 5, 0, 0, 10, 5, 0, 5, -1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = ATTACKABLE,
+	creatureBitmask = NONE,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+
+	templates = {"object/mobile/dressed_criminal_thug_aqualish_male_01.iff"},
+	lootGroups = {},
+
+	primaryWeapon = "general_pistol",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = marksmanmid,
+	secondaryAttacks = {},
+}
+
+CreatureTemplates:addCreatureTemplate(bellum_bounty_henchman, "bellum_bounty_henchman")

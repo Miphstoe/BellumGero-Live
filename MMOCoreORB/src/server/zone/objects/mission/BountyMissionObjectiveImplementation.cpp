@@ -22,6 +22,7 @@
 #include "server/zone/objects/mission/bountyhunter/BountyHunterDroid.h"
 #include "server/zone/objects/mission/bountyhunter/events/BountyHunterTargetTask.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
+#include "conf/ConfigManager.h"
 
 void BountyMissionObjectiveImplementation::setNpcTemplateToSpawn(SharedObjectTemplate* sp) {
 	npcTemplateToSpawn = sp;
@@ -142,11 +143,21 @@ void BountyMissionObjectiveImplementation::complete() {
 void BountyMissionObjectiveImplementation::spawnTarget(const String& zoneName) {
 	Locker locker(&syncMutex);
 
+	const bool bountySpawnDbg = ConfigManager::instance()->getBool("Core3.MissionManager.BountyNpcSpawnDebug", false);
+
 	ManagedReference<MissionObject* > mission = this->mission.get();
 
 	if (mission == nullptr || (npcTarget != nullptr && npcTarget->isInQuadTree()) || isPlayerTarget()) {
+		if (bountySpawnDbg) {
+			info(true) << "[BountyNpcSpawnDebug] spawnTarget early return mission="
+				<< (mission != nullptr ? mission->getObjectID() : (uint64)0)
+				<< " npcInTree=" << (npcTarget != nullptr && npcTarget->isInQuadTree() ? "1" : "0")
+				<< " playerTarget=" << (isPlayerTarget() ? "1" : "0");
+		}
 		return;
 	}
+
+	ManagedReference<CreatureObject*> ownerDbg = getPlayerOwner();
 
 	ZoneServer* zoneServer = getPlayerOwner()->getZoneServer();
 	Zone* zone = zoneServer->getZone(zoneName);
@@ -161,9 +172,19 @@ void BountyMissionObjectiveImplementation::spawnTarget(const String& zoneName) {
 
 	if (npcTarget == nullptr) {
 		Vector3 position = getTargetPosition();
+		const float spawnZ = zone->getHeight(position.getX(), position.getY());
+
+		if (bountySpawnDbg) {
+			info(true) << "[BountyNpcSpawnDebug] spawnTarget spawnCreatureWithAi owner=" << (ownerDbg != nullptr ? ownerDbg->getObjectID() : 0)
+				<< " mission=" << mission->getObjectID()
+				<< " zone=" << zoneName
+				<< " template=" << mission->getTargetOptionalTemplate()
+				<< " xy=" << position.getX() << "," << position.getY() << " z=" << spawnZ
+				<< " targetDisplayName=" << mission->getTargetName();
+		}
 
 		try {
-			npcTarget = cast<AiAgent*>(zone->getCreatureManager()->spawnCreatureWithAi(mission->getTargetOptionalTemplate().hashCode(), position.getX(), zone->getHeight(position.getX(), position.getY()), position.getY(), 0));
+			npcTarget = cast<AiAgent*>(zone->getCreatureManager()->spawnCreatureWithAi(mission->getTargetOptionalTemplate().hashCode(), position.getX(), spawnZ, position.getY(), 0));
 		} catch (Exception& e) {
 			fail();
 			ManagedReference<CreatureObject*> player = getPlayerOwner();
@@ -173,6 +194,12 @@ void BountyMissionObjectiveImplementation::spawnTarget(const String& zoneName) {
 			error("Template error: " + e.getMessage() + " Template = '" + mission->getTargetOptionalTemplate() +"'");
 		}
 		if (npcTarget != nullptr) {
+			if (bountySpawnDbg) {
+				info(true) << "[BountyNpcSpawnDebug] spawn OK oid=" << npcTarget->getObjectID()
+					<< " inQuadTree=" << (npcTarget->isInQuadTree() ? "1" : "0")
+					<< " worldPos=" << npcTarget->getWorldPosition().getX() << "," << npcTarget->getWorldPosition().getY()
+					<< "," << npcTarget->getWorldPosition().getZ();
+			}
 			npcTarget->setCustomObjectName(mission->getTargetName(), true);
 
 			// Set inventory loot ownership to mission owner so bounty mission completion works correctly
@@ -195,6 +222,8 @@ void BountyMissionObjectiveImplementation::spawnTarget(const String& zoneName) {
 			addObserverToCreature(ObserverEventType::OBJECTDESTRUCTION, npcTarget);
 			addObserverToCreature(ObserverEventType::DAMAGERECEIVED, npcTarget);
 		} else {
+			if (bountySpawnDbg)
+				info(true) << "[BountyNpcSpawnDebug] spawnCreatureWithAi returned null template=" << mission->getTargetOptionalTemplate();
 			fail();
 			ManagedReference<CreatureObject*> player = getPlayerOwner();
 			if (player != nullptr) {

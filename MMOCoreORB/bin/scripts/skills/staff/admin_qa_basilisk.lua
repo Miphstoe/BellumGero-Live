@@ -31,6 +31,7 @@ admin_qa_basilisk = {
 		"invulnerable",
 		"findObject",
 		"findPlayer",
+		"mandoFoundlingAdmin",
 		"showFactionInformation",
 	},
 	skillModifiers = {},

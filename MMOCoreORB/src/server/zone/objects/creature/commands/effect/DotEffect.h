@@ -93,8 +93,10 @@ public:
 		secondaryPercent = dot.getFloatField("secondaryPercent");
 
 		LuaObject defMods = dot.getObjectField("defenderStateDefenseModifiers");
-		for(int i = 1;i <= defMods.getTableSize();++i){
-			defenderStateDefenseModifiers.add(defMods.getStringAt(i));
+		if (defMods.isValidTable()) {
+			for (int i = 1; i <= defMods.getTableSize(); ++i) {
+				defenderStateDefenseModifiers.add(defMods.getStringAt(i));
+			}
 		}
 
 		defMods.pop();

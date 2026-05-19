@@ -35,6 +35,7 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/player/PlayerObject.h"
 
 #include "server/zone/managers/creature/SpawnGroup.h"
 #include "templates/faction/Factions.h"
@@ -293,6 +294,16 @@ void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionT
 	datapad->transferObject(mission, -1, true);
 
 	createMissionObjectives(mission, missionTerminal, player);
+
+	// Mando Way of Life — Patch 1: tag BH mission at accept for chapter counting (Chapters 1+)
+	{
+		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+		if (ghost != nullptr && ghost->getScreenPlayData("MandoWayOfLife", "countingEnabled") == "1") {
+			if (mission->getTypeCRC() == MissionTypes::BOUNTY) {
+				ghost->setScreenPlayData("MandoWayOfLife", "bhTagged_" + String::valueOf(mission->getObjectID()), "1");
+			}
+		}
+	}
 
 	player->updateToDatabaseAllObjects(false);
 }
@@ -1071,11 +1082,56 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 
 	int level = 1;
 	int randomTexts = 25;
-	if (player->hasSkill("combat_bountyhunter_investigation_03")) {
-		level = 3;
-	} else if (player->hasSkill("combat_bountyhunter_investigation_01")) {
-		level = 2;
-		randomTexts = 50;
+	// Explicit menu tier 4 (Investigation IV): same mob pool / mission level as tier 3, but higher Jedi-mark roll weight.
+	bool eliteInvestigationListing = false;
+
+	// Optional terminal UI tier (bounty_contract_tier / tierChoice). Does not affect Mando Spynet 5/5:
+	// MissionObjectiveImplementation counts NPC terminal bounties when countingEnabled + BOUNTY + non-empty target template.
+
+	ManagedReference<PlayerObject*> prefGhost = player->getPlayerObject();
+	String tierChoice;
+	if (prefGhost != nullptr)
+		tierChoice = prefGhost->getScreenPlayData("bounty_contract_tier", "tierChoice").trim().toLowerCase();
+
+	bool useAutoTier = tierChoice.isEmpty() || tierChoice == "auto" || tierChoice == "0";
+
+	if (!useAutoTier) {
+		if (tierChoice == "1") {
+			level = 1;
+		} else if (tierChoice == "2") {
+			if (player->hasSkill("combat_bountyhunter_investigation_01")) {
+				level = 2;
+				randomTexts = 50;
+			} else {
+				useAutoTier = true;
+			}
+		} else if (tierChoice == "3") {
+			if (player->hasSkill("combat_bountyhunter_investigation_03")) {
+				level = 3;
+			} else {
+				useAutoTier = true;
+			}
+		} else if (tierChoice == "4") {
+			if (player->hasSkill("combat_bountyhunter_investigation_04")) {
+				level = 3;
+				eliteInvestigationListing = true;
+			} else {
+				useAutoTier = true;
+			}
+		} else {
+			useAutoTier = true;
+		}
+	}
+
+	if (useAutoTier) {
+		level = 1;
+		randomTexts = 25;
+		if (player->hasSkill("combat_bountyhunter_investigation_03")) {
+			level = 3;
+		} else if (player->hasSkill("combat_bountyhunter_investigation_01")) {
+			level = 2;
+			randomTexts = 50;
+		}
 	}
 
 	NameManager* nm = processor->getNameManager();
@@ -1085,6 +1141,11 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 
 	if (level == 3 && size > 0) {
 		int compareValue = size > 25 ? 25 : size < 5 ? 5 : size;
+		if (eliteInvestigationListing) {
+			compareValue += 10;
+			if (compareValue > 50)
+				compareValue = 50;
+		}
 		if (System::random(100) < compareValue) {
 			playerTarget = true;
 			randomTexts = 6;
@@ -2014,6 +2075,25 @@ if (type == MissionTypes::DESTROY && player != nullptr) {
     }
 }
 // --- END: Mission Target Lock (Bellum Gero) ---
+
+	// Bellum custom shard behavior:
+	// Destroy missions should always be available from the active mission group
+	// and must not be filtered out by player or group level.
+	if (type == MissionTypes::DESTROY) {
+		LairSpawn* randomDestroy = availableLairList->get(System::random(availableLairList->size() - 1));
+		if (randomDestroy != nullptr) {
+			return randomDestroy;
+		}
+
+		for (int i = 0; i < availableLairList->size(); i++) {
+			LairSpawn* fallbackDestroy = availableLairList->get(i);
+			if (fallbackDestroy != nullptr) {
+				return fallbackDestroy;
+			}
+		}
+
+		return nullptr;
+	}
 
 	LairSpawn* lairSpawn = nullptr;
 

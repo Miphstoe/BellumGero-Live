@@ -32,10 +32,12 @@ public:
         SharedObjectTemplate* tmpl = weapon->getObjectTemplate();
         String tplPath = tmpl ? tmpl->getFullTemplateString() : String();
 
-        // Accept original lightning rifles OR the heavy lightning rifle template
+        // Stock LLC, heavy LLC, Bellum custom LLC (same CRC family as rifle_lightning.iff only for stock)
         bool isLightningWeapon =
             weapon->isLightningRifle() ||
-            tplPath == "object/weapon/ranged/rifle/rifle_lightning_heavy.iff";
+            tplPath == "object/weapon/ranged/rifle/rifle_lightning_heavy.iff" ||
+            tplPath == "object/weapon/ranged/rifle/rifle_foundling_light_lightning_cannon.iff" ||
+            tplPath == "object/weapon/ranged/rifle/rifle_mando_way_lightning.iff";
 
         if (!isLightningWeapon)
             return INVALIDWEAPON;

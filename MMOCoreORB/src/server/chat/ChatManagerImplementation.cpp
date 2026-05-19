@@ -40,6 +40,7 @@
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 #include "server/chat/StringIdChatParameter.h"
 #include "server/chat/PersistentMessage.h"
@@ -1081,6 +1082,24 @@ void ChatManagerImplementation::broadcastChatMessage(CreatureObject* sourceCreat
 
 	if (zone == nullptr)
 		return;
+
+	// Bellum Gero: Foundling arc status. Stock SWG clients reject unknown /slash commands before the server
+	// sees them; typing !foundling in Say reaches here and invokes Lua (mandoFoundlingStatusRun).
+	if (sourceCreature->isPlayerCreature()) {
+		String plain = message.toString().trim().toLowerCase();
+		// Aliases: !mando / !mandostatus (easier to remember than !foundling after Spynet).
+		if (plain == "!foundling" || plain == "!foundlingstatus" || plain == "!mando" || plain == "!mandostatus") {
+			Lua* lua = DirectorManager::instance()->getLuaInstance();
+			if (lua != nullptr) {
+				Reference<LuaFunction*> f = lua->createFunction("mandoFoundlingStatusRun", 0);
+				if (f != nullptr) {
+					*f << sourceCreature;
+					f->callFunction();
+				}
+			}
+			return;
+		}
+	}
 
 	if (spatialChatType == 0) {
 		spatialChatType = defaultSpatialChatType;

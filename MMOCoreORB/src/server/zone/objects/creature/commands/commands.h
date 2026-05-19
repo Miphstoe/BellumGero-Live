@@ -397,6 +397,7 @@
 #include "MakeMasterLooterCommand.h"
 #include "MakeSurveyCommand.h"
 #include "ManufactureCommand.h"
+#include "MandoFoundlingAdminCommand.h"
 #include "MaskscentCommand.h"
 #include "MaxCombatAbilityCommand.h"
 #include "MaxStatsCommand.h"

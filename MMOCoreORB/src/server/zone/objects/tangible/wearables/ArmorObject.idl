@@ -263,4 +263,11 @@ class ArmorObject extends WearableObject {
 	public void setHitLocation(unsigned byte h) {
 		hitLocation = h;
 	}
+
+	/**
+	 * Bellum Gero: add raw resist / max condition on non-vulnerable damage types (Mando Way beskar tuning from Lua).
+	 * @return count of applied changes (each non-vulnerable resist increment counts as 1; max-condition bump counts as 1 if applied).
+	 */
+	@dirty
+	public native int applyBellumBeskarTune(float kineticDelta, float energyDelta, float blastDelta, float heatDelta, float acidDelta, int maxConditionBonus);
 }

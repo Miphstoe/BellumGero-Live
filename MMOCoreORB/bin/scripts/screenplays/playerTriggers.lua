@@ -4,6 +4,9 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     if (pPlayer == nil) then return end
     ServerEventAutomation:playerLoggedIn(pPlayer)
     BestineElection:playerLoggedIn(pPlayer)
+    if MandoWayOfLife and MandoWayOfLife.onPlayerLoggedIn then
+        MandoWayOfLife:onPlayerLoggedIn(pPlayer)
+    end
 
     local co = CreatureObject(pPlayer)
     if (co ~= nil and co:hasSkill("force_title_jedi_rank_03")) then

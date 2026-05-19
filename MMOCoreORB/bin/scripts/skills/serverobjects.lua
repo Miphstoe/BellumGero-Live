@@ -42,3 +42,5 @@
 
 includeFile("language/serverobjects.lua")
 includeFile("staff/serverobjects.lua")
+includeFile("bellum/mando_titles.lua")
+includeFile("bellum/mando_armory_certs.lua")

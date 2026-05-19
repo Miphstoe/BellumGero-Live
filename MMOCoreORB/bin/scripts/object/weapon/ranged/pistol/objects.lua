@@ -797,6 +797,12 @@ object_weapon_ranged_pistol_shared_pistol_geonosian_sonic_blaster_loot = SharedW
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_pistol_shared_pistol_geonosian_sonic_blaster_loot, "object/weapon/ranged/pistol/shared_pistol_geonosian_sonic_blaster_loot.iff")
 
+object_weapon_ranged_pistol_shared_pistol_mando_way_geo_blaster = SharedWeaponObjectTemplate:new {
+	clientTemplateFileName = "object/weapon/ranged/pistol/shared_pistol_geonosian_sonic_blaster_loot.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_weapon_ranged_pistol_shared_pistol_mando_way_geo_blaster, "object/weapon/ranged/pistol/shared_pistol_mando_way_geo_blaster.iff")
+
 object_weapon_ranged_pistol_shared_pistol_launcher = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/pistol/shared_pistol_launcher.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
