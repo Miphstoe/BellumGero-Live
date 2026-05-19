@@ -7,6 +7,10 @@
 
 #include "server/zone/managers/guild/GuildManager.h"
 
+#include <algorithm>
+#include <vector>
+#include <utility>
+
 #include "server/chat/ChatManager.h"
 #include "server/chat/room/ChatRoom.h"
 
@@ -1082,6 +1086,8 @@ void GuildManagerImplementation::sendGuildMemberListTo(CreatureObject* player, G
 
 	GuildMemberList* memberList = guild->getGuildMemberList();
 
+	std::vector<std::pair<String, uint64>> sortedMembers;
+
 	for (int i = 0; i < memberList->size(); ++i) {
 		GuildMemberInfo* gmi = &memberList->get(i);
 
@@ -1094,8 +1100,16 @@ void GuildManagerImplementation::sendGuildMemberListTo(CreatureObject* player, G
 		if (obj == nullptr || !obj->isPlayerCreature())
 			continue;
 
-		CreatureObject* member = cast<CreatureObject*>( obj.get());
-		suiBox->addMenuItem(member->getDisplayedName(), playerID);
+		CreatureObject* member = cast<CreatureObject*>(obj.get());
+		sortedMembers.push_back({member->getDisplayedName(), playerID});
+	}
+
+	std::sort(sortedMembers.begin(), sortedMembers.end(), [](const std::pair<String, uint64>& a, const std::pair<String, uint64>& b) {
+		return a.first.toLowerCase() > b.first.toLowerCase();
+	});
+
+	for (const auto& entry : sortedMembers) {
+		suiBox->addMenuItem(entry.first, entry.second);
 	}
 
 	suiBox->setCancelButton(true, "@cancel");

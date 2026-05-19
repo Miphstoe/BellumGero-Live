@@ -8,6 +8,7 @@
 #include "server/zone/objects/player/sui/callbacks/DoctorBuffDroidPriceInputSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/DoctorBuffDroidDiscountSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/DoctorBuffDroidToggleSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/DoctorBuffDroidAdTextSuiCallback.h"
 #include "server/zone/objects/intangible/VehicleControlDevice.h"
 #include "server/zone/objects/scene/components/DataObjectComponentReference.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
@@ -856,6 +857,26 @@ void DoctorBuffDroidMenuComponent::promptToggleSelection(SceneObject* sceneObjec
 	player->sendMessage(box->generateMessage());
 }
 
+void DoctorBuffDroidMenuComponent::promptAdTextInput(SceneObject* sceneObject, CreatureObject* player) {
+	if (sceneObject == nullptr || player == nullptr)
+		return;
+
+	DoctorBuffDroidDataComponent* data = getDroidData(sceneObject);
+	if (data == nullptr)
+		return;
+
+	ManagedReference<SuiInputBox*> box = new SuiInputBox(player, SuiWindowType::NONE);
+	box->setPromptTitle("Doctor Buff Droid Ad Message");
+	box->setPromptText("Enter the advertisement message the droid will bark to nearby players (max 200 characters). Ad barking will be enabled automatically.");
+	box->setMaxInputSize(200);
+	String currentText = data->getAdBarkText();
+	if (!currentText.isEmpty())
+		box->setDefaultInput(currentText);
+	box->setCallback(new DoctorBuffDroidAdTextSuiCallback(player->getZoneServer(), sceneObject));
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
 bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta) {
 	if (sceneObject == nullptr || player == nullptr || data == nullptr)
 		return false;
@@ -1048,6 +1069,8 @@ void DoctorBuffDroidMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_TOGGLE_SERVICES, 3, "Toggle Services");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_EARNINGS, 3, "View Earnings");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_WITHDRAW, 3, "Withdraw Earnings");
+	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_SET_AD, 3, "Set Ad Message");
+	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_TOGGLE_AD, 3, String("Ad Barking (") + (data->isAdBarkEnabled() ? "On" : "Off") + ")");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_STORE, 3, "Store Droid");
 }
 
@@ -1139,6 +1162,24 @@ int DoctorBuffDroidMenuComponent::handleObjectMenuSelect(SceneObject* sceneObjec
 				player->addCashCredits(amount, true);
 				player->sendSystemMessage("Withdrew " + String::valueOf(amount) + " credits from the Doctor Buff Droid.");
 			}
+		}
+		return 0;
+	case MENU_SET_AD:
+		if (!data->isOwner(player)) {
+			sendOwnerOnlyMessage(player);
+			return 0;
+		}
+		promptAdTextInput(sceneObject, player);
+		return 0;
+	case MENU_TOGGLE_AD:
+		if (!data->isOwner(player)) {
+			sendOwnerOnlyMessage(player);
+			return 0;
+		} else {
+			bool nowEnabled = !data->isAdBarkEnabled();
+			data->setAdBarkEnabled(nowEnabled);
+			persistDroidState(sceneObject);
+			player->sendSystemMessage(String("Doctor Buff Droid ad barking ") + (nowEnabled ? "enabled." : "disabled."));
 		}
 		return 0;
 	case MENU_STORE:

@@ -22,6 +22,7 @@
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidZoneComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/TurretControlTerminalDataComponent.h"
@@ -261,6 +262,7 @@ ComponentManager::ComponentManager() {
 	components.put("DroidDatapadContainerComponent", new DroidDatapadContainerComponent());
 	components.put("VendorMenuComponent", new VendorMenuComponent());
 	components.put("DoctorBuffDroidMenuComponent", new DoctorBuffDroidMenuComponent());
+	components.put("DoctorBuffDroidZoneComponent", new DoctorBuffDroidZoneComponent());
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());
