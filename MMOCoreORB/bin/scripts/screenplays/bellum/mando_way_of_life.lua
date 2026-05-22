@@ -215,8 +215,8 @@ MandoWayOfLife = ScreenPlay:new {
 	-- planetDone poll interval (ms)
 	PLANET_DONE_POLL_MS = 60000,
 
-	-- Mission-terminal quota per Foundling planet (set to 36 for production)
-	FOUNDLING_PLANET_QUOTA_TARGET = 6,
+	-- Mission-terminal quota per Foundling planet
+	FOUNDLING_PLANET_QUOTA_TARGET = 24,
 
 	-- ---- Testing / deployment toggles (keep false on live shards) ----
 	-- false = recruiter comes from TatooineMosEisleyScreenPlay mobiles (Cantina); true = duplicate spawn from start().
@@ -1618,7 +1618,7 @@ function MandoWayOfLife:acceptPlanetAssignment(pPlayer)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "foundling.planetCountingEnabled") == 1) then return end
 
-	local target = self.FOUNDLING_PLANET_QUOTA_TARGET or 6
+	local target = self.FOUNDLING_PLANET_QUOTA_TARGET or 24
 	self:writeInt(pPlayer, "foundling.planetTarget", target)
 	self:writeInt(pPlayer, "foundling.planetCompleted", 0)
 	self:writeInt(pPlayer, "foundling.planetDone", 0)
