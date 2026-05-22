@@ -464,6 +464,15 @@ function MandoWayOfLife:startFoundlingArc(pPlayer)
 	-- Advance to planet 1 (Tatooine)
 	self:advanceToPlanet(pPlayer, 1)
 	self:grantFoundlingBeskarCdefKit(pPlayer)
+	self:ensureMandoStatusCommandSkill(pPlayer)
+end
+
+-- Hidden skill so /mandoStatus is server-gated to players (not staff-only admin slash).
+function MandoWayOfLife:ensureMandoStatusCommandSkill(pPlayer)
+	if (pPlayer == nil) then return end
+	if (not CreatureObject(pPlayer):hasSkill("mando_way_status_cmd")) then
+		awardSkill(pPlayer, "mando_way_status_cmd")
+	end
 end
 
 -- Foundling arc start: recruiter kit (CDEF appearance family, species CDEF certs, tuned combat).
@@ -725,6 +734,7 @@ end
 -- Stock client blocks unknown /slash commands; use !foundling or !mando in Say (spatial) so the server receives the line.
 function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 	if (pPlayer == nil) then return end
+	self:ensureMandoStatusCommandSkill(pPlayer)
 	local creo = CreatureObject(pPlayer)
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then
 		local ch = self:readInt(pPlayer, "chapter")
@@ -3110,7 +3120,26 @@ end
 -- ============================================================
 
 function mandoFoundlingStatusRun(pPlayer)
+	MandoWayOfLife:ensureMandoStatusCommandSkill(pPlayer)
 	MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
+end
+
+-- Staff: /mandoStatus <partialOnlineName> (privileged; C++ also gates).
+function mandoStatusAdminRun(pStaff, targetName)
+	if (pStaff == nil or MandoWayOfLife == nil) then return end
+	local sGhost = CreatureObject(pStaff):getPlayerObject()
+	if (sGhost == nil or not PlayerObject(sGhost):isPrivileged()) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoStatus] Denied (requires privileged admin).")
+		return
+	end
+	local name = targetName
+	if (name == nil) then name = "" end
+	name = tostring(name):match("^%s*(.-)%s*$") or ""
+	if (name == "") then
+		CreatureObject(pStaff):sendSystemMessage("[MandoStatus] Usage: /mandoStatus PartialOnlineName")
+		return
+	end
+	MandoWayOfLife:adminFoundlingCommand(pStaff, name)
 end
 
 -- ============================================================

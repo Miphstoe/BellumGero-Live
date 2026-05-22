@@ -3,6 +3,8 @@
 
 MandoFoundlingAdminCommand = {
 	name = "mandoFoundlingAdmin",
+	-- Must match staff skills (admin_player_management_01, etc.). Blocks non-staff on server.
+	characterAbility = "mandoFoundlingAdmin",
 }
 
 AddCommand(MandoFoundlingAdminCommand)
