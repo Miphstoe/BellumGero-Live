@@ -860,6 +860,7 @@ object_weapon_ranged_carbine_shared_carbine_nym_slugthrower = SharedWeaponObject
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_carbine_shared_carbine_nym_slugthrower, "object/weapon/ranged/carbine/shared_carbine_nym_slugthrower.iff")
 
+-- Client IFF path: shared_carbine_mando_way_slugthrower.iff (bg_custom1). STF: carbine_mando_way_slugthrower
 object_weapon_ranged_carbine_shared_carbine_mando_way_slugthrower = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/carbine/shared_carbine_nym_slugthrower.iff"
 }
