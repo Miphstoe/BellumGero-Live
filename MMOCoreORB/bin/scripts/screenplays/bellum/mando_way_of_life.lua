@@ -424,12 +424,16 @@ end
 
 -- ============================================================
 -- PREREQUISITES (Chapter 0 entry gate)
--- Novice Scout + Novice Marksman + Novice Medic
+-- Path A: Novice Scout + Novice Marksman + Novice Medic
+-- Path B: Novice Bounty Hunter (existing BHs skip the starter trio)
 -- ============================================================
 
 function MandoWayOfLife:meetsPrerequisites(pPlayer)
 	if (pPlayer == nil) then return false end
 	local creature = CreatureObject(pPlayer)
+	if (creature:hasSkill("combat_bountyhunter_novice")) then
+		return true
+	end
 	return creature:hasSkill("outdoors_scout_novice")
 		and creature:hasSkill("combat_marksman_novice")
 		and creature:hasSkill("science_medic_novice")
@@ -776,7 +780,7 @@ function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 	end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then
 		creo:sendSystemMessage("[Foundling] You have not started the Foundling arc yet.")
-		creo:sendSystemMessage("[Foundling] Train Novice Scout, Novice Marksman, and Novice Medic, then speak to the Mandalorian Recruiter in Mos Eisley cantina.")
+		creo:sendSystemMessage("[Foundling] Train Novice Scout, Novice Marksman, and Novice Medic, or earn Novice Bounty Hunter, then speak to the Mandalorian Recruiter in Mos Eisley cantina.")
 		self:logDiagPlayer(pPlayer, "sendFoundlingStatusReportToPlayer: ch0 not started.")
 		return
 	end

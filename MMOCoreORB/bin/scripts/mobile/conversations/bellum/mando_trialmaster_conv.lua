@@ -49,7 +49,7 @@ mandoTrialmasterConvoTemplate:addScreen(explain)
 prereqs_missing = ConvoScreen:new {
 	id = "prereqs_missing",
 	leftDialog = "",
-	customDialogText = "You want plates? Earn the right to wear them. Scout the terrain. Learn to shoot. Carry your own medpac. Come back when you have mastered all three.",
+	customDialogText = "You want plates? Earn the right to wear them. Scout the terrain. Learn to shoot. Carry your own medpac. Or train Novice Bounty Hunter if you already walk the hunt. Come back when one path is complete.",
 	stopConversation = "true",
 	options = {}
 }
