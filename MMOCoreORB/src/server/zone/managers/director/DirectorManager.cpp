@@ -5081,15 +5081,24 @@ int DirectorManager::getQuestTasks(lua_State* L) {
 }
 
 int DirectorManager::broadcastToGalaxy(lua_State* L) {
-	if (checkArgumentCount(L, 2) == 1) {
+	const int argCount = lua_gettop(L);
+
+	if (argCount < 1 || argCount > 2) {
 		String err = "incorrect number of arguments passed to DirectorManager::broadcastToGalaxy";
 		printTraceError(L, err);
 		ERROR_CODE = INCORRECT_ARGUMENTS;
 		return 0;
 	}
 
-	CreatureObject* creature = (CreatureObject*)lua_touserdata(L, -2);
-	String message = Lua::getStringParameter(L, -1);
+	String message;
+
+	if (argCount == 1) {
+		message = Lua::getStringParameter(L, -1);
+	} else {
+		// Screenplay userdata can outlive the underlying object, so Lua galaxy broadcasts
+		// are routed as system notices instead of trusting a raw CreatureObject pointer.
+		message = Lua::getStringParameter(L, -1);
+	}
 
 	ZoneServer* zoneServer = ServerCore::getZoneServer();
 
@@ -5102,7 +5111,7 @@ int DirectorManager::broadcastToGalaxy(lua_State* L) {
 	if (chatManager == nullptr)
 		return 0;
 
-	chatManager->broadcastGalaxy(creature, message);
+	chatManager->broadcastGalaxy(nullptr, message);
 
 	return 1;
 }

@@ -1025,6 +1025,8 @@ void ChatManagerImplementation::broadcastGalaxy(CreatureObject* creature, const 
 			firstName = creature->getCustomObjectName().toString();
 			fullMessage << firstName << ": ";
 		}
+	} else {
+		fullMessage << "[" << firstName << "] ";
 	}
 
 	fullMessage << message;
