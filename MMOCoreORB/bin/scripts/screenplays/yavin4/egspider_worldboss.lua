@@ -141,19 +141,15 @@ local function attachObservers(self, pBoss)
 end
 
 -- ===================== galaxy broadcast helper =====================
--- Uses your fork's broadcastToGalaxy(creatureObject, message).
--- Tries with boss pointer (preferred), then nil, then 1-arg form.
-local function galaxyBroadcast(msg, ctx)
+-- Prefer the system-style nil sender so galaxy notices never depend on a live creature pointer.
+local function galaxyBroadcast(msg)
   msg = tostring(msg or "")
   if type(broadcastToGalaxy) == "function" then
-    if ctx and _try(broadcastToGalaxy, ctx, msg) then
-      print("[EGSPIDER][BCAST] broadcastToGalaxy(ctx,msg)"); return true
-    end
     if _try(broadcastToGalaxy, nil, msg) then
       print("[EGSPIDER][BCAST] broadcastToGalaxy(nil,msg)"); return true
     end
-    if _try(broadcastToGalaxy, msg) then
-      print("[EGSPIDER][BCAST] broadcastToGalaxy(msg)"); return true
+    if _try(broadcastToGalaxy, 0, msg) then
+      print("[EGSPIDER][BCAST] broadcastToGalaxy(0,msg)"); return true
     end
   end
   print("[EGSPIDER][BCAST-FAIL] "..msg)
@@ -173,6 +169,56 @@ local function bindOID(self, pBoss)
     return true
   end
   return false
+end
+
+local function clearBossTracking(self)
+  self.bossPtr = nil
+  self.bossOID = nil
+  writeData(self.DATA_BOSS_OID, 0)
+  writeData(self.DATA_NEXT_BCAST_AT, 0)
+end
+
+local function resolveBossFromOID(self)
+  local savedOID = tonumber(readData(self.DATA_BOSS_OID) or 0) or 0
+  if savedOID <= 0 then
+    return nil, "no stored boss OID"
+  end
+
+  local obj = getSceneObject(savedOID)
+  if obj == nil then
+    return nil, "getSceneObject returned nil"
+  end
+
+  local so = SceneObject(obj)
+  if so == nil then
+    return nil, "SceneObject wrapper unavailable"
+  end
+
+  if not so:isCreatureObject() then
+    return nil, "stored object is not a creature"
+  end
+
+  local co = CreatureObject(obj)
+  if co == nil then
+    return nil, "CreatureObject wrapper unavailable"
+  end
+
+  if co:isDead() then
+    return nil, "boss creature is dead"
+  end
+
+  self.bossPtr = obj
+  self.bossOID = savedOID
+  return obj, nil
+end
+
+local function armCooldownForMissingBoss(self, now, reason)
+  local when = now + (self.RESPAWN_SECONDS or 60)
+  clearBossTracking(self)
+  writeData(self.DATA_NEXT_SPAWN, when)
+  self:setState(3)
+  self:d("loop: boss unavailable ("..tostring(reason)..") -> cooldown armed for "..tostring(self.RESPAWN_SECONDS or 60).."s")
+  self:d("loop: stopped boss tracking because the boss is gone")
 end
 
 function EGSpiderBoss:doSpawn()
@@ -203,40 +249,39 @@ function EGSpiderBoss:doSpawn()
 end
 
 function EGSpiderBoss:loop()
-  -- Re-acquire pointer if we know the OID
-  if (not self.bossPtr) then
-    local savedOID = readData(self.DATA_BOSS_OID)
-    if savedOID and tonumber(savedOID) and tonumber(savedOID) > 0 then
-      local obj = getSceneObject(tonumber(savedOID))
-      if obj then self.bossPtr = obj end
-    end
+  if self.VERBOSE_TICK then
+    self:d("loop: start")
   end
-
   local state = self:getState()
   local now   = os.time()
   local nextA = readData(self.DATA_NEXT_SPAWN)
   local cd    = (nextA and tonumber(nextA) and (tonumber(nextA) - now)) or 0
 
+  self.bossPtr = nil
+  self.bossOID = tonumber(readData(self.DATA_BOSS_OID) or 0) or 0
+
+  if state == 1 then
+    local pBoss, reason = resolveBossFromOID(self)
+    if not pBoss then
+      self:d("loop: boss object lookup failed: "..tostring(reason))
+      self:d("loop: broadcast skipped because boss object is unavailable")
+      armCooldownForMissingBoss(self, now, reason)
+    end
+  end
+
   if self.bossPtr then
-    -- Hourly galaxy broadcast while alive
     local nextGal = tonumber(readData(self.DATA_NEXT_BCAST_AT) or 0) or 0
     if nextGal > 0 and now >= nextGal then
       local x = tonumber(readData(self.DATA_LAST_X) or 0) or 0
       local y = tonumber(readData(self.DATA_LAST_Y) or 0) or 0
       local msg = string.format("[NOTICE] %s is located (%.0f, %.0f) on Yavin4.", self.BOSS_NAME, x, y)
-      galaxyBroadcast(msg, self.bossPtr)
+      galaxyBroadcast(msg)
       writeData(self.DATA_NEXT_BCAST_AT, now + (self.REPEAT_EVERY_SECONDS or 3600))
     end
 
   else
     if state == 1 then
-      -- We thought it was alive → arm cooldown
-      local when = now + (self.RESPAWN_SECONDS or 60)
-      writeData(self.DATA_NEXT_SPAWN, when)
-      self:setState(3)
-      writeData(self.DATA_BOSS_OID, 0)
-      writeData(self.DATA_NEXT_BCAST_AT, 0)
-      self:d("loop: boss missing -> cooldown armed for "..tostring(self.RESPAWN_SECONDS or 60).."s")
+      -- State may already have been converted to cooldown by validation above.
     elseif state ~= 3 then
       -- Idle (first boot) → spawn immediately
       self:doSpawn()
