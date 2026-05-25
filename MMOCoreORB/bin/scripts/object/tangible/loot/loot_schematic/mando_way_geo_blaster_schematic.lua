@@ -5,7 +5,7 @@ object_tangible_loot_loot_schematic_mando_way_geo_blaster_schematic = object_tan
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_weaponsmith_master",
 	targetDraftSchematic = "object/draft_schematic/weapon/pistol_mando_way_geo_blaster.iff",
-	targetUseCount = 5
+	targetUseCount = 3
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_mando_way_geo_blaster_schematic, "object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.iff")

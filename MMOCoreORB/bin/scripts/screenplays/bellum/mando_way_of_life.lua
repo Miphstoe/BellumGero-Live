@@ -190,9 +190,9 @@ MandoWayOfLife = ScreenPlay:new {
 		},
 	},
 	mandoWayArmorySchematicSales = {
-		[1] = { chapterFlag = "chapter1Complete", cost = 25000, iff = "object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.iff" },
-		[2] = { chapterFlag = "chapter2Complete", cost = 50000, iff = "object/tangible/loot/loot_schematic/mando_way_slugthrower_schematic.iff" },
-		[3] = { chapterFlag = "chapter3Complete", cost = 85000, iff = "object/tangible/loot/loot_schematic/mando_way_lightning_schematic.iff" },
+		[1] = { chapterFlag = "chapter1Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.iff" },
+		[2] = { chapterFlag = "chapter2Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_slugthrower_schematic.iff" },
+		[3] = { chapterFlag = "chapter3Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_lightning_schematic.iff" },
 	},
 
 	-- Legacy: strip old Spynet coordinate disks from inventory on fail/complete/reset (no longer granted).
