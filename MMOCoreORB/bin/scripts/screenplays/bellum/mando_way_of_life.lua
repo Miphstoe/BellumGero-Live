@@ -83,7 +83,7 @@ MandoWayOfLife = ScreenPlay:new {
 	-- TODO: verify all coordinates in-game before final deploy
 	-- --------------------------------------------------------
 	planetData = {
-		-- Tatooine: per-player informant via spawnInformant(); citySpawn=false so GM spawnStaticInformants can place a hub if ever needed.
+		-- Tatooine: lazy planet singleton via spawnInformant(); citySpawn=false so GM spawnStaticInformants can place a hub if ever needed.
 		[1]  = { planet = "tatooine",  x =  3491, z = 5,  y = -4782, citySpawn = false, parting = "Tatoo system teaches patience. The suns don't rush." },
 		[2]  = { planet = "corellia",  x = -367, z = 28, y = -4577, parting = "Corellians talk too much. Learn to listen first." },
 		[3]  = { planet = "naboo",     x = -5468, z = 5,  y =  4382, parting = "Beauty hides danger. Do not be deceived by what you see." },
@@ -326,9 +326,8 @@ function MandoWayOfLife:start()
 		end
 	end
 
-	-- Dynamic spawn mode: informant NPCs are spawned per-player via spawnInformant() when
-	-- a player advances to each planet. spawnStaticInformants() is kept below for GM admin
-	-- use (Option 5 respawn command) but is NOT called at boot.
+	-- Foundling informants: one lazy singleton per planet via spawnInformant() (shared OID, per-player screenplay).
+	-- spawnStaticInformants() is kept for GM admin (Option 5 respawn) but is NOT called at boot.
 end
 
 -- Post-spawn configuration for template mando_foundling_informant (dynamic spawn, GM static spawn).
@@ -633,8 +632,8 @@ function MandoWayOfLife:tryLinkStaticFoundlingInformant(pPlayer, index, grantInf
 	return true
 end
 
--- Spawn a private informant NPC for this player on the given planet index.
--- Each player gets their own NPC - no shared static keys, no zone-restart wipe.
+-- Link or spawn one Foundling informant per planet (lazy singleton at planetData coords).
+-- Multiple players on the same world share the same NPC; conversation state stays per player.
 -- grantWaypoint: true = grant "find informant" yellow waypoint (pass false when mid-quota).
 -- Returns true on success.
 function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
@@ -643,15 +642,33 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 	local data = self.planetData[index]
 	if (data == nil) then return false end
 
-	-- Clean up any existing informant first (defensive: handles desync where old NPC still alive)
+	-- Drop this player's previous link; destroy only legacy per-player dynamic NPCs (not planet singletons).
 	local oldOid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
+	local wasStatic = self:readInt(pPlayer, "foundling.informantStatic") == 1
 	if (oldOid ~= 0) then
-		local pOld = getSceneObject(oldOid)
-		if (pOld ~= nil) then
-			deleteData("mando_way:informant:" .. tostring(oldOid) .. ":player")
-			SceneObject(pOld):destroyObjectFromWorld()
+		if (not wasStatic) then
+			local pOld = getSceneObject(oldOid)
+			if (pOld ~= nil) then
+				deleteData("mando_way:informant:" .. tostring(oldOid) .. ":player")
+				SceneObject(pOld):destroyObjectFromWorld()
+			end
 		end
 		self:writeStr(pPlayer, "foundling.informantId", "0")
+		self:writeInt(pPlayer, "foundling.informantStatic", 0)
+	end
+
+	local staticKey = "mando_way:foundling_informant_static:" .. data.planet
+	local staticSid = tonumber(readData(staticKey)) or 0
+	if (staticSid ~= 0 and getSceneObject(staticSid) == nil) then
+		deleteData(staticKey)
+	end
+
+	if (self:tryLinkStaticFoundlingInformant(pPlayer, index, grantWaypoint)) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"spawnInformant: linked planet singleton oid=%s planet=%s index=%s grantWp=%s",
+			self:readStr(pPlayer, "foundling.informantId"), tostring(data.planet), tostring(index), tostring(grantWaypoint)
+		))
+		return true
 	end
 
 	local pInformant = spawnMobile(data.planet, "mando_foundling_informant", 0, data.x, data.z, data.y, 0, 0)
@@ -663,19 +680,15 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 		return false
 	end
 
-	-- Per-player informant: shared creature flags (AIENABLED + CONVERSABLE + INVULNERABLE); see configureFoundlingInformantMobile().
+	-- Planet singleton: shared creature flags (AIENABLED + CONVERSABLE + INVULNERABLE); see configureFoundlingInformantMobile().
 	-- Note: NpcConversationStart still requires same cell as player, ~6m, LoS - bad z on planetData breaks LoS with no client error.
 	self:configureFoundlingInformantMobile(pInformant)
 
 	local oid = SceneObject(pInformant):getObjectID()
-	local playerOid = SceneObject(pPlayer):getObjectID()
+	writeData(staticKey, oid)
 
-	-- Register ownership so conv handler can reject other players clicking this NPC
-	writeData("mando_way:informant:" .. tostring(oid) .. ":player", playerOid)
-
-	-- Per-player state
 	self:writeStr(pPlayer, "foundling.informantId", tostring(oid))
-	self:writeInt(pPlayer, "foundling.informantStatic", 0)
+	self:writeInt(pPlayer, "foundling.informantStatic", 1)
 	self:writeInt(pPlayer, "foundling.informantCoordX", data.x)
 	self:writeInt(pPlayer, "foundling.informantCoordY", data.y)
 
@@ -685,15 +698,15 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 
 	local parentId = SceneObject(pInformant):getParentID()
 	self:logDiagPlayer(pPlayer, string.format(
-		"spawnInformant: dynamic NPC spawned oid=%s planet=%s index=%s parentId=%s coords=(%.1f,%.1f,%.1f) grantWp=%s (converse: same outdoor cell as NPC, within ~6m, clear LoS)",
+		"spawnInformant: planet singleton spawned oid=%s planet=%s index=%s parentId=%s coords=(%.1f,%.1f,%.1f) grantWp=%s (converse: same outdoor cell as NPC, within ~6m, clear LoS)",
 		tostring(oid), tostring(data.planet), tostring(index), tostring(parentId),
 		data.x, data.z, data.y, tostring(grantWaypoint)
 	))
 	return true
 end
 
--- If Foundling arc is active but the player's private informant OID is missing (restart, death, stale data),
--- spawn a fresh dynamic NPC and re-grant the appropriate waypoint.
+-- If Foundling arc is active but the player's informant link is missing (restart, death, stale OID),
+-- link or spawn the planet singleton and re-grant the appropriate waypoint.
 function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then return end
