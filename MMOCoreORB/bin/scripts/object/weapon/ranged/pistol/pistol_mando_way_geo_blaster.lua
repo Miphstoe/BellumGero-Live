@@ -1,3 +1,7 @@
+-- Bellum: clan armory pistol (Initiate chapter). Client localized name/description:
+-- `shared_pistol_mando_way_geo_blaster.iff` in bg_custom1.tre →
+-- @weapon_name:pistol_mando_way_geo_blaster, @weapon_detail:..., @weapon_lookat:...
+-- See docs/mando_way_armory_client_names.md. Until TRE ships, customObjectName overrides on server.
 object_weapon_ranged_pistol_pistol_mando_way_geo_blaster = object_weapon_ranged_pistol_shared_pistol_mando_way_geo_blaster:new {
 	customObjectName = "Mandalorian Geonosian Blaster Pistol",
 

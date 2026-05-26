@@ -797,6 +797,7 @@ object_weapon_ranged_pistol_shared_pistol_geonosian_sonic_blaster_loot = SharedW
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_pistol_shared_pistol_geonosian_sonic_blaster_loot, "object/weapon/ranged/pistol/shared_pistol_geonosian_sonic_blaster_loot.iff")
 
+-- Client IFF path: shared_pistol_mando_way_geo_blaster.iff (bg_custom1). STF: pistol_mando_way_geo_blaster
 object_weapon_ranged_pistol_shared_pistol_mando_way_geo_blaster = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/pistol/shared_pistol_geonosian_sonic_blaster_loot.iff"
 }

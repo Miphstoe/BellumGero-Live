@@ -1,3 +1,5 @@
+-- Bellum: clan armory carbine (Hunter chapter). Client STF keys: carbine_mando_way_slugthrower
+-- (docs/mando_way_armory_client_names.md). customObjectName until bg_custom1 IFF+STF live.
 object_weapon_ranged_carbine_carbine_mando_way_slugthrower = object_weapon_ranged_carbine_shared_carbine_mando_way_slugthrower:new {
 	customObjectName = "Mandalorian Nym Slugthrower Carbine",
 

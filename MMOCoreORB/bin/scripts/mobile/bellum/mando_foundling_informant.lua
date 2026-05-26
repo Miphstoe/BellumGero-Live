@@ -1,6 +1,6 @@
 -- Mandalorian Foundling Informant
--- Dynamically spawned per-player on each planet by MandoWayOfLife:spawnInformant()
--- Despawned on planet turn-in by MandoWayOfLife:despawnInformant()
+-- Lazy planet singleton via MandoWayOfLife:spawnInformant() (one NPC per world, shared by concurrent Foundlings)
+-- Player turn-in / advance clears the link only; MandoWayOfLife:despawnInformant() does not destroy singletons
 -- Conversation: mandoFoundlingInformantConvoTemplate
 -- TODO: replace template mesh with confirmed Mandalorian-armored client IFF
 

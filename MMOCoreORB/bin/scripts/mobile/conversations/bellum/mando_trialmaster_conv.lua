@@ -49,7 +49,7 @@ mandoTrialmasterConvoTemplate:addScreen(explain)
 prereqs_missing = ConvoScreen:new {
 	id = "prereqs_missing",
 	leftDialog = "",
-	customDialogText = "You want plates? Earn the right to wear them. Scout the terrain. Learn to shoot. Carry your own medpac. Come back when you have mastered all three.",
+	customDialogText = "You want plates? Earn the right to wear them. Scout the terrain. Learn to shoot. Carry your own medpac. Or train Novice Bounty Hunter if you already walk the hunt. Come back when one path is complete.",
 	stopConversation = "true",
 	options = {}
 }
@@ -206,9 +206,9 @@ mando_armory_shop = ConvoScreen:new {
 	customDialogText = "I keep sealed clan armory schematics for those on the Way. You already received the gift weapon when you passed each trial; buy these for a weaponsmith to experiment for better assemblies. Initiate: Geo blaster pistol. Hunter: Nym slugthrower carbine. Verd'ika: light lightning cannon. Cash only.",
 	stopConversation = "false",
 	options = {
-		{"Mandalorian Geo blaster schematic (250000 credits).", "buy_mando_armory_1"},
-		{"Mandalorian slugthrower schematic (500000 credits).", "buy_mando_armory_2"},
-		{"Mandalorian lightning cannon schematic (850000 credits).", "buy_mando_armory_3"},
+		{"Mandalorian Geo blaster schematic (125000 credits).", "buy_mando_armory_1"},
+		{"Mandalorian slugthrower schematic (125000 credits).", "buy_mando_armory_2"},
+		{"Mandalorian lightning cannon schematic (125000 credits).", "buy_mando_armory_3"},
 		{"Back.", "intro"},
 	}
 }

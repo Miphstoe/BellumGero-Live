@@ -934,6 +934,7 @@ object_weapon_ranged_rifle_shared_rifle_lightning = SharedWeaponObjectTemplate:n
 
 ObjectTemplates:addClientTemplate(object_weapon_ranged_rifle_shared_rifle_lightning, "object/weapon/ranged/rifle/shared_rifle_lightning.iff")
 
+-- Client IFF path: shared_rifle_mando_way_lightning.iff (bg_custom1). STF: rifle_mando_way_lightning
 object_weapon_ranged_rifle_shared_rifle_mando_way_lightning = SharedWeaponObjectTemplate:new {
 	clientTemplateFileName = "object/weapon/ranged/rifle/shared_rifle_lightning.iff"
 }

@@ -83,7 +83,7 @@ MandoWayOfLife = ScreenPlay:new {
 	-- TODO: verify all coordinates in-game before final deploy
 	-- --------------------------------------------------------
 	planetData = {
-		-- Tatooine: per-player informant via spawnInformant(); citySpawn=false so GM spawnStaticInformants can place a hub if ever needed.
+		-- Tatooine: lazy planet singleton via spawnInformant(); citySpawn=false so GM spawnStaticInformants can place a hub if ever needed.
 		[1]  = { planet = "tatooine",  x =  3491, z = 5,  y = -4782, citySpawn = false, parting = "Tatoo system teaches patience. The suns don't rush." },
 		[2]  = { planet = "corellia",  x = -367, z = 28, y = -4577, parting = "Corellians talk too much. Learn to listen first." },
 		[3]  = { planet = "naboo",     x = -5468, z = 5,  y =  4382, parting = "Beauty hides danger. Do not be deceived by what you see." },
@@ -190,9 +190,9 @@ MandoWayOfLife = ScreenPlay:new {
 		},
 	},
 	mandoWayArmorySchematicSales = {
-		[1] = { chapterFlag = "chapter1Complete", cost = 25000, iff = "object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.iff" },
-		[2] = { chapterFlag = "chapter2Complete", cost = 50000, iff = "object/tangible/loot/loot_schematic/mando_way_slugthrower_schematic.iff" },
-		[3] = { chapterFlag = "chapter3Complete", cost = 85000, iff = "object/tangible/loot/loot_schematic/mando_way_lightning_schematic.iff" },
+		[1] = { chapterFlag = "chapter1Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_geo_blaster_schematic.iff" },
+		[2] = { chapterFlag = "chapter2Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_slugthrower_schematic.iff" },
+		[3] = { chapterFlag = "chapter3Complete", cost = 125000, iff = "object/tangible/loot/loot_schematic/mando_way_lightning_schematic.iff" },
 	},
 
 	-- Legacy: strip old Spynet coordinate disks from inventory on fail/complete/reset (no longer granted).
@@ -215,8 +215,8 @@ MandoWayOfLife = ScreenPlay:new {
 	-- planetDone poll interval (ms)
 	PLANET_DONE_POLL_MS = 60000,
 
-	-- Mission-terminal quota per Foundling planet (set to 36 for production)
-	FOUNDLING_PLANET_QUOTA_TARGET = 6,
+	-- Mission-terminal quota per Foundling planet
+	FOUNDLING_PLANET_QUOTA_TARGET = 24,
 
 	-- ---- Testing / deployment toggles (keep false on live shards) ----
 	-- false = recruiter comes from TatooineMosEisleyScreenPlay mobiles (Cantina); true = duplicate spawn from start().
@@ -326,9 +326,8 @@ function MandoWayOfLife:start()
 		end
 	end
 
-	-- Dynamic spawn mode: informant NPCs are spawned per-player via spawnInformant() when
-	-- a player advances to each planet. spawnStaticInformants() is kept below for GM admin
-	-- use (Option 5 respawn command) but is NOT called at boot.
+	-- Foundling informants: one lazy singleton per planet via spawnInformant() (shared OID, per-player screenplay).
+	-- spawnStaticInformants() is kept for GM admin (Option 5 respawn) but is NOT called at boot.
 end
 
 -- Post-spawn configuration for template mando_foundling_informant (dynamic spawn, GM static spawn).
@@ -424,12 +423,16 @@ end
 
 -- ============================================================
 -- PREREQUISITES (Chapter 0 entry gate)
--- Novice Scout + Novice Marksman + Novice Medic
+-- Path A: Novice Scout + Novice Marksman + Novice Medic
+-- Path B: Novice Bounty Hunter (existing BHs skip the starter trio)
 -- ============================================================
 
 function MandoWayOfLife:meetsPrerequisites(pPlayer)
 	if (pPlayer == nil) then return false end
 	local creature = CreatureObject(pPlayer)
+	if (creature:hasSkill("combat_bountyhunter_novice")) then
+		return true
+	end
 	return creature:hasSkill("outdoors_scout_novice")
 		and creature:hasSkill("combat_marksman_novice")
 		and creature:hasSkill("science_medic_novice")
@@ -464,6 +467,15 @@ function MandoWayOfLife:startFoundlingArc(pPlayer)
 	-- Advance to planet 1 (Tatooine)
 	self:advanceToPlanet(pPlayer, 1)
 	self:grantFoundlingBeskarCdefKit(pPlayer)
+	self:ensureMandoStatusCommandSkill(pPlayer)
+end
+
+-- Hidden skill so /mandoStatus is server-gated to players (not staff-only admin slash).
+function MandoWayOfLife:ensureMandoStatusCommandSkill(pPlayer)
+	if (pPlayer == nil) then return end
+	if (not CreatureObject(pPlayer):hasSkill("mando_way_status_cmd")) then
+		awardSkill(pPlayer, "mando_way_status_cmd")
+	end
 end
 
 -- Foundling arc start: recruiter kit (CDEF appearance family, species CDEF certs, tuned combat).
@@ -620,8 +632,8 @@ function MandoWayOfLife:tryLinkStaticFoundlingInformant(pPlayer, index, grantInf
 	return true
 end
 
--- Spawn a private informant NPC for this player on the given planet index.
--- Each player gets their own NPC - no shared static keys, no zone-restart wipe.
+-- Link or spawn one Foundling informant per planet (lazy singleton at planetData coords).
+-- Multiple players on the same world share the same NPC; conversation state stays per player.
 -- grantWaypoint: true = grant "find informant" yellow waypoint (pass false when mid-quota).
 -- Returns true on success.
 function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
@@ -630,15 +642,33 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 	local data = self.planetData[index]
 	if (data == nil) then return false end
 
-	-- Clean up any existing informant first (defensive: handles desync where old NPC still alive)
+	-- Drop this player's previous link; destroy only legacy per-player dynamic NPCs (not planet singletons).
 	local oldOid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
+	local wasStatic = self:readInt(pPlayer, "foundling.informantStatic") == 1
 	if (oldOid ~= 0) then
-		local pOld = getSceneObject(oldOid)
-		if (pOld ~= nil) then
-			deleteData("mando_way:informant:" .. tostring(oldOid) .. ":player")
-			SceneObject(pOld):destroyObjectFromWorld()
+		if (not wasStatic) then
+			local pOld = getSceneObject(oldOid)
+			if (pOld ~= nil) then
+				deleteData("mando_way:informant:" .. tostring(oldOid) .. ":player")
+				SceneObject(pOld):destroyObjectFromWorld()
+			end
 		end
 		self:writeStr(pPlayer, "foundling.informantId", "0")
+		self:writeInt(pPlayer, "foundling.informantStatic", 0)
+	end
+
+	local staticKey = "mando_way:foundling_informant_static:" .. data.planet
+	local staticSid = tonumber(readData(staticKey)) or 0
+	if (staticSid ~= 0 and getSceneObject(staticSid) == nil) then
+		deleteData(staticKey)
+	end
+
+	if (self:tryLinkStaticFoundlingInformant(pPlayer, index, grantWaypoint)) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"spawnInformant: linked planet singleton oid=%s planet=%s index=%s grantWp=%s",
+			self:readStr(pPlayer, "foundling.informantId"), tostring(data.planet), tostring(index), tostring(grantWaypoint)
+		))
+		return true
 	end
 
 	local pInformant = spawnMobile(data.planet, "mando_foundling_informant", 0, data.x, data.z, data.y, 0, 0)
@@ -650,19 +680,15 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 		return false
 	end
 
-	-- Per-player informant: shared creature flags (AIENABLED + CONVERSABLE + INVULNERABLE); see configureFoundlingInformantMobile().
+	-- Planet singleton: shared creature flags (AIENABLED + CONVERSABLE + INVULNERABLE); see configureFoundlingInformantMobile().
 	-- Note: NpcConversationStart still requires same cell as player, ~6m, LoS - bad z on planetData breaks LoS with no client error.
 	self:configureFoundlingInformantMobile(pInformant)
 
 	local oid = SceneObject(pInformant):getObjectID()
-	local playerOid = SceneObject(pPlayer):getObjectID()
+	writeData(staticKey, oid)
 
-	-- Register ownership so conv handler can reject other players clicking this NPC
-	writeData("mando_way:informant:" .. tostring(oid) .. ":player", playerOid)
-
-	-- Per-player state
 	self:writeStr(pPlayer, "foundling.informantId", tostring(oid))
-	self:writeInt(pPlayer, "foundling.informantStatic", 0)
+	self:writeInt(pPlayer, "foundling.informantStatic", 1)
 	self:writeInt(pPlayer, "foundling.informantCoordX", data.x)
 	self:writeInt(pPlayer, "foundling.informantCoordY", data.y)
 
@@ -672,15 +698,15 @@ function MandoWayOfLife:spawnInformant(pPlayer, index, grantWaypoint)
 
 	local parentId = SceneObject(pInformant):getParentID()
 	self:logDiagPlayer(pPlayer, string.format(
-		"spawnInformant: dynamic NPC spawned oid=%s planet=%s index=%s parentId=%s coords=(%.1f,%.1f,%.1f) grantWp=%s (converse: same outdoor cell as NPC, within ~6m, clear LoS)",
+		"spawnInformant: planet singleton spawned oid=%s planet=%s index=%s parentId=%s coords=(%.1f,%.1f,%.1f) grantWp=%s (converse: same outdoor cell as NPC, within ~6m, clear LoS)",
 		tostring(oid), tostring(data.planet), tostring(index), tostring(parentId),
 		data.x, data.z, data.y, tostring(grantWaypoint)
 	))
 	return true
 end
 
--- If Foundling arc is active but the player's private informant OID is missing (restart, death, stale data),
--- spawn a fresh dynamic NPC and re-grant the appropriate waypoint.
+-- If Foundling arc is active but the player's informant link is missing (restart, death, stale OID),
+-- link or spawn the planet singleton and re-grant the appropriate waypoint.
 function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then return end
@@ -725,6 +751,7 @@ end
 -- Stock client blocks unknown /slash commands; use !foundling or !mando in Say (spatial) so the server receives the line.
 function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 	if (pPlayer == nil) then return end
+	self:ensureMandoStatusCommandSkill(pPlayer)
 	local creo = CreatureObject(pPlayer)
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then
 		local ch = self:readInt(pPlayer, "chapter")
@@ -766,7 +793,7 @@ function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 	end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then
 		creo:sendSystemMessage("[Foundling] You have not started the Foundling arc yet.")
-		creo:sendSystemMessage("[Foundling] Train Novice Scout, Novice Marksman, and Novice Medic, then speak to the Mandalorian Recruiter in Mos Eisley cantina.")
+		creo:sendSystemMessage("[Foundling] Train Novice Scout, Novice Marksman, and Novice Medic, or earn Novice Bounty Hunter, then speak to the Mandalorian Recruiter in Mos Eisley cantina.")
 		self:logDiagPlayer(pPlayer, "sendFoundlingStatusReportToPlayer: ch0 not started.")
 		return
 	end
@@ -1618,7 +1645,7 @@ function MandoWayOfLife:acceptPlanetAssignment(pPlayer)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "foundling.planetCountingEnabled") == 1) then return end
 
-	local target = self.FOUNDLING_PLANET_QUOTA_TARGET or 6
+	local target = self.FOUNDLING_PLANET_QUOTA_TARGET or 24
 	self:writeInt(pPlayer, "foundling.planetTarget", target)
 	self:writeInt(pPlayer, "foundling.planetCompleted", 0)
 	self:writeInt(pPlayer, "foundling.planetDone", 0)
@@ -3110,7 +3137,26 @@ end
 -- ============================================================
 
 function mandoFoundlingStatusRun(pPlayer)
+	MandoWayOfLife:ensureMandoStatusCommandSkill(pPlayer)
 	MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
+end
+
+-- Staff: /mandoStatus <partialOnlineName> (privileged; C++ also gates).
+function mandoStatusAdminRun(pStaff, targetName)
+	if (pStaff == nil or MandoWayOfLife == nil) then return end
+	local sGhost = CreatureObject(pStaff):getPlayerObject()
+	if (sGhost == nil or not PlayerObject(sGhost):isPrivileged()) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoStatus] Denied (requires privileged admin).")
+		return
+	end
+	local name = targetName
+	if (name == nil) then name = "" end
+	name = tostring(name):match("^%s*(.-)%s*$") or ""
+	if (name == "") then
+		CreatureObject(pStaff):sendSystemMessage("[MandoStatus] Usage: /mandoStatus PartialOnlineName")
+		return
+	end
+	MandoWayOfLife:adminFoundlingCommand(pStaff, name)
 end
 
 -- ============================================================

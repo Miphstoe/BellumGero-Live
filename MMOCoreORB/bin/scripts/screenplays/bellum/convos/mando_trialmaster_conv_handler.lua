@@ -3,6 +3,19 @@
 
 MandoTrialmasterConvoHandler = conv_handler:new {}
 
+function MandoTrialmasterConvoHandler:getArcAcceptScreen(pPlayer, convoTemplate)
+	local pBase = convoTemplate:getScreen("arc_accept")
+	if (pPlayer ~= nil and CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then
+		local pCloned = LuaConversationScreen(pBase):cloneScreen()
+		LuaConversationScreen(pCloned):setCustomDialogText(
+			"Greetings Bounty Hunter, we've heard of your talent and reputation. We welcome you, but you still have to prove yourself with the tribe. This is the Way! "
+			.. "Ten worlds. Each one will test a different part of you. Your contact on each planet will give you work. Destroy missions. Delivery runs. Standard terminals only. This is Mandalorian proving, not Guild business. When the last planet is done, come find me."
+		)
+		return pCloned
+	end
+	return pBase
+end
+
 function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	if (pPlayer == nil) then return nil end
 
@@ -60,7 +73,7 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	end
 
 	-- Ready to start arc
-	return convoTemplate:getScreen("arc_accept")
+	return self:getArcAcceptScreen(pPlayer, convoTemplate)
 end
 
 function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)

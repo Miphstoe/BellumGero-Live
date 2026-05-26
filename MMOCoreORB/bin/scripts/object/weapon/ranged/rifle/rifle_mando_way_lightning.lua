@@ -1,3 +1,5 @@
+-- Bellum: clan armory lightning rifle (Verd'ika chapter). Client STF keys: rifle_mando_way_lightning
+-- (docs/mando_way_armory_client_names.md). customObjectName until bg_custom1 IFF+STF live.
 object_weapon_ranged_rifle_rifle_mando_way_lightning = object_weapon_ranged_rifle_shared_rifle_mando_way_lightning:new {
 	customObjectName = "Mandalorian Light Lightning Cannon",
 
