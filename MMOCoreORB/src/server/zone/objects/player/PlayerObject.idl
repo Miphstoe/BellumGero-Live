@@ -327,6 +327,8 @@ class PlayerObject extends IntangibleObject {
 	protected transient string sessionStatsIPAddress;
 	protected transient unsigned long snoopedPlayerID;
 
+	protected transient float lastClientPositionZ;
+
 	public static final int ONLINE = 1;
 	public static final int OFFLINE = 2;
 	public static final int LINKDEAD = 3;
@@ -1759,6 +1761,15 @@ class PlayerObject extends IntangibleObject {
 	@read
 	public unsigned int getClientLastMovementStamp() {
 		return clientLastMovementStamp;
+	}
+
+	public void setLastClientPositionZ(float z) {
+		lastClientPositionZ = z;
+	}
+
+	@read
+	public float getLastClientPositionZ() {
+		return lastClientPositionZ;
 	}
 
 	public void addHologrindProfession(byte prof) {

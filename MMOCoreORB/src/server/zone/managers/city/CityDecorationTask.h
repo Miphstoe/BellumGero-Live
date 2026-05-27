@@ -10,6 +10,7 @@
 
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/managers/planet/PlanetManager.h"
+#include "server/zone/managers/collision/CollisionManager.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/tangible/deed/pet/PetDeed.h"
@@ -104,7 +105,7 @@ public:
 
 		Reference<SceneObject*> objTooClose = zone->getPlanetManager()->findObjectTooCloseToDecoration(mayor->getPositionX(), mayor->getPositionY(), obj->getObjectTemplate()->getNoBuildRadius());
 
-		if (objTooClose != nullptr && !obj->isCityStreetLamp()) {
+		if (objTooClose != nullptr && !obj->isCityStreetLamp() && !obj->isCraftingStation()) {
 			StringIdChatParameter msg;
 			msg.setStringId("@city/city:deco_too_close"); //"You can't place a decoration here, it would be too close to structure %TO.");
 
@@ -129,7 +130,10 @@ public:
 			return;
 		}
 
-		obj->initializePosition(mayor->getWorldPositionX(), mayor->getWorldPositionZ(),mayor->getWorldPositionY());
+		float collisionHeight = CollisionManager::getWorldFloorCollision(mayor->getPositionX(), mayor->getPositionY(), zone, false);
+		float clientZ = (mayorGhost != nullptr) ? mayorGhost->getLastClientPositionZ() : collisionHeight;
+		float surfaceHeight = (clientZ > collisionHeight) ? clientZ : collisionHeight;
+		obj->initializePosition(mayor->getWorldPositionX(), surfaceHeight, mayor->getWorldPositionY());
 		obj->rotate(mayor->getDirectionAngle() - obj->getDirectionAngle());
 
 		if(zone->transferObject(obj, -1, true)) {
