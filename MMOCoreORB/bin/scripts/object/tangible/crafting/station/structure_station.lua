@@ -44,6 +44,7 @@
 object_tangible_crafting_station_structure_station = object_tangible_crafting_station_shared_structure_station:new {
 
 	templateType = CRAFTINGSTATION,
+	objectMenuComponent = "CityDecorationMenuComponent",
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",
 		"object/creature/player/bothan_female.iff",
