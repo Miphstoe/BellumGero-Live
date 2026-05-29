@@ -341,6 +341,11 @@ public:
 		}
 		*/
 
+		// Store client-reported Z before server corrects it to terrain level.
+		// Used by city decoration placement to position objects on elevated surfaces (e.g., garden decorations)
+		// that have no collision flags and thus appear at ground level to CollisionManager.
+		ghost->setLastClientPositionZ(transform.getPositionZ());
+
 		// Update the the players position on the server
 		creO->setPosition(transform.getPositionX(), positionZ, transform.getPositionY());
 		creO->setDirection(transform.getDirection());

@@ -3,7 +3,7 @@
 -- One-at-a-time Gorax spawn, randomized within NW corridor of Endor.
 -- - No engine auto-respawn; we handle respawn to re-randomize location.
 -- - Duplicate-guarded so you never get two from double startup.
--- - Tweak respawnSeconds and spawnAreas as you like.
+-- - Slope-checks candidate spawns; rejects terrain too steep to fight on.
 -- =====================================================================
 
 local TAG = "[GORAX_NW_ENDOR] "
@@ -14,14 +14,16 @@ GoraxNWEndor = ScreenPlay:new {
     planet = "endor",
 
     -- How long after death to bring it back somewhere else (seconds)
-    respawnSeconds = 3600, -- 1 hour; set smaller while testing
+    respawnSeconds = 3600, -- 1 hour
 
     -- Data key to remember the current Gorax object id
     dataKey = "gorax_nw_endor:oid",
 
-    -- Randomized anchor zones across the NW corridor.
-    -- Each entry is { x, z, radiusMeters } and we’ll pick a random point in the circle.
-    -- Coords are intentionally spread along NW forest “corridor”; adjust to taste.
+    -- Max terrain height delta (meters) sampled 30m out in 4 directions.
+    -- 8m over 30m ≈ 15° slope — Gorax-sized creatures become unattackable above this.
+    slopeThreshold = 8,
+
+    -- Anchor zones across the NW corridor: { worldX, worldZ, radiusMeters }
     spawnAreas = {
         {-7600, 5400, 250},
         {-7350, 5650, 250},
@@ -58,13 +60,11 @@ function GoraxNWEndor:start()
     self:ensureOneAlive()
 end
 
--- If one is already alive, do nothing; otherwise spawn one.
 function GoraxNWEndor:ensureOneAlive()
     local existingOID = readData(self.dataKey)
     if existingOID ~= 0 then
         local pExisting = getSceneObject(existingOID)
         if pExisting ~= nil and not SceneObject(pExisting):isDestroyed() then
-            -- Already alive
             return
         end
     end
@@ -74,28 +74,40 @@ end
 -- ========== Spawning & Respawn ==========
 
 function GoraxNWEndor:spawnAtRandomPoint()
-    -- Try a few different random points in case one fails (bad terrain etc.)
     for attempt = 1, 15 do
-        local x, y, z, heading = self:getRandomGroundPoint()
-        if x ~= nil then
-            local pMob = spawnMobile(self.planet, "gorax", 0, x, y, z, heading, 0)
-            if pMob ~= nil then
+        local worldX, worldZ, heading = self:getRandomHorizontalPoint()
+
+        -- spawnMobile arg order: (planet, template, respawnTimer, worldX, worldZ, worldY, heading, parentID)
+        -- Spawn at worldY=0 first; we use the spawned creature to sample real terrain height below.
+        local pMob = spawnMobile(self.planet, "gorax", 0, worldX, worldZ, 0, heading, 0)
+        if pMob ~= nil then
+            -- getTerrainHeight(creatureObject, worldX, worldZ) -> worldY elevation
+            local terrainY = getTerrainHeight(pMob, worldX, worldZ)
+            if terrainY == nil then terrainY = 0 end
+
+            if self:isTooSteep(pMob, worldX, worldZ, terrainY) then
+                -- Reject: terrain here is too hilly; clean up and try another point
+                SceneObject(pMob):destroyObjectFromWorld()
+            else
+                -- Flat enough: move to correct elevation and register
+                -- teleport(worldX, worldZ, worldY, parentID)
+                SceneObject(pMob):teleport(worldX, worldZ, terrainY, 0)
                 local oid = SceneObject(pMob):getObjectID()
                 writeData(self.dataKey, oid)
                 createObserver(OBJECTDESTRUCTION, "GoraxNWEndor", "onGoraxDestroyed", pMob)
-                print(string.format(TAG .. "Spawned Gorax at (%.1f, %.1f, %.1f), oid=%d", x, y, z, oid))
+                print(string.format(TAG .. "Spawned Gorax at (%.1f, %.1f, %.1f) attempt=%d oid=%d",
+                    worldX, terrainY, worldZ, attempt, oid))
                 return
             end
         end
     end
-    print(TAG .. "WARNING: Failed to spawn Gorax after multiple attempts.")
+    print(TAG .. "WARNING: Failed to spawn Gorax after 15 attempts (terrain too steep or spawn blocked).")
 end
 
 function GoraxNWEndor:onGoraxDestroyed(pVictim, pAttacker)
-    -- Clear the saved oid so ensureOneAlive won’t think it still exists
     writeData(self.dataKey, 0)
-    -- Schedule a fresh spawn somewhere else
-    createEvent(self.respawnSeconds * 1800, "GoraxNWEndor", "delayedRespawn", nil, "")
+    -- createEvent takes milliseconds; respawnSeconds * 1000 = correct delay
+    createEvent(self.respawnSeconds * 1000, "GoraxNWEndor", "delayedRespawn", nil, "")
     return 0
 end
 
@@ -103,46 +115,32 @@ function GoraxNWEndor:delayedRespawn(pDummy)
     self:spawnAtRandomPoint()
 end
 
--- ========== Random location helpers ==========
+-- ========== Location helpers ==========
 
--- Picks a random anchor circle and then a random point inside it.
-function GoraxNWEndor:getRandomGroundPoint()
-    if #self.spawnAreas == 0 then return nil end
-
-    -- Pick a random circle
+-- Returns a random (worldX, worldZ, heading) from the spawn area circles.
+function GoraxNWEndor:getRandomHorizontalPoint()
     local idx = getRandomNumber(1, #self.spawnAreas)
     local sx, sz, r = self.spawnAreas[idx][1], self.spawnAreas[idx][2], self.spawnAreas[idx][3]
-
-    -- Random polar coordinates inside the circle
     local angleDeg = getRandomNumber(0, 359)
     local angleRad = math.rad(angleDeg)
-    -- Bias radius toward center uniformly over area (sqrt of random)
     local rr = math.sqrt(math.random()) * r
-    local dx = rr * math.cos(angleRad)
-    local dz = rr * math.sin(angleRad)
-
-    local x = sx + dx
-    local z = sz + dz
-
-    -- Figure out ground height (y). Prefer engine helper if present.
-    local y = self:safeTerrainHeight(self.planet, x, z)
-
-    -- Random facing
+    local worldX = sx + rr * math.cos(angleRad)
+    local worldZ = sz + rr * math.sin(angleRad)
     local heading = getRandomNumber(0, 359)
-
-    return x, y, z, heading
+    return worldX, worldZ, heading
 end
 
--- Tries to get terrain height robustly, with fallbacks.
-function GoraxNWEndor:safeTerrainHeight(planetName, x, z)
-    -- Many cores expose getTerrainHeight(name, x, z)
-    local ok, h = pcall(function() return getTerrainHeight(planetName, x, z) end)
-    if ok and h ~= nil then return h end
-
-    -- Some shards bind getWorldFloor(name, x, z)
-    ok, h = pcall(function() return getWorldFloor(planetName, x, z) end)
-    if ok and h ~= nil then return h end
-
-    -- Last resort: 0 (engine may snap to floor; if not, adjust your anchors to include known y)
-    return 0
+-- Samples terrain height 30m out in 4 cardinal directions.
+-- Returns true if any delta from h0 exceeds slopeThreshold.
+function GoraxNWEndor:isTooSteep(pMob, worldX, worldZ, h0)
+    local d = 30
+    local limit = self.slopeThreshold
+    local offsets = {{d, 0}, {-d, 0}, {0, d}, {0, -d}}
+    for _, o in ipairs(offsets) do
+        local h = getTerrainHeight(pMob, worldX + o[1], worldZ + o[2])
+        if h ~= nil and math.abs(h - h0) > limit then
+            return true
+        end
+    end
+    return false
 end

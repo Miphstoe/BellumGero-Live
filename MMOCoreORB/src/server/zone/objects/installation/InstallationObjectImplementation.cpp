@@ -10,6 +10,7 @@
 
 #include "server/zone/managers/resource/ResourceManager.h"
 #include "server/zone/managers/faction/FactionManager.h"
+#include "server/chat/ChatManager.h"
 
 #include "server/zone/packets/installation/InstallationObjectMessage3.h"
 #include "server/zone/packets/installation/InstallationObjectDeltaMessage3.h"
@@ -292,6 +293,8 @@ bool InstallationObjectImplementation::updateMaintenance(Time& workingTime) {
 		workingTime = workTill;
 
 		shutdownWork = true;
+		if (isActive())
+			sendHarvesterStopMail("maintenance_depleted");
 	}
 
 	if (workTimePermitted > 0) {
@@ -315,6 +318,8 @@ bool InstallationObjectImplementation::updateMaintenance(Time& workingTime) {
 				workingTime = workTill;
 			}
 
+			if (!shutdownWork)
+				sendHarvesterStopMail("power_depleted");
 			shutdownWork = true;
 		}
 
@@ -373,6 +378,8 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	if (!errorString.isEmpty() && isActive()) {
 		StringIdChatParameter stringId("shared", errorString);
 		broadcastToOperators(new ChatSystemMessage(stringId));
+
+		sendHarvesterStopMail(errorString);
 
 		resourceHopperTimestamp.updateToCurrentTime();
 		currentSpawn = nullptr;
@@ -438,10 +445,15 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	// Update Timestamp
 	resourceHopperTimestamp.updateToCurrentTime();
 
-	if((int)getHopperSize() >= (int)getHopperSizeMax())
+	if((int)getHopperSize() >= (int)getHopperSizeMax()) {
+		if (!shutdownAfterUpdate)
+			sendHarvesterStopMail("hopper_full");
 		shutdownAfterUpdate = true;
+	}
 
 	if(spawnExpireTimestamp.compareTo(currentTime) > 0) {
+		if (!shutdownAfterUpdate)
+			sendHarvesterStopMail("resource_expired");
 		shutdownAfterUpdate = true;
 	}
 
@@ -615,6 +627,42 @@ void InstallationObjectImplementation::changeActiveResourceID(uint64 spawnID) {
 	inso7->close();
 
 	broadcastToOperators(inso7);
+}
+
+void InstallationObjectImplementation::sendHarvesterStopMail(const String& reason) {
+	ManagedReference<CreatureObject*> owner = getOwnerCreatureObject();
+	if (owner == nullptr)
+		return;
+
+	ChatManager* chatManager = getZoneServer()->getChatManager();
+	if (chatManager == nullptr)
+		return;
+
+	StringBuffer body;
+	body << "Your harvester";
+
+	Zone* zone = getZone();
+	if (zone != nullptr)
+		body << " on " << zone->getZoneName() << " (" << (int)getPositionX() << ", " << (int)getPositionY() << ")";
+
+	body << " has shut down.\n\n";
+
+	if (reason == "harvester_resource_depleted")
+		body << "Reason: The resource has been depleted.";
+	else if (reason == "harvester_no_resource")
+		body << "Reason: No resource was selected.";
+	else if (reason == "hopper_full")
+		body << "Reason: The hopper is full. Please empty it and restart.";
+	else if (reason == "resource_expired")
+		body << "Reason: The resource spawn has expired.";
+	else if (reason == "maintenance_depleted")
+		body << "Reason: Maintenance funds have run out. Please deposit more maintenance and restart.";
+	else if (reason == "power_depleted")
+		body << "Reason: Power has run out. Please add more power and restart.";
+	else
+		body << "Reason: Unknown.";
+
+	chatManager->sendMail("Bellum Gero", UnicodeString("Harvester Stopped"), UnicodeString(body.toString()), owner->getFirstName());
 }
 
 void InstallationObjectImplementation::broadcastToOperators(BasePacket* packet) {
