@@ -124,6 +124,8 @@ class InstallationObject extends StructureObject {
 
 	public native void handleStructureAddEnergy(CreatureObject player);
 
+	public native void sendHarvesterStopMail(final string reason);
+
 	@preLocked
 	public native void setActiveResource(ResourceContainer container);
 	@preLocked
