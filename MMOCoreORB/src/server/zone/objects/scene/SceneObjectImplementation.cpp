@@ -1182,11 +1182,14 @@ SceneObject* SceneObjectImplementation::getRootParentUnsafe() {
 
 void SceneObjectImplementation::updateSavedRootParentRecursive(SceneObject* newRoot, int maxDepth) {
 	if (maxDepth <= 0) {
-		error() << "maxDepth reached -- Max Depth: " << maxDepth << " " << __FILE__ << ":" << __LINE__ << ":" <<  __FUNCTION__ <<
-			"() Object: "<< getDisplayedName() << " ID: " << getObjectID() <<
-			" New Root: " << (newRoot == nullptr ? "NO ROOT" : newRoot->getDisplayedName()) << " Root ID: " << (newRoot == nullptr ? 0 : newRoot->getObjectID());
-
-		throw Exception();
+		error() << "SceneObjectImplementation::updateSavedRootParentRecursive aborted: maxDepth exhausted"
+			<< " parentID=" << getObjectID()
+			<< " parentTemplate=" << (templateObject != nullptr ? templateObject->getFullTemplateString() : "null")
+			<< " remainingDepth=" << maxDepth
+			<< " containerType=" << containerType
+			<< " newRootID=" << (newRoot == nullptr ? 0 : newRoot->getObjectID())
+			<< " newRootTemplate=" << (newRoot != nullptr && newRoot->getObjectTemplate() != nullptr ? newRoot->getObjectTemplate()->getFullTemplateString() : "null");
+		return;
 	}
 
 	Locker locker(&parentLock);
@@ -1199,14 +1202,61 @@ void SceneObjectImplementation::updateSavedRootParentRecursive(SceneObject* newR
 	locker.release();
 
 	if (containerObjects.isLoaded()) {
-		for (int j = 0; j < getContainerObjectsSize(); ++j) {
-			ManagedReference<SceneObject*> object = getContainerObject(j);
+		VectorMap<uint64, ManagedReference<SceneObject*> > containerSnapshot;
+		VectorMap<String, ManagedReference<SceneObject*> > slottedSnapshot;
+
+		getContainerObjects(containerSnapshot);
+		getSlottedObjects(slottedSnapshot);
+
+		const auto logCorruptChild = [&](const char* relation, int childIndex, uint64 loadedOID, SceneObject* child, const String& slotName = String()) {
+			error() << "SceneObjectImplementation::updateSavedRootParentRecursive detected invalid child reference"
+				<< " parentID=" << getObjectID()
+				<< " parentTemplate=" << (templateObject != nullptr ? templateObject->getFullTemplateString() : "null")
+				<< " relation=" << relation
+				<< " childIndex=" << childIndex
+				<< " loadedOID=" << loadedOID
+				<< " remainingDepth=" << maxDepth
+				<< " nextDepth=" << (maxDepth - 1)
+				<< " containerType=" << containerType
+				<< " childPtr=" << child
+				<< " slot=" << slotName
+				<< " newRootID=" << (newRoot == nullptr ? 0 : newRoot->getObjectID())
+				<< " newRootTemplate=" << (newRoot != nullptr && newRoot->getObjectTemplate() != nullptr ? newRoot->getObjectTemplate()->getFullTemplateString() : "null");
+		};
+
+		for (int j = 0; j < containerSnapshot.size(); ++j) {
+			const auto& entry = containerSnapshot.elementAt(j);
+			const uint64 loadedOID = entry.getKey();
+			ManagedReference<SceneObject*> object = entry.getValue();
+
+			if (object == nullptr) {
+				logCorruptChild("container", j, loadedOID, nullptr);
+				continue;
+			}
+
+			if (object == asSceneObject()) {
+				logCorruptChild("container-self", j, loadedOID, object);
+				continue;
+			}
 
 			object->updateSavedRootParentRecursive(newRoot, maxDepth - 1);
 		}
 
-		for (int i = 0; i < getSlottedObjectsSize(); ++i) {
-			ManagedReference<SceneObject*> object = getSlottedObject(i);
+		for (int i = 0; i < slottedSnapshot.size(); ++i) {
+			const auto& entry = slottedSnapshot.elementAt(i);
+			const String& slotName = entry.getKey();
+			ManagedReference<SceneObject*> object = entry.getValue();
+			const uint64 loadedOID = object != nullptr ? object->getObjectID() : 0;
+
+			if (object == nullptr) {
+				logCorruptChild("slotted", i, loadedOID, nullptr, slotName);
+				continue;
+			}
+
+			if (object == asSceneObject()) {
+				logCorruptChild("slotted-self", i, loadedOID, object, slotName);
+				continue;
+			}
 
 			object->updateSavedRootParentRecursive(newRoot, maxDepth - 1);
 		}
