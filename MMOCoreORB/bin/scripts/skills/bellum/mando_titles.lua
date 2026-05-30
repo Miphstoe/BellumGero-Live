@@ -1,7 +1,7 @@
 -- Mandalorian Way of Life — equippable rank titles (title = 1).
 -- Client TRE (bg_custom1.tre): each skillName needs rows in datatables/skill/skills.iff (IS_TITLE=1) or the
 -- Community title picker will not list earned ranks after switching to a stock title. Also needs
--- string/en/skl_t.stf (nameplate) and skl_n.stf (dropdown label). Patch tool: tools/patch_mando_title_skills.py
+-- string/en/skl_t.stf (nameplate) and skl_n.stf (dropdown label).
 --
 -- Nameplate line wrap: the stock client breaks the resolved title to a fixed width. If the
 -- skl_t value is too long (e.g. "(Mandalorian Foundling)"), the closing ")" can appear alone on
