@@ -22,26 +22,26 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 	local ch = MandoWayOfLife:getChapter(pPlayer)
 
-	-- Chapter 5 complete — Mandalorian (true final state)
+	-- Chapter 5 complete — Mandalorian Tribesman (true final state)
 	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 		local pBase = convoTemplate:getScreen("clanbound")
 		local pCloned = LuaConversationScreen(pBase):cloneScreen()
 		LuaConversationScreen(pCloned):setCustomDialogText(
-			"You are Mandalorian. There is nothing left here to prove. Well fought."
+			"You are a Mandalorian Tribesman. There is nothing left here to prove. Well fought."
 		)
 		return pCloned
 	end
 
-	-- Chapter 4 complete — Clanbound. Check Jabba gate for Mandalorian title.
+	-- Chapter 4 complete — Clanbound. Check Jabba gate for Mandalorian Tribesman title.
 	if (MandoWayOfLife:readInt(pPlayer, "chapter4Complete") == 1) then
 		local pGhost = CreatureObject(pPlayer):getPlayerObject()
 		local pBase = convoTemplate:getScreen("clanbound")
 		if (pGhost ~= nil and PlayerObject(pGhost):hasBadge(MandoWayOfLife.JABBA_THEMEPARK_BADGE)) then
-			-- Player earned the Jabba badge: grant Mandalorian rank now
+			-- Player earned the Jabba badge: grant Mandalorian Tribesman rank now
 			MandoWayOfLife:grantMandalorian(pPlayer)
 			local pCloned = LuaConversationScreen(pBase):cloneScreen()
 			LuaConversationScreen(pCloned):setCustomDialogText(
-				"Word of your deeds reached me before you did. The Hunts have spoken. You are Mandalorian. Wear the title."
+				"Word of your deeds reached me before you did. The Hunts have spoken. You are a Mandalorian Tribesman. Wear the title."
 			)
 			return pCloned
 		end
@@ -123,17 +123,17 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 
 		if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 			msg =
-				"The Hutts already weighed you. The Guild trail is behind you. What remains is to live the Creed in every contract you take. "
+				"You stand as a Mandalorian Tribesman. The Hutts already weighed you. The Guild trail is behind you. What remains is to live the Creed in every contract you take. "
 				.. "There is no higher rank here. Walk it, or set the helmet down. This is the Way!"
 		else
 			local pGhost = CreatureObject(pPlayer):getPlayerObject()
 			if (pGhost ~= nil and PlayerObject(pGhost):hasBadge(MandoWayOfLife.JABBA_THEMEPARK_BADGE)) then
 				msg =
-					"Your proof with the Hutts is already on record. If the Mandalorian title did not land, close this talk and speak to me again."
+					"Your proof with the Hutts is already on record. If the Mandalorian Tribesman title did not land, close this talk and speak to me again."
 			else
 				msg =
 					"Seek the Hutts on Tatooine. Complete the work Jabba's people set before you. "
-					.. "That labor is your final testament to your dedication to the religion. "
+					.. "That labor is your final testament before the Mandalorian Tribesman rank. "
 					.. "When their operations are finished, return to me. This is the Way!"
 			end
 		end

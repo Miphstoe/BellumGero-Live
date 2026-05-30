@@ -107,7 +107,7 @@ MandoWayOfLife = ScreenPlay:new {
 	-- Ch2 Hunter     LIGHT  45% K/E+Heat+Cold             | helmet + chest + legs
 	-- Ch3 Verd’ika   MEDIUM 55% K/E+Heat+Cold+Blast       | helmet + chest + legs + gloves
 	-- Ch4 Clanbound  HEAVY  65% K/E+Heat+Cold+Blast+Acid  | helmet + chest + legs + gloves + boots
-	-- Ch5 Mandalorian: title + badge only (see grantMandalorian). Requires Jabba Themepark.
+	-- Ch5 Mandalorian Tribesman: title + badge only (see grantMandalorian). Requires Jabba Themepark.
 	-- Ch0 = Foundling arc. Ch1-4 = Spynet 5+1 gate completions. Ch5 = Jabba Themepark gate.
 	-- --------------------------------------------------------
 	chapterRewards = {
@@ -135,7 +135,7 @@ MandoWayOfLife = ScreenPlay:new {
 			"object/tangible/wearables/armor/mandalorian/custom/clanbound_gloves.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff",
 		},
-		-- [5] Mandalorian: no armor reward; title + badge only (grantMandalorian)
+		-- [5] Mandalorian Tribesman: no armor reward; title + badge only (grantMandalorian)
 	},
 
 	-- System messages / prose (human-readable)
@@ -145,7 +145,7 @@ MandoWayOfLife = ScreenPlay:new {
 		[2] = "Hunter",
 		[3] = "Verd’ika",
 		[4] = "Clanbound",
-		[5] = "Mandalorian",
+		[5] = "Mandalorian Tribesman",
 	},
 	-- Equippable title skills (title = 1); must match bin/scripts/skills/bellum/mando_titles.lua
 	chapterTitleSkills = {
@@ -757,13 +757,21 @@ function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 		local ch = self:readInt(pPlayer, "chapter")
 		local title = (self.chapterTitles ~= nil and self.chapterTitles[ch]) or "Unknown"
 		creo:sendSystemMessage(string.format(
-			"[Mandalorian Way] Story chapter: %s (%s). Ranks: 0 Foundling, 1 through 4 Spynet (Initiate through Clanbound).",
+			"[Mandalorian Way] Story chapter: %s (%s). Ranks: 0 Foundling, 1 through 4 Spynet (Initiate through Clanbound), 5 Mandalorian Tribesman (Jabba themepark).",
 			tostring(ch),
 			title
 		))
+		if (self:readInt(pPlayer, "chapter5Complete") == 1) then
+			creo:sendSystemMessage(
+				"[Mandalorian Way] You are a Mandalorian Tribesman. The guild arc is complete. Walk the Creed in every contract. There is no higher rank here."
+			)
+			creo:sendSystemMessage("[Mandalorian Way] Tip: in Say, !foundling or !mando (no slash). Or ask the Trialmaster.")
+			self:logDiagPlayer(pPlayer, "sendFoundlingStatusReportToPlayer: arc complete, chapter 5 done.")
+			return
+		end
 		if (self:readInt(pPlayer, "chapter4Complete") == 1) then
 			creo:sendSystemMessage(
-				"[Mandalorian Way] Clanbound path complete. Return to the Mandalorian Recruiter in the Mos Eisley cantina on Tatooine. They will set your next path when you are ready."
+				"[Mandalorian Way] Clanbound complete. Return to the Mandalorian Recruiter in the Mos Eisley cantina on Tatooine for the final trial toward Mandalorian Tribesman."
 			)
 			creo:sendSystemMessage("[Mandalorian Way] Tip: in Say, !foundling or !mando (no slash). Or ask the Trialmaster.")
 			self:logDiagPlayer(pPlayer, "sendFoundlingStatusReportToPlayer: arc complete, chapter 4 done.")
@@ -782,7 +790,7 @@ function MandoWayOfLife:sendFoundlingStatusReportToPlayer(pPlayer)
 		creo:sendSystemMessage(string.format("[Mandalorian Way] Spynet terminal count this cycle: %s/5.", tostring(c)))
 		creo:sendSystemMessage(
 			"[Mandalorian Way] How to advance: finish 5/5 Spynet-counted BH terminal missions, then use the purple waypoint to the Corellia operative, accept the solo private trial (helmet on, not grouped), and kill the mark. "
-				.. "Each successful trial raises your chapter by one until Clanbound (4). After a bounty-camp kill, rewards may apply after the camp stands down."
+				.. "Each successful trial raises your chapter by one until Clanbound (4). Mandalorian Tribesman (5) follows Jabba's themepark on Tatooine. After a bounty-camp kill, rewards may apply after the camp stands down."
 		)
 		creo:sendSystemMessage(
 			"[Mandalorian Way] Staff: slash /mandoFoundlingAdmin only works on clients whose command_table includes it (custom TRE). Otherwise use the Trialmaster: What is my Mandalorian Way status?"
@@ -2663,7 +2671,7 @@ function MandoWayOfLife:completePrivateContract(pPlayer)
 end
 
 -- ============================================================
--- CHAPTER 5: MANDALORIAN (Jabba Themepark gate)
+-- CHAPTER 5: MANDALORIAN TRIBESMAN (Jabba Themepark gate)
 -- ============================================================
 -- Called from ThemeParkLogic when Jabba themepark awards badge 105; only messages Clanbound players awaiting ch5.
 function MandoWayOfLife:onJabbaThemeparkBadgeEarned(pPlayer)
@@ -2703,10 +2711,10 @@ function MandoWayOfLife:grantMandalorian(pPlayer)
 	self:grantChapterRankTitle(pPlayer, 5)
 	self:tryAwardChapterBadge(pPlayer, 5)
 
-	self:logDiagPlayer(pPlayer, "grantMandalorian: Mandalorian rank granted (chapter 5).")
+	self:logDiagPlayer(pPlayer, "grantMandalorian: Mandalorian Tribesman rank granted (chapter 5).")
 	CreatureObject(pPlayer):sendSystemMessage(
 		"[Mandalorian Way] Word of your deeds reached me before you did. "
-		.. "The Hunts have spoken. You are Mandalorian. Wear the title."
+		.. "The Hunts have spoken. You are a Mandalorian Tribesman. Wear the title."
 	)
 	CreatureObject(pPlayer):sendSystemMessage(
 		"[Mandalorian Way] Incoming message from the Spynet comlink. Continue your Hunt. We will be in touch. THIS IS THE WAY!"
