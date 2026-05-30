@@ -21,6 +21,29 @@ namespace {
     static const char* TOOL_SERVER_IFF = "object/tangible/item/sea_removal_tool.iff";
     static const char* TOOL_SHARED_IFF = "object/tangible/item/shared_sea_removal_tool.iff";
 
+    String formatSkillModDisplayName(const String& modName) {
+        String normalized = modName.replaceAll("_", " ").toLowerCase();
+        String result;
+        bool capitalizeNext = true;
+
+        for (int i = 0; i < normalized.length(); ++i) {
+            String ch = normalized.subString(i, i + 1);
+
+            if (capitalizeNext && ch != " ")
+                result += ch.toUpperCase();
+            else
+                result += ch;
+
+            capitalizeNext = (ch == " ");
+        }
+
+        return result;
+    }
+
+    String buildExtractedAttachmentName(const String& modName, int value) {
+        return String("+") + String::valueOf(value) + " " + formatSkillModDisplayName(modName);
+    }
+
     inline bool isSEATool(SceneObject* so) {
         if (!so) return false;
         SharedObjectTemplate* tmpl = so->getObjectTemplate();
@@ -216,9 +239,9 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
                 gem->addSkillMod(modName, value);
             }
 
-            String n = isArmor ? "Armor Attachment: " : "Clothing Attachment: ";
-            n += modName + " (+" + String::valueOf(value) + ")";
+            String n = buildExtractedAttachmentName(modName, value);
             tobj->setCustomObjectName(n, true);
+            player->sendSystemMessage("SEA: named extracted attachment \"" + n + "\".");
         }
 
         if (!inventory->transferObject(tobj, -1, true)) {
