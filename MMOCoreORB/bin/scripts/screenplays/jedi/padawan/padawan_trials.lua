@@ -773,6 +773,7 @@ function PadawanTrials:resetAllPadawanTrials(pPlayer)
 	deleteScreenPlayData(pPlayer, "PadawanTrials", "awaitingCrafting")
 	deleteScreenPlayData(pPlayer, "PadawanTrials", "huntingPhase")
 	deleteScreenPlayData(pPlayer, "PadawanTrials", "nextPhase")
+	deleteScreenPlayData(pPlayer, "PadawanTrials", "robesAwarded")
 
 	-- Also clear all pre-stored question data for all phases
 	for phase = 1, 5 do

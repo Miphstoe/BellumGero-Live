@@ -30,6 +30,22 @@ local function give_socketed(pInventory, template, sockets)
     return pItem
 end
 
+local function getPadawanTrialPlayerName(pPlayer)
+	if (pPlayer == nil) then
+		return "unknown"
+	end
+
+	local creature = CreatureObject(pPlayer)
+	if (creature ~= nil) then
+		local firstName = creature:getFirstName()
+		if (firstName ~= nil and firstName ~= "") then
+			return firstName
+		end
+	end
+
+	return tostring(SceneObject(pPlayer):getObjectID())
+end
+
 function JediTrials:isEligibleForPadawanTrials(pPlayer)
 	if (pPlayer == nil or not self.padawanTrialsEnabled) then
 		return false
@@ -133,10 +149,15 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 		return
 	end
 
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02") or tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "completedTrials")) == 1) then
+		self:awardPadawanRobes(pPlayer)
+		return
+	end
+
 	if (dontSendSui == nil or dontSendSui == false) then
 		local sui = SuiMessageBox.new("JediTrials", "emptyCallback") -- No callback
 		sui.setTitle("@jedi_trials:padawan_trials_title")
-		sui.setPrompt("@jedi_trials:padawan_trials_completed")
+		sui.setPrompt("Congratulations. You have completed the Padawan Trials.\n\nYou should now seek out your Jedi trainer to continue your path.\n\nUse the /findmutrainer command to locate your Jedi trainer.")
 		sui.sendTo(pPlayer)
 	end
 
@@ -163,42 +184,57 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 
 	PlayerObject(pGhost):setJediState(2)
 
+	self:awardPadawanRobes(pPlayer)
+
+	sendMail("system", "@jedi_spam:welcome_subject", "@jedi_spam:welcome_body", CreatureObject(pPlayer):getFirstName())
+end
+
+function JediTrials:inventoryHasTemplate(pInventory, template)
+	if (pInventory == nil or template == nil) then
+		return false
+	end
+
+	local items = pInventory:getContainedObjects()
+	if (items == nil) then
+		return false
+	end
+
+	local count = items:size()
+	for i = 0, count - 1 do
+		local item = items:get(i)
+		if (item ~= nil and SceneObject(item):getTemplate() == template) then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JediTrials:awardPadawanRobes(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local playerName = getPadawanTrialPlayerName(pPlayer)
+	local robesAwarded = tonumber(readScreenPlayData(pPlayer, "PadawanTrials", "robesAwarded")) == 1
+
+	if (robesAwarded) then
+		return true
+	end
+
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
 
 	if (pInventory == nil) then
-		return
-	end
-
-	local function inventoryHasTemplate(pInv, template)
-		local items = pInv:getContainedObjects()
-		if items == nil then
-			return false
-		end
-
-		local count = items:size()
-		for i = 0, count - 1 do
-			local item = items:get(i)
-			if item ~= nil then
-				local itemTemplate = SceneObject(item):getTemplate()
-				if itemTemplate == template then
-					return true
-				end
-			end
-		end
-
+		printLuaError("JediTrials:awardPadawanRobes - inventory lookup failed for player " .. playerName)
+		CreatureObject(pPlayer):sendSystemMessage("Your Padawan robes could not be delivered because your inventory could not be found. Please contact staff.")
 		return false
 	end
 
 	local lightTemplate = "object/tangible/wearables/robe/robe_jedi_padawan.iff"
 	local darkTemplate = "object/tangible/wearables/robe/robe_jedi_padawan_dark.iff"
-	local hasLight = inventoryHasTemplate(pInventory, lightTemplate)
-	local hasDark = inventoryHasTemplate(pInventory, darkTemplate)
+	local hasLight = self:inventoryHasTemplate(pInventory, lightTemplate)
+	local hasDark = self:inventoryHasTemplate(pInventory, darkTemplate)
 
-	if (hasLight and hasDark) then
-		return
-	end
-
-	-- Calculate how many robes need to be given
 	local robesNeeded = 0
 	if not hasLight then
 		robesNeeded = robesNeeded + 1
@@ -207,30 +243,47 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 		robesNeeded = robesNeeded + 1
 	end
 
-	-- Check if we have enough free slots for all robes needed
+	if (robesNeeded == 0) then
+		writeScreenPlayData(pPlayer, "PadawanTrials", "robesAwarded", 1)
+		return true
+	end
+
 	local containerObjects = SceneObject(pInventory):getContainerObjectsSize()
 	local containerVolumeLimit = SceneObject(pInventory):getContainerVolumeLimit()
 	local freeSlots = containerVolumeLimit - containerObjects
 
 	if (freeSlots < robesNeeded) then
-		if (robesNeeded == 1) then
-			CreatureObject(pPlayer):sendSystemMessage("@jedi_spam:inventory_full_jedi_robe")
-		else
-			CreatureObject(pPlayer):sendSystemMessage("You need at least " .. robesNeeded .. " free inventory slots to receive your Padawan Robes.")
-		end
-		return
+		printLuaError("JediTrials:awardPadawanRobes - insufficient inventory space for player " .. playerName .. " (needed " .. robesNeeded .. ", free " .. freeSlots .. ")")
+		CreatureObject(pPlayer):sendSystemMessage("You need at least " .. robesNeeded .. " free inventory slot(s) to receive your Padawan robes. Clear space and use the shrine robe recovery option.")
+		return false
 	end
 
-	-- Give the robes (we know we have space for both)
 	if (not hasLight) then
-		give_socketed(pInventory, lightTemplate, 4)
+		local pLight = give_socketed(pInventory, lightTemplate, 4)
+		if (pLight == nil) then
+			printLuaError("JediTrials:awardPadawanRobes - failed to create light Padawan robe for player " .. playerName .. " using template " .. lightTemplate)
+		else
+			hasLight = true
+		end
 	end
 
 	if (not hasDark) then
-		give_socketed(pInventory, darkTemplate, 4)
+		local pDark = give_socketed(pInventory, darkTemplate, 4)
+		if (pDark == nil) then
+			printLuaError("JediTrials:awardPadawanRobes - failed to create dark Padawan robe for player " .. playerName .. " using template " .. darkTemplate)
+		else
+			hasDark = true
+		end
 	end
 
-	sendMail("system", "@jedi_spam:welcome_subject", "@jedi_spam:welcome_body", CreatureObject(pPlayer):getFirstName())
+	if (hasLight and hasDark) then
+		writeScreenPlayData(pPlayer, "PadawanTrials", "robesAwarded", 1)
+		CreatureObject(pPlayer):sendSystemMessage("Your light and dark Padawan robes have been placed in your inventory.")
+		return true
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage("One or more Padawan robes could not be delivered. The server has logged the failure; please contact staff if the robes are missing.")
+	return false
 end
 
 function JediTrials:unlockJediKnight(pPlayer)
@@ -545,6 +598,7 @@ function JediTrials:resetTrialData(pPlayer, trialType)
 	if (trialType == "padawan") then
 		deleteScreenPlayData(pPlayer, "PadawanTrials", "trialsCompleted")
 		deleteScreenPlayData(pPlayer, "PadawanTrials", "startedTrials")
+		deleteScreenPlayData(pPlayer, "PadawanTrials", "robesAwarded")
 	elseif (trialType == "knight") then
 		deleteScreenPlayData(pPlayer, "KnightTrials", "trialsCompleted")
 		deleteScreenPlayData(pPlayer, "KnightTrials", "startedTrials")
