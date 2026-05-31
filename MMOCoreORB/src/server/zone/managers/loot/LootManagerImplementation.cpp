@@ -828,6 +828,19 @@ String LootManagerImplementation::getRandomLootableMod(uint32 sceneObjectType) {
 	return "";
 }
 
+bool LootManagerImplementation::isLootableAttachmentMod(uint32 sceneObjectType, const String& modName) {
+	if (modName.isEmpty())
+		return false;
+
+	if (sceneObjectType == SceneObjectType::ARMORATTACHMENT) {
+		return lootableArmorAttachmentMods.contains(modName);
+	} else if (sceneObjectType == SceneObjectType::CLOTHINGATTACHMENT) {
+		return lootableClothingAttachmentMods.contains(modName);
+	}
+
+	return false;
+}
+
 bool LootManagerImplementation::createLoot(TransactionLog& trx, SceneObject* container, AiAgent* creature) {
 	auto lootCollection = creature->getLootGroups();
 

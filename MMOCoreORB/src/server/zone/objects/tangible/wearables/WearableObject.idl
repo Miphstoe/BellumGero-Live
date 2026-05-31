@@ -25,6 +25,8 @@ class WearableObject extends TangibleObject {
 
 	@dereferenced
 	protected VectorMap<string, int> wearableSkillMods;
+	@dereferenced
+	protected VectorMap<string, int> socketedSkillMods;
 
 	public WearableObject() {
 		socketsGenerated = false;
@@ -32,6 +34,7 @@ class WearableObject extends TangibleObject {
 		usedSocketCount = 0;
 		modsNotInSockets = 0;
 		wearableSkillMods.setAllowOverwriteInsertPlan();
+		socketedSkillMods.setAllowOverwriteInsertPlan();
 		Logger.setLoggingName("WearableObject");
 	}
 
@@ -78,6 +81,11 @@ class WearableObject extends TangibleObject {
 		return socketCount - usedSocketCount;
 	}
 
+	@read
+	public int getModsNotInSockets() {
+		return modsNotInSockets;
+	}
+
 	private native void generateSockets(CraftingValues craftingValues);
 
 	public native string repairAttempt(int repairChance);
@@ -91,6 +99,12 @@ class WearableObject extends TangibleObject {
 	@read
 	public final VectorMap<string, int> getWearableSkillMods() {
 		return wearableSkillMods;
+	}
+
+	@local
+	@read
+	public final VectorMap<string, int> getSocketedSkillMods() {
+		return socketedSkillMods;
 	}
 
 	public abstract void addSkillMod(final int skillType, final string skillMod, int value, boolean notifyClient = true) {

@@ -7,8 +7,11 @@
 #include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
+#include "server/zone/objects/tangible/wearables/ModSortingHelper.h"
 #include "server/zone/objects/tangible/attachment/Attachment.h"
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/managers/loot/LootManager.h"
+#include "server/zone/objects/scene/SceneObjectType.h"
 
 #ifndef CA_TEMPLATE
 #define CA_TEMPLATE "object/tangible/gem/clothing.iff"
@@ -67,8 +70,14 @@ namespace {
         return nullptr;
     }
 
-    inline bool looksLikeAttachmentTemplate(const String& full) {
-        return full.indexOf("/attachment/") != -1 || full.endsWith("_attachment.iff");
+    inline bool isExtractableAttachment(SceneObject* child, const String& full) {
+        if (child != nullptr && child->isAttachment())
+            return true;
+
+        return full.indexOf("/attachment/") != -1
+            || full.endsWith("_attachment.iff")
+            || full == CA_TEMPLATE
+            || full == AA_TEMPLATE;
     }
 
     // Recurse into nested containers (belts, bandoliers, etc.)
@@ -86,7 +95,7 @@ namespace {
             if (tmpl) {
                 const String full = tmpl->getFullTemplateString();
                 if (dbg) dbg->sendSystemMessage(String("SEA: found child ") + full);
-                if (looksLikeAttachmentTemplate(full)) {
+                if (isExtractableAttachment(child, full)) {
                     if (auto* t = child->asTangibleObject()) out.add(t);
                 }
             }
@@ -96,20 +105,6 @@ namespace {
         }
     }
 
-   // Nudge the client to render newly created items
-static void nudgeInventoryWithItems(CreatureObject* player,
-                                    const Vector< ManagedReference<TangibleObject*> >& items) {
-    if (!player) return;
-    SceneObject* viewer = player; // upcast
-
-    for (int i = 0; i < items.size(); ++i) {
-        ManagedReference<TangibleObject*> obj = items.get(i);
-        if (obj != nullptr) {
-            // doClose = false, forceLoadContainer = true
-            obj->sendTo(viewer, false, true);
-        }
-    }
-}
 }
  // namespace
 
@@ -163,6 +158,9 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
                 player->sendSystemMessage("SEA: Failed to move an attachment to your inventory. Aborting.");
                 return;
             }
+
+            usingObj->removeChildObject(att);
+            inventory->broadcastObject(att, true);
         }
 
         usingObj->destroyObjectFromWorld(true);
@@ -177,7 +175,6 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
             }
         }
 
-        nudgeInventoryWithItems(player, attachments);
         player->sendSystemMessage("SEA: Extraction complete. Attachments moved to your inventory; the wearable and tool were consumed.");
         return;
     }
@@ -211,7 +208,7 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
         const String& modName = mods.elementAt(i).getKey();
         const int     value   = mods.elementAt(i).getValue();
 
-        Reference<SceneObject*> so = server->createObject(tmplCRC, 1);
+        Reference<SceneObject*> so = server->createObject(tmplCRC, 2);
         if (so == nullptr) {
             player->sendSystemMessage(String("SEA: Failed to create: ") + path);
             for (int j = 0; j < created.size(); ++j) {
@@ -234,6 +231,7 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
 
         {
             Locker lt(tobj);
+            tobj->createChildObjects();
 
             if (Attachment* gem = cast<Attachment*>(tobj.get())) {
                 gem->addSkillMod(modName, value);
@@ -241,6 +239,7 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
 
             String n = buildExtractedAttachmentName(modName, value);
             tobj->setCustomObjectName(n, true);
+            tobj->addMagicBit(false);
             player->sendSystemMessage("SEA: named extracted attachment \"" + n + "\".");
         }
 
@@ -255,6 +254,7 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
             return;
         }
 
+        inventory->broadcastObject(tobj, true);
         created.add(tobj);
     }
 
@@ -270,7 +270,6 @@ void ExtractSEASuiCallback::run(CreatureObject* player, SuiBox* sui, uint32 even
         }
     }
 
-    nudgeInventoryWithItems(player, created);
     player->sendSystemMessage(String("SEA: created ") + String::valueOf(created.size()) + " attachment(s).");
     player->sendSystemMessage("SEA: Extraction complete. The wearable and tool were consumed.");
 }
@@ -283,7 +282,7 @@ void ExtractSEASuiCallback::collectSkillMods(WearableObject* wearable,
 
     int found = 0;
 
-    if (VectorMap<String,int>* m = wearable->getWearableSkillMods()) {
+    if (const VectorMap<String,int>* m = wearable->getSocketedSkillMods()) {
         for (int i = 0; i < m->size(); ++i) {
             String key = m->elementAt(i).getKey();
             int    val = m->get(key);
@@ -293,12 +292,47 @@ void ExtractSEASuiCallback::collectSkillMods(WearableObject* wearable,
 
     if (found == 0) {
         if (auto* wc = cast<WearableContainerObject*>(wearable)) {
-            if (const VectorMap<String,int>* cm = wc->getWearableSkillMods()) {
+            if (const VectorMap<String,int>* cm = wc->getSocketedSkillMods()) {
                 VectorMap<String,int>* m = const_cast<VectorMap<String,int>*>(cm);
                 for (int i = 0; i < m->size(); ++i) {
                     String key = m->elementAt(i).getKey();
                     int    val = m->get(key);
                     if (!key.isEmpty() && val != 0) { outMods.put(key, val); ++found; }
+                }
+            }
+        }
+    }
+
+    if (found == 0) {
+        LootManager* lootManager = server != nullptr ? server->getLootManager() : nullptr;
+        const uint32 attachmentType = wearable->isArmorObject()
+            ? SceneObjectType::ARMORATTACHMENT
+            : SceneObjectType::CLOTHINGATTACHMENT;
+
+        if (lootManager != nullptr) {
+            if (const VectorMap<String,int>* m = wearable->getWearableSkillMods()) {
+                SortedVector<ModSortingHelper> candidateMods;
+
+                for (int i = 0; i < m->size(); ++i) {
+                    String key = m->elementAt(i).getKey();
+                    int    val = m->get(key);
+
+                    if (!key.isEmpty() && val != 0 && lootManager->isLootableAttachmentMod(attachmentType, key)) {
+                        candidateMods.put(ModSortingHelper(key, val));
+                    }
+                }
+
+                int limit = candidateMods.size();
+
+                if (wearable->getModsNotInSockets() > 0) {
+                    limit = Math::min(limit, wearable->getMaxSockets() - wearable->getRemainingSockets());
+                }
+
+                for (int i = 0; i < limit; ++i) {
+                    String key = candidateMods.elementAt(i).getKey();
+                    int val = candidateMods.elementAt(i).getValue();
+                    outMods.put(key, val);
+                    ++found;
                 }
             }
         }
