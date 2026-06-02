@@ -10,8 +10,6 @@ myswg_vendor_first_screen = ConvoScreen:new {
     customDialogText = "What can I help you with?",
     stopConversation = "false",
     options = {
-        {"DOC/ENT BUFFS", "newbuff1"},
-        {"Pet Enhance", "petbuff1"},
         {"Weapons", "weaps1"},
         {"Armor", "armor1"},
         {"Loot", "loot1"},
@@ -239,41 +237,6 @@ languages1 = ConvoScreen:new {
 }
 myswg_vendor_conv:addScreen(languages1);
 
-newbuff1 = ConvoScreen:new {
-    id = "newbuff1",
-    leftDialog = "",
-    customDialogText = "I sell buffs!",
-    stopConversation = "false",
-    options = { 
-
-        {"1500 Buffs 2hr - 5k", "buff1"},
-        {"Reset Buffs - 2k", "reset_buffs"},
-    --    {"300% Doctor Buffs 6hr - 30k", "buff3"},
-    --    {"200% Entertainer Buffs 4hr - 10k", "buff4"},
-   --     {"300% Entertainer Buffs 6hr - 20k", "buff5"},
- 
---        {"125%/3hr Mind Buffs - 5k", "buff5"},
---        {"StimPack A - 500", "option50"},
---        {"StimPack B - 1k", "option51"},
---        {"StimPack C - 2k", "option52"},
---        {"StimPack D - 5k", "option53"},
---        {"StimPack E - 10k", "option54"},
-      	{"Main menu.", "first_screen"},
-    }
-}
-myswg_vendor_conv:addScreen(newbuff1);
-
-petbuff1 = ConvoScreen:new {
-    id = "petbuff1",
-    leftDialog = "",
-    customDialogText = "I can enhance your pet with powerful buffs!",
-    stopConversation = "false",
-    options = {
-        {"Pet 2500 Buffs 2hr - 5k", "petbuff_option1"},
-        {"Main menu.", "first_screen"},
-    }
-}
-myswg_vendor_conv:addScreen(petbuff1);
 
 special_npc1 = ConvoScreen:new {
     id = "special_npc1",
@@ -387,27 +350,6 @@ travel_complete = ConvoScreen:new {
 myswg_vendor_conv:addScreen(travel_complete)
 
 myswg_vendor_accept_quest = ConvoScreen:new {
-    id = "petbuff_option1",
-    leftDialog = "",
-    customDialogText = "Your pet has been enhanced!",
-    stopConversation = "true",
-    options = { }
-}
-myswg_vendor_accept_quest = ConvoScreen:new {
-    id = "buff1",
-    leftDialog = "",
-    customDialogText = "Enjoy!",
-    stopConversation = "true",
-    options = { }
-}
-myswg_vendor_accept_quest = ConvoScreen:new {    
-    id = "reset_buffs",
-    leftDialog = "",
-    customDialogText = "Your buffs have been reset!",
-    stopConversation = "true",
-    options = { }
-}
-myswg_vendor_accept_quest = ConvoScreen:new {    
     id = "option1",
     leftDialog = "",
     customDialogText = "Enjoy!",
