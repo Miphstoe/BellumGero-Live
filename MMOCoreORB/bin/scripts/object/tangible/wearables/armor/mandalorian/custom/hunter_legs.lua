@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_hunter_legs = object_tangible
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 72,
 	actionEncumbrance = 140,
@@ -69,14 +69,14 @@ object_tangible_wearables_armor_mandalorian_custom_hunter_legs = object_tangible
 	rating = LIGHT,
 	maxCondition = 36000,
 
-	kinetic = 45,
-	energy = 45,
-	electricity = 0,
+	kinetic = 60,
+	energy = 60,
+	electricity = 60,
 	stun = 0,
-	blast = 0,
-	heat = 45,
-	cold = 45,
-	acid = 0,
+	blast = 60,
+	heat = 60,
+	cold = 60,
+	acid = 60,
 	lightSaber = 0,
 }
 

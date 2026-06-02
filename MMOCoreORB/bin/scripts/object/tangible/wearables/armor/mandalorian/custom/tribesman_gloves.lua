@@ -1,13 +1,13 @@
--- Mandalorian Way of Life — Verd'ika tier (Ch3): MEDIUM, 55% Kinetic / Energy / Heat / Cold / Blast
+-- Mandalorian Way of Life — Tribesman tier (Ch5): HEAVY, 75% standard resists; 10% stun/lightsaber; vulnerability NONE.
 
-object_tangible_wearables_armor_mandalorian_custom_verdika_gloves = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_gloves:new {
+object_tangible_wearables_armor_mandalorian_custom_tribesman_gloves = object_tangible_wearables_armor_mandalorian_shared_armor_mandalorian_gloves:new {
 	templateType = ARMOROBJECT,
 
 	objectMenuComponent = "ArmorObjectMenuComponent",
 
 	certificationsRequired = {},
 
-	customName = "Verd'ika Gloves",
+	customName = "Mandalorian Tribesman Gloves",
 
 	playerRaces = { "object/creature/player/bothan_male.iff",
 				"object/creature/player/bothan_female.iff",
@@ -60,24 +60,24 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_gloves = object_tangi
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = STUN + LIGHTSABER,
+	vulnerability = NONE,
 
-	healthEncumbrance = 38,
-	actionEncumbrance = 30,
-	mindEncumbrance = 32,
+	healthEncumbrance = 44,
+	actionEncumbrance = 34,
+	mindEncumbrance = 36,
 
-	rating = MEDIUM,
-	maxCondition = 42000,
+	rating = HEAVY,
+	maxCondition = 58000,
 
-	kinetic = 65,
-	energy = 65,
-	electricity = 65,
-	stun = 0,
-	blast = 65,
-	heat = 65,
-	cold = 65,
-	acid = 65,
-	lightSaber = 0,
+	kinetic = 75,
+	energy = 75,
+	electricity = 75,
+	stun = 10,
+	blast = 75,
+	heat = 75,
+	cold = 75,
+	acid = 75,
+	lightSaber = 10,
 }
 
-ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_verdika_gloves, "object/tangible/wearables/armor/mandalorian/custom/verdika_gloves.iff")
+ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_tribesman_gloves, "object/tangible/wearables/armor/mandalorian/custom/tribesman_gloves.iff")

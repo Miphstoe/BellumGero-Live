@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_l = object_t
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = NONE,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 50,
 	actionEncumbrance = 48,
@@ -69,15 +69,15 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_l = object_t
 	rating = LIGHT,
 	maxCondition = 40000,
 
-	kinetic = 58,
-	energy = 58,
-	electricity = 58,
-	stun = 10,
-	blast = 65,
-	heat = 58,
-	cold = 58,
-	acid = 58,
-	lightSaber = 10,
+	kinetic = 70,
+	energy = 70,
+	electricity = 70,
+	stun = 0,
+	blast = 70,
+	heat = 70,
+	cold = 70,
+	acid = 70,
+	lightSaber = 0,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_clanbound_bracer_l, "object/tangible/wearables/armor/mandalorian/custom/clanbound_bracer_l.iff")

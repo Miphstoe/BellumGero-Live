@@ -1,6 +1,7 @@
 -- Mandalorian Way of Life — equippable rank titles (title = 1).
--- Client: each skillName needs string/en/skl_t.stf (nameplate / @skl_t). Without it the client shows (skl_t:[skillName]).
--- Optional: skl_n.stf / skl_d.stf for skill UI; Community title dropdown may also need these skills in the client's skill datatables (patch TRE).
+-- Client TRE (bg_custom1.tre): each skillName needs rows in datatables/skill/skills.iff (IS_TITLE=1) or the
+-- Community title picker will not list earned ranks after switching to a stock title. Also needs
+-- string/en/skl_t.stf (nameplate) and skl_n.stf (dropdown label).
 --
 -- Nameplate line wrap: the stock client breaks the resolved title to a fixed width. If the
 -- skl_t value is too long (e.g. "(Mandalorian Foundling)"), the closing ")" can appear alone on

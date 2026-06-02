@@ -62,24 +62,24 @@ object_tangible_wearables_armor_mandalorian_custom_foundling_helmet = object_tan
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 15,
 	actionEncumbrance = 15,
 	mindEncumbrance = 80,
 
-	-- Design table Ch0: LIGHT — 25% Kinetic & Energy only (other families 0; cold is vulnerability).
+	-- Design table Ch0: LIGHT — 50% all standard resists; stun and lightsaber unprotected.
 	rating = LIGHT,
 	maxCondition = 25000,
 
-	kinetic = 25,
-	energy = 25,
-	electricity = 0,
+	kinetic = 50,
+	energy = 50,
+	electricity = 50,
 	stun = 0,
-	blast = 0,
-	heat = 0,
-	cold = 0,
-	acid = 0,
+	blast = 50,
+	heat = 50,
+	cold = 50,
+	acid = 50,
 	lightSaber = 0,
 }
 

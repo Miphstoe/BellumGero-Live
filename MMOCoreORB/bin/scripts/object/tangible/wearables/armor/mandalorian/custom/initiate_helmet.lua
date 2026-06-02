@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_helmet = object_tang
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 18,
 	actionEncumbrance = 18,
@@ -69,14 +69,14 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_helmet = object_tang
 	rating = LIGHT,
 	maxCondition = 28000,
 
-	kinetic = 35,
-	energy = 35,
-	electricity = 0,
+	kinetic = 55,
+	energy = 55,
+	electricity = 55,
 	stun = 0,
-	blast = 0,
-	heat = 35,
-	cold = 0,
-	acid = 0,
+	blast = 55,
+	heat = 55,
+	cold = 55,
+	acid = 55,
 	lightSaber = 0,
 }
 

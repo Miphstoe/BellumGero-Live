@@ -3,6 +3,19 @@
 
 MandoTrialmasterConvoHandler = conv_handler:new {}
 
+function MandoTrialmasterConvoHandler:withRecruiterArmorRetroOption(pPlayer, pNpc, pScreen)
+	if (pScreen == nil or pPlayer == nil or pNpc == nil) then return pScreen end
+	if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then return pScreen end
+	if (MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)) then return pScreen end
+
+	local pCloned = LuaConversationScreen(pScreen):cloneScreen()
+	LuaConversationScreen(pCloned):addOption(
+		"Reissue all Way armor sets (once per account).",
+		"mando_armor_retro"
+	)
+	return pCloned
+end
+
 function MandoTrialmasterConvoHandler:getArcAcceptScreen(pPlayer, convoTemplate)
 	local pBase = convoTemplate:getScreen("arc_accept")
 	if (pPlayer ~= nil and CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then
@@ -22,58 +35,58 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 	local ch = MandoWayOfLife:getChapter(pPlayer)
 
-	-- Chapter 5 complete — Mandalorian (true final state)
+	-- Chapter 5 complete — Mandalorian Tribesman (true final state)
 	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 		local pBase = convoTemplate:getScreen("clanbound")
 		local pCloned = LuaConversationScreen(pBase):cloneScreen()
 		LuaConversationScreen(pCloned):setCustomDialogText(
-			"You are Mandalorian. There is nothing left here to prove. Well fought."
+			"You are a Mandalorian Tribesman. There is nothing left here to prove. Well fought."
 		)
-		return pCloned
+		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, pCloned)
 	end
 
-	-- Chapter 4 complete — Clanbound. Check Jabba gate for Mandalorian title.
+	-- Chapter 4 complete — Clanbound. Check Jabba gate for Mandalorian Tribesman title.
 	if (MandoWayOfLife:readInt(pPlayer, "chapter4Complete") == 1) then
 		local pGhost = CreatureObject(pPlayer):getPlayerObject()
 		local pBase = convoTemplate:getScreen("clanbound")
 		if (pGhost ~= nil and PlayerObject(pGhost):hasBadge(MandoWayOfLife.JABBA_THEMEPARK_BADGE)) then
-			-- Player earned the Jabba badge: grant Mandalorian rank now
+			-- Player earned the Jabba badge: grant Mandalorian Tribesman rank now
 			MandoWayOfLife:grantMandalorian(pPlayer)
 			local pCloned = LuaConversationScreen(pBase):cloneScreen()
 			LuaConversationScreen(pCloned):setCustomDialogText(
-				"Word of your deeds reached me before you did. The Hunts have spoken. You are Mandalorian. Wear the title."
+				"Word of your deeds reached me before you did. The Hunts have spoken. You are a Mandalorian Tribesman. Wear the title."
 			)
-			return pCloned
+			return self:withRecruiterArmorRetroOption(pPlayer, pNpc, pCloned)
 		end
 		-- No Jabba badge yet: send them to earn it
 		local pCloned = LuaConversationScreen(pBase):cloneScreen()
 		LuaConversationScreen(pCloned):setCustomDialogText(
 			"You are Clanbound. The last trial runs through the Hutts on Tatooine. When you want the full brief, ask me what comes next."
 		)
-		return pCloned
+		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, pCloned)
 	end
 
 	-- Arc complete + Novice BH: ready for chapter gate cycle
 	if (MandoWayOfLife:isArcComplete(pPlayer)) then
 		if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then
-			return convoTemplate:getScreen("arc_complete_no_bh")
+			return self:withRecruiterArmorRetroOption(pPlayer, pNpc, convoTemplate:getScreen("arc_complete_no_bh"))
 		end
-		return convoTemplate:getScreen("chapter_gate_ready")
+		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, convoTemplate:getScreen("chapter_gate_ready"))
 	end
 
 	-- Arc started but not complete: player is mid-arc
 	if (MandoWayOfLife:readInt(pPlayer, "chapter0Started") == 1) then
 		MandoWayOfLife:ensureFoundlingInformant(pPlayer)
-		return convoTemplate:getScreen("arc_in_progress")
+		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, convoTemplate:getScreen("arc_in_progress"))
 	end
 
 	-- Prerequisites not met
 	if (not MandoWayOfLife:meetsPrerequisites(pPlayer)) then
-		return convoTemplate:getScreen("prereqs_missing")
+		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, convoTemplate:getScreen("prereqs_missing"))
 	end
 
 	-- Ready to start arc
-	return self:getArcAcceptScreen(pPlayer, convoTemplate)
+	return self:withRecruiterArmorRetroOption(pPlayer, pNpc, self:getArcAcceptScreen(pPlayer, convoTemplate))
 end
 
 function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
@@ -97,6 +110,24 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 	elseif (screenID == "foundling_resync") then
 		-- Force despawn + respawn informant and re-grant waypoints for current planetIndex (stuck contact / bad OID).
 		MandoWayOfLife:resyncFoundlingContactAndWaypoints(pPlayer)
+
+	elseif (screenID == "mando_armor_retro_grant") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That reissue is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_armor_retro_grant ok=%s.", tostring(ok)))
+		return pCloned
 
 	elseif (screenID == "buy_mando_armory_1" or screenID == "buy_mando_armory_2" or screenID == "buy_mando_armory_3") then
 		local tier = 1
@@ -123,17 +154,17 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 
 		if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 			msg =
-				"The Hutts already weighed you. The Guild trail is behind you. What remains is to live the Creed in every contract you take. "
+				"You stand as a Mandalorian Tribesman. The Hutts already weighed you. The Guild trail is behind you. What remains is to live the Creed in every contract you take. "
 				.. "There is no higher rank here. Walk it, or set the helmet down. This is the Way!"
 		else
 			local pGhost = CreatureObject(pPlayer):getPlayerObject()
 			if (pGhost ~= nil and PlayerObject(pGhost):hasBadge(MandoWayOfLife.JABBA_THEMEPARK_BADGE)) then
 				msg =
-					"Your proof with the Hutts is already on record. If the Mandalorian title did not land, close this talk and speak to me again."
+					"Your proof with the Hutts is already on record. If the Mandalorian Tribesman title did not land, close this talk and speak to me again."
 			else
 				msg =
 					"Seek the Hutts on Tatooine. Complete the work Jabba's people set before you. "
-					.. "That labor is your final testament to your dedication to the religion. "
+					.. "That labor is your final testament before the Mandalorian Tribesman rank. "
 					.. "When their operations are finished, return to me. This is the Way!"
 			end
 		end

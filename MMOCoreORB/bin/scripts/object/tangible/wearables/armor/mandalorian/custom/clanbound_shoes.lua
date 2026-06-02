@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes = object_tang
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = NONE,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 75,
 	actionEncumbrance = 96,
@@ -69,15 +69,15 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes = object_tang
 	rating = HEAVY,
 	maxCondition = 52000,
 
-	kinetic = 65,
-	energy = 65,
-	electricity = 65,
-	stun = 10,
-	blast = 65,
-	heat = 65,
-	cold = 65,
-	acid = 65,
-	lightSaber = 10,
+	kinetic = 70,
+	energy = 70,
+	electricity = 70,
+	stun = 0,
+	blast = 70,
+	heat = 70,
+	cold = 70,
+	acid = 70,
+	lightSaber = 0,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_clanbound_shoes, "object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff")
