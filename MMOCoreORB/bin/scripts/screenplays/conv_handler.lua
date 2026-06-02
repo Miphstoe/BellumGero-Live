@@ -717,6 +717,11 @@ function conv_handler:getBGTokenReward3(screenId)
         ["give_item_3_74"] = {name = "Painting: Imperial Oppression (TIE Oppressor)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
         ["give_item_3_75"] = {name = "Painting: Emperor's Eyes (TIE Sentinel)", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
         ["give_item_3_76"] = {name = "SoroSuub Luxury Yacht Deed", template = "object/tangible/space/veteran_reward/sorosuub_space_yacht_deed.iff"},
+        ["give_item_3_77"] = {name = "Fine Woven Rug (Style 1)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_01.iff"},
+        ["give_item_3_78"] = {name = "Fine Woven Rug (Style 2)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_02.iff"},
+        ["give_item_3_79"] = {name = "Fine Woven Rug (Style 3)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_03.iff"},
+        ["give_item_3_80"] = {name = "Fine Woven Rug (Style 4)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_04.iff"},
+        ["give_item_3_81"] = {name = "Fine Woven Rug (Style 5)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_05.iff"},
     }
     return rewards[screenId]
 end
