@@ -2,7 +2,7 @@
 -- Bellum: Foundling kit. CDEF certification, Beskar naming, recruiter grant on arc start.
 
 object_weapon_ranged_rifle_rifle_foundling_cdef_beskar = object_weapon_ranged_rifle_shared_rifle_cdef:new {
-	customObjectName = "Beskar Polished Rifle",
+	customObjectName = "Foundling Beskar Polished Rifle",
 
 	playerRaces = {
 		"object/creature/player/bothan_male.iff",
@@ -52,9 +52,9 @@ object_weapon_ranged_rifle_rifle_foundling_cdef_beskar = object_weapon_ranged_ri
 	maxRange = 64,
 	maxRangeAccuracy = -80,
 
-	minDamage = 666,
-	maxDamage = 666,
-	attackSpeed = 0.6,
+	minDamage = 333,
+	maxDamage = 333,
+	attackSpeed = 2.5,
 	woundsRatio = 13,
 
 	numberExperimentalProperties = {1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2},
@@ -62,8 +62,8 @@ object_weapon_ranged_rifle_rifle_foundling_cdef_beskar = object_weapon_ranged_ri
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 666, 666, 0.6, 9, 30, 750, 0, -80, 35, 35, 10, 22, 10},
-	experimentalMax = {0, 0, 666, 666, 0.6, 17, 65, 1500, 0, -80, 35, 65, 7, 15, 7},
+	experimentalMin = {0, 0, 333, 333, 2.5, 9, 30, 750, 0, -80, 35, 35, 10, 22, 10},
+	experimentalMax = {0, 0, 333, 333, 2.5, 17, 65, 1500, 0, -80, 35, 65, 7, 15, 7},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
