@@ -16,6 +16,7 @@
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
 #include "server/zone/Zone.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
 
 namespace server {
 namespace zone {
@@ -105,6 +106,15 @@ public:
 			}
 			case 3: {
 				// Detonate Droid
+
+				// Block detonation if the droid itself is inside a safe zone (player-city cantina / hospital)
+				if (SafeZoneManager::isInSafeBuilding(droid)) {
+					droid->showFlyText("pet/droid_modules", "detonation_disabled", 204, 0, 0);
+					module->deactivate();
+					droid->removePendingTask("droid_detonation");
+					return;
+				}
+
 				bool shouldGcwCrackdownTef = false, shouldGcwTef = false, shouldBhTef = false;
 
 				// find all valid targets in 17 m range and hit them with the damage
@@ -136,6 +146,11 @@ public:
 					CreatureObject* creo = object->asCreatureObject();
 
 					if (creo == nullptr || creo->isDead() || !creo->isAttackableBy(droid) || !droid->isInRange(object, 17)) {
+						continue;
+					}
+
+					// Skip targets sheltered inside a safe building (cantina / hospital)
+					if (SafeZoneManager::isInSafeBuilding(creo)) {
 						continue;
 					}
 

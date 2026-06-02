@@ -35,7 +35,7 @@ cost_info = ConvoScreen:new {
 }
 bg_token_vendor_conv:addScreen(cost_info)
 
--- ITEMS MENU (showing all 20 items)
+-- ITEMS MENU (showing all 21 items)
 items_menu = ConvoScreen:new {
     id = "items_menu",
     leftDialog = "",
@@ -95,7 +95,7 @@ bg_token_vendor_conv:addScreen(items_menu_3)
 items_menu_4 = ConvoScreen:new {
     id = "items_menu_4",
     leftDialog = "",
-    customDialogText = "Choose an item (50 Bellum Gero Tokens each):\n\nItems 16-20:",
+    customDialogText = "Choose an item (50 Bellum Gero Tokens each):\n\nItems 16-21:",
     stopConversation = "false",
     options = {
         {"Item 16 - [Chemical Recycler]", "trade_item_16"},
@@ -103,6 +103,7 @@ items_menu_4 = ConvoScreen:new {
         {"Item 18 - [Flora Recycler]", "trade_item_18"},
         {"Item 19 - [Metal Recycler]", "trade_item_19"},
         {"Item 20 - [Ore Recycler]", "trade_item_20"},
+        {"Item 21 - [Hanging Planter]", "trade_item_21"},
         {"Previous", "items_menu_3"},
         {"Back", "first_screen"},
     }
@@ -549,6 +550,28 @@ give_item_20 = ConvoScreen:new {
     options = { }
 }
 bg_token_vendor_conv:addScreen(give_item_20)
+
+-- Item 21
+trade_item_21 = ConvoScreen:new {
+    id = "trade_item_21",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 50 Bellum Gero Tokens for Hanging Planter?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_21"},
+        {"No, go back", "items_menu_4"}
+    }
+}
+bg_token_vendor_conv:addScreen(trade_item_21)
+
+give_item_21 = ConvoScreen:new {
+    id = "give_item_21",
+    leftDialog = "",
+    customDialogText = "Processing trade...",
+    stopConversation = "true",
+    options = { }
+}
+bg_token_vendor_conv:addScreen(give_item_21)
 
 -- BYE SCREEN
 bye = ConvoScreen:new {

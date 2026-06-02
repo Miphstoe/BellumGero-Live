@@ -26,6 +26,8 @@ class WearableContainerObject extends Container {
 
 	@dereferenced
 	protected VectorMap<string, int> wearableSkillMods;
+	@dereferenced
+	protected VectorMap<string, int> socketedSkillMods;
 
 	public WearableContainerObject() {
 		super();
@@ -36,6 +38,7 @@ class WearableContainerObject extends Container {
 
 		Logger.setLoggingName("WearableContainerObject");
 		wearableSkillMods.setAllowOverwriteInsertPlan();
+		socketedSkillMods.setAllowOverwriteInsertPlan();
 	}
 
 	public native void initializeTransientMembers();
@@ -69,6 +72,12 @@ class WearableContainerObject extends Container {
 		return wearableSkillMods;
 	}
 
+	@local
+	@read
+	public final VectorMap<string, int> getSocketedSkillMods() {
+		return socketedSkillMods;
+	}
+
 	@dirty
 	public native boolean isEquipped();
 
@@ -80,6 +89,11 @@ class WearableContainerObject extends Container {
 	@read
 	public int getRemainingSockets() {
 		return socketCount - usedSocketCount;
+	}
+
+	@read
+	public int getModsNotInSockets() {
+		return modsNotInSockets;
 	}
 
 	private native void generateSockets(CraftingValues craftingValues);

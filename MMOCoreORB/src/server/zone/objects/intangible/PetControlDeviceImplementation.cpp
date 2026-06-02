@@ -233,11 +233,31 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		}
 
 		if (creaturePet->getAdultLevel() > maxLevelofPets) {
+			const CreatureTemplate* petTemplate = pet->getCreatureTemplate();
+			StringBuffer callFailMsg;
+			callFailMsg << "[CallCheck] FAIL player=" << player->getFirstName()
+			            << " template=" << (petTemplate ? petTemplate->getTemplateName() : "unknown")
+			            << " adultLevel=" << creaturePet->getAdultLevel()
+			            << " currentLevel=" << level
+			            << " tame_level=" << maxLevelofPets
+			            << " keep_creature=" << maxPets
+			            << " isCH=" << (ch ? "yes" : "no")
+			            << " reason=adult_level_exceeds_max";
+			info(callFailMsg.toString(), true);
 			player->sendSystemMessage("@pet/pet_menu:control_exceeded"); // Calling this pet would exceed your Control Level ability.
 			return;
 		}
 
 		if (creaturePet->isVicious() && (player->getSkillMod("tame_aggro") <= 0 || !ch)) {
+			const CreatureTemplate* petTemplate = pet->getCreatureTemplate();
+			StringBuffer callFailMsg;
+			callFailMsg << "[CallCheck] FAIL player=" << player->getFirstName()
+			            << " template=" << (petTemplate ? petTemplate->getTemplateName() : "unknown")
+			            << " adultLevel=" << creaturePet->getAdultLevel()
+			            << " tame_aggro=" << player->getSkillMod("tame_aggro")
+			            << " isCH=" << (ch ? "yes" : "no")
+			            << " reason=vicious_no_skill";
+			info(callFailMsg.toString(), true);
 			player->sendSystemMessage("@pet/pet_menu:lack_skill"); // You lack the skill to call a pet of this type.
 			return;
 		}
@@ -257,6 +277,17 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 					continue;
 
 				if (++currentlySpawned >= maxPets) {
+					const CreatureTemplate* petTemplate = pet->getCreatureTemplate();
+					StringBuffer callFailMsg;
+					callFailMsg << "[CallCheck] FAIL player=" << player->getFirstName()
+					            << " template=" << (petTemplate ? petTemplate->getTemplateName() : "unknown")
+					            << " currentLevel=" << level
+					            << " tame_level=" << maxLevelofPets
+					            << " keep_creature=" << maxPets
+					            << " currentlySpawned=" << currentlySpawned
+					            << " spawnedLevel=" << spawnedLevel
+					            << " reason=too_many_active_pets";
+					info(callFailMsg.toString(), true);
 					player->sendSystemMessage("@pet/pet_menu:at_max"); // You already have the maximum number of pets of this type that you can call.
 					return;
 				}
@@ -264,6 +295,18 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 				spawnedLevel += object->getLevel();
 
 				if ((spawnedLevel + level) > maxLevelofPets) {
+					const CreatureTemplate* petTemplate = pet->getCreatureTemplate();
+					StringBuffer callFailMsg;
+					callFailMsg << "[CallCheck] FAIL player=" << player->getFirstName()
+					            << " template=" << (petTemplate ? petTemplate->getTemplateName() : "unknown")
+					            << " currentLevel=" << level
+					            << " tame_level=" << maxLevelofPets
+					            << " keep_creature=" << maxPets
+					            << " currentlySpawned=" << currentlySpawned
+					            << " spawnedLevel=" << spawnedLevel
+					            << " combinedLevel=" << (spawnedLevel + level)
+					            << " reason=total_level_exceeded";
+					info(callFailMsg.toString(), true);
 					player->sendSystemMessage("@pet/pet_menu:control_exceeded"); // Calling this pet would exceed your Control Level ability.
 					return;
 				}

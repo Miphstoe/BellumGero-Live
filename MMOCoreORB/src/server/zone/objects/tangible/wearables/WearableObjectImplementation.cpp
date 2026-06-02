@@ -91,6 +91,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 
 	SortedVector<ModSortingHelper> sortedMods;
 	VectorMap<String, int>* skillModifiers = attachment->getSkillMods();
+	bool appliedAnyMod = false;
 
 	for (int i = 0; i < skillModifiers->size(); i++) {
 		auto key = skillModifiers->elementAt(i).getKey();
@@ -113,7 +114,17 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 
 		if (modValue > existingValue) {
 			wearableSkillMods.put(modName, modValue);
+			socketedSkillMods.put(modName, modValue);
+			appliedAnyMod = true;
 		}
+	}
+
+	if (!appliedAnyMod) {
+		if (isEquipped()) {
+			applySkillModsTo(player);
+		}
+
+		return;
 	}
 
 	usedSocketCount++;

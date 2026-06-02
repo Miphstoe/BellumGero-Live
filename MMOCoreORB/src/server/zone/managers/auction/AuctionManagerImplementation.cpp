@@ -831,6 +831,14 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 				if (strongOwnerRef->isOnline()) {
 					strongOwnerRef->sendSystemMessage(player->getFirstName() + " has offered an item to " + vendor->getDisplayedName());
 				}
+
+				ManagedReference<ChatManager*> cman = zoneServer->getChatManager();
+				if (cman != nullptr) {
+					UnicodeString subject("Item Offered on Your Vendor");
+					String bodyStr = player->getFirstName() + " has offered '" + removeColorCodes(item->getItemName()) + "' on your vendor '" + vendor->getDisplayedName() + "'.";
+					UnicodeString body(bodyStr);
+					cman->sendMail("auctioner", subject, body, strongOwnerRef->getFirstName());
+				}
 			}
 		}
 	}

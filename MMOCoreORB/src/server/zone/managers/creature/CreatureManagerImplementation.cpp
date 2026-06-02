@@ -1227,11 +1227,29 @@ void CreatureManagerImplementation::tame(Creature* creature, CreatureObject* pla
 	int maxLevelofPets = player->getSkillMod("tame_level");
 
 	if (!player->hasSkill("outdoors_creaturehandler_novice") || (templateLevel > maxLevelofPets)) {
+		StringBuffer tameFailMsg;
+		tameFailMsg << "[TameCheck] FAIL player=" << player->getFirstName()
+		            << " template=" << creatureTemplate->getTemplateName()
+		            << " creatureLevel=" << templateLevel
+		            << " tame_level=" << maxLevelofPets
+		            << " keep_creature=" << player->getSkillMod("keep_creature")
+		            << " tame_aggro=" << player->getSkillMod("tame_aggro")
+		            << " reason=" << (!player->hasSkill("outdoors_creaturehandler_novice") ? "not_CH" : "level_too_high");
+		info(tameFailMsg.toString(), true);
 		player->sendSystemMessage("@pet/pet_menu:sys_lack_skill"); // You lack the skill to be able to tame that creature.
 		return;
 	}
 
 	if ((creature->isVicious() && player->getSkillMod("tame_aggro") < 1) || creature->getChanceToTame(player) <= 0) {
+		StringBuffer tameFailMsg;
+		tameFailMsg << "[TameCheck] FAIL player=" << player->getFirstName()
+		            << " template=" << creatureTemplate->getTemplateName()
+		            << " creatureLevel=" << templateLevel
+		            << " tame_level=" << maxLevelofPets
+		            << " tame_aggro=" << player->getSkillMod("tame_aggro")
+		            << " chanceToTame=" << creature->getChanceToTame(player)
+		            << " reason=" << (creature->isVicious() ? "vicious_no_aggro" : "no_chance");
+		info(tameFailMsg.toString(), true);
 		player->sendSystemMessage("@pet/pet_menu:sys_lack_skill"); // You lack the skill to be able to tame that creature.
 		return;
 	}
@@ -1285,13 +1303,35 @@ void CreatureManagerImplementation::tame(Creature* creature, CreatureObject* pla
 			}
 
 			if (++currentlySpawned >= maxPets) {
+				StringBuffer tameFailMsg;
+				tameFailMsg << "[TameCheck] FAIL player=" << player->getFirstName()
+				            << " template=" << creatureTemplate->getTemplateName()
+				            << " creatureLevel=" << level
+				            << " tame_level=" << maxLevelofPets
+				            << " keep_creature=" << maxPets
+				            << " currentlySpawned=" << currentlySpawned
+				            << " spawnedLevel=" << spawnedLevel
+				            << " reason=too_many_active_pets";
+				info(tameFailMsg.toString(), true);
 				player->sendSystemMessage("@pet/pet_menu:too_many"); // You can't control any more pets. Store one first
 				return;
 			}
 
 			spawnedLevel += object->getLevel();
 
-			if ((spawnedLevel + level) >= maxLevelofPets) {
+			// BUG FIX: was '>=' which incorrectly rejected tames where total == maxLevelofPets
+			if ((spawnedLevel + level) > maxLevelofPets) {
+				StringBuffer tameFailMsg;
+				tameFailMsg << "[TameCheck] FAIL player=" << player->getFirstName()
+				            << " template=" << creatureTemplate->getTemplateName()
+				            << " creatureLevel=" << level
+				            << " tame_level=" << maxLevelofPets
+				            << " keep_creature=" << maxPets
+				            << " currentlySpawned=" << currentlySpawned
+				            << " spawnedLevel=" << spawnedLevel
+				            << " combinedLevel=" << (spawnedLevel + level)
+				            << " reason=total_level_exceeded";
+				info(tameFailMsg.toString(), true);
 				player->sendSystemMessage("Taming this pet would exceed your control level ability.");
 				return;
 			}
