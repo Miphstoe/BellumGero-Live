@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_chest = object_tangi
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 130,
 	actionEncumbrance = 58,
@@ -69,14 +69,14 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_chest = object_tangi
 	rating = LIGHT,
 	maxCondition = 30000,
 
-	kinetic = 35,
-	energy = 35,
-	electricity = 0,
+	kinetic = 55,
+	energy = 55,
+	electricity = 55,
 	stun = 0,
-	blast = 0,
-	heat = 35,
-	cold = 0,
-	acid = 0,
+	blast = 55,
+	heat = 55,
+	cold = 55,
+	acid = 55,
 	lightSaber = 0,
 }
 

@@ -60,7 +60,7 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_helmet = object_tangi
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
 
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = STUN + LIGHTSABER,
 
 	healthEncumbrance = 22,
 	actionEncumbrance = 22,
@@ -69,14 +69,14 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_helmet = object_tangi
 	rating = MEDIUM,
 	maxCondition = 44000,
 
-	kinetic = 55,
-	energy = 55,
-	electricity = 0,
+	kinetic = 65,
+	energy = 65,
+	electricity = 65,
 	stun = 0,
-	blast = 55,
-	heat = 55,
-	cold = 55,
-	acid = 0,
+	blast = 65,
+	heat = 65,
+	cold = 65,
+	acid = 65,
 	lightSaber = 0,
 }
 

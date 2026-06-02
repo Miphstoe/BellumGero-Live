@@ -102,12 +102,13 @@ MandoWayOfLife = ScreenPlay:new {
 
 	-- --------------------------------------------------------
 	-- Chapter rewards - each chapter grants only that tier’s armor set.
-	-- Ch0 Foundling  LIGHT  25% K/E                      | helmet only
-	-- Ch1 Initiate   LIGHT  35% K/E+Heat                 | helmet + chest
-	-- Ch2 Hunter     LIGHT  45% K/E+Heat+Cold             | helmet + chest + legs
-	-- Ch3 Verd’ika   MEDIUM 55% K/E+Heat+Cold+Blast       | helmet + chest + legs + gloves
-	-- Ch4 Clanbound  HEAVY  65% K/E+Heat+Cold+Blast+Acid  | helmet + chest + legs + gloves + boots
-	-- Ch5 Mandalorian Tribesman: title + badge only (see grantMandalorian). Requires Jabba Themepark.
+	-- Ch0 Foundling  LIGHT   50% standard resists (not stun/lightsaber)     | helmet only
+	-- Ch1 Initiate   LIGHT   55% (+5% per phase)                           | helmet + chest
+	-- Ch2 Hunter     LIGHT   60%                                           | helmet + chest + legs
+	-- Ch3 Verd’ika   MEDIUM  65%                                           | helmet + chest + legs + gloves
+	-- Ch4 Clanbound  HEAVY   70% (0 stun/saber)                             | helmet + chest + legs + gloves + boots
+	-- Ch5 Tribesman  HEAVY   75% + 10% stun/saber; vulnerability NONE       | helmet + chest + legs + gloves + boots
+	-- Ch5 Mandalorian Tribesman: 5-piece armor + title + badge (see grantMandalorian). Requires Jabba Themepark.
 	-- Ch0 = Foundling arc. Ch1-4 = Spynet 5+1 gate completions. Ch5 = Jabba Themepark gate.
 	-- --------------------------------------------------------
 	chapterRewards = {
@@ -135,7 +136,13 @@ MandoWayOfLife = ScreenPlay:new {
 			"object/tangible/wearables/armor/mandalorian/custom/clanbound_gloves.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff",
 		},
-		-- [5] Mandalorian Tribesman: no armor reward; title + badge only (grantMandalorian)
+		[5] = {
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_helmet.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_chest.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_legs.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_gloves.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_shoes.iff",
+		},
 	},
 
 	-- System messages / prose (human-readable)
@@ -221,6 +228,9 @@ MandoWayOfLife = ScreenPlay:new {
 	-- ---- Testing / deployment toggles (keep false on live shards) ----
 	-- false = recruiter comes from TatooineMosEisleyScreenPlay mobiles (Cantina); true = duplicate spawn from start().
 	SPAWN_RECRUITER_ON_START = false,
+
+	-- Global writeData key prefix: one armor reissue per login account (see tryGrantAccountArmorRetro).
+	ACCOUNT_ARMOR_RETRO_DATA_PREFIX = "mando_way:acctArmorRetro:",
 	-- Grant waypoint + coords but do not spawn a dynamic informant (use a static-placed mando_foundling_informant at planetData coords).
 	DEBUG_SKIP_INFORMANT_MOBILE_SPAWN = false,
 	-- Allow any mando_foundling_informant to advance convo while Foundling arc is active (ignores per-player OID link). Dev-only.
@@ -2686,7 +2696,7 @@ end
 
 -- Called from mando_trialmaster_conv_handler when the player returns with Jabba badge 105.
 -- Idempotent: no-ops if chapter5Complete is already set.
--- No armor reward at this tier; title + badge only.
+-- Grants Tribesman 5-piece armor, title, and badge.
 function MandoWayOfLife:grantMandalorian(pPlayer)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter5Complete") == 1) then return end
@@ -2710,11 +2720,12 @@ function MandoWayOfLife:grantMandalorian(pPlayer)
 	self:setChapter(pPlayer, 5)
 	self:grantChapterRankTitle(pPlayer, 5)
 	self:tryAwardChapterBadge(pPlayer, 5)
+	self:grantReward(pPlayer, 5)
 
 	self:logDiagPlayer(pPlayer, "grantMandalorian: Mandalorian Tribesman rank granted (chapter 5).")
 	CreatureObject(pPlayer):sendSystemMessage(
 		"[Mandalorian Way] Word of your deeds reached me before you did. "
-		.. "The Hunts have spoken. You are a Mandalorian Tribesman. Wear the title."
+		.. "The Hunts have spoken. You are a Mandalorian Tribesman. Wear the title and your Tribesman armor."
 	)
 	CreatureObject(pPlayer):sendSystemMessage(
 		"[Mandalorian Way] Incoming message from the Spynet comlink. Continue your Hunt. We will be in touch. THIS IS THE WAY!"
@@ -2878,6 +2889,129 @@ function MandoWayOfLife:grantReward(pPlayer, chapter)
 			)
 		end
 	end
+end
+
+-- ============================================================
+-- ACCOUNT ONE-TIME ARMOR REISSUE (Recruiter convo)
+-- ============================================================
+-- Veterans who earned ranks before resist retunes can claim every chapter armor set once per
+-- login account (Foundling through Tribesman). Stored in global writeData keyed by account id.
+
+function MandoWayOfLife:getPlayerAccountId(pPlayer)
+	if (pPlayer == nil) then return 0 end
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	if (pGhost == nil) then return 0 end
+	return PlayerObject(pGhost):getAccountID()
+end
+
+function MandoWayOfLife:accountArmorRetroDataKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_ARMOR_RETRO_DATA_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)
+	local key = self:accountArmorRetroDataKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) or 0) == 1
+end
+
+function MandoWayOfLife:isMandoRecruiterNpc(pNpc)
+	if (pNpc == nil) then return false end
+	local recruiterOid = readData("mando_way:recruiter_id") or 0
+	if (recruiterOid ~= 0 and SceneObject(pNpc):getObjectID() == recruiterOid) then
+		return true
+	end
+	local name = SceneObject(pNpc):getCustomObjectName()
+	if (name == nil) then return false end
+	return string.find(name, "Recruiter", 1, true) ~= nil
+end
+
+function MandoWayOfLife:buildAccountArmorRetroTemplateList()
+	local list = {}
+	for chapter = 0, 5 do
+		local reward = self.chapterRewards[chapter]
+		if (reward == nil) then
+		elseif (type(reward) == "table") then
+			for _, template in ipairs(reward) do
+				table.insert(list, template)
+			end
+		else
+			table.insert(list, reward)
+		end
+	end
+	return list
+end
+
+function MandoWayOfLife:countAccountArmorRetroPieces()
+	return #self:buildAccountArmorRetroTemplateList()
+end
+
+-- Returns ok, playerMessage
+function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	local accountKey = self:accountArmorRetroDataKey(pPlayer)
+	if (accountKey == nil) then
+		return false, "I cannot verify your login account. Try relogging, or contact staff."
+	end
+
+	if (self:hasAccountArmorRetroClaimed(pPlayer)) then
+		return false,
+			"This account already claimed the one-time armor reissue. Another character on the same login cannot claim it again."
+	end
+
+	local templates = self:buildAccountArmorRetroTemplateList()
+	local requiredSlots = #templates
+	if (requiredSlots < 1) then
+		return false, "Armor reissue list is empty. Contact staff."
+	end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "You have no inventory."
+	end
+
+	local inv = SceneObject(pInventory)
+	local freeSlots = inv:getContainerVolumeLimit() - inv:getCountableObjectsRecursive()
+	if (freeSlots < requiredSlots) then
+		return false, string.format(
+			"You need at least %s free inventory slots for every armor piece (Foundling through Tribesman). Clear space and ask again.",
+			tostring(requiredSlots)
+		)
+	end
+
+	for _, template in ipairs(templates) do
+		if (inv:isContainerFullRecursive()) then
+			return false, string.format(
+				"Your inventory filled before all pieces were issued. Clear at least %s slots and contact staff — do not retry or you may be blocked incorrectly.",
+				tostring(requiredSlots)
+			)
+		end
+		local pItem = giveItem(pInventory, template, -1)
+		if (pItem == nil) then
+			self:logDiagPlayer(pPlayer, string.format("tryGrantAccountArmorRetro FAILED at %s", template))
+			return false,
+				"Something blocked the transfer of " .. template .. ". Clear bag space and contact staff."
+		end
+	end
+
+	writeData(accountKey, 1)
+	self:writeInt(pPlayer, "accountArmorRetro.claimed", 1)
+	self:writeStr(pPlayer, "accountArmorRetro.claimedAt", tostring(os.time()))
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryGrantAccountArmorRetro OK accountId=%s pieces=%s.",
+		tostring(self:getPlayerAccountId(pPlayer)),
+		tostring(requiredSlots)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(
+		"[Mandalorian Way] One-time account armor reissue complete: Foundling through Tribesman sets with current resist values."
+	)
+
+	return true,
+		"Done. Every rank armor set from Foundling through Tribesman is in your inventory — current resist tuning, one claim per login account. This is the Way."
 end
 
 -- ============================================================

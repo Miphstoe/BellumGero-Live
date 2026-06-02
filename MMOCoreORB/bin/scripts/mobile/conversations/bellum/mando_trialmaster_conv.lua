@@ -241,4 +241,26 @@ buy_mando_armory_3 = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(buy_mando_armory_3)
 
+-- Recruiter-only (handler): one-time per login account reissue of all chapter armor sets.
+mando_armor_retro = ConvoScreen:new {
+	id = "mando_armor_retro",
+	leftDialog = "",
+	customDialogText = "For veterans of the Way: I can reissue every rank armor set once per login account — Foundling helmet through the full Tribesman panoply — using today's resist values. You need twenty free inventory slots. Another character on your account cannot claim this again.",
+	stopConversation = "false",
+	options = {
+		{"Grant the armor sets.", "mando_armor_retro_grant"},
+		{"Not now.", "bye"},
+	}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_retro)
+
+mando_armor_retro_grant = ConvoScreen:new {
+	id = "mando_armor_retro_grant",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_retro_grant)
+
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
