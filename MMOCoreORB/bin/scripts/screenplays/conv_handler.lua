@@ -266,6 +266,7 @@ function conv_handler:getTier3Reward(screenId)
         ["give_t3_73"] = {name = "Painting: Smuggler's Run", template = "object/tangible/veteran_reward/one_year_anniversary/painting_07.iff"},
         ["give_t3_74"] = {name = "Painting: Imperial Oppression", template = "object/tangible/veteran_reward/one_year_anniversary/painting_08.iff"},
         ["give_t3_75"] = {name = "Painting: Emperor's Eyes", template = "object/tangible/veteran_reward/one_year_anniversary/painting_09.iff"},
+        ["give_t3_76"] = {name = "Fish Tank", template = "object/tangible/collection/reward/shared_fish_tank_reward.iff"},
     }
     return rewards[screenId]
 end
