@@ -631,6 +631,7 @@ includeFile("items/loot_schematic/throw_pillow_schematic.lua")
 
 --misc sub-folder
 includeFile("items/misc/bg_token.lua")
+includeFile("items/misc/droid_head.lua")
 
 -- veteran_reward holograms
 includeFile("items/veteran_reward/frn_vet_holo_corvette.lua")
