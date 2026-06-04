@@ -1807,6 +1807,13 @@ bool TangibleObjectImplementation::isCityFountain() const {
 	return (templateObject != nullptr && templateObject->getFullTemplateString().contains("object/tangible/furniture/city/fountain"));
 }
 
+bool TangibleObjectImplementation::isCityTorch() const {
+	if (templateObject == nullptr)
+		return false;
+	const String& tmpl = templateObject->getFullTemplateString();
+	return tmpl.contains("object/tangible/furniture/city/torch") || tmpl.contains("frn_all_tiki_torch_s1");
+}
+
 bool TangibleObjectImplementation::isPetDecoration() const {
 	if (getGameObjectType() != SceneObjectType::CREATURE)
 		return false;

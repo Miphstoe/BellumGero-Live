@@ -105,7 +105,7 @@ public:
 
 		Reference<SceneObject*> objTooClose = zone->getPlanetManager()->findObjectTooCloseToDecoration(mayor->getPositionX(), mayor->getPositionY(), obj->getObjectTemplate()->getNoBuildRadius());
 
-		if (objTooClose != nullptr && !obj->isCityStreetLamp() && !obj->isCraftingStation()) {
+		if (objTooClose != nullptr && !obj->isCityStreetLamp() && !obj->isCraftingStation() && !obj->isCityTorch()) {
 			StringIdChatParameter msg;
 			msg.setStringId("@city/city:deco_too_close"); //"You can't place a decoration here, it would be too close to structure %TO.");
 
@@ -115,10 +115,12 @@ public:
 			return;
 		}
 
-		if(city->getCityTreasury() < 1000) {
+		int decorCost = obj->isCityTorch() ? 375 : 1000;
+
+		if(city->getCityTreasury() < decorCost) {
 			StringIdChatParameter msg;
 			msg.setStringId("@city/city:action_no_money");
-			msg.setDI(1000);
+			msg.setDI(decorCost);
 			mayor->sendSystemMessage(msg); //"The city treasury must have %DI credits in order to perform that action.");
 			return;
 		}
@@ -140,7 +142,7 @@ public:
 			tlock.release();
 			Locker clock(city, mayor);
 			city->addDecoration(obj);
-			city->subtractFromCityTreasury(1000);
+			city->subtractFromCityTreasury(decorCost);
 		}
 
 	}

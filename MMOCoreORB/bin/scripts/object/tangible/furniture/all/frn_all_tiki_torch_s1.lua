@@ -53,6 +53,7 @@ object_tangible_furniture_all_frn_all_tiki_torch_s1 = object_tangible_furniture_
 	experimentalMax = {0, 0, 1000, 100},
 	experimentalPrecision = {0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1},
+	objectMenuComponent = "CityDecorationMenuComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_furniture_all_frn_all_tiki_torch_s1, "object/tangible/furniture/all/frn_all_tiki_torch_s1.iff")
