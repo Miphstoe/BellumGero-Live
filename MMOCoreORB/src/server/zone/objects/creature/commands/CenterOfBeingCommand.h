@@ -26,9 +26,11 @@ public:
 
 		PlayerObject* ghost = creature->getPlayerObject();
 
-		if (creature->hasBuff(STRING_HASHCODE("centerofbeing"))) {
-			creature->sendSystemMessage("@combat_effects:already_centered");
-			return GENERALERROR;
+		uint32 centerHash = STRING_HASHCODE("centerofbeing");
+
+		if (creature->hasBuff(centerHash)) {
+			creature->removeBuff(centerHash);
+			return SUCCESS;
 		}
 
 		WeaponObject* weapon = creature->getWeapon();
@@ -54,9 +56,8 @@ public:
 		if (duration == 0 || efficacy == 0)
 			return GENERALERROR;
 
-		uint32 centerHash = STRING_HASHCODE("centerofbeing");
-
-		Buff* centered = new Buff(creature, centerHash, duration, BuffType::SKILL);
+		const int toggleDuration = 2147483; // Largest safe duration before scheduler milliseconds overflow.
+		Buff* centered = new Buff(creature, centerHash, toggleDuration, BuffType::SKILL);
 
 		Locker locker(centered);
 
