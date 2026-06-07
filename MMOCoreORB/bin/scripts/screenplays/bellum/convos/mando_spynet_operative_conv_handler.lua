@@ -8,6 +8,11 @@ function MandoSpynetOperativeConvoHandler:getInitialScreen(pPlayer, pNpc, pConvT
 
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 
+	-- Player who never started the Mandalorian arc: send them to the recruiter, not here.
+	if (MandoWayOfLife:readInt(pPlayer, "chapter0Started") ~= 1 and not MandoWayOfLife:isArcComplete(pPlayer)) then
+		return convoTemplate:getScreen("go_away")
+	end
+
 	-- Helmet check first
 	if (not MandoWayOfLife:hasFoundlingHelmet(pPlayer)) then
 		return convoTemplate:getScreen("no_helmet")

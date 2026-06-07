@@ -2815,6 +2815,8 @@ function MandoWayOfLife:playerEligibleForMandoArmoryCatalog(pPlayer)
 	if (pPlayer == nil) then return false end
 	if (not self:isArcComplete(pPlayer)) then return false end
 	if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then return false end
+	-- Armory schematics unlock only after the entire Way is finished (Mandalorian Tribesman / final phase).
+	if (self:readInt(pPlayer, "chapter5Complete") ~= 1) then return false end
 	return true
 end
 
@@ -2825,15 +2827,11 @@ function MandoWayOfLife:trySellMandoArmorySchematic(pPlayer, tier)
 	if (tier == nil or type(tier) ~= "number" or tier < 1 or tier > 3) then return false, "Invalid request." end
 
 	if (not self:playerEligibleForMandoArmoryCatalog(pPlayer)) then
-		return false, "You are not cleared for the Mandalorian armory. Finish the Foundling arc and earn Novice Bounty Hunter first."
+		return false, "You are not cleared for the Mandalorian armory. Walk the entire Way and earn the Mandalorian Tribesman rank first. Then the clan armory opens to you."
 	end
 
 	local sale = self.mandoWayArmorySchematicSales[tier]
 	if (sale == nil) then return false, "Invalid request." end
-
-	if (self:readInt(pPlayer, sale.chapterFlag) ~= 1) then
-		return false, "You have not completed the trial for that rank yet. Earn the chapter first, then come back for the schematic."
-	end
 
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
 	if (pInventory == nil) then return false, "I cannot reach your inventory." end

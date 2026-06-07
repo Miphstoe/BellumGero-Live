@@ -42,6 +42,8 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 		LuaConversationScreen(pCloned):setCustomDialogText(
 			"You are a Mandalorian Tribesman. There is nothing left here to prove. Well fought."
 		)
+		-- Armory schematics open only to a finished Tribesman (final phase of the Way).
+		LuaConversationScreen(pCloned):addOption("Armory schematics.", "mando_armory_shop")
 		return self:withRecruiterArmorRetroOption(pPlayer, pNpc, pCloned)
 	end
 

@@ -26,6 +26,19 @@ intro = ConvoScreen:new {
 mandoSpynetOperativeConvoTemplate:addScreen(intro)
 
 -- --------------------------------------------------------
+-- GO AWAY: player has not started the Mandalorian arc.
+-- Send them to the recruiter in the Mos Eisley cantina on Tatooine.
+-- --------------------------------------------------------
+go_away = ConvoScreen:new {
+	id = "go_away",
+	leftDialog = "",
+	customDialogText = "Spynet has no file on you, and I don't deal with outsiders. If you want this work, go to the Mandalorian Recruiter in the Mos Eisley cantina on Tatooine and earn your way in. Until then, you were never here.",
+	stopConversation = "true",
+	options = {}
+}
+mandoSpynetOperativeConvoTemplate:addScreen(go_away)
+
+-- --------------------------------------------------------
 -- HELMET NOT EQUIPPED
 -- --------------------------------------------------------
 no_helmet = ConvoScreen:new {
