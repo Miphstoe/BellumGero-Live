@@ -42,12 +42,13 @@ MandoWayOfLife = ScreenPlay:new {
 		cellId   = 1082877,
 		template = "mando_trialmaster",
 		name     = "Mando Recruiter",
-		-- World waypoint (exterior) - cantina block; NPC is inside cell 1082877
+		-- Datapad pin: grantRecruiterWaypoint() prefers live recruiter world position (cell 1082877).
+		-- Static fallback = Mos Eisley cantina block exterior (matches city mobiles ~3526, -4799).
 		recruiterWaypointName = "Mandalorian Recruiter",
-		recruiterWaypointDesc = "Mos Eisley cantina. Speak with the Mandalorian Recruiter inside.",
-		recruiterWpX = 3491,
+		recruiterWaypointDesc = "Mos Eisley cantina main hall. Speak with the Mandalorian Recruiter.",
+		recruiterWpX = 3526,
 		recruiterWpZ = 5,
-		recruiterWpY = -4782,
+		recruiterWpY = -4799,
 	},
 
 	-- --------------------------------------------------------
@@ -955,11 +956,24 @@ function MandoWayOfLife:grantRecruiterWaypoint(pPlayer)
 		PlayerObject(pGhost):removeWaypoint(old, true)
 	end
 
+	local wpX = cfg.recruiterWpX
+	local wpZ = cfg.recruiterWpZ
+	local wpY = cfg.recruiterWpY
+	local recruiterOid = tonumber(readData("mando_way:recruiter_id")) or 0
+	if (recruiterOid ~= 0) then
+		local pRecruiter = getSceneObject(recruiterOid)
+		if (pRecruiter ~= nil) then
+			wpX = SceneObject(pRecruiter):getWorldPositionX()
+			wpZ = SceneObject(pRecruiter):getWorldPositionZ()
+			wpY = SceneObject(pRecruiter):getWorldPositionY()
+		end
+	end
+
 	local wpId = PlayerObject(pGhost):addWaypoint(
 		cfg.planet,
 		cfg.recruiterWaypointName or "Mandalorian Recruiter",
-		cfg.recruiterWaypointDesc or "Mos Eisley cantina. Speak with the Mandalorian Recruiter.",
-		cfg.recruiterWpX, cfg.recruiterWpZ, cfg.recruiterWpY,
+		cfg.recruiterWaypointDesc or "Mos Eisley cantina main hall. Speak with the Mandalorian Recruiter.",
+		wpX, wpZ, wpY,
 		WAYPOINT_YELLOW, true, true, 0
 	)
 	if (wpId ~= nil) then
@@ -1635,9 +1649,7 @@ function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 	end
 
 	if (not ch0) then
-		if (self:meetsPrerequisites(pPlayer)) then
-			self:grantRecruiterWaypoint(pPlayer)
-		end
+		-- Eligible players discover the recruiter organically; no datapad pin until arc_start.
 		return
 	end
 
