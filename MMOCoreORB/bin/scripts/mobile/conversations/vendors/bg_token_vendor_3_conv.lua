@@ -323,6 +323,7 @@ items_menu_16 = ConvoScreen:new {
     stopConversation = "false",
     options = {
         {"Item 76 - [SoroSuub Luxury Yacht Deed]", "trade_item_3_76"},
+        {"More items...", "items_menu_17"},
         {"Previous", "items_menu_15"},
         {"Back", "first_screen"},
     }
@@ -1409,6 +1410,99 @@ trade_item_3_76 = ConvoScreen:new {
 bg_token_vendor_3_conv:addScreen(trade_item_3_76)
 give_item_3_76 = ConvoScreen:new { id = "give_item_3_76", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
 bg_token_vendor_3_conv:addScreen(give_item_3_76)
+
+-- PAGE 17: Items 77-81
+items_menu_17 = ConvoScreen:new {
+    id = "items_menu_17",
+    leftDialog = "",
+    customDialogText = "Choose an item (75 Bellum Gero Tokens each):\n\nFine Woven Rugs:",
+    stopConversation = "false",
+    options = {
+        {"Item 77 - [Fine Woven Rug (Style 1)]", "trade_item_3_77"},
+        {"Item 78 - [Fine Woven Rug (Style 2)]", "trade_item_3_78"},
+        {"Item 79 - [Fine Woven Rug (Style 3)]", "trade_item_3_79"},
+        {"Item 80 - [Fine Woven Rug (Style 4)]", "trade_item_3_80"},
+        {"Item 81 - [Fine Woven Rug (Style 5)]", "trade_item_3_81"},
+        {"Previous", "items_menu_16"},
+        {"Back", "first_screen"},
+    }
+}
+bg_token_vendor_3_conv:addScreen(items_menu_17)
+
+-- Item 77
+trade_item_3_77 = ConvoScreen:new {
+    id = "trade_item_3_77",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the Fine Woven Rug (Style 1)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_77"},
+        {"No, go back", "items_menu_17"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_77)
+give_item_3_77 = ConvoScreen:new { id = "give_item_3_77", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_77)
+
+-- Item 78
+trade_item_3_78 = ConvoScreen:new {
+    id = "trade_item_3_78",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the Fine Woven Rug (Style 2)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_78"},
+        {"No, go back", "items_menu_17"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_78)
+give_item_3_78 = ConvoScreen:new { id = "give_item_3_78", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_78)
+
+-- Item 79
+trade_item_3_79 = ConvoScreen:new {
+    id = "trade_item_3_79",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the Fine Woven Rug (Style 3)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_79"},
+        {"No, go back", "items_menu_17"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_79)
+give_item_3_79 = ConvoScreen:new { id = "give_item_3_79", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_79)
+
+-- Item 80
+trade_item_3_80 = ConvoScreen:new {
+    id = "trade_item_3_80",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the Fine Woven Rug (Style 4)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_80"},
+        {"No, go back", "items_menu_17"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_80)
+give_item_3_80 = ConvoScreen:new { id = "give_item_3_80", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_80)
+
+-- Item 81
+trade_item_3_81 = ConvoScreen:new {
+    id = "trade_item_3_81",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 75 Bellum Gero Tokens for the Fine Woven Rug (Style 5)?",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_81"},
+        {"No, go back", "items_menu_17"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_81)
+give_item_3_81 = ConvoScreen:new { id = "give_item_3_81", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_81)
 
 -- BYE SCREEN
 bye = ConvoScreen:new {

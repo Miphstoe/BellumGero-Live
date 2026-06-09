@@ -265,6 +265,7 @@ sav_menu_15 = ConvoScreen:new {
     stopConversation = "false",
     options = {
         {"Painting: Emperor's Eyes", "sav_tc_75"},
+        --{"Fish Tank", "sav_tc_76"}, -- TRE pending fix
         {"Previous", "sav_menu_14"},
         {"Back", "sav_first_screen"},
     }
@@ -558,6 +559,10 @@ sav_tc_75 = ConvoScreen:new { id="sav_tc_75", leftDialog="", customDialogText="C
     options={{"Yes, make the trade","give_t3_75"},{"No, go back","sav_menu_15"}} }
 sea_attachment_vendor_conv:addScreen(sav_tc_75)
 
+--sav_tc_76 = ConvoScreen:new { id="sav_tc_76", leftDialog="", customDialogText="Confirm: Trade 75 Attachments for Fish Tank?", stopConversation="false",
+--    options={{"Yes, make the trade","give_t3_76"},{"No, go back","sav_menu_15"}} }
+--sea_attachment_vendor_conv:addScreen(sav_tc_76)
+
 -- ===== GIVE (PROCESSING) SCREENS =====
 -- These are caught by conv_handler:handleAttachmentTrade via "give_t3_" prefix
 
@@ -703,6 +708,8 @@ sav_give_74 = ConvoScreen:new { id="give_t3_74", leftDialog="", customDialogText
 sea_attachment_vendor_conv:addScreen(sav_give_74)
 sav_give_75 = ConvoScreen:new { id="give_t3_75", leftDialog="", customDialogText="Processing trade...", stopConversation="true", options={} }
 sea_attachment_vendor_conv:addScreen(sav_give_75)
+--sav_give_76 = ConvoScreen:new { id="give_t3_76", leftDialog="", customDialogText="Processing trade...", stopConversation="true", options={} }
+--sea_attachment_vendor_conv:addScreen(sav_give_76)
 
 sav_bye = ConvoScreen:new {
     id = "sav_bye",

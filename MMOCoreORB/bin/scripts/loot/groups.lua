@@ -105,6 +105,7 @@ includeFile("groups/creature/rancor_common.lua")
 includeFile("groups/creature/sharnaff_common.lua")
 includeFile("groups/creature/voritor_lizard_common.lua")
 
+includeFile("groups/bellum/fish_tank_reward.lua")
 -- bellum sub-folder (Mandalorian Way of Life)
 includeFile("groups/bellum/mando_contract_kill_reward.lua")
 includeFile("groups/bellum/mando_contract_rare_bonus.lua")
@@ -759,6 +760,7 @@ includeFile("groups/wearables/wearables_common.lua")
 includeFile("groups/wearables/wearables_rare.lua")
 includeFile("groups/wearables/wearables_scarce.lua")
 includeFile("groups/wearables/wearables_uncommon.lua")
+includeFile("groups/wearables/jedi_robe.lua")
 
 --world boss
 -- ...existing includes...

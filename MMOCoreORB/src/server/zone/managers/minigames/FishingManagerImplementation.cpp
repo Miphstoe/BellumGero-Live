@@ -727,6 +727,19 @@ void FishingManagerImplementation::success(CreatureObject* player, int fish, Sce
 		}
 	}
 
+	// 1 in 1000 chance to reel in a Fish Tank as a bonus alongside the normal catch
+	if (System::random(999) == 0) {
+		TransactionLog trxTank(TrxCode::FISHING, player);
+		uint64 tankID = lootManager->createLoot(trxTank, marker, "fish_tank_reward", 1);
+
+		if (tankID > 0) {
+			player->sendSystemMessage("You reel in something extraordinary... a Fish Tank!");
+			trxTank.commit();
+		} else {
+			trxTank.abort() << "FishingManager -- Failed to create Fish Tank bonus loot";
+		}
+	}
+
 	stopFishing(player, boxID, false);
 }
 

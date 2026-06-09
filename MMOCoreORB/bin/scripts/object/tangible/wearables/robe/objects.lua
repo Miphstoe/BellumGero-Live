@@ -1552,3 +1552,114 @@ object_tangible_wearables_robe_shared_robe_chronicle_master = SharedTangibleObje
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_chronicle_master, "object/tangible/wearables/robe/shared_robe_chronicle_master.iff")
+
+object_tangible_wearables_robe_shared_robe_s32 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_s32.iff",
+	gameObjectType = 16777221
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_s32, "object/tangible/wearables/robe/shared_robe_s32.iff")
+
+object_tangible_wearables_robe_shared_robe_s32_h1 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_s32_h1.iff",
+	gameObjectType = 16777221
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_s32_h1, "object/tangible/wearables/robe/shared_robe_s32_h1.iff")
+
+object_tangible_wearables_robe_shared_robe_s33 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_s33.iff",
+	gameObjectType = 16777221
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_s33, "object/tangible/wearables/robe/shared_robe_s33.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_black_01 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_black_01.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_black_01, "object/tangible/wearables/robe/shared_robe_jedi_black_01.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_black_02 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_black_02.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_black_02, "object/tangible/wearables/robe/shared_robe_jedi_black_02.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey_s01 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey_s01.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey_s01, "object/tangible/wearables/robe/shared_robe_jedi_grey_s01.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey_s02 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey_s02.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey_s02, "object/tangible/wearables/robe/shared_robe_jedi_grey_s02.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey_s03 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey_s03.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey_s03, "object/tangible/wearables/robe/shared_robe_jedi_grey_s03.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey_s04 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey_s04.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey_s04, "object/tangible/wearables/robe/shared_robe_jedi_grey_s04.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey_s05 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey_s05.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey_s05, "object/tangible/wearables/robe/shared_robe_jedi_grey_s05.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey2_s01 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey2_s01.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey2_s01, "object/tangible/wearables/robe/shared_robe_jedi_grey2_s01.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey2_s02 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey2_s02.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey2_s02, "object/tangible/wearables/robe/shared_robe_jedi_grey2_s02.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey2_s03 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey2_s03.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey2_s03, "object/tangible/wearables/robe/shared_robe_jedi_grey2_s03.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey2_s04 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey2_s04.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey2_s04, "object/tangible/wearables/robe/shared_robe_jedi_grey2_s04.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_grey2_s05 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_grey2_s05.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_grey2_s05, "object/tangible/wearables/robe/shared_robe_jedi_grey2_s05.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_tan_01 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_tan_01.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_tan_01, "object/tangible/wearables/robe/shared_robe_jedi_tan_01.iff")
+
+object_tangible_wearables_robe_shared_robe_jedi_tan_02 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_tan_02.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_tan_02, "object/tangible/wearables/robe/shared_robe_jedi_tan_02.iff")
+
+object_tangible_wearables_robe_shared_robe_revan = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_revan.iff",
+	gameObjectType = 16777221
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_revan, "object/tangible/wearables/robe/shared_robe_revan.iff")
