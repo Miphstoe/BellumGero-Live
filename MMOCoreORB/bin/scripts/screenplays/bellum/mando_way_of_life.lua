@@ -42,12 +42,13 @@ MandoWayOfLife = ScreenPlay:new {
 		cellId   = 1082877,
 		template = "mando_trialmaster",
 		name     = "Mando Recruiter",
-		-- World waypoint (exterior) - cantina block; NPC is inside cell 1082877
+		-- Datapad pin: grantRecruiterWaypoint() prefers live recruiter world position (cell 1082877).
+		-- Static fallback = Mos Eisley cantina block exterior (matches city mobiles ~3526, -4799).
 		recruiterWaypointName = "Mandalorian Recruiter",
-		recruiterWaypointDesc = "Mos Eisley cantina. Speak with the Mandalorian Recruiter inside.",
-		recruiterWpX = 3491,
+		recruiterWaypointDesc = "Mos Eisley cantina main hall. Speak with the Mandalorian Recruiter.",
+		recruiterWpX = 3526,
 		recruiterWpZ = 5,
-		recruiterWpY = -4782,
+		recruiterWpY = -4799,
 	},
 
 	-- --------------------------------------------------------
@@ -231,6 +232,8 @@ MandoWayOfLife = ScreenPlay:new {
 
 	-- Global writeData key prefix: one armor reissue per login account (see tryGrantAccountArmorRetro).
 	ACCOUNT_ARMOR_RETRO_DATA_PREFIX = "mando_way:acctArmorRetro:",
+	-- One title reissue per login account (see tryGrantAccountTitleRetro).
+	ACCOUNT_TITLE_RETRO_DATA_PREFIX = "mando_way:acctTitleRetro:",
 	-- Grant waypoint + coords but do not spawn a dynamic informant (use a static-placed mando_foundling_informant at planetData coords).
 	DEBUG_SKIP_INFORMANT_MOBILE_SPAWN = false,
 	-- Allow any mando_foundling_informant to advance convo while Foundling arc is active (ignores per-player OID link). Dev-only.
@@ -953,11 +956,24 @@ function MandoWayOfLife:grantRecruiterWaypoint(pPlayer)
 		PlayerObject(pGhost):removeWaypoint(old, true)
 	end
 
+	local wpX = cfg.recruiterWpX
+	local wpZ = cfg.recruiterWpZ
+	local wpY = cfg.recruiterWpY
+	local recruiterOid = tonumber(readData("mando_way:recruiter_id")) or 0
+	if (recruiterOid ~= 0) then
+		local pRecruiter = getSceneObject(recruiterOid)
+		if (pRecruiter ~= nil) then
+			wpX = SceneObject(pRecruiter):getWorldPositionX()
+			wpZ = SceneObject(pRecruiter):getWorldPositionZ()
+			wpY = SceneObject(pRecruiter):getWorldPositionY()
+		end
+	end
+
 	local wpId = PlayerObject(pGhost):addWaypoint(
 		cfg.planet,
 		cfg.recruiterWaypointName or "Mandalorian Recruiter",
-		cfg.recruiterWaypointDesc or "Mos Eisley cantina. Speak with the Mandalorian Recruiter.",
-		cfg.recruiterWpX, cfg.recruiterWpZ, cfg.recruiterWpY,
+		cfg.recruiterWaypointDesc or "Mos Eisley cantina main hall. Speak with the Mandalorian Recruiter.",
+		wpX, wpZ, wpY,
 		WAYPOINT_YELLOW, true, true, 0
 	)
 	if (wpId ~= nil) then
@@ -1633,9 +1649,7 @@ function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 	end
 
 	if (not ch0) then
-		if (self:meetsPrerequisites(pPlayer)) then
-			self:grantRecruiterWaypoint(pPlayer)
-		end
+		-- Eligible players discover the recruiter organically; no datapad pin until arc_start.
 		return
 	end
 
@@ -3010,6 +3024,138 @@ function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
 
 	return true,
 		"Done. Every rank armor set from Foundling through Tribesman is in your inventory — current resist tuning, one claim per login account. This is the Way."
+end
+
+-- ============================================================
+-- ACCOUNT ONE-TIME TITLE REISSUE (Recruiter convo)
+-- ============================================================
+-- Veterans who finished ranks before title skills were wired can restore equippable
+-- Community titles (mando_title_*) once per login account.
+
+function MandoWayOfLife:accountTitleRetroDataKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_TITLE_RETRO_DATA_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:hasAccountTitleRetroClaimed(pPlayer)
+	local key = self:accountTitleRetroDataKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) or 0) == 1
+end
+
+-- Highest chapter this character actually earned (screenplay flags, then Mando badges).
+function MandoWayOfLife:getHighestEarnedChapter(pPlayer)
+	if (pPlayer == nil) then return -1 end
+
+	if (self:readInt(pPlayer, "chapter5Complete") == 1) then return 5 end
+	if (self:readInt(pPlayer, "chapter4Complete") == 1) then return 4 end
+	if (self:readInt(pPlayer, "chapter3Complete") == 1) then return 3 end
+	if (self:readInt(pPlayer, "chapter2Complete") == 1) then return 2 end
+	if (self:readInt(pPlayer, "chapter1Complete") == 1) then return 1 end
+	if (self:readInt(pPlayer, "chapter0Complete") == 1 or self:isArcComplete(pPlayer)) then return 0 end
+
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	if (pGhost ~= nil and self.chapterBadgeIds ~= nil) then
+		for ch = 5, 0, -1 do
+			local badgeId = self.chapterBadgeIds[ch]
+			if (badgeId ~= nil and PlayerObject(pGhost):hasBadge(tonumber(badgeId))) then
+				return ch
+			end
+		end
+	end
+
+	local ch = self:getChapter(pPlayer)
+	if (ch ~= nil and ch >= 0 and self:isArcComplete(pPlayer)) then
+		return ch
+	end
+
+	return -1
+end
+
+function MandoWayOfLife:countMissingChapterTitleSkills(pPlayer, maxChapter)
+	if (pPlayer == nil or maxChapter == nil or maxChapter < 0) then return 0 end
+	local missing = 0
+	local creature = CreatureObject(pPlayer)
+	for ch = 0, maxChapter do
+		local skillName = self.chapterTitleSkills[ch]
+		if (skillName ~= nil and skillName ~= "" and not creature:hasSkill(skillName)) then
+			missing = missing + 1
+		end
+	end
+	return missing
+end
+
+-- Returns ok, playerMessage
+function MandoWayOfLife:tryGrantAccountTitleRetro(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	local accountKey = self:accountTitleRetroDataKey(pPlayer)
+	if (accountKey == nil) then
+		return false, "I cannot verify your login account. Try relogging, or contact staff."
+	end
+
+	if (self:hasAccountTitleRetroClaimed(pPlayer)) then
+		return false,
+			"This account already claimed the one-time title restoration. Another character on the same login cannot claim it again."
+	end
+
+	local maxChapter = self:getHighestEarnedChapter(pPlayer)
+	if (maxChapter < 0) then
+		return false,
+			"You have not earned a Mandalorian rank on this character yet. Complete the Foundling arc first."
+	end
+
+	local missing = self:countMissingChapterTitleSkills(pPlayer, maxChapter)
+	if (missing < 1) then
+		return false,
+			"Your Community title skills already match your rank. Open Community, Character, and pick a Mandalorian title from the list."
+	end
+
+	local granted = 0
+	local creature = CreatureObject(pPlayer)
+	for ch = 0, maxChapter do
+		local skillName = self.chapterTitleSkills[ch]
+		if (skillName ~= nil and skillName ~= "" and not creature:hasSkill(skillName)) then
+			awardSkill(pPlayer, skillName)
+			if (creature:hasSkill(skillName)) then
+				granted = granted + 1
+			else
+				self:logDiagPlayer(pPlayer, string.format(
+					"tryGrantAccountTitleRetro FAILED award %s (chapter %s).",
+					skillName, tostring(ch)
+				))
+				return false,
+					"Something blocked restoring " .. skillName .. ". Contact staff before retrying."
+			end
+		end
+	end
+
+	writeData(accountKey, 1)
+	self:writeInt(pPlayer, "accountTitleRetro.claimed", 1)
+	self:writeStr(pPlayer, "accountTitleRetro.claimedAt", tostring(os.time()))
+
+	self:grantChapterRankTitle(pPlayer, maxChapter)
+
+	local capTitle = self.chapterTitles[maxChapter] or "your rank"
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryGrantAccountTitleRetro OK accountId=%s maxChapter=%s granted=%s.",
+		tostring(self:getPlayerAccountId(pPlayer)),
+		tostring(maxChapter),
+		tostring(granted)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(string.format(
+		"[Mandalorian Way] Title restoration complete: %s equippable rank title(s) through %s. Open Community — Character — Title to select one.",
+		tostring(granted),
+		capTitle
+	))
+
+	return true, string.format(
+		"Done. I restored %s equippable rank title(s) through %s. Open Community, Character, and pick a Mandalorian title from the dropdown — one claim per login account. This is the Way.",
+		tostring(granted),
+		capTitle
+	)
 end
 
 -- ============================================================

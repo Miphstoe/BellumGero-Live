@@ -273,4 +273,26 @@ mando_armor_retro_grant = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_armor_retro_grant)
 
+-- Recruiter-only (handler): one-time per login account restoration of equippable rank titles.
+mando_title_retro = ConvoScreen:new {
+	id = "mando_title_retro",
+	leftDialog = "",
+	customDialogText = "For veterans of the Way: if you earned rank badges but your Mandalorian titles never appeared in Community, I can restore every equippable title you have earned on this character — Foundling through your current rank — once per login account. Another character on your account cannot claim this again.",
+	stopConversation = "false",
+	options = {
+		{"Restore my rank titles.", "mando_title_retro_grant"},
+		{"Not now.", "bye"},
+	}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_title_retro)
+
+mando_title_retro_grant = ConvoScreen:new {
+	id = "mando_title_retro_grant",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_title_retro_grant)
+
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
