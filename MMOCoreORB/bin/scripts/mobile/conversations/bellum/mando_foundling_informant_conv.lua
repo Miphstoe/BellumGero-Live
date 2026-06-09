@@ -116,6 +116,19 @@ turnin_final = ConvoScreen:new {
 mandoFoundlingInformantConvoTemplate:addScreen(turnin_final)
 
 -- --------------------------------------------------------
+-- GO AWAY: player has not started the Mandalorian arc.
+-- Send them to the recruiter in the Mos Eisley cantina on Tatooine.
+-- --------------------------------------------------------
+go_away = ConvoScreen:new {
+	id = "go_away",
+	leftDialog = "",
+	customDialogText = "I don't know you, and I've no work for a stranger. If you mean to walk the Way, find the Mandalorian Recruiter in the Mos Eisley cantina on Tatooine. Earn it from them first. Now move along.",
+	stopConversation = "true",
+	options = {}
+}
+mandoFoundlingInformantConvoTemplate:addScreen(go_away)
+
+-- --------------------------------------------------------
 -- BYE
 -- --------------------------------------------------------
 bye = ConvoScreen:new {
