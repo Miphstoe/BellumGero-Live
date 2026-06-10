@@ -77,7 +77,13 @@ imperial_inquisitor_boss = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 350000
-		}
+		},
+		{
+			groups = {
+				{group = "jedi_robe", chance = 10000000}
+			},
+			lootChance = 1000000 -- 10.00% chance
+		},
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

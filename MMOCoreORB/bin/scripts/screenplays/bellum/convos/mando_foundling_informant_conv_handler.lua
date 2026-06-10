@@ -28,6 +28,11 @@ function MandoFoundlingInformantConvoHandler:getInitialScreen(pPlayer, pNpc, pCo
 	))
 
 	if (not inArc) then
+		-- Player who never started the Mandalorian arc: brush them off toward the recruiter.
+		-- (Players who already finished the arc are simply past this contact — stay silent.)
+		if (ch0 ~= 1 and arcComplete ~= 1) then
+			return convoTemplate:getScreen("go_away")
+		end
 		return nil
 	end
 

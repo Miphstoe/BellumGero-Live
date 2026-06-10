@@ -1468,7 +1468,7 @@ void CraftingSessionImplementation::createPrototype(int clientCounter, bool crea
 		} else {
 			// This is for practicing
 			startCreationTasks(0, true);
-			xp = round(xp * 1.05f);
+			xp = round(xp * 1.10f);
 		}
 
 		Reference<PlayerManager*> playerManager = crafter->getZoneServer()->getPlayerManager();

@@ -21,7 +21,6 @@ intro = ConvoScreen:new {
 	options = {
 		{"Tell me about the Mandalorian way.", "explain"},
 		{"I am ready to prove myself.", "check_prereqs"},
-		{"Armory schematics (rank gated).", "mando_armory_shop"},
 		{"Nothing.", "bye"},
 	}
 }
@@ -37,7 +36,6 @@ explain = ConvoScreen:new {
 	stopConversation = "false",
 	options = {
 		{"I am ready to prove myself.", "check_prereqs"},
-		{"Armory schematics (rank gated).", "mando_armory_shop"},
 		{"I understand.", "bye"},
 	}
 }
@@ -67,7 +65,6 @@ arc_in_progress = ConvoScreen:new {
 	options = {
 		{"What is my status?", "foundling_status"},
 		{"My contact or waypoint is broken. Reset them.", "foundling_resync"},
-		{"Armory schematics (rank gated).", "mando_armory_shop"},
 		{"Understood.", "bye"},
 	}
 }
@@ -155,7 +152,6 @@ chapter_gate_ready = ConvoScreen:new {
 	stopConversation = "false",
 	options = {
 		{"What is my Mandalorian Way status?", "mando_way_status"},
-		{"Armory schematics (rank gated).", "mando_armory_shop"},
 		{"Understood.", "bye"},
 	}
 }
@@ -172,7 +168,6 @@ clanbound = ConvoScreen:new {
 	options = {
 		{"What's next?", "clanbound_whats_next"},
 		{"What is my Mandalorian Way status?", "mando_way_status"},
-		{"Armory schematics (rank gated).", "mando_armory_shop"},
 		{"Understood.", "bye"},
 	}
 }
@@ -209,10 +204,25 @@ mando_armory_shop = ConvoScreen:new {
 		{"Mandalorian Geo blaster schematic (125000 credits).", "buy_mando_armory_1"},
 		{"Mandalorian slugthrower schematic (125000 credits).", "buy_mando_armory_2"},
 		{"Mandalorian lightning cannon schematic (125000 credits).", "buy_mando_armory_3"},
-		{"Back.", "intro"},
+		{"Back.", "tribesman_hub"},
 	}
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_armory_shop)
+
+-- Tribesman hub: landing screen for a finished Mandalorian Tribesman (e.g. "Back" out of the armory).
+-- Only reachable from the armory shop, which itself is gated to chapter5Complete, so the armory option here never leaks.
+tribesman_hub = ConvoScreen:new {
+	id = "tribesman_hub",
+	leftDialog = "",
+	customDialogText = "Anything else, Tribesman? You have walked the whole Way.",
+	stopConversation = "false",
+	options = {
+		{"What is my Mandalorian Way status?", "mando_way_status"},
+		{"Armory schematics.", "mando_armory_shop"},
+		{"Nothing.", "bye"},
+	}
+}
+mandoTrialmasterConvoTemplate:addScreen(tribesman_hub)
 
 buy_mando_armory_1 = ConvoScreen:new {
 	id = "buy_mando_armory_1",
@@ -262,5 +272,27 @@ mando_armor_retro_grant = ConvoScreen:new {
 	options = {}
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_armor_retro_grant)
+
+-- Recruiter-only (handler): one-time per login account restoration of equippable rank titles.
+mando_title_retro = ConvoScreen:new {
+	id = "mando_title_retro",
+	leftDialog = "",
+	customDialogText = "For veterans of the Way: if you earned rank badges but your Mandalorian titles never appeared in Community, I can restore every equippable title you have earned on this character — Foundling through your current rank — once per login account. Another character on your account cannot claim this again.",
+	stopConversation = "false",
+	options = {
+		{"Restore my rank titles.", "mando_title_retro_grant"},
+		{"Not now.", "bye"},
+	}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_title_retro)
+
+mando_title_retro_grant = ConvoScreen:new {
+	id = "mando_title_retro_grant",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_title_retro_grant)
 
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
