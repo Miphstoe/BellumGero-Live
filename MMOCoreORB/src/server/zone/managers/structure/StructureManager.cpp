@@ -1312,7 +1312,7 @@ void StructureManager::reportStructureStatus(CreatureObject* creature, Structure
 			}
 		}
 
-		status->addMenuItem("@player_structure:items_in_building_prompt " + String::valueOf(building->getCurrentNumberOfPlayerItems())); // Number of Items in Building:
+		status->addMenuItem("@player_structure:items_in_building_prompt " + String::valueOf(building->getCurrentNumberOfPlayerItems()) + " / " + String::valueOf(building->getMaximumNumberOfPlayerItems())); // Number of Items in Building:
 
 #if ENABLE_STRUCTURE_JSON_EXPORT
 		if (creature->hasSkill("admin_base")) {
@@ -1639,11 +1639,26 @@ void StructureManager::payMaintenance(StructureObject* structure, CreatureObject
 
 	PlayerObject* ghost = creature->getPlayerObject();
 
-	if (ghost->hasAbility("maintenance_fees_1")) {
+	bool hasMerchantFees = ghost->hasAbility("maintenance_fees_1");
+	if (hasMerchantFees) {
 		structure->setMaintenanceReduced(true);
 	} else {
 		structure->setMaintenanceReduced(false);
 	}
+
+	// Debug: show combined maintenance modifier breakdown
+	float merchantMod = hasMerchantFees ? 20.0f : 0.0f;
+	float architectMod = structure->getMaintenanceReductionBonus();
+	if (architectMod > 25.0f) architectMod = 25.0f;
+	float combined = merchantMod + architectMod;
+	if (combined > 50.0f) combined = 50.0f;
+	float effectiveRate = structure->getMaintenanceRate();
+	info(true) << "[Maintenance Debug] structure=" << structure->getObjectID()
+	           << " baseMaintDeposit=" << amount
+	           << " merchantMod=" << merchantMod << "%"
+	           << " architectMod=" << architectMod << "%"
+	           << " combinedReduction=" << combined << "%"
+	           << " effectiveRate=" << effectiveRate << "cr/hr";
 }
 
 void StructureManager::withdrawMaintenance(StructureObject* structure, CreatureObject* creature, int amount) {

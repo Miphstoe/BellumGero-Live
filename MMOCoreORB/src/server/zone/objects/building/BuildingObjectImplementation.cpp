@@ -1081,10 +1081,11 @@ uint32 BuildingObjectImplementation::getMaximumNumberOfPlayerItems() {
 	if (lots == 0)
 		return MAXPLAYERITEMS;
 
-	//auto maxItems = MAXPLAYERITEMS;
+	uint32 base = lots * 300;
 
-	//return Math::min(maxItems, lots * 200);
-	return lots * 300;
+	// Apply experimentation storage bonus for player houses (storageBonus is 0 for unexerimented deeds)
+	uint32 bonus = (storageBonus > 0) ? (uint32)storageBonus : 0;
+	return base + bonus;
 }
 
 int BuildingObjectImplementation::notifyObjectInsertedToChild(SceneObject* object, SceneObject* child, SceneObject* oldParent) {

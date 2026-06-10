@@ -68,6 +68,8 @@ class BuildingObject extends StructureObject {
 
 	protected int factionBaseType;
 
+	protected int storageBonus;
+
 	public BuildingObject() {
 		Logger.setLoggingName("BuildingObject");
 
@@ -88,6 +90,7 @@ class BuildingObject extends StructureObject {
 
 		signName = "";
 		isOwnerResidence = false;
+		storageBonus = 0;
 
 		factionBaseType = 0;
 	}
@@ -375,6 +378,16 @@ class BuildingObject extends StructureObject {
 	 */
 	@preLocked
 	public native boolean togglePrivacy();
+
+	@preLocked
+	public void setStorageBonus(int bonus) {
+		storageBonus = bonus;
+	}
+
+	@read
+	public int getStorageBonus() {
+		return storageBonus;
+	}
 
 	/**
 	 * Calculates the maximum number of items that can be stored by a player in this building.

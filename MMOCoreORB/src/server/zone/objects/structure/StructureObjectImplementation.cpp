@@ -311,6 +311,9 @@ CreatureObject* StructureObjectImplementation::getOwnerCreatureObject() const {
 	}
 }
 
+// Maximum combined maintenance reduction (merchant + architect experimentation).
+static constexpr float MAX_COMBINED_MAINT_REDUCTION = 50.0f;
+
 float StructureObjectImplementation::getMaintenanceRate() const {
 	float rate = getBaseMaintenanceRate();
 
@@ -318,19 +321,52 @@ float StructureObjectImplementation::getMaintenanceRate() const {
 	rate *= 10000.0f; // Make structures really expensive
 #endif // DEBUG_STRUCTURE_RAPID_DECAY
 
-	if (maintenanceReduced) {
-		rate *= 0.8f;
+	float combinedReduction = 0.0f;
+
+	if (maintenanceReduced)
+		combinedReduction += 20.0f;
+
+	// Additive stacking: architect experimentation bonus applies to player buildings only
+	if (maintenanceReductionBonus > 0.0f) {
+		auto* self = const_cast<StructureObjectImplementation*>(this);
+		if (self->isBuildingObject() && !self->isCivicStructure()) {
+			float clampedBonus = maintenanceReductionBonus;
+			if (clampedBonus > 25.0f) clampedBonus = 25.0f;
+			combinedReduction += clampedBonus;
+		}
 	}
+
+	if (combinedReduction > MAX_COMBINED_MAINT_REDUCTION)
+		combinedReduction = MAX_COMBINED_MAINT_REDUCTION;
+
+	if (combinedReduction > 0.0f)
+		rate *= (1.0f - combinedReduction / 100.0f);
 
 	return (float)((int)rate); // Round to nearest int
 }
 
 String StructureObjectImplementation::getMaintenanceMods() const {
-	if (maintenanceReduced) {
-			return "-20%";
+	float combinedReduction = 0.0f;
+
+	if (maintenanceReduced)
+		combinedReduction += 20.0f;
+
+	if (maintenanceReductionBonus > 0.0f) {
+		auto* self = const_cast<StructureObjectImplementation*>(this);
+		if (self->isBuildingObject() && !self->isCivicStructure()) {
+			float clampedBonus = maintenanceReductionBonus;
+			if (clampedBonus > 25.0f) clampedBonus = 25.0f;
+			combinedReduction += clampedBonus;
+		}
 	}
 
-	return "-";
+	if (combinedReduction <= 0.0f)
+		return "-";
+
+	if (combinedReduction > MAX_COMBINED_MAINT_REDUCTION)
+		combinedReduction = MAX_COMBINED_MAINT_REDUCTION;
+
+	return "-" + String::valueOf(Math::getPrecision(combinedReduction, 1)) + "%";
 }
 
 String StructureObjectImplementation::getTimeString(uint32 timestamp) const {
