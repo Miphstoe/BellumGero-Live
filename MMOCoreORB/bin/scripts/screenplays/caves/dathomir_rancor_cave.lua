@@ -20,6 +20,37 @@ local NIGHTSISTER_LOOT_GROUPS = {
 	}
 }
 
+local function _rollOneNightLoot(pInventory, lootGroups, bossLevel)
+	local entry = lootGroups[math.random(#lootGroups)]
+	if not entry or not entry.groups then return "an item" end
+
+	local totalWeight = 0
+	for _, g in ipairs(entry.groups) do totalWeight = totalWeight + (g.chance or 0) end
+	if totalWeight == 0 then return "an item" end
+
+	local roll = math.random(totalWeight)
+	local cumulative = 0
+	local chosenGroup = nil
+	for _, g in ipairs(entry.groups) do
+		cumulative = cumulative + (g.chance or 0)
+		if roll <= cumulative then chosenGroup = g.group; break end
+	end
+	if not chosenGroup then return "an item" end
+
+	local itemOID = nil
+	pcall(function() itemOID = createLoot(pInventory, chosenGroup, bossLevel, true) end)
+
+	local itemName = "an item"
+	if itemOID and itemOID ~= 0 then
+		local pItem = getSceneObject(itemOID)
+		if pItem then
+			local so = SceneObject(pItem)
+			if so then itemName = so:getDisplayedName() or "an item" end
+		end
+	end
+	return itemName
+end
+
 local function _giveNightBossLoot(pPlayer, lootGroups, bossName, bossLevel)
 	pcall(function()
 		local co = CreatureObject(pPlayer)
@@ -33,37 +64,12 @@ local function _giveNightBossLoot(pPlayer, lootGroups, bossName, bossLevel)
 	end)
 	if not pInventory then return end
 
-	local entry = lootGroups[math.random(#lootGroups)]
-	if not entry or not entry.groups then return end
-
-	local totalWeight = 0
-	for _, g in ipairs(entry.groups) do totalWeight = totalWeight + (g.chance or 0) end
-	if totalWeight == 0 then return end
-
-	local roll = math.random(totalWeight)
-	local cumulative = 0
-	local chosenGroup = nil
-	for _, g in ipairs(entry.groups) do
-		cumulative = cumulative + (g.chance or 0)
-		if roll <= cumulative then chosenGroup = g.group; break end
-	end
-	if not chosenGroup then return end
-
-	local itemOID = nil
-	pcall(function() itemOID = createLoot(pInventory, chosenGroup, bossLevel, true) end)
-
-	local itemName = "an item"
-	if itemOID and itemOID ~= 0 then
-		local pItem = getSceneObject(itemOID)
-		if pItem then
-			local so = SceneObject(pItem)
-			if so then itemName = so:getDisplayedName() or "an item" end
-		end
-	end
+	local item1 = _rollOneNightLoot(pInventory, lootGroups, bossLevel)
+	local item2 = _rollOneNightLoot(pInventory, lootGroups, bossLevel)
 
 	pcall(function()
 		CreatureObject(pPlayer):sendSystemMessage(
-			"\\#00FF00You received from " .. bossName .. ": " .. itemName .. " and 5,000 credits!")
+			"\\#00FF00You received from " .. bossName .. ": " .. item1 .. ", " .. item2 .. " and 5,000 credits!")
 	end)
 end
 
