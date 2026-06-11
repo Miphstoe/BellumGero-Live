@@ -3,7 +3,70 @@
 --  Mirrored from ForceCrystalCaveScreenPlay:
 --    * Awards Force-Rank XP on cave mob kills
 --    * Uses spawnPoints table + observers
+--  + Distributes 1 loot item + 5000 credits to every damager when the boss dies
 ----------------------------------------
+local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
+
+local NIGHTSISTER_LOOT_GROUPS = {
+	{
+		groups = {
+			{ group = "nightsister_cave",          chance = 5750000 },
+			{ group = "house_deeds",               chance = 2000000 },
+			{ group = "vet_holo_group",            chance = 1000000 },
+			{ group = "endgame_weapon_schematics", chance = 750000  },
+			{ group = "bg_token_group",            chance = 500000  },
+		},
+		lootChance = 10000000
+	}
+}
+
+local function _giveNightBossLoot(pPlayer, lootGroups, bossName, bossLevel)
+	pcall(function()
+		local co = CreatureObject(pPlayer)
+		if co then co:addCashCredits(5000, true) end
+	end)
+
+	local pInventory = nil
+	pcall(function()
+		local co = CreatureObject(pPlayer)
+		if co then pInventory = co:getSlottedObject("inventory") end
+	end)
+	if not pInventory then return end
+
+	local entry = lootGroups[math.random(#lootGroups)]
+	if not entry or not entry.groups then return end
+
+	local totalWeight = 0
+	for _, g in ipairs(entry.groups) do totalWeight = totalWeight + (g.chance or 0) end
+	if totalWeight == 0 then return end
+
+	local roll = math.random(totalWeight)
+	local cumulative = 0
+	local chosenGroup = nil
+	for _, g in ipairs(entry.groups) do
+		cumulative = cumulative + (g.chance or 0)
+		if roll <= cumulative then chosenGroup = g.group; break end
+	end
+	if not chosenGroup then return end
+
+	local itemOID = nil
+	pcall(function() itemOID = createLoot(pInventory, chosenGroup, bossLevel, true) end)
+
+	local itemName = "an item"
+	if itemOID and itemOID ~= 0 then
+		local pItem = getSceneObject(itemOID)
+		if pItem then
+			local so = SceneObject(pItem)
+			if so then itemName = so:getDisplayedName() or "an item" end
+		end
+	end
+
+	pcall(function()
+		CreatureObject(pPlayer):sendSystemMessage(
+			"\\#00FF00You received from " .. bossName .. ": " .. itemName .. " and 5,000 credits!")
+	end)
+end
+
 RancorCaveScreenPlay = ScreenPlay:new {
     numberOfActs       = 1,
     screenplayName     = "RancorCaveScreenPlay",
@@ -102,6 +165,15 @@ function RancorCaveScreenPlay:spawnMobiles()
                            "RancorCaveScreenPlay",
                            "onCaveMobDied",
                            pMob)
+            if tpl == "nightsister_boss" then
+                for _, nm in ipairs({"DAMAGERECEIVED", "COMBATDAMAGE", "DAMAGE"}) do
+                    local ev = rawget(_G, nm)
+                    if type(ev) == "number" then
+                        pcall(createObserver, ev, "RancorCaveScreenPlay", "onNightBossDamage", pMob)
+                    end
+                end
+                createObserver(OBJECTDESTRUCTION, "RancorCaveScreenPlay", "onNightBossDied", pMob)
+            end
         else
             Logger:log(
               string.format("RancorCaveScreenPlay: FAILED to spawn '%s' #%d", tpl, i),
@@ -109,6 +181,93 @@ function RancorCaveScreenPlay:spawnMobiles()
             )
         end
     end
+end
+
+function RancorCaveScreenPlay:onNightBossDamage(pBoss, pAttacker, damage)
+    WorldBossLootManager:trackDamage(pBoss, pAttacker)
+    return 0
+end
+
+function RancorCaveScreenPlay:onNightBossDied(pBoss, pKiller)
+    if pBoss == nil then return 0 end
+
+    local soBoss = SceneObject(pBoss)
+    if not soBoss then return 0 end
+    local bossOID = soBoss:getObjectID()
+
+    local recipients = {}
+    local damagers = (_G.__WB_DAMAGE_TRACKING or {})[bossOID] or {}
+    local trackedCount = 0
+    for _ in pairs(damagers) do trackedCount = trackedCount + 1 end
+
+    if trackedCount > 0 then
+        for playerOID, _ in pairs(damagers) do
+            pcall(function()
+                local pPlayer = getSceneObject(tonumber(playerOID))
+                if pPlayer and SceneObject(pPlayer):isPlayerCreature() then
+                    table.insert(recipients, pPlayer)
+                end
+            end)
+        end
+    else
+        local pPlayer = nil
+        pcall(function()
+            if pKiller and SceneObject(pKiller):isPlayerCreature() then
+                pPlayer = pKiller
+            elseif pKiller then
+                local ko = CreatureObject(pKiller)
+                if ko and ko.getOwner then
+                    local pOwner = ko:getOwner()
+                    if pOwner and SceneObject(pOwner):isPlayerCreature() then pPlayer = pOwner end
+                end
+            end
+        end)
+        if pPlayer then
+            local killerCO = CreatureObject(pPlayer)
+            if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
+                local size = killerCO:getGroupSize()
+                for i = 0, size - 1 do
+                    local pMember = killerCO:getGroupMember(i)
+                    if pMember and SceneObject(pMember):isPlayerCreature() then
+                        table.insert(recipients, pMember)
+                    end
+                end
+            else
+                table.insert(recipients, pPlayer)
+            end
+        end
+    end
+
+    if _G.__WB_DAMAGE_TRACKING then _G.__WB_DAMAGE_TRACKING[bossOID] = nil end
+
+    for _, pRecipient in ipairs(recipients) do
+        pcall(_giveNightBossLoot, pRecipient, NIGHTSISTER_LOOT_GROUPS, "Zaritha (a Nightsister clan mother)", 315)
+    end
+
+    pcall(function()
+        local n = soBoss:getContainerObjectsSize()
+        if n and n > 0 then
+            for i = n - 1, 0, -1 do
+                pcall(function()
+                    local pItem = soBoss:getContainerObject(i)
+                    if pItem then
+                        local item = SceneObject(pItem)
+                        if item then item:destroyObjectFromWorld(); item:destroyObjectFromDatabase() end
+                    end
+                end)
+            end
+        end
+    end)
+    pcall(function()
+        local co = CreatureObject(pBoss)
+        if co then
+            local cash = co:getCashCredits()
+            if cash and cash > 0 then co:subtractCashCredits(cash) end
+            co:setCashCredits(0)
+        end
+    end)
+
+    return 0
 end
 
 function RancorCaveScreenPlay:onCaveMobDied(pMob, pKiller)

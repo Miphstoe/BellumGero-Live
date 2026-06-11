@@ -29,56 +29,7 @@ nightsister_boss = Creature:new {
     scale = 1.30,
 
 	templates = {"object/mobile/dressed_dathomir_nightsister_axkva.iff"},
-	lootGroups = {
-		{
-			groups = {
-				{group = "nightsister_cave", chance = 10000000}
-			},
-			lootChance = 10000000 -- 100.00% total chance
-		},
-		{
-			groups = {
-				{group = "nightsister_cave", chance = 10000000}
-			},
-			lootChance = 10000000 -- 100.00% total chance
-		},
-		{
-			groups = {
-				{group = "nightsister_cave", chance = 10000000}
-			},
-			lootChance = 10000000 -- 100.00% total chance
-		},
-		{
-			groups = {
-				{group = "nightsister_cave", chance = 10000000},
-			},
-			lootChance = 2000000 -- 20.00% total chance
-		},
-        {
-            groups = {
-			    {group = "house_deeds", chance = 10000000}
-		    },
-		    lootChance = 2000000, -- 20.00% total chance
-	    },
-        {
-            groups = {
-			    {group = "endgame_weapon_schematics", chance = 10000000}
-		    },
-		    lootChance = 500000, -- 5.00% total chance
-	    },
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 250000
-		},
-		{
-			groups = {
-				{group = "vet_holo_group", chance = 10000000}
-			},
-			lootChance = 1000000 -- 10.00% chance
-		},
-	},
+	lootGroups = {},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary
