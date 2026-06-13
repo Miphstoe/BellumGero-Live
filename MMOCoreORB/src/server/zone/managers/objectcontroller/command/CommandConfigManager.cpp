@@ -405,6 +405,11 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	// has no row for them (client command_table.iff still drives dispatch).
 	createCommand(String("mandoFoundlingAdmin").toLowerCase());
 	createCommand(String("mandoStatus").toLowerCase());
+
+	// Entertainer Paid Buff Service
+	createCommand(String("epbspay").toLowerCase());
+	createCommand(String("epbspetpay").toLowerCase());
+	createCommand(String("epbssetup").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {

@@ -849,6 +849,9 @@
 #include "ReaperBlastCommand.h"
 #include "ReaperShotCommand.h"
 #include "LightningBarrageCommand.h"
+#include "EPBSPayCommand.h"
+#include "EPBSPetPayCommand.h"
+#include "EPBSSetupCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */

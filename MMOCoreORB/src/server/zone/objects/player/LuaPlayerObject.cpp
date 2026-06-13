@@ -19,6 +19,7 @@
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/callbacks/EnclaveCouncilRankSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 
 const char LuaPlayerObject::className[] = "LuaPlayerObject";
 
@@ -112,6 +113,8 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "getSquadronType", &LuaPlayerObject::getSquadronType },
 		{ "addDroidCommand", &LuaPlayerObject::addDroidCommand },
 		{ "removeDroidCommands", &LuaPlayerObject::removeDroidCommands },
+		{ "getActivePetsSize", &LuaPlayerObject::getActivePetsSize },
+		{ "getActivePet", &LuaPlayerObject::getActivePet },
 
 		{ 0, 0 }
 };
@@ -1061,5 +1064,33 @@ int LuaPlayerObject::removeDroidCommands(lua_State* L) {
 
 	skillManager->removeDroidCommands(realObject);
 
+	return 1;
+}
+
+int LuaPlayerObject::getActivePetsSize(lua_State* L) {
+	if (realObject == nullptr) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	lua_pushinteger(L, realObject->getActivePetsSize());
+	return 1;
+}
+
+int LuaPlayerObject::getActivePet(lua_State* L) {
+	int index = (int)lua_tointeger(L, -1);
+
+	if (realObject == nullptr || index < 0 || index >= realObject->getActivePetsSize()) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	ManagedReference<AiAgent*> pet = realObject->getActivePet(index);
+	if (pet == nullptr) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushlightuserdata(L, pet.get());
 	return 1;
 }
