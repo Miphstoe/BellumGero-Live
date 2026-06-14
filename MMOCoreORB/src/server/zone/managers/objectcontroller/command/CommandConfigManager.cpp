@@ -410,6 +410,9 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("epbspay").toLowerCase());
 	createCommand(String("epbspetpay").toLowerCase());
 	createCommand(String("epbssetup").toLowerCase());
+
+	// Jedi Master Healer force resurrection
+	createCommand(String("forcerevive").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {
