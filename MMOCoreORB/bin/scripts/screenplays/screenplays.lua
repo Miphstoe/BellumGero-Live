@@ -813,6 +813,7 @@ includeFile("world/primordial_warlord_grak_loot_wrapper.lua")
 includeFile("boss/djm_random_name_boss.lua")
 -- screenplay LAST so it can spawn after the above are loaded
 includeFile("vendors/attachment_exchange_vendor.lua")
+includeFile("vendors/jedi_furniture_sea_vendor.lua")
 includeFile("vendors/bg_token_vendor.lua")
 --includeFile("vendors/bg_token_vendor_2.lua")
 includeFile("vendors/bg_token_vendor_3.lua")
