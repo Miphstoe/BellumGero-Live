@@ -573,6 +573,7 @@ includeFile("items/loot_schematic/coruscant_clonetrooper_utility_belt_schematic.
 includeFile("items/loot_schematic/couch_blue_schematic.lua")
 includeFile("items/loot_schematic/droid_body_schematic.lua")
 includeFile("items/loot_schematic/elegant_cabinet_schematic.lua")
+includeFile("items/loot_schematic/entertainer_buff_bot.lua")
 includeFile("items/loot_schematic/fat_bottle_schematic.lua")
 includeFile("items/loot_schematic/gambling_table_schematic.lua")
 includeFile("items/loot_schematic/kitchen_utensils.lua")
@@ -654,6 +655,7 @@ includeFile("items/misc/majestic_rug.lua")
 includeFile("items/misc/potted_plants_sml_s05.lua")
 includeFile("items/misc/radar_topology_screen.lua")
 includeFile("items/misc/tato_small_table_style_03.lua")
+includeFile("items/misc/sarlacc_trash_can.lua")
 
 --npc sub-folder
 includeFile("items/npc/aakuan_belt.lua")
