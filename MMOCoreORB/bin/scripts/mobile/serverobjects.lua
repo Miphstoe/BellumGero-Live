@@ -58,6 +58,7 @@ includeFile("vendors/apprentice_coin_vendor.lua")
 -- SEA Vendor
 -- mobile (creature) template FIRST so spawnMobile can find it
 includeFile("vendors/attachment_exchange_vendor.lua")
+includeFile("vendors/jedi_furniture_sea_vendor.lua")
 
 -- BG Token Vendor
 includeFile("vendors/bg_token_vendor.lua")

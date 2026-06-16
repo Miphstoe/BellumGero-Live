@@ -43,6 +43,8 @@ class StructureObject extends TangibleObject {
 
 	protected boolean maintenanceReduced;
 
+	protected float maintenanceReductionBonus;
+
 	protected boolean permissionsFixed;
 
 	public StructureObject() {
@@ -63,6 +65,8 @@ class StructureObject extends TangibleObject {
 		structureMaintenanceTask = null;
 
 		maintenanceReduced = false;
+
+		maintenanceReductionBonus = 0;
 
 		permissionsFixed = false;
 
@@ -300,6 +304,16 @@ class StructureObject extends TangibleObject {
 	@preLocked
 	public void setMaintenanceReduced(boolean value) {
 		maintenanceReduced = value;
+	}
+
+	@preLocked
+	public void setMaintenanceReductionBonus(float bonus) {
+		maintenanceReductionBonus = bonus;
+	}
+
+	@read
+	public float getMaintenanceReductionBonus() {
+		return maintenanceReductionBonus;
 	}
 
 	@read

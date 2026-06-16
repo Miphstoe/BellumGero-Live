@@ -80,6 +80,10 @@
 #include "server/zone/objects/creature/commands/MinefieldAttackCommand.h"
 #include "server/zone/objects/creature/commands/MandoFoundlingAdminCommand.h"
 #include "server/zone/objects/creature/commands/MandoStatusCommand.h"
+#include "server/zone/objects/creature/commands/EPBSPayCommand.h"
+#include "server/zone/objects/creature/commands/EPBSPetPayCommand.h"
+#include "server/zone/objects/creature/commands/EPBSSetupCommand.h"
+#include "server/zone/objects/creature/commands/ForceReviveCommand.h"
 #include "server/zone/objects/creature/commands/MoneyCommand.h"
 #include "server/zone/objects/creature/commands/MountCommand.h"
 #include "server/zone/objects/creature/commands/MoveFurnitureCommand.h"
@@ -389,6 +393,10 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<MinefieldAttackCommand>(String("minefieldAttack").toLowerCase());
 	commandFactory.registerCommand<MandoFoundlingAdminCommand>(String("mandoFoundlingAdmin").toLowerCase());
 	commandFactory.registerCommand<MandoStatusCommand>(String("mandoStatus").toLowerCase());
+	commandFactory.registerCommand<EPBSPayCommand>(String("epbspay").toLowerCase());
+	commandFactory.registerCommand<EPBSPetPayCommand>(String("epbspetpay").toLowerCase());
+	commandFactory.registerCommand<EPBSSetupCommand>(String("epbssetup").toLowerCase());
+	commandFactory.registerCommand<ForceReviveCommand>(String("forcerevive").toLowerCase());
 	commandFactory.registerCommand<MoneyCommand>(String("money").toLowerCase());
 	commandFactory.registerCommand<MountCommand>(String("mount").toLowerCase());
 	commandFactory.registerCommand<MoveFurnitureCommand>(String("moveFurniture").toLowerCase());

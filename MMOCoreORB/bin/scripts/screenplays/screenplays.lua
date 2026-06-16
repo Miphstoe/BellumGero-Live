@@ -813,6 +813,7 @@ includeFile("world/primordial_warlord_grak_loot_wrapper.lua")
 includeFile("boss/djm_random_name_boss.lua")
 -- screenplay LAST so it can spawn after the above are loaded
 includeFile("vendors/attachment_exchange_vendor.lua")
+includeFile("vendors/jedi_furniture_sea_vendor.lua")
 includeFile("vendors/bg_token_vendor.lua")
 --includeFile("vendors/bg_token_vendor_2.lua")
 includeFile("vendors/bg_token_vendor_3.lua")
@@ -828,6 +829,9 @@ includeFile("static_spawns/master_bounty_guild.lua")
 -- Painting Exchange Vendor
 includeFile("bellum/painting_exchange_vendor.lua")
 includeFile("bellum/convos/painting_exchange_vendor_conv_handler.lua")
+
+-- Entertainer Paid Buff Service
+includeFile("bellum/entertainer_paid_buff_service.lua")
 
 -- Mandalorian Way of Life (loaded again after vendors/bounty so start() runs last among globals — original Bellum ordering)
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")

@@ -64,8 +64,15 @@ skillModLimits = {
 
 -- Per-mod-name overrides: checked before skillModLimits type caps.
 -- Format: { "modName", modType, minValue, maxValue }
+--
+-- jedi_force_power_regen SEA cap:
+--   WEARABLE (4097) sources — clothing attachments and SEAs — are capped at ±25 total.
+--   Multiple clothing pieces with Force Power Regen SEAs cannot stack beyond +25 combined.
+--   Robe template mods use TEMPLATE type (0x101 = 257), which has no cap entry here and
+--   is therefore uncapped; robe innate Force Power Regen adds on top of the +25 SEA cap.
+--   Example: two +25 SEAs = +25; one +25 SEA + robe +10 = +35; two +25 SEAs + robe +10 = +35.
 skillModNameLimits = {
-	{"jedi_force_power_regen", 4097, -75, 75},  -- WEARABLE cap raised from ±25 to ±75
+	{"jedi_force_power_regen", 4097, -25, 25},
 }
 
 disabledWearableSkillMods = {
