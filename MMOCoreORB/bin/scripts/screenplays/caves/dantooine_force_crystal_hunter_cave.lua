@@ -219,7 +219,7 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
         if pTarget == nil then return end
         if not SceneObject(pTarget):isPlayerCreature() then return end
         CreatureObject(pTarget):sendSystemMessage(
-            "\#AA44FFThe Fallen Inquisitor is dead... his Force grip on the sealed containers shatters. The way is open."
+            "\\#AA44FFThe Fallen Inquisitor is dead... his Force grip on the sealed containers shatters. The way is open."
         )
     end
 
