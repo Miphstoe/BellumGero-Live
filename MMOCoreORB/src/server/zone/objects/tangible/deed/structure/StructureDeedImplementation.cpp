@@ -68,6 +68,12 @@ void StructureDeedImplementation::fillAttributeList(AttributeListMessage* alm, C
 	if (extractionRate > 0)
 		alm->insertAttribute("examine_extractionrate", String::valueOf(Math::getPrecision(extractionRate, 2)));
 
+	if (maintenanceReductionBonus > 0.0f)
+		alm->insertAttribute("bg_maint_reduction", "-" + String::valueOf(Math::getPrecision(maintenanceReductionBonus, 1)) + "% maintenance");
+
+	if (storageBonus > 0)
+		alm->insertAttribute("bg_storage_bonus", "+" + String::valueOf(storageBonus) + " item capacity");
+
 	for (int i = 0; i < structureTemplate->getTotalAllowedZones(); ++i) {
 		String zoneName = structureTemplate->getAllowedZone(i);
 
@@ -81,4 +87,21 @@ void StructureDeedImplementation::fillAttributeList(AttributeListMessage* alm, C
 void StructureDeedImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate){
 	setExtractionRate(values->getCurrentValue("extractrate"));
 	setHopperSize(values->getCurrentValue("hoppersize"));
+
+	// House experimentation bonuses
+	static constexpr float MAX_MAINT_REDUCTION = 25.0f;
+	static constexpr int   MAX_STORAGE_BONUS   = 100;
+
+	float maintRed = values->getCurrentValue("maintenancereduction");
+	if (maintRed > 0.0f) {
+		if (maintRed > MAX_MAINT_REDUCTION) maintRed = MAX_MAINT_REDUCTION;
+		maintenanceReductionBonus = maintRed;
+	}
+
+	float storage = values->getCurrentValue("storagebonus");
+	if (storage > 0.0f) {
+		int storageInt = (int)storage;
+		if (storageInt > MAX_STORAGE_BONUS) storageInt = MAX_STORAGE_BONUS;
+		storageBonus = storageInt;
+	}
 }

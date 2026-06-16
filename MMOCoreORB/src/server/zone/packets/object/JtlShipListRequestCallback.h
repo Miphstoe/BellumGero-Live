@@ -10,6 +10,7 @@
 
 #include "ObjectControllerMessageCallback.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/scene/SceneObjectType.h"
 #include "server/zone/packets/object/JtlShipListResponse.h"
 
 class JtlShipListRequestCallback : public MessageCallback {
@@ -35,6 +36,9 @@ public:
 		ManagedReference<SceneObject*> invokedObject = server->getZoneServer()->getObject(terminalObjectID);
 
 		if (invokedObject == nullptr)
+			return;
+
+		if (invokedObject->getGameObjectType() != SceneObjectType::SPACETERMINAL)
 			return;
 
 		//This should be handled by the radial?

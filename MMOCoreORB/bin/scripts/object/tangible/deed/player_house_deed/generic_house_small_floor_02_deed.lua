@@ -48,15 +48,15 @@ object_tangible_deed_player_house_deed_generic_house_small_floor_02_deed = objec
 
 
 
-	numberExperimentalProperties = {1, 1, 1},
-	experimentalProperties = {"XX", "XX", "DR"},
-	experimentalWeights = {1, 1, 1},
-	experimentalGroupTitles = {"null", "null", "exp_durability"},
-	experimentalSubGroupTitles = {"null", "null", "hitpoints"},
-	experimentalMin = {0, 0, 21000},
-	experimentalMax = {0, 0, 39000},
-	experimentalPrecision = {0, 0, 0},
-	experimentalCombineType = {0, 0, 4},
+	numberExperimentalProperties = {1, 1, 1, 1, 1},
+	experimentalProperties = {"XX", "XX", "DR", "OQ", "OQ"},
+	experimentalWeights = {1, 1, 1, 1, 1},
+	experimentalGroupTitles = {"null", "null", "exp_durability", "expEffeciency", "expStorage"},
+	experimentalSubGroupTitles = {"null", "null", "hitpoints", "maintenancereduction", "storagebonus"},
+	experimentalMin = {0, 0, 21000, 0, 0},
+	experimentalMax = {0, 0, 39000, 25, 100},
+	experimentalPrecision = {0, 0, 0, 1, 0},
+	experimentalCombineType = {0, 0, 4, 1, 1},
 }
 
 ObjectTemplates:addTemplate(object_tangible_deed_player_house_deed_generic_house_small_floor_02_deed, "object/tangible/deed/player_house_deed/generic_house_small_floor_02_deed.iff")

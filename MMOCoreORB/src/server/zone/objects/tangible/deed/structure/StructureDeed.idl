@@ -18,6 +18,9 @@ class StructureDeed extends Deed {
 	protected float extractionRate;
 	protected float hopperSizeMax;
 
+	protected float maintenanceReductionBonus;
+	protected int storageBonus;
+
 	protected transient PlaceStructureComponent placeStructureComponent;
 
 	public StructureDeed() {
@@ -27,6 +30,8 @@ class StructureDeed extends Deed {
 		surplusPower = 0;
 		extractionRate = 0;
 		hopperSizeMax = 0;
+		maintenanceReductionBonus = 0;
+		storageBonus = 0;
 	}
 
 	@local
@@ -90,6 +95,24 @@ class StructureDeed extends Deed {
 	@read
 	public float getHopperSize() {
 		return hopperSizeMax;
+	}
+
+	public void setMaintenanceReductionBonus(float bonus) {
+		maintenanceReductionBonus = bonus;
+	}
+
+	public void setStorageBonus(int bonus) {
+		storageBonus = bonus;
+	}
+
+	@read
+	public float getMaintenanceReductionBonus() {
+		return maintenanceReductionBonus;
+	}
+
+	@read
+	public int getStorageBonus() {
+		return storageBonus;
 	}
 
 	@dirty
