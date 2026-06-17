@@ -230,6 +230,10 @@ void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* mis
 	}
 
 	populateMissionList(missionTerminal, player, counter);
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	if (ghost != nullptr)
+		ghost->setScreenPlayData("missionTerminalSession", "lastTerminalID", String::valueOf(missionTerminal->getObjectID()));
 }
 
 void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionTerminal, MissionObject* mission, CreatureObject* player) {
