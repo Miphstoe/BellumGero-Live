@@ -2,7 +2,7 @@
 --  ForceCrystalCaveScreenPlay
 --  Rewards Force-Rank XP on cave mob kills
 --  + Adds server-spawned loot containers that use the same loot groups/level/respawn
---  + Distributes 1 loot item + 5000 credits to every damager when the boss dies
+--  + Distributes 2 loot items + 5000 credits to every damager when the boss dies
 ----------------------------------------
 local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
 
@@ -59,20 +59,24 @@ local function _giveBossLoot(pPlayer, lootGroups, bossName, bossLevel)
 		if co then co:addCashCredits(5000, true) end
 	end)
 
-	local pInventory = nil
-	pcall(function()
-		local co = CreatureObject(pPlayer)
-		if co then pInventory = co:getSlottedObject("inventory") end
-	end)
-	if not pInventory then return end
+	local itemNames = {}
+	for _ = 1, 2 do
+		local pInv = nil
+		pcall(function()
+			local co = CreatureObject(pPlayer)
+			if co then pInv = co:getSlottedObject("inventory") end
+		end)
+		if not pInv then break end
+		table.insert(itemNames, _rollOneLoot(pInv, lootGroups, bossLevel))
+	end
 
-	local item1 = _rollOneLoot(pInventory, lootGroups, bossLevel)
-	local item2 = _rollOneLoot(pInventory, lootGroups, bossLevel)
-
-	pcall(function()
-		CreatureObject(pPlayer):sendSystemMessage(
-			"\\#00FF00You received from " .. bossName .. ": " .. item1 .. ", " .. item2 .. " and 5,000 credits!")
-	end)
+	if #itemNames > 0 then
+		pcall(function()
+			CreatureObject(pPlayer):sendSystemMessage(
+				"\\#00FF00You received from " .. bossName .. ": "
+				.. table.concat(itemNames, ", ") .. " and 5,000 credits!")
+		end)
+	end
 end
 
 ForceCrystalCaveScreenPlay = ScreenPlay:new {
