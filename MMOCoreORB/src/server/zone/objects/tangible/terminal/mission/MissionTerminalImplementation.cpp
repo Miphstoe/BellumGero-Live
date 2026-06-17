@@ -13,6 +13,8 @@
 #include "server/zone/managers/city/CityRemoveAmenityTask.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "server/zone/managers/director/DirectorManager.h"
+#include "server/zone/managers/mission/MissionManager.h"
+#include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
@@ -45,6 +47,10 @@ void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* m
 
 	if (terminalType == "bounty" && player->hasSkill("combat_bountyhunter_novice")) {
 		menuResponse->addRadialMenuItem(115, 3, "Choose Bounty Contract Tier");
+	}
+
+	if (terminalType == "general" || terminalType == "imperial" || terminalType == "rebel") {
+		menuResponse->addRadialMenuItem(116, 3, "Accept Top 6 Missions");
 	}
 }
 
@@ -208,6 +214,82 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
 		Reference<LuaFunction*> fn = lua->createFunction("bounty_contract_tier", "openWindow", 0);
 		*fn << player;
 		fn->callFunction();
+
+		return 0;
+	} else if (selectedID == 116) {
+		PlayerObject* ghost = player->getPlayerObject();
+		if (ghost == nullptr)
+			return 0;
+
+		String lastID = ghost->getScreenPlayData("missionTerminalSession", "lastTerminalID");
+		if (lastID != String::valueOf(_this.getReferenceUnsafeStaticCast()->getObjectID())) {
+			player->sendSystemMessage("You must open this terminal's mission list before accepting missions.");
+			return 0;
+		}
+
+		SceneObject* missionBag = player->getSlottedObject("mission_bag");
+		SceneObject* datapad = player->getSlottedObject("datapad");
+
+		if (missionBag == nullptr || datapad == nullptr)
+			return 0;
+
+		// Match missions to this terminal's faction so Imperial/Rebel terminals
+		// don't accidentally accept General missions left over from a prior browse
+		uint32 expectedFaction = Factions::FACTIONNEUTRAL;
+		if (terminalType == "imperial")
+			expectedFaction = Factions::FACTIONIMPERIAL;
+		else if (terminalType == "rebel")
+			expectedFaction = Factions::FACTIONREBEL;
+
+		// Snapshot populated missions before iterating — transferObject modifies the bag
+		Vector<ManagedReference<MissionObject*>> candidates;
+		for (int i = 0; i < missionBag->getContainerObjectsSize(); ++i) {
+			SceneObject* obj = missionBag->getContainerObject(i);
+			if (obj != nullptr && obj->isMissionObject()) {
+				MissionObject* mission = cast<MissionObject*>(obj);
+				if (mission != nullptr && mission->getTypeCRC() != 0 && mission->getFaction() == expectedFaction)
+					candidates.add(mission);
+			}
+		}
+
+		if (candidates.isEmpty()) {
+			player->sendSystemMessage("No missions available from this terminal. Open the terminal to browse its mission list first.");
+			return 0;
+		}
+
+		int beforeCount = 0;
+		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+			if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
+				++beforeCount;
+		}
+
+		if (beforeCount >= 6) {
+			StringIdChatParameter stringId("mission/mission_generic", "too_many_missions");
+			player->sendSystemMessage(stringId);
+			return 0;
+		}
+
+		MissionManager* missionManager = getZoneServer()->getMissionManager();
+		MissionTerminal* terminal = _this.getReferenceUnsafeStaticCast();
+
+		for (int i = 0; i < candidates.size(); ++i) {
+			MissionObject* mission = candidates.get(i);
+			if (mission == nullptr) continue;
+			Locker missionLock(mission, player);
+			missionManager->handleMissionAccept(terminal, mission, player);
+		}
+
+		int afterCount = 0;
+		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+			if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
+				++afterCount;
+		}
+
+		int accepted = afterCount - beforeCount;
+		if (accepted > 0)
+			player->sendSystemMessage("Accepted " + String::valueOf(accepted) + " mission(s).");
+		else
+			player->sendSystemMessage("Could not accept any missions. You may already have 6 active missions.");
 
 		return 0;
 	}

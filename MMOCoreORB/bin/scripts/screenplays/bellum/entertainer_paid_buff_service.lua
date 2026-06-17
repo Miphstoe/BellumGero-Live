@@ -139,8 +139,8 @@ function EntertainerPaidBuffService:processPay(pPatron, entertainerID, isPet)
     end
 
     local pEntertainer = getSceneObject(entertainerID)
-    if pEntertainer == nil then
-        CreatureObject(pPatron):sendSystemMessage("[EPBS] Entertainer not found.")
+    if pEntertainer == nil or not SceneObject(pEntertainer):isPlayerCreature() then
+        CreatureObject(pPatron):sendSystemMessage("[EPBS] Target a performing entertainer first, then use /epbspay.")
         return
     end
 
@@ -222,7 +222,7 @@ function EntertainerPaidBuffService:completePay(pPatron, entertainerID, price, i
     if pPatron == nil then return end
 
     local pEntertainer = getSceneObject(entertainerID)
-    if pEntertainer == nil then
+    if pEntertainer == nil or not SceneObject(pEntertainer):isPlayerCreature() then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] Entertainer is no longer available. Payment canceled.")
         return
     end
