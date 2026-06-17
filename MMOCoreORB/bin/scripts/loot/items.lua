@@ -573,7 +573,6 @@ includeFile("items/loot_schematic/coruscant_clonetrooper_utility_belt_schematic.
 includeFile("items/loot_schematic/couch_blue_schematic.lua")
 includeFile("items/loot_schematic/droid_body_schematic.lua")
 includeFile("items/loot_schematic/elegant_cabinet_schematic.lua")
-includeFile("items/loot_schematic/entertainer_buff_bot.lua")
 includeFile("items/loot_schematic/fat_bottle_schematic.lua")
 includeFile("items/loot_schematic/gambling_table_schematic.lua")
 includeFile("items/loot_schematic/kitchen_utensils.lua")
