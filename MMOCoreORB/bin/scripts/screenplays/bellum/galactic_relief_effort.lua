@@ -465,6 +465,9 @@ function GalacticReliefEffort:syncActivePatientMirror(pPlayer)
 end
 
 function GalacticReliefEffort:resetRunData(pPlayer)
+	for cityIdx = 1, self.ASSIGNED_CITIES_PER_RUN, 1 do
+		self:releaseSpawnPointsForCity(pPlayer, cityIdx)
+	end
 	self:setNumber(pPlayer, "active", 0)
 	self:setNumber(pPlayer, "reward_pending", 0)
 	self:setNumber(pPlayer, "reward_lock", 0)
@@ -489,6 +492,7 @@ end
 
 function GalacticReliefEffort:buildAssignmentData(pPlayer)
 	local shuffledCities = self:shuffleArray(self.cityPool)
+	local playerOid = SceneObject(pPlayer):getObjectID()
 
 	for cityIndex = 1, self.ASSIGNED_CITIES_PER_RUN, 1 do
 		local city = shuffledCities[cityIndex]
@@ -496,11 +500,34 @@ function GalacticReliefEffort:buildAssignmentData(pPlayer)
 		self:setNumber(pPlayer, "city_" .. cityIndex .. "_complete", 0)
 		self:setNumber(pPlayer, "city_" .. cityIndex .. "_healed_count", 0)
 
-		local spawnIndexes = {}
+		local allIndexes = {}
 		for i = 1, #city.spawnPoints, 1 do
-			table.insert(spawnIndexes, i)
+			table.insert(allIndexes, i)
 		end
-		spawnIndexes = self:shuffleArray(spawnIndexes)
+		allIndexes = self:shuffleArray(allIndexes)
+
+		-- Prefer spawn points not already claimed by another active player
+		local spawnIndexes = {}
+		for i = 1, #allIndexes, 1 do
+			if #spawnIndexes >= self.ACTIVE_PATIENT_POOL then break end
+			local owner = readData("gre:city:" .. city.id .. ":spawn:" .. allIndexes[i])
+			if owner == nil or owner == 0 then
+				table.insert(spawnIndexes, allIndexes[i])
+			end
+		end
+		-- Fall back to any remaining points if the pool is exhausted
+		for i = 1, #allIndexes, 1 do
+			if #spawnIndexes >= self.ACTIVE_PATIENT_POOL then break end
+			local alreadyIn = false
+			for j = 1, #spawnIndexes, 1 do
+				if spawnIndexes[j] == allIndexes[i] then alreadyIn = true; break end
+			end
+			if not alreadyIn then
+				table.insert(spawnIndexes, allIndexes[i])
+			end
+		end
+
+		self:claimCitySpawnPoints(city.id, playerOid, spawnIndexes)
 
 		for slot = 1, self.ACTIVE_PATIENT_POOL, 1 do
 			self:setNumber(pPlayer, "city_" .. cityIndex .. "_patient_" .. slot .. "_spawn_index", spawnIndexes[slot])
@@ -595,7 +622,9 @@ function GalacticReliefEffort:spawnPatientForSlot(pPlayer, cityIndex, slot)
 	local template = self:choosePatientTemplate(city)
 	local condition = self:getString(pPlayer, "city_" .. cityIndex .. "_patient_" .. slot .. "_condition")
 	local damagePool = self:getString(pPlayer, "city_" .. cityIndex .. "_patient_" .. slot .. "_damage_pool")
-	local pMobile = spawnMobile(city.planet, template, 0, point[1], point[2], point[3], point[4], point[5] or 0)
+	local jitterX = (getRandomNumber(1, 41) - 21) / 10.0
+	local jitterZ = (getRandomNumber(1, 41) - 21) / 10.0
+	local pMobile = spawnMobile(city.planet, template, 0, point[1] + jitterX, point[2], point[3] + jitterZ, point[4], point[5] or 0)
 
 	if (pMobile == nil) then
 		return nil
@@ -639,6 +668,32 @@ function GalacticReliefEffort:ensureCurrentCityPatients(pPlayer)
 	self:syncActivePatientMirror(pPlayer)
 end
 
+function GalacticReliefEffort:claimCitySpawnPoints(cityId, playerOid, indices)
+	for i = 1, #indices, 1 do
+		writeData("gre:city:" .. cityId .. ":spawn:" .. indices[i], playerOid)
+	end
+end
+
+function GalacticReliefEffort:releaseSpawnPointsForCity(pPlayer, cityIndex)
+	if pPlayer == nil then
+		return
+	end
+	local cityData = self:getAssignedCityData(pPlayer, cityIndex)
+	if cityData == nil then
+		return
+	end
+	local playerOid = SceneObject(pPlayer):getObjectID()
+	for slot = 1, self.ACTIVE_PATIENT_POOL, 1 do
+		local spawnIndex = self:getNumber(pPlayer, "city_" .. cityIndex .. "_patient_" .. slot .. "_spawn_index")
+		if spawnIndex ~= 0 then
+			local key = "gre:city:" .. cityData.id .. ":spawn:" .. spawnIndex
+			if readData(key) == playerOid then
+				deleteData(key)
+			end
+		end
+	end
+end
+
 function GalacticReliefEffort:destroyPatientById(objectId)
 	if (objectId == nil or objectId == 0) then
 		return
@@ -653,6 +708,7 @@ function GalacticReliefEffort:destroyPatientById(objectId)
 end
 
 function GalacticReliefEffort:cleanupCityPatients(pPlayer, cityIndex)
+	self:releaseSpawnPointsForCity(pPlayer, cityIndex)
 	for slot = 1, self.ACTIVE_PATIENT_POOL, 1 do
 		local keyBase = "city_" .. cityIndex .. "_patient_" .. slot
 		self:destroyPatientById(self:getNumber(pPlayer, keyBase .. "_object_id"))
