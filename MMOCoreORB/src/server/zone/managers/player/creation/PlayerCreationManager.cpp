@@ -570,6 +570,18 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	// Welcome Mail
 	chatManager->sendMail("Bellum Gero", "@newbie_tutorial/newbie_mail:welcome_subject", "@newbie_tutorial/newbie_mail:welcome_body", playerCreature->getFirstName());
 
+	// Services info mail
+	chatManager->sendMail("Bellum Gero Staff",
+		UnicodeString("Need a Buff or a Vendor?"),
+		UnicodeString("Welcome to Bellum Gero!\n\n"
+			"Looking for buffs, vendors, crafting services, or an active community? "
+			"Open the Services chat channel to see advertisements from player cities across the galaxy.\n\n"
+			"Many cities offer entertainers, doctors, shopping, crafting, and other useful services "
+			"for new and veteran players alike.\n\n"
+			"Take some time to explore and find a city that feels like home!\n\n"
+			"* Bellum Gero Staff"),
+		playerCreature->getFirstName());
+
 	// Schedule Task to send out JTL Recruitment Mail
 	SendJtlRecruitment* jtlMailTask = new SendJtlRecruitment(playerCreature);
 
