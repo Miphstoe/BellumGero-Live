@@ -312,25 +312,18 @@ function EntertainerPaidBuffService:openSetupMenu(pEntertainer)
         return
     end
 
-    local enabled     = self:isEnabled(pEntertainer)
-    local playerPrice = self:getPlayerPrice(pEntertainer)
-    local petPrice    = self:getPetPrice(pEntertainer)
-    local earnings    = self:getNum(pEntertainer, "earnings")
+    local enabled  = self:isEnabled(pEntertainer)
+    local earnings = self:getNum(pEntertainer, "earnings")
 
     local sui = SuiListBox.new("EntertainerPaidBuffService", "setupMenuCallback")
     sui.setTargetNetworkId(SceneObject(pEntertainer):getObjectID())
     sui.setTitle("Entertainer Paid Buff Service — Setup")
     sui.setPrompt(
         "Status: " .. (enabled and "ENABLED" or "DISABLED") ..
-        "\nPlayer Buff Price: " .. tostring(playerPrice) .. " credits" ..
-        "\nPet Buff Price: " .. tostring(petPrice) .. " credits" ..
         "\nTotal Earnings: " .. tostring(earnings) .. " credits"
     )
 
     sui.add(enabled and "Disable Service" or "Enable Service", "")
-    sui.add("Set Player Buff Price (" .. tostring(playerPrice) .. ")", "")
-    sui.add("Set Pet Buff Price (" .. tostring(petPrice) .. ")", "")
-    sui.add("View Earnings Details", "")
 
     sui.sendTo(pEntertainer)
 end
@@ -343,76 +336,14 @@ function EntertainerPaidBuffService:setupMenuCallback(pEntertainer, pSui, eventI
     if sel == nil then return end
 
     if sel == 0 then
-        -- Toggle enable/disable
         local enabled = self:isEnabled(pEntertainer)
         self:setString(pEntertainer, "enabled", enabled and "0" or "1")
-        local msg = enabled and "[EPBS] Paid buff service DISABLED." or "[EPBS] Paid buff service ENABLED. Players can now pay for buffs with /epbspay."
+        local msg = enabled and "[EPBS] Paid buff service DISABLED." or "[EPBS] Paid buff service ENABLED."
         CreatureObject(pEntertainer):sendSystemMessage(msg)
         self:openSetupMenu(pEntertainer)
-
-    elseif sel == 1 then
-        self:openPriceInput(pEntertainer, false)
-
-    elseif sel == 2 then
-        self:openPriceInput(pEntertainer, true)
-
-    elseif sel == 3 then
-        local earnings = self:getNum(pEntertainer, "earnings")
-        CreatureObject(pEntertainer):sendSystemMessage(
-            "[EPBS] Total buff service earnings: " .. tostring(earnings) .. " credits."
-        )
-        self:openSetupMenu(pEntertainer)
     end
 end
 
--- ============================================================
--- Price input box
--- ============================================================
-function EntertainerPaidBuffService:openPriceInput(pEntertainer, isPet)
-    if pEntertainer == nil then return end
-    local label   = isPet and "Pet Buff" or "Player Buff"
-    local current = isPet and self:getPetPrice(pEntertainer) or self:getPlayerPrice(pEntertainer)
-
-    -- Store which price is being edited
-    self:setString(pEntertainer, "price_edit_target", isPet and "pet" or "player")
-
-    local sui = SuiInputBox.new("EntertainerPaidBuffService", "priceInputCallback")
-    sui.setTargetNetworkId(SceneObject(pEntertainer):getObjectID())
-    sui.setTitle("Set " .. label .. " Price")
-    sui.setPrompt(
-        "Enter the credit price for a " .. label .. ".\n" ..
-        "Min: " .. tostring(self.MIN_PRICE) .. "   Max: " .. tostring(self.MAX_PRICE) ..
-        "\nCurrent: " .. tostring(current) .. " credits"
-    )
-    sui.setOkButtonText("Set Price")
-    sui.sendTo(pEntertainer)
-end
-
-function EntertainerPaidBuffService:priceInputCallback(pEntertainer, pSui, eventIndex, args)
-    if pEntertainer == nil then return end
-
-    local isPet = self:getString(pEntertainer, "price_edit_target") == "pet"
-    self:clearKey(pEntertainer, "price_edit_target")
-
-    if eventIndex ~= 0 then
-        self:openSetupMenu(pEntertainer)
-        return
-    end
-
-    local price = tonumber(args)
-    if price == nil then
-        CreatureObject(pEntertainer):sendSystemMessage("[EPBS] Invalid input — please enter a number.")
-        self:openSetupMenu(pEntertainer)
-        return
-    end
-
-    price = math.max(self.MIN_PRICE, math.min(self.MAX_PRICE, math.floor(price)))
-    local key   = isPet and "petPrice" or "playerPrice"
-    local label = isPet and "Pet Buff" or "Player Buff"
-    self:setNum(pEntertainer, key, price)
-    CreatureObject(pEntertainer):sendSystemMessage("[EPBS] " .. label .. " price set to " .. tostring(price) .. " credits.")
-    self:openSetupMenu(pEntertainer)
-end
 
 -- ============================================================
 -- V2: Session state helpers
