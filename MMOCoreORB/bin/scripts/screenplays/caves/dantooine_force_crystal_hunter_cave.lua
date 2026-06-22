@@ -141,6 +141,11 @@ ForceCrystalCaveScreenPlay = ScreenPlay:new {
     -- How often (ms) to poll for the boss respawning so we can re-attach the observer
     INQ_POLL_INTERVAL_MS = 15000,   -- 15 seconds
 
+    -- Loot eligibility radius (meters). A tracked damager only earns boss loot if
+    -- they are within this range of the Inquisitor when it dies. Prevents
+    -- server-wide grants to players who tagged it and left the cave.
+    INQ_LOOT_RANGE = 80,
+
     -- Inquisitor loot groups for the boss-locked containers (seeded on death)
     inqLootGroups = {
         { groups = { { group = "dark_jedi_tier_5", chance = 10000000 } }, lootChance = 10000000 },
@@ -308,7 +313,8 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
         for playerOID, _ in pairs(damagers) do
             pcall(function()
                 local pPlayer = getSceneObject(tonumber(playerOID))
-                if pPlayer and SceneObject(pPlayer):isPlayerCreature() then
+                if pPlayer and SceneObject(pPlayer):isPlayerCreature()
+                        and SceneObject(pPlayer):isInRangeWithObject(pBoss, self.INQ_LOOT_RANGE) then
                     table.insert(recipients, pPlayer)
                 end
             end)
@@ -333,7 +339,8 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
                 local size = killerCO:getGroupSize()
                 for i = 0, size - 1 do
                     local pMember = killerCO:getGroupMember(i)
-                    if pMember and SceneObject(pMember):isPlayerCreature() then
+                    if pMember and SceneObject(pMember):isPlayerCreature()
+                            and SceneObject(pMember):isInRangeWithObject(pBoss, self.INQ_LOOT_RANGE) then
                         table.insert(recipients, pMember)
                     end
                 end
