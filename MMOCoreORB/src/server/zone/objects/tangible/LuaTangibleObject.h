@@ -73,6 +73,8 @@ namespace tangible {
 		int addAttachmentSkillModBonus(lua_State* L);
 		int addMagicBit(lua_State* L);
 		int applyArmorBeskarTune(lua_State* L);
+		int setLockedStatus(lua_State* L);
+		int isContainerLocked(lua_State* L);
 
 	protected:
 		TangibleObject* realObject;

@@ -119,7 +119,7 @@ function ForceCrystalCaveScreenPlay:setupExtraLootContainers()
             writeData(oid .. ":extraLootBossLocked", bossLocked and 1 or 0)
 
             if bossLocked then
-                Container(pCont):setLockedStatus(true)
+                TangibleObject(pCont):setLockedStatus(true)
                 inqIdx = inqIdx + 1
                 writeData(self.DATA_INQ_CONT_OID .. inqIdx, oid)
             else
@@ -156,7 +156,7 @@ function ForceCrystalCaveScreenPlay:refillExtraContainer(pContainer)
 
         if bossLocked == 1 then
             -- Re-lock; waits for next Inquisitor kill to fill
-            Container(pContainer):setLockedStatus(true)
+            TangibleObject(pContainer):setLockedStatus(true)
         else
             createLootFromCollection(pContainer, self.lootGroups, level)
             createLootFromCollection(pContainer, self.lootGroups, level)
@@ -244,7 +244,7 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
         local oid   = readData(self.DATA_INQ_CONT_OID .. i)
         local pCont = getSceneObject(oid)
         if pCont ~= nil then
-            Container(pCont):setLockedStatus(false)
+            TangibleObject(pCont):setLockedStatus(false)
 
             local level = readData(oid .. ":extraLootLevel")
             if level == 0 then level = self.lootLevel end
