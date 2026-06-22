@@ -654,6 +654,7 @@ includeFile("items/misc/majestic_rug.lua")
 includeFile("items/misc/potted_plants_sml_s05.lua")
 includeFile("items/misc/radar_topology_screen.lua")
 includeFile("items/misc/tato_small_table_style_03.lua")
+includeFile("items/misc/sarlacc_trash_can.lua")
 
 --npc sub-folder
 includeFile("items/npc/aakuan_belt.lua")

@@ -157,7 +157,7 @@ function JediTrials:unlockJediPadawan(pPlayer, dontSendSui)
 	if (dontSendSui == nil or dontSendSui == false) then
 		local sui = SuiMessageBox.new("JediTrials", "emptyCallback") -- No callback
 		sui.setTitle("@jedi_trials:padawan_trials_title")
-		sui.setPrompt("Congratulations. You have completed the Padawan Trials.\n\nYou should now seek out your Jedi trainer to continue your path.\n\nUse the /findmutrainer command to locate your Jedi trainer.")
+		sui.setPrompt("Congratulations. You have completed the Padawan Trials.\n\nYou should now seek out your Jedi trainer to continue your path.\n\nUse the /findmytrainer command to locate your Jedi trainer.\n\nIf your Padawan robes are missing, return to a Force shrine and use Recover Jedi Items to recover them.")
 		sui.sendTo(pPlayer)
 	end
 

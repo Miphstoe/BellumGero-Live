@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 5, day = 31, hour = 18, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 5, day = 31, hour = 19, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 6, day = 28, hour = 18, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 6, day = 28, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -35,31 +35,33 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
-  { planet = "endor", template = "giant_ewok_graaku", x = -2684, y = 5293, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_graaku", x = -2686, y = 5295, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_graaku", x = -2688, y = 5297, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_graaku", x = -2690, y = 5299, z = 200, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1976, y = -4643, z = 8, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
-  { planet = "endor", template = "giant_ewok_torga", x = -2684, y = 5293, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_torga", x = -2686, y = 5295, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_torga", x = -2688, y = 5297, z = 200, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1976, y = -4643, z = 8, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
- -- { planet = "corellia", template = "meatlump_loon", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "endor", template = "giant_ewok_nakku", x = -2684, y = 5293, z = 200, heading = 0 },
-  { planet = "endor", template = "giant_ewok_nakku", x = -2686, y = 5295, z = 200, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1976, y = -4643, z = 8, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
- -- { planet = "corellia", template = "wookiee_jedi_event", x = -172, y = -4723, z = 28, heading = 0 },
-  { planet = "endor", template = "giant_ewok_warchief", x = -2684, y = 5293, z = 200, heading = 0 },
-  --{ planet = "corellia", template = "wookiee_jedi_event", x = -180, y = -4725, z = 28, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_boss", x = -1972, y = -4647, z = 8, heading = 0 },
+  { planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
 }
 
 -- Tier change times (in seconds from event start)

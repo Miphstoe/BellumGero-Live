@@ -774,4 +774,5 @@ includeFile("groups/events/event.lua")
 
 includeFile("groups/endgame_weapon_schematics.lua")
 includeFile("groups/bg_token_group.lua")
+includeFile("groups/sarlacc_trash_can_group.lua")
 includeFile("groups/vet_holo_group.lua")

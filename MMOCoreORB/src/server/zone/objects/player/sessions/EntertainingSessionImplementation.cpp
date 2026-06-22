@@ -23,6 +23,7 @@
 #include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/objects/mission/EntertainerMissionObjective.h"
 #include "server/zone/objects/creature/buffs/PerformanceBuff.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/buffs/PerformanceBuffType.h"
 #include "server/zone/objects/mission/MissionTypes.h"
 #include "server/zone/objects/building/BuildingObject.h"
@@ -866,6 +867,51 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
             return;
         }
 
+        // ---- EPBS: Payment Gate -----------------------------------------------
+        // If this entertainer has enabled the Paid Buff Service, require that the
+        // patron has already paid and holds a valid authorization token.
+        bool epbsPetBuffPending = false;
+        {
+            ManagedReference<PlayerObject*> epbsEntGhost = entertainer->getPlayerObject();
+            if (epbsEntGhost != nullptr && epbsEntGhost->getScreenPlayData("epbs", "enabled") == "1") {
+                ManagedReference<PlayerObject*> epbsPatronGhost = creature->getPlayerObject();
+                if (epbsPatronGhost == nullptr) {
+                    creature->sendSystemMessage("[EPBS] This entertainer requires payment for buffs. Use /epbspay.");
+                    return;
+                }
+
+                String authKey = "auth_" + String::valueOf(entertainer->getObjectID());
+                String authVal = epbsPatronGhost->getScreenPlayData("epbs", authKey);
+
+                if (authVal.isEmpty()) {
+                    creature->sendSystemMessage("[EPBS] This entertainer requires payment for buffs. Use /epbspay to purchase.");
+                    return;
+                }
+
+                int64 expiry = (int64)atoll(authVal.toCharArray());
+                if (expiry < (int64)time(nullptr)) {
+                    epbsPatronGhost->deleteScreenPlayData("epbs", authKey);
+                    creature->sendSystemMessage("[EPBS] Your paid buff authorization has expired. Use /epbspay to purchase again.");
+                    return;
+                }
+
+                // Consume the auth token (single use)
+                epbsPatronGhost->deleteScreenPlayData("epbs", authKey);
+
+                // Check for a pet buff auth purchased separately
+                String petAuthKey = "petAuth_" + String::valueOf(entertainer->getObjectID());
+                String petAuthVal = epbsPatronGhost->getScreenPlayData("epbs", petAuthKey);
+                if (!petAuthVal.isEmpty()) {
+                    int64 petExpiry = (int64)atoll(petAuthVal.toCharArray());
+                    if (petExpiry >= (int64)time(nullptr)) {
+                        epbsPetBuffPending = true;
+                    }
+                    epbsPatronGhost->deleteScreenPlayData("epbs", petAuthKey);
+                }
+            }
+        }
+        // ---- End EPBS Gate -----------------------------------------------------
+
         // ---------- facility (private_buff_mind) scaling ----------
         // Read the structure-provided facility on the *performer* (entertainer).
         int facility = 0;
@@ -961,6 +1007,44 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
             creature->addBuff(willBuff);
             locker2.release();
         }
+
+        // ---- EPBS: Apply same buff amounts to patron's active pet ----
+        if (epbsPetBuffPending) {
+            ManagedReference<PlayerObject*> patronGhostForPet = creature->getPlayerObject();
+            if (patronGhostForPet != nullptr && patronGhostForPet->getActivePetsSize() > 0) {
+                ManagedReference<AiAgent*> activePet = patronGhostForPet->getActivePet(0);
+                if (activePet != nullptr && !activePet->isDead() && !activePet->isIncapacitated()) {
+                    Locker petLocker(activePet, creature);
+
+                    if (activePet->getBuff(mindBuffCRC)  != nullptr) activePet->removeBuff(mindBuffCRC);
+                    if (activePet->getBuff(focusBuffCRC) != nullptr) activePet->removeBuff(focusBuffCRC);
+                    if (activePet->getBuff(willBuffCRC)  != nullptr) activePet->removeBuff(willBuffCRC);
+
+                    int petMind  = Math::max(1, activePet->getBaseHAM(CreatureAttribute::MIND));
+                    int petFocus = Math::max(1, activePet->getBaseHAM(CreatureAttribute::FOCUS));
+                    int petWill  = Math::max(1, activePet->getBaseHAM(CreatureAttribute::WILLPOWER));
+
+                    if (totalMindBuff > 0.0f) {
+                        ManagedReference<PerformanceBuff*> pBuff = new PerformanceBuff(activePet, mindBuffCRC, totalMindBuff / petMind, buffDuration * 60, PerformanceBuffType::DANCE_MIND);
+                        Locker bl(pBuff);
+                        activePet->addBuff(pBuff);
+                    }
+                    if (totalFocusBuff > 0.0f) {
+                        ManagedReference<PerformanceBuff*> pBuff = new PerformanceBuff(activePet, focusBuffCRC, totalFocusBuff / petFocus, buffDuration * 60, PerformanceBuffType::MUSIC_FOCUS);
+                        Locker bl(pBuff);
+                        activePet->addBuff(pBuff);
+                    }
+                    if (totalWillBuff > 0.0f) {
+                        ManagedReference<PerformanceBuff*> pBuff = new PerformanceBuff(activePet, willBuffCRC, totalWillBuff / petWill, buffDuration * 60, PerformanceBuffType::MUSIC_WILLPOWER);
+                        Locker bl(pBuff);
+                        activePet->addBuff(pBuff);
+                    }
+
+                    creature->sendSystemMessage("[EPBS] Your pet has also been inspired by the performance!");
+                }
+            }
+        }
+        // ---- End EPBS Pet Buff -----------------------------------------------
 
         // Inform player of the buff with details (round down to ints for display)
         String buffMessage = "You have been inspired by the performance! ";

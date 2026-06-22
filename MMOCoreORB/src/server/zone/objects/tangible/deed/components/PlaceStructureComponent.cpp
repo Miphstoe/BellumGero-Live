@@ -47,10 +47,15 @@ int PlaceStructureComponent::notifyStructurePlaced(StructureDeed* deed, Creature
         }
     }
     
-    // Restore packed house contents if this is a building (house)
+    // Restore packed house contents and apply experimentation bonuses for player buildings
     if (structureObject->isBuildingObject()) {
         BuildingObject* building = cast<BuildingObject*>(structureObject);
         if (building != nullptr) {
+            // Transfer experimentation bonuses (only meaningful for player houses; civic/guild
+            // structures never have these set on their deeds, so this is always safe)
+            building->setMaintenanceReductionBonus(deed->getMaintenanceReductionBonus());
+            building->setStorageBonus(deed->getStorageBonus());
+
             // This will restore any items previously packed into this deed
             HousePackupManager::instance()->restoreFromDeed(building, deed, creature);
         }
