@@ -53,6 +53,17 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
 	local ch = MandoWayOfLife:getChapter(pPlayer)
 
+	-- Account-wide completion: any character on the account can use the armory shop once the Way is finished.
+	MandoWayOfLife:ensureAccountMandoWayComplete(pPlayer)
+	if (MandoWayOfLife:isAccountMandoWayComplete(pPlayer)) then
+		local pBase = convoTemplate:getScreen("tribesman_hub")
+		local pCloned = LuaConversationScreen(pBase):cloneScreen()
+		LuaConversationScreen(pCloned):setCustomDialogText(
+			"Your account has walked the whole Way. The clan armory is open to you."
+		)
+		return self:withRecruiterRetroOptions(pPlayer, pNpc, pCloned)
+	end
+
 	-- Chapter 5 complete — Mandalorian Tribesman (true final state)
 	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 		local pBase = convoTemplate:getScreen("clanbound")
