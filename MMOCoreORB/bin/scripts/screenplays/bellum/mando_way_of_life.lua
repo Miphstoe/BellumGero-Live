@@ -234,6 +234,8 @@ MandoWayOfLife = ScreenPlay:new {
 	ACCOUNT_ARMOR_RETRO_DATA_PREFIX = "mando_way:acctArmorRetro:",
 	-- One title reissue per login account (see tryGrantAccountTitleRetro).
 	ACCOUNT_TITLE_RETRO_DATA_PREFIX = "mando_way:acctTitleRetro:",
+	-- Account-wide flag set when any character on the account completes the Mandalorian Way (chapter 5).
+	ACCOUNT_MANDO_WAY_COMPLETE_PREFIX = "mando_way:acctComplete:",
 	-- Grant waypoint + coords but do not spawn a dynamic informant (use a static-placed mando_foundling_informant at planetData coords).
 	DEBUG_SKIP_INFORMANT_MOBILE_SPAWN = false,
 	-- Allow any mando_foundling_informant to advance convo while Foundling arc is active (ignores per-player OID link). Dev-only.
@@ -2731,6 +2733,7 @@ function MandoWayOfLife:grantMandalorian(pPlayer)
 	end
 
 	self:writeInt(pPlayer, "chapter5Complete", 1)
+	self:setAccountMandoWayComplete(pPlayer)
 	self:setChapter(pPlayer, 5)
 	self:grantChapterRankTitle(pPlayer, 5)
 	self:tryAwardChapterBadge(pPlayer, 5)
@@ -2827,11 +2830,9 @@ end
 
 function MandoWayOfLife:playerEligibleForMandoArmoryCatalog(pPlayer)
 	if (pPlayer == nil) then return false end
-	if (not self:isArcComplete(pPlayer)) then return false end
-	if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then return false end
-	-- Armory schematics unlock only after the entire Way is finished (Mandalorian Tribesman / final phase).
-	if (self:readInt(pPlayer, "chapter5Complete") ~= 1) then return false end
-	return true
+	-- Armory schematics unlock account-wide once any character on the account finishes the Mandalorian Way.
+	self:ensureAccountMandoWayComplete(pPlayer)
+	return self:isAccountMandoWayComplete(pPlayer)
 end
 
 -- Recruiter sale: tier 1..3 matches Initiate, Hunter, Verd'ika chapter completion.
@@ -3036,6 +3037,32 @@ function MandoWayOfLife:accountTitleRetroDataKey(pPlayer)
 	local accountId = self:getPlayerAccountId(pPlayer)
 	if (accountId == nil or accountId == 0) then return nil end
 	return self.ACCOUNT_TITLE_RETRO_DATA_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:getAccountMandoWayCompleteKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_MANDO_WAY_COMPLETE_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:isAccountMandoWayComplete(pPlayer)
+	local key = self:getAccountMandoWayCompleteKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) or 0) == 1
+end
+
+function MandoWayOfLife:setAccountMandoWayComplete(pPlayer)
+	local key = self:getAccountMandoWayCompleteKey(pPlayer)
+	if (key == nil) then return end
+	writeData(key, 1)
+	self:logDiagPlayer(pPlayer, "setAccountMandoWayComplete: account flagged as having completed the Mandalorian Way.")
+end
+
+function MandoWayOfLife:ensureAccountMandoWayComplete(pPlayer)
+	if (self:isAccountMandoWayComplete(pPlayer)) then return end
+	if (self:readInt(pPlayer, "chapter5Complete") == 1) then
+		self:setAccountMandoWayComplete(pPlayer)
+	end
 end
 
 function MandoWayOfLife:hasAccountTitleRetroClaimed(pPlayer)
