@@ -173,7 +173,7 @@ function VillageJediManager:canLearnSkill(pPlayer, skillName)
 		return false
 	end
 
-	if skillName == "force_title_jedi_rank_03" and not CreatureObject(pPlayer):villageKnightPrereqsMet("") then
+	if skillName == "force_title_jedi_rank_03" then
 		return false
 	end
 
@@ -220,6 +220,17 @@ end
 function VillageJediManager:onSkillRevoked(pPlayer, pSkill)
 	if (pPlayer == nil) then
 		return
+	end
+
+	if (pSkill ~= nil) then
+		local droppedSkill = LuaSkill(pSkill)
+		local skillName = droppedSkill:getName()
+
+		if skillName == "force_title_jedi_rank_03" then
+			writeScreenPlayData(pPlayer, "KnightTrials", "completedTrials", 0)
+			writeScreenPlayData(pPlayer, "KnightTrials", "startedTrials", 0)
+			deleteScreenPlayData(pPlayer, "KnightTrials", "trialsCompleted")
+		end
 	end
 
 	if (JediTrials:isOnPadawanTrials(pPlayer) or JediTrials:isOnKnightTrials(pPlayer)) then
