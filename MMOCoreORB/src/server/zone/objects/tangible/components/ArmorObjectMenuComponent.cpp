@@ -23,7 +23,9 @@
 
 // ---------- SEA constants & helpers ----------
 namespace {
-	static const uint8 MENU_EXTRACT_SEA = 165;
+	static const uint8 MENU_EXTRACT_SEA    = 165;
+	static const uint8 ARMOR_LOCK_ITEM     = 220;
+	static const uint8 ARMOR_UNLOCK_ITEM   = 221;
 	static const char* TOOL_SERVER_IFF = "object/tangible/item/sea_removal_tool.iff";
 	static const char* TOOL_SHARED_IFF = "object/tangible/item/shared_sea_removal_tool.iff";
 
@@ -94,6 +96,19 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 	menuResponse->addRadialMenuItem(81, 3, "Color Change");
 	menuResponse->addRadialMenuItem(82, 3, "Color Change (Secondary)");
 
+	// Lock / Unlock option
+	if (sceneObject->isASubChildOf(player)) {
+		TangibleObject* tangible = dynamic_cast<TangibleObject*>(sceneObject);
+		if (tangible != nullptr) {
+			String lockValue = tangible->getLuaStringData("item_locked");
+			bool isLocked = !lockValue.isEmpty() && Integer::valueOf(lockValue) == 1;
+			if (isLocked)
+				menuResponse->addRadialMenuItem(ARMOR_UNLOCK_ITEM, 3, "Unlock Item");
+			else
+				menuResponse->addRadialMenuItem(ARMOR_LOCK_ITEM, 3, "Lock Item");
+		}
+	}
+
 	// Preserve normal wearable/tangible menu behavior
 	WearableObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 }
@@ -128,6 +143,25 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 		return 0;
 	}
 	// -------------------------------------------------------------------
+
+	// Lock / Unlock handling
+	if (selectedID == ARMOR_LOCK_ITEM || selectedID == ARMOR_UNLOCK_ITEM) {
+		if (sceneObject->isASubChildOf(player)) {
+			TangibleObject* tangible = dynamic_cast<TangibleObject*>(sceneObject);
+			if (tangible != nullptr) {
+				if (selectedID == ARMOR_LOCK_ITEM) {
+					tangible->setLuaStringData("item_locked", "1");
+					tangible->addMagicBit(true);
+					player->sendSystemMessage("Item locked: " + tangible->getDisplayedName() + " - This item cannot be deleted or traded.");
+				} else {
+					tangible->deleteLuaStringData("item_locked");
+					tangible->removeMagicBit(true);
+					player->sendSystemMessage("Item unlocked: " + tangible->getDisplayedName() + " - This item can now be deleted or traded normally.");
+				}
+				return 0;
+			}
+		}
+	}
 
 	// Existing color logic (unchanged)
 	if (selectedID == 81 || selectedID == 82) {

@@ -10,6 +10,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     customDialogText = "What can I help you with?",
     stopConversation = "false",
     options = {
+        {"Reset Buffs / Empty Stomach - 2k", "reset_buffs"},
         {"Weapons", "weaps1"},
         {"Armor", "armor1"},
         {"Loot", "loot1"},
@@ -1056,5 +1057,14 @@ myswg_vendor_ad_view_queue = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_ad_view_queue);
+
+reset_buffs_screen = ConvoScreen:new {
+    id = "reset_buffs",
+    leftDialog = "",
+    customDialogText = "Your buffs have been reset and your stomach has been emptied!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(reset_buffs_screen);
 
 addConversationTemplate("myswg_vendor_conv", myswg_vendor_conv);

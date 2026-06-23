@@ -245,6 +245,9 @@ function JunkDealer:getSpecialJunkValue(pItem)
 	local specialItems = {
 		-- Rancor Hides (armor segment enhancement, no junk value in loot def)
 		["object/tangible/component/armor/armor_segment_enhancement_rancor.iff"] = 150,
+		-- Rancor Bile and Rancor Padded Armor Segment (no junk value in loot def)
+		["object/tangible/component/chemistry/rancor_bile.iff"] = 250,
+		["object/tangible/component/armor/armor_segment_padded_rancor.iff"] = 250,
 		-- Low Quality / Very Low Quality DNA Samples
 		["object/tangible/component/dna/dna_sample_low.iff"] = 100,
 		["object/tangible/component/dna/dna_sample_very_low.iff"] = 50,

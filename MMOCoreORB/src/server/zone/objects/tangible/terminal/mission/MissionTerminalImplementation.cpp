@@ -269,11 +269,20 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
 			return 0;
 		}
 
+		// Sort by reward descending so we accept the highest-paying missions first
+		std::vector<ManagedReference<MissionObject*>> sorted(candidates.size());
+		for (int i = 0; i < candidates.size(); ++i)
+			sorted[i] = candidates.get(i);
+		std::sort(sorted.begin(), sorted.end(), [](const ManagedReference<MissionObject*>& a, const ManagedReference<MissionObject*>& b) {
+			int rewardA = (a != nullptr) ? a->getRewardCredits() : 0;
+			int rewardB = (b != nullptr) ? b->getRewardCredits() : 0;
+			return rewardA > rewardB;
+		});
+
 		MissionManager* missionManager = getZoneServer()->getMissionManager();
 		MissionTerminal* terminal = _this.getReferenceUnsafeStaticCast();
 
-		for (int i = 0; i < candidates.size(); ++i) {
-			MissionObject* mission = candidates.get(i);
+		for (auto& mission : sorted) {
 			if (mission == nullptr) continue;
 			Locker missionLock(mission, player);
 			missionManager->handleMissionAccept(terminal, mission, player);
