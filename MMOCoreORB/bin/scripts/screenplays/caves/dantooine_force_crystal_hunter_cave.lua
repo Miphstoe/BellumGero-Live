@@ -2,6 +2,11 @@
 --  ForceCrystalCaveScreenPlay
 --  Rewards Force-Rank XP on cave mob kills
 --  + Adds server-spawned loot containers that use the same loot groups/level/respawn
+--  + HYBRID Inquisitor death rewards:
+--      (1) Per-damager direct loot: every player who damaged the boss gets
+--          2 rolled items + 5000 credits (WorldBossLootManager tracking).
+--      (2) Boss-locked premium containers in Valen Kade's room unlock and
+--          seed loot on death; they re-lock on refill until the next kill.
 --  + Distributes 2 loot items + 5000 credits to every damager when the boss dies
 ----------------------------------------
 local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
@@ -100,14 +105,57 @@ ForceCrystalCaveScreenPlay = ScreenPlay:new {
     -- Respawn window (seconds). Used by both static- and server-spawned containers.
     lootContainerRespawn = 1800,  -- 30 minutes
 
-    -- NEW: Server-spawned extra loot crate placements (planet, x, z, y, cellId, rotDeg)
-    -- Fill these in with your real positions. Use cellId 0 for exterior; interior needs a valid cell object ID.
+    -- Server-spawned extra loot crate placements.
+    -- Each entry: { planet, x, z, y, cellId, rotDeg [, lootGroups, lootLevel, lockedByBoss] }
+    -- If lootGroups/lootLevel are omitted the spawn inherits self.lootGroups / self.lootLevel.
+    -- lockedByBoss = true  => container starts locked; unlocks on Inquisitor death.
     extraLootSpawns = {
-        -- { "dantooine", X,     Z,     Y,     CELL_ID, ROT_DEG }
-        { "dantooine",  77.0,   -45.7,   -147.6,   8535493,   0 },   -- TODO: replace with real coords/cell/rot
-        { "dantooine",  92.8,   -76.2,   -83.9,   8535486,   0 },   -- TODO: replace with real coords/cell/rot
-        { "dantooine",  195.5,   -66.6,   -99.9,   8535491,   0 },   -- TODO: replace with real coords/cell/rot
-        { "dantooine",  195.1,   -66.9,   -103.6,   8535491,   0 },   -- TODO: replace with real coords/cell/rot
+        { "dantooine",  77.0,   -45.7,   -147.6,   8535493,   0 },
+        { "dantooine",  92.8,   -76.2,   -83.9,    8535486,   0 },
+
+        -- Valen Kade (Fallen Inquisitor) room -- standalone premium containers
+        {
+            "dantooine",  195.5,  -66.6,  -99.9,   8535491,  0,
+            lockedByBoss = true,
+            lootLevel  = 400,
+            lootGroups = {
+                { groups = { { group = "dark_jedi_tier_5", chance = 10000000 } }, lootChance = 10000000 },
+                { groups = { { group = "bg_token_group",   chance = 10000000 } }, lootChance = 350000   },
+                { groups = { { group = "jedi_robe",        chance = 10000000 } }, lootChance = 1000000  },
+            },
+        },
+        {
+            "dantooine",  195.1,  -66.9,  -103.6,  8535491,  0,
+            lockedByBoss = true,
+            lootLevel  = 400,
+            lootGroups = {
+                { groups = { { group = "dark_jedi_tier_5", chance = 10000000 } }, lootChance = 10000000 },
+                { groups = { { group = "bg_token_group",   chance = 10000000 } }, lootChance = 350000   },
+                { groups = { { group = "jedi_robe",        chance = 10000000 } }, lootChance = 1000000  },
+            },
+        },
+    },
+
+    -- Persistent keys for boss-locked container tracking
+    DATA_INQ_CONT_COUNT = "fcc:inq:contCount",
+    DATA_INQ_CONT_OID   = "fcc:inq:cont:",
+
+    -- Persistent key for the Inquisitor boss OID (so we can re-attach after respawn)
+    DATA_INQ_BOSS_OID   = "fcc:inq:bossOID",
+
+    -- How often (ms) to poll for the boss respawning so we can re-attach the observer
+    INQ_POLL_INTERVAL_MS = 15000,   -- 15 seconds
+
+    -- Loot eligibility radius (meters). A tracked damager only earns boss loot if
+    -- they are within this range of the Inquisitor when it dies. Prevents
+    -- server-wide grants to players who tagged it and left the cave.
+    INQ_LOOT_RANGE = 80,
+
+    -- Inquisitor loot groups for the boss-locked containers (seeded on death)
+    inqLootGroups = {
+        { groups = { { group = "dark_jedi_tier_5", chance = 10000000 } }, lootChance = 10000000 },
+        { groups = { { group = "bg_token_group",   chance = 10000000 } }, lootChance = 350000   },
+        { groups = { { group = "jedi_robe",        chance = 10000000 } }, lootChance = 1000000  },
     },
 }
 
@@ -120,26 +168,29 @@ function ForceCrystalCaveScreenPlay:start()
         -- Keep original static-ID containers working
         self:initializeLootContainers()
 
-        -- NEW: Add three server-spawned loot containers that share the same loot config/respawn
+        -- Add server-spawned loot containers
         self:setupExtraLootContainers()
     end
 end
 
 -- ============================================================
--- NEW: Server-spawned loot containers (share lootGroups/level)
+-- Server-spawned loot containers
 -- ============================================================
 
--- Spawns the extra crates and seeds loot from self.lootGroups/self.lootLevel
 function ForceCrystalCaveScreenPlay:setupExtraLootContainers()
     local respawnSec = self.lootContainerRespawn or 1800
     local spawns = self.extraLootSpawns or {}
+    local inqIdx = 0
 
     for i = 1, #spawns do
         local P = spawns[i]
         local planet, x, z, y, cell, rotDeg =
             P[1], P[2], P[3], P[4], P[5], P[6]
 
-        -- Use standard dungeon loot crate template
+        local groups     = P.lootGroups  or self.lootGroups
+        local level      = P.lootLevel   or self.lootLevel
+        local bossLocked = P.lockedByBoss or false
+
         local pCont = spawnSceneObject(
             planet,
             "object/tangible/container/loot/placable_loot_crate.iff",
@@ -149,16 +200,24 @@ function ForceCrystalCaveScreenPlay:setupExtraLootContainers()
         if pCont ~= nil then
             local oid = SceneObject(pCont):getObjectID()
 
-            -- Tag with respawn for refill scheduling
             writeData(oid .. ":extraLootRespawnSec", respawnSec)
+            writeData(oid .. ":extraLootLevel", level)
+            writeData(oid .. ":extraLootBossLocked", bossLocked and 1 or 0)
 
-            -- Seed loot using SAME groups/level as static containers
-            createLootFromCollection(pCont, self.lootGroups, self.lootLevel)
+            if bossLocked then
+                TangibleObject(pCont):setLockedStatus(true)
+                inqIdx = inqIdx + 1
+                writeData(self.DATA_INQ_CONT_OID .. inqIdx, oid)
+            else
+                createLootFromCollection(pCont, groups, level)
+                createLootFromCollection(pCont, groups, level)
+            end
 
-            -- When emptied, schedule a refill using same timing
             createObserver(CONTAINERCONTENTSCHANGED, self.screenplayName, "onExtraContainerLooted", pCont)
         end
     end
+
+    writeData(self.DATA_INQ_CONT_COUNT, inqIdx)
 end
 
 -- When a spawned crate is looted empty, schedule a refill
@@ -172,16 +231,197 @@ function ForceCrystalCaveScreenPlay:onExtraContainerLooted(pContainer, pWho)
     return 1
 end
 
--- Refill (re-roll) the container if it’s empty
+-- Refill (re-roll) the container if it is empty
 function ForceCrystalCaveScreenPlay:refillExtraContainer(pContainer)
     if pContainer == nil then return end
     if SceneObject(pContainer):getContainerObjectCount() == 0 then
-        createLootFromCollection(pContainer, self.lootGroups, self.lootLevel)
+        local oid        = SceneObject(pContainer):getObjectID()
+        local level      = readData(oid .. ":extraLootLevel")
+        local bossLocked = readData(oid .. ":extraLootBossLocked")
+        if level == 0 then level = self.lootLevel end
+
+        if bossLocked == 1 then
+            -- Re-lock; waits for next Inquisitor kill to fill
+            TangibleObject(pContainer):setLockedStatus(true)
+        else
+            createLootFromCollection(pContainer, self.lootGroups, level)
+            createLootFromCollection(pContainer, self.lootGroups, level)
+        end
     end
 end
 
 -- ============================================================
--- Existing mobile spawns & FRS XP logic (unchanged)
+-- Inquisitor boss observer management
+-- ============================================================
+
+-- Attach ALL boss observers to a live boss pointer:
+--   * damage observers feed WorldBossLootManager (per-damager loot)
+--   * OBJECTDESTRUCTION drives onInquisitorDied (loot + container unlock)
+-- Used both at initial spawn and after respawn (see checkInquisitorRespawn),
+-- so the death observer is attached exactly once per boss instance.
+function ForceCrystalCaveScreenPlay:attachInquisitorObserver(pBoss)
+    createObserver(OBJECTDESTRUCTION, self.screenplayName, "onInquisitorDied", pBoss)
+
+    for _, nm in ipairs({"DAMAGERECEIVED", "COMBATDAMAGE", "DAMAGE"}) do
+        local ev = rawget(_G, nm)
+        if type(ev) == "number" then
+            pcall(createObserver, ev, self.screenplayName, "onInquisitorDamage", pBoss)
+        end
+    end
+end
+
+-- Poll until the boss has respawned, then re-attach the observers.
+-- Called via createEvent after onInquisitorDied fires.
+function ForceCrystalCaveScreenPlay:checkInquisitorRespawn(pUnused)
+    local oid  = readData(self.DATA_INQ_BOSS_OID)
+    if oid == 0 then return end   -- was never stored; nothing to do
+
+    local pBoss = getSceneObject(oid)
+    if pBoss ~= nil then
+        -- Boss is back in the world; re-attach and stop polling
+        self:attachInquisitorObserver(pBoss)
+        Logger:log("ForceCrystalCaveScreenPlay: Inquisitor respawned (OID=" .. tostring(oid) .. "), observers re-attached.", LT_INFO)
+    else
+        -- Still dead/in-progress respawn; check again later
+        createEvent(self.INQ_POLL_INTERVAL_MS, self.screenplayName, "checkInquisitorRespawn", nil, "")
+    end
+end
+
+-- Feed damage tracking so every damager is eligible for boss loot
+function ForceCrystalCaveScreenPlay:onInquisitorDamage(pBoss, pAttacker, damage)
+    WorldBossLootManager:trackDamage(pBoss, pAttacker)
+    return 0
+end
+
+-- ============================================================
+-- Inquisitor boss death (HYBRID):
+--   (1) per-damager direct loot + credits
+--   (2) unlock boss-locked containers and seed them
+--   (3) begin respawn polling to re-attach observers
+-- ============================================================
+
+function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
+    if pBoss == nil then return 0 end
+
+    local soBoss = SceneObject(pBoss)
+    if not soBoss then return 0 end
+    local bossOID = soBoss:getObjectID()
+
+    -- ---- (1) Per-damager direct loot ----
+    -- Build recipient list from damage tracking; fall back to killer + group
+    local recipients = {}
+    local damagers = (_G.__WB_DAMAGE_TRACKING or {})[bossOID] or {}
+    local trackedCount = 0
+    for _ in pairs(damagers) do trackedCount = trackedCount + 1 end
+
+    if trackedCount > 0 then
+        for playerOID, _ in pairs(damagers) do
+            pcall(function()
+                local pPlayer = getSceneObject(tonumber(playerOID))
+                if pPlayer and SceneObject(pPlayer):isPlayerCreature()
+                        and SceneObject(pPlayer):isInRangeWithObject(pBoss, self.INQ_LOOT_RANGE) then
+                    table.insert(recipients, pPlayer)
+                end
+            end)
+        end
+    else
+        -- Damage observer wasn't attached (boss already existed at startup); fall back to killer
+        local pPlayer = nil
+        pcall(function()
+            if pKiller and SceneObject(pKiller):isPlayerCreature() then
+                pPlayer = pKiller
+            elseif pKiller then
+                local ko = CreatureObject(pKiller)
+                if ko and ko.getOwner then
+                    local pOwner = ko:getOwner()
+                    if pOwner and SceneObject(pOwner):isPlayerCreature() then pPlayer = pOwner end
+                end
+            end
+        end)
+        if pPlayer then
+            local killerCO = CreatureObject(pPlayer)
+            if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
+                local size = killerCO:getGroupSize()
+                for i = 0, size - 1 do
+                    local pMember = killerCO:getGroupMember(i)
+                    if pMember and SceneObject(pMember):isPlayerCreature()
+                            and SceneObject(pMember):isInRangeWithObject(pBoss, self.INQ_LOOT_RANGE) then
+                        table.insert(recipients, pMember)
+                    end
+                end
+            else
+                table.insert(recipients, pPlayer)
+            end
+        end
+    end
+
+    if _G.__WB_DAMAGE_TRACKING then _G.__WB_DAMAGE_TRACKING[bossOID] = nil end
+
+    for _, pRecipient in ipairs(recipients) do
+        pcall(_giveBossLoot, pRecipient, INQUISITOR_LOOT_GROUPS, "Valen Kade (Fallen Inquisitor)", 400)
+    end
+
+    -- Strip the boss corpse inventory/cash so loot only comes from the systems above
+    pcall(function()
+        local n = soBoss:getContainerObjectsSize()
+        if n and n > 0 then
+            for i = n - 1, 0, -1 do
+                pcall(function()
+                    local pItem = soBoss:getContainerObject(i)
+                    if pItem then
+                        local item = SceneObject(pItem)
+                        if item then item:destroyObjectFromWorld(); item:destroyObjectFromDatabase() end
+                    end
+                end)
+            end
+        end
+    end)
+    pcall(function()
+        local co = CreatureObject(pBoss)
+        if co then
+            local cash = co:getCashCredits()
+            if cash and cash > 0 then co:subtractCashCredits(cash) end
+            co:setCashCredits(0)
+        end
+    end)
+
+    -- ---- (2) Unlock boss-locked premium containers ----
+    -- Announce to everyone who earned loot that the sealed containers opened
+    local function msg(pTarget)
+        if pTarget == nil then return end
+        if not SceneObject(pTarget):isPlayerCreature() then return end
+        CreatureObject(pTarget):sendSystemMessage(
+            "\\#AA44FFThe Fallen Inquisitor is dead... his Force grip on the sealed containers shatters. The way is open."
+        )
+    end
+    for _, pRecipient in ipairs(recipients) do
+        msg(pRecipient)
+    end
+
+    -- Unlock every boss-locked container and seed 2 items each
+    local count = readData(self.DATA_INQ_CONT_COUNT)
+    for i = 1, count do
+        local oid   = readData(self.DATA_INQ_CONT_OID .. i)
+        local pCont = getSceneObject(oid)
+        if pCont ~= nil then
+            TangibleObject(pCont):setLockedStatus(false)
+
+            local level = readData(oid .. ":extraLootLevel")
+            if level == 0 then level = self.lootLevel end
+
+            createLootFromCollection(pCont, self.inqLootGroups, level)
+            createLootFromCollection(pCont, self.inqLootGroups, level)
+        end
+    end
+
+    -- ---- (3) Begin polling for respawn so we can re-attach observers ----
+    createEvent(self.INQ_POLL_INTERVAL_MS, self.screenplayName, "checkInquisitorRespawn", nil, "")
+
+    return 0
+end
+
+-- ============================================================
+-- Mobile spawns and FRS XP logic
 -- ============================================================
 
 function ForceCrystalCaveScreenPlay:spawnMobiles()
@@ -213,10 +453,10 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
     }
 
     for i, data in ipairs(spawnPoints) do
-        local tpl     = data[1]
-        local x, y, z = data[2], data[3], data[4]
-        local heading = data[5]
-        local cell    = data[6]
+        local tpl      = data[1]
+        local x, y, z  = data[2], data[3], data[4]
+        local heading  = data[5]
+        local cell     = data[6]
 
         local pMob = spawnMobile("dantooine", tpl, 1800, x, y, z, heading, cell)
         if pMob then
@@ -225,18 +465,18 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
                             tpl, i, x, y, z, cell),
               LT_INFO
             )
+
+            -- General mob XP observer (all mobs)
             createObserver(OBJECTDESTRUCTION,
-                           "ForceCrystalCaveScreenPlay",
+                           self.screenplayName,
                            "onCaveMobDied",
                            pMob)
+
+            -- Inquisitor: store OID for respawn polling + attach damage/death observers
             if tpl == "imperial_inquisitor_boss" then
-                for _, nm in ipairs({"DAMAGERECEIVED", "COMBATDAMAGE", "DAMAGE"}) do
-                    local ev = rawget(_G, nm)
-                    if type(ev) == "number" then
-                        pcall(createObserver, ev, "ForceCrystalCaveScreenPlay", "onInquisitorDamage", pMob)
-                    end
-                end
-                createObserver(OBJECTDESTRUCTION, "ForceCrystalCaveScreenPlay", "onInquisitorDied", pMob)
+                local bossOID = SceneObject(pMob):getObjectID()
+                writeData(self.DATA_INQ_BOSS_OID, bossOID)
+                self:attachInquisitorObserver(pMob)
             end
         else
             Logger:log(
@@ -247,104 +487,13 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
     end
 end
 
-function ForceCrystalCaveScreenPlay:onInquisitorDamage(pBoss, pAttacker, damage)
-    WorldBossLootManager:trackDamage(pBoss, pAttacker)
-    return 0
-end
-
-function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
-    if pBoss == nil then return 0 end
-
-    local soBoss = SceneObject(pBoss)
-    if not soBoss then return 0 end
-    local bossOID = soBoss:getObjectID()
-
-    -- Build recipient list from damage tracking; fall back to killer + group
-    local recipients = {}
-    local damagers = (_G.__WB_DAMAGE_TRACKING or {})[bossOID] or {}
-    local trackedCount = 0
-    for _ in pairs(damagers) do trackedCount = trackedCount + 1 end
-
-    if trackedCount > 0 then
-        for playerOID, _ in pairs(damagers) do
-            pcall(function()
-                local pPlayer = getSceneObject(tonumber(playerOID))
-                if pPlayer and SceneObject(pPlayer):isPlayerCreature() then
-                    table.insert(recipients, pPlayer)
-                end
-            end)
-        end
-    else
-        -- Damage observer wasn't attached (boss already existed at startup); fall back to killer
-        local pPlayer = nil
-        pcall(function()
-            if pKiller and SceneObject(pKiller):isPlayerCreature() then
-                pPlayer = pKiller
-            elseif pKiller then
-                local ko = CreatureObject(pKiller)
-                if ko and ko.getOwner then
-                    local pOwner = ko:getOwner()
-                    if pOwner and SceneObject(pOwner):isPlayerCreature() then pPlayer = pOwner end
-                end
-            end
-        end)
-        if pPlayer then
-            local killerCO = CreatureObject(pPlayer)
-            if killerCO and killerCO.isGrouped and killerCO:isGrouped() then
-                local size = killerCO:getGroupSize()
-                for i = 0, size - 1 do
-                    local pMember = killerCO:getGroupMember(i)
-                    if pMember and SceneObject(pMember):isPlayerCreature() then
-                        table.insert(recipients, pMember)
-                    end
-                end
-            else
-                table.insert(recipients, pPlayer)
-            end
-        end
-    end
-
-    if _G.__WB_DAMAGE_TRACKING then _G.__WB_DAMAGE_TRACKING[bossOID] = nil end
-
-    for _, pRecipient in ipairs(recipients) do
-        pcall(_giveBossLoot, pRecipient, INQUISITOR_LOOT_GROUPS, "Valen Kade (Fallen Inquisitor)", 400)
-    end
-
-    pcall(function()
-        local n = soBoss:getContainerObjectsSize()
-        if n and n > 0 then
-            for i = n - 1, 0, -1 do
-                pcall(function()
-                    local pItem = soBoss:getContainerObject(i)
-                    if pItem then
-                        local item = SceneObject(pItem)
-                        if item then item:destroyObjectFromWorld(); item:destroyObjectFromDatabase() end
-                    end
-                end)
-            end
-        end
-    end)
-    pcall(function()
-        local co = CreatureObject(pBoss)
-        if co then
-            local cash = co:getCashCredits()
-            if cash and cash > 0 then co:subtractCashCredits(cash) end
-            co:setCashCredits(0)
-        end
-    end)
-
-    return 0
-end
-
 function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
-    -- resolve the *player* responsible (handle pets)
     if pKiller == nil then return 0 end
 
     local pPlayer = nil
     if SceneObject(pKiller):isPlayerCreature() then
         pPlayer = pKiller
     else
-        -- if the killer is a pet/vehicle/etc, try to credit the owner
         local ko = CreatureObject(pKiller)
         if ko and ko.getOwner then
             local pOwner = ko:getOwner()
@@ -355,12 +504,11 @@ function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
     end
     if pPlayer == nil then return 0 end
 
-    local RANGE_METERS = 80 -- only grant to group members present at the kill
+    local RANGE_METERS = 80
     local mobSO = SceneObject(pMob)
 
     local function grantIfEligible(pTarget)
         if pTarget == nil or not SceneObject(pTarget):isPlayerCreature() then return end
-        -- must be within range of the mob that died
         if mobSO and not SceneObject(pTarget):isInRangeWithObject(pMob, RANGE_METERS) then return end
 
         local c = CreatureObject(pTarget)
@@ -377,7 +525,6 @@ function ForceCrystalCaveScreenPlay:onCaveMobDied(pMob, pKiller)
             grantIfEligible(pMember)
         end
     else
-        -- not grouped: just grant to the solo killer if eligible
         grantIfEligible(pPlayer)
     end
 

@@ -7,6 +7,7 @@
 
 #include "LuaTangibleObject.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
+#include "server/zone/objects/tangible/Container.h"
 #include "templates/params/PaletteColorCustomizationVariable.h"
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "templates/appearance/PaletteTemplate.h"
@@ -67,6 +68,8 @@ Luna<LuaTangibleObject>::RegType LuaTangibleObject::Register[] = {
 		{ "addAttachmentSkillModBonus", &LuaTangibleObject::addAttachmentSkillModBonus},
 		{ "addMagicBit", &LuaTangibleObject::addMagicBit},
 		{ "applyArmorBeskarTune", &LuaTangibleObject::applyArmorBeskarTune},
+		{ "setLockedStatus", &LuaTangibleObject::setLockedStatus},
+		{ "isContainerLocked", &LuaTangibleObject::isContainerLocked},
 		{ 0, 0 }
 };
 
@@ -557,5 +560,36 @@ int LuaTangibleObject::applyArmorBeskarTune(lua_State* L) {
 
 	int applied = armor->applyBellumBeskarTune(kineticDelta, energyDelta, blastDelta, heatDelta, acidDelta, maxConditionBonus);
 	lua_pushinteger(L, applied);
+	return 1;
+}
+
+int LuaTangibleObject::setLockedStatus(lua_State* L) {
+	bool lock = lua_toboolean(L, -1);
+
+	if (realObject == nullptr || !realObject->isContainerObject())
+		return 0;
+
+	Container* container = cast<Container*>(realObject);
+
+	if (container == nullptr)
+		return 0;
+
+	Locker locker(container);
+
+	container->setLockedStatus(lock);
+
+	return 0;
+}
+
+int LuaTangibleObject::isContainerLocked(lua_State* L) {
+	if (realObject == nullptr || !realObject->isContainerObject()) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	Container* container = cast<Container*>(realObject);
+
+	lua_pushboolean(L, container != nullptr && container->isContainerLocked());
+
 	return 1;
 }

@@ -1274,11 +1274,11 @@ Reference<SceneObject*> SceneObjectImplementation::getParentRecursively(uint32 g
 		return nullptr;
 
 	if (temp->getGameObjectType() == gameObjectType)
-		return std::move(temp);
+		return temp;
 
 	while ((temp = temp->getParent().get()) != nullptr && temp != asSceneObject()) {
 		if (temp->getGameObjectType() == gameObjectType) {
-			return std::move(temp);
+			return temp;
 		}
 	}
 
@@ -2056,7 +2056,7 @@ Reference<SceneObject*> SceneObjectImplementation::getCraftedComponentsSatchel()
 		craftingComponentsSatchel = craftingComponents->getContainerObject(0);
 	}
 
-	return std::move(craftingComponentsSatchel);
+	return craftingComponentsSatchel;
 }
 
 int SceneObjectImplementation::getArrangementDescriptorSize() const {
