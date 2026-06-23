@@ -132,7 +132,7 @@ function MuseumCuratorConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNp
 		end
 		clonedConversation:addOption("@conversation/lilas_dinhint:s_3f115c47", "thanks_for_visiting")
 	elseif (screenID == "schematic_purchased") then
-		BestineMuseumScreenPlay:doSchematicPurchase(pPlayer)
+		createEvent(100, "BestineMuseumScreenPlay", "showPaintingSelection", pPlayer, "")
 	elseif (screenID == "everything_prepared" or screenID == "quite_happy_to") then
 		if (BestineElection:hasFullInventory(pPlayer)) then
 			clonedConversation:addOption("@conversation/lilas_dinhint:s_b67247f1", "sean_inv_full") -- Perfect, thank you!

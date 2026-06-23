@@ -2103,6 +2103,13 @@ elseif (optionLink == "learn_all_languages") then
                         return nil
                     end
 
+                elseif (optionLink == "reset_buffs" and not canAfford(2000)) then
+                    nextConversationScreen = conversation:getScreen("insufficient_funds")
+                    creature:sendSystemMessage("You have insufficient funds")
+                elseif (optionLink == "reset_buffs" and canAfford(2000)) then
+                    charge(2000)
+                    CreatureObject(conversingPlayer):reset_buffs()
+
                 end
             end
         end

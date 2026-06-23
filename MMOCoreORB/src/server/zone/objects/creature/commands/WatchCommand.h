@@ -6,6 +6,7 @@
 #define WATCHCOMMAND_H_
 
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 class WatchCommand : public QueueCommand {
 public:
@@ -27,6 +28,21 @@ public:
 
 		if (playerManager != nullptr)
 			playerManager->startWatch(creature, target);
+
+		// EPBS V2: notify Lua after watch is established
+		// Use getWatchToID() — the confirmed ID set by startWatch — not the raw command target
+		uint64 confirmedWatchID = creature->getWatchToID();
+		if (confirmedWatchID != 0) {
+			Lua* lua = DirectorManager::instance()->getLuaInstance();
+			if (lua != nullptr) {
+				Reference<LuaFunction*> f = lua->createFunction("epbsOnWatchStart", 0);
+				if (f != nullptr) {
+					*f << creature;
+					*f << confirmedWatchID;
+					f->callFunction();
+				}
+			}
+		}
 
 		return SUCCESS;
 	}

@@ -8,9 +8,13 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/tangible/powerup/PowerupObject.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
 #include "WeaponObjectMenuComponent.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
+
+static const uint8 WEAPON_RADIAL_LOCK_ITEM   = 220;
+static const uint8 WEAPON_RADIAL_UNLOCK_ITEM = 221;
 
 void WeaponObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
@@ -33,6 +37,19 @@ void WeaponObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject,
 	}
 
 	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
+
+	// Lock / Unlock option
+	if (weapon->isASubChildOf(player)) {
+		TangibleObject* tangible = dynamic_cast<TangibleObject*>(sceneObject);
+		if (tangible != nullptr) {
+			String lockValue = tangible->getLuaStringData("item_locked");
+			bool isLocked = !lockValue.isEmpty() && Integer::valueOf(lockValue) == 1;
+			if (isLocked)
+				menuResponse->addRadialMenuItem(WEAPON_RADIAL_UNLOCK_ITEM, 3, "Unlock Item");
+			else
+				menuResponse->addRadialMenuItem(WEAPON_RADIAL_LOCK_ITEM, 3, "Lock Item");
+		}
+	}
 
 }
 
@@ -90,6 +107,22 @@ int WeaponObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, 
 			player->sendSystemMessage(message);
 
 			return 1;
+		}
+	}
+
+	// Lock / Unlock handling
+	if (selectedID == WEAPON_RADIAL_LOCK_ITEM || selectedID == WEAPON_RADIAL_UNLOCK_ITEM) {
+		if (weapon->isASubChildOf(player)) {
+			if (selectedID == WEAPON_RADIAL_LOCK_ITEM) {
+				weapon->setLuaStringData("item_locked", "1");
+				weapon->addMagicBit(true);
+				player->sendSystemMessage("Item locked: " + weapon->getDisplayedName() + " - This item cannot be deleted or traded.");
+			} else {
+				weapon->deleteLuaStringData("item_locked");
+				weapon->removeMagicBit(true);
+				player->sendSystemMessage("Item unlocked: " + weapon->getDisplayedName() + " - This item can now be deleted or traded normally.");
+			}
+			return 0;
 		}
 	}
 

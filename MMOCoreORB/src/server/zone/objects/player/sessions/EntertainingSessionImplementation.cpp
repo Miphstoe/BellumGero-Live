@@ -880,34 +880,40 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
                     return;
                 }
 
-                String authKey = "auth_" + String::valueOf(entertainer->getObjectID());
-                String authVal = epbsPatronGhost->getScreenPlayData("epbs", authKey);
+                // Check both player and pet auth keys upfront (V2 PET-only purchase only sets petAuth)
+                String authKey    = "auth_"    + String::valueOf(entertainer->getObjectID());
+                String petAuthKey = "petAuth_" + String::valueOf(entertainer->getObjectID());
+                String authVal    = epbsPatronGhost->getScreenPlayData("epbs", authKey);
+                String petAuthVal = epbsPatronGhost->getScreenPlayData("epbs", petAuthKey);
 
-                if (authVal.isEmpty()) {
+                int64 now = (int64)time(nullptr);
+                bool playerAuthValid = false;
+                bool petAuthOK       = false;
+
+                if (!authVal.isEmpty()) {
+                    int64 expiry = (int64)atoll(authVal.toCharArray());
+                    playerAuthValid = (expiry >= now);
+                    epbsPatronGhost->deleteScreenPlayData("epbs", authKey);
+                }
+
+                if (!petAuthVal.isEmpty()) {
+                    int64 petExpiry = (int64)atoll(petAuthVal.toCharArray());
+                    petAuthOK = (petExpiry >= now);
+                    epbsPatronGhost->deleteScreenPlayData("epbs", petAuthKey);
+                }
+
+                if (!playerAuthValid && !petAuthOK) {
+                    // V2 early stop: Lua already sent the "too early" message and set this flag
+                    String v2EarlyStop = epbsPatronGhost->getScreenPlayData("epbs", "v2_early_stop");
+                    if (v2EarlyStop == "1") {
+                        epbsPatronGhost->deleteScreenPlayData("epbs", "v2_early_stop");
+                        return;
+                    }
                     creature->sendSystemMessage("[EPBS] This entertainer requires payment for buffs. Use /epbspay to purchase.");
                     return;
                 }
 
-                int64 expiry = (int64)atoll(authVal.toCharArray());
-                if (expiry < (int64)time(nullptr)) {
-                    epbsPatronGhost->deleteScreenPlayData("epbs", authKey);
-                    creature->sendSystemMessage("[EPBS] Your paid buff authorization has expired. Use /epbspay to purchase again.");
-                    return;
-                }
-
-                // Consume the auth token (single use)
-                epbsPatronGhost->deleteScreenPlayData("epbs", authKey);
-
-                // Check for a pet buff auth purchased separately
-                String petAuthKey = "petAuth_" + String::valueOf(entertainer->getObjectID());
-                String petAuthVal = epbsPatronGhost->getScreenPlayData("epbs", petAuthKey);
-                if (!petAuthVal.isEmpty()) {
-                    int64 petExpiry = (int64)atoll(petAuthVal.toCharArray());
-                    if (petExpiry >= (int64)time(nullptr)) {
-                        epbsPetBuffPending = true;
-                    }
-                    epbsPatronGhost->deleteScreenPlayData("epbs", petAuthKey);
-                }
+                epbsPetBuffPending = petAuthOK;
             }
         }
         // ---- End EPBS Gate -----------------------------------------------------
