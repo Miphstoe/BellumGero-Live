@@ -41,6 +41,7 @@ EntertainerPaidBuffService = {
     SVC_PET    = "PET",
     SVC_BOTH   = "BOTH",
     SVC_TIP    = "TIP",
+    SVC_FREE   = "FREE",  -- watch/listen without paying; still earns the buff
 }
 
 -- ============================================================
@@ -482,7 +483,10 @@ function EntertainerPaidBuffService:v2ServiceCallback(pPatron, pSui, eventIndex,
     end
 
     if sel == 4 then  -- Continue Without Tipping
+        local mode = self:getString(pPatron, "v2_sui_mode")
+        if mode == "" then mode = "watch" end
         self:clearV2SuiState(pPatron)
+        self:v2StartFreeSession(pPatron, pEntertainer, mode)
         return
     end
 
@@ -827,13 +831,31 @@ function EntertainerPaidBuffService:v2ProcessPayment(pPatron, entID, svcType, am
     end
 
     patronCreo:sendSystemMessage(
-        "[EPBS] Paid " .. tostring(totalAmount) .. " credits to " .. entName .. " for " .. buffDesc .. ". " ..
+        "[EPBS] " .. patronName .. " paid " .. entName .. " " .. tostring(totalAmount) .. " credits for " .. buffDesc .. ". " ..
         "Your service will be ready in 60 seconds — feel free to stay and enjoy the show!"
     )
     entCreo:sendSystemMessage(
-        "[EPBS] " .. patronName .. " paid for " .. buffDesc .. "."
+        "[EPBS] " .. patronName .. " paid you " .. tostring(totalAmount) .. " credits for " .. buffDesc .. "."
     )
     print("[EPBS V2] Session started: patron=" .. patronName .. " type=" .. svcType .. " total=" .. tostring(totalAmount))
+end
+
+-- ============================================================
+-- V2 Free session: player opted out of payment but still gets the buff
+-- ============================================================
+function EntertainerPaidBuffService:v2StartFreeSession(pPatron, pEntertainer, mode)
+    if pPatron == nil or pEntertainer == nil then return end
+
+    -- Don't start a free session if one is already active
+    if self:hasV2Session(pPatron) then return end
+
+    local entID = SceneObject(pEntertainer):getObjectID()
+    CreatureObject(pPatron):sendSystemMessage(
+        "[EPBS] You are watching freely. Your mind buff will be ready in 60 seconds — " ..
+        "use /stopwatching or /stoplistening when you are ready to receive it."
+    )
+    self:v2StartSession(pPatron, entID, self.SVC_FREE, mode)
+    print("[EPBS V2] Free session started: patron=" .. CreatureObject(pPatron):getFirstName())
 end
 
 -- ============================================================
@@ -912,6 +934,10 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
         else
             buffDesc = "Player Mind Buff is (your pet is no longer eligible)"
         end
+
+    elseif svcType == self.SVC_FREE then
+        self:setV2Auth(pPatron, entID, false)
+        buffDesc = "free Mind Buff is"
     end
 
     patronCreo:sendSystemMessage(
@@ -919,7 +945,9 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
         "You may /stopwatching or /stoplistening to receive your buff. " ..
         "You are welcome to stay and enjoy the entertainment until you are ready to leave."
     )
-    entCreo:sendSystemMessage("[EPBS] " .. patronCreo:getFirstName() .. "'s service is now ready.")
+    if svcType ~= self.SVC_FREE then
+        entCreo:sendSystemMessage("[EPBS] " .. patronCreo:getFirstName() .. "'s service is now ready.")
+    end
 
     print("[EPBS V2] Ready: patron=" .. patronCreo:getFirstName() .. " type=" .. svcType)
 end
@@ -940,7 +968,7 @@ function EntertainerPaidBuffService:v2ReminderEvent(pPatron, entIDStr)
     -- Only remind if the ready event successfully set an auth key
     local svcType = self:getString(pPatron, "v2_sess_type")
     local hasReady = false
-    if svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH then
+    if svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH or svcType == self.SVC_FREE then
         hasReady = self:hasValidAuth(pPatron, entID, false)
     end
     if not hasReady and (svcType == self.SVC_PET or svcType == self.SVC_BOTH) then
@@ -954,14 +982,16 @@ function EntertainerPaidBuffService:v2ReminderEvent(pPatron, entIDStr)
         buffDesc = "Player and Pet Mind Buffs are"
     elseif svcType == self.SVC_PET then
         buffDesc = "Pet Mind Buff is"
+    elseif svcType == self.SVC_FREE then
+        buffDesc = "free Mind Buff is"
     else
         buffDesc = "Player Mind Buff is"
     end
 
+    local thankYou = (svcType ~= self.SVC_FREE) and " Thank you for supporting the entertainer!" or ""
     patronCreo:sendSystemMessage(
         "[EPBS] Your " .. buffDesc .. " fully prepared. " ..
-        "You may /stopwatching or /stoplistening to receive your buff. " ..
-        "Thank you for supporting the entertainer!"
+        "You may /stopwatching or /stoplistening to receive your buff." .. thankYou
     )
 end
 
@@ -985,19 +1015,21 @@ function EntertainerPaidBuffService:handleStop(pPatron)
     local elapsed  = os.time() - sessStart
 
     -- Check whether auth keys were set by the ready event
-    local playerReady = (svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH) and
+    local playerReady = (svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH or svcType == self.SVC_FREE) and
                          self:hasValidAuth(pPatron, entID, false)
     local petReady    = (svcType == self.SVC_PET    or svcType == self.SVC_BOTH) and
                          self:hasValidAuth(pPatron, entID, true)
 
     local isReady = (svcType == self.SVC_PLAYER and playerReady) or
                     (svcType == self.SVC_PET    and petReady) or
-                    (svcType == self.SVC_BOTH   and (playerReady or petReady))
+                    (svcType == self.SVC_BOTH   and (playerReady or petReady)) or
+                    (svcType == self.SVC_FREE   and playerReady)
 
     if not isReady then
-        CreatureObject(pPatron):sendSystemMessage(
-            "[EPBS] You ended the session before your EPBS service was ready. No buff will be applied."
-        )
+        local earlyMsg = (svcType == self.SVC_FREE)
+            and "[EPBS] You ended the session too early. Watch or listen for at least 60 seconds to receive your buff."
+            or  "[EPBS] You ended the session before your EPBS service was ready. No buff will be applied."
+        CreatureObject(pPatron):sendSystemMessage(earlyMsg)
         -- Tell C++ gate to suppress its own "requires payment" message
         self:setString(pPatron, "v2_early_stop", "1")
         -- Clean up any stale auth keys
