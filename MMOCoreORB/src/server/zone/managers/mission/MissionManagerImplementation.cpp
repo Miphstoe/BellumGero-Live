@@ -36,6 +36,7 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/managers/safezone/SafeZoneManager.h"
 
 #include "server/zone/managers/creature/SpawnGroup.h"
 #include "templates/faction/Factions.h"
@@ -230,6 +231,10 @@ void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* mis
 	}
 
 	populateMissionList(missionTerminal, player, counter);
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	if (ghost != nullptr)
+		ghost->setScreenPlayData("missionTerminalSession", "lastTerminalID", String::valueOf(missionTerminal->getObjectID()));
 }
 
 void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionTerminal, MissionObject* mission, CreatureObject* player) {
@@ -2485,6 +2490,10 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 		if (building != nullptr && building->isPrivateStructure())
 			return false;
 	}
+
+	// Targets inside a Player City Cantina or Hospital do not appear on BH terminals
+	if (SafeZoneManager::isInSafeBuilding(creature))
+		return false;
 
 	// Only check for same-account hunters if same-account bounties are disabled
 	if (!enableSameAccountBountyMissions) {

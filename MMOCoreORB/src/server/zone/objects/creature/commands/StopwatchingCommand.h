@@ -6,6 +6,7 @@
 #define STOPWATCHINGCOMMAND_H_
 
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 class StopwatchingCommand : public QueueCommand {
 public:
@@ -25,6 +26,18 @@ public:
 
 		if (!creature->isWatching())
 			return GENERALERROR;
+
+		// EPBS V2: notify Lua BEFORE stop executes (checks session readiness)
+		{
+			Lua* lua = DirectorManager::instance()->getLuaInstance();
+			if (lua != nullptr) {
+				Reference<LuaFunction*> f = lua->createFunction("epbsOnStopWatch", 0);
+				if (f != nullptr) {
+					*f << creature;
+					f->callFunction();
+				}
+			}
+		}
 
 		ManagedReference<PlayerManager*> playerManager = server->getPlayerManager();
 

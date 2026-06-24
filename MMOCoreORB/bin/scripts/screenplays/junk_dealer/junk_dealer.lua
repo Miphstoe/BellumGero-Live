@@ -164,6 +164,98 @@ function JunkDealer:isVillageResource(pItem)
 	return false
 end
 
+function JunkDealer:isCustomBlockedItem(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	local blockedTemplates = {
+		"object/tangible/tool/sarlacc_trash_can.iff",
+		"object/tangible/collection/reward/fish_tank_reward.iff",
+	}
+
+	for _, t in ipairs(blockedTemplates) do
+		if templatePath == t then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:isAttachment(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	return templatePath == "object/tangible/gem/armor.iff" or templatePath == "object/tangible/gem/clothing.iff"
+end
+
+function JunkDealer:isLightsaberCrystalOrPearl(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return false
+	end
+
+	local crystalTemplates = {
+		"object/tangible/component/weapon/lightsaber/lightsaber_module_force_crystal.iff",
+		"object/tangible/component/weapon/lightsaber/lightsaber_lance_module_force_crystal.iff",
+		"object/tangible/component/weapon/lightsaber/lightsaber_module_krayt_dragon_pearl.iff"
+	}
+
+	for _, template in ipairs(crystalTemplates) do
+		if templatePath == template then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:getSpecialJunkValue(pItem)
+	-- Returns a hardcoded credit value for items with no junk value set but that should be sellable.
+	-- Returns 0 if this is not a special item.
+	if pItem == nil then
+		return 0
+	end
+
+	local templatePath = SceneObject(pItem):getTemplateObjectPath()
+
+	if templatePath == nil then
+		return 0
+	end
+
+	local specialItems = {
+		-- Rancor Hides (armor segment enhancement, no junk value in loot def)
+		["object/tangible/component/armor/armor_segment_enhancement_rancor.iff"] = 150,
+		-- Rancor Bile and Rancor Padded Armor Segment (no junk value in loot def)
+		["object/tangible/component/chemistry/rancor_bile.iff"] = 250,
+		["object/tangible/component/armor/armor_segment_padded_rancor.iff"] = 250,
+		-- Low Quality / Very Low Quality DNA Samples
+		["object/tangible/component/dna/dna_sample_low.iff"] = 100,
+		["object/tangible/component/dna/dna_sample_very_low.iff"] = 50,
+	}
+
+	return specialItems[templatePath] or 0
+end
+
 function JunkDealer:isTreasureMap(pItem)
 	if pItem == nil then
 		return false
@@ -230,61 +322,25 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 					craftersName = tano:getCraftersName() or ""
 				end
 
-				-- More comprehensive resource container detection
+				-- Resource containers all live at object/resource_container/ — use template path, not name keywords
 				local isResourceContainer = false
-				if name ~= nil then
-					local lowerName = string.lower(name)
-
-					-- Check for resource container keywords
-					local resourceKeywords = {
-						"hide", "bone", "meat", "milk", "blood", "hair", "horn", "scalp",
-						"wood", "softwood", "hardwood", "conifer", "deciduous", "evergreen",
-						"ore", "metal", "iron", "copper", "aluminum", "steel", "radioactive",
-						"gas", "inert", "reactive", "chemical", "liquid", "solid",
-						"water", "moisture", "condensed", "vapor", "steam",
-						"energy", "geothermal", "solar", "tidal", "wind",
-						"gemstone", "crystal", "carbonate", "sedimentary", "igneous",
-						"fiber", "vegetable", "fruit", "grain", "tuber", "berry",
-						"seafood", "fish", "crustacean", "mollusk"
-					}
-
-					-- Also check for common resource container patterns
-					local containerPatterns = {
-						"container", "units of", "units", "sample", "batch"
-					}
-
-					-- Check if name contains resource keywords
-					for _, keyword in ipairs(resourceKeywords) do
-						if string.find(lowerName, keyword) then
-							isResourceContainer = true
-							break
-						end
-					end
-
-					-- Additional checks for container patterns
-					if not isResourceContainer then
-						for _, pattern in ipairs(containerPatterns) do
-							if string.find(lowerName, pattern) then
-								isResourceContainer = true
-								break
-							end
-						end
-					end
-
-					-- Check for quantity brackets [number] which almost always indicates resources
-					if not isResourceContainer and string.find(name, "%[%d+%]") then
-						isResourceContainer = true
-					end
-
-					-- Check for "wooly hide" specifically since that was your example
-					if string.find(lowerName, "wooly") then
-						isResourceContainer = true
-					end
+				local itemTemplatePath = SceneObject(pItem):getTemplateObjectPath()
+				if itemTemplatePath ~= nil and string.find(itemTemplatePath, "^object/resource_container/") then
+					isResourceContainer = true
+				end
+				-- Also catch quantity brackets [number] on edge-case containers
+				if not isResourceContainer and name ~= nil and string.find(name, "%[%d+%]") then
+					isResourceContainer = true
 				end
 
 				-- Check if item is a schematic
 				local isSchematic = self:isSchematic(pItem)
 				local isTreasureMap = self:isTreasureMap(pItem)
+
+				-- Block protected item types
+				if self:isCustomBlockedItem(pItem) or self:isAttachment(pItem) or self:isLightsaberCrystalOrPearl(pItem) then
+					goto continue
+				end
 
 				-- Check exclusions
 				local isCrafted = (craftersName ~= nil and craftersName ~= "")
@@ -300,25 +356,28 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 					local textTable = {"[2000] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
 				elseif self:isVillageResource(pItem) then
-					-- Village resources bypass the resource container keyword filter
 					local textTable = {"[250] " .. name, sceno:getObjectID()}
 					table.insert(junkList, textTable)
 				elseif isResourceContainer then
 				elseif isCrafted then
-				elseif name ~= nil and name ~= "" then
-					-- Item is eligible
-					local value = 250 -- Default value for items without a junk value
+				else
+					local specialValue = self:getSpecialJunkValue(pItem)
+					if specialValue > 0 then
+						local textTable = {"[" .. specialValue .. "] " .. name, sceno:getObjectID()}
+						table.insert(junkList, textTable)
+					elseif name ~= nil and name ~= "" then
+						local value = 250
 
-					-- Safely get junk value
-					if tano.getJunkValue then
-						local junkValue = tano:getJunkValue()
-						if junkValue ~= nil and junkValue > 0 then
-							value = junkValue
+						if tano.getJunkValue then
+							local junkValue = tano:getJunkValue()
+							if junkValue ~= nil and junkValue > 0 then
+								value = junkValue
+							end
 						end
-					end
 
-					local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
-					table.insert(junkList, textTable)
+						local textTable = {"[" .. value .. "] " .. name, sceno:getObjectID()}
+						table.insert(junkList, textTable)
+					end
 				end
 			end
 			::continue::
@@ -424,7 +483,12 @@ function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
 			elseif self:isVillageResource(pItem) then
 				value = 250
 			else
-				value = TangibleObject(pItem):getJunkValue()
+				local specialValue = self:getSpecialJunkValue(pItem)
+				if specialValue > 0 then
+					value = specialValue
+				else
+					value = TangibleObject(pItem):getJunkValue()
+				end
 			end
 
 			-- Only sell items with actual values > 0
@@ -525,6 +589,13 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 		end
 	end
 
+	-- Safety check: prevent selling protected item types by template path
+	if self:isCustomBlockedItem(pItem) or self:isAttachment(pItem) or self:isLightsaberCrystalOrPearl(pItem) then
+		CreatureObject(pPlayer):sendSystemMessage("You cannot sell that item to a junk dealer.")
+		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+		return
+	end
+
 	local skipItem = item:getObjectID()
 	local name = item:getDisplayedName()
 
@@ -544,11 +615,15 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	elseif isVillageResource then
 		value = 250
 	else
-		value = TangibleObject(pItem):getJunkValue()
+		local specialValue = self:getSpecialJunkValue(pItem)
+		if specialValue > 0 then
+			value = specialValue
+		else
+			value = TangibleObject(pItem):getJunkValue()
 
-		-- If item has no junk value, give it a default value of 250 credit
-		if value == nil or value <= 0 then
-			value = 250 -- Default value for items without a junk value
+			if value == nil or value <= 0 then
+				value = 250
+			end
 		end
 	end
 

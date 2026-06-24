@@ -962,6 +962,10 @@ void ChatManagerImplementation::sendRoomList(CreatureObject* player) {
 	crl->insertChannelListCount();
 	player->sendMessage(crl);
 
+	// Auto-join the Services channel so every player gets the tab without needing to join manually
+	if (servicesRoom != nullptr && !servicesRoom->hasPlayer(player))
+		handleChatEnterRoomById(player, servicesRoom->getRoomID(), -1, true);
+
 }
 
 void ChatManagerImplementation::addPlayer(CreatureObject* player) {

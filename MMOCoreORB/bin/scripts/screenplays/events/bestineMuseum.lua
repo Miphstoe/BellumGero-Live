@@ -45,6 +45,25 @@ local artistMobiles = {
 
 registerScreenPlay("BestineMuseumScreenPlay", true)
 
+-- All purchasable Bestine painting schematics shown in the SUI picker.
+BestineMuseumScreenPlay.purchasablePaintings = {
+	{ name = "Boffa Painting (Vanvi Hotne)",           schematic = "object/tangible/loot/bestine/bestine_painting_schematic_boffa.iff" },
+	{ name = "Ronka Painting (Vanvi Hotne)",           schematic = "object/tangible/loot/bestine/bestine_painting_schematic_ronka.iff" },
+	{ name = "Mattberry Painting (Vanvi Hotne)",       schematic = "object/tangible/loot/bestine/bestine_painting_schematic_mattberry.iff" },
+	{ name = "Blumbush Painting (Vanvi Hotne)",        schematic = "object/tangible/loot/bestine/bestine_painting_schematic_blumbush.iff" },
+	{ name = "Blueleaf Temple (Kolka Zteht)",          schematic = "object/tangible/loot/bestine/bestine_painting_schematic_blueleaf_temple.iff" },
+	{ name = "House Painting (Kolka Zteht)",           schematic = "object/tangible/loot/bestine/bestine_painting_schematic_house.iff" },
+	{ name = "Lucky Despot (Giaal Itotr)",             schematic = "object/tangible/loot/bestine/bestine_painting_schematic_lucky_despot.iff" },
+	{ name = "Krayt Skeleton (Giaal Itotr)",           schematic = "object/tangible/loot/bestine/bestine_painting_schematic_krayt_skeleton.iff" },
+	{ name = "Mon Cal Eye I (Kahfr Oladi)",            schematic = "object/tangible/loot/bestine/bestine_painting_schematic_moncal_eye_01.iff" },
+	{ name = "Mon Cal Eye II (Kahfr Oladi)",           schematic = "object/tangible/loot/bestine/bestine_painting_schematic_moncal_eye_02.iff" },
+	{ name = "Rainbow Berry Bush (Klepa Laeel)",       schematic = "object/tangible/loot/bestine/bestine_painting_schematic_rainbow_berry_bush.iff" },
+	{ name = "Raventhorn Painting (Klepa Laeel)",      schematic = "object/tangible/loot/bestine/bestine_painting_schematic_raventhorn.iff" },
+	{ name = "Golden Flower I (Boulo Siesi)",          schematic = "object/tangible/loot/bestine/bestine_painting_schematic_golden_flower_01.iff" },
+	{ name = "Golden Flower II (Boulo Siesi)",         schematic = "object/tangible/loot/bestine/bestine_painting_schematic_golden_flower_02.iff" },
+	{ name = "Golden Flower III (Boulo Siesi)",        schematic = "object/tangible/loot/bestine/bestine_painting_schematic_golden_flower_03.iff" },
+}
+
 function BestineMuseumScreenPlay:start()
 	if (isZoneEnabled("tatooine")) then
 		self:spawnMobiles()
@@ -174,6 +193,115 @@ function BestineMuseumScreenPlay:spawnVisualPainting(winningArtist, winningPaint
 	pPainting = spawnSceneObject("tatooine", template, 10.7, 1.0 + artistPaintingZAxis[tonumber(winningArtist)][tonumber(winningPainting)], 9.9, 1028169, 0.7071067811865476, 0, -0.7071067811865475, 0)
 	if (pPainting ~= nil) then
 		setQuestStatus("bestine_museum:winning_painting_display", SceneObject(pPainting):getObjectID())
+	end
+end
+
+function BestineMuseumScreenPlay:showPaintingSelection(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local sui = SuiListBox.new("BestineMuseumScreenPlay", "paintingSelectionCallback")
+	sui.setTargetNetworkId(SceneObject(pPlayer):getObjectID())
+	sui.setTitle("Museum Painting Purchase")
+	sui.setPrompt("Select the painting schematic you wish to purchase for 48,000 credits.\n\nYou will be asked to confirm before credits are charged.")
+
+	for i = 1, #self.purchasablePaintings do
+		sui.add(self.purchasablePaintings[i].name, "")
+	end
+
+	sui.sendTo(pPlayer)
+end
+
+function BestineMuseumScreenPlay:paintingSelectionCallback(pPlayer, pSui, eventIndex, args)
+	if (pPlayer == nil) then
+		return
+	end
+
+	if (eventIndex == 1 or args == "-1") then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase cancelled.")
+		return
+	end
+
+	local selectedIndex = tonumber(args)
+	if (selectedIndex == nil) then
+		CreatureObject(pPlayer):sendSystemMessage("Invalid selection. Purchase cancelled.")
+		return
+	end
+
+	selectedIndex = selectedIndex + 1
+
+	local painting = self.purchasablePaintings[selectedIndex]
+	if (painting == nil) then
+		CreatureObject(pPlayer):sendSystemMessage("Invalid selection. Purchase cancelled.")
+		return
+	end
+
+	writeScreenPlayData(pPlayer, "bestineMuseum", "pendingPaintingIndex", tostring(selectedIndex))
+
+	local sui = SuiMessageBox.new("BestineMuseumScreenPlay", "confirmPaintingPurchaseCallback")
+	sui.setTargetNetworkId(SceneObject(pPlayer):getObjectID())
+	sui.setTitle("Confirm Painting Purchase")
+	sui.setPrompt("You are about to purchase:\n\n" .. painting.name .. "\n\nCost: 48,000 credits\n\nConfirm purchase?")
+	sui.sendTo(pPlayer)
+end
+
+function BestineMuseumScreenPlay:confirmPaintingPurchaseCallback(pPlayer, pSui, eventIndex, args)
+	if (pPlayer == nil) then
+		return
+	end
+
+	if (eventIndex == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase cancelled.")
+		writeScreenPlayData(pPlayer, "bestineMuseum", "pendingPaintingIndex", "")
+		return
+	end
+
+	local pendingStr = readScreenPlayData(pPlayer, "bestineMuseum", "pendingPaintingIndex")
+	writeScreenPlayData(pPlayer, "bestineMuseum", "pendingPaintingIndex", "")
+
+	local paintingIndex = tonumber(pendingStr)
+	if (paintingIndex == nil or paintingIndex < 1 or paintingIndex > #self.purchasablePaintings) then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase failed: selection data was lost. Please try again.")
+		return
+	end
+
+	self:completePaintingPurchase(pPlayer, paintingIndex)
+end
+
+function BestineMuseumScreenPlay:completePaintingPurchase(pPlayer, paintingIndex)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local playerID = tostring(SceneObject(pPlayer):getObjectID())
+	local painting = self.purchasablePaintings[paintingIndex]
+	if (painting == nil) then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase failed: invalid selection. Please contact staff.")
+		return
+	end
+
+	if (CreatureObject(pPlayer):getCashCredits() < 48000) then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase failed: insufficient credits.")
+		return
+	end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage("Purchase failed: your inventory is full. Free at least one slot and try again.")
+		return
+	end
+
+	CreatureObject(pPlayer):subtractCashCredits(48000)
+	CreatureObject(pPlayer):sendSystemMessage("You successfully make a payment of 48000 credits.")
+	self:writeToPurchasedList(pPlayer)
+
+	local pItem = giveItem(pInventory, painting.schematic, -1)
+	if (pItem ~= nil) then
+		CreatureObject(pPlayer):sendSystemMessage("@system_msg:give_item_success")
+	else
+		CreatureObject(pPlayer):sendSystemMessage("Purchase failed: could not create your schematic. Your credits were consumed. Please contact staff for a refund.")
+		print("[BestineMuseum] CRITICAL: schematic creation failed for player " .. playerID .. " after deducting 48000 credits. Schematic: " .. tostring(painting.schematic))
 	end
 end
 

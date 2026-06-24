@@ -593,7 +593,7 @@ function BestineElection:giveCampaignReward(pPlayer, candidate)
     else ]]
     if rewardChance <= 300 then
         if candidate == self.SEAN then
-            rewardTemplate = "object/tangible/furniture/modern/bestine_quest_rug.iff"
+            rewardTemplate = "object/tangible/gcw/flip_banner_rebel.iff"
         else
             rewardTemplate = "object/tangible/furniture/all/bestine_quest_imp_banner.iff"
         end

@@ -146,6 +146,12 @@ void VisibilityManager::increaseVisibility(CreatureObject* creature, int visibil
 
 	if (ghost != nullptr  && !ghost->hasGodMode()) {
 		Locker locker(ghost);
+
+		// Block visibility gain during 24-hour post-BH-kill grace period for Padawans
+		String graceEndStr = ghost->getScreenPlayData("BGBHKill", "visGraceEnd");
+		if (!graceEndStr.isEmpty() && Time().getMiliTime() < UnsignedLong::valueOf(graceEndStr))
+			return;
+
 		decreaseVisibility(creature);
 
 		float newVis = ghost->getVisibility() + (calculateVisibilityIncrease(creature) * visibilityMultiplier); // Calculate new total vis

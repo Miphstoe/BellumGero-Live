@@ -709,5 +709,16 @@ void BountyMissionObjectiveImplementation::handlePlayerKilled(ManagedObject* arg
 	message.setTO("exp_n", "jedi_general");
 	target->sendSystemMessage(message);
 
+	// 24-hour visibility grace period for Jedi Padawans killed by a Bounty Hunter
+	if (target->hasSkill("force_title_jedi_rank_02") && !target->hasSkill("force_title_jedi_rank_03")) {
+		PlayerObject* targetGhost = target->getPlayerObject();
+		if (targetGhost != nullptr) {
+			uint64 graceEnd = Time().getMiliTime() + (24ULL * 60 * 60 * 1000);
+			Locker ghostLocker(targetGhost);
+			targetGhost->setScreenPlayData("BGBHKill", "visGraceEnd", String::valueOf(graceEnd));
+		}
+		target->sendSystemMessage("You have been slain by a Bounty Hunter. Your Force presence will remain dormant for 24 hours.");
+	}
+
 	complete();
 }
