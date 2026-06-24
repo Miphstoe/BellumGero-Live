@@ -29,11 +29,12 @@ EntertainerPaidBuffService = {
     DEFAULT_PET_PRICE    = 7500,
 
     -- V2 constants
-    V2_READY_SECS    = 60,
-    V2_REMINDER_SECS = 180,
-    V2_STALE_SECS    = 600,   -- sessions older than 10 min are stale on re-watch
-    V2_PRESET_LOW    = 5000,
-    V2_PRESET_HIGH   = 10000,
+    V2_READY_SECS         = 60,
+    V2_REMINDER_SECS      = 180,
+    V2_STALE_SECS         = 600,    -- sessions older than 10 min are stale on re-watch
+    V2_AUTH_WINDOW_SECONDS = 86400, -- auth key valid for 24 hrs; cleared by handleStop
+    V2_PRESET_LOW         = 5000,
+    V2_PRESET_HIGH        = 10000,
 
     -- V2 service type constants
     SVC_PLAYER = "PLAYER",
@@ -102,6 +103,13 @@ end
 function EntertainerPaidBuffService:setAuth(pPatron, entertainerID, isPet)
     local key = isPet and self:petAuthKey(entertainerID) or self:authKey(entertainerID)
     local expiry = os.time() + self.AUTH_WINDOW_SECONDS
+    self:setNum(pPatron, key, expiry)
+end
+
+-- V2 variant: auth key lives for 24 hours so it survives long watch/listen sessions
+function EntertainerPaidBuffService:setV2Auth(pPatron, entertainerID, isPet)
+    local key = isPet and self:petAuthKey(entertainerID) or self:authKey(entertainerID)
+    local expiry = os.time() + self.V2_AUTH_WINDOW_SECONDS
     self:setNum(pPatron, key, expiry)
 end
 
@@ -884,7 +892,7 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
     local buffDesc
 
     if svcType == self.SVC_PLAYER then
-        self:setAuth(pPatron, entID, false)
+        self:setV2Auth(pPatron, entID, false)
         buffDesc = "Player Mind Buff is"
 
     elseif svcType == self.SVC_PET then
@@ -893,13 +901,13 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
             self:clearV2Session(pPatron)
             return
         end
-        self:setAuth(pPatron, entID, true)
+        self:setV2Auth(pPatron, entID, true)
         buffDesc = "Pet Mind Buff is"
 
     elseif svcType == self.SVC_BOTH then
-        self:setAuth(pPatron, entID, false)   -- always set player auth
+        self:setV2Auth(pPatron, entID, false)   -- always set player auth
         if petOK then
-            self:setAuth(pPatron, entID, true)
+            self:setV2Auth(pPatron, entID, true)
             buffDesc = "Player and Pet Mind Buffs are"
         else
             buffDesc = "Player Mind Buff is (your pet is no longer eligible)"
