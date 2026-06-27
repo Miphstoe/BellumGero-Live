@@ -143,6 +143,10 @@ MandoWayOfLife = ScreenPlay:new {
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_legs.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_gloves.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_shoes.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_r.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
 		},
 	},
 
@@ -238,6 +242,8 @@ MandoWayOfLife = ScreenPlay:new {
 	ACCOUNT_MANDO_WAY_COMPLETE_PREFIX = "mando_way:acctComplete:",
 	-- One-time per login account exchange of old Mandalorian armor schematics for new learnable ones.
 	ACCOUNT_SCHEMATIC_EXCHANGE_PREFIX = "mando_way:acctSchematicExchange:",
+	-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
+	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
 	-- Daily Bounty Mission Fob IFF
 	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
 	-- Maximum daily bounty missions per player
@@ -3033,6 +3039,90 @@ function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
 
 	return true,
 		"Done. Every rank armor set from Foundling through Tribesman is in your inventory — current resist tuning, one claim per login account. This is the Way."
+end
+
+-- ============================================================
+-- ACCOUNT ONE-TIME BICEP AND BRACER GRANT (Recruiter convo)
+-- ============================================================
+-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
+-- who finished before these pieces were added to the reward set.
+
+function MandoWayOfLife:accountBicepBracerRetroDataKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_BICEP_BRACER_RETRO_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)
+	local key = self:accountBicepBracerRetroDataKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) == 1)
+end
+
+function MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen may claim the missing armor pieces."
+	end
+
+	local accountKey = self:accountBicepBracerRetroDataKey(pPlayer)
+	if (accountKey == nil) then
+		return false, "I cannot verify your login account. Try relogging, or contact staff."
+	end
+
+	if (self:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+		return false,
+			"This account already claimed the one-time bicep and bracer grant. Another character on the same login cannot claim it again."
+	end
+
+	local templates = {
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_l.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_r.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_l.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
+	}
+	local requiredSlots = #templates
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "You have no inventory."
+	end
+
+	local inv = SceneObject(pInventory)
+	local freeSlots = inv:getContainerVolumeLimit() - inv:getCountableObjectsRecursive()
+	if (freeSlots < requiredSlots) then
+		return false, string.format(
+			"You need at least %s free inventory slots for the missing armor pieces. Clear space and ask again.",
+			tostring(requiredSlots)
+		)
+	end
+
+	for _, template in ipairs(templates) do
+		local pItem = giveItem(pInventory, template, -1)
+		if (pItem == nil) then
+			self:logDiagPlayer(pPlayer, string.format("tryGrantAccountBicepBracerRetro FAILED at %s", template))
+			return false,
+				"Something blocked the transfer of " .. template .. ". Clear bag space and contact staff."
+		end
+	end
+
+	writeData(accountKey, 1)
+	self:writeInt(pPlayer, "accountBicepBracerRetro.claimed", 1)
+	self:writeStr(pPlayer, "accountBicepBracerRetro.claimedAt", tostring(os.time()))
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryGrantAccountBicepBracerRetro OK accountId=%s pieces=%s.",
+		tostring(self:getPlayerAccountId(pPlayer)),
+		tostring(requiredSlots)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(
+		"[Mandalorian Way] One-time account bicep and bracer grant complete. Your Tribesman set is now complete."
+	)
+
+	return true,
+		"Done. The missing bicep and bracer pieces for your Tribesman armor are in your inventory — one claim per login account. This is the Way."
 end
 
 -- ============================================================

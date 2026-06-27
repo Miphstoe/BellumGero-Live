@@ -49,6 +49,14 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
+	if (MandoWayOfLife:isMandoTribesman(pPlayer) and not MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+		cloned:addOption(
+			"Claim missing Tribesman bicep and bracer armor pieces (one-time per account).",
+			"mando_bicep_bracer_retro"
+		)
+		added = true
+	end
+
 	if (not added) then return pScreen end
 	return pCloned
 end
@@ -231,6 +239,24 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_daily_bounty_fob ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_bicep_bracer_retro") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That grant is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_bicep_bracer_retro ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "buy_mando_armory_1" or screenID == "buy_mando_armory_2" or screenID == "buy_mando_armory_3") then
