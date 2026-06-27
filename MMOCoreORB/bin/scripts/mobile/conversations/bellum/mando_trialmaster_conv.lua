@@ -295,4 +295,26 @@ mando_title_retro_grant = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_title_retro_grant)
 
+-- Recruiter-only (handler): one-time per login account exchange of old Mandalorian armor schematics for learnable versions.
+mando_schematic_exchange = ConvoScreen:new {
+	id = "mando_schematic_exchange",
+	leftDialog = "",
+	customDialogText = "For veterans who obtained Mandalorian armor schematics before the recent fix: I can exchange all your old Death Watch Mandalorian armor schematics for new learnable versions. You need Master Armorsmith skill to learn them. This is a one-time exchange per login account. Another character on your account cannot claim this again.",
+	stopConversation = "false",
+	options = {
+		{"Exchange my old schematics.", "mando_schematic_exchange_grant"},
+		{"Not now.", "bye"},
+	}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_schematic_exchange)
+
+mando_schematic_exchange_grant = ConvoScreen:new {
+	id = "mando_schematic_exchange_grant",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_schematic_exchange_grant)
+
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
