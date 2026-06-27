@@ -57,12 +57,16 @@ int PlayerContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject
 		}
 
 		if (object->isArmorObject()) {
-			PlayerManager* playerManager = sceneObject->getZoneServer()->getPlayerManager();
+			ArmorObject* armor = cast<ArmorObject*>(object);
 
-			if (!playerManager->checkEncumbrancies(creo, cast<ArmorObject*>(object))) {
-				errorDescription = "You lack the necessary secondary stats to equip this item";
+			if (armor != nullptr && !armor->isCosmeticArmor()) {
+				PlayerManager* playerManager = sceneObject->getZoneServer()->getPlayerManager();
 
-				return TransferErrorCode::NOTENOUGHENCUMBRANCE;
+				if (!playerManager->checkEncumbrancies(creo, armor)) {
+					errorDescription = "You lack the necessary secondary stats to equip this item";
+
+					return TransferErrorCode::NOTENOUGHENCUMBRANCE;
+				}
 			}
 		}
 
@@ -124,15 +128,22 @@ int PlayerContainerComponent::notifyObjectInserted(SceneObject* sceneObject, Sce
 		return 0;
 	}
 
+	bool cosmeticArmor = false;
+
 	if (object->isArmorObject()) {
-		PlayerManager* playerManager = sceneObject->getZoneServer()->getPlayerManager();
-		playerManager->applyEncumbrancies(creo, cast<ArmorObject*>(object));
+		ArmorObject* armor = cast<ArmorObject*>(object);
+		cosmeticArmor = armor != nullptr && armor->isCosmeticArmor();
+
+		if (!cosmeticArmor) {
+			PlayerManager* playerManager = sceneObject->getZoneServer()->getPlayerManager();
+			playerManager->applyEncumbrancies(creo, armor);
+		}
 	}
 
 	if (object->isTangibleObject()) {
 		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
 
-		if (tano != nullptr) {
+		if (tano != nullptr && !cosmeticArmor) {
 			// creo->info(true) << "Adding template & wearable skill mods from: " << tano->getDisplayedName();
 
 			tano->addTemplateSkillMods(creo);
@@ -182,15 +193,22 @@ int PlayerContainerComponent::notifyObjectRemoved(SceneObject* sceneObject, Scen
 		return 0;
 	}
 
+	bool cosmeticArmor = false;
+
 	if (object->isArmorObject()) {
-		PlayerManager* playerManager = creo->getZoneServer()->getPlayerManager();
-		playerManager->removeEncumbrancies(creo, cast<ArmorObject*>(object));
+		ArmorObject* armor = cast<ArmorObject*>(object);
+		cosmeticArmor = armor != nullptr && armor->isCosmeticArmor();
+
+		if (!cosmeticArmor) {
+			PlayerManager* playerManager = creo->getZoneServer()->getPlayerManager();
+			playerManager->removeEncumbrancies(creo, armor);
+		}
 	}
 
 	if (object->isTangibleObject()) {
 		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
 
-		if (tano != nullptr) {
+		if (tano != nullptr && !cosmeticArmor) {
 			// creo->info(true) << "Removing template & wearable skill mods from: " << tano->getDisplayedName();
 
 			tano->removeTemplateSkillMods(creo);
