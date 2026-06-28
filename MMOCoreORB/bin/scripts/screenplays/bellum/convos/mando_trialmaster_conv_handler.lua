@@ -5,16 +5,20 @@ MandoTrialmasterConvoHandler = conv_handler:new {}
 
 function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, pScreen)
 	if (pScreen == nil or pPlayer == nil or pNpc == nil) then return pScreen end
-	if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then return pScreen end
+	if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+		MandoWayOfLife:logDiagPlayer(pPlayer, "withRecruiterRetroOptions: NOT recruiter NPC, skipping")
+		return pScreen
+	end
 
 	local pCloned = LuaConversationScreen(pScreen):cloneScreen()
 	local cloned = LuaConversationScreen(pCloned)
 	local added = false
 
 	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
-		"withRecruiterRetroOptions: isMandoTribesman=%s hasBicepBracerRetroClaimed=%s",
+		"withRecruiterRetroOptions: isMandoTribesman=%s hasBicepBracerRetroClaimed=%s screenID=%s",
 		tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
-		tostring(MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer))
+		tostring(MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)),
+		tostring(LuaConversationScreen(pScreen):getScreenID())
 	))
 
 	if (not MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)) then
