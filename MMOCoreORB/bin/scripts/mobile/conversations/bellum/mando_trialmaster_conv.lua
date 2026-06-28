@@ -317,4 +317,24 @@ mando_schematic_exchange_grant = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_schematic_exchange_grant)
 
+-- Recruiter-only (handler): Daily Bounty Mission Fob request
+mando_daily_bounty_fob = ConvoScreen:new {
+	id = "mando_daily_bounty_fob",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_daily_bounty_fob)
+
+-- Recruiter-only (handler): One-time per login account grant of missing bicep and bracer pieces
+mando_bicep_bracer_retro = ConvoScreen:new {
+	id = "mando_bicep_bracer_retro",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_bicep_bracer_retro)
+
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
