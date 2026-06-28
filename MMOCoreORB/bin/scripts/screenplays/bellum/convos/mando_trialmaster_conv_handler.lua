@@ -11,6 +11,12 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 	local cloned = LuaConversationScreen(pCloned)
 	local added = false
 
+	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+		"withRecruiterRetroOptions: isMandoTribesman=%s hasBicepBracerRetroClaimed=%s",
+		tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
+		tostring(MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer))
+	))
+
 	if (not MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)) then
 		cloned:addOption(
 			"Reissue all Way armor sets (once per account).",
