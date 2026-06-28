@@ -245,7 +245,7 @@ MandoWayOfLife = ScreenPlay:new {
 	-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
 	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
 	-- Daily Bounty Mission Fob IFF
-	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
+	DAILY_BOUNTY_FOB_IFF = "object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.iff",
 	-- Maximum daily bounty missions per player
 	DAILY_BOUNTY_MAX_MISSIONS = 5,
 	-- Daily bounty mission data key prefix (per player, per day)
