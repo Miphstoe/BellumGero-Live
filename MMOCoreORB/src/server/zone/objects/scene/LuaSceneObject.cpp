@@ -50,6 +50,7 @@ Luna<LuaSceneObject>::RegType LuaSceneObject::Register[] = {
 		{ "getContainerObjectsSize", &LuaSceneObject::getContainerObjectsSize },
 		{ "getCountableObjectsRecursive", &LuaSceneObject::getCountableObjectsRecursive },
 		{ "getContainerVolumeLimit", &LuaSceneObject::getContainerVolumeLimit },
+		{ "isContainerObject", &LuaSceneObject::isContainerObject },
 		{ "isContainerFull", &LuaSceneObject::isContainerFull },
 		{ "isContainerFullRecursive", &LuaSceneObject::isContainerFullRecursive },
 		{ "getSlottedObject", &LuaSceneObject::getSlottedObject },
@@ -613,6 +614,12 @@ int LuaSceneObject::getContainerVolumeLimit(lua_State* L) {
 	int num = realObject->getContainerVolumeLimit();
 
 	lua_pushnumber(L, num);
+
+	return 1;
+}
+
+int LuaSceneObject::isContainerObject(lua_State* L) {
+	lua_pushboolean(L, realObject != nullptr && realObject->isContainerObject());
 
 	return 1;
 }
