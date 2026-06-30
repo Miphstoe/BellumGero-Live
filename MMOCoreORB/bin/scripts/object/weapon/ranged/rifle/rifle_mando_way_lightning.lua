@@ -61,8 +61,8 @@ object_weapon_ranged_rifle_rifle_mando_way_lightning = object_weapon_ranged_rifl
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "expRange", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 900, 1300, 5.4, 10, 32, 850, -5, 32, 0, 36, 54, 30},
-	experimentalMax = {0, 0, 1300, 1900, 4.0, 20, 68, 1650, 22, 32, 18, 24, 34, 20},
+	experimentalMin = {0, 0, 315, 640, 6.3, 10, 32, 850, -5, 32, 0, 36, 54, 30},
+	experimentalMax = {0, 0, 450, 775, 4.7, 20, 68, 1650, 22, 32, 18, 24, 34, 20},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
