@@ -50,7 +50,7 @@ object_draft_schematic_clothing_component_clothing_shoe_sole = object_draft_sche
    craftingToolTab = 8, -- (See DraftSchematicObjectTemplate.h)
    complexity = 10, 
    size = 1, 
-   factoryCrateSize = 2000,
+   factoryCrateSize = 5000,
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
    xpType = "crafting_clothing_general", 

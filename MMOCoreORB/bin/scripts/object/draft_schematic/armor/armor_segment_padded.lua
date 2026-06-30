@@ -50,7 +50,7 @@ object_draft_schematic_armor_armor_segment_padded = object_draft_schematic_armor
 	craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
 	complexity = 25,
 	size = 1,
-	factoryCrateSize = 2000,
+	factoryCrateSize = 5000,
 	factoryCrateType = "object/factory/factory_crate_armor.iff",
 
 	xpType = "crafting_clothing_armor",
