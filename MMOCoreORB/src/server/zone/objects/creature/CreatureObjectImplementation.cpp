@@ -107,11 +107,13 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 	currentWind = 0;
 	spawnerID = 0;
 
-	if (creditObject == nullptr) {
-		creditObject = getCreditObject();
-	}
+	// Always resolve through getCreditObject() so a cross-linked persisted
+	// reference is validated and re-resolved at load, not blindly trusted.
+	creditObject = getCreditObject();
 
-	creditObject->setOwner(asCreatureObject());
+	if (creditObject != nullptr) {
+		creditObject->setOwner(asCreatureObject());
+	}
 
 	lastActionCounter = 0x40000000;
 
@@ -2214,59 +2216,121 @@ void CreatureObjectImplementation::deleteQueueAction(uint32 actionCount) {
 		commandQueue->deleteQueueAction(actionCount);
 }
 
+int CreatureObjectImplementation::getBankCredits() const {
+	CreditObject* creditsObject = const_cast<CreatureObjectImplementation*>(this)->getCreditObject();
+	if (creditsObject == nullptr)
+		return 0;
+
+	Locker locker(creditsObject);
+	return creditsObject->getBankCredits();
+}
+
+int CreatureObjectImplementation::getCashCredits() const {
+	CreditObject* creditsObject = const_cast<CreatureObjectImplementation*>(this)->getCreditObject();
+	if (creditsObject == nullptr)
+		return 0;
+
+	Locker locker(creditsObject);
+	return creditsObject->getCashCredits();
+}
+
 void CreatureObjectImplementation::addBankCredits(int credits, bool notifyClient) {
-	Locker locker(creditObject);
-	creditObject->addBankCredits(credits, notifyClient);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->addBankCredits(credits, notifyClient);
 }
 
 void CreatureObjectImplementation::addCashCredits(int credits, bool notifyClient) {
-	Locker locker(creditObject);
-	creditObject->addCashCredits(credits, notifyClient);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->addCashCredits(credits, notifyClient);
 }
 
 void CreatureObjectImplementation::clearBankCredits(bool notifyClient) {
-	Locker locker(creditObject);
-	creditObject->clearBankCredits(notifyClient);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->clearBankCredits(notifyClient);
 }
 
 void CreatureObjectImplementation::clearCashCredits(bool notifyClient) {
-	Locker locker(creditObject);
-	creditObject->clearCashCredits(notifyClient);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->clearCashCredits(notifyClient);
 }
 
 void CreatureObjectImplementation::transferCredits(int cash, int bank, bool notifyClient) {
-	Locker locker(creditObject);
-	creditObject->transferCredits(cash, bank, notifyClient);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->transferCredits(cash, bank, notifyClient);
 }
 
 void CreatureObjectImplementation::subtractBankCredits(int credits) {
-	Locker locker(creditObject);
-	creditObject->subtractBankCredits(credits, true);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->subtractBankCredits(credits, true);
 }
 
 void CreatureObjectImplementation::subtractCashCredits(int credits) {
-	Locker locker(creditObject);
-	creditObject->subtractCashCredits(credits, true);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return;
+
+	Locker locker(creditsObject);
+	creditsObject->subtractCashCredits(credits, true);
 }
 
 bool CreatureObjectImplementation::subtractCredits(int credits) {
-	Locker locker(creditObject);
-	return creditObject->subtractCredits(credits, true);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return false;
+
+	Locker locker(creditsObject);
+	return creditsObject->subtractCredits(credits, true);
 }
 
 bool CreatureObjectImplementation::verifyCashCredits(int credits) {
-	Locker locker(creditObject);
-	return creditObject->verifyCashCredits(credits);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return false;
+
+	Locker locker(creditsObject);
+	return creditsObject->verifyCashCredits(credits);
 }
 
 bool CreatureObjectImplementation::verifyBankCredits(int credits) {
-	Locker locker(creditObject);
-	return creditObject->verifyBankCredits(credits);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return false;
+
+	Locker locker(creditsObject);
+	return creditsObject->verifyBankCredits(credits);
 }
 
 bool CreatureObjectImplementation::verifyCredits(int credits) {
-	Locker locker(creditObject);
-	return creditObject->verifyCredits(credits);
+	CreditObject* creditsObject = getCreditObject();
+	if (creditsObject == nullptr)
+		return false;
+
+	Locker locker(creditsObject);
+	return creditsObject->verifyCredits(credits);
 }
 
 void CreatureObjectImplementation::notifyLoadFromDatabase() {
@@ -4315,11 +4379,22 @@ bool CreatureObjectImplementation::isPlayerCreature() {
 }
 
 CreditObject* CreatureObjectImplementation::getCreditObject() {
+	static const uint64 databaseID = ObjectDatabaseManager::instance()->getDatabaseID("credits");
+
+	const uint64 oid = ((getObjectID() & 0x0000FFFFFFFFFFFFull) | (databaseID << 48));
+
+	// Self-heal: a creature's credit object is deterministically keyed off its own
+	// object id. If a persisted/cached creditObject reference does not match that
+	// key, it is cross-linked to another creature's wallet (e.g. from a restored or
+	// merged database) and must be discarded and re-resolved. This prevents two
+	// creatures from ever sharing one CreditObject.
+	if (creditObject != nullptr && creditObject->_getObjectID() != oid) {
+		error() << "creditObject mismatch on " << getObjectID() << ": had "
+				<< creditObject->_getObjectID() << ", expected " << oid << " -- re-resolving";
+		creditObject = nullptr;
+	}
+
 	if (creditObject == nullptr) {
-		static const uint64 databaseID = ObjectDatabaseManager::instance()->getDatabaseID("credits");
-
-		uint64 oid = ((getObjectID() & 0x0000FFFFFFFFFFFFull) | (databaseID << 48));
-
 		ManagedReference<ManagedObject*> obj = Core::getObjectBroker()->lookUp(oid).castTo<ManagedObject*>();
 
 		if (obj == nullptr) {

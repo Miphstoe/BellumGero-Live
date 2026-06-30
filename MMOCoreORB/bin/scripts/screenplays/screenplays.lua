@@ -831,7 +831,8 @@ includeFile("bellum/painting_exchange_vendor.lua")
 includeFile("bellum/convos/painting_exchange_vendor_conv_handler.lua")
 
 -- Entertainer Paid Buff Service
-includeFile("bellum/entertainer_paid_buff_service.lua")
+-- Disabled while EPBS wallet-conflict behavior is under review.
+-- includeFile("bellum/entertainer_paid_buff_service.lua")
 
 -- Mandalorian Way of Life (loaded again after vendors/bounty so start() runs last among globals — original Bellum ordering)
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")

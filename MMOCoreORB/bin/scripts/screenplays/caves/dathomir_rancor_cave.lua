@@ -77,6 +77,9 @@ RancorCaveScreenPlay = ScreenPlay:new {
     numberOfActs       = 1,
     screenplayName     = "RancorCaveScreenPlay",
 
+    -- Players must be within this range of the boss when it dies to receive loot
+    NS_LOOT_RANGE      = 64,
+
     lootContainers     = {
         9815402,
         9815403,
@@ -210,7 +213,8 @@ function RancorCaveScreenPlay:onNightBossDied(pBoss, pKiller)
         for playerOID, _ in pairs(damagers) do
             pcall(function()
                 local pPlayer = getSceneObject(tonumber(playerOID))
-                if pPlayer and SceneObject(pPlayer):isPlayerCreature() then
+                if pPlayer and SceneObject(pPlayer):isPlayerCreature()
+                        and SceneObject(pPlayer):isInRangeWithObject(pBoss, self.NS_LOOT_RANGE) then
                     table.insert(recipients, pPlayer)
                 end
             end)
@@ -234,7 +238,8 @@ function RancorCaveScreenPlay:onNightBossDied(pBoss, pKiller)
                 local size = killerCO:getGroupSize()
                 for i = 0, size - 1 do
                     local pMember = killerCO:getGroupMember(i)
-                    if pMember and SceneObject(pMember):isPlayerCreature() then
+                    if pMember and SceneObject(pMember):isPlayerCreature()
+                            and SceneObject(pMember):isInRangeWithObject(pBoss, self.NS_LOOT_RANGE) then
                         table.insert(recipients, pMember)
                     end
                 end

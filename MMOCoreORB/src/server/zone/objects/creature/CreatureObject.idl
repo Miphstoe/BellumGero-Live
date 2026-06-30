@@ -1580,14 +1580,10 @@ class CreatureObject extends TangibleObject {
 	}
 
 	@read
-	public int getBankCredits() {
-		return creditObject.getBankCredits();
-	}
+	public native int getBankCredits();
 
 	@read
-	public int getCashCredits() {
-		return creditObject.getCashCredits();
-	}
+	public native int getCashCredits();
 
 	@read
 	public int getBaseHAM(int idx) {

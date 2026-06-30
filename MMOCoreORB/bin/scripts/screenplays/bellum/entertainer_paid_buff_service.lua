@@ -9,8 +9,7 @@
 --
 -- V2 session keys (patron):
 --   v2_sess_ent_id, v2_sess_type, v2_sess_start, v2_sess_mode
---   v2_sui_ent_id, v2_sui_type, v2_sui_player_amt, v2_sui_pet_amt,
---   v2_sui_step, v2_sui_custom_target
+--   v2_sui_ent_id, v2_sui_type, v2_sui_amount, v2_sui_mode
 --   v2_early_stop  (signals C++ gate to suppress its message)
 --
 -- The C++ hook in EntertainingSessionImplementation::activateEntertainerBuff reads
@@ -29,17 +28,18 @@ EntertainerPaidBuffService = {
     DEFAULT_PET_PRICE    = 7500,
 
     -- V2 constants
-    V2_READY_SECS    = 60,
-    V2_REMINDER_SECS = 180,
-    V2_STALE_SECS    = 600,   -- sessions older than 10 min are stale on re-watch
-    V2_PRESET_LOW    = 5000,
-    V2_PRESET_HIGH   = 10000,
+    V2_READY_SECS         = 60,
+    V2_REMINDER_SECS      = 180,
+    V2_STALE_SECS         = 600,    -- sessions older than 10 min are stale on re-watch
+    V2_AUTH_WINDOW_SECONDS = 86400, -- auth key valid for 24 hrs; cleared by handleStop
+    V2_PRESET_LOW         = 5000,
+    V2_PRESET_HIGH        = 10000,
 
     -- V2 service type constants
     SVC_PLAYER = "PLAYER",
     SVC_PET    = "PET",
     SVC_BOTH   = "BOTH",
-    SVC_TIP    = "TIP",
+    SVC_FREE   = "FREE",  -- watch/listen without paying; still earns the buff
 }
 
 -- ============================================================
@@ -105,6 +105,13 @@ function EntertainerPaidBuffService:setAuth(pPatron, entertainerID, isPet)
     self:setNum(pPatron, key, expiry)
 end
 
+-- V2 variant: auth key lives for 24 hours so it survives long watch/listen sessions
+function EntertainerPaidBuffService:setV2Auth(pPatron, entertainerID, isPet)
+    local key = isPet and self:petAuthKey(entertainerID) or self:authKey(entertainerID)
+    local expiry = os.time() + self.V2_AUTH_WINDOW_SECONDS
+    self:setNum(pPatron, key, expiry)
+end
+
 function EntertainerPaidBuffService:hasValidAuth(pPatron, entertainerID, isPet)
     local key = isPet and self:petAuthKey(entertainerID) or self:authKey(entertainerID)
     local expiry = self:getNum(pPatron, key)
@@ -147,13 +154,19 @@ end
 
 -- ============================================================
 -- Payment entry point (called by /epbspay and /epbspetpay)
--- entertainerID is passed directly from the C++ command (the player's current target).
+-- entertainerID is passed from the C++ command, preferring the active watch/listen target.
 -- ============================================================
 function EntertainerPaidBuffService:processPay(pPatron, entertainerID, isPet)
     if pPatron == nil then return end
 
     if entertainerID == nil or entertainerID == 0 then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] Target the performing entertainer first, then use /epbspay.")
+        return
+    end
+
+    if entertainerID == SceneObject(pPatron):getObjectID() then
+        CreatureObject(pPatron):sendSystemMessage("[EPBS] You must watch or listen to another entertainer before using /epbspay.")
+        print("[EPBS V1] ABORT self-target before payment menu: patron ID=" .. tostring(SceneObject(pPatron):getObjectID()))
         return
     end
 
@@ -247,6 +260,14 @@ function EntertainerPaidBuffService:completePay(pPatron, entertainerID, price, i
     end
 
     local entCreo = CreatureObject(pEntertainer)
+
+    -- SAFETY GUARD: never let the patron pay themselves.
+    if SceneObject(pEntertainer):getObjectID() == SceneObject(pPatron):getObjectID() then
+        CreatureObject(pPatron):sendSystemMessage("[EPBS] Internal error: could not identify the entertainer. Payment canceled.")
+        print("[EPBS V1] ABORT self-pay: entertainerID=" .. tostring(entertainerID) ..
+              " resolved to patron (ID=" .. tostring(SceneObject(pPatron):getObjectID()) .. ").")
+        return
+    end
 
     if not entCreo:isDancing() and not entCreo:isPlayingMusic() then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] The entertainer stopped performing. Payment canceled.")
@@ -349,15 +370,14 @@ end
 -- V2: Session state helpers
 -- Session keys stored in epbs namespace on patron:
 --   v2_sess_ent_id  - OID string of entertainer ("" = none)
---   v2_sess_type    - SVC_PLAYER / SVC_PET / SVC_BOTH / SVC_TIP
+--   v2_sess_type    - SVC_PLAYER / SVC_PET / SVC_BOTH / SVC_FREE
 --   v2_sess_start   - Unix timestamp when session started
 --   v2_sess_mode    - "watch" or "listen"
 -- SUI flow keys:
---   v2_sui_ent_id, v2_sui_type
---   v2_sui_player_amt (amt for player buff; also sole amt for PET/TIP)
---   v2_sui_pet_amt    (extra amt for pet buff, BOTH only)
---   v2_sui_step       ("player_amt" or "pet_amt")
---   v2_sui_custom_target ("pet" or "")
+--   v2_sui_ent_id  - OID string of entertainer
+--   v2_sui_type    - SVC_PLAYER / SVC_PET / SVC_BOTH (chosen buff)
+--   v2_sui_amount  - confirmed custom tip amount (custom flow only)
+--   v2_sui_mode    - "watch" or "listen"
 -- Early stop signal for C++ gate:
 --   v2_early_stop   - "1" = Lua sent the message; C++ should return silently
 -- ============================================================
@@ -372,10 +392,7 @@ end
 function EntertainerPaidBuffService:clearV2SuiState(pPatron)
     self:clearKey(pPatron, "v2_sui_ent_id")
     self:clearKey(pPatron, "v2_sui_type")
-    self:clearKey(pPatron, "v2_sui_player_amt")
-    self:clearKey(pPatron, "v2_sui_pet_amt")
-    self:clearKey(pPatron, "v2_sui_step")
-    self:clearKey(pPatron, "v2_sui_custom_target")
+    self:clearKey(pPatron, "v2_sui_amount")
     self:clearKey(pPatron, "v2_sui_mode")
 end
 
@@ -398,6 +415,12 @@ end
 -- ============================================================
 function EntertainerPaidBuffService:onWatchOrListenStart(pPatron, entID, mode)
     if pPatron == nil or entID == nil or entID == 0 then return end
+
+    if entID == SceneObject(pPatron):getObjectID() then
+        print("[EPBS V2] Ignoring self " .. tostring(mode) ..
+              " start for patron ID=" .. tostring(SceneObject(pPatron):getObjectID()))
+        return
+    end
 
     -- Clear stale session for a different entertainer or one that timed out
     local sessID = self:getV2SessEntID(pPatron)
@@ -432,7 +455,30 @@ function EntertainerPaidBuffService:onWatchOrListenStart(pPatron, entID, mode)
 end
 
 -- ============================================================
--- V2 Step 1: Service selection menu
+-- V2 display helpers
+-- ============================================================
+function EntertainerPaidBuffService:formatCredits(n)
+    local s = tostring(math.floor(tonumber(n) or 0))
+    while true do
+        local k
+        s, k = string.gsub(s, "^(-?%d+)(%d%d%d)", "%1,%2")
+        if k == 0 then break end
+    end
+    return s
+end
+
+function EntertainerPaidBuffService:v2BuffLabel(svcType)
+    if svcType == self.SVC_PET then
+        return "Pet Buff"
+    elseif svcType == self.SVC_BOTH then
+        return "Player and Pet Buff"
+    end
+    return "Player Buff"
+end
+
+-- ============================================================
+-- V2 Step 1: Buff selection menu
+--   0 Player Buff   1 Pet Buff   2 Player and Pet Buff   3 Cancel
 -- ============================================================
 function EntertainerPaidBuffService:openV2ServiceMenu(pPatron, pEntertainer)
     local entID   = SceneObject(pEntertainer):getObjectID()
@@ -443,25 +489,89 @@ function EntertainerPaidBuffService:openV2ServiceMenu(pPatron, pEntertainer)
     sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
     sui.setTitle("Entertainer Services Available")
     sui.setPrompt(
-        entName .. " offers paid buff services.\n\n" ..
-        "What would you like?\n\n" ..
-        "All payments are voluntary. Buffs apply after 60 seconds of continuous watching or listening."
+        entName .. " offers mind buff services.\n\n" ..
+        "Which buff would you like?\n\n" ..
+        "Buffs apply after 60 seconds of continuous watching or listening."
     )
-    sui.add("Player Mind Buff", "")
-    sui.add("Pet Mind Buff", "")
-    sui.add("Player + Pet Mind Buff", "")
-    sui.add("Custom Tip Only", "")
-    sui.add("Continue Without Tipping", "")
+    sui.add("Player Buff", "")
+    sui.add("Pet Buff", "")
+    sui.add("Player and Pet Buff", "")
+    sui.add("Cancel", "")
     sui.sendTo(pPatron)
 end
 
 function EntertainerPaidBuffService:v2ServiceCallback(pPatron, pSui, eventIndex, args)
     if pPatron == nil then return end
 
-    local entIDStr = self:getString(pPatron, "v2_sui_ent_id")
-    local entID    = tonumber(entIDStr) or 0
+    local entID        = tonumber(self:getString(pPatron, "v2_sui_ent_id")) or 0
     local pEntertainer = entID > 0 and getSceneObject(entID) or nil
 
+    -- Escape / window closed
+    if eventIndex == 1 or not pEntertainer then
+        self:clearV2SuiState(pPatron)
+        return
+    end
+
+    local sel = tonumber(args)
+    if sel == nil or sel == 3 then    -- Cancel: close, do nothing
+        self:clearV2SuiState(pPatron)
+        return
+    end
+
+    local svcType
+    if sel == 0 then
+        svcType = self.SVC_PLAYER
+    elseif sel == 1 or sel == 2 then
+        if not self:patronHasEligiblePet(pPatron) then
+            CreatureObject(pPatron):sendSystemMessage("[EPBS] You do not have an active, eligible pet.")
+            self:openV2ServiceMenu(pPatron, pEntertainer)
+            return
+        end
+        svcType = (sel == 1) and self.SVC_PET or self.SVC_BOTH
+    else
+        self:clearV2SuiState(pPatron)
+        return
+    end
+
+    self:setString(pPatron, "v2_sui_type", svcType)
+    self:openV2TipMenu(pPatron, pEntertainer)
+end
+
+-- ============================================================
+-- V2 Step 2: Tip selection menu
+--   0 preset low (pay now)   1 preset high (pay now)
+--   2 custom amount (input -> confirm)   3 continue without paying
+-- ============================================================
+function EntertainerPaidBuffService:openV2TipMenu(pPatron, pEntertainer)
+    local entName   = CreatureObject(pEntertainer):getFirstName()
+    local svcType   = self:getString(pPatron, "v2_sui_type")
+    local buffLabel = self:v2BuffLabel(svcType)
+
+    local sui = SuiListBox.new("EntertainerPaidBuffService", "v2TipCallback")
+    sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
+    sui.setTitle(buffLabel .. " - Tip " .. entName)
+    sui.setPrompt(
+        "Would you like to tip " .. entName .. " for your " .. buffLabel .. "?\n\n" ..
+        "Tipping is voluntary. You will receive your buff either way after 60 seconds " ..
+        "of watching or listening."
+    )
+    sui.add(self:formatCredits(self.V2_PRESET_LOW) .. " Credits", "")
+    sui.add(self:formatCredits(self.V2_PRESET_HIGH) .. " Credits", "")
+    sui.add("Custom Amount", "")
+    sui.add("Continue without paying", "")
+    sui.sendTo(pPatron)
+end
+
+function EntertainerPaidBuffService:v2TipCallback(pPatron, pSui, eventIndex, args)
+    if pPatron == nil then return end
+
+    local entID        = tonumber(self:getString(pPatron, "v2_sui_ent_id")) or 0
+    local pEntertainer = entID > 0 and getSceneObject(entID) or nil
+    local svcType      = self:getString(pPatron, "v2_sui_type")
+    local mode         = self:getString(pPatron, "v2_sui_mode")
+    if mode == "" then mode = "watch" end
+
+    -- Escape / window closed = safely cancel without charging
     if eventIndex == 1 or not pEntertainer then
         self:clearV2SuiState(pPatron)
         return
@@ -473,162 +583,33 @@ function EntertainerPaidBuffService:v2ServiceCallback(pPatron, pSui, eventIndex,
         return
     end
 
-    if sel == 4 then  -- Continue Without Tipping
+    if sel == 0 or sel == 1 then          -- preset amount: pay immediately
+        local amount = (sel == 0) and self.V2_PRESET_LOW or self.V2_PRESET_HIGH
         self:clearV2SuiState(pPatron)
-        return
-    end
-
-    if sel == 0 then   -- Player Mind Buff
-        self:setString(pPatron, "v2_sui_type", self.SVC_PLAYER)
-        self:openV2AmountMenu(pPatron, pEntertainer, "player_amt")
-
-    elseif sel == 1 then   -- Pet Mind Buff
-        if not self:patronHasEligiblePet(pPatron) then
-            CreatureObject(pPatron):sendSystemMessage("[EPBS] You do not have an active eligible pet.")
-            self:openV2ServiceMenu(pPatron, pEntertainer)
-            return
-        end
-        self:setString(pPatron, "v2_sui_type", self.SVC_PET)
-        self:openV2AmountMenu(pPatron, pEntertainer, "player_amt")
-
-    elseif sel == 2 then   -- Player + Pet Mind Buff
-        if not self:patronHasEligiblePet(pPatron) then
-            CreatureObject(pPatron):sendSystemMessage("[EPBS] You do not have an active eligible pet.")
-            self:openV2ServiceMenu(pPatron, pEntertainer)
-            return
-        end
-        self:setString(pPatron, "v2_sui_type", self.SVC_BOTH)
-        self:openV2AmountMenu(pPatron, pEntertainer, "player_amt")
-
-    elseif sel == 3 then   -- Custom Tip Only
-        self:setString(pPatron, "v2_sui_type", self.SVC_TIP)
-        self:openV2CustomTipInput(pPatron, pEntertainer)
-    end
-end
-
--- ============================================================
--- V2 Step 2: Amount selection menu
--- step: "player_amt" = first amount (player buff, or sole for PET/TIP)
---       "pet_amt"    = second amount (pet buff, BOTH only)
--- ============================================================
-function EntertainerPaidBuffService:openV2AmountMenu(pPatron, pEntertainer, step)
-    local svcType = self:getString(pPatron, "v2_sui_type")
-    self:setString(pPatron, "v2_sui_step", step)
-
-    local isPetLabel = (step == "pet_amt") or (svcType == self.SVC_PET)
-    local label   = isPetLabel and "Pet Mind Buff" or "Player Mind Buff"
-    local entName = CreatureObject(pEntertainer):getFirstName()
-
-    local sui = SuiListBox.new("EntertainerPaidBuffService", "v2AmountCallback")
-    sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
-    sui.setTitle(label .. " — Select Amount")
-    sui.setPrompt("How much would you like to tip " .. entName .. " for the " .. label .. "?")
-    sui.add(tostring(self.V2_PRESET_LOW) .. " credits", "")
-    sui.add(tostring(self.V2_PRESET_HIGH) .. " credits", "")
-    sui.add("Custom Amount", "")
-    sui.add("Back", "")
-    sui.sendTo(pPatron)
-end
-
-function EntertainerPaidBuffService:v2AmountCallback(pPatron, pSui, eventIndex, args)
-    if pPatron == nil then return end
-
-    local entIDStr = self:getString(pPatron, "v2_sui_ent_id")
-    local entID    = tonumber(entIDStr) or 0
-    local pEntertainer = entID > 0 and getSceneObject(entID) or nil
-    local step    = self:getString(pPatron, "v2_sui_step")
-    local svcType = self:getString(pPatron, "v2_sui_type")
-
-    local function goBack()
-        if not pEntertainer then
-            self:clearV2SuiState(pPatron)
-        elseif step == "pet_amt" then
-            self:openV2AmountMenu(pPatron, pEntertainer, "player_amt")
-        else
-            self:openV2ServiceMenu(pPatron, pEntertainer)
-        end
-    end
-
-    if eventIndex == 1 then
-        goBack()
-        return
-    end
-
-    if not pEntertainer then
+        self:v2ProcessPayment(pPatron, entID, svcType, amount, mode)
+    elseif sel == 2 then                  -- custom amount: ask for input
+        self:openV2CustomAmountInput(pPatron, pEntertainer)
+    elseif sel == 3 then                  -- continue without paying
         self:clearV2SuiState(pPatron)
-        return
-    end
-
-    local sel = tonumber(args)
-    if sel == nil then
-        self:clearV2SuiState(pPatron)
-        return
-    end
-
-    if sel == 3 then   -- Back
-        goBack()
-        return
-    end
-
-    local amount
-    if sel == 0 then
-        amount = self.V2_PRESET_LOW
-    elseif sel == 1 then
-        amount = self.V2_PRESET_HIGH
-    elseif sel == 2 then   -- Custom Amount
-        local isPet = (step == "pet_amt") or (svcType == self.SVC_PET)
-        self:openV2CustomAmountInput(pPatron, pEntertainer, isPet)
-        return
-    end
-
-    self:v2StoreAmount(pPatron, pEntertainer, step, svcType, amount)
-end
-
--- Helper: store amount and advance the SUI flow
-function EntertainerPaidBuffService:v2StoreAmount(pPatron, pEntertainer, step, svcType, amount)
-    if step == "pet_amt" then
-        self:setNum(pPatron, "v2_sui_pet_amt", amount)
-        self:openV2Confirm(pPatron, pEntertainer)
+        self:v2StartFreeSession(pPatron, pEntertainer, svcType, mode)
     else
-        self:setNum(pPatron, "v2_sui_player_amt", amount)
-        if svcType == self.SVC_BOTH then
-            self:openV2AmountMenu(pPatron, pEntertainer, "pet_amt")
-        else
-            self:openV2Confirm(pPatron, pEntertainer)
-        end
+        self:clearV2SuiState(pPatron)
     end
 end
 
 -- ============================================================
--- V2 Step 2b: Custom amount input (shared by player, pet, tip)
+-- V2 Step 2b: Custom amount input
 -- ============================================================
-function EntertainerPaidBuffService:openV2CustomAmountInput(pPatron, pEntertainer, isPet)
-    self:setString(pPatron, "v2_sui_custom_target", isPet and "pet" or "")
-    local entName = CreatureObject(pEntertainer):getFirstName()
-    local label   = isPet and "Pet Mind Buff" or "Player Mind Buff"
-
-    local sui = SuiInputBox.new("EntertainerPaidBuffService", "v2CustomAmountCallback")
-    sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
-    sui.setTitle("Custom Amount — " .. label)
-    sui.setPrompt(
-        "Enter a custom credit amount for the " .. label .. " tip to " .. entName .. ".\n" ..
-        "Min: " .. tostring(self.MIN_PRICE) .. "  Max: " .. tostring(self.MAX_PRICE)
-    )
-    sui.setOkButtonText("Set Amount")
-    sui.sendTo(pPatron)
-end
-
-function EntertainerPaidBuffService:openV2CustomTipInput(pPatron, pEntertainer)
-    self:clearKey(pPatron, "v2_sui_custom_target")
+function EntertainerPaidBuffService:openV2CustomAmountInput(pPatron, pEntertainer)
     local entName = CreatureObject(pEntertainer):getFirstName()
 
     local sui = SuiInputBox.new("EntertainerPaidBuffService", "v2CustomAmountCallback")
     sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
-    sui.setTitle("Custom Tip Only")
+    sui.setTitle("Custom Tip Amount")
     sui.setPrompt(
-        "Enter a tip amount for " .. entName .. ".\n" ..
-        "Min: " .. tostring(self.MIN_PRICE) .. "  Max: " .. tostring(self.MAX_PRICE) ..
-        "\n\nCustom Tip does not include a buff session."
+        "Enter the amount you would like to tip " .. entName .. ".\n" ..
+        "Minimum " .. self:formatCredits(self.MIN_PRICE) .. ", maximum " ..
+        self:formatCredits(self.MAX_PRICE) .. " credits."
     )
     sui.setOkButtonText("Continue")
     sui.sendTo(pPatron)
@@ -637,22 +618,13 @@ end
 function EntertainerPaidBuffService:v2CustomAmountCallback(pPatron, pSui, eventIndex, args)
     if pPatron == nil then return end
 
-    local entIDStr     = self:getString(pPatron, "v2_sui_ent_id")
-    local entID        = tonumber(entIDStr) or 0
+    local entID        = tonumber(self:getString(pPatron, "v2_sui_ent_id")) or 0
     local pEntertainer = entID > 0 and getSceneObject(entID) or nil
-    local customTarget = self:getString(pPatron, "v2_sui_custom_target")
-    local isPet        = (customTarget == "pet")
-    local svcType      = self:getString(pPatron, "v2_sui_type")
-    local step         = self:getString(pPatron, "v2_sui_step")
-    self:clearKey(pPatron, "v2_sui_custom_target")
 
-    if eventIndex ~= 0 then   -- Cancel = back
+    -- Cancel / closed input -> back to the tip menu, no charge
+    if eventIndex ~= 0 then
         if pEntertainer then
-            if svcType == self.SVC_TIP then
-                self:openV2ServiceMenu(pPatron, pEntertainer)
-            else
-                self:openV2AmountMenu(pPatron, pEntertainer, step)
-            end
+            self:openV2TipMenu(pPatron, pEntertainer)
         else
             self:clearV2SuiState(pPatron)
         end
@@ -665,53 +637,40 @@ function EntertainerPaidBuffService:v2CustomAmountCallback(pPatron, pSui, eventI
         return
     end
 
+    -- Reject blank, non-numeric, zero, or negative amounts
     local amount = tonumber(args)
-    if amount == nil or amount <= 0 then
-        CreatureObject(pPatron):sendSystemMessage("[EPBS] Please enter a valid positive amount.")
-        if svcType == self.SVC_TIP then
-            self:openV2CustomTipInput(pPatron, pEntertainer)
-        else
-            self:openV2CustomAmountInput(pPatron, pEntertainer, isPet)
-        end
+    if amount == nil or amount < self.MIN_PRICE then
+        CreatureObject(pPatron):sendSystemMessage(
+            "[EPBS] Please enter a valid amount of at least " ..
+            self:formatCredits(self.MIN_PRICE) .. " credits.")
+        self:openV2CustomAmountInput(pPatron, pEntertainer)
         return
     end
 
-    amount = math.max(self.MIN_PRICE, math.min(self.MAX_PRICE, math.floor(amount)))
-    self:v2StoreAmount(pPatron, pEntertainer, isPet and "pet_amt" or "player_amt", svcType, amount)
+    amount = math.min(self.MAX_PRICE, math.floor(amount))
+
+    -- Make sure the player can actually afford the tip before confirming
+    local creo = CreatureObject(pPatron)
+    if (creo:getBankCredits() + creo:getCashCredits()) < amount then
+        CreatureObject(pPatron):sendSystemMessage("[EPBS] You do not have enough credits for that tip.")
+        self:openV2CustomAmountInput(pPatron, pEntertainer)
+        return
+    end
+
+    self:setNum(pPatron, "v2_sui_amount", amount)
+    self:openV2Confirm(pPatron, pEntertainer, amount)
 end
 
 -- ============================================================
--- V2 Step 3: Confirmation dialog
+-- V2 Step 3: Custom amount confirmation (no charge until confirmed)
 -- ============================================================
-function EntertainerPaidBuffService:openV2Confirm(pPatron, pEntertainer)
-    local svcType = self:getString(pPatron, "v2_sui_type")
-    local amt1    = self:getNum(pPatron, "v2_sui_player_amt")
-    local amt2    = self:getNum(pPatron, "v2_sui_pet_amt")
+function EntertainerPaidBuffService:openV2Confirm(pPatron, pEntertainer, amount)
     local entName = CreatureObject(pEntertainer):getFirstName()
-    local prompt
-
-    if svcType == self.SVC_PLAYER then
-        prompt = "Pay " .. tostring(amt1) .. " credits to " .. entName .. " for a Player Mind Buff?\n\n" ..
-                 "Buff becomes ready after 60 seconds of watching or listening."
-    elseif svcType == self.SVC_PET then
-        prompt = "Pay " .. tostring(amt1) .. " credits to " .. entName .. " for a Pet Mind Buff?\n\n" ..
-                 "Buff becomes ready after 60 seconds of watching or listening."
-    elseif svcType == self.SVC_BOTH then
-        local total = amt1 + amt2
-        prompt = "Player Mind Buff: " .. tostring(amt1) .. " credits\n" ..
-                 "Pet Mind Buff:    " .. tostring(amt2) .. " credits\n" ..
-                 "Total:            " .. tostring(total) .. " credits\n\n" ..
-                 "Pay " .. tostring(total) .. " credits to " .. entName .. "?\n\n" ..
-                 "Both buffs become ready after 60 seconds of watching or listening."
-    elseif svcType == self.SVC_TIP then
-        prompt = "Tip " .. tostring(amt1) .. " credits to " .. entName .. "?\n\n" ..
-                 "Custom Tip does not include a buff session."
-    end
 
     local sui = SuiMessageBox.new("EntertainerPaidBuffService", "v2ConfirmCallback")
     sui.setTargetNetworkId(SceneObject(pPatron):getObjectID())
     sui.setTitle("Confirm EPBS Payment")
-    sui.setPrompt(prompt or "")
+    sui.setPrompt("Confirm payment of " .. self:formatCredits(amount) .. " credits to " .. entName .. "?")
     sui.setOkButtonText("Confirm")
     sui.sendTo(pPatron)
 end
@@ -719,25 +678,38 @@ end
 function EntertainerPaidBuffService:v2ConfirmCallback(pPatron, pSui, eventIndex, args)
     if pPatron == nil then return end
 
-    local entID   = tonumber(self:getString(pPatron, "v2_sui_ent_id")) or 0
-    local svcType = self:getString(pPatron, "v2_sui_type")
-    local amt1    = self:getNum(pPatron, "v2_sui_player_amt")
-    local amt2    = self:getNum(pPatron, "v2_sui_pet_amt")
+    local entID        = tonumber(self:getString(pPatron, "v2_sui_ent_id")) or 0
+    local pEntertainer = entID > 0 and getSceneObject(entID) or nil
+    local svcType      = self:getString(pPatron, "v2_sui_type")
+    local amount       = self:getNum(pPatron, "v2_sui_amount")
+    local mode         = self:getString(pPatron, "v2_sui_mode")
+    if mode == "" then mode = "watch" end
+
+    -- Cancel -> back to the tip menu, no charge
+    if eventIndex ~= 0 then
+        if pEntertainer then
+            self:openV2TipMenu(pPatron, pEntertainer)
+        else
+            self:clearV2SuiState(pPatron)
+        end
+        return
+    end
 
     self:clearV2SuiState(pPatron)
 
-    if eventIndex ~= 0 or entID == 0 or svcType == "" then return end
+    if not pEntertainer or amount <= 0 or svcType == "" then return end
 
-    self:v2ProcessPayment(pPatron, entID, svcType, amt1, amt2)
+    self:v2ProcessPayment(pPatron, entID, svcType, amount, mode)
 end
 
 -- ============================================================
 -- V2 Payment processing
--- amt1 = player buff cost (or pet cost for SVC_PET, or tip for SVC_TIP)
--- amt2 = pet buff cost (SVC_BOTH only)
+-- amount = single tip the patron agreed to pay for the chosen buff
+-- mode   = "watch" or "listen" (drives the session)
 -- ============================================================
-function EntertainerPaidBuffService:v2ProcessPayment(pPatron, entID, svcType, amt1, amt2)
+function EntertainerPaidBuffService:v2ProcessPayment(pPatron, entID, svcType, amount, mode)
     if pPatron == nil then return end
+    if mode == nil or mode == "" then mode = "watch" end
 
     local pEntertainer = getSceneObject(entID)
     if pEntertainer == nil or not SceneObject(pEntertainer):isPlayerCreature() then
@@ -746,6 +718,14 @@ function EntertainerPaidBuffService:v2ProcessPayment(pPatron, entID, svcType, am
     end
 
     local entCreo = CreatureObject(pEntertainer)
+
+    -- SAFETY GUARD: never let the patron pay themselves.
+    if SceneObject(pEntertainer):getObjectID() == SceneObject(pPatron):getObjectID() then
+        CreatureObject(pPatron):sendSystemMessage("[EPBS] Internal error: could not identify the entertainer. Payment canceled.")
+        print("[EPBS V2] ABORT self-pay: entID=" .. tostring(entID) ..
+              " resolved to patron (ID=" .. tostring(SceneObject(pPatron):getObjectID()) .. ").")
+        return
+    end
 
     if not entCreo:isDancing() and not entCreo:isPlayingMusic() then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] The entertainer stopped performing. Payment canceled.")
@@ -767,65 +747,93 @@ function EntertainerPaidBuffService:v2ProcessPayment(pPatron, entID, svcType, am
         return
     end
 
-    -- Prevent duplicate session
+    -- Prevent duplicate session / double charge
     if self:hasV2Session(pPatron) and self:getV2SessEntID(pPatron) == entID then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] You already have an active session with this entertainer.")
         return
     end
 
-    -- Calculate total
-    local totalAmount = (svcType == self.SVC_BOTH) and (amt1 + amt2) or amt1
-
-    if totalAmount <= 0 or totalAmount > self.MAX_PRICE * 2 then
+    if amount <= 0 or amount > self.MAX_PRICE then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] Invalid payment amount.")
         return
     end
 
-    if not self:deductCredits(pPatron, totalAmount) then
+    -- Snapshot balances so we can detect a wallet conflict (patron and
+    -- entertainer resolving to the same credit account) and refund instead of
+    -- shuffling the patron's own money (the "pay yourself" bug).
+    -- Snapshot balances so we can detect a wallet conflict (patron and
+    -- entertainer resolving to the same credit account) and refund instead of
+    -- shuffling the patron's own money (the "pay yourself" bug).
+    local patronCreo = CreatureObject(pPatron)
+    local patronBank0, patronCash0 = patronCreo:getBankCredits(), patronCreo:getCashCredits()
+    local entBank0,    entCash0    = entCreo:getBankCredits(),    entCreo:getCashCredits()
+
+    if not self:deductCredits(pPatron, amount) then
         CreatureObject(pPatron):sendSystemMessage("[EPBS] Insufficient credits.")
         return
     end
 
-    entCreo:addCashCredits(totalAmount, true)
-    self:addEarnings(pEntertainer, totalAmount)
-
-    local patronName = CreatureObject(pPatron):getFirstName()
-    local entName    = entCreo:getFirstName()
-
-    if svcType == self.SVC_TIP then
+    -- WALLET-CONFLICT GUARD: if the entertainer's balance moved when we deducted
+    -- from the patron, both share one account. Refund the patron and abort.
+    if entCreo:getBankCredits() ~= entBank0 or entCreo:getCashCredits() ~= entCash0 then
+        local bankBack = patronBank0 - patronCreo:getBankCredits()
+        local cashBack = patronCash0 - patronCreo:getCashCredits()
+        if bankBack > 0 then patronCreo:addBankCredits(bankBack, false) end
+        if cashBack > 0 then patronCreo:addCashCredits(cashBack, false) end
         CreatureObject(pPatron):sendSystemMessage(
-            "[EPBS] You tipped " .. entName .. " " .. tostring(totalAmount) .. " credits. Thank you!"
-        )
-        entCreo:sendSystemMessage(
-            "[EPBS] " .. patronName .. " tipped you " .. tostring(totalAmount) .. " credits."
-        )
-        print("[EPBS V2] TIP: patron=" .. patronName .. " ent=" .. entName .. " amt=" .. tostring(totalAmount))
+            "[EPBS] Payment canceled: could not deliver credits to the entertainer. You were not charged.")
+        print("[EPBS] WALLET-CONFLICT ABORT: patron OID=" .. tostring(SceneObject(pPatron):getObjectID()) ..
+              " ent OID=" .. tostring(SceneObject(pEntertainer):getObjectID()) ..
+              " | amount=" .. tostring(amount) ..
+              " | patron bank " .. tostring(patronBank0) .. "->" .. tostring(patronCreo:getBankCredits()) ..
+              " cash " .. tostring(patronCash0) .. "->" .. tostring(patronCreo:getCashCredits()) ..
+              " | ent bank " .. tostring(entBank0) .. "->" .. tostring(entCreo:getBankCredits()) ..
+              " cash " .. tostring(entCash0) .. "->" .. tostring(entCreo:getCashCredits()))
         return
     end
 
-    -- Start V2 session for buff services
-    local patronCreo = CreatureObject(pPatron)
-    local mode = self:getString(pPatron, "v2_sui_mode")
-    if mode == "" then mode = "watch" end
+    entCreo:addCashCredits(amount, true)
+    self:addEarnings(pEntertainer, amount)
+
+    -- Start the buff session for the chosen buff type
     self:v2StartSession(pPatron, entID, svcType, mode)
 
-    local buffDesc
-    if svcType == self.SVC_PLAYER then
-        buffDesc = "Player Mind Buff (" .. tostring(amt1) .. " cr)"
-    elseif svcType == self.SVC_PET then
-        buffDesc = "Pet Mind Buff (" .. tostring(amt1) .. " cr)"
-    else
-        buffDesc = "Player + Pet Mind Buff (" .. tostring(totalAmount) .. " cr total)"
-    end
+    local patronName = patronCreo:getFirstName()
+    local entName    = entCreo:getFirstName()
+    local amtStr     = self:formatCredits(amount)
 
     patronCreo:sendSystemMessage(
-        "[EPBS] Paid " .. tostring(totalAmount) .. " credits to " .. entName .. " for " .. buffDesc .. ". " ..
-        "Your service will be ready in 60 seconds — feel free to stay and enjoy the show!"
+        patronName .. " pays " .. entName .. " " .. amtStr ..
+        " credits. Please watch or listen for at least 1 minute to receive your buff."
     )
     entCreo:sendSystemMessage(
-        "[EPBS] " .. patronName .. " paid for " .. buffDesc .. "."
+        "[EPBS] " .. patronName .. " paid you " .. amtStr .. " credits for a " ..
+        self:v2BuffLabel(svcType) .. "."
     )
-    print("[EPBS V2] Session started: patron=" .. patronName .. " type=" .. svcType .. " total=" .. tostring(totalAmount))
+    print("[EPBS V2] Paid: patron=" .. patronName .. " ent=" .. entName ..
+          " type=" .. svcType .. " amount=" .. tostring(amount))
+end
+
+-- ============================================================
+-- V2 Free session: player opted out of payment but still gets the buff
+-- ============================================================
+function EntertainerPaidBuffService:v2StartFreeSession(pPatron, pEntertainer, svcType, mode)
+    if pPatron == nil or pEntertainer == nil then return end
+
+    -- Don't start a free session if one is already active
+    if self:hasV2Session(pPatron) then return end
+
+    if svcType == nil or svcType == "" then svcType = self.SVC_PLAYER end
+    if mode == nil or mode == "" then mode = "watch" end
+
+    local entID     = SceneObject(pEntertainer):getObjectID()
+    local buffLabel = self:v2BuffLabel(svcType)
+    CreatureObject(pPatron):sendSystemMessage(
+        "[EPBS] No tip given. Please watch or listen for at least 1 minute to receive your " ..
+        buffLabel .. "."
+    )
+    self:v2StartSession(pPatron, entID, svcType, mode)
+    print("[EPBS V2] Free session started: patron=" .. CreatureObject(pPatron):getFirstName() .. " type=" .. svcType)
 end
 
 -- ============================================================
@@ -884,7 +892,7 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
     local buffDesc
 
     if svcType == self.SVC_PLAYER then
-        self:setAuth(pPatron, entID, false)
+        self:setV2Auth(pPatron, entID, false)
         buffDesc = "Player Mind Buff is"
 
     elseif svcType == self.SVC_PET then
@@ -893,17 +901,21 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
             self:clearV2Session(pPatron)
             return
         end
-        self:setAuth(pPatron, entID, true)
+        self:setV2Auth(pPatron, entID, true)
         buffDesc = "Pet Mind Buff is"
 
     elseif svcType == self.SVC_BOTH then
-        self:setAuth(pPatron, entID, false)   -- always set player auth
+        self:setV2Auth(pPatron, entID, false)   -- always set player auth
         if petOK then
-            self:setAuth(pPatron, entID, true)
+            self:setV2Auth(pPatron, entID, true)
             buffDesc = "Player and Pet Mind Buffs are"
         else
             buffDesc = "Player Mind Buff is (your pet is no longer eligible)"
         end
+
+    elseif svcType == self.SVC_FREE then
+        self:setV2Auth(pPatron, entID, false)
+        buffDesc = "free Mind Buff is"
     end
 
     patronCreo:sendSystemMessage(
@@ -911,7 +923,9 @@ function EntertainerPaidBuffService:v2ReadyEvent(pPatron, entIDStr)
         "You may /stopwatching or /stoplistening to receive your buff. " ..
         "You are welcome to stay and enjoy the entertainment until you are ready to leave."
     )
-    entCreo:sendSystemMessage("[EPBS] " .. patronCreo:getFirstName() .. "'s service is now ready.")
+    if svcType ~= self.SVC_FREE then
+        entCreo:sendSystemMessage("[EPBS] " .. patronCreo:getFirstName() .. "'s service is now ready.")
+    end
 
     print("[EPBS V2] Ready: patron=" .. patronCreo:getFirstName() .. " type=" .. svcType)
 end
@@ -932,7 +946,7 @@ function EntertainerPaidBuffService:v2ReminderEvent(pPatron, entIDStr)
     -- Only remind if the ready event successfully set an auth key
     local svcType = self:getString(pPatron, "v2_sess_type")
     local hasReady = false
-    if svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH then
+    if svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH or svcType == self.SVC_FREE then
         hasReady = self:hasValidAuth(pPatron, entID, false)
     end
     if not hasReady and (svcType == self.SVC_PET or svcType == self.SVC_BOTH) then
@@ -946,14 +960,16 @@ function EntertainerPaidBuffService:v2ReminderEvent(pPatron, entIDStr)
         buffDesc = "Player and Pet Mind Buffs are"
     elseif svcType == self.SVC_PET then
         buffDesc = "Pet Mind Buff is"
+    elseif svcType == self.SVC_FREE then
+        buffDesc = "free Mind Buff is"
     else
         buffDesc = "Player Mind Buff is"
     end
 
+    local thankYou = (svcType ~= self.SVC_FREE) and " Thank you for supporting the entertainer!" or ""
     patronCreo:sendSystemMessage(
         "[EPBS] Your " .. buffDesc .. " fully prepared. " ..
-        "You may /stopwatching or /stoplistening to receive your buff. " ..
-        "Thank you for supporting the entertainer!"
+        "You may /stopwatching or /stoplistening to receive your buff." .. thankYou
     )
 end
 
@@ -977,19 +993,21 @@ function EntertainerPaidBuffService:handleStop(pPatron)
     local elapsed  = os.time() - sessStart
 
     -- Check whether auth keys were set by the ready event
-    local playerReady = (svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH) and
+    local playerReady = (svcType == self.SVC_PLAYER or svcType == self.SVC_BOTH or svcType == self.SVC_FREE) and
                          self:hasValidAuth(pPatron, entID, false)
     local petReady    = (svcType == self.SVC_PET    or svcType == self.SVC_BOTH) and
                          self:hasValidAuth(pPatron, entID, true)
 
     local isReady = (svcType == self.SVC_PLAYER and playerReady) or
                     (svcType == self.SVC_PET    and petReady) or
-                    (svcType == self.SVC_BOTH   and (playerReady or petReady))
+                    (svcType == self.SVC_BOTH   and (playerReady or petReady)) or
+                    (svcType == self.SVC_FREE   and playerReady)
 
     if not isReady then
-        CreatureObject(pPatron):sendSystemMessage(
-            "[EPBS] You ended the session before your EPBS service was ready. No buff will be applied."
-        )
+        local earlyMsg = (svcType == self.SVC_FREE)
+            and "[EPBS] You ended the session too early. Watch or listen for at least 60 seconds to receive your buff."
+            or  "[EPBS] You ended the session before your EPBS service was ready. No buff will be applied."
+        CreatureObject(pPatron):sendSystemMessage(earlyMsg)
         -- Tell C++ gate to suppress its own "requires payment" message
         self:setString(pPatron, "v2_early_stop", "1")
         -- Clean up any stale auth keys

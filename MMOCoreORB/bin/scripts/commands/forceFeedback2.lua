@@ -49,10 +49,9 @@ ForceFeedback2Command = {
 	clientEffect = "clienteffect/pl_force_feedback_self.cef",
 	buffClass = SINGLE_USE_BUFF,
 	frsLightBuffModifier = 0.45,
-	frsDarkBuffModifier = 0.45
+	frsDarkBuffModifier = 0.45,
 	frsLightForceCostModifier = -2.0,
 	frsDarkForceCostModifier = -2.0,
 }
 
 AddCommand(ForceFeedback2Command)
-
