@@ -60,8 +60,8 @@ object_weapon_ranged_rifle_rifle_foundling_light_lightning_cannon = object_weapo
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "expRange", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 666, 666, 0.6, 9, 30, 750, 0, 15, 35, 10, 22, 10},
-	experimentalMax = {0, 0, 666, 666, 0.6, 17, 65, 1500, 0, 15, 65, 7, 15, 7},
+	experimentalMin = {0, 0, 276, 592, 6.3, 9, 30, 750, 0, 15, 35, 10, 22, 10},
+	experimentalMax = {0, 0, 410, 730, 4.7, 17, 65, 1500, 0, 15, 65, 7, 15, 7},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
