@@ -15,6 +15,7 @@
 #include "server/zone/objects/tangible/wearables/ModSortingHelper.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h" // for setObjectMenuComponent()
+#include "server/zone/objects/tangible/wearables/ArmorObject.h"
 
 void WearableObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
@@ -83,7 +84,16 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 		return;
 	}
 
-	if (isEquipped()) {
+	bool applyModsWhileEquipped = isEquipped();
+
+	if (applyModsWhileEquipped && isArmorObject()) {
+		ArmorObject* armor = cast<ArmorObject*>(_this.getReferenceUnsafeStaticCast());
+
+		if (armor != nullptr && armor->isCosmeticArmor())
+			applyModsWhileEquipped = false;
+	}
+
+	if (applyModsWhileEquipped) {
 		removeSkillModsFrom(player);
 	}
 
@@ -120,7 +130,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	}
 
 	if (!appliedAnyMod) {
-		if (isEquipped()) {
+		if (applyModsWhileEquipped) {
 			applySkillModsTo(player);
 		}
 
@@ -145,7 +155,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	attachment->destroyObjectFromWorld(true);
 	attachment->destroyObjectFromDatabase(true);
 
-	if (isEquipped()) {
+	if (applyModsWhileEquipped) {
 		applySkillModsTo(player);
 	}
 }
