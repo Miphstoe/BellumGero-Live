@@ -139,4 +139,11 @@ class EnhancePack extends PharmaceuticalObject {
 	public boolean isEnhancePack() {
 		return true;
 	}
+
+	@local
+	public void setPackValues(float eff, float dur, byte packAttr) {
+		effectiveness = eff;
+		duration = dur;
+		attribute = packAttr;
+	}
 }
