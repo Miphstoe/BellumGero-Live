@@ -5,11 +5,21 @@ MandoTrialmasterConvoHandler = conv_handler:new {}
 
 function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, pScreen)
 	if (pScreen == nil or pPlayer == nil or pNpc == nil) then return pScreen end
-	if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then return pScreen end
+	if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+		MandoWayOfLife:logDiagPlayer(pPlayer, "withRecruiterRetroOptions: NOT recruiter NPC, skipping")
+		return pScreen
+	end
 
 	local pCloned = LuaConversationScreen(pScreen):cloneScreen()
 	local cloned = LuaConversationScreen(pCloned)
 	local added = false
+
+	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+		"withRecruiterRetroOptions: isMandoTribesman=%s hasBicepBracerRetroClaimed=%s screenID=%s",
+		tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
+		tostring(MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)),
+		tostring(LuaConversationScreen(pScreen):getScreenID())
+	))
 
 	if (not MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)) then
 		cloned:addOption(
@@ -28,6 +38,33 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 			)
 			added = true
 		end
+	end
+
+	if (not MandoWayOfLife:hasAccountSchematicExchangeClaimed(pPlayer)) then
+		local oldCount = MandoWayOfLife:countOldMandalorianSchematics(pPlayer)
+		if (oldCount > 0) then
+			cloned:addOption(
+				"Exchange old Mandalorian armor schematics for learnable versions (once per account).",
+				"mando_schematic_exchange"
+			)
+			added = true
+		end
+	end
+
+	if (MandoWayOfLife:isMandoTribesman(pPlayer)) then
+		cloned:addOption(
+			"Request Daily Bounty Mission Fob.",
+			"mando_daily_bounty_fob"
+		)
+		added = true
+	end
+
+	if (MandoWayOfLife:isMandoTribesman(pPlayer) and not MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+		cloned:addOption(
+			"Claim missing Tribesman bicep and bracer armor pieces (one-time per account).",
+			"mando_bicep_bracer_retro"
+		)
+		added = true
 	end
 
 	if (not added) then return pScreen end
@@ -176,6 +213,60 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_title_retro_grant ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_schematic_exchange") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That exchange is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_schematic_exchange ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_daily_bounty_fob") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That fob is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryGrantDailyBountyFob(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_daily_bounty_fob ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_bicep_bracer_retro") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That grant is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_bicep_bracer_retro ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "buy_mando_armory_1" or screenID == "buy_mando_armory_2" or screenID == "buy_mando_armory_3") then

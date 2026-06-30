@@ -36,19 +36,14 @@
 
 --Note that people who make modified versions of Engine3 are not obligated 
 --to grant this special exception for their modified versions; 
---it is their choice whether to do so. The GNU Lesser General Public License 
---gives permission to release a modified version without this exception; 
+--it is no choice whether to do so. The GNU Lesser General Public License 
+--gives permission to release a modified version without this exception 
 --this exception also makes it possible to release a modified version 
 
 
-object_tangible_loot_loot_schematic_death_watch_mandalorian_gloves_schematic = object_tangible_loot_loot_schematic_shared_death_watch_mandalorian_gloves_schematic:new {
-	templateType = LOOTSCHEMATIC,
-	customName = "Mandalorian Armor Gloves Schematic",
-	objectMenuComponent = "LootSchematicMenuComponent",
-	attributeListComponent = "LootSchematicAttributeListComponent",
-	requiredSkill = "crafting_armorsmith_master",
-	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_mandalorian_gloves.iff",
-	targetUseCount = 3,
+object_tangible_mission_mando_daily_bounty_fob = object_tangible_mission_shared_mando_daily_bounty_fob:new {
+	objectMenuComponent = "MandoDailyBountyFobMenuComponent",
+	attributeListComponent = "MandoDailyBountyFobAttributeListComponent",
 }
 
-ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_death_watch_mandalorian_gloves_schematic, "object/tangible/loot/loot_schematic/death_watch_mandalorian_gloves_schematic.iff")
+ObjectTemplates:addTemplate(object_tangible_mission_mando_daily_bounty_fob, "object/tangible/mission/mando_daily_bounty_fob.iff")

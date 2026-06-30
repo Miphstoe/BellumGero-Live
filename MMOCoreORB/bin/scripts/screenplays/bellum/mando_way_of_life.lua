@@ -143,6 +143,10 @@ MandoWayOfLife = ScreenPlay:new {
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_legs.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_gloves.iff",
 			"object/tangible/wearables/armor/mandalorian/custom/tribesman_shoes.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_r.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_l.iff",
+			"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
 		},
 	},
 
@@ -236,6 +240,16 @@ MandoWayOfLife = ScreenPlay:new {
 	ACCOUNT_TITLE_RETRO_DATA_PREFIX = "mando_way:acctTitleRetro:",
 	-- Account-wide flag set when any character on the account completes the Mandalorian Way (chapter 5).
 	ACCOUNT_MANDO_WAY_COMPLETE_PREFIX = "mando_way:acctComplete:",
+	-- One-time per login account exchange of old Mandalorian armor schematics for new learnable ones.
+	ACCOUNT_SCHEMATIC_EXCHANGE_PREFIX = "mando_way:acctSchematicExchange:",
+	-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
+	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
+	-- Daily Bounty Mission Fob IFF
+	DAILY_BOUNTY_FOB_IFF = "object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.iff",
+	-- Maximum daily bounty missions per player
+	DAILY_BOUNTY_MAX_MISSIONS = 5,
+	-- Daily bounty mission data key prefix (per player, per day)
+	DAILY_BOUNTY_DATA_PREFIX = "mando_way:dailyBounty:",
 	-- Grant waypoint + coords but do not spawn a dynamic informant (use a static-placed mando_foundling_informant at planetData coords).
 	DEBUG_SKIP_INFORMANT_MOBILE_SPAWN = false,
 	-- Allow any mando_foundling_informant to advance convo while Foundling arc is active (ignores per-player OID link). Dev-only.
@@ -3028,6 +3042,90 @@ function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
 end
 
 -- ============================================================
+-- ACCOUNT ONE-TIME BICEP AND BRACER GRANT (Recruiter convo)
+-- ============================================================
+-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
+-- who finished before these pieces were added to the reward set.
+
+function MandoWayOfLife:accountBicepBracerRetroDataKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_BICEP_BRACER_RETRO_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)
+	local key = self:accountBicepBracerRetroDataKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) == 1)
+end
+
+function MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen may claim the missing armor pieces."
+	end
+
+	local accountKey = self:accountBicepBracerRetroDataKey(pPlayer)
+	if (accountKey == nil) then
+		return false, "I cannot verify your login account. Try relogging, or contact staff."
+	end
+
+	if (self:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+		return false,
+			"This account already claimed the one-time bicep and bracer grant. Another character on the same login cannot claim it again."
+	end
+
+	local templates = {
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_l.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_r.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_l.iff",
+		"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
+	}
+	local requiredSlots = #templates
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "You have no inventory."
+	end
+
+	local inv = SceneObject(pInventory)
+	local freeSlots = inv:getContainerVolumeLimit() - inv:getCountableObjectsRecursive()
+	if (freeSlots < requiredSlots) then
+		return false, string.format(
+			"You need at least %s free inventory slots for the missing armor pieces. Clear space and ask again.",
+			tostring(requiredSlots)
+		)
+	end
+
+	for _, template in ipairs(templates) do
+		local pItem = giveItem(pInventory, template, -1)
+		if (pItem == nil) then
+			self:logDiagPlayer(pPlayer, string.format("tryGrantAccountBicepBracerRetro FAILED at %s", template))
+			return false,
+				"Something blocked the transfer of " .. template .. ". Clear bag space and contact staff."
+		end
+	end
+
+	writeData(accountKey, 1)
+	self:writeInt(pPlayer, "accountBicepBracerRetro.claimed", 1)
+	self:writeStr(pPlayer, "accountBicepBracerRetro.claimedAt", tostring(os.time()))
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryGrantAccountBicepBracerRetro OK accountId=%s pieces=%s.",
+		tostring(self:getPlayerAccountId(pPlayer)),
+		tostring(requiredSlots)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(
+		"[Mandalorian Way] One-time account bicep and bracer grant complete. Your Tribesman set is now complete."
+	)
+
+	return true,
+		"Done. The missing bicep and bracer pieces for your Tribesman armor are in your inventory — one claim per login account. This is the Way."
+end
+
+-- ============================================================
 -- ACCOUNT ONE-TIME TITLE REISSUE (Recruiter convo)
 -- ============================================================
 -- Veterans who finished ranks before title skills were wired can restore equippable
@@ -3183,6 +3281,310 @@ function MandoWayOfLife:tryGrantAccountTitleRetro(pPlayer)
 		tostring(granted),
 		capTitle
 	)
+end
+
+-- ============================================================
+-- SCHEMATIC EXCHANGE (old unlearnable -> new learnable)
+-- ============================================================
+-- For players who obtained Mandalorian armor schematics before the requiredSkill fix.
+-- One-time per login account: exchanges all old DW Mando schematics for new learnable ones.
+
+function MandoWayOfLife:schematicExchangeDataKey(pPlayer)
+	local accountId = self:getPlayerAccountId(pPlayer)
+	if (accountId == nil or accountId == 0) then return nil end
+	return self.ACCOUNT_SCHEMATIC_EXCHANGE_PREFIX .. tostring(accountId)
+end
+
+function MandoWayOfLife:hasAccountSchematicExchangeClaimed(pPlayer)
+	local key = self:schematicExchangeDataKey(pPlayer)
+	if (key == nil) then return false end
+	return (readData(key) or 0) == 1
+end
+
+-- Map of old schematic IFFs to new schematic IFFs (same name, now learnable)
+MandoWayOfLife.schematicExchangeMap = {
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_belt_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_belt_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_l_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_l_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_r_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bracer_r_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_helmet_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_helmet_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_chest_plate_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_chest_plate_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_gloves_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_gloves_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_boots_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_boots_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff",
+	["object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff",
+}
+
+-- Returns the number of old Mandalorian armor schematics in the player's top-level inventory.
+function MandoWayOfLife:countOldMandalorianSchematics(pPlayer)
+	if (pPlayer == nil) then return 0 end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then return 0 end
+
+	local count = 0
+	local sizeOk, size = pcall(function() return SceneObject(pInventory):getContainerObjectsSize() end)
+	if (not sizeOk or size == nil) then return 0 end
+
+	for i = 0, size - 1, 1 do
+		local pItem = SceneObject(pInventory):getContainerObject(i)
+		if (pItem ~= nil) then
+			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
+			if (templateOk and tmpl ~= nil and self.schematicExchangeMap[tmpl] ~= nil) then
+				count = count + 1
+			end
+		end
+	end
+
+	return count
+end
+
+-- Returns an array of object pointers for old Mandalorian armor schematics in top-level inventory.
+function MandoWayOfLife:getOldMandalorianSchematicObjects(pPlayer)
+	if (pPlayer == nil) then return {} end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then return {} end
+
+	local found = {}
+	local sizeOk, size = pcall(function() return SceneObject(pInventory):getContainerObjectsSize() end)
+	if (not sizeOk or size == nil) then return found end
+
+	for i = 0, size - 1, 1 do
+		local pItem = SceneObject(pInventory):getContainerObject(i)
+		if (pItem ~= nil) then
+			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
+			if (templateOk and tmpl ~= nil and self.schematicExchangeMap[tmpl] ~= nil) then
+				found[#found + 1] = pItem
+			end
+		end
+	end
+
+	return found
+end
+
+-- Returns ok, playerMessage
+function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	local accountKey = self:schematicExchangeDataKey(pPlayer)
+	if (accountKey == nil) then
+		return false, "I cannot verify your login account. Try relogging, or contact staff."
+	end
+
+	if (self:hasAccountSchematicExchangeClaimed(pPlayer)) then
+		return false,
+			"This account already exchanged old Mandalorian armor schematics. Another character on the same login cannot claim this again."
+	end
+
+	local oldSchematics = self:getOldMandalorianSchematicObjects(pPlayer)
+	if (#oldSchematics < 1) then
+		return false,
+			"You have no old Mandalorian armor schematics in your inventory. The exchange is for players who obtained these before the recent fix."
+	end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "I cannot reach your inventory."
+	end
+
+	local exchanged = 0
+	for _, pOldSchematic in ipairs(oldSchematics) do
+		local templateOk, oldTmpl = pcall(function() return SceneObject(pOldSchematic):getTemplateObjectPath() end)
+		if (templateOk and oldTmpl ~= nil) then
+			local newTmpl = self.schematicExchangeMap[oldTmpl]
+			if (newTmpl ~= nil) then
+				-- Create new schematic
+				local pNewSchematic = giveItem(pInventory, newTmpl, -1)
+				if (pNewSchematic ~= nil) then
+					-- Destroy old schematic
+					SceneObject(pOldSchematic):destroyObjectFromWorld(true)
+					SceneObject(pOldSchematic):destroyObjectFromDatabase(true)
+					exchanged = exchanged + 1
+				else
+					self:logDiagPlayer(pPlayer, string.format(
+						"tryExchangeMandalorianSchematics FAILED giveItem for %s.",
+						newTmpl
+					))
+				end
+			end
+		end
+	end
+
+	if (exchanged < 1) then
+		return false, "Something blocked the exchange. Contact staff."
+	end
+
+	writeData(accountKey, 1)
+	self:writeInt(pPlayer, "schematicExchange.claimed", 1)
+	self:writeStr(pPlayer, "schematicExchange.claimedAt", tostring(os.time()))
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryExchangeMandalorianSchematics OK accountId=%s exchanged=%s.",
+		tostring(self:getPlayerAccountId(pPlayer)),
+		tostring(exchanged)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(string.format(
+		"[Mandalorian Way] Schematic exchange complete: %s Mandalorian armor schematic(s) replaced with learnable versions. Give them to a Master Armorsmith.",
+		tostring(exchanged)
+	))
+
+	return true, string.format(
+		"Done. I exchanged %s old Mandalorian armor schematic(s) for new learnable versions. Give them to a Master Armorsmith — one exchange per login account. This is the Way.",
+		tostring(exchanged)
+	)
+end
+
+-- ============================================================
+-- DAILY BOUNTY MISSIONS
+-- ============================================================
+-- For Mandalorian Tribesmen: daily bounty camp missions with 5 difficulty tiers.
+-- Higher tiers have more guards and harder bosses, with better loot drop rates.
+
+function MandoWayOfLife:isMandoTribesman(pPlayer)
+	if (pPlayer == nil) then return false end
+	return (self:readInt(pPlayer, "chapter5Complete") == 1) or self:isAccountMandoWayComplete(pPlayer)
+end
+
+-- Get today's date string for daily reset tracking (YYYYMMDD format)
+function MandoWayOfLife:getTodayDateString()
+	local t = os.date("*t")
+	return string.format("%04d%02d%02d", t.year, t.month, t.day)
+end
+
+-- Get daily bounty data key for a player (includes date)
+function MandoWayOfLife:dailyBountyDataKey(pPlayer)
+	if (pPlayer == nil) then return nil end
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local today = self:getTodayDateString()
+	return self.DAILY_BOUNTY_DATA_PREFIX .. tostring(playerID) .. ":" .. today
+end
+
+-- Get current mission count for today
+function MandoWayOfLife:getDailyBountyCount(pPlayer)
+	local key = self:dailyBountyDataKey(pPlayer)
+	if (key == nil) then return 0 end
+	return readData(key) or 0
+end
+
+-- Increment daily mission count
+function MandoWayOfLife:incrementDailyBountyCount(pPlayer)
+	local key = self:dailyBountyDataKey(pPlayer)
+	if (key == nil) then return end
+	local current = readData(key) or 0
+	writeData(key, current + 1)
+end
+
+-- Get current mission tier (1-5) based on completed missions today
+function MandoWayOfLife:getCurrentMissionTier(pPlayer)
+	local count = self:getDailyBountyCount(pPlayer)
+	if (count >= 5) then return 5 end
+	return count + 1
+end
+
+-- Show daily bounty mission status to player
+function MandoWayOfLife:showDailyBountyStatus(pPlayer)
+	if (pPlayer == nil) then return end
+
+	local count = self:getDailyBountyCount(pPlayer)
+	local tier = self:getCurrentMissionTier(pPlayer)
+	local remaining = self.DAILY_BOUNTY_MAX_MISSIONS - count
+
+	local statusMsg = string.format(
+		"[Mandalorian Daily Bounty] Progress: %s/5 missions completed today. Current tier: %s/5. Missions remaining: %s.",
+		tostring(count),
+		tostring(tier),
+		tostring(remaining)
+	)
+
+	CreatureObject(pPlayer):sendSystemMessage(statusMsg)
+end
+
+-- Returns ok, playerMessage
+function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen may accept daily bounty missions."
+	end
+
+	local count = self:getDailyBountyCount(pPlayer)
+	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS) then
+		return false, "You have completed all 5 daily bounty missions. Return tomorrow for more."
+	end
+
+	local tier = self:getCurrentMissionTier(pPlayer)
+
+	-- Start the appropriate tier camp
+	local theaterName = "BellumBountyDailyTier" .. tier .. "Theater"
+	local theater = _G[theaterName]
+
+	if (theater == nil) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission FAILED: theater %s not found.",
+			theaterName
+		))
+		return false, "Mission system error. Contact staff."
+	end
+
+	-- Start the theater
+	theater:start(pPlayer)
+
+	-- Increment mission count
+	self:incrementDailyBountyCount(pPlayer)
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryAcceptDailyBountyMission OK: tier=%s count=%s.",
+		tostring(tier),
+		tostring(count + 1)
+	))
+
+	return true, string.format(
+		"Bounty mission accepted (Tier %s/5). Check your datapad for the waypoint. This is the Way.",
+		tostring(tier)
+	)
+end
+
+-- Returns ok, playerMessage
+function MandoWayOfLife:tryGrantDailyBountyFob(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen may receive a Daily Bounty Mission Fob."
+	end
+
+	-- Check if player already has a fob
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "I cannot reach your inventory."
+	end
+
+	-- Check for existing fob
+	local sizeOk, size = pcall(function() return SceneObject(pInventory):getContainerObjectsSize() end)
+	if (sizeOk and size ~= nil) then
+		for i = 0, size - 1, 1 do
+			local pItem = SceneObject(pInventory):getContainerObject(i)
+			if (pItem ~= nil) then
+				local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
+				if (templateOk and tmpl == self.DAILY_BOUNTY_FOB_IFF) then
+					return false, "You already have a Daily Bounty Mission Fob in your inventory."
+				end
+			end
+		end
+	end
+
+	-- Grant the fob
+	local pFob = giveItem(pInventory, self.DAILY_BOUNTY_FOB_IFF, -1)
+	if (pFob == nil) then
+		self:logDiagPlayer(pPlayer, "tryGrantDailyBountyFob FAILED: giveItem returned nil.")
+		return false, "Something blocked granting the fob. Contact staff."
+	end
+
+	self:logDiagPlayer(pPlayer, "tryGrantDailyBountyFob OK: fob granted.")
+
+	return true, "Here is your Daily Bounty Mission Fob. Right-click it to check your status or accept missions. This is the Way."
 end
 
 -- ============================================================
