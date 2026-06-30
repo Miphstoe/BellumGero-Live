@@ -61,8 +61,8 @@ object_weapon_ranged_carbine_carbine_mando_way_slugthrower = object_weapon_range
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 100, 250, 8.4, 18, 24, 850, -25, -40, 40, 8, 28, 45, 22},
-	experimentalMax = {0, 0, 145, 470, 5.2, 35, 52, 1650, -25, -40, 40, 18, 15, 24, 12},
+	experimentalMin = {0, 0, 800, 1100, 4.4, 10, 32, 850, -25, -40, 40, 8, 28, 45, 22},
+	experimentalMax = {0, 0, 1200, 1700, 3.0, 20, 68, 1650, -25, -40, 40, 18, 15, 24, 12},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
