@@ -1341,17 +1341,24 @@ void CraftingSessionImplementation::customization(const String& name, byte templ
 
 	prototype->setCustomObjectName(customName, false);
 
-	// Use factoryCrateSize as the manufacture limit cap
+	// Use factoryCrateSize as the manufacture limit cap. The client may still
+	// submit the old 1000 maximum from the crafting UI, so when a schematic
+	// supports a larger crate size and the client sends 1000, treat that as
+	// the player selecting the maximum manufacturing limit for this schematic.
 	Reference<DraftSchematic*> draftSchematic = manufactureSchematic->getDraftSchematic();
 	int maxLimit = 1000; // Default cap
+
 	if (draftSchematic != nullptr) {
 		int crateSize = draftSchematic->getFactoryCrateSize();
+
 		if (crateSize > 0) {
 			maxLimit = crateSize;
 		}
 	}
 
-	if (schematicCount < 0 || schematicCount > maxLimit) {
+	if (schematicCount == 1000 && maxLimit > 1000) {
+		schematicCount = maxLimit;
+	} else if (schematicCount < 0 || schematicCount > maxLimit) {
 		schematicCount = maxLimit;
 	}
 
