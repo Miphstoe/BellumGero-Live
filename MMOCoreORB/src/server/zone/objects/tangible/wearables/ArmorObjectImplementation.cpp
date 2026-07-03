@@ -10,6 +10,17 @@
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "templates/tangible/SharedWeaponObjectTemplate.h"
 
+namespace {
+	static const String COSMETIC_ARMOR_FLAG = "armor_cosmetic";
+	static const String COSMETIC_ARMOR_ORIGINAL_NAME = "armor_cosmetic_original_name";
+	static const String COSMETIC_ARMOR_HAD_CUSTOM_NAME = "armor_cosmetic_had_custom_name";
+	static const String COSMETIC_ARMOR_PREFIX = "\\#66CCFF[Cosmetic]\\#. ";
+
+	bool stringFlagEnabled(const String& value) {
+		return !value.isEmpty() && Integer::valueOf(value) == 1;
+	}
+}
+
 void ArmorObjectImplementation::initializeTransientMembers() {
 	setLoggingName("ArmorObject");
 
@@ -67,6 +78,56 @@ void ArmorObjectImplementation::notifyLoadFromDatabase() {
 
 	if (rating != LIGHT && templateObject->getClientTemplateFileName().contains("armor_bounty_hunter_"))
 		rating = LIGHT;
+}
+
+bool ArmorObjectImplementation::isCosmeticArmor() const {
+	return stringFlagEnabled(getLuaStringData(COSMETIC_ARMOR_FLAG));
+}
+
+void ArmorObjectImplementation::setCosmeticArmor(bool cosmetic) {
+	if (cosmetic) {
+		setLuaStringData(COSMETIC_ARMOR_FLAG, "1");
+	} else {
+		deleteLuaStringData(COSMETIC_ARMOR_FLAG);
+	}
+}
+
+void ArmorObjectImplementation::applyCosmeticArmorNameTag() {
+	String currentCustomName = getCustomObjectName().toString();
+	String visibleName = currentCustomName;
+
+	if (visibleName.isEmpty())
+		visibleName = getDisplayedName();
+
+	// Do not stack duplicate cosmetic prefixes.
+	if (visibleName.contains("[Cosmetic]"))
+		return;
+
+	// Store the original custom-name state once so removing the cosmetic flag can restore it.
+	if (getLuaStringData(COSMETIC_ARMOR_HAD_CUSTOM_NAME).isEmpty()) {
+		if (currentCustomName.isEmpty()) {
+			setLuaStringData(COSMETIC_ARMOR_HAD_CUSTOM_NAME, "0");
+		} else {
+			setLuaStringData(COSMETIC_ARMOR_HAD_CUSTOM_NAME, "1");
+			setLuaStringData(COSMETIC_ARMOR_ORIGINAL_NAME, currentCustomName);
+		}
+	}
+
+	setCustomObjectName(UnicodeString(COSMETIC_ARMOR_PREFIX + visibleName), true);
+}
+
+void ArmorObjectImplementation::clearCosmeticArmorNameTag() {
+	String hadCustomName = getLuaStringData(COSMETIC_ARMOR_HAD_CUSTOM_NAME);
+
+	if (stringFlagEnabled(hadCustomName)) {
+		setCustomObjectName(UnicodeString(getLuaStringData(COSMETIC_ARMOR_ORIGINAL_NAME)), true);
+	} else {
+		// Empty custom name lets the client fall back to the template/display name.
+		setCustomObjectName(UnicodeString(""), true);
+	}
+
+	deleteLuaStringData(COSMETIC_ARMOR_ORIGINAL_NAME);
+	deleteLuaStringData(COSMETIC_ARMOR_HAD_CUSTOM_NAME);
 }
 
 void ArmorObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {

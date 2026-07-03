@@ -26,6 +26,9 @@
 #include "server/zone/objects/player/sessions/CityFactionAlignmentSession.h"
 #include "server/zone/objects/region/CityRegion.h"
 
+// NEW: Architect retrofit service
+#include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
+
 static const int RADIAL_ROOT_MANAGEMENT = 118;
 static const int RADIAL_ROOT_PERMISSIONS = 117;
 
@@ -36,6 +39,9 @@ static const int RADIAL_VIEW_HOUSE_STORAGE = 241;
 
 // New action ID for Set Faction Alignment
 static const int RADIAL_SET_FACTION_ALIGNMENT = 241;
+
+// New action ID for Architect Retrofit Service
+static const int RADIAL_ARCHITECT_RETROFIT = 242;
 
 void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
@@ -162,6 +168,14 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
+			// Architect Retrofit Service — Master Architect only, one time per structure
+			if (creature->hasSkill("crafting_architect_master")) {
+				BuildingObject* bldCheck = cast<BuildingObject*>(structureObject.get());
+				if (bldCheck != nullptr && !ArchitectRetrofitSuiCallback::isRetrofitApplied(bldCheck->getObjectID())) {
+					menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_ARCHITECT_RETROFIT, 3, "Architect Retrofit Service");
+				}
+			}
+
 			// Pack Up House option - owner only, no vendors
 			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
 			if (building != nullptr && ghost != nullptr) {
@@ -188,6 +202,19 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 		if (creature->hasSkill("crafting_artisan_business_03")) {
 			menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management"); // Structure Management
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 130, 3, "@player_structure:create_vendor");      // Create Vendor
+		}
+	}
+
+	// Architect Retrofit Service — visible to any Master Architect at a non-civic player building,
+	// even if they are not on the admin list (service for another player's house).
+	// Admins who are also Master Architects already see this option in the admin block above.
+	if (!structureObject->isOnAdminList(creature) && !structureObject->isCivicStructure()
+	    && structureObject->isBuildingObject()
+	    && creature->hasSkill("crafting_architect_master")) {
+		BuildingObject* bldSvc = cast<BuildingObject*>(structureObject.get());
+		if (bldSvc != nullptr && !ArchitectRetrofitSuiCallback::isRetrofitApplied(bldSvc->getObjectID())) {
+			menuResponse->addRadialMenuItem(RADIAL_ROOT_MANAGEMENT, 3, "@player_structure:management");
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_ARCHITECT_RETROFIT, 3, "Architect Retrofit Service");
 		}
 	}
 }
@@ -375,6 +402,12 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				}
 				break;
 
+			case RADIAL_ARCHITECT_RETROFIT: // Architect Retrofit Service
+				if (structureObject->isBuildingObject()) {
+					structureManager->promptArchitectRetrofit(creature, structureObject);
+				}
+				break;
+
 			// NEW: Pack Up House (non-civic only)
 			case RADIAL_PACK_UP_HOUSE: {
 				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
@@ -411,6 +444,18 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 		if (creature->hasSkill("crafting_artisan_business_03")) {
 			creature->executeObjectControllerAction(STRING_HASHCODE("createvendor")); // Create Vendor
 		}
+	}
+
+	// Architect Retrofit Service — handle for non-admin architects offering the service
+	// (admins are already handled in the admin switch block above)
+	if (selectedID == RADIAL_ARCHITECT_RETROFIT
+	    && !structureObject->isOnAdminList(creature)
+	    && !structureObject->isCivicStructure()
+	    && structureObject->isBuildingObject()
+	    && creature->hasSkill("crafting_architect_master")) {
+		StructureManager* structureManager = StructureManager::instance();
+		Locker structureLocker(structureObject, creature);
+		structureManager->promptArchitectRetrofit(creature, structureObject);
 	}
 
 	return 0;

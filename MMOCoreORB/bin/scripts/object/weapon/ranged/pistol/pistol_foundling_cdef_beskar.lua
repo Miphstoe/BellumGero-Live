@@ -62,8 +62,8 @@ object_weapon_ranged_pistol_pistol_foundling_cdef_beskar = object_weapon_ranged_
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 333, 333, 2, 9, 30, 750, 0, -80, 15, 35, 10, 22, 10},
-	experimentalMax = {0, 0, 333, 333, 2, 17, 65, 1500, 0, -80, 15, 65, 7, 15, 7},
+	experimentalMin = {0, 0, 80, 200, 2, 9, 30, 750, 0, -80, 15, 35, 10, 22, 10},
+	experimentalMax = {0, 0, 100, 300, 2, 17, 65, 1500, 0, -80, 15, 65, 7, 15, 7},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }

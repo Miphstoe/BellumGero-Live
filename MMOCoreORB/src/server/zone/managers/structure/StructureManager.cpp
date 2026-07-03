@@ -56,6 +56,9 @@
 #include "templates/building/CampStructureTemplate.h"
 #include "templates/customization/CustomizationIdManager.h"
 #include "server/zone/managers/housepackup/HousePackupManager.h" // add at top of StructureManager.cpp
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sui/SuiWindowType.h"
+#include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
 
 namespace StorageManagerNamespace {
 int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
@@ -1716,4 +1719,60 @@ bool StructureManager::isInStructureFootprint(StructureObject* structure, float 
 	BoundaryRectangle structureFootprint(x0, y0, x1, y1);
 
 	return structureFootprint.containsPoint(positionX, positionY);
+}
+
+void StructureManager::promptArchitectRetrofit(CreatureObject* creature, StructureObject* structure) {
+	if (creature == nullptr || structure == nullptr)
+		return;
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	if (!structure->isBuildingObject()) {
+		creature->sendSystemMessage("Retrofit failed: target is not a valid building structure.");
+		return;
+	}
+
+	BuildingObject* building = cast<BuildingObject*>(structure);
+	if (building == nullptr)
+		return;
+
+	if (!creature->hasSkill("crafting_architect_master")) {
+		creature->sendSystemMessage("You must be a Master Architect to offer the retrofit service.");
+		return;
+	}
+
+	if (ArchitectRetrofitSuiCallback::isRetrofitApplied(building->getObjectID())) {
+		creature->sendSystemMessage("This structure has already received its one-time Architect retrofit.");
+		return;
+	}
+
+	int lots = building->getLotSize();
+	if (lots < 1) lots = 1;
+	int storagePreview = lots * 50;
+
+	ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::STRUCTURE_ARCHITECT_RETROFIT);
+	box->setPromptTitle("Architect Retrofit Service");
+
+	StringBuffer promptText;
+	promptText << "Choose one retrofit type to permanently upgrade this structure.\n\n"
+	           << "This is a one-time service — the selection cannot be undone or changed.\n\n"
+	           << "Structure size: " << lots << " lot" << (lots == 1 ? "" : "s") << "\n"
+	           << "Storage Expansion: +" << storagePreview << " item capacity\n"
+	           << "Maintenance Efficiency: 25% reduction (stacks with Merchant discount, combined cap 50%)";
+	box->setPromptText(promptText.toString());
+
+	StringBuffer storageLabel;
+	storageLabel << "Storage Expansion Retrofit  (+" << storagePreview << " item capacity)";
+	box->addMenuItem(storageLabel.toString());
+	box->addMenuItem("Maintenance Efficiency Retrofit  (25% reduction, stacks with Merchant discount)");
+	box->setUsingObject(structure);
+	box->setForceCloseDisabled();
+
+	ArchitectRetrofitSuiCallback* callback = new ArchitectRetrofitSuiCallback(server, building);
+	box->setCallback(callback);
+
+	ghost->addSuiBox(box);
+	creature->sendMessage(box->generateMessage());
 }

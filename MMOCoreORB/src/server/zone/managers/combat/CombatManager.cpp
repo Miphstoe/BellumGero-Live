@@ -2426,7 +2426,19 @@ ArmorObject* CombatManager::getArmorObject(CreatureObject* defender, uint8 hitLo
 	if (armor.isEmpty())
 		return nullptr;
 
-	return armor.get(System::random(armor.size() - 1));
+	Vector<ManagedReference<ArmorObject*>> validArmor;
+
+	for (int i = 0; i < armor.size(); ++i) {
+		ArmorObject* armorPiece = armor.get(i);
+
+		if (armorPiece != nullptr && !armorPiece->isCosmeticArmor())
+			validArmor.add(armorPiece);
+	}
+
+	if (validArmor.isEmpty())
+		return nullptr;
+
+	return validArmor.get(System::random(validArmor.size() - 1));
 }
 
 ArmorObject* CombatManager::getPSGArmor(CreatureObject* defender) const {

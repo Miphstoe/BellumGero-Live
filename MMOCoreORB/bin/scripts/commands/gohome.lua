@@ -43,7 +43,6 @@
 
 GohomeCommand = {
 	name = "gohome",
-	cooldownTime = 14400000, -- 4 hours in milliseconds (4 * 60 * 60 * 1000)
 }
 
 AddCommand(GohomeCommand)

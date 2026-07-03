@@ -140,12 +140,6 @@ ForceCrystalCaveScreenPlay = ScreenPlay:new {
     DATA_INQ_CONT_COUNT = "fcc:inq:contCount",
     DATA_INQ_CONT_OID   = "fcc:inq:cont:",
 
-    -- Persistent key for the Inquisitor boss OID (so we can re-attach after respawn)
-    DATA_INQ_BOSS_OID   = "fcc:inq:bossOID",
-
-    -- How often (ms) to poll for the boss respawning so we can re-attach the observer
-    INQ_POLL_INTERVAL_MS = 15000,   -- 15 seconds
-
     -- Loot eligibility radius (meters). A tracked damager only earns boss loot if
     -- they are within this range of the Inquisitor when it dies. Prevents
     -- server-wide grants to players who tagged it and left the cave.
@@ -257,8 +251,11 @@ end
 -- Attach ALL boss observers to a live boss pointer:
 --   * damage observers feed WorldBossLootManager (per-damager loot)
 --   * OBJECTDESTRUCTION drives onInquisitorDied (loot + container unlock)
--- Used both at initial spawn and after respawn (see checkInquisitorRespawn),
--- so the death observer is attached exactly once per boss instance.
+-- Attached ONCE at initial spawn. The engine reuses the same creature object
+-- (same OID) on respawn and does NOT clear its observers, and these observers
+-- return 0 so they are never dropped after firing -- so they persist across
+-- every respawn automatically. Re-attaching would stack duplicate observers,
+-- causing onInquisitorDied to fire (and grant loot) N times after N kills.
 function ForceCrystalCaveScreenPlay:attachInquisitorObserver(pBoss)
     createObserver(OBJECTDESTRUCTION, self.screenplayName, "onInquisitorDied", pBoss)
 
@@ -267,23 +264,6 @@ function ForceCrystalCaveScreenPlay:attachInquisitorObserver(pBoss)
         if type(ev) == "number" then
             pcall(createObserver, ev, self.screenplayName, "onInquisitorDamage", pBoss)
         end
-    end
-end
-
--- Poll until the boss has respawned, then re-attach the observers.
--- Called via createEvent after onInquisitorDied fires.
-function ForceCrystalCaveScreenPlay:checkInquisitorRespawn(pUnused)
-    local oid  = readData(self.DATA_INQ_BOSS_OID)
-    if oid == 0 then return end   -- was never stored; nothing to do
-
-    local pBoss = getSceneObject(oid)
-    if pBoss ~= nil then
-        -- Boss is back in the world; re-attach and stop polling
-        self:attachInquisitorObserver(pBoss)
-        Logger:log("ForceCrystalCaveScreenPlay: Inquisitor respawned (OID=" .. tostring(oid) .. "), observers re-attached.", LT_INFO)
-    else
-        -- Still dead/in-progress respawn; check again later
-        createEvent(self.INQ_POLL_INTERVAL_MS, self.screenplayName, "checkInquisitorRespawn", nil, "")
     end
 end
 
@@ -297,7 +277,8 @@ end
 -- Inquisitor boss death (HYBRID):
 --   (1) per-damager direct loot + credits
 --   (2) unlock boss-locked containers and seed them
---   (3) begin respawn polling to re-attach observers
+-- The damage/death observers attached at spawn persist across respawn, so
+-- nothing needs to be re-attached here.
 -- ============================================================
 
 function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
@@ -414,9 +395,6 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
         end
     end
 
-    -- ---- (3) Begin polling for respawn so we can re-attach observers ----
-    createEvent(self.INQ_POLL_INTERVAL_MS, self.screenplayName, "checkInquisitorRespawn", nil, "")
-
     return 0
 end
 
@@ -472,10 +450,9 @@ function ForceCrystalCaveScreenPlay:spawnMobiles()
                            "onCaveMobDied",
                            pMob)
 
-            -- Inquisitor: store OID for respawn polling + attach damage/death observers
+            -- Inquisitor: attach damage/death observers ONCE. They persist across
+            -- respawn (same object is reused), so no re-attach is needed/wanted.
             if tpl == "imperial_inquisitor_boss" then
-                local bossOID = SceneObject(pMob):getObjectID()
-                writeData(self.DATA_INQ_BOSS_OID, bossOID)
                 self:attachInquisitorObserver(pMob)
             end
         else

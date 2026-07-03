@@ -210,6 +210,14 @@ public:
 	bool isInStructureFootprint(StructureObject* structure, float positionX, float positionY, int extraFootprintMargin);
 
 	void promptMaintenanceDroid(StructureObject* structure, CreatureObject* creature);
+
+	/**
+	 * Shows a SUI list box letting a Master Architect choose which one-time retrofit
+	 * (storage expansion or maintenance efficiency) to apply to an existing structure.
+	 * @param creature The architect / structure owner requesting the service.
+	 * @param structure The target building.
+	 */
+	void promptArchitectRetrofit(CreatureObject* creature, StructureObject* structure);
 };
 
 #endif /*STRUCTUREMANAGER_H_*/

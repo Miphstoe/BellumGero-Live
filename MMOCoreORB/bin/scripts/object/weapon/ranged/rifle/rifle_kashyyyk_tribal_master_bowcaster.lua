@@ -72,8 +72,8 @@ object_weapon_ranged_rifle_rifle_kashyyyk_tribal_master_bowcaster = object_weapo
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "expEffeciency", "exp_durability", "null", "null", "null", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "roundsused", "hitpoints", "zerorangemod", "maxrangemod", "midrange", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 900, 1100, 4.4, 10, 30, 750, -30, -80, 45, -5, 28, 28, 34},
-	experimentalMax = {0, 0, 1200, 1600, 3.2, 20, 65, 1500, -30, -80, 45, 5, 16, 16, 22},
+	experimentalMin = {0, 0, 315, 640, 6.3, 10, 30, 750, -30, -80, 45, -5, 28, 28, 34},
+	experimentalMax = {0, 0, 450, 775, 4.7, 20, 65, 1500, -30, -80, 45, 5, 16, 16, 22},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }

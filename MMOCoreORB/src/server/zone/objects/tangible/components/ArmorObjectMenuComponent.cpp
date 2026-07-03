@@ -20,12 +20,15 @@
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/sui/callbacks/ExtractSEASuiCallback.h"
 #include "templates/SharedObjectTemplate.h"
+#include "server/zone/objects/tangible/wearables/ArmorObject.h"
 
 // ---------- SEA constants & helpers ----------
 namespace {
-	static const uint8 MENU_EXTRACT_SEA    = 165;
-	static const uint8 ARMOR_LOCK_ITEM     = 220;
-	static const uint8 ARMOR_UNLOCK_ITEM   = 221;
+	static const uint8 MENU_EXTRACT_SEA       = 165;
+	static const uint8 ARMOR_LOCK_ITEM        = 220;
+	static const uint8 ARMOR_UNLOCK_ITEM      = 221;
+	static const uint8 ARMOR_MARK_COSMETIC    = 222;
+	static const uint8 ARMOR_CLEAR_COSMETIC   = 223;
 	static const char* TOOL_SERVER_IFF = "object/tangible/item/sea_removal_tool.iff";
 	static const char* TOOL_SHARED_IFF = "object/tangible/item/shared_sea_removal_tool.iff";
 
@@ -109,6 +112,18 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 		}
 	}
 
+	// Cosmetic armor option - armor only. Normal armor remains the default unless this flag is set.
+	if (sceneObject->isASubChildOf(player) && sceneObject->isArmorObject()) {
+		ArmorObject* armor = cast<ArmorObject*>(sceneObject);
+
+		if (armor != nullptr) {
+			if (armor->isCosmeticArmor())
+				menuResponse->addRadialMenuItem(ARMOR_CLEAR_COSMETIC, 3, "Remove Cosmetic Mark");
+			else
+				menuResponse->addRadialMenuItem(ARMOR_MARK_COSMETIC, 3, "Mark as Cosmetic");
+		}
+	}
+
 	// Preserve normal wearable/tangible menu behavior
 	WearableObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 }
@@ -143,6 +158,36 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 		return 0;
 	}
 	// -------------------------------------------------------------------
+
+	// Cosmetic armor handling
+	if (selectedID == ARMOR_MARK_COSMETIC || selectedID == ARMOR_CLEAR_COSMETIC) {
+		if (!sceneObject->isASubChildOf(player) || !sceneObject->isArmorObject())
+			return 0;
+
+		ManagedReference<SceneObject*> parent = sceneObject->getParent().get();
+
+		if (parent != nullptr && parent->isPlayerCreature()) {
+			player->sendSystemMessage("Unequip this armor before changing its cosmetic status.");
+			return 0;
+		}
+
+		ArmorObject* armor = cast<ArmorObject*>(sceneObject);
+
+		if (armor == nullptr)
+			return 0;
+
+		if (selectedID == ARMOR_MARK_COSMETIC) {
+			armor->setCosmeticArmor(true);
+			armor->applyCosmeticArmorNameTag();
+			player->sendSystemMessage("Armor marked as cosmetic. It will display visually but provide no protection, encumbrance, or skill modifiers.");
+		} else {
+			armor->setCosmeticArmor(false);
+			armor->clearCosmeticArmorNameTag();
+			player->sendSystemMessage("Cosmetic mark removed. This armor will behave normally when equipped.");
+		}
+
+		return 0;
+	}
 
 	// Lock / Unlock handling
 	if (selectedID == ARMOR_LOCK_ITEM || selectedID == ARMOR_UNLOCK_ITEM) {

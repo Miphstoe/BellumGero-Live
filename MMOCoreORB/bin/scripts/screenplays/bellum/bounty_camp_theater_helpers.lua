@@ -163,19 +163,35 @@ function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVicti
 	end
 
 	if (isMark == 1 and pOwner ~= nil) then
+		-- Grant loot if lootGroup is specified (for daily bounty missions)
+		if (theater.lootGroup ~= nil and theater.lootLevel ~= nil) then
+			local pInventory = SceneObject(pOwner):getSlottedObject("inventory")
+			if (pInventory ~= nil) then
+				local itemID = createLoot(pInventory, theater.lootGroup, theater.lootLevel, false)
+				if (itemID ~= nil and itemID ~= 0) then
+					CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] You received a schematic from the mark's belongings.")
+				end
+			end
+		end
+
 		-- Only complete the Spynet trial while the private contract is active. Setting :campFinished before
 		-- completePrivateContract could soft-lock the player (campFinished=1 but chapter never advanced).
 		local active = (MandoWayOfLife ~= nil and MandoWayOfLife.readInt ~= nil and MandoWayOfLife:readInt(pOwner, "privateContractActive") == 1)
 		if (not active) then
-			CreatureObject(pOwner):sendSystemMessage(
-				"[Spynet trial] The mark fell but your trial was not active. Speak with the Mandalorian Operative on Corellia."
-			)
-			if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
-				MandoWayOfLife:logDiagPlayer(pOwner, string.format(
-					"notifyBountyMobileKilled: mark kill skipped (privateContractActive~=1) task=%s ownerOid=%s",
-					tostring(taskName),
-					tostring(ownerID)
-				))
+			-- If this is a daily bounty mission (not a Spynet trial), still call onSpynetMarkDown for completion message
+			if (theater.lootGroup ~= nil and theater.onSpynetMarkDown ~= nil) then
+				theater:onSpynetMarkDown(pOwner)
+			else
+				CreatureObject(pOwner):sendSystemMessage(
+					"[Spynet trial] The mark fell but your trial was not active. Speak with the Mandalorian Operative on Corellia."
+				)
+				if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+					MandoWayOfLife:logDiagPlayer(pOwner, string.format(
+						"notifyBountyMobileKilled: mark kill skipped (privateContractActive~=1) task=%s ownerOid=%s",
+						tostring(taskName),
+						tostring(ownerID)
+					))
+				end
 			end
 		else
 			if (theater.onSpynetMarkDown ~= nil) then
