@@ -503,7 +503,8 @@ bool CityRegionImplementation::hasZoningRights(uint64 objectid) {
 	if (getMayorID() != 0 && objectid == getMayorID())
 		return true;
 
-	if (hasMilitiaPermission(objectid, MILITIA_PERMISSION_PLACE_CIVIC))
+	// Militia always have zoning rights while they are militia
+	if (isMilitiaMember(objectid))
 		return true;
 
 	// Original time-boxed zoning token logic (unchanged)
