@@ -15,6 +15,10 @@ class InterplanetarySurvey extends ManagedObject {
 	protected int surveyToolType;
 	protected boolean executed;
 
+	// Name of the specific active resource spawn the player chose to scan for concentration hotspots.
+	// Empty means the droid should auto-select the highest-concentration resource in the chosen category.
+	protected string resourceName;
+
 	public InterplanetarySurvey() {
 		timeStamp = 0;
 		curTime = 0;
@@ -78,6 +82,15 @@ class InterplanetarySurvey extends ManagedObject {
 
 	public void setExecuted(boolean val) {
 		executed = val;
+	}
+
+	@read
+	public final string getResourceName() {
+		return resourceName;
+	}
+
+	public void setResourceName(final string en) {
+		resourceName = en;
 	}
 
 	public native void notifyLoadFromDatabase();
