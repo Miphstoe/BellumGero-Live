@@ -17,11 +17,11 @@ BgSundayDantooineEvent.CONFIG = {
 	activeSecond = 0,
 	absoluteStartDate = {
 		year = 2026,
-		month = 6,
-		day = 14,
+		month = 7,
+		day = 12,
 		hour = 18,
 		minute = 0,
-		second = 0,
+		second = 1,
 	},
 	schedulerIntervalMs = 60 * 1000,
 	checkpointPollIntervalMs = 5 * 1000,
@@ -38,6 +38,7 @@ BgSundayDantooineEvent.CONFIG = {
 		planet = "naboo",
 		x = 227,
 		y = 5436,
+		z = -196,
 		heading = 0,
 	},
 	messages = {
