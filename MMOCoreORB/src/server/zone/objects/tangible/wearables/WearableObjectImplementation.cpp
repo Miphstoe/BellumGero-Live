@@ -21,8 +21,9 @@ void WearableObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
 	// Give CLOTHING the exact same radial/UI as armor by attaching the armor menu component.
-	// If certain clothing templates must keep their own menu, add a template-name check here.
-	if (!isArmorObject()) {
+	// Templates that specify their own menu component (rings, hero rings, etc.) keep it --
+	// only plain clothing with no menu component of its own falls back to the armor menu.
+	if (!isArmorObject() && templateObject != nullptr && templateObject->getObjectMenuComponent().isEmpty()) {
 		setObjectMenuComponent("ArmorObjectMenuComponent");
 	}
 
