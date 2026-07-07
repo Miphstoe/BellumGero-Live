@@ -1351,7 +1351,13 @@ void CraftingSessionImplementation::customization(const String& name, byte templ
 		}
 	}
 
-	if (schematicCount < 0 || schematicCount > maxLimit) {
+	// The crafting tool's customization screen can't send more than 1000 (client-side UI ceiling),
+	// so treat a maxed-out request as "use the schematic's full limit" instead of a literal 1000.
+	if (schematicCount < 0) {
+		schematicCount = maxLimit;
+	} else if (schematicCount >= 1000 && maxLimit > 1000) {
+		schematicCount = maxLimit;
+	} else if (schematicCount > maxLimit) {
 		schematicCount = maxLimit;
 	}
 
