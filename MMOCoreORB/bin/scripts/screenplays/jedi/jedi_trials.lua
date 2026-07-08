@@ -321,8 +321,8 @@ function JediTrials:unlockJediKnight(pPlayer)
 		return
 	end
 
-	awardSkill(pPlayer, "force_title_jedi_rank_03")
 	writeScreenPlayData(pPlayer, "KnightTrials", "completedTrials", 1)
+	awardSkill(pPlayer, "force_title_jedi_rank_03")
 
 	-- Galaxy broadcast for Knight completion
 	local playerName = CreatureObject(pPlayer):getFirstName()

@@ -173,7 +173,7 @@ function VillageJediManager:canLearnSkill(pPlayer, skillName)
 		return false
 	end
 
-	if skillName == "force_title_jedi_rank_03" then
+	if skillName == "force_title_jedi_rank_03" and tonumber(readScreenPlayData(pPlayer, "KnightTrials", "completedTrials")) ~= 1 then
 		return false
 	end
 
