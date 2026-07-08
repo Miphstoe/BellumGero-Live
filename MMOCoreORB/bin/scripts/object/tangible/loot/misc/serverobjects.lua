@@ -45,6 +45,7 @@
 --Children folder includes
 
 -- Server Objects
+includeFile("tangible/loot/misc/ancient_crystal_of_the_sith.lua")
 includeFile("tangible/loot/misc/artifact_rare_s01.lua")
 includeFile("tangible/loot/misc/basket_expensive_s01.lua")
 includeFile("tangible/loot/misc/bowl_s01.lua")

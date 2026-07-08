@@ -12,6 +12,7 @@ JUNKCORSEC = 256
 --items folder
 includeFile("items/attachment_armor.lua")
 includeFile("items/attachment_clothing.lua")
+includeFile("items/ancient_crystal_of_the_sith.lua")
 includeFile("items/balanced_feed_mechanism.lua")
 includeFile("items/blacksun_razor_knuckler_schematic.lua")
 includeFile("items/blank_canvas.lua")
