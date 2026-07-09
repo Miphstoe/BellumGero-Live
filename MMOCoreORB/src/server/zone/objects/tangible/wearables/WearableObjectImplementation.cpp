@@ -21,10 +21,17 @@ void WearableObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
 	// Give CLOTHING the exact same radial/UI as armor by attaching the armor menu component.
-	// Templates that specify their own menu component (rings, hero rings, etc.) keep it --
-	// only plain clothing with no menu component of its own falls back to the armor menu.
-	if (!isArmorObject() && templateObject != nullptr && templateObject->getObjectMenuComponent().isEmpty()) {
-		setObjectMenuComponent("ArmorObjectMenuComponent");
+	// Templates that specify their own menu component (rings, hero rings, robes, goggles, etc.) keep it --
+	// only plain clothing with the generic default menu component falls back to the armor menu.
+	// Note: bin/scripts/object/tangible/wearables/base/wearables_base.lua defaults objectMenuComponent
+	// to "WearableObjectMenuComponent" for ordinary clothing, so plain clothing never actually reports
+	// an empty value here -- treat that inherited default the same as empty.
+	if (!isArmorObject() && templateObject != nullptr) {
+		String currentMenuComponent = templateObject->getObjectMenuComponent();
+
+		if (currentMenuComponent.isEmpty() || currentMenuComponent == "WearableObjectMenuComponent") {
+			setObjectMenuComponent("ArmorObjectMenuComponent");
+		}
 	}
 
 	// Wearable has too many attachments on it for the allowed socket count
