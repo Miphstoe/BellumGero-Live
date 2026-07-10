@@ -34,7 +34,7 @@ voritor_dasher = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 1600000
+			lootChance = 300000
 		}
 	},
 

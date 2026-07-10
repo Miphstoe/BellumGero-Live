@@ -35,7 +35,7 @@ gungan_fambaa = Creature:new {
 	        groups = {
 				{group = "fambaa_common", chance = 10000000}
 			},
-			lootChance = 1840000
+			lootChance = 400000
 		}
 	},
 
