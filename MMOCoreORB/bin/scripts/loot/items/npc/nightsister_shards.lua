@@ -7,9 +7,9 @@ nightsister_shards = {
 	directObjectTemplate = "object/tangible/component/armor/armor_segment_enhancement_nightsister.iff",
 	craftingValues = {
 		{"armor_effectiveness",3,6,10},
-		{"armor_health_encumbrance",-10,-20,0},
-		{"armor_action_encumbrance",-10,-20,0},
-		{"armor_mind_encumbrance",-10,-20,0},
+		{"armor_health_encumbrance",-2,-5,0},
+		{"armor_action_encumbrance",-2,-5,0},
+		{"armor_mind_encumbrance",-2,-5,0},
 		{"useCount",2,15,0},
 	},
 	customizationStringNames = {},
