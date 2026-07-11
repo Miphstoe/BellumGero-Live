@@ -8,7 +8,9 @@ object_building_player_hangar_house = object_building_player_shared_hangar_house
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}
+		{"private_safe_logout", 1},
+		{"structure_assembly", 10},
+		{"structure_experimentation", 5},
 	},
 	childObjects = {
 		{templateFile = "object/tangible/terminal/terminal_player_structure.iff", x = -8.8, z = 0.74, y = -24.4, ox = 0, oy = 0.707107, oz = 0, ow = 0.707107, cellid = 1, containmentType = -1},

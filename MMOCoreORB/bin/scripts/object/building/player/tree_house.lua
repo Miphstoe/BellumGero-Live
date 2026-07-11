@@ -8,7 +8,9 @@ object_building_player_tree_house = object_building_player_shared_tree_house:new
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}
+		{"private_safe_logout", 1},
+		{"bio_engineer_assembly", 10},
+		{"bio_engineer_experimentation", 5},
 	},
 	childObjects = {
 		{templateFile = "object/tangible/terminal/terminal_player_structure.iff", x = -6.87, z = 1.0, y = 10.54, ox = 0, oy = 1, oz = 0, ow = 0, cellid = 1, containmentType = -1},

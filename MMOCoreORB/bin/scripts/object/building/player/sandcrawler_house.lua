@@ -8,7 +8,9 @@ object_building_player_sandcrawler_house = object_building_player_shared_sandcra
 		{"private_medical_rating", 100},
 		{"private_buff_mind", 100},
 		{"private_med_battle_fatigue", 5},
-		{"private_safe_logout", 1}
+		{"private_safe_logout", 1},
+		{"droid_assembly", 10},
+		{"droid_experimentation", 5},
 	},
 	childObjects = {
 		{templateFile = "object/tangible/sign/player/house_address.iff", x = -8.91, z = 4.39, y = -12, ox = 0, oy = 0.70711, oz = 0, ow = 0.70711, cellid = -1, containmentType = -1},
