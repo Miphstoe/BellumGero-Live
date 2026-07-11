@@ -1752,3 +1752,33 @@ object_tangible_deed_player_house_deed_shared_diner_house_deed = SharedTangibleO
 	objectName = "@deed:diner_house_deed"
 }
 ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_diner_house_deed, "object/tangible/deed/player_house_deed/shared_diner_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_atat_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_atat_house_deed.iff",
+	objectName = "@deed:atat_house_deed"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_atat_house_deed, "object/tangible/deed/player_house_deed/shared_atat_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_hangar_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_hangar_house_deed.iff",
+	objectName = "@deed:hangar_house_deed"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_hangar_house_deed, "object/tangible/deed/player_house_deed/shared_hangar_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_sandcrawler_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_sandcrawler_house_deed.iff",
+	objectName = "@deed:sandcrawler_house_deed"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_sandcrawler_house_deed, "object/tangible/deed/player_house_deed/shared_sandcrawler_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_tree_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_tree_house_deed.iff",
+	objectName = "@deed:tree_house_deed"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_tree_house_deed, "object/tangible/deed/player_house_deed/shared_tree_house_deed.iff")
+
+object_tangible_deed_player_house_deed_shared_yt1300_house_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/player_house_deed/shared_yt1300_house_deed.iff",
+	objectName = "@deed:yt1300_house_deed"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_player_house_deed_shared_yt1300_house_deed, "object/tangible/deed/player_house_deed/shared_yt1300_house_deed.iff")

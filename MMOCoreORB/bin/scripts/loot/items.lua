@@ -190,6 +190,11 @@ includeFile("items/building/rebel_house_deed.lua")
 includeFile("items/building/sith_house_deed.lua")
 includeFile("items/building/vehicle_house_deed.lua")
 includeFile("items/building/vipbunker_house_deed.lua")
+includeFile("items/building/atat_house_deed.lua")
+includeFile("items/building/hangar_house_deed.lua")
+includeFile("items/building/sandcrawler_house_deed.lua")
+includeFile("items/building/tree_house_deed.lua")
+includeFile("items/building/yt1300_house_deed.lua")
 
 
 
