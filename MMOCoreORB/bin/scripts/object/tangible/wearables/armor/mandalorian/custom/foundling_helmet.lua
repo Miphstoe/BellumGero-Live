@@ -71,6 +71,7 @@ object_tangible_wearables_armor_mandalorian_custom_foundling_helmet = object_tan
 	-- Design table Ch0: LIGHT — 50% all standard resists; stun and lightsaber unprotected.
 	rating = LIGHT,
 	maxCondition = 25000,
+	socket = 4,
 
 	kinetic = 50,
 	energy = 50,

@@ -59,6 +59,17 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
+	if (MandoWayOfLife:isMandoTribesman(pPlayer)) then
+		local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
+		if (oldCount > 0) then
+			cloned:addOption(
+				"Exchange old Mandalorian armor for new custom armor.",
+				"mando_armor_exchange"
+			)
+			added = true
+		end
+	end
+
 	if (not added) then return pScreen end
 	return pCloned
 end
@@ -241,6 +252,24 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_bicep_bracer_retro ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_armor_exchange") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That exchange is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_armor_exchange ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "buy_mando_armory_1" or screenID == "buy_mando_armory_2" or screenID == "buy_mando_armory_3") then

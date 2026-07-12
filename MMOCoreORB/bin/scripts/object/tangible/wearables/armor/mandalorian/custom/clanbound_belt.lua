@@ -59,6 +59,8 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_belt = object_tangi
 				"object/mobile/vendor/ithorian_male.iff",
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
+
+	socket = 4,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_custom_clanbound_belt, "object/tangible/wearables/armor/mandalorian/custom/clanbound_belt.iff")

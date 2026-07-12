@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_hunter_legs = object_tangible
 
 	rating = LIGHT,
 	maxCondition = 36000,
+	socket = 4,
 
 	kinetic = 60,
 	energy = 60,
