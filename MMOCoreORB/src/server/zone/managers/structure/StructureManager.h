@@ -168,6 +168,21 @@ public:
 	void promptPayMaintenance(StructureObject* structure, CreatureObject* creature, SceneObject* terminal = nullptr);
 
 	/**
+	 * Checks whether the character owns the structure or is explicitly granted
+	 * ADMIN permission, either directly or through their guild. This helper is
+	 * used only by the remote Manage Maintenance feature.
+	 */
+	bool hasRemoteMaintenanceAdminRights(StructureObject* structure, CreatureObject* creature) const;
+
+	/**
+	 * Populates a list with all non-civic, non-GCW structures that the character
+	 * may fund through the remote Manage Maintenance feature.
+	 */
+	void getRemoteMaintenanceStructureIDs(CreatureObject* creature, Vector<uint64>* structureIDs);
+
+	void promptRemotePayMaintenance(StructureObject* structure, CreatureObject* creature);
+
+	/**
 	 * Sends the transfer box prompting for maintenance to be withdrawn.
 	 * @param structure The structure having maintenance withdrawn from.
 	 * @param creature The creature attempting to withdraw maintenance.
@@ -196,6 +211,7 @@ public:
 	 * @param amount The amount to pay maintenance.
 	 */
 	void payMaintenance(StructureObject* structure, CreatureObject* creature, int amount);
+	void payRemoteMaintenance(StructureObject* structure, CreatureObject* creature, int amount);
 
 	/**
 	 * Attempts to withdraw the requested amount from the structure, and notifies the creature.
