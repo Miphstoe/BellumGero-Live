@@ -245,7 +245,7 @@ MandoWayOfLife = ScreenPlay:new {
 	-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
 	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
 	-- Daily Bounty Mission Fob IFF
-	DAILY_BOUNTY_FOB_IFF = "object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.iff",
+	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
 	-- Maximum daily bounty missions per player
 	DAILY_BOUNTY_MAX_MISSIONS = 5,
 	-- Daily bounty mission data key prefix (per player, per day)
@@ -3042,38 +3042,26 @@ function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
 end
 
 -- ============================================================
--- ACCOUNT ONE-TIME BICEP AND BRACER GRANT (Recruiter convo)
+-- CHARACTER ONE-TIME BICEP AND BRACER GRANT (Recruiter convo)
 -- ============================================================
--- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
+-- One-time per character grant of missing bicep and bracer pieces for Ch5 completers
 -- who finished before these pieces were added to the reward set.
 
-function MandoWayOfLife:accountBicepBracerRetroDataKey(pPlayer)
-	local accountId = self:getPlayerAccountId(pPlayer)
-	if (accountId == nil or accountId == 0) then return nil end
-	return self.ACCOUNT_BICEP_BRACER_RETRO_PREFIX .. tostring(accountId)
+function MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)
+	if (pPlayer == nil) then return false end
+	return self:readInt(pPlayer, "bicepBracerRetro.claimed") == 1
 end
 
-function MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)
-	local key = self:accountBicepBracerRetroDataKey(pPlayer)
-	if (key == nil) then return false end
-	return (readData(key) == 1)
-end
-
-function MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+function MandoWayOfLife:tryGrantCharacterBicepBracerRetro(pPlayer)
 	if (pPlayer == nil) then return false, "No player." end
 
 	if (not self:isMandoTribesman(pPlayer)) then
 		return false, "Only Mandalorian Tribesmen may claim the missing armor pieces."
 	end
 
-	local accountKey = self:accountBicepBracerRetroDataKey(pPlayer)
-	if (accountKey == nil) then
-		return false, "I cannot verify your login account. Try relogging, or contact staff."
-	end
-
-	if (self:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+	if (self:hasCharacterBicepBracerRetroClaimed(pPlayer)) then
 		return false,
-			"This account already claimed the one-time bicep and bracer grant. Another character on the same login cannot claim it again."
+			"This character already claimed the one-time bicep and bracer grant."
 	end
 
 	local templates = {
@@ -3107,22 +3095,21 @@ function MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
 		end
 	end
 
-	writeData(accountKey, 1)
-	self:writeInt(pPlayer, "accountBicepBracerRetro.claimed", 1)
-	self:writeStr(pPlayer, "accountBicepBracerRetro.claimedAt", tostring(os.time()))
+	self:writeInt(pPlayer, "bicepBracerRetro.claimed", 1)
+	self:writeStr(pPlayer, "bicepBracerRetro.claimedAt", tostring(os.time()))
 
 	self:logDiagPlayer(pPlayer, string.format(
-		"tryGrantAccountBicepBracerRetro OK accountId=%s pieces=%s.",
-		tostring(self:getPlayerAccountId(pPlayer)),
+		"tryGrantCharacterBicepBracerRetro OK playerOid=%s pieces=%s.",
+		tostring(SceneObject(pPlayer):getObjectID()),
 		tostring(requiredSlots)
 	))
 
 	CreatureObject(pPlayer):sendSystemMessage(
-		"[Mandalorian Way] One-time account bicep and bracer grant complete. Your Tribesman set is now complete."
+		"[Mandalorian Way] One-time character bicep and bracer grant complete. Your Tribesman set is now complete."
 	)
 
 	return true,
-		"Done. The missing bicep and bracer pieces for your Tribesman armor are in your inventory — one claim per login account. This is the Way."
+		"Done. The missing bicep and bracer pieces for your Tribesman armor are in your inventory — one claim per character. This is the Way."
 end
 
 -- ============================================================

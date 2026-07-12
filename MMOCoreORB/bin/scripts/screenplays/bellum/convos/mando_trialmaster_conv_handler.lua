@@ -51,9 +51,9 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
-	if (MandoWayOfLife:isMandoTribesman(pPlayer) and not MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)) then
+	if (MandoWayOfLife:isMandoTribesman(pPlayer) and not MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)) then
 		cloned:addOption(
-			"Claim missing Tribesman bicep and bracer armor pieces (one-time per account).",
+			"Claim missing Tribesman bicep and bracer armor pieces (one-time per character).",
 			"mando_bicep_bracer_retro"
 		)
 		added = true
@@ -234,7 +234,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 			cloned:setStopConversation(true)
 			return pCloned
 		end
-		local ok, msg = MandoWayOfLife:tryGrantAccountBicepBracerRetro(pPlayer)
+		local ok, msg = MandoWayOfLife:tryGrantCharacterBicepBracerRetro(pPlayer)
 		local luaScreen = LuaConversationScreen(pConvScreen)
 		local pCloned = luaScreen:cloneScreen()
 		local cloned = LuaConversationScreen(pCloned)
