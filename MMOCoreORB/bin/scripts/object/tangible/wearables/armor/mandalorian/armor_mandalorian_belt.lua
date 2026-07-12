@@ -101,8 +101,8 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_belt = object_tang
 				"object/mobile/vendor/ithorian_male.iff",
 				"object/mobile/vendor/wookiee_female.iff",
 				"object/mobile/vendor/wookiee_male.iff" },
-	
 
+	socket = 4,
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_armor_mandalorian_belt, "object/tangible/wearables/armor/mandalorian/armor_mandalorian_belt.iff")

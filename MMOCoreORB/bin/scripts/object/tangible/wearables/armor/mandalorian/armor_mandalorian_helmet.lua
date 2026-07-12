@@ -113,6 +113,7 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_helmet = object_ta
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 	maxCondition = 40000,
+	socket = 4,
 
 	kinetic = 58,
 	energy = 58,

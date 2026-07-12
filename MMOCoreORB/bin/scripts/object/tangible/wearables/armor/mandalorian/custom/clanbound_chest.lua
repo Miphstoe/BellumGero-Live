@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_chest = object_tang
 
 	rating = HEAVY,
 	maxCondition = 58000,
+	socket = 4,
 
 	kinetic = 70,
 	energy = 70,
