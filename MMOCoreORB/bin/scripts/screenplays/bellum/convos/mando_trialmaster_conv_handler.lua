@@ -21,14 +21,6 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		tostring(LuaConversationScreen(pScreen):getScreenID())
 	))
 
-	if (not MandoWayOfLife:hasAccountArmorRetroClaimed(pPlayer)) then
-		cloned:addOption(
-			"Reissue all Way armor sets (once per account).",
-			"mando_armor_retro"
-		)
-		added = true
-	end
-
 	if (not MandoWayOfLife:hasAccountTitleRetroClaimed(pPlayer)) then
 		local maxChapter = MandoWayOfLife:getHighestEarnedChapter(pPlayer)
 		if (maxChapter >= 0 and MandoWayOfLife:countMissingChapterTitleSkills(pPlayer, maxChapter) > 0) then
@@ -178,24 +170,6 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 	elseif (screenID == "foundling_resync") then
 		-- Force despawn + respawn informant and re-grant waypoints for current planetIndex (stuck contact / bad OID).
 		MandoWayOfLife:resyncFoundlingContactAndWaypoints(pPlayer)
-
-	elseif (screenID == "mando_armor_retro_grant") then
-		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
-			local luaScreen = LuaConversationScreen(pConvScreen)
-			local pCloned = luaScreen:cloneScreen()
-			local cloned = LuaConversationScreen(pCloned)
-			cloned:setCustomDialogText("That reissue is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
-			cloned:setStopConversation(true)
-			return pCloned
-		end
-		local ok, msg = MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
-		local luaScreen = LuaConversationScreen(pConvScreen)
-		local pCloned = luaScreen:cloneScreen()
-		local cloned = LuaConversationScreen(pCloned)
-		cloned:setCustomDialogText(msg)
-		cloned:setStopConversation(true)
-		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_armor_retro_grant ok=%s.", tostring(ok)))
-		return pCloned
 
 	elseif (screenID == "mando_title_retro_grant") then
 		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
