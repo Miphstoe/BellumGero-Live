@@ -50,6 +50,7 @@ object_draft_schematic_food_dessert_bantha_butter = object_draft_schematic_food_
    craftingToolTab = 4, -- (See DraftSchematicObjectTemplate.h)
    complexity = 6, 
    size = 1, 
+	factoryCrateSize = 5000,
    factoryCrateType = "object/factory/factory_crate_food.iff",
    
    xpType = "crafting_food_general", 
