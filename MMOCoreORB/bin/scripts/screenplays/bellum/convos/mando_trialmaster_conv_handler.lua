@@ -17,7 +17,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
 		"withRecruiterRetroOptions: isMandoTribesman=%s hasBicepBracerRetroClaimed=%s screenID=%s",
 		tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
-		tostring(MandoWayOfLife:hasAccountBicepBracerRetroClaimed(pPlayer)),
+		tostring(MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)),
 		tostring(LuaConversationScreen(pScreen):getScreenID())
 	))
 
@@ -61,6 +61,11 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 
 	if (MandoWayOfLife:isMandoTribesman(pPlayer)) then
 		local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+			"withRecruiterRetroOptions: armor exchange check - isTribesman=%s oldArmorCount=%s",
+			tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
+			tostring(oldCount)
+		))
 		if (oldCount > 0) then
 			cloned:addOption(
 				"Exchange old Mandalorian armor for new custom armor.",
