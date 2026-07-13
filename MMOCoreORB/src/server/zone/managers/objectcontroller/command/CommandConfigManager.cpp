@@ -400,6 +400,7 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("findmystructure").toLowerCase());
 	createCommand(String("findplayerstructure").toLowerCase());
 	createCommand(String("managemaintenance").toLowerCase());
+	createCommand(String("managepower").toLowerCase());
 
 	// Bellum / Mandalorian Way custom slash commands. Registered here so they
 	// reach the CommandList even when the server-side command_tables_shared*.iff

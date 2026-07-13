@@ -183,6 +183,25 @@ public:
 	void promptRemotePayMaintenance(StructureObject* structure, CreatureObject* creature);
 
 	/**
+	 * Checks whether the character owns the installation or is explicitly
+	 * granted ADMIN permission, directly or through their guild. This helper is
+	 * used only by the remote Manage Power feature.
+	 */
+	bool hasRemotePowerAdminRights(StructureObject* structure, CreatureObject* creature) const;
+
+	/**
+	 * Populates a list with all power-consuming harvesters and factories that
+	 * the character owns or administers.
+	 */
+	void getRemotePowerStructureIDs(CreatureObject* creature, Vector<uint64>* structureIDs);
+
+	/**
+	 * Opens the remote inventory-power transfer window for an eligible
+	 * harvester or factory.
+	 */
+	void promptRemoteAddPower(StructureObject* structure, CreatureObject* creature);
+
+	/**
 	 * Sends the transfer box prompting for maintenance to be withdrawn.
 	 * @param structure The structure having maintenance withdrawn from.
 	 * @param creature The creature attempting to withdraw maintenance.
@@ -212,6 +231,12 @@ public:
 	 */
 	void payMaintenance(StructureObject* structure, CreatureObject* creature, int amount);
 	void payRemoteMaintenance(StructureObject* structure, CreatureObject* creature, int amount);
+
+	/**
+	 * Deposits inventory power into an eligible remotely managed installation.
+	 * The caller must lock both the character and selected installation.
+	 */
+	void addRemotePower(StructureObject* structure, CreatureObject* creature, uint32 amount);
 
 	/**
 	 * Attempts to withdraw the requested amount from the structure, and notifies the creature.

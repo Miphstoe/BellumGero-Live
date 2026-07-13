@@ -420,6 +420,7 @@
 #include "server/zone/objects/creature/commands/LootPlayerCorpseCommand.h"
 #include "server/zone/objects/creature/commands/LowBlowCommand.h"
 #include "server/zone/objects/creature/commands/ManageMaintenanceCommand.h"
+#include "server/zone/objects/creature/commands/ManagePowerCommand.h"
 #include "server/zone/objects/creature/commands/MakeLeaderCommand.h"
 #include "server/zone/objects/creature/commands/MakeMasterLooterCommand.h"
 #include "server/zone/objects/creature/commands/MakeSurveyCommand.h"
@@ -842,6 +843,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<LootPlayerCorpseCommand>(String("lootPlayerCorpse").toLowerCase());
 	commandFactory.registerCommand<LowBlowCommand>(String("lowBlow").toLowerCase());
 	commandFactory.registerCommand<ManageMaintenanceCommand>(String("managemaintenance").toLowerCase());
+	commandFactory.registerCommand<ManagePowerCommand>(String("managepower").toLowerCase());
 	commandFactory.registerCommand<MakeLeaderCommand>(String("makeLeader").toLowerCase());
 	commandFactory.registerCommand<MakeMasterLooterCommand>(String("makeMasterLooter").toLowerCase());
 	commandFactory.registerCommand<MakeSurveyCommand>(String("makeSurvey").toLowerCase());

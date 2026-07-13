@@ -39,6 +39,7 @@
 #include "server/zone/objects/player/sui/callbacks/NameStructureSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructurePayMaintenanceSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/RemoteStructurePayMaintenanceSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/RemoteStructureAddPowerSuiCallback.h"
 #include "server/zone/objects/player/sui/callbacks/StructureWithdrawMaintenanceSuiCallback.h"
 #include "server/login/account/AccountManager.h"
 #include "server/login/account/Account.h"
@@ -49,6 +50,8 @@
 #include "tasks/DestroyStructureTask.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/managers/resource/ResourceManager.h"
+#include "server/zone/objects/installation/InstallationObject.h"
 #include "server/zone/objects/installation/harvester/HarvesterObject.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/login/account/AccountManager.h"
@@ -1560,6 +1563,80 @@ void StructureManager::getRemoteMaintenanceStructureIDs(CreatureObject* creature
 	}
 }
 
+bool StructureManager::hasRemotePowerAdminRights(StructureObject* structure, CreatureObject* creature) const {
+	if (structure == nullptr || creature == nullptr)
+		return false;
+
+	uint64 creatureID = creature->getObjectID();
+
+	if (structure->getOwnerObjectID() == creatureID)
+		return true;
+
+	if (structure->isOnAdminList(creatureID))
+		return true;
+
+	ManagedReference<GuildObject*> guild = creature->getGuildObject().get();
+
+	return guild != nullptr && structure->isOnAdminList(guild->getObjectID());
+}
+
+void StructureManager::getRemotePowerStructureIDs(CreatureObject* creature, Vector<uint64>* structureIDs) {
+	if (creature == nullptr || structureIDs == nullptr || server == nullptr)
+		return;
+
+	structureIDs->removeAll();
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	// Add owned installations first so newly placed objects are available even
+	// before their latest state has been flushed to the playerstructures DB.
+	for (int i = 0; i < ghost->getTotalOwnedStructureCount(); ++i) {
+		uint64 structureID = ghost->getOwnedStructure(i);
+		ManagedReference<StructureObject*> structure = server->getObject(structureID).castTo<StructureObject*>();
+
+		if (structure == nullptr || !structure->isInstallationObject() || structure->isGeneratorObject() ||
+				(!structure->isHarvesterObject() && !structure->isFactory()) ||
+				structure->getBasePowerRate() <= 0)
+			continue;
+
+		if (hasRemotePowerAdminRights(structure, creature) && !structureIDs->contains(structureID))
+			structureIDs->add(structureID);
+	}
+
+	// PlayerObject only tracks ownership. Scan the existing playerstructures
+	// database to discover installations where the character or guild has ADMIN.
+	// This scan is read-only and does not alter permissions or installation data.
+	ObjectDatabase* structureDatabase = ObjectDatabaseManager::instance()->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr)
+		return;
+
+	ObjectDatabaseIterator iterator(structureDatabase);
+	ObjectInputStream objectData(2000);
+	uint64 structureID = 0;
+
+	try {
+		while (iterator.getNextKeyAndValue(structureID, &objectData)) {
+			if (!structureIDs->contains(structureID)) {
+				ManagedReference<StructureObject*> structure = server->getObject(structureID).castTo<StructureObject*>();
+
+				if (structure != nullptr && structure->isInstallationObject() && !structure->isGeneratorObject() &&
+						(structure->isHarvesterObject() || structure->isFactory()) &&
+						structure->getBasePowerRate() > 0 &&
+						hasRemotePowerAdminRights(structure, creature)) {
+					structureIDs->add(structureID);
+				}
+			}
+
+			objectData.reset();
+		}
+	} catch (Exception& e) {
+		error("Unable to discover administered installations for remote power management: " + e.getMessage());
+	}
+}
+
 void StructureManager::promptRemotePayMaintenance(StructureObject* structure, CreatureObject* creature) {
 	if (structure == nullptr || creature == nullptr)
 		return;
@@ -1676,6 +1753,93 @@ void StructureManager::promptRemotePayMaintenance(StructureObject* structure, Cr
 	// remaining amount is taken from the bank account.
 	sui->addFrom("@player_structure:total_funds", String::valueOf(availableCredits), String::valueOf(availableCredits), "1");
 	sui->addTo("@player_structure:to_pay", "0", "0", "1");
+
+	ghost->addSuiBox(sui);
+	creature->sendMessage(sui->generateMessage());
+}
+
+void StructureManager::promptRemoteAddPower(StructureObject* structure, CreatureObject* creature) {
+	if (structure == nullptr || creature == nullptr)
+		return;
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	if (!hasRemotePowerAdminRights(structure, creature)) {
+		creature->sendSystemMessage("You are not an administrator for that installation.");
+		return;
+	}
+
+	if (!structure->isInstallationObject() || structure->isGeneratorObject() ||
+			(!structure->isHarvesterObject() && !structure->isFactory()) ||
+			structure->getBasePowerRate() <= 0) {
+		creature->sendSystemMessage("That installation cannot receive power through remote power management.");
+		return;
+	}
+
+	ManagedReference<ResourceManager*> resourceManager = creature->getZoneServer()->getResourceManager();
+	if (resourceManager == nullptr)
+		return;
+
+	uint32 availablePower = resourceManager->getAvailablePowerFromPlayer(creature);
+	if (availablePower == 0) {
+		creature->sendSystemMessage("You do not have any usable energy resources in your inventory.");
+		creature->enqueueCommand(STRING_HASHCODE("managepower"), 0, 0, "");
+		return;
+	}
+
+	InstallationObject* installation = cast<InstallationObject*>(structure);
+	if (installation == nullptr)
+		return;
+
+	installation->updateStructureStatus();
+
+	String structureName = installation->getDisplayedName();
+	if (structureName.isEmpty())
+		structureName = "Unnamed Installation";
+
+	String planet = "Unknown";
+	if (installation->getZone() != nullptr)
+		planet = installation->getZone()->getZoneName();
+
+	int powerPool = (int)floor((float)installation->getSurplusPower());
+	float powerRate = installation->getBasePowerRate();
+	String powerRemaining = "Depleted";
+
+	if (powerPool > 0 && powerRate > 0.0f) {
+		uint64 secondsRemaining =
+			(uint64)(((double)powerPool / (double)powerRate) * 3600.0);
+
+		powerRemaining = getTimeString((uint32)secondsRemaining);
+	}
+
+	if (ghost->hasSuiBoxWindowType(SuiWindowType::STRUCTURE_REMOTE_POWER_DEPOSIT))
+		ghost->closeSuiWindowType(SuiWindowType::STRUCTURE_REMOTE_POWER_DEPOSIT);
+
+	ManagedReference<SuiTransferBox*> sui = new SuiTransferBox(creature, SuiWindowType::STRUCTURE_REMOTE_POWER_DEPOSIT);
+	sui->setCallback(new RemoteStructureAddPowerSuiCallback(server));
+	sui->setPromptTitle("Manage Power");
+
+	// A distant/off-planet installation cannot be the client-side SUI target.
+	// Bind the interface to the character and retain the selected installation
+	// separately for the server callback, matching remote maintenance behavior.
+	sui->setUsingObject(creature);
+	sui->setStructureObject(installation);
+	sui->setForceCloseDisabled();
+
+	StringBuffer prompt;
+	prompt << "Add inventory power to " << structureName << " [" << planet << "].\n\n";
+	prompt << "Power Reserve: " << powerPool << " units\n";
+	prompt << "Power Consumption: " << (int)ceil(powerRate) << " units per hour\n";
+	prompt << "Power Remaining: " << powerRemaining << "\n";
+	prompt << "Installation Status: " << (installation->isActive() ? "Active" : "Inactive") << "\n\n";
+	prompt << "Available Inventory Power: " << availablePower << " units\n\n";
+	prompt << "Enter the amount of power to add below.";
+	sui->setPromptText(prompt.toString());
+
+	sui->addFrom("@player_structure:total_energy", String::valueOf(availablePower), String::valueOf(availablePower), "1");
+	sui->addTo("@player_structure:to_deposit", "0", "0", "1");
 
 	ghost->addSuiBox(sui);
 	creature->sendMessage(sui->generateMessage());
@@ -1944,6 +2108,53 @@ void StructureManager::payRemoteMaintenance(StructureObject* structure, Creature
 	           << " architectMod=" << architectMod << "%"
 	           << " combinedReduction=" << combined << "%"
 	           << " effectiveRate=" << effectiveRate << "cr/hr";
+}
+
+void StructureManager::addRemotePower(StructureObject* structure, CreatureObject* creature, uint32 amount) {
+	if (structure == nullptr || creature == nullptr || amount == 0)
+		return;
+
+	// Revalidate every condition when the transfer is submitted so a stale SUI
+	// cannot fund a transferred installation or one that no longer needs power.
+	if (!hasRemotePowerAdminRights(structure, creature)) {
+		creature->sendSystemMessage("You are no longer an administrator for that installation.");
+		return;
+	}
+
+	if (!structure->isInstallationObject() || structure->isGeneratorObject() ||
+			(!structure->isHarvesterObject() && !structure->isFactory()) ||
+			structure->getBasePowerRate() <= 0) {
+		creature->sendSystemMessage("That installation cannot receive power through remote power management.");
+		return;
+	}
+
+	ManagedReference<ResourceManager*> resourceManager = creature->getZoneServer()->getResourceManager();
+	if (resourceManager == nullptr)
+		return;
+
+	uint32 availablePower = resourceManager->getAvailablePowerFromPlayer(creature);
+	if (amount > availablePower) {
+		StringIdChatParameter params("@player_structure:not_enough_energy");
+		params.setDI(amount);
+		creature->sendSystemMessage(params);
+		return;
+	}
+
+	// Use the same conversion and resource-consumption methods as the existing
+	// nearby radial menu and /addPower command. No inventory power rules change.
+	structure->updateStructureStatus();
+	structure->addPower(amount);
+	resourceManager->removePowerFromPlayer(creature, amount);
+
+	StringIdChatParameter params("player_structure", "deposit_successful");
+	params.setDI(amount);
+	creature->sendSystemMessage(params);
+
+	params.setStringId("player_structure", "reserve_report");
+	params.setDI((int)structure->getSurplusPower());
+	creature->sendSystemMessage(params);
+
+	structure->updateToDatabase();
 }
 
 void StructureManager::withdrawMaintenance(StructureObject* structure, CreatureObject* creature, int amount) {
