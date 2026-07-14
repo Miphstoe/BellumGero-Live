@@ -51,7 +51,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
-	if (MandoWayOfLife:isMandoTribesman(pPlayer) and not MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)) then
+	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1 and not MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)) then
 		cloned:addOption(
 			"Claim missing Tribesman bicep and bracer armor pieces (one-time per character).",
 			"mando_bicep_bracer_retro"
