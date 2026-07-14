@@ -69,12 +69,17 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 	))
 	if (maxChapter >= 0) then
 		if (oldCount > 0) then
+			MandoWayOfLife:logDiagPlayer(pPlayer, "withRecruiterRetroOptions: Adding armor exchange option")
 			cloned:addOption(
 				"Exchange Mandalorian armor for refurbished pieces.",
 				"mando_armor_exchange_tier_select"
 			)
 			added = true
+		else
+			MandoWayOfLife:logDiagPlayer(pPlayer, "withRecruiterRetroOptions: oldCount is 0, not adding option")
 		end
+	else
+		MandoWayOfLife:logDiagPlayer(pPlayer, "withRecruiterRetroOptions: maxChapter < 0, not adding option")
 	end
 
 	if (not added) then return pScreen end
