@@ -180,7 +180,7 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 		if (selectedID == ARMOR_MARK_COSMETIC) {
 			armor->setCosmeticArmor(true);
 			armor->applyCosmeticArmorNameTag();
-			player->sendSystemMessage("Armor marked as cosmetic. It will display visually but provide no protection, encumbrance, or skill modifiers.");
+			player->sendSystemMessage("Armor marked as cosmetic. It will display visually and keep its skill modifiers, but provide no protection or encumbrance.");
 		} else {
 			armor->setCosmeticArmor(false);
 			armor->clearCosmeticArmorNameTag();

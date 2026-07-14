@@ -23,6 +23,7 @@ void WearableObjectImplementation::initializeTransientMembers() {
 	// Give CLOTHING the exact same radial/UI as armor by attaching the armor menu component.
 	// Templates that specify their own menu component (rings, hero rings, robes, goggles, etc.) keep it --
 	// only plain clothing with the generic default menu component falls back to the armor menu.
+	//
 	// Note: bin/scripts/object/tangible/wearables/base/wearables_base.lua defaults objectMenuComponent
 	// to "WearableObjectMenuComponent" for ordinary clothing, so plain clothing never actually reports
 	// an empty value here -- treat that inherited default the same as empty.
@@ -93,13 +94,6 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	}
 
 	bool applyModsWhileEquipped = isEquipped();
-
-	if (applyModsWhileEquipped && isArmorObject()) {
-		ArmorObject* armor = cast<ArmorObject*>(_this.getReferenceUnsafeStaticCast());
-
-		if (armor != nullptr && armor->isCosmeticArmor())
-			applyModsWhileEquipped = false;
-	}
 
 	if (applyModsWhileEquipped) {
 		removeSkillModsFrom(player);

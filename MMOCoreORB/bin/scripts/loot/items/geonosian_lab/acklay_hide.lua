@@ -7,11 +7,9 @@ acklay_hide = {
 	directObjectTemplate = "object/tangible/component/armor/armor_segment_padded_acklay.iff",
 	craftingValues = {
 		{"hit_points",1000,1000,0, true},
-		{"armor_effectiveness",10,20,10},
+		{"armor_effectiveness",10,25,10},
 		{"armor_integrity",15000,25000,0},
 		{"armor_rating",1,1,0, true},
-		{"heateffectiveness",10,20,10},
-		{"energyeffectiveness",10,20,10},
 		{"useCount",1,11,0},
 	},
 	customizationStringNames = {},

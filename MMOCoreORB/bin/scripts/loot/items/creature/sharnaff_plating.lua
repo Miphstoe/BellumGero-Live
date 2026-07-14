@@ -6,13 +6,11 @@ sharnaff_plating = {
 	customObjectName = "",
 	directObjectTemplate = "object/tangible/component/armor/armor_segment_enhancement_sharnaff.iff",
 	craftingValues = {
+		{"armor_effectiveness",3,6,10},
 		{"armor_health_encumbrance",5,0,0},
 		{"armor_action_encumbrance",5,0,0},
 		{"armor_mind_encumbrance",5,0,0},
-		{"heateffectiveness",3,6,10},
-		{"coldeffectiveness",3,6,10},
-		{"acideffectiveness",3,6,10},
-		{"useCount",1,11,0},
+		{"useCount",2,15,0},
 	},
 	customizationStringNames = {},
 	customizationValues = {}
