@@ -65,6 +65,12 @@ bsv_lab_guard_droid = Creature:new {
             },
             lootChance = 2000000, -- 20%
         },
+        {
+            groups = {
+                {group = "lytus_family_artefact_damage_buff_group", chance = 10000000}
+            },
+            lootChance = 100000, -- 1%
+        },
     },
 
     primaryWeapon   = "battle_droid_weapons",
