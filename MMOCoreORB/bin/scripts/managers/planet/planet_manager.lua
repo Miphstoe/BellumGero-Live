@@ -246,6 +246,7 @@ lok = {
 
 	planetTravelPoints = {
 		{name = "Nym's Stronghold", x = 478.92676, z = 9, y = 5511.9565, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Imperial Outpost", x = -1914, z = 12, y = -3147, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 	},
 
 	jtlLaunchPoint = {"space_lok", -6200, -5350, 113},
@@ -273,7 +274,8 @@ lok = {
 
 	planetObjects = {
 	--	{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.999879, oz = 0, ow = 0.015506, x = 464.677, z = 8.75806, y = 5506.49, parentid = 0}
-	}
+		{templateFile = "object/building/tatooine/shuttleport_tatooine.iff", ox = 0, oy = 1, oz = 0, ow = 0, x = -1933, z = 12, y = -3146, parentid = 0}
+}
 }
 
 naboo = {

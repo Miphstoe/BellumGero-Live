@@ -19,7 +19,7 @@
 #include "server/chat/ChatManager.h"
 
 // A single sampled point of a resource's concentration map. Plain POD -- kept out of the
-// engine's Vector<> (which requires E to support binary (de)serialization); a fixed-size
+// engine's here Vector<> (which requires E to support binary (de)serialization); a fixed-size
 // array is used for the hotspot list instead since there are always at most MAX_HOTSPOTS.
 struct SurveyHotspotSample {
 	float x = 0.f;

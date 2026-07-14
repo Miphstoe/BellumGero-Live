@@ -12,6 +12,7 @@ JUNKCORSEC = 256
 --items folder
 includeFile("items/attachment_armor.lua")
 includeFile("items/attachment_clothing.lua")
+includeFile("items/ancient_crystal_of_the_sith.lua")
 includeFile("items/balanced_feed_mechanism.lua")
 includeFile("items/blacksun_razor_knuckler_schematic.lua")
 includeFile("items/blank_canvas.lua")
@@ -190,6 +191,11 @@ includeFile("items/building/rebel_house_deed.lua")
 includeFile("items/building/sith_house_deed.lua")
 includeFile("items/building/vehicle_house_deed.lua")
 includeFile("items/building/vipbunker_house_deed.lua")
+includeFile("items/building/atat_house_deed.lua")
+includeFile("items/building/hangar_house_deed.lua")
+includeFile("items/building/sandcrawler_house_deed.lua")
+includeFile("items/building/tree_house_deed.lua")
+includeFile("items/building/yt1300_house_deed.lua")
 
 
 
@@ -1905,6 +1911,7 @@ includeFile("items/task_reward/ind_republic_blaster.lua")
 includeFile("items/task_reward/kitster_banai_anakin_droid_brain.lua")
 includeFile("items/task_reward/kitster_banai_anakin_podrace_helmet.lua")
 includeFile("items/task_reward/lytus_family_artifact.lua")
+includeFile("items/lytus_family_artefact_damage_buff.lua")
 includeFile("items/task_reward/mining_suit_quest_jazeen.lua")
 includeFile("items/task_reward/no_drop_holocron_dark.lua")
 includeFile("items/task_reward/no_drop_holocron_light.lua")

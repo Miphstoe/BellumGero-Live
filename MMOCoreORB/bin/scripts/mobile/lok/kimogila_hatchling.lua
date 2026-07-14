@@ -34,7 +34,7 @@ kimogila_hatchling = Creature:new {
 	        groups = {
 				{group = "kimogila_common", chance = 10000000}
 			},
-			lootChance = 1440000
+			lootChance = 300000
 		},
 		{
 			groups = {

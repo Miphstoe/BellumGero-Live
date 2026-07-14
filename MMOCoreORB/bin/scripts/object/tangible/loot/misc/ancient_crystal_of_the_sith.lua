@@ -1,0 +1,5 @@
+object_tangible_loot_misc_ancient_crystal_of_the_sith = object_tangible_loot_misc_shared_artifact_rare_s01:new {
+	objectMenuComponent = "AncientCrystalMenuComponent",
+}
+
+ObjectTemplates:addTemplate(object_tangible_loot_misc_ancient_crystal_of_the_sith, "object/tangible/loot/misc/ancient_crystal_of_the_sith.iff")

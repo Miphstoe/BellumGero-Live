@@ -689,7 +689,7 @@ bool PetControlDeviceImplementation::growPet(CreatureObject* player, bool force,
 
 	Time currentTime;
 	uint32 timeDelta = currentTime.getTime() - lastGrowth.getTime();
-	int stagesToGrow = timeDelta / 25920; // 7.2 hours per stage (3 days total)
+	int stagesToGrow = timeDelta / 9600; // 2 hours 40 minutes per stage (24 hours from stage 1 to stage 10)
 
 	if (adult)
 		stagesToGrow = 10;

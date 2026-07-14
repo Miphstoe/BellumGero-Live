@@ -21,7 +21,7 @@ BgSundayDantooineEvent.CONFIG = {
 		day = 12,
 		hour = 18,
 		minute = 0,
-		second = 0,
+		second = 1,
 	},
 	schedulerIntervalMs = 60 * 1000,
 	checkpointPollIntervalMs = 5 * 1000,
