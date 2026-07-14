@@ -59,11 +59,11 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
-	if (MandoWayOfLife:isMandoTribesman(pPlayer)) then
+	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
 		local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
-			"withRecruiterRetroOptions: armor exchange check - isTribesman=%s oldArmorCount=%s",
-			tostring(MandoWayOfLife:isMandoTribesman(pPlayer)),
+			"withRecruiterRetroOptions: armor exchange check - chapter5Complete=%s oldArmorCount=%s",
+			tostring(MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1),
 			tostring(oldCount)
 		))
 		if (oldCount > 0) then

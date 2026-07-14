@@ -3500,8 +3500,8 @@ end
 function MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
 	if (pPlayer == nil) then return false, "No player." end
 
-	-- Gate: Must have completed the entire Mandalorian Way quest line (chapter 5)
-	if (not self:isMandoTribesman(pPlayer)) then
+	-- Gate: Must have completed the entire Mandalorian Way quest line (chapter 5) on this character
+	if (self:readInt(pPlayer, "chapter5Complete") ~= 1) then
 		return false,
 			"You must complete the entire Mandalorian Way quest line (become a Mandalorian Tribesman) before exchanging armor. This is the Way."
 	end
