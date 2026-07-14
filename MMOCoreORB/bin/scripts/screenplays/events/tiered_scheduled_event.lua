@@ -19,8 +19,8 @@ TieredScheduledEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in 
 TieredScheduledEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredScheduledEvent.START_TIME = { year = 2026, month = 6, day = 28, hour = 18, min = 00, sec = 0 }
-TieredScheduledEvent.END_TIME   = { year = 2026, month = 6, day = 28, hour = 19, min = 00, sec = 0 }
+TieredScheduledEvent.START_TIME = { year = 2026, month = 7, day = 19, hour = 18, min = 00, sec = 0 }
+TieredScheduledEvent.END_TIME   = { year = 2026, month = 7, day = 19, hour = 19, min = 00, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredScheduledEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }
@@ -35,33 +35,33 @@ TieredScheduledEvent.CATCH_UP_IF_MISSED = true
 -- TIER CONFIGURATION - Each tier has its own mob list
 -- Tier 1: 0-15 minutes (Easy mobs)
 TieredScheduledEvent.TIER1_NPCS = {
-  { planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1976, y = -4643, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "krayt_dragon_grand", x = -179, y = -4723, z = 8, heading = 0 },
 }
 
 -- Tier 2: 15-30 minutes (Medium mobs)
 TieredScheduledEvent.TIER2_NPCS = {
-  { planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_elder", x = -1976, y = -4643, z = 8, heading = 0 },
+ -- { planet = "corellia", template = "nightsister_protector", x = -1970, y = -4649, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "krayt_dragon_grand", x = -179, y = -4723, z = 8, heading = 0 },
 }
 
 -- Tier 3: 30-45 minutes (Hard mobs)
 TieredScheduledEvent.TIER3_NPCS = {
-  { planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_elder", x = -1976, y = -4643, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1972, y = -4647, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_protector", x = -1974, y = -4645, z = 8, heading = 0 },
+  { planet = "corellia", template = "krayt_dragon_ancient", x = -179, y = -4723, z = 8, heading = 0 },
 }
 
 -- Tier 4: 45-60 minutes (Boss mobs)
 TieredScheduledEvent.TIER4_NPCS = {
-  { planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_boss", x = -1972, y = -4647, z = 8, heading = 0 },
-  { planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_elder", x = -1970, y = -4649, z = 8, heading = 0 },
+  { planet = "corellia", template = "ancient_krayt_king", x = -179, y = -4723, z = 8, heading = 0 },
+  --{ planet = "corellia", template = "nightsister_elder", x = -1974, y = -4645, z = 8, heading = 0 },
 }
 
 -- Tier change times (in seconds from event start)
