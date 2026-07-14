@@ -59,17 +59,14 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		added = true
 	end
 
-	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1) then
+	-- Armor exchange options - show based on quest progress
+	local maxChapter = MandoWayOfLife:getHighestEarnedChapter(pPlayer)
+	if (maxChapter >= 0) then
 		local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
-		MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
-			"withRecruiterRetroOptions: armor exchange check - chapter5Complete=%s oldArmorCount=%s",
-			tostring(MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1),
-			tostring(oldCount)
-		))
 		if (oldCount > 0) then
 			cloned:addOption(
-				"Exchange old Mandalorian armor for new custom armor.",
-				"mando_armor_exchange"
+				"Exchange Mandalorian armor for refurbished pieces.",
+				"mando_armor_exchange_tier_select"
 			)
 			added = true
 		end
@@ -259,7 +256,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_bicep_bracer_retro ok=%s.", tostring(ok)))
 		return pCloned
 
-	elseif (screenID == "mando_armor_exchange") then
+	elseif (screenID == "mando_armor_exchange_tier_select") then
 		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
 			local luaScreen = LuaConversationScreen(pConvScreen)
 			local pCloned = luaScreen:cloneScreen()
@@ -268,13 +265,63 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 			cloned:setStopConversation(true)
 			return pCloned
 		end
-		local ok, msg = MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText("Which armor set would you like to exchange? I can refurbish any Mandalorian armor piece to its current socketed version.")
+		
+		local maxChapter = MandoWayOfLife:getHighestEarnedChapter(pPlayer)
+		
+		-- Add tier options based on quest progress
+		if (maxChapter >= 0) then
+			cloned:addOption("Foundling (Chapter 0)", "mando_armor_exchange_foundling")
+		end
+		if (maxChapter >= 1) then
+			cloned:addOption("Initiate (Chapter 1)", "mando_armor_exchange_initiate")
+		end
+		if (maxChapter >= 2) then
+			cloned:addOption("Hunter (Chapter 2)", "mando_armor_exchange_hunter")
+		end
+		if (maxChapter >= 3) then
+			cloned:addOption("Verd'ika (Chapter 3)", "mando_armor_exchange_verdika")
+		end
+		if (maxChapter >= 4) then
+			cloned:addOption("Clanbound (Chapter 4)", "mando_armor_exchange_clanbound")
+		end
+		if (maxChapter >= 5) then
+			cloned:addOption("Tribesman (Chapter 5)", "mando_armor_exchange_tribesman")
+		end
+		
+		cloned:addOption("Never mind.", "tribesman_hub")
+		return pCloned
+
+	elseif (screenID == "mando_armor_exchange_foundling" or screenID == "mando_armor_exchange_initiate" or 
+	        screenID == "mando_armor_exchange_hunter" or screenID == "mando_armor_exchange_verdika" or
+	        screenID == "mando_armor_exchange_clanbound" or screenID == "mando_armor_exchange_tribesman") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That exchange is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		
+		local tier = 0
+		if (screenID == "mando_armor_exchange_initiate") then tier = 1
+		elseif (screenID == "mando_armor_exchange_hunter") then tier = 2
+		elseif (screenID == "mando_armor_exchange_verdika") then tier = 3
+		elseif (screenID == "mando_armor_exchange_clanbound") then tier = 4
+		elseif (screenID == "mando_armor_exchange_tribesman") then tier = 5
+		end
+		
+		local ok, msg = MandoWayOfLife:tryExchangeMandalorianArmorByTier(pPlayer, tier)
 		local luaScreen = LuaConversationScreen(pConvScreen)
 		local pCloned = luaScreen:cloneScreen()
 		local cloned = LuaConversationScreen(pCloned)
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
-		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_armor_exchange ok=%s.", tostring(ok)))
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_armor_exchange tier=%s ok=%s.", tostring(tier), tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "buy_mando_armory_1" or screenID == "buy_mando_armory_2" or screenID == "buy_mando_armory_3") then

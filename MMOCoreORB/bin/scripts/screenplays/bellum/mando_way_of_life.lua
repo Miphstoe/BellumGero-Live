@@ -246,8 +246,10 @@ MandoWayOfLife = ScreenPlay:new {
 	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
 	
 	-- Armor exchange mapping: old armor template -> new custom armor template
-	-- Available to Mandalorian Tribesmen anytime they have old armor in inventory
+	-- Maps all old Mandalorian armor (DWB and old custom) to new socketed custom versions
+	-- Used for refurbishing any Mandalorian armor piece
 	armorExchangeMap = {
+		-- DWB Mandalorian armor -> Tribesman custom armor
 		["object/tangible/wearables/armor/mandalorian/armor_mandalorian_helmet.iff"] = "object/tangible/wearables/armor/mandalorian/custom/tribesman_helmet.iff",
 		["object/tangible/wearables/armor/mandalorian/armor_mandalorian_chest_plate.iff"] = "object/tangible/wearables/armor/mandalorian/custom/tribesman_chest.iff",
 		["object/tangible/wearables/armor/mandalorian/armor_mandalorian_leggings.iff"] = "object/tangible/wearables/armor/mandalorian/custom/tribesman_legs.iff",
@@ -259,6 +261,66 @@ MandoWayOfLife = ScreenPlay:new {
 		["object/tangible/wearables/armor/mandalorian/armor_mandalorian_bracer_r.iff"] = "object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
 		["object/tangible/wearables/armor/mandalorian/armor_mandalorian_shoes.iff"] = "object/tangible/wearables/armor/mandalorian/custom/tribesman_shoes.iff",
 	},
+
+	-- Tier-specific armor sets for exchange
+	-- Maps chapter numbers to their corresponding custom armor templates
+	armorExchangeTiers = {
+		[0] = {
+			name = "Foundling",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/foundling_helmet.iff",
+			},
+		},
+		[1] = {
+			name = "Initiate",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/initiate_helmet.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/initiate_chest.iff",
+			},
+		},
+		[2] = {
+			name = "Hunter",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/hunter_helmet.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/hunter_chest.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/hunter_legs.iff",
+			},
+		},
+		[3] = {
+			name = "Verd'ika",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/verdika_helmet.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/verdika_chest.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/verdika_legs.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/verdika_gloves.iff",
+			},
+		},
+		[4] = {
+			name = "Clanbound",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/clanbound_helmet.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/clanbound_chest.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/clanbound_legs.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/clanbound_gloves.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/clanbound_shoes.iff",
+			},
+		},
+		[5] = {
+			name = "Tribesman",
+			armor = {
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_helmet.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_chest.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_legs.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_gloves.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_shoes.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_l.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_bicep_r.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_l.iff",
+				"object/tangible/wearables/armor/mandalorian/custom/tribesman_bracer_r.iff",
+			},
+		},
+	},
+
 	
 	-- Daily Bounty Mission Fob IFF
 	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
@@ -3448,7 +3510,8 @@ end
 -- Requires: Chapter 5 complete (Mandalorian Tribesman), old armor in inventory (not equipped).
 -- Future: May require Beskar Segment components.
 
--- Returns the number of old Mandalorian armor pieces in the player's top-level inventory.
+-- Returns the number of Mandalorian armor pieces in the player's top-level inventory.
+-- Counts all Mandalorian armor (DWB, custom, old versions, broken versions) for exchange.
 function MandoWayOfLife:countOldMandalorianArmor(pPlayer)
 	if (pPlayer == nil) then return 0 end
 
@@ -3463,8 +3526,11 @@ function MandoWayOfLife:countOldMandalorianArmor(pPlayer)
 		local pItem = SceneObject(pInventory):getContainerObject(i)
 		if (pItem ~= nil) then
 			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
-			if (templateOk and tmpl ~= nil and self.armorExchangeMap[tmpl] ~= nil) then
-				count = count + 1
+			if (templateOk and tmpl ~= nil) then
+				-- Count any Mandalorian armor piece (DWB or custom)
+				if (string.find(tmpl, "mandalorian") and string.find(tmpl, "armor")) then
+					count = count + 1
+				end
 			end
 		end
 	end
@@ -3472,7 +3538,8 @@ function MandoWayOfLife:countOldMandalorianArmor(pPlayer)
 	return count
 end
 
--- Returns an array of object pointers for old Mandalorian armor in top-level inventory.
+-- Returns an array of object pointers for Mandalorian armor in top-level inventory.
+-- Returns all Mandalorian armor (DWB, custom, old versions, broken versions) for exchange.
 function MandoWayOfLife:getOldMandalorianArmorObjects(pPlayer)
 	if (pPlayer == nil) then return {} end
 
@@ -3487,8 +3554,11 @@ function MandoWayOfLife:getOldMandalorianArmorObjects(pPlayer)
 		local pItem = SceneObject(pInventory):getContainerObject(i)
 		if (pItem ~= nil) then
 			local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
-			if (templateOk and tmpl ~= nil and self.armorExchangeMap[tmpl] ~= nil) then
-				found[#found + 1] = pItem
+			if (templateOk and tmpl ~= nil) then
+				-- Return any Mandalorian armor piece (DWB or custom)
+				if (string.find(tmpl, "mandalorian") and string.find(tmpl, "armor")) then
+					found[#found + 1] = pItem
+				end
 			end
 		end
 	end
@@ -3566,6 +3636,114 @@ function MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
 	return true, string.format(
 		"Done. I exchanged %s old Mandalorian armor piece(s) for new custom armor. Your old armor has been destroyed. You may exchange more armor anytime. This is the Way.",
 		tostring(exchanged)
+	)
+end
+
+-- Returns ok, playerMessage
+-- Exchanges old Mandalorian armor for tier-specific custom armor
+function MandoWayOfLife:tryExchangeMandalorianArmorByTier(pPlayer, tier)
+	if (pPlayer == nil) then return false, "No player." end
+	if (tier == nil or tier < 0 or tier > 5) then return false, "Invalid tier." end
+
+	-- Gate: Must have completed the required chapter for this tier
+	local chapterFlag = "chapter" .. tostring(tier) .. "Complete"
+	if (self:readInt(pPlayer, chapterFlag) ~= 1) then
+		return false,
+			string.format("You must complete Chapter %s before exchanging for %s armor. This is the Way.", tostring(tier), self.armorExchangeTiers[tier].name)
+	end
+
+	local tierData = self.armorExchangeTiers[tier]
+	if (tierData == nil) then
+		return false, "Invalid tier data."
+	end
+
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		return false, "I cannot reach your inventory."
+	end
+
+	-- Count how many pieces of this tier the player has in inventory (old or broken versions)
+	local oldArmor = self:getOldMandalorianArmorObjects(pPlayer)
+	if (#oldArmor < 1) then
+		return false,
+			"You have no Mandalorian armor in your inventory to exchange. Place the armor pieces you wish to refurbish in your inventory."
+	end
+
+	-- Check that none of the armor is equipped
+	for _, pOldArmor in ipairs(oldArmor) do
+		if (SceneObject(pOldArmor):isEquipped()) then
+			return false,
+				"You must unequip all Mandalorian armor before exchanging it. Remove it from your character and place it in your inventory."
+		end
+	end
+
+	-- Exchange old armor for new tier-specific armor
+	local exchanged = 0
+	for _, pOldArmor in ipairs(oldArmor) do
+		local templateOk, oldTmpl = pcall(function() return SceneObject(pOldArmor):getTemplateObjectPath() end)
+		if (templateOk and oldTmpl ~= nil) then
+			-- Check if this old armor maps to something in the exchange map
+			local newTmpl = self.armorExchangeMap[oldTmpl]
+			if (newTmpl ~= nil) then
+				-- For tier-specific exchange, we grant the tier's armor pieces
+				-- One old piece = one new piece from the tier
+				local tierArmorIndex = (exchanged % #tierData.armor) + 1
+				local tierArmorTmpl = tierData.armor[tierArmorIndex]
+				
+				if (tierArmorTmpl ~= nil) then
+					local pNewArmor = giveItem(pInventory, tierArmorTmpl, -1)
+					if (pNewArmor ~= nil) then
+						-- Destroy old armor
+						SceneObject(pOldArmor):destroyObjectFromWorld(true)
+						SceneObject(pOldArmor):destroyObjectFromDatabase(true)
+						exchanged = exchanged + 1
+					else
+						self:logDiagPlayer(pPlayer, string.format(
+							"tryExchangeMandalorianArmorByTier FAILED giveItem for %s.",
+							tierArmorTmpl
+						))
+					end
+				end
+			else
+				-- If not in exchange map, check if it's a custom armor piece that needs refurbishing
+				-- Exchange any custom armor piece for the same tier's socketed version
+				for _, tierArmorTmpl in ipairs(tierData.armor) do
+					if (string.find(oldTmpl, tierArmorTmpl) or string.find(tierArmorTmpl, oldTmpl)) then
+						local pNewArmor = giveItem(pInventory, tierArmorTmpl, -1)
+						if (pNewArmor ~= nil) then
+							-- Destroy old armor
+							SceneObject(pOldArmor):destroyObjectFromWorld(true)
+							SceneObject(pOldArmor):destroyObjectFromDatabase(true)
+							exchanged = exchanged + 1
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if (exchanged < 1) then
+		return false, "Something blocked the exchange. Contact staff."
+	end
+
+	self:logDiagPlayer(pPlayer, string.format(
+		"tryExchangeMandalorianArmorByTier OK playerOid=%s tier=%s exchanged=%s.",
+		tostring(SceneObject(pPlayer):getObjectID()),
+		tostring(tier),
+		tostring(exchanged)
+	))
+
+	CreatureObject(pPlayer):sendSystemMessage(string.format(
+		"[Mandalorian Way] Armor exchange complete: %s armor piece(s) refurbished to %s tier. This is the Way!",
+		tostring(exchanged),
+		tierData.name
+	))
+
+	return true, string.format(
+		"Done. I refurbished %s armor piece(s) to %s tier socketed versions. Your old armor has been destroyed. You may exchange more armor anytime. This is the Way.",
+		tostring(exchanged),
+		tierData.name
 	)
 end
 
