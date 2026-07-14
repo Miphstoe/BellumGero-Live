@@ -2310,3 +2310,28 @@ object_building_player_shared_diner_house = SharedBuildingObjectTemplate:new {
 	clientTemplateFileName = "object/building/player/shared_diner_house.iff"
 }
 ObjectTemplates:addClientTemplate(object_building_player_shared_diner_house, "object/building/player/shared_diner_house.iff")
+
+object_building_player_shared_atat_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_atat_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_atat_house, "object/building/player/shared_atat_house.iff")
+
+object_building_player_shared_hangar_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_hangar_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_hangar_house, "object/building/player/shared_hangar_house.iff")
+
+object_building_player_shared_sandcrawler_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_sandcrawler_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_sandcrawler_house, "object/building/player/shared_sandcrawler_house.iff")
+
+object_building_player_shared_tree_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_tree_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_tree_house, "object/building/player/shared_tree_house.iff")
+
+object_building_player_shared_yt1300_house = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/player/shared_yt1300_house.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_player_shared_yt1300_house, "object/building/player/shared_yt1300_house.iff")
