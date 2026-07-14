@@ -61,8 +61,13 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 
 	-- Armor exchange options - show based on quest progress
 	local maxChapter = MandoWayOfLife:getHighestEarnedChapter(pPlayer)
+	local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
+	MandoWayOfLife:logDiagPlayer(pPlayer, string.format(
+		"withRecruiterRetroOptions: armor exchange check - maxChapter=%s oldCount=%s",
+		tostring(maxChapter),
+		tostring(oldCount)
+	))
 	if (maxChapter >= 0) then
-		local oldCount = MandoWayOfLife:countOldMandalorianArmor(pPlayer)
 		if (oldCount > 0) then
 			cloned:addOption(
 				"Exchange Mandalorian armor for refurbished pieces.",
