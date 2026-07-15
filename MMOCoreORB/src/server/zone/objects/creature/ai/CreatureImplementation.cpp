@@ -79,8 +79,20 @@ void CreatureImplementation::fillAttributeList(AttributeListMessage* alm, Creatu
 
 	int creaKnowledge = player != nullptr ?  player->getSkillMod("creature_knowledge") : 100;
 
+	// Bio Engineers need to know a creature's level because DNA harvesting
+	// eligibility and the resulting DNA sample both depend on it. Keep all
+	// other Creature Knowledge attributes gated behind creature_knowledge.
+	bool bioEngineerCanAnalyzeLevel = player != nullptr
+		&& player->hasSkill("outdoors_bio_engineer_novice")
+		&& player->getSkillMod("dna_harvesting") > 0
+		&& !isBaby()
+		&& (!isPet() || hasPetDeed())
+		&& !isDroidObject()
+		&& hasOrganics()
+		&& getDiet() != ObjectFlag::NONE;
+
 	if (getHideType().isEmpty() && getBoneType().isEmpty() && getMeatType().isEmpty()) {
-		if(!isPet()) // we do want to show this for pets
+		if (!isPet() && !bioEngineerCanAnalyzeLevel) // we do want to show this for pets and DNA-compatible creatures
 			return;
 	}
 
@@ -134,7 +146,7 @@ void CreatureImplementation::fillAttributeList(AttributeListMessage* alm, Creatu
 		alm->insertAttribute("ferocity", (int) getFerocity());
 	}
 
-	if (creaKnowledge >= 45)
+	if (creaKnowledge >= 45 || bioEngineerCanAnalyzeLevel)
 		alm->insertAttribute("challenge_level", getAdultLevel());
 
 	//int skillNum = skillCommands.size();
