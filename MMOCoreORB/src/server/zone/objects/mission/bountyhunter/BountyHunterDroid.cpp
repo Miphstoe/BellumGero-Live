@@ -9,6 +9,7 @@
 #include "server/zone/objects/mission/BountyMissionObjective.h"
 #include "server/zone/Zone.h"
 #include "server/zone/managers/creature/CreatureManager.h"
+#include "server/zone/managers/mission/MissionManager.h"
 
 Reference<Task*> BountyHunterDroid::performAction(int action, SceneObject* droidObject, CreatureObject* player, MissionObject* mission) {
 	if (player == nullptr)
@@ -59,7 +60,7 @@ Reference<FindTargetTask*> BountyHunterDroid::findTarget(SceneObject* droidObjec
 
 	ManagedReference<BountyMissionObjective*> objective = cast<BountyMissionObjective*>(mission->getMissionObjective());
 
-	if (objective == nullptr || objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS) {
+	if (objective == nullptr || (objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS && !objective->isPlayerTarget())) {
 		player->sendSystemMessage("@mission/mission_generic:bounty_no_signature"); // You must go speak with your informant before you can track your target.
 		return nullptr;
 	}
@@ -109,7 +110,7 @@ Reference<CallArakydTask*> BountyHunterDroid::callArakydDroid(SceneObject* droid
 
 	ManagedReference<BountyMissionObjective*> objective = cast<BountyMissionObjective*>(mission->getMissionObjective());
 
-	if (objective == nullptr || objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS) {
+	if (objective == nullptr || (objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS && !objective->isPlayerTarget())) {
 		player->sendSystemMessage("@mission/mission_generic:bounty_no_signature"); // You must go speak with your informant before you can track your target.
 		return nullptr;
 	}
@@ -134,6 +135,9 @@ Reference<CallArakydTask*> BountyHunterDroid::callArakydDroid(SceneObject* droid
 
 	Reference<CallArakydTask*> task = new CallArakydTask(player, cast<BountyMissionObjective*>(mission->getMissionObjective()));
 
+	if (objective->isPlayerTarget())
+		player->sendSystemMessage("Deploying Arakyd Tracking Droid...");
+
 	Core::getTaskManager()->executeTask(task);
 
 	// Temporary set the arakyd droid to the player object. The call task will overwrite it with correct value.
@@ -148,9 +152,12 @@ Reference<CallArakydTask*> BountyHunterDroid::callArakydDroid(SceneObject* droid
 
 	TangibleObject* tano = cast<TangibleObject*>(droidObject);
 
-	if (tano != nullptr) {
+	MissionManager* missionManager = player->getZoneServer() != nullptr ? player->getZoneServer()->getMissionManager() : nullptr;
+	bool consumeArakyd = missionManager == nullptr || missionManager->getAnonymousJediBountyConsumeArakyd();
+
+	if (tano != nullptr && consumeArakyd) {
 		tano->decreaseUseCount();
-	} else {
+	} else if (tano == nullptr && consumeArakyd) {
 		droidObject->destroyObjectFromWorld(true);
 		droidObject->destroyObjectFromDatabase(true);
 	}
@@ -166,7 +173,7 @@ Reference<FindTargetTask*> BountyHunterDroid::transmitBiologicalSignature(SceneO
 
 	ManagedReference<BountyMissionObjective*> objective = cast<BountyMissionObjective*>(mission->getMissionObjective());
 
-	if (objective == nullptr || objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS) {
+	if (objective == nullptr || (objective->getObjectiveStatus() == BountyMissionObjective::INITSTATUS && !objective->isPlayerTarget())) {
 		player->sendSystemMessage("@mission/mission_generic:bounty_no_signature"); // You must go speak with your informant before you can track your target.
 		return nullptr;
 	}
@@ -179,6 +186,17 @@ Reference<FindTargetTask*> BountyHunterDroid::transmitBiologicalSignature(SceneO
 	if (player->isRidingMount()) {
 		player->sendSystemMessage("@error_message:survey_on_mount"); // You cannot perform that action while mounted on a creature or driving a vehicle.
 		return nullptr;
+	}
+
+	MissionManager* missionManager = player->getZoneServer() != nullptr ? player->getZoneServer()->getMissionManager() : nullptr;
+	if (objective->isPlayerTarget() && missionManager != nullptr) {
+		if (!player->checkCooldownRecovery("anonymous_jedi_bounty_scan")) {
+			player->sendSystemMessage("Scanning system is recharging.");
+			return nullptr;
+		}
+
+		player->addCooldown("anonymous_jedi_bounty_scan", missionManager->getAnonymousJediBountyScanCooldown());
+		player->sendSystemMessage("Scanning for target...");
 	}
 
 	objective->cancelCallArakydTask();

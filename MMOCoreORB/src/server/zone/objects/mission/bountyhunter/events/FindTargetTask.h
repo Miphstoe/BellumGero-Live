@@ -11,6 +11,7 @@
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/Zone.h"
+#include "server/zone/objects/waypoint/WaypointObject.h"
 
 namespace server {
 namespace zone {
@@ -130,10 +131,43 @@ class FindTargetTask : public Task, public Logger {
 		objective->updateMissionStatus(2);
 
 		if (arakyd) {
+			if (objective->isPlayerTarget()) {
+				return objective->handleArakydTrackingScan(player);
+			}
+
 			player->sendSystemMessage("@mission/mission_generic:target_located_" + objective->getTargetZoneName());
 		} else {
+			if (objective->isPlayerTarget()) {
+				if (objective->getTargetZoneName() != zoneName) {
+					player->sendSystemMessage("@mission/mission_generic:target_not_on_planet");
+					return false;
+				}
+
+				ManagedReference<MissionObject*> mission = objective->getMissionObject().get();
+
+				if (mission != nullptr) {
+					WaypointObject* waypoint = mission->getWaypointToMission();
+
+					if (waypoint != nullptr) {
+						Vector3 targetCoordinate = objective->getTargetPosition();
+
+						Locker wplocker(waypoint);
+						waypoint->setPlanetCRC(zoneName.hashCode());
+						waypoint->setPosition(targetCoordinate.getX(), 0, targetCoordinate.getY());
+						waypoint->setActive(true);
+						wplocker.release();
+
+						mission->updateMissionLocation();
+					}
+				}
+
+				player->sendSystemMessage("Target signal acquired.");
+				player->sendSystemMessage("Current target location marked.");
+				objective->authorizeTrackedPlayerTarget(player);
+			}
+
 			if (objective->getTargetZoneName() == zoneName) {
-				if (ConfigManager::instance()->getBool("Core3.MissionManager.AnonymousBountyTerminals", false)) {
+				if (!objective->isPlayerTarget() && ConfigManager::instance()->getBool("Core3.MissionManager.AnonymousBountyTerminals", false)) {
 					ManagedReference<MissionObject*> mission = objective->getMissionObject().get();
 
 					ZoneServer* zoneServer = player->getZoneServer();
@@ -306,6 +340,13 @@ public:
 		state = Init;
 
 		timeLeft = calculateTime(player);
+
+		MissionManager* missionManager = player->getZoneServer() != nullptr ? player->getZoneServer()->getMissionManager() : nullptr;
+		if (arakyd && objective != nullptr && objective->isPlayerTarget() && missionManager != nullptr) {
+			timeLeft = missionManager->getAnonymousJediBountyScanDuration() / 1000;
+			if (timeLeft < 6)
+				timeLeft = 6;
+		}
 
 		success = getSuccess(player, objective);
 

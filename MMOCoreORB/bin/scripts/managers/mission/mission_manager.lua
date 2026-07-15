@@ -76,6 +76,17 @@ playerBountyKillBuffer = 30 * 60 * 1000 -- Buffer before player bounty can be pu
 
 playerBountyDebuffLength = 3 * 24 * 60 * 60 * 1000 -- Time before their bounty resets from the minimum amount
 
+-- Anonymous Jedi bounty Arakyd tracking configuration
+anonymousJediBountyTracking = {
+	initialScanDuration = 15000,              -- 15 seconds
+	scanCooldown = 15000,                     -- 15 seconds
+	targetConfirmationRange = 100,            -- meters
+	trackingLockDuration = 5 * 60 * 1000,     -- 5 minutes
+	trackingLossDistance = 300,               -- meters
+	approximateWaypointAccuracy = 200,        -- meters
+	consumeArakydDroid = true,                -- use one charge / item on deployment
+}
+
 -- Player Placed Bounty System Configuration
 playerPlacedBounties = {
 	enabled = true,                          -- Enable/disable player-placed bounties

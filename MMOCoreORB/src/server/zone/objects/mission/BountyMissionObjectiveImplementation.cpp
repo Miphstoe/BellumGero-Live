@@ -21,8 +21,36 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/objects/mission/bountyhunter/BountyHunterDroid.h"
 #include "server/zone/objects/mission/bountyhunter/events/BountyHunterTargetTask.h"
+#include "server/zone/objects/mission/bountyhunter/events/BountyTrackingTask.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "conf/ConfigManager.h"
+
+namespace {
+	String getDisplayPlanetName(const String& zoneName) {
+		if (zoneName == "corellia")
+			return "Corellia";
+		if (zoneName == "dantooine")
+			return "Dantooine";
+		if (zoneName == "dathomir")
+			return "Dathomir";
+		if (zoneName == "endor")
+			return "Endor";
+		if (zoneName == "lok")
+			return "Lok";
+		if (zoneName == "naboo")
+			return "Naboo";
+		if (zoneName == "rori")
+			return "Rori";
+		if (zoneName == "talus")
+			return "Talus";
+		if (zoneName == "tatooine")
+			return "Tatooine";
+		if (zoneName == "yavin4")
+			return "Yavin IV";
+
+		return zoneName;
+	}
+}
 
 void BountyMissionObjectiveImplementation::setNpcTemplateToSpawn(SharedObjectTemplate* sp) {
 	npcTemplateToSpawn = sp;
@@ -42,6 +70,15 @@ void BountyMissionObjectiveImplementation::activate() {
 			getPlayerOwner()->sendSystemMessage("@mission/mission_generic:failed"); // Mission failed
 			abort();
 			removeMissionFromPlayer();
+		} else {
+			WaypointObject* waypoint = mission->getWaypointToMission();
+			if (waypoint != nullptr) {
+				Locker wplocker(waypoint);
+				waypoint->setActive(false);
+			}
+
+			info(true) << "[AnonymousJediBounty] Mission accepted hunter=" << getPlayerOwner()->getObjectID()
+				<< " target=" << mission->getTargetObjectId() << " mission=" << mission->getObjectID();
 		}
 	} else {
 		startNpcTargetTask();
@@ -54,6 +91,7 @@ void BountyMissionObjectiveImplementation::activate() {
 
 void BountyMissionObjectiveImplementation::deactivate() {
 	MissionObjectiveImplementation::deactivate();
+	clearTrackingData("Mission deactivated", false);
 
 	if (activeDroid != nullptr) {
 		if (!activeDroid->isPlayerCreature()) {
@@ -78,6 +116,8 @@ void BountyMissionObjectiveImplementation::abort() {
 	ManagedReference<MissionObject*> strongRef = mission.get();
 
 	MissionObjectiveImplementation::abort();
+	clearTrackingData("Mission abandonment", false);
+	info(true) << "[AnonymousJediBounty] Mission abandonment mission=" << (strongRef != nullptr ? strongRef->getObjectID() : (uint64)0);
 
 	cancelAllTasks();
 
@@ -132,6 +172,9 @@ void BountyMissionObjectiveImplementation::complete() {
 	owner->getZoneServer()->getPlayerManager()->awardExperience(owner, "bountyhunter", expGain, true, 1);
 
 	owner->getZoneServer()->getMissionManager()->completePlayerBounty(mission->getTargetObjectId(), owner->getObjectID());
+	clearTrackingData("Mission completion", false);
+	info(true) << "[AnonymousJediBounty] Mission completion hunter=" << owner->getObjectID()
+		<< " target=" << mission->getTargetObjectId() << " mission=" << mission->getObjectID();
 
 	completedMission = true;
 
@@ -243,6 +286,20 @@ int BountyMissionObjectiveImplementation::notifyObserverEvent(MissionObserver* o
 		return handleNpcTargetReceivesDamage(arg1);
 	} else if (eventType == ObserverEventType::PLAYERKILLED) {
 		handlePlayerKilled(arg1, arg2);
+	} else if (eventType == ObserverEventType::LOGGEDOUT) {
+		ManagedReference<MissionObject*> mission = this->mission.get();
+		SceneObject* loggedOut = cast<SceneObject*>(observable);
+		ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+		if (mission != nullptr && loggedOut != nullptr && loggedOut->getObjectID() == mission->getTargetObjectId()) {
+			clearTrackingData("Target unavailable", true);
+			info(true) << "[AnonymousJediBounty] Logout cleanup target=" << mission->getTargetObjectId()
+				<< " mission=" << mission->getObjectID();
+		} else {
+			clearTrackingData("Logout cleanup", owner != nullptr && loggedOut != nullptr && loggedOut->getObjectID() != owner->getObjectID());
+			if (mission != nullptr)
+				info(true) << "[AnonymousJediBounty] Logout cleanup mission=" << mission->getObjectID();
+		}
 	}
 
 	return 0;
@@ -263,19 +320,19 @@ void BountyMissionObjectiveImplementation::updateMissionStatus(int informantLeve
 			startNpcTargetTask();
 		}
 
-		if (informantLevel >= 1) {
+		if (!isPlayerTarget() && informantLevel >= 1) {
 			updateWaypoint();
 		}
 		objectiveStatus = HASBIOSIGNATURESTATUS;
 		break;
 	case HASBIOSIGNATURESTATUS:
-		if (informantLevel > 1) {
+		if (!isPlayerTarget() && informantLevel > 1) {
 			updateWaypoint();
 		}
 		objectiveStatus = HASTALKED;
 		break;
 	case HASTALKED:
-		if (informantLevel > 1) {
+		if (!isPlayerTarget() && informantLevel > 1) {
 			updateWaypoint();
 		}
 		break;
@@ -290,6 +347,9 @@ void BountyMissionObjectiveImplementation::updateWaypoint() {
 	ManagedReference<MissionObject* > mission = this->mission.get();
 
 	if(mission == nullptr)
+		return;
+
+	if (isPlayerTarget())
 		return;
 
 	WaypointObject* waypoint = mission->getWaypointToMission();
@@ -409,6 +469,12 @@ void BountyMissionObjectiveImplementation::cancelAllTasks() {
 	}*/
 
 	droidTasks.removeAll();
+
+	if (trackingTask != nullptr && trackingTask->isScheduled()) {
+		trackingTask->cancel();
+	}
+
+	trackingTask = nullptr;
 }
 
 void BountyMissionObjectiveImplementation::cancelCallArakydTask() {
@@ -464,14 +530,27 @@ void BountyMissionObjectiveImplementation::removePlayerTargetObservers() {
 	if(owner == nullptr || mission == nullptr)
 		return;
 
-	removeObserver(1, ObserverEventType::PLAYERKILLED, owner);
-
 	ZoneServer* zoneServer = owner->getZoneServer();
+	ManagedReference<CreatureObject*> target = nullptr;
 
 	if (zoneServer != nullptr) {
-		ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+		target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+	}
 
-		removeObserver(0, ObserverEventType::PLAYERKILLED, target);
+	for (int i = getObserverCount() - 1; i >= 0; --i) {
+		ManagedReference<MissionObserver*> observer = getObserver(i);
+
+		if (owner != nullptr) {
+			owner->dropObserver(ObserverEventType::PLAYERKILLED, observer);
+			owner->dropObserver(ObserverEventType::LOGGEDOUT, observer);
+		}
+
+		if (target != nullptr) {
+			target->dropObserver(ObserverEventType::PLAYERKILLED, observer);
+			target->dropObserver(ObserverEventType::LOGGEDOUT, observer);
+		}
+
+		dropObserver(observer, true);
 	}
 }
 
@@ -539,7 +618,11 @@ bool BountyMissionObjectiveImplementation::addPlayerTargetObservers() {
 
 			addObserverToCreature(ObserverEventType::PLAYERKILLED, owner);
 
-			//Update aggressive status on target for bh.
+			addObserverToCreature(ObserverEventType::LOGGEDOUT, target);
+
+			addObserverToCreature(ObserverEventType::LOGGEDOUT, owner);
+
+			//Update status on target for bh. Attackability remains closed until tracking confirms the contract.
 			target->sendPvpStatusTo(owner);
 
 			return true;
@@ -571,6 +654,380 @@ bool BountyMissionObjectiveImplementation::isPlayerTarget() {
 		return false;
 
 	return mission->getTargetOptionalTemplate() == "";
+}
+
+bool BountyMissionObjectiveImplementation::handleArakydTrackingScan(CreatureObject* player) {
+	Locker locker(&syncMutex);
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (player == nullptr || mission == nullptr || owner == nullptr || player->getObjectID() != owner->getObjectID() || !isPlayerTarget())
+		return false;
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	if (zoneServer == nullptr)
+		return false;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr || !missionManager->hasPlayerBountyTargetInList(mission->getTargetObjectId())
+			|| !missionManager->hasBountyHunterInPlayerBounty(mission->getTargetObjectId(), owner->getObjectID())) {
+		clearTrackingData("Authorization cleanup", false);
+		return false;
+	}
+
+	ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+
+	if (target == nullptr || target->getZone() == nullptr || !target->isOnline() || !owner->isOnline()) {
+		clearTrackingData("Target unavailable", true);
+		info(true) << "[AnonymousJediBounty] Target unavailable hunter=" << owner->getObjectID()
+			<< " target=" << mission->getTargetObjectId() << " mission=" << mission->getObjectID();
+		return false;
+	}
+
+	String targetZone = target->getZone()->getZoneName();
+	Zone* playerZone = player->getZone();
+	String playerZoneName = playerZone != nullptr ? playerZone->getZoneName() : "";
+
+	if (trackingPlanet == "" || trackingPlanet != targetZone || playerZoneName != targetZone) {
+		clearTrackingData("Initial planet scan", false);
+		trackingPlanet = targetZone;
+		trackingState = TRACKING_PLANET_KNOWN;
+
+		StringBuffer msg;
+		msg << "Target located.\nPlanet: " << getDisplayPlanetName(targetZone);
+		player->sendSystemMessage(msg.toString());
+		player->sendSystemMessage("Target planet identified.");
+
+		info(true) << "[AnonymousJediBounty] Initial planet scan hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " planet=" << targetZone
+			<< " mission=" << mission->getObjectID();
+		return true;
+	}
+
+	WaypointObject* waypoint = mission->getWaypointToMission();
+	if (waypoint == nullptr)
+		return false;
+
+	float accuracy = missionManager->getAnonymousJediBountyWaypointAccuracy();
+	float offsetX = 0.f;
+	float offsetY = 0.f;
+
+	if (accuracy > 0.f) {
+		int scaledAccuracy = (int)(accuracy * 10.f);
+		offsetX = (System::random(scaledAccuracy * 2) - scaledAccuracy) / 10.f;
+		offsetY = (System::random(scaledAccuracy * 2) - scaledAccuracy) / 10.f;
+	}
+
+	Locker wplocker(waypoint);
+	waypoint->setPlanetCRC(targetZone.hashCode());
+	waypoint->setPosition(target->getWorldPositionX() + offsetX, 0, target->getWorldPositionY() + offsetY);
+	waypoint->setActive(true);
+	wplocker.release();
+
+	mission->updateMissionLocation();
+
+	player->sendSystemMessage("Target signal acquired.");
+	player->sendSystemMessage("Approximate location marked.");
+
+	trackingState = TRACKING_WAYPOINT;
+	trackingToken++;
+	trackingAuthorizationExpires = 0;
+
+	Vector3 ownerPosition = owner->getWorldPosition();
+	ownerPosition.setZ(0);
+	Vector3 targetPosition = target->getWorldPosition();
+	targetPosition.setZ(0);
+
+	if (ownerPosition.distanceTo(targetPosition) <= missionManager->getAnonymousJediBountyConfirmationRange()) {
+		uint64 duration = missionManager->getAnonymousJediBountyTrackingDuration();
+		trackingAuthorizationExpires = Time().getMiliTime() + duration;
+		trackingState = TRACKING_CONFIRMED;
+		trackingLockX = target->getWorldPositionX();
+		trackingLockY = target->getWorldPositionY();
+
+		owner->addPersonalEnemyFlag(target, duration);
+
+		Locker targetLocker(target);
+		target->addPersonalEnemyFlag(owner, duration);
+		targetLocker.release();
+
+		player->sendSystemMessage("Target confirmed.");
+		player->sendSystemMessage("Engagement authorized.");
+		target->sendPvpStatusTo(owner);
+		owner->sendPvpStatusTo(target);
+
+		info(true) << "[AnonymousJediBounty] Target confirmation hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
+		info(true) << "[AnonymousJediBounty] PvP authorization granted hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " duration=" << duration
+			<< " mission=" << mission->getObjectID();
+	}
+
+	if (trackingTask != nullptr && trackingTask->isScheduled())
+		trackingTask->cancel();
+
+	trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
+	trackingTask->schedule(5 * 1000);
+
+	info(true) << "[AnonymousJediBounty] Same-planet location scan hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " planet=" << targetZone
+		<< " mission=" << mission->getObjectID();
+	return true;
+}
+
+bool BountyMissionObjectiveImplementation::authorizeTrackedPlayerTarget(CreatureObject* player) {
+	Locker locker(&syncMutex);
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (player == nullptr || mission == nullptr || owner == nullptr || player->getObjectID() != owner->getObjectID() || !isPlayerTarget())
+		return false;
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	if (zoneServer == nullptr)
+		return false;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr || !missionManager->hasPlayerBountyTargetInList(mission->getTargetObjectId())
+			|| !missionManager->hasBountyHunterInPlayerBounty(mission->getTargetObjectId(), owner->getObjectID())) {
+		clearTrackingData("Authorization cleanup", false);
+		return false;
+	}
+
+	ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+
+	if (target == nullptr || target->getZone() == nullptr || owner->getZone() == nullptr || !target->isOnline() || !owner->isOnline()) {
+		clearTrackingData("Target unavailable", true);
+		return false;
+	}
+
+	String targetZone = target->getZone()->getZoneName();
+	String ownerZone = owner->getZone()->getZoneName();
+
+	if (targetZone != ownerZone) {
+		player->sendSystemMessage("@mission/mission_generic:target_not_on_planet");
+		return false;
+	}
+
+	uint64 duration = missionManager->getAnonymousJediBountyTrackingDuration();
+	trackingPlanet = targetZone;
+	trackingState = TRACKING_CONFIRMED;
+	trackingToken++;
+	trackingAuthorizationExpires = Time().getMiliTime() + duration;
+	trackingLockX = target->getWorldPositionX();
+	trackingLockY = target->getWorldPositionY();
+
+	owner->addPersonalEnemyFlag(target, duration);
+
+	Locker targetLocker(target);
+	target->addPersonalEnemyFlag(owner, duration);
+	targetLocker.release();
+
+	player->sendSystemMessage("Target confirmed.");
+	player->sendSystemMessage("Engagement authorized.");
+	target->sendPvpStatusTo(owner);
+	owner->sendPvpStatusTo(target);
+
+	if (trackingTask != nullptr && trackingTask->isScheduled())
+		trackingTask->cancel();
+
+	trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
+	trackingTask->schedule(5 * 1000);
+
+	info(true) << "[AnonymousJediBounty] Target confirmation hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
+	info(true) << "[AnonymousJediBounty] PvP authorization granted hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " duration=" << duration
+		<< " mission=" << mission->getObjectID();
+	return true;
+}
+
+void BountyMissionObjectiveImplementation::validateTrackingLock(uint64 token) {
+	Locker locker(&syncMutex);
+
+	if (token != trackingToken || trackingState < TRACKING_WAYPOINT)
+		return;
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (mission == nullptr || owner == nullptr)
+		return;
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	if (zoneServer == nullptr)
+		return;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr || !missionManager->hasPlayerBountyTargetInList(mission->getTargetObjectId())
+			|| !missionManager->hasBountyHunterInPlayerBounty(mission->getTargetObjectId(), owner->getObjectID())) {
+		clearTrackingData("Authorization cleanup", false);
+		return;
+	}
+
+	ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+
+	if (target == nullptr || target->getZone() == nullptr || owner->getZone() == nullptr || !target->isOnline() || !owner->isOnline()) {
+		clearTrackingData("Target unavailable", true);
+		return;
+	}
+
+	String targetZone = target->getZone()->getZoneName();
+	String ownerZone = owner->getZone()->getZoneName();
+
+	if (trackingPlanet != "" && trackingPlanet != targetZone) {
+		clearTrackingData("Target changed planets", true);
+		trackingPlanet = "";
+		trackingState = TRACKING_UNKNOWN;
+		info(true) << "[AnonymousJediBounty] Planet change hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " planet=" << targetZone
+			<< " mission=" << mission->getObjectID();
+		return;
+	}
+
+	if (ownerZone != targetZone) {
+		trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
+		trackingTask->schedule(5 * 1000);
+		return;
+	}
+
+	Vector3 ownerPosition = owner->getWorldPosition();
+	ownerPosition.setZ(0);
+	Vector3 targetPosition = target->getWorldPosition();
+	targetPosition.setZ(0);
+
+	float distance = ownerPosition.distanceTo(targetPosition);
+	uint64 now = Time().getMiliTime();
+
+	if (trackingState == TRACKING_CONFIRMED) {
+		if (trackingAuthorizationExpires > 0 && now >= trackingAuthorizationExpires) {
+			clearTrackingData("Tracking authorization expired", true);
+			info(true) << "[AnonymousJediBounty] Authorization cleanup hunter=" << owner->getObjectID()
+				<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
+			return;
+		}
+
+		Vector3 lockPosition;
+		lockPosition.setX(trackingLockX);
+		lockPosition.setY(trackingLockY);
+		lockPosition.setZ(0);
+
+		float targetMovedDistance = targetPosition.distanceTo(lockPosition);
+
+		if (targetMovedDistance > missionManager->getAnonymousJediBountyTrackingLossDistance()) {
+			clearTrackingData("Tracking signal lost", true);
+			info(true) << "[AnonymousJediBounty] Tracking lost hunter=" << owner->getObjectID()
+				<< " target=" << target->getObjectID() << " distance=" << targetMovedDistance
+				<< " mission=" << mission->getObjectID();
+			return;
+		}
+
+		trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
+		trackingTask->schedule(5 * 1000);
+		return;
+	}
+
+	if (distance <= missionManager->getAnonymousJediBountyConfirmationRange()) {
+		uint64 duration = missionManager->getAnonymousJediBountyTrackingDuration();
+		trackingAuthorizationExpires = now + duration;
+		trackingState = TRACKING_CONFIRMED;
+		trackingLockX = target->getWorldPositionX();
+		trackingLockY = target->getWorldPositionY();
+
+		Locker ownerLocker(owner);
+		owner->addPersonalEnemyFlag(target, duration);
+		ownerLocker.release();
+
+		Locker targetLocker(target);
+		target->addPersonalEnemyFlag(owner, duration);
+		targetLocker.release();
+
+		owner->sendSystemMessage("Target confirmed.");
+		owner->sendSystemMessage("Engagement authorized.");
+		target->sendPvpStatusTo(owner);
+		owner->sendPvpStatusTo(target);
+
+		info(true) << "[AnonymousJediBounty] Target confirmation hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
+		info(true) << "[AnonymousJediBounty] PvP authorization granted hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " duration=" << duration
+			<< " mission=" << mission->getObjectID();
+	}
+
+	trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
+	trackingTask->schedule(5 * 1000);
+}
+
+void BountyMissionObjectiveImplementation::clearTrackingData(const String& reason, bool notifyPlayer) {
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+	ManagedReference<CreatureObject*> target = nullptr;
+
+	if (mission != nullptr && owner != nullptr && owner->getZoneServer() != nullptr) {
+		target = owner->getZoneServer()->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+	}
+
+	if (trackingTask != nullptr && trackingTask->isScheduled())
+		trackingTask->cancel();
+
+	trackingTask = nullptr;
+	trackingToken++;
+
+	if (mission != nullptr) {
+		WaypointObject* waypoint = mission->getWaypointToMission();
+		if (waypoint != nullptr) {
+			Locker wplocker(waypoint);
+			waypoint->setActive(false);
+		}
+	}
+
+	if (owner != nullptr && target != nullptr) {
+		Locker ownerLocker(owner);
+		owner->removePersonalEnemyFlag(target);
+		ownerLocker.release();
+
+		Locker targetLocker(target);
+		target->removePersonalEnemyFlag(owner);
+		targetLocker.release();
+	}
+
+	if (notifyPlayer && owner != nullptr) {
+		owner->sendSystemMessage(reason);
+		owner->sendSystemMessage("Deploy another Arakyd Droid to reacquire the target.");
+	}
+
+	if ((reason == "Tracking signal lost" || reason == "Authorization cleanup" || reason == "Tracking authorization expired") && trackingPlanet != "") {
+		trackingState = TRACKING_PLANET_KNOWN;
+	} else {
+		trackingPlanet = "";
+		trackingState = TRACKING_UNKNOWN;
+	}
+
+	trackingAuthorizationExpires = 0;
+	trackingLockX = 0;
+	trackingLockY = 0;
+	info(true) << "[AnonymousJediBounty] Authorization cleanup reason=\"" << reason << "\" mission=" << (mission != nullptr ? mission->getObjectID() : (uint64)0);
+}
+
+bool BountyMissionObjectiveImplementation::hasTrackingAuthorization(CreatureObject* hunter, CreatureObject* target) {
+	if (hunter == nullptr || target == nullptr || trackingState != TRACKING_CONFIRMED)
+		return false;
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (mission == nullptr || owner == nullptr)
+		return false;
+
+	if (owner->getObjectID() != hunter->getObjectID() || mission->getTargetObjectId() != target->getObjectID())
+		return false;
+
+	if (trackingAuthorizationExpires > 0 && Time().getMiliTime() >= trackingAuthorizationExpires)
+		return false;
+
+	return hunter->hasPersonalEnemyFlag(target) && target->hasPersonalEnemyFlag(hunter);
 }
 
 void BountyMissionObjectiveImplementation::handleNpcTargetKilled(Observable* observable) {
@@ -653,6 +1110,12 @@ void BountyMissionObjectiveImplementation::handlePlayerKilled(ManagedObject* arg
 	uint64 targetID = mission->getTargetObjectId();
 	uint64 ownerID = owner->getObjectID();
 	uint64 killerID = killer->getObjectID();
+
+	if (destructedID == ownerID) {
+		clearTrackingData("Tracking signal lost", false);
+		info(true) << "[AnonymousJediBounty] Tracking lost hunter death hunter=" << ownerID
+			<< " target=" << targetID << " mission=" << mission->getObjectID();
+	}
 
 	// Player died to DoT
 	if (killerID == destructedID)

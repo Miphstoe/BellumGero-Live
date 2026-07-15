@@ -107,6 +107,18 @@ void MissionManagerImplementation::loadLuaSettings() {
 		playerBountyKillBuffer = lua->getGlobalLong("playerBountyKillBuffer");
 		playerBountyDebuffLength = lua->getGlobalLong("playerBountyDebuffLength");
 
+		LuaObject anonymousTracking = lua->getGlobalObject("anonymousJediBountyTracking");
+		if (anonymousTracking.isValidTable()) {
+			anonymousJediBountyScanDuration = anonymousTracking.getLongField("initialScanDuration");
+			anonymousJediBountyScanCooldown = anonymousTracking.getLongField("scanCooldown");
+			anonymousJediBountyConfirmationRange = anonymousTracking.getFloatField("targetConfirmationRange");
+			anonymousJediBountyTrackingDuration = anonymousTracking.getLongField("trackingLockDuration");
+			anonymousJediBountyTrackingLossDistance = anonymousTracking.getFloatField("trackingLossDistance");
+			anonymousJediBountyWaypointAccuracy = anonymousTracking.getFloatField("approximateWaypointAccuracy");
+			anonymousJediBountyConsumeArakyd = anonymousTracking.getBooleanField("consumeArakydDroid");
+		}
+		anonymousTracking.pop();
+
 		destroyMissionBaseDistance = lua->getGlobalLong("destroyMissionBaseDistance");
 		destroyMissionDifficultyDistanceFactor = lua->getGlobalLong("destroyMissionDifficultyDistanceFactor");
 		destroyMissionRandomDistance = lua->getGlobalLong("destroyMissionRandomDistance");

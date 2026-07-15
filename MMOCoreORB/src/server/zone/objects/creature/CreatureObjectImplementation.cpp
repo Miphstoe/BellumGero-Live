@@ -52,6 +52,7 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/objects/area/ActiveArea.h"
 #include "server/zone/objects/mission/MissionObject.h"
+#include "server/zone/objects/mission/BountyMissionObjective.h"
 #include "server/zone/objects/area/CampSiteActiveArea.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
@@ -3876,6 +3877,12 @@ bool CreatureObjectImplementation::hasBountyMissionFor(CreatureObject* target) {
 
 	if (mission == nullptr)
 		return false;
+
+	if (mission->getTargetOptionalTemplate() == "") {
+		ManagedReference<BountyMissionObjective*> objective = cast<BountyMissionObjective*>(mission->getMissionObjective());
+
+		return objective != nullptr && objective->hasTrackingAuthorization(asCreatureObject(), target);
+	}
 
 	return mission->getTargetObjectId() == target->getObjectID();
 }

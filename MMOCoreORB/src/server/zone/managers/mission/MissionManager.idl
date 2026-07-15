@@ -61,6 +61,14 @@ class MissionManager extends Observer implements Logger {
 	unsigned long playerBountyKillBuffer;
 	unsigned long playerBountyDebuffLength;
 
+	unsigned long anonymousJediBountyScanDuration;
+	unsigned long anonymousJediBountyScanCooldown;
+	float anonymousJediBountyConfirmationRange;
+	unsigned long anonymousJediBountyTrackingDuration;
+	float anonymousJediBountyTrackingLossDistance;
+	float anonymousJediBountyWaypointAccuracy;
+	boolean anonymousJediBountyConsumeArakyd;
+
 	unsigned long destroyMissionBaseDistance;
 	unsigned long destroyMissionDifficultyDistanceFactor;
 	unsigned long destroyMissionRandomDistance;
@@ -81,6 +89,13 @@ class MissionManager extends Observer implements Logger {
 		enableFactionalEntertainerMissions = false;
 		enableSameAccountBountyMissions = false;
 		playerBountyKillBuffer = 0;
+		anonymousJediBountyScanDuration = 15000;
+		anonymousJediBountyScanCooldown = 15000;
+		anonymousJediBountyConfirmationRange = 100;
+		anonymousJediBountyTrackingDuration = 300000;
+		anonymousJediBountyTrackingLossDistance = 300;
+		anonymousJediBountyWaypointAccuracy = 200;
+		anonymousJediBountyConsumeArakyd = true;
 
 		Logger.setLoggingName("MissionManager");
 
@@ -212,4 +227,39 @@ class MissionManager extends Observer implements Logger {
 
 	@arg1preLocked
 	public native boolean sendPlayerBountyDebug(CreatureObject player, CreatureObject target);
+
+	@read
+	public unsigned long getAnonymousJediBountyScanDuration() {
+		return anonymousJediBountyScanDuration;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyScanCooldown() {
+		return anonymousJediBountyScanCooldown;
+	}
+
+	@read
+	public float getAnonymousJediBountyConfirmationRange() {
+		return anonymousJediBountyConfirmationRange;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyTrackingDuration() {
+		return anonymousJediBountyTrackingDuration;
+	}
+
+	@read
+	public float getAnonymousJediBountyTrackingLossDistance() {
+		return anonymousJediBountyTrackingLossDistance;
+	}
+
+	@read
+	public float getAnonymousJediBountyWaypointAccuracy() {
+		return anonymousJediBountyWaypointAccuracy;
+	}
+
+	@read
+	public boolean getAnonymousJediBountyConsumeArakyd() {
+		return anonymousJediBountyConsumeArakyd;
+	}
 }

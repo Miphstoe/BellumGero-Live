@@ -16,6 +16,7 @@ include templates.SharedObjectTemplate;
 import server.zone.objects.mission.bountyhunter.BountyHunterDroid;
 import server.zone.objects.mission.bountyhunter.events.BountyHunterTargetTask;
 include server.zone.objects.mission.bountyhunter.events.FindTargetTaskList;
+import engine.core.Task;
 import system.thread.Mutex;
 import engine.core.ManagedObject;
 include engine.log.Logger;
@@ -44,10 +45,29 @@ class BountyMissionObjective extends MissionObjective {
 	@dereferenced
 	protected transient Mutex syncMutex;
 
+	protected string trackingPlanet;
+
+	protected int trackingState;
+
+	protected unsigned long trackingToken;
+
+	protected unsigned long trackingAuthorizationExpires;
+
+	protected transient Task trackingTask;
+
+	protected float trackingLockX;
+
+	protected float trackingLockY;
+
 	public static final int INITSTATUS = 0;
 	public static final int HASBIOSIGNATURESTATUS = 1;
 	public static final int HASTALKED = 2;
 	public static final int TARGETELIMINATEDSTATUS = 3;
+
+	public static final int TRACKING_UNKNOWN = 0;
+	public static final int TRACKING_PLANET_KNOWN = 1;
+	public static final int TRACKING_WAYPOINT = 2;
+	public static final int TRACKING_CONFIRMED = 3;
 
 	public BountyMissionObjective(MissionObject mission) {
 		super(mission);
@@ -58,6 +78,13 @@ class BountyMissionObjective extends MissionObjective {
 		droid = null;
 
 		completedMission = false;
+		trackingPlanet = "";
+		trackingState = TRACKING_UNKNOWN;
+		trackingToken = 0;
+		trackingAuthorizationExpires = 0;
+		trackingTask = null;
+		trackingLockX = 0;
+		trackingLockY = 0;
 
 		Logger.setLoggingName("BountyMissionObjective");
 	}
@@ -125,6 +152,17 @@ class BountyMissionObjective extends MissionObjective {
 
 	@dirty
 	public native string getTargetZoneName();
+
+	public native boolean handleArakydTrackingScan(CreatureObject player);
+
+	public native boolean authorizeTrackedPlayerTarget(CreatureObject player);
+
+	public native void validateTrackingLock(unsigned long token);
+
+	public native void clearTrackingData(final string reason, boolean notifyPlayer = false);
+
+	@dirty
+	public native boolean hasTrackingAuthorization(CreatureObject hunter, CreatureObject target);
 
 	@preLocked
 	private native void removePlayerTargetObservers();
