@@ -44,6 +44,7 @@
 object_draft_schematic_bio_engineer_creature_creature_dune_lizard = object_draft_schematic_bio_engineer_creature_shared_creature_dune_lizard:new {
 
    templateType = DRAFTSCHEMATIC,
+   lab = BIO_CREATURE_LAB,
    factoryCrateSize = 0,	
 
    customObjectName = "Dune Lizard",

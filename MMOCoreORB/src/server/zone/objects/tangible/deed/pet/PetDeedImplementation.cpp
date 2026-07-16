@@ -381,6 +381,54 @@ void PetDeedImplementation::updateCraftingValues(CraftingValues* values, bool fi
 		level = Genetics::calculatePetLevel(component);
 	}
 
+	// Final Conditioning is only present on creature schematics assigned to
+	// BIO_CREATURE_LAB. Every update starts by restoring the Genetic
+	// Template values above, so these final values never stack across repeated
+	// experimentation updates.
+	bool hasFinalConditioning = values->hasExperimentalAttribute("hp") ||
+		values->hasExperimentalAttribute("mindamage") ||
+		values->hasExperimentalAttribute("maxdamage") ||
+		values->hasExperimentalAttribute("accuracy");
+
+	if (hasFinalConditioning) {
+		if (values->hasExperimentalAttribute("hp")) {
+			float baseAverageHam = (health + action + mind) / 3.f;
+			float conditionedAverageHam = values->getCurrentValue("hp");
+
+			if (baseAverageHam > 0.f && conditionedAverageHam >= baseAverageHam) {
+				float vitalityMultiplier = conditionedAverageHam / baseAverageHam;
+				vitalityMultiplier = Math::max(1.f, Math::min(vitalityMultiplier, 1.05f));
+
+				health = (int)round(health * vitalityMultiplier);
+				action = (int)round(action * vitalityMultiplier);
+				mind = (int)round(mind * vitalityMultiplier);
+			}
+		}
+
+		if (values->hasExperimentalAttribute("mindamage"))
+			damageMin = (int)round(values->getCurrentValue("mindamage"));
+
+		if (values->hasExperimentalAttribute("maxdamage"))
+			damageMax = (int)round(values->getCurrentValue("maxdamage"));
+
+		if (values->hasExperimentalAttribute("accuracy"))
+			chanceHit = values->getCurrentValue("accuracy");
+
+		// Preserve the existing crafted-pet damage safety limits.
+		if (damageMax > 1000)
+			damageMax = 1000;
+
+		if (damageMin > damageMax)
+			damageMin = damageMax;
+
+		// Recalculate the deed CL from the conditioned combat values so the
+		// displayed and control-device level continues to reflect the pet's
+		// actual final strength.
+		int averageHam = (health + action + mind) / 3;
+		regen = Math::max(1, averageHam / 10);
+		level = calculatePetLevel();
+	}
+
 	CreatureTemplateManager* creatureTemplateManager = CreatureTemplateManager::instance();
 	Reference<CreatureTemplate*> petTemplate = creatureTemplateManager->getTemplate(mobileTemplate.hashCode());
 
