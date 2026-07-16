@@ -1,6 +1,6 @@
 -- Dedicated Bio-Engineer creature crafting tool.
 -- Uses the normal Food and Chemical Crafting Tool client appearance,
--- but exposes only the Bio-Engineered creature schematic tab.
+-- and exposes the Bio-Engineered creature and Genetics schematic tabs.
 
 object_tangible_crafting_station_bio_engineer_creature_tool = object_tangible_crafting_station_shared_bio_engineer_creature_tool:new {
 	templateType = CRAFTINGTOOL,
@@ -33,7 +33,7 @@ object_tangible_crafting_station_bio_engineer_creature_tool = object_tangible_cr
 
 	toolType = 2,
 	complexityLevel = 20,
-	enabledTabs = {256},
+	enabledTabs = {256, 8192},
 
 	numberExperimentalProperties = {1, 1, 1, 1},
 	experimentalProperties = {"XX", "XX", "XX", "CD"},

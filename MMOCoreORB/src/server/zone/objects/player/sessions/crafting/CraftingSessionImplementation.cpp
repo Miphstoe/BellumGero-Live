@@ -46,6 +46,16 @@
 // #define DEBUG_CRAFTING_SESSION
 // #define DEBUG_EXPERIMENTATION
 
+namespace {
+	const int BIO_ENGINEER_DNA_TEMPLATE_MENU_OFFSET = 1000000;
+
+	bool isBioEngineerGeneticDnaTemplate(DraftSchematic* draftSchematic) {
+		return draftSchematic != nullptr &&
+			draftSchematic->getTanoCRC() == STRING_HASHCODE(
+				"object/tangible/component/dna/dna_template_generic.iff");
+	}
+}
+
 int CraftingSessionImplementation::initializeSession(CraftingTool* tool, CraftingStation* station) {
 	craftingTool = tool;
 	craftingStation = station;
@@ -170,17 +180,24 @@ void CraftingSessionImplementation::openBioEngineerCategorySelection() {
 	}
 
 	std::map<int, int> categoryCounts;
+	int dnaTemplateIndex = -1;
 
 	for (int i = 0; i < currentSchematicList.size(); ++i) {
 		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
+
+		if (isBioEngineerGeneticDnaTemplate(draftSchematic)) {
+			dnaTemplateIndex = i;
+			continue;
+		}
+
 		int minimumLevel = getBioEngineerMinimumLevel(draftSchematic);
 
 		if (minimumLevel > 0)
 			categoryCounts[minimumLevel]++;
 	}
 
-	if (categoryCounts.empty()) {
-		crafter->sendSystemMessage("You do not currently know any Bio-Engineered creature schematics that can be crafted with this tool and station.");
+	if (dnaTemplateIndex < 0 && categoryCounts.empty()) {
+		crafter->sendSystemMessage("You do not currently know any Genetic DNA Template or Bio-Engineered creature schematics that can be crafted with this tool and station.");
 		cancelSessionCommand();
 		return;
 	}
@@ -190,10 +207,16 @@ void CraftingSessionImplementation::openBioEngineerCategorySelection() {
 
 	listBox->setPromptTitle("Bio-Engineer Creature Crafting");
 	listBox->setPromptText(
-		"Select a species Minimum CL category. The finished Pet Deed uses the higher of the Genetic Template's Calculated Template CL or the selected species' Minimum CL.");
+		"Create a Genetic DNA Template or select a species Minimum CL category. Finished Pet Deeds use the higher of the Genetic Template's Calculated Template CL or the selected species' Minimum CL.");
 	listBox->setOkButton(true, "Select");
 	listBox->setCancelButton(true, "Cancel");
 	listBox->setUsingObject(tool);
+
+	if (dnaTemplateIndex >= 0) {
+		listBox->addMenuItem(
+			"Genetic DNA Template",
+			static_cast<uint64>(BIO_ENGINEER_DNA_TEMPLATE_MENU_OFFSET + dnaTemplateIndex));
+	}
 
 	for (const auto& category : categoryCounts) {
 		String levelText = String::valueOf(category.first);
@@ -290,24 +313,26 @@ void CraftingSessionImplementation::selectBioEngineerCreatureSchematic(int schem
 	if (crafter == nullptr || tool == nullptr || !isBioEngineerCreatureCraftingTool() ||
 		state != 1 || schematicIndex < 0 || schematicIndex >= currentSchematicList.size()) {
 		if (crafter != nullptr)
-			crafter->sendSystemMessage("The selected Bio-Engineer creature schematic is no longer available.");
+			crafter->sendSystemMessage("The selected Bio-Engineer schematic is no longer available.");
 
 		cancelSessionCommand();
 		return;
 	}
 
 	ManagedReference<DraftSchematic*> selectedSchematic = currentSchematicList.get(schematicIndex);
+	bool isGeneticDnaTemplate = isBioEngineerGeneticDnaTemplate(selectedSchematic.get());
+	bool isCreaturePetDeed = getBioEngineerMinimumLevel(selectedSchematic.get()) > 0;
 
-	if (selectedSchematic == nullptr || getBioEngineerMinimumLevel(selectedSchematic.get()) <= 0) {
-		crafter->sendSystemMessage("The selected schematic is not a valid Bio-Engineered creature Pet Deed.");
+	if (selectedSchematic == nullptr || (!isGeneticDnaTemplate && !isCreaturePetDeed)) {
+		crafter->sendSystemMessage("The selected schematic is not valid for the Bio-Engineer Creature Crafting Tool.");
 		cancelSessionCommand();
 		return;
 	}
 
-	// Reduce the stock client schematic list to the chosen creature. The client
-	// must perform its normal one-item confirmation so it records the selected
-	// schematic CRC before requesting the ingredient slots. Everything after
-	// that confirmation uses the unchanged crafting workflow.
+	// Reduce the stock client schematic list to the selected DNA Template or
+	// creature. The client must perform its normal one-item confirmation so it
+	// records the selected schematic CRC before requesting the ingredient slots.
+	// Everything after that confirmation uses the unchanged crafting workflow.
 	currentSchematicList.removeAll();
 	currentSchematicList.add(selectedSchematic);
 
@@ -321,7 +346,11 @@ void CraftingSessionImplementation::selectBioEngineerCreatureSchematic(int schem
 	ocm->insertInt(selectedSchematic->getClientObjectCRC());
 	ocm->insertInt(selectedSchematic->getToolTab());
 	crafter->sendMessage(ocm);
-	crafter->sendSystemMessage("Confirm the selected creature in the crafting window to continue.");
+
+	if (isGeneticDnaTemplate)
+		crafter->sendSystemMessage("Confirm the Genetic DNA Template in the crafting window to continue.");
+	else
+		crafter->sendSystemMessage("Confirm the selected creature in the crafting window to continue.");
 }
 
 int CraftingSessionImplementation::startSession() {
@@ -378,24 +407,25 @@ int CraftingSessionImplementation::startSession() {
 	// End dplay9***********************************
 
 	/// The dedicated Bio-Engineer tool replaces only the initial schematic
-	/// selection screen. Once a creature is selected, the normal crafting
-	/// workflow resumes through selectDraftSchematic().
+	/// selection screen. Once a DNA Template or creature is selected, the normal
+	/// crafting workflow resumes through selectDraftSchematic().
 	state = 1;
 
 	if (isBioEngineerCreatureCraftingTool()) {
-		bool hasValidCreatureSchematic = false;
+		bool hasValidBioEngineerSchematic = false;
 
 		for (int i = 0; i < currentSchematicList.size(); ++i) {
 			DraftSchematic* candidate = currentSchematicList.get(i).get();
 
-			if (getBioEngineerMinimumLevel(candidate) > 0) {
-				hasValidCreatureSchematic = true;
+			if (isBioEngineerGeneticDnaTemplate(candidate) ||
+				getBioEngineerMinimumLevel(candidate) > 0) {
+				hasValidBioEngineerSchematic = true;
 				break;
 			}
 		}
 
-		if (!hasValidCreatureSchematic) {
-			crafter->sendSystemMessage("You do not currently know any Bio-Engineered creature schematics that can be crafted with this tool and station.");
+		if (!hasValidBioEngineerSchematic) {
+			crafter->sendSystemMessage("You do not currently know any Genetic DNA Template or Bio-Engineered creature schematics that can be crafted with this tool and station.");
 			cancelSessionCommand();
 			return false;
 		}
@@ -416,7 +446,7 @@ int CraftingSessionImplementation::startSession() {
 		openBioEngineerCategorySelection();
 
 		if (crafterGhost != nullptr && crafterGhost->getDebug())
-			crafter->sendSystemMessage("*** Starting Bio-Engineer creature crafting selector ***");
+			crafter->sendSystemMessage("*** Starting Bio-Engineer crafting selector ***");
 
 		return true;
 	}

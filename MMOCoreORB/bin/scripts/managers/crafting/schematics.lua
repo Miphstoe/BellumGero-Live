@@ -246,6 +246,7 @@ schematics = {
 	{path="object/draft_schematic/item/item_survey_tool_solar.iff"},
 	{path="object/draft_schematic/item/item_survey_tool_wind.iff"},
 	{path="object/draft_schematic/item/item_food_tool.iff"},
+	{path="object/draft_schematic/item/item_bio_engineer_creature_tool.iff"},
 	{path="object/draft_schematic/item/item_clothing_tool.iff"},
 	{path="object/draft_schematic/item/item_structure_tool.iff"},
 	{path="object/draft_schematic/item/item_weapon_tool.iff"},

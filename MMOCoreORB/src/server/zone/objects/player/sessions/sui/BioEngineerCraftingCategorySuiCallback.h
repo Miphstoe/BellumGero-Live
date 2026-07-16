@@ -1,8 +1,8 @@
 /*
  * BioEngineerCraftingCategorySuiCallback.h
  *
- * Handles Minimum CL category selection for the dedicated
- * Bio-Engineer Creature Crafting Tool.
+ * Handles Genetic DNA Template and Minimum CL category selection
+ * for the dedicated Bio-Engineer Creature Crafting Tool.
  */
 
 #ifndef BIOENGINEERCRAFTINGCATEGORYSUICALLBACK_H_
@@ -51,12 +51,20 @@ public:
 		if (selectedRow < 0 || selectedRow >= listBox->getMenuSize())
 			return;
 
-		int minimumLevel = static_cast<int>(listBox->getMenuObjectID(selectedRow));
+		static const int DNA_TEMPLATE_MENU_OFFSET = 1000000;
 
-		if (minimumLevel <= 0)
+		int menuObjectID = static_cast<int>(listBox->getMenuObjectID(selectedRow));
+
+		if (menuObjectID >= DNA_TEMPLATE_MENU_OFFSET) {
+			int schematicIndex = menuObjectID - DNA_TEMPLATE_MENU_OFFSET;
+			session->selectBioEngineerCreatureSchematic(schematicIndex);
+			return;
+		}
+
+		if (menuObjectID <= 0)
 			return;
 
-		session->openBioEngineerCreatureSelection(minimumLevel);
+		session->openBioEngineerCreatureSelection(menuObjectID);
 	}
 };
 
