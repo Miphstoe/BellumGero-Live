@@ -32,6 +32,16 @@
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "templates/params/RangedIntCustomizationVariable.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sessions/sui/BioEngineerCraftingCategorySuiCallback.h"
+#include "server/zone/objects/player/sessions/sui/BioEngineerCraftingCreatureSuiCallback.h"
+#include "server/zone/managers/creature/CreatureTemplateManager.h"
+#include "templates/manager/TemplateManager.h"
+#include "templates/tangible/PetDeedTemplate.h"
+
+#include <algorithm>
+#include <map>
+#include <vector>
 
 // #define DEBUG_CRAFTING_SESSION
 // #define DEBUG_EXPERIMENTATION
@@ -112,6 +122,208 @@ bool CraftingSessionImplementation::validateSession() {
 	return true;
 }
 
+bool CraftingSessionImplementation::isBioEngineerCreatureCraftingTool() {
+	ManagedReference<CraftingTool*> tool = craftingTool.get();
+
+	return tool != nullptr &&
+		tool->getServerObjectCRC() == STRING_HASHCODE("object/tangible/crafting/station/bio_engineer_creature_tool.iff");
+}
+
+int CraftingSessionImplementation::getBioEngineerMinimumLevel(DraftSchematic* draftSchematic) {
+	if (draftSchematic == nullptr)
+		return -1;
+
+	SharedObjectTemplate* targetTemplate =
+		TemplateManager::instance()->getTemplate(draftSchematic->getTanoCRC());
+
+	PetDeedTemplate* petDeedTemplate = dynamic_cast<PetDeedTemplate*>(targetTemplate);
+
+	if (petDeedTemplate == nullptr)
+		return -1;
+
+	String mobileTemplate = petDeedTemplate->getMobileTemplate();
+
+	if (mobileTemplate.isEmpty())
+		return -1;
+
+	CreatureTemplate* creatureTemplate =
+		CreatureTemplateManager::instance()->getTemplate(mobileTemplate);
+
+	if (creatureTemplate == nullptr)
+		return -1;
+
+	return creatureTemplate->getLevel();
+}
+
+void CraftingSessionImplementation::openBioEngineerCategorySelection() {
+	if (!validateSession())
+		return;
+
+	ManagedReference<CreatureObject*> crafter = this->crafter.get();
+	ManagedReference<PlayerObject*> ghost = this->crafterGhost.get();
+	ManagedReference<CraftingTool*> tool = this->craftingTool.get();
+
+	if (crafter == nullptr || ghost == nullptr || tool == nullptr ||
+		!isBioEngineerCreatureCraftingTool()) {
+		cancelSessionCommand();
+		return;
+	}
+
+	std::map<int, int> categoryCounts;
+
+	for (int i = 0; i < currentSchematicList.size(); ++i) {
+		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
+		int minimumLevel = getBioEngineerMinimumLevel(draftSchematic);
+
+		if (minimumLevel > 0)
+			categoryCounts[minimumLevel]++;
+	}
+
+	if (categoryCounts.empty()) {
+		crafter->sendSystemMessage("You do not currently know any Bio-Engineered creature schematics that can be crafted with this tool and station.");
+		cancelSessionCommand();
+		return;
+	}
+
+	ManagedReference<SuiListBox*> listBox = new SuiListBox(
+		crafter, SuiWindowType::BIO_ENGINEER_CRAFT_CATEGORY);
+
+	listBox->setPromptTitle("Bio-Engineer Creature Crafting");
+	listBox->setPromptText(
+		"Select a species Minimum CL category. The finished Pet Deed uses the higher of the Genetic Template's Calculated Template CL or the selected species' Minimum CL.");
+	listBox->setOkButton(true, "Select");
+	listBox->setCancelButton(true, "Cancel");
+	listBox->setUsingObject(tool);
+
+	for (const auto& category : categoryCounts) {
+		String levelText = String::valueOf(category.first);
+
+		if (category.first < 10)
+			levelText = "0" + levelText;
+
+		String creatureText = category.second == 1 ? " creature" : " creatures";
+		String menuText = "Minimum CL " + levelText + "  -  " +
+			String::valueOf(category.second) + creatureText;
+
+		listBox->addMenuItem(menuText, static_cast<uint64>(category.first));
+	}
+
+	listBox->setCallback(new BioEngineerCraftingCategorySuiCallback(crafter->getZoneServer()));
+	ghost->addSuiBox(listBox);
+	crafter->sendMessage(listBox->generateMessage());
+}
+
+void CraftingSessionImplementation::openBioEngineerCreatureSelection(int minimumLevel) {
+	if (!validateSession())
+		return;
+
+	ManagedReference<CreatureObject*> crafter = this->crafter.get();
+	ManagedReference<PlayerObject*> ghost = this->crafterGhost.get();
+	ManagedReference<CraftingTool*> tool = this->craftingTool.get();
+
+	if (crafter == nullptr || ghost == nullptr || tool == nullptr ||
+		!isBioEngineerCreatureCraftingTool() || minimumLevel <= 0) {
+		cancelSessionCommand();
+		return;
+	}
+
+	std::vector<std::pair<String, int>> creatures;
+
+	for (int i = 0; i < currentSchematicList.size(); ++i) {
+		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
+
+		if (draftSchematic == nullptr ||
+			getBioEngineerMinimumLevel(draftSchematic) != minimumLevel)
+			continue;
+
+		String displayName = draftSchematic->getCustomName();
+
+		if (displayName.isEmpty())
+			displayName = "Unnamed Creature Schematic";
+
+		creatures.push_back(std::make_pair(displayName, i));
+	}
+
+	if (creatures.empty()) {
+		crafter->sendSystemMessage("No available creature schematics were found in that Minimum CL category.");
+		openBioEngineerCategorySelection();
+		return;
+	}
+
+	std::sort(creatures.begin(), creatures.end(),
+		[](const std::pair<String, int>& first, const std::pair<String, int>& second) {
+			return first.first.toLowerCase() < second.first.toLowerCase();
+		});
+
+	String levelText = String::valueOf(minimumLevel);
+
+	if (minimumLevel < 10)
+		levelText = "0" + levelText;
+
+	ManagedReference<SuiListBox*> listBox = new SuiListBox(
+		crafter, SuiWindowType::BIO_ENGINEER_CRAFT_CREATURE);
+
+	listBox->setPromptTitle("Minimum CL " + levelText + " Creatures");
+	listBox->setPromptText(
+		"Select the creature species. After this selection, confirm the single schematic in the normal crafting window to continue.");
+	listBox->setOkButton(true, "Select");
+	listBox->setCancelButton(true, "Back");
+	listBox->setUsingObject(tool);
+
+	for (const auto& creature : creatures)
+		listBox->addMenuItem(creature.first, static_cast<uint64>(creature.second));
+
+	listBox->setCallback(new BioEngineerCraftingCreatureSuiCallback(
+		crafter->getZoneServer(), minimumLevel));
+	ghost->addSuiBox(listBox);
+	crafter->sendMessage(listBox->generateMessage());
+}
+
+void CraftingSessionImplementation::selectBioEngineerCreatureSchematic(int schematicIndex) {
+	if (!validateSession())
+		return;
+
+	ManagedReference<CreatureObject*> crafter = this->crafter.get();
+	ManagedReference<CraftingTool*> tool = this->craftingTool.get();
+	ManagedReference<CraftingStation*> station = this->craftingStation.get();
+
+	if (crafter == nullptr || tool == nullptr || !isBioEngineerCreatureCraftingTool() ||
+		state != 1 || schematicIndex < 0 || schematicIndex >= currentSchematicList.size()) {
+		if (crafter != nullptr)
+			crafter->sendSystemMessage("The selected Bio-Engineer creature schematic is no longer available.");
+
+		cancelSessionCommand();
+		return;
+	}
+
+	ManagedReference<DraftSchematic*> selectedSchematic = currentSchematicList.get(schematicIndex);
+
+	if (selectedSchematic == nullptr || getBioEngineerMinimumLevel(selectedSchematic.get()) <= 0) {
+		crafter->sendSystemMessage("The selected schematic is not a valid Bio-Engineered creature Pet Deed.");
+		cancelSessionCommand();
+		return;
+	}
+
+	// Reduce the stock client schematic list to the chosen creature. The client
+	// must perform its normal one-item confirmation so it records the selected
+	// schematic CRC before requesting the ingredient slots. Everything after
+	// that confirmation uses the unchanged crafting workflow.
+	currentSchematicList.removeAll();
+	currentSchematicList.add(selectedSchematic);
+
+	ObjectControllerMessage* ocm = new ObjectControllerMessage(
+		crafter->getObjectID(), 0x0B, 0x102);
+
+	ocm->insertLong(tool->getObjectID());
+	ocm->insertLong(station != nullptr ? station->getObjectID() : 0);
+	ocm->insertInt(1);
+	ocm->insertInt(selectedSchematic->getClientObjectCRC());
+	ocm->insertInt(selectedSchematic->getClientObjectCRC());
+	ocm->insertInt(selectedSchematic->getToolTab());
+	crafter->sendMessage(ocm);
+	crafter->sendSystemMessage("Confirm the selected creature in the crafting window to continue.");
+}
+
 int CraftingSessionImplementation::startSession() {
 	if (!validateSession()) {
 		return 1;
@@ -164,6 +376,50 @@ int CraftingSessionImplementation::startSession() {
 	dplay9->close();
 	crafter->sendMessage(dplay9);
 	// End dplay9***********************************
+
+	/// The dedicated Bio-Engineer tool replaces only the initial schematic
+	/// selection screen. Once a creature is selected, the normal crafting
+	/// workflow resumes through selectDraftSchematic().
+	state = 1;
+
+	if (isBioEngineerCreatureCraftingTool()) {
+		bool hasValidCreatureSchematic = false;
+
+		for (int i = 0; i < currentSchematicList.size(); ++i) {
+			DraftSchematic* candidate = currentSchematicList.get(i).get();
+
+			if (getBioEngineerMinimumLevel(candidate) > 0) {
+				hasValidCreatureSchematic = true;
+				break;
+			}
+		}
+
+		if (!hasValidCreatureSchematic) {
+			crafter->sendSystemMessage("You do not currently know any Bio-Engineered creature schematics that can be crafted with this tool and station.");
+			cancelSessionCommand();
+			return false;
+		}
+
+		// A normal crafting session dismisses the client's startup waiting box
+		// when it sends the 0x102 Draft Schematics list. Sending that list here
+		// would also open the stock Draft Schematics window behind our custom
+		// selector. A successful requestCraftingSession response dismisses the
+		// waiting box without activating the stock schematic window.
+		ObjectControllerMessage* startResponse = new ObjectControllerMessage(
+			crafter->getObjectID(), 0x1B, 0x010C);
+
+		startResponse->insertInt(0x10F); // CM_requestCraftingSession
+		startResponse->insertInt(1);     // Success
+		startResponse->insertByte(0);    // Sequence ID
+		crafter->sendMessage(startResponse);
+
+		openBioEngineerCategorySelection();
+
+		if (crafterGhost != nullptr && crafterGhost->getDebug())
+			crafter->sendSystemMessage("*** Starting Bio-Engineer creature crafting selector ***");
+
+		return true;
+	}
 
 	/// Object Controller Message 102 - Schematic List
 	ObjectControllerMessage* ocm = new ObjectControllerMessage(crafter->getObjectID(), 0x0B, 0x102);

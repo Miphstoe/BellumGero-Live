@@ -159,6 +159,14 @@ SceneObject* CraftingStationImplementation::findCraftingTool(CreatureObject* pla
 		if (object != nullptr && object->isCraftingTool()) {
 			CraftingTool* tool = cast<CraftingTool*>( object);
 
+			// The dedicated Bio-Engineer tool must be used directly so clicking a
+			// normal Food and Chemical station never replaces the normal crafting
+			// workflow merely because this tool happens to be first in inventory.
+			if (tool->getServerObjectCRC() == STRING_HASHCODE(
+				"object/tangible/crafting/station/bio_engineer_creature_tool.iff")) {
+				continue;
+			}
+
 			if (!tool->isReady()) {
 				continue;
 			}

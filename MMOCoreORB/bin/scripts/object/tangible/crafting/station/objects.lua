@@ -1338,3 +1338,14 @@ object_tangible_crafting_station_shared_weapon_tool = SharedTangibleObjectTempla
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_crafting_station_shared_weapon_tool, "object/tangible/crafting/station/shared_weapon_tool.iff")
+
+object_tangible_crafting_station_shared_bio_engineer_creature_tool =
+	SharedTangibleObjectTemplate:new {
+		clientTemplateFileName =
+			"object/tangible/crafting/station/shared_bio_engineer_creature_tool.iff"
+	}
+
+ObjectTemplates:addClientTemplate(
+	object_tangible_crafting_station_shared_bio_engineer_creature_tool,
+	"object/tangible/crafting/station/shared_bio_engineer_creature_tool.iff"
+)
