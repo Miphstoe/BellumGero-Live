@@ -6797,7 +6797,6 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 	ManagedReference<CreatureObject*> highDamageAttacker = nullptr;
 	uint32 highDamageAmount = 0;
 	FrsManager* frsManager = server->getFrsManager();
-	int frsXpAdjustment = 0;
 	bool throttleOnly = true;
 
 	bool accountVictimList = ConfigManager::instance()->getBool("PlayerManager.accountVictimList", false);
@@ -6881,8 +6880,6 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 
 		if (frsManager != nullptr && frsManager->isFrsEnabled() && frsManager->isValidFrsBattle(attackerCreo, player)) {
 			int attackerFrsXp = frsManager->calculatePvpExperienceChange(attackerCreo, player, damageContribution, false);
-			int victimFrsXp = frsManager->calculatePvpExperienceChange(attackerCreo, player, damageContribution, true);
-			frsXpAdjustment += victimFrsXp;
 
 			ManagedReference<CreatureObject*> attackerRef = attackerCreo;
 			if (attackerFrsXp > 0) {
@@ -6940,12 +6937,6 @@ void PlayerManagerImplementation::doPvpDeathRatingUpdate(CreatureObject* player,
 
 	if (highDamageAttacker == nullptr)
 		return;
-
-	if (frsManager != nullptr && frsManager->isFrsEnabled() && frsXpAdjustment < 0) {
-		Locker crossLock(frsManager, player);
-
-		frsManager->adjustFrsExperience(player, frsXpAdjustment);
-	}
 
 	if (defenderPvpRating <= PlayerObject::PVP_RATING_FLOOR) {
 		String stringFile;
