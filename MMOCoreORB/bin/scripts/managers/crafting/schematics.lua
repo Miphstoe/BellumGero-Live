@@ -1440,6 +1440,7 @@ schematics = {
 	{path="object/draft_schematic/bio_engineer/bio_component/bio_component_food_heavy_quantity.iff"},
 	{path="object/draft_schematic/bio_engineer/utilities/pet_stimpack_c.iff"},
 	{path="object/draft_schematic/bio_engineer/creature/creature_torton.iff"},
+	{path="object/draft_schematic/bio_engineer/creature/creature_acklay.iff"},
 	{path="object/draft_schematic/bio_engineer/creature/creature_kimogila.iff"},
 	{path="object/draft_schematic/bio_engineer/creature/creature_rancor.iff"},
 	{path="object/draft_schematic/bio_engineer/creature/creature_fambaa.iff"},
