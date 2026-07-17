@@ -2029,6 +2029,57 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 
 	int playerHitCount = playerList.size();
 
+	// Precompute the highest current CL among each owner's qualifying
+	// participating creature pets. This allows the owner to receive one CH XP
+	// award per target while preventing a low-level pet from tagging endgame
+	// content for an unrestricted reward. Target CL is never compared.
+	VectorMap<uint64, int> creatureHandlerHighestParticipatingPetLevels;
+	creatureHandlerHighestParticipatingPetLevels.setAllowOverwriteInsertPlan();
+	creatureHandlerHighestParticipatingPetLevels.setNullValue(0);
+
+	if (baseXp > 0 && !(destructedObject->isAiAgent() && destructedObject->asAiAgent()->isEventMob())) {
+		for (int i = 0; i < threatMap->size(); ++i) {
+			ThreatMapEntry* entry = &threatMap->elementAt(i).getValue();
+			TangibleObject* attacker = threatMap->elementAt(i).getKey();
+
+			if (entry == nullptr || attacker == nullptr || !attacker->isPet() || !attacker->isCreatureObject() || entry->getTotalDamage() <= 0)
+				continue;
+
+			CreatureObject* attackerCreo = attacker->asCreatureObject();
+
+			if (attackerCreo == nullptr)
+				continue;
+
+			PetControlDevice* pcd = attackerCreo->getControlDevice().get().castTo<PetControlDevice*>();
+
+			if (pcd == nullptr || pcd->getPetType() != PetManager::CREATUREPET)
+				continue;
+
+			CreatureObject* owner = attackerCreo->getLinkedCreature().get();
+
+			if (owner == nullptr || !owner->isPlayerCreature())
+				continue;
+
+			Locker crossLocker(owner, destructedObject);
+
+			PlayerObject* ownerGhost = owner->getPlayerObject();
+
+			if (ownerGhost == nullptr || !owner->hasSkill("outdoors_creaturehandler_novice") || !destructedObject->isInRange(owner, 80))
+				continue;
+
+			uint64 ownerID = owner->getObjectID();
+			int participatingPetLevel = Math::max(1, attackerCreo->getLevel());
+			int highestParticipatingPetLevel = creatureHandlerHighestParticipatingPetLevels.get(ownerID);
+
+			if (participatingPetLevel > highestParticipatingPetLevel)
+				creatureHandlerHighestParticipatingPetLevels.put(ownerID, participatingPetLevel);
+		}
+	}
+
+	// Creature Handler XP is awarded once per owner per defeated target,
+	// regardless of how many of that owner's creature pets participated.
+	Vector<uint64> creatureHandlerAwardedOwners;
+
 	for (int i = 0; i < threatMap->size(); ++i) {
 		ThreatMapEntry* entry = &threatMap->elementAt(i).getValue();
 		TangibleObject* attacker = threatMap->elementAt(i).getKey();
@@ -2045,6 +2096,11 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 			if (destructedObject->isAiAgent() && destructedObject->asAiAgent()->isEventMob())
 				continue;
 
+			// A creature pet must have dealt actual damage to qualify its owner
+			// for CH XP or earn active growth progress.
+			if (entry->getTotalDamage() <= 0)
+				continue;
+
 			CreatureObject* attackerCreo = attacker->asCreatureObject();
 
 			if (attackerCreo == nullptr) {
@@ -2053,7 +2109,7 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 
 			PetControlDevice* pcd = attackerCreo->getControlDevice().get().castTo<PetControlDevice*>();
 
-			// only creature pets will award exp, so discard anything else
+			// Only creature pets award Creature Handler XP or growth progress.
 			if (pcd == nullptr || pcd->getPetType() != PetManager::CREATUREPET) {
 				continue;
 			}
@@ -2081,40 +2137,57 @@ void PlayerManagerImplementation::disseminateExperience(TangibleObject* destruct
 			trx.addState("combatDPS", entry->getDPS());
 			trx.addState("combatPlayerLevel", calculatePlayerLevel(owner));
 			trx.addState("combatPetLevel", calculatePlayerLevel(attackerCreo));
+			trx.addState("combatBaseXp", baseXp);
 
-			int totalPets = 1;
-
-			for (int i = 0; i < ownerGhost->getActivePetsSize(); i++) {
-				ManagedReference<AiAgent*> object = ownerGhost->getActivePet(i);
-
-				if (object != nullptr && object->isCreature()) {
-					if (object == attacker)
-						continue;
-
-					PetControlDevice* petControlDevice = object->getControlDevice().get().castTo<PetControlDevice*>();
-					if (petControlDevice != nullptr && petControlDevice->getPetType() == PetManager::CREATUREPET)
-						totalPets++;
-				}
+			// Targets intentionally configured with no base XP should not provide
+			// Creature Handler XP or active pet-growth progress.
+			if (baseXp <= 0) {
+				trx.addState("combatChXpSkippedZeroBaseXp", true);
+				continue;
 			}
 
-			// TODO: Find a more correct CH xp formula
-			float levelRatio = (float)destructedObject->getLevel() / (float)attacker->getLevel();
-
-			float xpAmount = levelRatio * 500.f;
-
-			if (levelRatio <= 0.5) {
-				xpAmount = 1;
-			} else {
-				xpAmount = Math::min(xpAmount, (float)attacker->getLevel() * 50.f);
-				xpAmount /= totalPets;
-
-				if (winningFaction != Factions::FACTIONNEUTRAL && winningFaction == attacker->getFaction())
-					xpAmount *= gcwBonus;
+			// Every participating immature creature pet earns its own capped growth
+			// progress, even though its owner receives CH XP only once per target.
+			{
+				Locker pcdLocker(pcd, owner);
+				pcd->addCombatGrowthProgress(owner, baseXp);
 			}
 
-			trx.addState("combatTotalPets", totalPets);
+			uint64 ownerID = owner->getObjectID();
 
-			awardExperience(owner, "creaturehandler", xpAmount);
+			if (creatureHandlerAwardedOwners.contains(ownerID)) {
+				trx.addState("combatChXpAlreadyAwarded", true);
+				continue;
+			}
+
+			creatureHandlerAwardedOwners.add(ownerID);
+
+			// Fourth-pass CH progression tuning. Target base XP controls the reward,
+			// but the highest-level participating pet establishes a smooth capability
+			// ceiling. This blocks low-level pet tagging without comparing the pet's
+			// CL against the target's CL or restoring the old drastic falloff.
+			static constexpr float CH_XP_BASE_RATE = 0.35f;
+			static constexpr float CH_XP_MINIMUM = 100.f;
+			static constexpr float CH_XP_MAXIMUM = 5000.f;
+			static constexpr float CH_XP_PER_PET_LEVEL = 40.f;
+
+			int highestParticipatingPetLevel = creatureHandlerHighestParticipatingPetLevels.get(ownerID);
+			float scaledXpAmount = Math::clamp(CH_XP_MINIMUM, baseXp * CH_XP_BASE_RATE, CH_XP_MAXIMUM);
+			float petCapabilityCap = Math::max(CH_XP_MINIMUM, highestParticipatingPetLevel * CH_XP_PER_PET_LEVEL);
+			float xpAmount = Math::min(scaledXpAmount, petCapabilityCap);
+
+			if (winningFaction != Factions::FACTIONNEUTRAL && winningFaction == owner->getFaction())
+				xpAmount *= gcwBonus;
+
+			trx.addState("combatChXpBaseRate", CH_XP_BASE_RATE);
+			trx.addState("combatChXpMinimum", CH_XP_MINIMUM);
+			trx.addState("combatChXpHighestParticipatingPetLevel", highestParticipatingPetLevel);
+			trx.addState("combatChXpPerPetLevel", CH_XP_PER_PET_LEVEL);
+			trx.addState("combatChXpScaledBeforePetCap", scaledXpAmount);
+			trx.addState("combatChXpPetCapabilityCap", petCapabilityCap);
+			trx.addState("combatChXpBeforeServerModifiers", xpAmount);
+
+			awardExperience(owner, "creaturehandler", (int)xpAmount);
 		} else if (attacker->isPlayerCreature()) {
 			if (!(attacker->getZone() == zone && destructedObject->isInRangeZoneless(attacker, 80))) {
 				continue;

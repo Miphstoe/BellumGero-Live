@@ -91,8 +91,13 @@ void CreatureImplementation::fillAttributeList(AttributeListMessage* alm, Creatu
 		&& hasOrganics()
 		&& getDiet() != ObjectFlag::NONE;
 
+	// Creature Handlers need exact CL information from Novice onward because
+	// pet control limits and pet progression are directly tied to creature CL.
+	bool creatureHandlerCanAnalyzeLevel = player != nullptr
+		&& player->hasSkill("outdoors_creaturehandler_novice");
+
 	if (getHideType().isEmpty() && getBoneType().isEmpty() && getMeatType().isEmpty()) {
-		if (!isPet() && !bioEngineerCanAnalyzeLevel) // we do want to show this for pets and DNA-compatible creatures
+		if (!isPet() && !bioEngineerCanAnalyzeLevel && !creatureHandlerCanAnalyzeLevel) // show for pets, DNA-compatible creatures, and Creature Handlers
 			return;
 	}
 
@@ -146,7 +151,7 @@ void CreatureImplementation::fillAttributeList(AttributeListMessage* alm, Creatu
 		alm->insertAttribute("ferocity", (int) getFerocity());
 	}
 
-	if (creaKnowledge >= 45 || bioEngineerCanAnalyzeLevel)
+	if (creaKnowledge >= 45 || bioEngineerCanAnalyzeLevel || creatureHandlerCanAnalyzeLevel)
 		alm->insertAttribute("challenge_level", getAdultLevel());
 
 	//int skillNum = skillCommands.size();

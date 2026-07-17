@@ -58,6 +58,15 @@ class PetControlDevice extends ControlDevice {
 	@dereferenced
 	protected Time lastGrowth;
 
+	// Unconsumed natural/combat progress carried toward the next growth stage.
+	protected unsigned int growthProgressSeconds;
+
+	// Lifetime combat-earned growth acceleration. Capped at six hours.
+	protected unsigned int activeGrowthBonusEarnedSeconds;
+
+	// Prevents repeating the stage-ready message until growth is applied.
+	protected boolean growthStageReadyNotified;
+
 	protected boolean trainedAsMount;
 
 	@dereferenced
@@ -88,6 +97,9 @@ class PetControlDevice extends ControlDevice {
 		namingProgress = 0;
 		futureName = "";
 		growthStage = 0;
+		growthProgressSeconds = 0;
+		activeGrowthBonusEarnedSeconds = 0;
+		growthStageReadyNotified = false;
 		trainedAsMount = false;
 		useRanged = false;
 
@@ -115,6 +127,10 @@ class PetControlDevice extends ControlDevice {
 	@preLocked
 	@arg1preLocked
 	public native boolean growPet(CreatureObject player, boolean force = false, boolean adult = false);
+
+	@preLocked
+	@arg1preLocked
+	public native void addCombatGrowthProgress(CreatureObject player, int baseXp);
 
 	@preLocked
 	public native void arrestGrowth();
