@@ -315,4 +315,69 @@ mando_bicep_bracer_retro = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_bicep_bracer_retro)
 
+-- Recruiter-only (handler): Armor exchange tier selection
+mando_armor_exchange_tier_select = ConvoScreen:new {
+	id = "mando_armor_exchange_tier_select",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "false",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_tier_select)
+
+-- Recruiter-only (handler): Armor exchange for individual tiers
+mando_armor_exchange_foundling = ConvoScreen:new {
+	id = "mando_armor_exchange_foundling",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_foundling)
+
+mando_armor_exchange_initiate = ConvoScreen:new {
+	id = "mando_armor_exchange_initiate",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_initiate)
+
+mando_armor_exchange_hunter = ConvoScreen:new {
+	id = "mando_armor_exchange_hunter",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_hunter)
+
+mando_armor_exchange_verdika = ConvoScreen:new {
+	id = "mando_armor_exchange_verdika",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_verdika)
+
+mando_armor_exchange_clanbound = ConvoScreen:new {
+	id = "mando_armor_exchange_clanbound",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_clanbound)
+
+mando_armor_exchange_tribesman = ConvoScreen:new {
+	id = "mando_armor_exchange_tribesman",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_armor_exchange_tribesman)
+
 addConversationTemplate("mandoTrialmasterConvoTemplate", mandoTrialmasterConvoTemplate)
