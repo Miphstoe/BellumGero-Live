@@ -109,6 +109,10 @@ class PlayerBounty extends ManagedObject {
 		missionCooldownList.put(enemyID, newTime);
 	}
 
+	public void clearMissionCooldowns() {
+		missionCooldownList.removeAll();
+	}
+
 	public void addBountyPlacer(unsigned long placerID, int amount) {
 		if (bountyPlacers.contains(placerID)) {
 			int currentAmount = bountyPlacers.get(placerID);

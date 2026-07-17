@@ -4301,6 +4301,11 @@ bool AiAgentImplementation::isAttackableBy(CreatureObject* creature) {
 	if (movementState == AiAgent::LEASHING || isDead() || isIncapacitated())
 		return false;
 
+	// Contract-specific attack permission (e.g. bounty tracking droids) - mutual flag required, bypasses
+	// the normal pvpStatusBitmask/faction gating below. Nothing else sets personalEnemyFlags on an AiAgent.
+	if (hasPersonalEnemyFlag(creature) && creature->hasPersonalEnemyFlag(asAiAgent()))
+		return true;
+
 	// Handle Pets - Check against owner
 	if (isPet() && !isMindTricked()) {
 		ManagedReference<PetControlDevice*> pcd = getControlDevice().get().castTo<PetControlDevice*>();

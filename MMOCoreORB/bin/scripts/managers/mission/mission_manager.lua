@@ -87,6 +87,21 @@ anonymousJediBountyTracking = {
 	consumeArakydDroid = true,                -- use one charge / item on deployment
 }
 
+-- Destroyable Arakyd tracking droid configuration (same-planet location scan phase 2)
+anonymousJediBountyDroidTracking = {
+	scanDuration = 15000,                     -- 15 seconds, time the droid must survive to complete the scan
+	spawnProtection = 2000,                   -- 2 seconds, droid cannot be attacked while spawning
+	droidHealth = 6000,                       -- droid HAM/condition, survives several normal hits (raise further if still dying too fast)
+	maxDistanceFromTarget = 20,                -- meters, droid spawns within this range of the Jedi target
+	maxDistanceFromHunter = 0,                -- meters, 0 = not enforced (droid is target-relative, not hunter-relative)
+	relaunchCooldown = 90 * 1000,             -- 90 seconds before another droid can be deployed after destruction
+	consumedOnDestruction = true,              -- whether a destroyed droid costs the hunter a redeploy charge
+	consumedOnSuccess = true,                  -- follows existing tracking droid consumption behavior
+	despawnDelay = 3000,                       -- ms after a successful scan before the droid is removed
+	movementSpeed = 0,                         -- 0 = stationary
+	droidTemplate = "bounty_tracking_droid",   -- mobile template key spawned for the scan
+}
+
 -- Player Placed Bounty System Configuration
 playerPlacedBounties = {
 	enabled = true,                          -- Enable/disable player-placed bounties

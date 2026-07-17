@@ -130,6 +130,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "addCooldown", &LuaCreatureObject::addCooldown},
 		{ "clearVisibility", &LuaCreatureObject::clearVisibility},
 		{ "invalidatePlayerBountyMissions", &LuaCreatureObject::invalidatePlayerBountyMissions },
+		{ "clearPlayerBountyCooldowns", &LuaCreatureObject::clearPlayerBountyCooldowns },
 		{ "isDead", &LuaCreatureObject::isDead},
 		{ "isIncapacitated", &LuaCreatureObject::isIncapacitated },
 		{ "getLevel", &LuaCreatureObject::getLevel},
@@ -949,6 +950,22 @@ int LuaCreatureObject::invalidatePlayerBountyMissions(lua_State* L) {
 		return 0;
 
 	missionManager->invalidatePlayerBountyMissions(realObject->getObjectID());
+	return 0;
+}
+
+int LuaCreatureObject::clearPlayerBountyCooldowns(lua_State* L) {
+	if (realObject == nullptr || !realObject->isPlayerCreature())
+		return 0;
+
+	ZoneServer* zoneServer = realObject->getZoneServer();
+	if (zoneServer == nullptr)
+		return 0;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr)
+		return 0;
+
+	missionManager->clearPlayerBountyCooldowns(realObject->getObjectID());
 	return 0;
 }
 

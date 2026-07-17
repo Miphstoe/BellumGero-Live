@@ -69,6 +69,18 @@ class MissionManager extends Observer implements Logger {
 	float anonymousJediBountyWaypointAccuracy;
 	boolean anonymousJediBountyConsumeArakyd;
 
+	unsigned long anonymousJediBountyDroidScanDuration;
+	unsigned long anonymousJediBountyDroidSpawnProtection;
+	int anonymousJediBountyDroidHealth;
+	float anonymousJediBountyDroidMaxDistanceFromTarget;
+	float anonymousJediBountyDroidMaxDistanceFromHunter;
+	unsigned long anonymousJediBountyDroidRelaunchCooldown;
+	boolean anonymousJediBountyDroidConsumedOnDestruction;
+	boolean anonymousJediBountyDroidConsumedOnSuccess;
+	unsigned long anonymousJediBountyDroidDespawnDelay;
+	float anonymousJediBountyDroidMovementSpeed;
+	string anonymousJediBountyDroidTemplate;
+
 	unsigned long destroyMissionBaseDistance;
 	unsigned long destroyMissionDifficultyDistanceFactor;
 	unsigned long destroyMissionRandomDistance;
@@ -96,6 +108,18 @@ class MissionManager extends Observer implements Logger {
 		anonymousJediBountyTrackingLossDistance = 300;
 		anonymousJediBountyWaypointAccuracy = 200;
 		anonymousJediBountyConsumeArakyd = true;
+
+		anonymousJediBountyDroidScanDuration = 15000;
+		anonymousJediBountyDroidSpawnProtection = 2000;
+		anonymousJediBountyDroidHealth = 6000;
+		anonymousJediBountyDroidMaxDistanceFromTarget = 20;
+		anonymousJediBountyDroidMaxDistanceFromHunter = 0;
+		anonymousJediBountyDroidRelaunchCooldown = 90000;
+		anonymousJediBountyDroidConsumedOnDestruction = true;
+		anonymousJediBountyDroidConsumedOnSuccess = true;
+		anonymousJediBountyDroidDespawnDelay = 3000;
+		anonymousJediBountyDroidMovementSpeed = 0;
+		anonymousJediBountyDroidTemplate = "bounty_tracking_droid";
 
 		Logger.setLoggingName("MissionManager");
 
@@ -189,6 +213,7 @@ class MissionManager extends Observer implements Logger {
 	public native void completePlayerBounty(unsigned long targetId, unsigned long bountyHunter);
 	public native void failPlayerBountyMission(unsigned long bountyHunter, unsigned long targetID);
 	public native void invalidatePlayerBountyMissions(unsigned long targetId);
+	public native void clearPlayerBountyCooldowns(unsigned long targetId);
 
 	@local
 	@dereferenced
@@ -261,5 +286,60 @@ class MissionManager extends Observer implements Logger {
 	@read
 	public boolean getAnonymousJediBountyConsumeArakyd() {
 		return anonymousJediBountyConsumeArakyd;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyDroidScanDuration() {
+		return anonymousJediBountyDroidScanDuration;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyDroidSpawnProtection() {
+		return anonymousJediBountyDroidSpawnProtection;
+	}
+
+	@read
+	public int getAnonymousJediBountyDroidHealth() {
+		return anonymousJediBountyDroidHealth;
+	}
+
+	@read
+	public float getAnonymousJediBountyDroidMaxDistanceFromTarget() {
+		return anonymousJediBountyDroidMaxDistanceFromTarget;
+	}
+
+	@read
+	public float getAnonymousJediBountyDroidMaxDistanceFromHunter() {
+		return anonymousJediBountyDroidMaxDistanceFromHunter;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyDroidRelaunchCooldown() {
+		return anonymousJediBountyDroidRelaunchCooldown;
+	}
+
+	@read
+	public boolean getAnonymousJediBountyDroidConsumedOnDestruction() {
+		return anonymousJediBountyDroidConsumedOnDestruction;
+	}
+
+	@read
+	public boolean getAnonymousJediBountyDroidConsumedOnSuccess() {
+		return anonymousJediBountyDroidConsumedOnSuccess;
+	}
+
+	@read
+	public unsigned long getAnonymousJediBountyDroidDespawnDelay() {
+		return anonymousJediBountyDroidDespawnDelay;
+	}
+
+	@read
+	public float getAnonymousJediBountyDroidMovementSpeed() {
+		return anonymousJediBountyDroidMovementSpeed;
+	}
+
+	@dirty
+	public string getAnonymousJediBountyDroidTemplate() {
+		return anonymousJediBountyDroidTemplate;
 	}
 }

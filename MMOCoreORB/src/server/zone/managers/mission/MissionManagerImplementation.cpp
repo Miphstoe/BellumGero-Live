@@ -119,6 +119,22 @@ void MissionManagerImplementation::loadLuaSettings() {
 		}
 		anonymousTracking.pop();
 
+		LuaObject anonymousDroidTracking = lua->getGlobalObject("anonymousJediBountyDroidTracking");
+		if (anonymousDroidTracking.isValidTable()) {
+			anonymousJediBountyDroidScanDuration = anonymousDroidTracking.getLongField("scanDuration");
+			anonymousJediBountyDroidSpawnProtection = anonymousDroidTracking.getLongField("spawnProtection");
+			anonymousJediBountyDroidHealth = anonymousDroidTracking.getIntField("droidHealth");
+			anonymousJediBountyDroidMaxDistanceFromTarget = anonymousDroidTracking.getFloatField("maxDistanceFromTarget");
+			anonymousJediBountyDroidMaxDistanceFromHunter = anonymousDroidTracking.getFloatField("maxDistanceFromHunter");
+			anonymousJediBountyDroidRelaunchCooldown = anonymousDroidTracking.getLongField("relaunchCooldown");
+			anonymousJediBountyDroidConsumedOnDestruction = anonymousDroidTracking.getBooleanField("consumedOnDestruction");
+			anonymousJediBountyDroidConsumedOnSuccess = anonymousDroidTracking.getBooleanField("consumedOnSuccess");
+			anonymousJediBountyDroidDespawnDelay = anonymousDroidTracking.getLongField("despawnDelay");
+			anonymousJediBountyDroidMovementSpeed = anonymousDroidTracking.getFloatField("movementSpeed");
+			anonymousJediBountyDroidTemplate = anonymousDroidTracking.getStringField("droidTemplate");
+		}
+		anonymousDroidTracking.pop();
+
 		destroyMissionBaseDistance = lua->getGlobalLong("destroyMissionBaseDistance");
 		destroyMissionDifficultyDistanceFactor = lua->getGlobalLong("destroyMissionDifficultyDistanceFactor");
 		destroyMissionRandomDistance = lua->getGlobalLong("destroyMissionRandomDistance");
@@ -2567,9 +2583,21 @@ void MissionManagerImplementation::completePlayerBounty(uint64 targetId, uint64 
 				failPlayerBountyMission(activeBountyHunters.get(i), targetId);
 			} else {
 				ManagedReference<CreatureObject*> creo = server->getObject(activeBountyHunters.get(i)).castTo<CreatureObject*>();
-				auto ghost = creo->getPlayerObject();
-				if (ghost != nullptr)
-					ghost->schedulePvpTefRemovalTask(false, false, true);
+
+				if (creo != nullptr) {
+					auto ghost = creo->getPlayerObject();
+					if (ghost != nullptr)
+						ghost->schedulePvpTefRemovalTask(false, false, true);
+				}
+
+				// Remove the winning hunter from the target's active-hunter list here, synchronously,
+				// rather than relying solely on the later async CompleteMissionObjectiveTask ->
+				// removeMissionFromPlayer() -> removeMission() chain. That chain silently no-ops if
+				// getPlayerOwner() can't resolve the player (e.g. they disconnect right as the kill
+				// registers), which would leave this hunter's ID stuck on bountyHunterIDs forever -
+				// permanently inflating numberOfActiveMissions() and eventually locking the target
+				// out of the bounty terminal once enough hunters accumulate this way.
+				target->removeBountyHunter(bountyHunter);
 			}
 		}
 	}
@@ -2612,6 +2640,19 @@ void MissionManagerImplementation::failPlayerBountyMission(uint64 bountyHunter, 
 				objective->fail();
 			}
 		}
+	}
+
+	// objective->fail() normally removes this hunter from the target's active-hunter list via
+	// removeMissionFromPlayer() -> removeMission() -> removeBountyHunterFromPlayerBounty(), but every
+	// step to get there (resolving the hunter's creature, their bounty mission object, its objective,
+	// and the mission still being parented under their datapad) can silently no-op on a stale or
+	// already-desynced mission. Guarantee the removal directly here as a fallback so a failed cleanup
+	// can never leave a hunter's ID stuck on bountyHunterIDs - that would permanently inflate
+	// numberOfActiveMissions() and eventually lock the target out of the bounty terminal. Safe to call
+	// unconditionally (SortedVector::drop() is a no-op if already removed). All callers of this
+	// function hold playerBountyListMutex for the duration of the call.
+	if (playerBountyList.contains(targetID)) {
+		playerBountyList.get(targetID)->removeBountyHunter(bountyHunter);
 	}
 }
 
@@ -2667,6 +2708,27 @@ void MissionManagerImplementation::invalidatePlayerBountyMissions(uint64 targetI
 	}
 }
 
+void MissionManagerImplementation::clearPlayerBountyCooldowns(uint64 targetId) {
+	Locker listLocker(&playerBountyListMutex);
+
+	// Separate from invalidatePlayerBountyMissions() on purpose: that function intentionally leaves a
+	// per-hunter cooldown behind (a hunter whose target "changed identity" shouldn't immediately
+	// re-acquire them). This is the GM/admin counterpart - a full clean-slate reset of a target's
+	// bounty tracking, including wiping every hunter's personal PlayerBountyCooldownTime entry so the
+	// target can be rolled again right away instead of waiting out the (default 24h) cooldown.
+	if (playerBountyList.contains(targetId)) {
+		PlayerBounty* bounty = playerBountyList.get(targetId);
+
+		bounty->clearMissionCooldowns();
+
+		// lastBountyKill also gates isBountyValidForPlayer() directly (playerBountyKillBuffer, default
+		// 30m) independent of the per-hunter cooldown above, and lastBountyDebuff suppresses the
+		// displayed/awarded reward for playerBountyDebuffLength (default 3d) after a kill. Clear both
+		// so a GM reset isn't still silently excluding or under-rewarding the target afterward.
+		bounty->setLastBountyKill(0);
+		bounty->setLastBountyDebuff(0);
+	}
+}
 
 Vector<uint64> MissionManagerImplementation::getHuntersHuntingTarget(uint64 targetId) {
 	Vector<uint64> values;
@@ -2789,6 +2851,25 @@ bool MissionManagerImplementation::sendPlayerBountyDebug(CreatureObject* creatur
 		promptText += "Online Status: " + onlineStatus + "\n";
 		int activeCount = playerBounty->numberOfActiveMissions();
 		promptText += "Active Bounty Count: " + String::valueOf(activeCount) + "\n";
+
+		uint64 lastKill = playerBounty->getLastBountyKill();
+
+		if (lastKill > 0) {
+			uint64 curTime = System::getMiliTime();
+			uint64 elapsed = curTime > lastKill ? curTime - lastKill : 0;
+
+			promptText += "Time Since Last Bounty Kill: " + String::valueOf(elapsed / 1000) + "s\n";
+
+			// isBountyValidForPlayer() excludes the target from the terminal pool entirely (regardless
+			// of visibility, online status, or active hunter count) for playerBountyKillBuffer after
+			// any kill - separate from the per-hunter PlayerBountyCooldownTime. Surface it here since
+			// it's otherwise invisible and easy to mistake for a stuck/bugged target.
+			if (playerBountyKillBuffer > 0 && elapsed < playerBountyKillBuffer) {
+				uint64 remaining = (playerBountyKillBuffer - elapsed) / 1000;
+				promptText += "Kill Buffer Active - excluded from terminal for another " + String::valueOf(remaining) + "s\n";
+			}
+		}
+
 		if (activeCount > 0) {
 			promptText += "\nPlayers holding active bounties:";
 			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();

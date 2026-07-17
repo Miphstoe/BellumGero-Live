@@ -22,7 +22,11 @@
 #include "server/zone/objects/mission/bountyhunter/BountyHunterDroid.h"
 #include "server/zone/objects/mission/bountyhunter/events/BountyHunterTargetTask.h"
 #include "server/zone/objects/mission/bountyhunter/events/BountyTrackingTask.h"
+#include "server/zone/objects/mission/bountyhunter/events/DroidSpawnProtectionTask.h"
+#include "server/zone/objects/mission/bountyhunter/events/DroidScanCompletionTask.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
+#include "server/zone/managers/planet/PlanetManager.h"
+#include "templates/params/creature/CreatureAttribute.h"
 #include "conf/ConfigManager.h"
 
 namespace {
@@ -60,6 +64,11 @@ void BountyMissionObjectiveImplementation::activate() {
 	Locker locker(&syncMutex);
 
 	MissionObjectiveImplementation::activate();
+
+	if (droidScanState != DROID_IDLE && (trackingDroid == nullptr || !trackingDroid->isInQuadTree())) {
+		info(true) << "[AnonymousJediBounty] Stale droid state reconciled on activate state=" << droidScanState;
+		cleanupDroidTracking("Mission reactivated", false);
+	}
 
 	if (isPlayerTarget()) {
 		ManagedReference<MissionObject* > mission = this->mission.get();
@@ -281,8 +290,23 @@ int BountyMissionObjectiveImplementation::notifyObserverEvent(MissionObserver* o
 	Locker locker(&syncMutex);
 
 	if (eventType == ObserverEventType::OBJECTDESTRUCTION) {
-		handleNpcTargetKilled(observable);
+		SceneObject* destroyed = cast<SceneObject*>(observable);
+
+		if (trackingDroid != nullptr && destroyed != nullptr && destroyed->getObjectID() == trackingDroid->getObjectID()) {
+			handleTrackingDroidDestroyed(observable, arg1);
+		} else {
+			handleNpcTargetKilled(observable);
+		}
 	} else if (eventType == ObserverEventType::DAMAGERECEIVED) {
+		SceneObject* damaged = cast<SceneObject*>(observable);
+
+		if (trackingDroid != nullptr && damaged != nullptr && damaged->getObjectID() == trackingDroid->getObjectID()) {
+			ManagedReference<MissionObject*> missionRef = mission.get();
+			info(true) << "[AnonymousJediBounty] Droid damage droid=" << trackingDroid->getObjectID()
+				<< " mission=" << (missionRef != nullptr ? missionRef->getObjectID() : (uint64)0);
+			return 0;
+		}
+
 		return handleNpcTargetReceivesDamage(arg1);
 	} else if (eventType == ObserverEventType::PLAYERKILLED) {
 		handlePlayerKilled(arg1, arg2);
@@ -705,9 +729,231 @@ bool BountyMissionObjectiveImplementation::handleArakydTrackingScan(CreatureObje
 		return true;
 	}
 
-	WaypointObject* waypoint = mission->getWaypointToMission();
-	if (waypoint == nullptr)
+	info(true) << "[AnonymousJediBounty] Same-planet location scan hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " planet=" << targetZone
+		<< " mission=" << mission->getObjectID();
+
+	return beginDroidTrackingScan(player, target);
+}
+
+bool BountyMissionObjectiveImplementation::beginDroidTrackingScan(CreatureObject* player, CreatureObject* target) {
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (player == nullptr || target == nullptr || mission == nullptr || owner == nullptr)
 		return false;
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	if (zoneServer == nullptr)
+		return false;
+
+	MissionManager* missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr)
+		return false;
+
+	uint64 now = Time().getMiliTime();
+
+	if (droidScanState != DROID_IDLE) {
+		player->sendSystemMessage("A tracking droid is already active for this contract.");
+		info(true) << "[AnonymousJediBounty] Droid deploy rejected (already active) hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
+		return false;
+	}
+
+	uint64 relaunchCooldown = missionManager->getAnonymousJediBountyDroidRelaunchCooldown();
+
+	if (droidLastDestroyedTime > 0 && now < droidLastDestroyedTime + relaunchCooldown) {
+		player->sendSystemMessage("Tracking droid systems recharging. Try again shortly.");
+		info(true) << "[AnonymousJediBounty] Droid deploy rejected (cooldown) hunter=" << owner->getObjectID()
+			<< " target=" << target->getObjectID() << " remaining=" << (droidLastDestroyedTime + relaunchCooldown - now)
+			<< " mission=" << mission->getObjectID();
+		return false;
+	}
+
+	Zone* targetZone = target->getZone();
+	if (targetZone == nullptr)
+		return false;
+
+	PlanetManager* planetManager = targetZone->getPlanetManager();
+	Vector3 spawnPosition = target->getWorldPosition();
+
+	if (planetManager != nullptr) {
+		spawnPosition = planetManager->getInSightSpawnPoint(target, 5, missionManager->getAnonymousJediBountyDroidMaxDistanceFromTarget(), 15);
+	}
+
+	float spawnZ = targetZone->getHeight(spawnPosition.getX(), spawnPosition.getY());
+
+	uint32 templateCRC = missionManager->getAnonymousJediBountyDroidTemplate().hashCode();
+
+	ManagedReference<AiAgent*> newDroid = cast<AiAgent*>(targetZone->getCreatureManager()->spawnCreature(templateCRC, 0, spawnPosition.getX(), spawnZ, spawnPosition.getY(), 0));
+
+	if (newDroid == nullptr) {
+		error("Failed to spawn bounty tracking droid template");
+		return false;
+	}
+
+	Locker droidLocker(newDroid);
+
+	newDroid->addObjectFlag(ObjectFlag::STATIC);
+	newDroid->setAITemplate();
+
+	int configuredHealth = missionManager->getAnonymousJediBountyDroidHealth();
+
+	if (configuredHealth > 0) {
+		newDroid->setBaseHAM(CreatureAttribute::HEALTH, configuredHealth);
+		newDroid->setHAM(CreatureAttribute::HEALTH, configuredHealth);
+	}
+
+	ManagedReference<MissionObserver*> observer = new MissionObserver(_this.getReferenceUnsafeStaticCast());
+	addObserver(observer, true);
+	newDroid->registerObserver(ObserverEventType::OBJECTDESTRUCTION, observer);
+	newDroid->registerObserver(ObserverEventType::DAMAGERECEIVED, observer);
+	droidObserver = observer;
+
+	droidLocker.release();
+
+	trackingDroid = newDroid;
+	droidScanToken++;
+	droidScanState = DROID_DEPLOYING;
+
+	if (droidSpawnProtectionTask != nullptr && droidSpawnProtectionTask->isScheduled())
+		droidSpawnProtectionTask->cancel();
+
+	droidSpawnProtectionTask = new DroidSpawnProtectionTask(_this.getReferenceUnsafeStaticCast(), droidScanToken);
+	droidSpawnProtectionTask->schedule(missionManager->getAnonymousJediBountyDroidSpawnProtection());
+
+	player->sendSystemMessage("Deploying Arakyd probe droid...");
+
+	info(true) << "[AnonymousJediBounty] Droid deployed hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " droid=" << newDroid->getObjectID()
+		<< " mission=" << mission->getObjectID();
+
+	return true;
+}
+
+void BountyMissionObjectiveImplementation::endDroidSpawnProtection(uint64 token) {
+	Locker locker(&syncMutex);
+
+	if (token != droidScanToken || droidScanState != DROID_DEPLOYING) {
+		info(true) << "[AnonymousJediBounty] Duplicate callback prevented (spawn protection) token=" << token
+			<< " currentToken=" << droidScanToken << " state=" << droidScanState;
+		return;
+	}
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (mission == nullptr || owner == nullptr || trackingDroid == nullptr) {
+		droidScanState = DROID_CANCELLED;
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	MissionManager* missionManager = zoneServer != nullptr ? zoneServer->getMissionManager() : nullptr;
+
+	if (missionManager == nullptr) {
+		droidScanState = DROID_CANCELLED;
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+
+	if (target == nullptr || target->getZone() == nullptr || !target->isOnline() || target->isDead() || !owner->isOnline()) {
+		droidScanState = DROID_CANCELLED;
+		info(true) << "[AnonymousJediBounty] Scan cancelled (target unavailable) hunter=" << owner->getObjectID()
+			<< " mission=" << mission->getObjectID();
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	info(true) << "[AnonymousJediBounty] Droid spawn complete droid=" << trackingDroid->getObjectID()
+		<< " mission=" << mission->getObjectID();
+
+	droidScanState = DROID_SCANNING;
+
+	uint64 scanDuration = missionManager->getAnonymousJediBountyDroidScanDuration();
+	uint64 flagDuration = scanDuration + 5000;
+
+	Locker targetLocker(target);
+	target->addPersonalEnemyFlag(trackingDroid, flagDuration);
+	targetLocker.release();
+
+	Locker droidLocker(trackingDroid);
+	trackingDroid->addPersonalEnemyFlag(target, flagDuration);
+	trackingDroid->sendPvpStatusTo(target);
+	droidLocker.release();
+
+	info(true) << "[AnonymousJediBounty] Spawn protection ended droid=" << trackingDroid->getObjectID()
+		<< " mission=" << mission->getObjectID();
+
+	target->sendSystemMessage("An Arakyd probe droid is scanning your location.");
+
+	info(true) << "[AnonymousJediBounty] Jedi warned target=" << target->getObjectID()
+		<< " mission=" << mission->getObjectID();
+
+	info(true) << "[AnonymousJediBounty] Scan started hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " droid=" << trackingDroid->getObjectID()
+		<< " duration=" << scanDuration << " mission=" << mission->getObjectID();
+
+	if (droidScanTask != nullptr && droidScanTask->isScheduled())
+		droidScanTask->cancel();
+
+	droidScanTask = new DroidScanCompletionTask(_this.getReferenceUnsafeStaticCast(), droidScanToken);
+	droidScanTask->schedule(scanDuration);
+}
+
+void BountyMissionObjectiveImplementation::completeDroidScan(uint64 token) {
+	Locker locker(&syncMutex);
+
+	if (token != droidScanToken || droidScanState != DROID_SCANNING) {
+		info(true) << "[AnonymousJediBounty] Duplicate callback prevented (scan completion) token=" << token
+			<< " currentToken=" << droidScanToken << " state=" << droidScanState;
+		return;
+	}
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+
+	if (mission == nullptr || owner == nullptr) {
+		droidScanState = DROID_CANCELLED;
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	ZoneServer* zoneServer = owner->getZoneServer();
+	MissionManager* missionManager = zoneServer != nullptr ? zoneServer->getMissionManager() : nullptr;
+
+	if (missionManager == nullptr) {
+		droidScanState = DROID_CANCELLED;
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	ManagedReference<CreatureObject*> target = zoneServer->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+
+	// Defense in depth - re-validate the target is still a valid, reachable scan target
+	// (the completion timer is a one-shot and does not otherwise poll for planet changes/logout).
+	if (target == nullptr || target->getZone() == nullptr || target->isDead() || !target->isOnline() || !owner->isOnline()
+			|| owner->getZone() == nullptr || target->getZone()->getZoneName() != owner->getZone()->getZoneName()
+			|| target->getZone()->getZoneName() != trackingPlanet) {
+		droidScanState = DROID_CANCELLED;
+		info(true) << "[AnonymousJediBounty] Scan cancelled (target unavailable) hunter=" << owner->getObjectID()
+			<< " mission=" << mission->getObjectID();
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	WaypointObject* waypoint = mission->getWaypointToMission();
+
+	if (waypoint == nullptr) {
+		droidScanState = DROID_CANCELLED;
+		cleanupDroidTracking("Scan cancelled", false);
+		return;
+	}
+
+	String targetZone = target->getZone()->getZoneName();
 
 	float accuracy = missionManager->getAnonymousJediBountyWaypointAccuracy();
 	float offsetX = 0.f;
@@ -727,8 +973,11 @@ bool BountyMissionObjectiveImplementation::handleArakydTrackingScan(CreatureObje
 
 	mission->updateMissionLocation();
 
-	player->sendSystemMessage("Target signal acquired.");
-	player->sendSystemMessage("Approximate location marked.");
+	owner->sendSystemMessage("Target signal acquired.");
+	owner->sendSystemMessage("Approximate location marked.");
+
+	info(true) << "[AnonymousJediBounty] Waypoint generated hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
 
 	trackingState = TRACKING_WAYPOINT;
 	trackingToken++;
@@ -752,8 +1001,8 @@ bool BountyMissionObjectiveImplementation::handleArakydTrackingScan(CreatureObje
 		target->addPersonalEnemyFlag(owner, duration);
 		targetLocker.release();
 
-		player->sendSystemMessage("Target confirmed.");
-		player->sendSystemMessage("Engagement authorized.");
+		owner->sendSystemMessage("Target confirmed.");
+		owner->sendSystemMessage("Engagement authorized.");
 		target->sendPvpStatusTo(owner);
 		owner->sendPvpStatusTo(target);
 
@@ -770,10 +1019,140 @@ bool BountyMissionObjectiveImplementation::handleArakydTrackingScan(CreatureObje
 	trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
 	trackingTask->schedule(5 * 1000);
 
-	info(true) << "[AnonymousJediBounty] Same-planet location scan hunter=" << owner->getObjectID()
-		<< " target=" << target->getObjectID() << " planet=" << targetZone
+	info(true) << "[AnonymousJediBounty] Droid consumedOnSuccess=" << (missionManager->getAnonymousJediBountyDroidConsumedOnSuccess() ? "true" : "false")
 		<< " mission=" << mission->getObjectID();
-	return true;
+
+	uint64 despawnDelay = missionManager->getAnonymousJediBountyDroidDespawnDelay();
+	ManagedReference<AiAgent*> droidRef = trackingDroid;
+
+	if (droidRef != nullptr) {
+		Core::getTaskManager()->scheduleTask([droidRef] {
+			if (droidRef == nullptr)
+				return;
+
+			Locker locker(droidRef);
+
+			if (droidRef->isInQuadTree()) {
+				droidRef->destroyObjectFromDatabase();
+				droidRef->destroyObjectFromWorld(true);
+			}
+		}, "BountyTrackingDroidDespawn", despawnDelay);
+	}
+
+	info(true) << "[AnonymousJediBounty] Droid scan completed hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " droid=" << (droidRef != nullptr ? droidRef->getObjectID() : (uint64)0)
+		<< " mission=" << mission->getObjectID();
+
+	droidScanState = DROID_COMPLETED;
+	cleanupDroidTracking("Droid cleanup", false);
+}
+
+void BountyMissionObjectiveImplementation::handleTrackingDroidDestroyed(Observable* observable, ManagedObject* attacker) {
+	if (droidScanState != DROID_DEPLOYING && droidScanState != DROID_SCANNING) {
+		info(true) << "[AnonymousJediBounty] Duplicate callback prevented (droid destruction) state=" << droidScanState;
+		return;
+	}
+
+	ManagedReference<MissionObject*> mission = this->mission.get();
+	ManagedReference<CreatureObject*> owner = getPlayerOwner();
+	ManagedReference<CreatureObject*> target = nullptr;
+
+	if (mission != nullptr && owner != nullptr && owner->getZoneServer() != nullptr) {
+		target = owner->getZoneServer()->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+	}
+
+	CreatureObject* attackerCreo = cast<CreatureObject*>(attacker);
+
+	info(true) << "[AnonymousJediBounty] Droid destroyed hunter=" << (owner != nullptr ? owner->getObjectID() : (uint64)0)
+		<< " target=" << (target != nullptr ? target->getObjectID() : (uint64)0)
+		<< " attacker=" << (attackerCreo != nullptr ? attackerCreo->getObjectID() : (uint64)0)
+		<< " droid=" << (trackingDroid != nullptr ? trackingDroid->getObjectID() : (uint64)0)
+		<< " mission=" << (mission != nullptr ? mission->getObjectID() : (uint64)0);
+
+	droidScanState = DROID_DESTROYED;
+	droidLastDestroyedTime = Time().getMiliTime();
+
+	MissionManager* missionManager = (owner != nullptr && owner->getZoneServer() != nullptr) ? owner->getZoneServer()->getMissionManager() : nullptr;
+
+	if (owner != nullptr)
+		owner->sendSystemMessage("Tracking droid destroyed. Target location could not be acquired.");
+
+	if (target != nullptr)
+		target->sendSystemMessage("Tracking droid destroyed. The bounty hunter has temporarily lost your signal.");
+
+	info(true) << "[AnonymousJediBounty] Scan cancelled (destroyed) mission=" << (mission != nullptr ? mission->getObjectID() : (uint64)0);
+
+	if (missionManager != nullptr) {
+		info(true) << "[AnonymousJediBounty] Cooldown applied hunter=" << (owner != nullptr ? owner->getObjectID() : (uint64)0)
+			<< " duration=" << missionManager->getAnonymousJediBountyDroidRelaunchCooldown()
+			<< " consumedOnDestruction=" << (missionManager->getAnonymousJediBountyDroidConsumedOnDestruction() ? "true" : "false")
+			<< " mission=" << (mission != nullptr ? mission->getObjectID() : (uint64)0);
+	}
+
+	cleanupDroidTracking("Droid destroyed", false);
+}
+
+void BountyMissionObjectiveImplementation::cleanupDroidTracking(const String& reason, bool notifyPlayer) {
+	bool hadActiveState = trackingDroid != nullptr || droidScanState != DROID_IDLE;
+
+	if (droidSpawnProtectionTask != nullptr && droidSpawnProtectionTask->isScheduled())
+		droidSpawnProtectionTask->cancel();
+
+	droidSpawnProtectionTask = nullptr;
+
+	if (droidScanTask != nullptr && droidScanTask->isScheduled())
+		droidScanTask->cancel();
+
+	droidScanTask = nullptr;
+
+	droidScanToken++;
+
+	if (trackingDroid != nullptr) {
+		ManagedReference<AiAgent*> droidRef = trackingDroid;
+		ManagedReference<MissionObject*> mission = this->mission.get();
+		ManagedReference<CreatureObject*> owner = getPlayerOwner();
+		ManagedReference<CreatureObject*> target = nullptr;
+
+		if (mission != nullptr && owner != nullptr && owner->getZoneServer() != nullptr) {
+			target = owner->getZoneServer()->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+		}
+
+		if (droidObserver != nullptr) {
+			droidRef->dropObserver(ObserverEventType::OBJECTDESTRUCTION, droidObserver);
+			droidRef->dropObserver(ObserverEventType::DAMAGERECEIVED, droidObserver);
+			dropObserver(droidObserver, true);
+			droidObserver = nullptr;
+		}
+
+		if (target != nullptr) {
+			Locker targetLocker(target);
+			target->removePersonalEnemyFlag(droidRef);
+			targetLocker.release();
+
+			Locker droidLocker(droidRef);
+			droidRef->removePersonalEnemyFlag(target);
+			droidLocker.release();
+		}
+
+		// The success path (DROID_COMPLETED) already scheduled its own delayed despawn with an
+		// independent reference; avoid destroying the droid out from under that pending task here.
+		if (droidScanState != DROID_COMPLETED) {
+			Locker droidLocker(droidRef);
+
+			if (droidRef->isInQuadTree()) {
+				droidRef->destroyObjectFromDatabase();
+				droidRef->destroyObjectFromWorld(true);
+			}
+
+			droidLocker.release();
+		}
+	}
+
+	trackingDroid = nullptr;
+	droidScanState = DROID_IDLE;
+
+	if (hadActiveState)
+		info(true) << "[AnonymousJediBounty] Droid cleanup reason=\"" << reason << "\"";
 }
 
 bool BountyMissionObjectiveImplementation::authorizeTrackedPlayerTarget(CreatureObject* player) {
@@ -811,37 +1190,13 @@ bool BountyMissionObjectiveImplementation::authorizeTrackedPlayerTarget(Creature
 		return false;
 	}
 
-	uint64 duration = missionManager->getAnonymousJediBountyTrackingDuration();
 	trackingPlanet = targetZone;
-	trackingState = TRACKING_CONFIRMED;
-	trackingToken++;
-	trackingAuthorizationExpires = Time().getMiliTime() + duration;
-	trackingLockX = target->getWorldPositionX();
-	trackingLockY = target->getWorldPositionY();
 
-	owner->addPersonalEnemyFlag(target, duration);
-
-	Locker targetLocker(target);
-	target->addPersonalEnemyFlag(owner, duration);
-	targetLocker.release();
-
-	player->sendSystemMessage("Target confirmed.");
-	player->sendSystemMessage("Engagement authorized.");
-	target->sendPvpStatusTo(owner);
-	owner->sendPvpStatusTo(target);
-
-	if (trackingTask != nullptr && trackingTask->isScheduled())
-		trackingTask->cancel();
-
-	trackingTask = new BountyTrackingTask(_this.getReferenceUnsafeStaticCast(), trackingToken);
-	trackingTask->schedule(5 * 1000);
-
-	info(true) << "[AnonymousJediBounty] Target confirmation hunter=" << owner->getObjectID()
-		<< " target=" << target->getObjectID() << " mission=" << mission->getObjectID();
-	info(true) << "[AnonymousJediBounty] PvP authorization granted hunter=" << owner->getObjectID()
-		<< " target=" << target->getObjectID() << " duration=" << duration
+	info(true) << "[AnonymousJediBounty] Same-planet location scan hunter=" << owner->getObjectID()
+		<< " target=" << target->getObjectID() << " planet=" << targetZone
 		<< " mission=" << mission->getObjectID();
-	return true;
+
+	return beginDroidTrackingScan(player, target);
 }
 
 void BountyMissionObjectiveImplementation::validateTrackingLock(uint64 token) {
@@ -961,6 +1316,8 @@ void BountyMissionObjectiveImplementation::validateTrackingLock(uint64 token) {
 }
 
 void BountyMissionObjectiveImplementation::clearTrackingData(const String& reason, bool notifyPlayer) {
+	cleanupDroidTracking(reason, false);
+
 	ManagedReference<MissionObject*> mission = this->mission.get();
 	ManagedReference<CreatureObject*> owner = getPlayerOwner();
 	ManagedReference<CreatureObject*> target = nullptr;

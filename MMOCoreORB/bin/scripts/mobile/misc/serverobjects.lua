@@ -1,5 +1,6 @@
 includeFile("misc/agrilatracecoordinator.lua")
 includeFile("misc/bossk.lua")
+includeFile("misc/bounty_tracking_droid.lua")
 includeFile("misc/cll_8.lua")
 includeFile("misc/chiss_female.lua")
 includeFile("misc/chiss_male.lua")

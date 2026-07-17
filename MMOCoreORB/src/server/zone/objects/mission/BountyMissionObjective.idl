@@ -59,6 +59,20 @@ class BountyMissionObjective extends MissionObjective {
 
 	protected float trackingLockY;
 
+	protected AiAgent trackingDroid;
+
+	protected transient MissionObserver droidObserver;
+
+	protected int droidScanState;
+
+	protected unsigned long droidScanToken;
+
+	protected transient Task droidScanTask;
+
+	protected transient Task droidSpawnProtectionTask;
+
+	protected unsigned long droidLastDestroyedTime;
+
 	public static final int INITSTATUS = 0;
 	public static final int HASBIOSIGNATURESTATUS = 1;
 	public static final int HASTALKED = 2;
@@ -68,6 +82,13 @@ class BountyMissionObjective extends MissionObjective {
 	public static final int TRACKING_PLANET_KNOWN = 1;
 	public static final int TRACKING_WAYPOINT = 2;
 	public static final int TRACKING_CONFIRMED = 3;
+
+	public static final int DROID_IDLE = 0;
+	public static final int DROID_DEPLOYING = 1;
+	public static final int DROID_SCANNING = 2;
+	public static final int DROID_COMPLETED = 3;
+	public static final int DROID_DESTROYED = 4;
+	public static final int DROID_CANCELLED = 5;
 
 	public BountyMissionObjective(MissionObject mission) {
 		super(mission);
@@ -85,6 +106,14 @@ class BountyMissionObjective extends MissionObjective {
 		trackingTask = null;
 		trackingLockX = 0;
 		trackingLockY = 0;
+
+		trackingDroid = null;
+		droidObserver = null;
+		droidScanState = DROID_IDLE;
+		droidScanToken = 0;
+		droidScanTask = null;
+		droidSpawnProtectionTask = null;
+		droidLastDestroyedTime = 0;
 
 		Logger.setLoggingName("BountyMissionObjective");
 	}
@@ -163,6 +192,16 @@ class BountyMissionObjective extends MissionObjective {
 
 	@dirty
 	public native boolean hasTrackingAuthorization(CreatureObject hunter, CreatureObject target);
+
+	private native boolean beginDroidTrackingScan(CreatureObject player, CreatureObject target);
+
+	public native void endDroidSpawnProtection(unsigned long token);
+
+	public native void completeDroidScan(unsigned long token);
+
+	private native void handleTrackingDroidDestroyed(Observable observable, ManagedObject attacker);
+
+	private native void cleanupDroidTracking(final string reason, boolean notifyPlayer);
 
 	@preLocked
 	private native void removePlayerTargetObservers();

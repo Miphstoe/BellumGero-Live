@@ -789,9 +789,19 @@ function VillageGmSui.manageVisibility(pPlayer, targetID)
 	promptBuf = promptBuf .. " \\#pcontrast1 " .. "Current Visibility: " .. " \\#pcontrast2 " .. PlayerObject(pGhost):getVisibility() .. "\n"
 	promptBuf = promptBuf .. " \\#pcontrast1 (Cap: " .. maxVisibility .. ") \n"
 
+	local isJediBountyTarget = CreatureObject(pTarget):hasSkill("force_title_jedi_rank_02")
+
+	if (isJediBountyTarget) then
+		promptBuf = promptBuf .. "\nIf this player is stuck and won't come up on the Bounty Hunter Mission Terminal, use \\#pcontrast1 Reset Stuck Bounty Hunter Tracking \\#pcontrast2 below, then confirm with " .. "\\#pcontrast1 /snoop " .. SceneObject(pTarget):getCustomObjectName() .. " visibility \\#pcontrast2 .\n"
+	end
+
 	sui.setPrompt(promptBuf)
 
 	--sui.add("Set Visibility Value", "setVisibility" .. targetID)
+
+	if (isJediBountyTarget) then
+		sui.add("Reset Stuck Bounty Hunter Tracking", "resetBountyHunterTracking" .. targetID)
+	end
 
 	sui.sendTo(pPlayer)
 end
@@ -799,7 +809,53 @@ end
 function VillageGmSui:manageVisibilityCallback(pPlayer, pSui, eventIndex, args)
 	local cancelPressed = (eventIndex == 1)
 
-	if (cancelPressed) then
+	if (cancelPressed or args == nil or tonumber(args) < 0) then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local menuOption = suiPageData:getStoredData(tostring(args))
+
+	if (menuOption == nil or not string.find(menuOption, "%d")) then
+		return
+	end
+
+	local targetID = string.match(menuOption, '%d+')
+	menuOption = string.gsub(menuOption, targetID, "")
+
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		Logger:log("Unable to find player for VillageGmSui function " .. menuOption .. " using oid " .. targetID, LT_ERROR)
+		return
+	end
+
+	if (menuOption == "resetBountyHunterTracking") then
+		-- Clears the persisted PlayerBounty's active-hunter list for this target. Needed because a
+		-- pre-fix accounting leak could permanently strand hunter IDs on that list (see
+		-- MissionManagerImplementation::completePlayerBounty / failPlayerBountyMission), pinning
+		-- numberOfActiveMissions() at or above maxBountiesPerJedi and locking the target out of the
+		-- bounty terminal forever regardless of visibility or FRS rank. Also fails any currently
+		-- active bounty missions against this target as a side effect.
+		CreatureObject(pTarget):invalidatePlayerBountyMissions()
+
+		-- invalidatePlayerBountyMissions() intentionally leaves a per-hunter cooldown behind for
+		-- anyone who was actively hunting this target (the "identity changed" cooldown, by design).
+		-- That means any hunter who had a mission against this target when the button is pressed -
+		-- including whoever is testing right now - gets personally cooldowned out for
+		-- PlayerBountyCooldownTime (default 24h) and won't be able to re-roll this target even though
+		-- the target is otherwise clear. Wipe all per-hunter cooldowns too so this is a true clean-slate
+		-- reset for testing/production use.
+		CreatureObject(pTarget):clearPlayerBountyCooldowns()
+
+		CreatureObject(pPlayer):sendSystemMessage("Cleared bounty hunter tracking and all hunter cooldowns for " .. SceneObject(pTarget):getCustomObjectName() .. ". Use /snoop " .. SceneObject(pTarget):getCustomObjectName() .. " visibility to confirm the active count is now 0.")
+		VillageGmSui.manageVisibility(pPlayer, targetID)
 		return
 	end
 end
@@ -946,6 +1002,15 @@ function VillageGmSui:knightTrialsCallback(pPlayer, pSui, eventIndex, args)
 	end
 
 	if (menuOption == "knightLight" or menuOption == "knightDark") then
+		-- unlockJediKnight() unconditionally resets FRS council/rank to 0 as part of granting the title.
+		-- Re-running it on a player who already completed Knight Trials silently wipes any FRS progress
+		-- they've earned since - block that here and point the GM at the FRS management tool instead.
+		if (JediTrials:hasCompletedKnightTrials(pTarget)) then
+			CreatureObject(pPlayer):sendSystemMessage("This player has already completed Knight Trials. Re-running this would reset their FRS council/rank to 0. Use the FRS Management menu if you need to adjust their FRS standing instead.")
+			VillageGmSui.playerInfo(pPlayer, targetID)
+			return
+		end
+
 		local councilType = menuOption == "knightLight" and JediTrials.COUNCIL_LIGHT or JediTrials.COUNCIL_DARK
 		writeScreenPlayData(pTarget, "KnightTrials", "startedTrials", 1)
 		writeScreenPlayData(pTarget, "KnightTrials", "activatedAtShrine", 1)

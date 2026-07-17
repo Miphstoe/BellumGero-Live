@@ -574,8 +574,10 @@ function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
 		return 0
 	end
 
-	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
-		printLuaError("KnightTrials:notifyKilledForPoints - player already completed Knight Trials (has rank_03)")
+	-- Use the completedTrials flag rather than hasSkill("force_title_jedi_rank_03") - the skill grant
+	-- can lag behind (or, historically, fail) independently of whether the trials were actually finished.
+	if (JediTrials:hasCompletedKnightTrials(pPlayer)) then
+		printLuaError("KnightTrials:notifyKilledForPoints - player already completed Knight Trials")
 		return 0
 	end
 

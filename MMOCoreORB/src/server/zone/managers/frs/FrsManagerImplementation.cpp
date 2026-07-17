@@ -16,6 +16,7 @@
 #include "server/zone/objects/player/sui/callbacks/EnclaveVotingTerminalSuiCallback.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/mission/MissionManager.h"
 #include "templates/faction/Factions.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/managers/player/PlayerMap.h"
@@ -616,6 +617,16 @@ void FrsManagerImplementation::setPlayerRank(CreatureObject* player, int rank) {
 		}
 
 		updatePlayerSkills(player);
+	}
+
+	// FRS rank feeds directly into the player bounty payout formula (calculateBhReward), but that
+	// payout is a cached snapshot only refreshed on specific skill-grant events - it was never
+	// refreshed here, so a rank change alone could leave a stale (often much lower) bounty reward
+	// cached indefinitely. Refresh it whenever rank actually changes.
+	MissionManager* missionManager = player->getZoneServer() != nullptr ? player->getZoneServer()->getMissionManager() : nullptr;
+
+	if (missionManager != nullptr && rank != curRank) {
+		missionManager->updatePlayerBountyReward(playerID, ghost->calculateBhReward());
 	}
 }
 
