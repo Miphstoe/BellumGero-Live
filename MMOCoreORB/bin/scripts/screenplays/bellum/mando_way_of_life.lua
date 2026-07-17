@@ -3589,7 +3589,7 @@ function MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
 
 	-- Check that none of the old armor is equipped
 	for _, pOldArmor in ipairs(oldArmor) do
-		if (SceneObject(pOldArmor):isEquipped()) then
+		if (SceneObject(pOldArmor):getParentID() ~= SceneObject(pInventory):getObjectID()) then
 			return false,
 				"You must unequip all old Mandalorian armor before exchanging it. Remove it from your character and place it in your inventory."
 		end
@@ -3671,7 +3671,7 @@ function MandoWayOfLife:tryExchangeMandalorianArmorByTier(pPlayer, tier)
 
 	-- Check that none of the armor is equipped
 	for _, pOldArmor in ipairs(oldArmor) do
-		if (SceneObject(pOldArmor):isEquipped()) then
+		if (SceneObject(pOldArmor):getParentID() ~= SceneObject(pInventory):getObjectID()) then
 			return false,
 				"You must unequip all Mandalorian armor before exchanging it. Remove it from your character and place it in your inventory."
 		end
