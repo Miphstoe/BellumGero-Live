@@ -492,15 +492,18 @@ int CraftingSessionImplementation::cancelSession() {
 
 	if (crafter != nullptr) {
 		crafter->dropActiveSession(SessionFacadeType::CRAFTING);
-		// DPlay9 *****************************
-		PlayerObjectDeltaMessage9* dplay9 = new PlayerObjectDeltaMessage9(crafterGhost);
-		dplay9->setCraftingState(0);
-		dplay9->close();
-		crafter->sendMessage(dplay9);
-		// *************************************
+
+		// Only build the PlayerObject delta when the ghost still exists. A player
+		// can disconnect or otherwise invalidate the session before cancellation.
+		if (crafterGhost != nullptr) {
+			PlayerObjectDeltaMessage9* dplay9 = new PlayerObjectDeltaMessage9(crafterGhost);
+			dplay9->setCraftingState(0);
+			dplay9->close();
+			crafter->sendMessage(dplay9);
+		}
 	}
 
-	if (crafterGhost != nullptr && crafterGhost->getDebug()) {
+	if (crafter != nullptr && crafterGhost != nullptr && crafterGhost->getDebug()) {
 		crafter->sendSystemMessage("*** Canceling crafting session ***");
 	}
 
@@ -595,7 +598,7 @@ int CraftingSessionImplementation::clearSession() {
 		}
 	}
 
-	if (crafterGhost != nullptr && crafterGhost->getDebug()) {
+	if (crafter != nullptr && crafterGhost != nullptr && crafterGhost->getDebug()) {
 		crafter->sendSystemMessage("*** Clearing crafting session ***");
 	}
 

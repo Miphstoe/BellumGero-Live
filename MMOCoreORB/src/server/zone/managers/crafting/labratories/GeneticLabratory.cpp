@@ -78,6 +78,15 @@ static bool isInvalidBioDnaAttack(const String& attackName) {
 	return false;
 }
 
+static bool containsAttack(const Vector<String>& attacks, const String& attackName) {
+	for (int i = 0; i < attacks.size(); ++i) {
+		if (attacks.get(i) == attackName)
+			return true;
+	}
+
+	return false;
+}
+
 static bool validateBioEngineerLootDna(DnaComponent* component) {
 	if (component == nullptr)
 		return false;
@@ -110,7 +119,10 @@ static bool validateBioEngineerLootDna(DnaComponent* component) {
 	if (qualityScore < 1 || qualityScore > 1000)
 		return false;
 
-	if (attackCount < 1 || attackCount > 3)
+	// Zero is valid for creatures that do not expose a usable special attack.
+	// Continue accepting three here so already-generated schema v1 DNA remains usable,
+	// even though new samples are limited to the two attacks the crafted template can store.
+	if (attackCount < 0 || attackCount > 3)
 		return false;
 
 	int qualityTier = tierNameToValue(component->getLuaStringData("bioengineer.dna.qualityTier"));
@@ -122,7 +134,7 @@ static bool validateBioEngineerLootDna(DnaComponent* component) {
 	String attack2 = component->getLuaStringData("bioengineer.dna.specialAttack.2");
 	String attack3 = component->getLuaStringData("bioengineer.dna.specialAttack.3");
 
-	if (isInvalidBioDnaAttack(attack1))
+	if (attackCount > 0 && isInvalidBioDnaAttack(attack1))
 		return false;
 
 	if (attackCount > 1 && isInvalidBioDnaAttack(attack2))
@@ -133,7 +145,7 @@ static bool validateBioEngineerLootDna(DnaComponent* component) {
 
 	component->setLevel(creatureLevel);
 	component->setQuality(qualityTier);
-	component->setSpecialAttackOne(attack1);
+	component->setSpecialAttackOne(attackCount > 0 ? attack1 : "defaultattack");
 	component->setSpecialAttackTwo(attackCount > 1 ? attack2 : "defaultattack");
 
 	return true;
@@ -153,82 +165,40 @@ void GeneticLabratory::initialize(ZoneServer* server) {
 
 String GeneticLabratory::pickSpecialAttack(String a, String b, String c, String d, String e, int odds, String otherSpecial) {
 	String effectiveSpecial = "defaultattack";
-	info(true) << "pickSpecialAttack called with: a=" << a << " b=" << b << " c=" << c << " d=" << d << " e=" << e << " odds=" << odds;
-	// if no special was found in the first passed in slot pick one at random
-	if (a.isEmpty() || a == otherSpecial) {
-		int rand = System::random(4);  // Fixed: was System::random(3) which only returned 0-2, never picking slot 'e'
-		info(true) << "pickSpecialAttack: slot 'a' was empty or duplicate, randomly picking from b/c/d/e, rand=" << rand;
-		switch(rand) {
-			case 0:
-				effectiveSpecial = b;
-				info(true) << "pickSpecialAttack: selected slot b = " << b;
-				break;
-			case 1:
-				effectiveSpecial = c;
-				info(true) << "pickSpecialAttack: selected slot c = " << c;
-				break;
-			case 2:
-				effectiveSpecial = d;
-				info(true) << "pickSpecialAttack: selected slot d = " << d;
-				break;
-			case 3:
-				effectiveSpecial = e;
-				info(true) << "pickSpecialAttack: selected slot e = " << e;
-				break;
-			default:
-				effectiveSpecial = "defaultattack";
-				break;
-		}
 
-		// If the randomly selected slot was also empty or "none", try to find a non-empty one
-		if (effectiveSpecial.isEmpty() || effectiveSpecial == "none" || effectiveSpecial == "defaultattack") {
-			info(true) << "pickSpecialAttack: randomly selected slot was empty/none/default, searching for valid attack";
-			if (!b.isEmpty() && b != "none" && b != "defaultattack" && b != otherSpecial) {
-				effectiveSpecial = b;
-				info(true) << "pickSpecialAttack: using slot b = " << b;
-			} else if (!c.isEmpty() && c != "none" && c != "defaultattack" && c != otherSpecial) {
-				effectiveSpecial = c;
-				info(true) << "pickSpecialAttack: using slot c = " << c;
-			} else if (!d.isEmpty() && d != "none" && d != "defaultattack" && d != otherSpecial) {
-				effectiveSpecial = d;
-				info(true) << "pickSpecialAttack: using slot d = " << d;
-			} else if (!e.isEmpty() && e != "none" && e != "defaultattack" && e != otherSpecial) {
-				effectiveSpecial = e;
-				info(true) << "pickSpecialAttack: using slot e = " << e;
-			} else {
-				effectiveSpecial = "defaultattack";
-				info(true) << "pickSpecialAttack: all backup slots were empty/none/default, using defaultattack";
-			}
-		}
-	} else {
+	// Preserve the original slot priority when the preferred attack is usable and
+	// is not already assigned as the other crafted special.
+	if (!isInvalidBioDnaAttack(a) && a != otherSpecial) {
 		effectiveSpecial = a;
-	}
-	info(true) << "pickSpecialAttack: effectiveSpecial after selection = " << effectiveSpecial;
-	// Removed filter that prevented area attacks (creature*) from being assigned to pets
-	// if (effectiveSpecial.contains("creature"))
-	//     effectiveSpecial = "defaultattack";
-	int roll = System::random(750);
-	// roll now determined by template quality
-	// we roll 0-750 if that number is >= quality * 100 we dont stick the special
-	// VHQ (quality 7, odds 700) has 93% chance to stick, VLQ (quality 1, odds 100) has 13% chance to stick
-	info(true) << "pickSpecialAttack: roll = " << roll << ", odds = " << odds;
-	if (roll >= odds ) {
-		info(true) << "pickSpecialAttack: roll >= odds, setting to defaultattack";
-		effectiveSpecial = "defaultattack";
-	}
-	// If we ended up with an empty string, default to defaultattack
-	if (effectiveSpecial.isEmpty()) {
-		info(true) << "pickSpecialAttack: effectiveSpecial was empty, setting to defaultattack";
-		effectiveSpecial = "defaultattack";
+	} else {
+		Vector<String> candidates;
+		String backupAttacks[4] = { b, c, d, e };
+
+		for (int i = 0; i < 4; ++i) {
+			const String& candidate = backupAttacks[i];
+
+			if (isInvalidBioDnaAttack(candidate) || candidate == otherSpecial ||
+				containsAttack(candidates, candidate))
+				continue;
+
+			candidates.add(candidate);
+		}
+
+		if (candidates.size() > 0)
+			effectiveSpecial = candidates.get(System::random(candidates.size() - 1));
 	}
 
-	// If we picked the same as otherSpecial, try again with increased odds
-	if (effectiveSpecial == otherSpecial && effectiveSpecial != "defaultattack") {
-		info(true) << "pickSpecialAttack: effectiveSpecial matches otherSpecial, recursing with increased odds";
-		effectiveSpecial = pickSpecialAttack(effectiveSpecial,b,c,d,e,odds+100,otherSpecial);// pick another default mantis #5598 max loop count is 8 (i.e. odds starting at 100, at 8 calls it picks defaultattack
-	}
+	if (effectiveSpecial == "defaultattack")
+		return effectiveSpecial;
 
-	info(true) << "pickSpecialAttack: final return value = " << effectiveSpecial;
+	// Quality values run from VHQ=1 through VLQ=7. The historical behavior uses
+	// quality * 100 as the failure threshold, giving VHQ roughly an 87% retention
+	// chance and VLQ roughly a 7% retention chance.
+	int failureThreshold = Math::max(0, Math::min(odds, 750));
+
+	if (System::random(750) < failureThreshold)
+		return "defaultattack";
+
 	return effectiveSpecial;
 }
 
@@ -255,8 +225,9 @@ void GeneticLabratory::recalculateResistances(CraftingValues* craftingValues, fl
 
 	float fortitude = craftingValues->getCurrentValue("fortitude");
 
-		// Reset effective resists if fortitude breaks 500
-	if (fortitude < 500 && fortitude + fortDiff >= 500) {
+	// Reset ordinary effective resists only when fortitude actually crosses
+	// from the unarmored range into Medium armor (> 500).
+	if (fortitude <= 500.f && fortitude + fortDiff > 500.f) {
 		armorReset = true;
 	}
 
@@ -707,9 +678,6 @@ void GeneticLabratory::setInitialCraftingValues(TangibleObject* prototype, Manuf
 	genetic->setRanged(ranged);
 	genetic->setQuality(quality);
 
-	// Debug logging for special attacks
-	info(true) << "GeneticLabratory: Special Attack 1 set to: " << special1;
-	info(true) << "GeneticLabratory: Special Attack 2 set to: " << special2;
 
 	// determine avg sample levels to choose a level of this template for output generation
 	int level = Genetics::physchologicalFormula(physique->getLevel(), prowess->getLevel(), mental->getLevel(), psychological->getLevel(), aggression->getLevel());
@@ -782,12 +750,23 @@ void GeneticLabratory::experimentRow(CraftingValues* craftingValues,int rowEffec
 
 	*/
 
+	if (attribute1.isEmpty() || attribute2.isEmpty())
+		return;
+
 	float newValue = 0.f, capValue = 0.f, fortDiff = 0.f;
 
 	float modifier = calculateExperimentationValueModifier(experimentationResult, pointsAttempted) * 2000.f;
 
 	float attValue1 = craftingValues->getCurrentValue(attribute1);
 	float attValue2 = craftingValues->getCurrentValue(attribute2);
+	float combinedValue = attValue1 + attValue2;
+	float attribute1Weight = 0.5f;
+	float attribute2Weight = 0.5f;
+
+	if (combinedValue > 0.f) {
+		attribute1Weight = attValue2 / combinedValue;
+		attribute2Weight = attValue1 / combinedValue;
+	}
 
 	// In the case of a failure only one attribute should go down from the primary group
 	float signSwap = -1.f;
@@ -807,11 +786,8 @@ void GeneticLabratory::experimentRow(CraftingValues* craftingValues,int rowEffec
 	capValue = craftingValues->getCapValue(attribute1);
 	float att1Mod = (swap1 ? (modifier * signSwap) : modifier);
 
-	newValue = attValue1 + (attValue2 / (attValue1 + attValue2) * att1Mod);
-
-	if (newValue > capValue) {
-		newValue = capValue;
-	}
+	newValue = attValue1 + (attribute1Weight * att1Mod);
+	newValue = Math::max(0.f, Math::min(newValue, capValue));
 
 	craftingValues->setCurrentPercentage(attribute1, (newValue / 1000.f));
 
@@ -826,11 +802,8 @@ void GeneticLabratory::experimentRow(CraftingValues* craftingValues,int rowEffec
 	capValue = craftingValues->getCapValue(attribute2);
 	float att2Mod = (swap2 ? (modifier * signSwap) : modifier);
 
-	newValue = attValue2 + (attValue1 / (attValue1 + attValue2) * att2Mod);
-
-	if (newValue > capValue) {
-		newValue = capValue;
-	}
+	newValue = attValue2 + (attribute2Weight * att2Mod);
+	newValue = Math::max(0.f, Math::min(newValue, capValue));
 
 	craftingValues->setCurrentPercentage(attribute2, (newValue / 1000.f));
 
@@ -849,14 +822,15 @@ void GeneticLabratory::experimentRow(CraftingValues* craftingValues,int rowEffec
 #ifdef DEBUG_GENETIC_LAB
 		info(true) << "Experimental Critical Failure -- ";
 #endif
-		int roll = System::random(randomFailed.size());
+		int roll = System::random(randomFailed.size() - 1);
 
-		String failedAttribute = craftingValues->getAttribute(roll);
+		String failedAttribute = randomFailed.get(roll);
 		float currentPercent = craftingValues->getCurrentPercentage(failedAttribute);
+		float percentageModifier = modifier / 2000.f;
 
-		newValue = Math::max(0.f, (modifier + currentPercent));
+		newValue = Math::max(0.f, currentPercent + percentageModifier);
 
-		// Reduce attribute
+		// Reduce the selected attribute using percentage units.
 		craftingValues->setCurrentPercentage(failedAttribute, newValue);
 
 #ifdef DEBUG_GENETIC_LAB
