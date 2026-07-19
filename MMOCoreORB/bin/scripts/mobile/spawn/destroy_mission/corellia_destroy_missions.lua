@@ -159,6 +159,12 @@ corellia_destroy_missions = {
 			size = 20,
 		},
 		{
+			lairTemplateName = "corellia_forest_murra_lair_neutral_medium",
+			minDifficulty = 10,
+			maxDifficulty = 14,
+			size = 25,
+		},
+		{
 			lairTemplateName = "corellia_gulginaw_nest_neutral_medium",
 			minDifficulty = 11,
 			maxDifficulty = 15,
@@ -189,6 +195,12 @@ corellia_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "corellia_vrelt_pack_neutral_none",
+			minDifficulty = 12,
+			maxDifficulty = 16,
+			size = 25,
+		},
+		{
 			lairTemplateName = "corellia_hidden_daggers_outpost_neutral_medium_theater",
 			minDifficulty = 13,
 			maxDifficulty = 18,
@@ -210,6 +222,12 @@ corellia_destroy_missions = {
 			lairTemplateName = "corellia_drall_camp_neutral_medium_theater",
 			minDifficulty = 13,
 			maxDifficulty = 22,
+			size = 25,
+		},
+		{
+			lairTemplateName = "corellia_dalyrake_nest_neutral_medium",
+			minDifficulty = 13,
+			maxDifficulty = 17,
 			size = 25,
 		},
 		{

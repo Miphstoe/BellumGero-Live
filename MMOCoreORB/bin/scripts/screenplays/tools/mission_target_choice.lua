@@ -11,6 +11,23 @@ local SORT_MODE = "fileOrder"
 
 -- Target name overrides for special/global entries.
 local OVERRIDES_TARGET = {
+  ["corellia_forest_murra_lair_neutral_medium"] = "Forest Murra",
+  ["corellia_vrelt_pack_neutral_none"] = "Vrelt Mother (Mixed Vrelt Pack)",
+  ["corellia_dalyrake_nest_neutral_medium"] = "Dalyrake Harvester (Mixed Nest)",
+  ["dantooine_voritor_dasher_neutral_none"] = "Voritor Dasher",
+  ["dathomir_shear_mite_lurking_neutral_none"] = "Lurking Shear Mite",
+  ["endor_arachne_lair_neutral_boss_01"] = "Arachne Fleshripper (Boss)",
+  ["naboo_krevol_lair_neutral_boss_01"] = "Horned Krevol",
+  ["naboo_nightspider_lair_neutral_small_03"] = "Nightspider Poison Spitter",
+  ["naboo_krevol_lair_neutral_boss_03"] = "Poisonous Krevol Queen (Boss)",
+  ["rori_sickle_rasp_pack_neutral_none"] = "Crescent Rasp (Mixed Rasp Pack)",
+  ["talus_dung_mite_lair_neutral_small"] = "Repugnant Dung Mite Crawler",
+  ["talus_rot_mite_lair_neutral_small_02"] = "Cyst-Covered Rot Mite Guard",
+  ["talus_tortur_pack_neutral_none"] = "Tortur Bull (Mixed Tortur Pack)",
+  ["tatooine_kreetle_over_neutral_none"] = "Kreetle Swarmling (Overkreetle Boss)",
+  ["yavin4_tybis_herd_neutral_none"] = "Tybis Youth (Mixed Tybis Herd)",
+  ["yavin4_spined_puc_giant_neutral_medium_boss_01"] = "Poisonous Spined Puc (Boss)",
+  ["yavin4_skreeg_warrior_neutral_medium_boss_01"] = "Skreeg Warrior Elite (Mixed Lair)",
   ["global_dark_jedi_master"]                 = "Dark Jedi Master",
   ["global_dark_jedi_knight"]                 = "Dark Jedi Knight",
   ["global_dark_jedi_camp_dark_jedi_theater"] = "Dark Jedi Knight",

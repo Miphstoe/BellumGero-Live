@@ -7,6 +7,8 @@ corellia_vrelt_pack_neutral_none = Lair:new {
 	buildingsHard = {},
 	buildingsVeryHard = {},
 	buildingType = "none",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_garbage_small.iff",
+	customName = "Vrelt Mother Pack",
 }
 
 addLairTemplate("corellia_vrelt_pack_neutral_none", corellia_vrelt_pack_neutral_none)
