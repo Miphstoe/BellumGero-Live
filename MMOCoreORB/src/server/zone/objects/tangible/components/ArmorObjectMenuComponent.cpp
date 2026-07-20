@@ -95,9 +95,10 @@ void ArmorObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, 
 	}
 	// -----------------------------------------------------------------------------------------------
 
-	// Your existing color options
+	// Keep primary color as the top-level action and nest secondary color beneath it.
+	// This reduces the number of top-level radial entries without changing either callback ID.
 	menuResponse->addRadialMenuItem(81, 3, "Color Change");
-	menuResponse->addRadialMenuItem(82, 3, "Color Change (Secondary)");
+	menuResponse->addRadialMenuItemToRadialID(81, 82, 3, "Color Change (Secondary)");
 
 	// Lock / Unlock option
 	if (sceneObject->isASubChildOf(player)) {
@@ -179,7 +180,7 @@ int ArmorObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, C
 		if (selectedID == ARMOR_MARK_COSMETIC) {
 			armor->setCosmeticArmor(true);
 			armor->applyCosmeticArmorNameTag();
-			player->sendSystemMessage("Armor marked as cosmetic. It will display visually but provide no protection, encumbrance, or skill modifiers.");
+			player->sendSystemMessage("Armor marked as cosmetic. It will display visually and keep its skill modifiers, but provide no protection or encumbrance.");
 		} else {
 			armor->setCosmeticArmor(false);
 			armor->clearCosmeticArmorNameTag();

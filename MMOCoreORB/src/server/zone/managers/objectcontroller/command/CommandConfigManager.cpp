@@ -396,9 +396,12 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("petClearPatrolPoints").toLowerCase())->setCommandGroup(0xe1c9a54a);
 	createCommand(String("petGetPatrolPoint").toLowerCase())->setCommandGroup(0xe1c9a54a);
 
-	// Structure location commands
+	// Structure location and remote maintenance commands
 	createCommand(String("findmystructure").toLowerCase());
 	createCommand(String("findplayerstructure").toLowerCase());
+	createCommand(String("managemaintenance").toLowerCase());
+	createCommand(String("managepower").toLowerCase());
+	createCommand(String("managestructures").toLowerCase());
 
 	// Bellum / Mandalorian Way custom slash commands. Registered here so they
 	// reach the CommandList even when the server-side command_tables_shared*.iff

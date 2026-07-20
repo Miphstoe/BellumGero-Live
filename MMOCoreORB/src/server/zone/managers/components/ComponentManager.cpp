@@ -23,6 +23,7 @@
 #include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidZoneComponent.h"
+#include "server/zone/objects/tangible/components/LytusFamilyArtefactMenuComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/TurretControlTerminalDataComponent.h"
@@ -59,6 +60,7 @@
 #include "server/zone/objects/tangible/components/HolocronMenuComponent.h"
 #include "server/zone/objects/tangible/components/HolocronDestinyMenuComponent.h"
 #include "server/zone/objects/tangible/components/SarlaccTrashCanMenuComponent.h"
+#include "server/zone/objects/tangible/components/AncientCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/LockedBriefcaseMenuComponent.h"
 #include "server/zone/objects/tangible/components/WaypointDatapadMenuComponent.h"
 #include "server/zone/objects/tangible/components/ForceCrystalMenuComponent.h"
@@ -240,6 +242,7 @@ ComponentManager::ComponentManager() {
 
 	components.put("SkillBuffObjectAttributeListComponent", new SkillBuffObjectAttributeListComponent());
 	components.put("SkillBuffObjectMenuComponent", new SkillBuffObjectMenuComponent());
+	components.put("LytusFamilyArtefactMenuComponent", new LytusFamilyArtefactMenuComponent());
 
 	components.put("PlaceStructureComponent", new PlaceStructureComponent());
 	components.put("PlaceCityHallComponent", new PlaceCityHallComponent());
@@ -313,6 +316,7 @@ ComponentManager::ComponentManager() {
 	components.put("LightsaberObjectMenuComponent", new LightsaberObjectMenuComponent());
 	components.put("RobeObjectMenuComponent", new RobeObjectMenuComponent());
 	components.put("ForceCrystalMenuComponent", new ForceCrystalMenuComponent());
+	components.put("AncientCrystalMenuComponent", new AncientCrystalMenuComponent());
 	components.put("SaberInventoryContainerComponent", new SaberInventoryContainerComponent());
 
 	components.put("VehicleCustomKitObjectMenuComponent", new VehicleCustomKitObjectMenuComponent());

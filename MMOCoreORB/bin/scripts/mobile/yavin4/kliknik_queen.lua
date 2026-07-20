@@ -34,7 +34,7 @@ kliknik_queen = Creature:new {
 			groups = {
 				{group = "kliknik_common", chance = 10000000}
 			},
-			lootChance = 1740000
+			lootChance = 300000
 		},
 		{
 			groups = {

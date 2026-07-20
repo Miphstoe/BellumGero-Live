@@ -113,6 +113,9 @@ Reference<SceneObject*> DraftSchematicImplementation::createManufactureSchematic
 
 	manuSchematic->setDraftSchematic(_this.getReferenceUnsafeStaticCast());
 
+	int crateSize = getFactoryCrateSize();
+	manuSchematic->setManufactureLimit(crateSize > 0 ? crateSize : 1000);
+
 	return Reference<SceneObject*>(manuSchematic.get());
 }
 

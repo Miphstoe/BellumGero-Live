@@ -17,7 +17,7 @@ void InterplanetarySurveyImplementation::notifyLoadFromDatabase() {
 
 	Reference<InterplanetarySurveyTask*> task = new InterplanetarySurveyTask(_this.getReferenceUnsafeStaticCast());
 
-	if (remTime > 0) { // If there is still time left before it should be triggered, schedule for that amount of time
+	if (remTime > 0) { // If there's is still time left before it should be triggered, schedule for that amount of time
 		task->schedule(remTime);
 	} else { // If not, schedule in 1s
 		task->schedule(1000);

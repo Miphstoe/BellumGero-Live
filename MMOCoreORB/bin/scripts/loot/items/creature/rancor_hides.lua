@@ -11,9 +11,7 @@ rancor_hides = {
 		{"armor_health_encumbrance",10,0,0},
 		{"armor_action_encumbrance",10,0,0},
 		{"armor_mind_encumbrance",10,0,0},
-		{"heateffectiveness",3,6,10},
-		{"coldeffectiveness",3,6,10},
-		{"useCount",1,11,0},
+		{"useCount",2,15,0},
 	},
 	customizationStringNames = {},
 	customizationValues = {}

@@ -7,7 +7,7 @@ kliknik_chitin_armor_segment = {
 	directObjectTemplate = "object/tangible/component/armor/armor_segment_chitin_kliknick.iff",
 	craftingValues = {
 		{"hit_points",1000,1000,0, true},
-		{"armor_effectiveness",3,8,10},
+		{"armor_effectiveness",10,25,10},
 		{"armor_integrity",500,2000,0},
 		{"armor_health_encumbrance",-7,-14,0},
 		{"armor_action_encumbrance",-7,-14,0},

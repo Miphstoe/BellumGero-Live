@@ -34,7 +34,7 @@ slinking_voritor_hunter = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 2140000
+			lootChance = 450000
 		}
 	},
 
