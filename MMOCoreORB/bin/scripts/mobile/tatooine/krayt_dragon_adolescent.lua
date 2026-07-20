@@ -67,13 +67,13 @@ krayt_dragon_adolescent = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 350000
+			lootChance = 350000,
 		},
 		{
         groups = {
 			{group = "krayt_tissue_epic", chance = 10000000},                 -- 100.00% of group, 5.00% total
 		},
-		lootChance = 10000000, -- 5.00% total chance
+		lootChance = 10000000 -- 5.00% total chance
 	},
 },
 
