@@ -30,6 +30,14 @@
 #include "server/zone/objects/creature/commands/QueueCommand.h"
 #include "server/zone/objects/intangible/tasks/PetControlDeviceStoreTask.h"
 
+namespace {
+	static constexpr uint32 PET_GROWTH_STAGE_SECONDS = 9600; // 2 hours 40 minutes
+	static constexpr uint32 PET_ACTIVE_GROWTH_MAX_SECONDS = 6 * 60 * 60;
+	static constexpr int PET_ACTIVE_GROWTH_XP_DIVISOR = 25;
+	static constexpr int PET_ACTIVE_GROWTH_MIN_SECONDS = 5;
+	static constexpr int PET_ACTIVE_GROWTH_MAX_PER_KILL_SECONDS = 180;
+}
+
 void PetControlDeviceImplementation::callObject(CreatureObject* player, bool initialCall) {
 	if (player == nullptr) {
 		return;
@@ -688,8 +696,11 @@ bool PetControlDeviceImplementation::growPet(CreatureObject* player, bool force,
 		return true;
 
 	Time currentTime;
-	uint32 timeDelta = currentTime.getTime() - lastGrowth.getTime();
-	int stagesToGrow = timeDelta / 9600; // 2 hours 40 minutes per stage (24 hours from stage 1 to stage 10)
+	uint32 currentSeconds = currentTime.getTime();
+	uint32 lastGrowthSeconds = lastGrowth.getTime();
+	uint32 timeDelta = currentSeconds >= lastGrowthSeconds ? currentSeconds - lastGrowthSeconds : 0;
+	uint64 totalGrowthProgress = (uint64)timeDelta + (uint64)growthProgressSeconds;
+	int stagesToGrow = totalGrowthProgress / PET_GROWTH_STAGE_SECONDS;
 
 	if (adult)
 		stagesToGrow = 10;
@@ -746,11 +757,72 @@ bool PetControlDeviceImplementation::growPet(CreatureObject* player, bool force,
 	pet->setPetLevel(newLevel);
 
 	growthStage = newStage;
+
+	// Preserve all progress beyond the completed stage instead of discarding it.
+	// Once the pet reaches adulthood, no additional growth progress is needed.
+	if (growthStage >= 10) {
+		growthProgressSeconds = 0;
+	} else {
+		growthProgressSeconds = totalGrowthProgress % PET_GROWTH_STAGE_SECONDS;
+	}
+
+	growthStageReadyNotified = false;
 	lastGrowth.updateToCurrentTime();
 
 	setVitality(getVitality());
 
 	return true;
+}
+
+void PetControlDeviceImplementation::addCombatGrowthProgress(CreatureObject* player, int baseXp) {
+	if (player == nullptr || petType != PetManager::CREATUREPET)
+		return;
+
+	if (growthStage <= 0 || growthStage >= 10)
+		return;
+
+	ManagedReference<TangibleObject*> controlledObject = this->controlledObject.get();
+
+	if (controlledObject == nullptr || !controlledObject->isCreature())
+		return;
+
+	ManagedReference<Creature*> pet = cast<Creature*>(controlledObject.get());
+
+	if (pet == nullptr)
+		return;
+
+	uint32 growthSeconds = 0;
+
+	if (activeGrowthBonusEarnedSeconds < PET_ACTIVE_GROWTH_MAX_SECONDS) {
+		int calculatedGrowth = Math::clamp(
+			PET_ACTIVE_GROWTH_MIN_SECONDS,
+			baseXp / PET_ACTIVE_GROWTH_XP_DIVISOR,
+			PET_ACTIVE_GROWTH_MAX_PER_KILL_SECONDS
+		);
+
+		uint32 remainingLifetimeBonus = PET_ACTIVE_GROWTH_MAX_SECONDS - activeGrowthBonusEarnedSeconds;
+		growthSeconds = Math::min((uint32)calculatedGrowth, remainingLifetimeBonus);
+
+		growthProgressSeconds += growthSeconds;
+		activeGrowthBonusEarnedSeconds += growthSeconds;
+	}
+
+	// Combat is the notification trigger, but the readiness check includes both
+	// natural elapsed time and all carried active-training progress.
+	Time currentTime;
+	uint32 currentSeconds = currentTime.getTime();
+	uint32 lastGrowthSeconds = lastGrowth.getTime();
+	uint32 timeDelta = currentSeconds >= lastGrowthSeconds ? currentSeconds - lastGrowthSeconds : 0;
+	uint64 totalGrowthProgress = (uint64)timeDelta + (uint64)growthProgressSeconds;
+
+	if (totalGrowthProgress >= PET_GROWTH_STAGE_SECONDS && !growthStageReadyNotified) {
+		StringBuffer message;
+		message << pet->getDisplayedName()
+			<< " has accumulated enough growth progress to advance to its next stage. Store and recall the pet to complete its growth.";
+
+		player->sendSystemMessage(message.toString());
+		growthStageReadyNotified = true;
+	}
 }
 
 void PetControlDeviceImplementation::arrestGrowth() {
@@ -803,6 +875,8 @@ void PetControlDeviceImplementation::arrestGrowth() {
 	setVitality(getVitality());
 
 	growthStage = 10;
+	growthProgressSeconds = 0;
+	growthStageReadyNotified = false;
 	lastGrowth.updateToCurrentTime();
 }
 

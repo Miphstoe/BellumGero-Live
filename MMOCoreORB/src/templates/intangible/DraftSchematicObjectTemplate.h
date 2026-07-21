@@ -86,7 +86,8 @@ public:
 	enum LabType {
 		RESOURCE_LAB = 0x00,
 		GENETIC_LAB = 0x01,
-		DROID_LAB = 0x02
+		DROID_LAB = 0x02,
+		BIO_CREATURE_LAB = 0x03
 	};
 
 	DraftSchematicObjectTemplate();

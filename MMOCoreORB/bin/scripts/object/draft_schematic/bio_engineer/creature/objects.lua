@@ -41,6 +41,12 @@
 --which carries forward this exception.
 
 
+object_draft_schematic_bio_engineer_creature_shared_creature_acklay = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/bio_engineer/creature/shared_creature_acklay.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_bio_engineer_creature_shared_creature_acklay, "object/draft_schematic/bio_engineer/creature/shared_creature_acklay.iff")
+
 object_draft_schematic_bio_engineer_creature_shared_creature_angler = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/bio_engineer/creature/shared_creature_angler.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
