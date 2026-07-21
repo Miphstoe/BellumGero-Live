@@ -182,6 +182,15 @@ MandoWayOfLife = ScreenPlay:new {
 	-- grantMandalorian() checks this before granting Ch5.
 	JABBA_THEMEPARK_BADGE = 105,
 
+	-- Quest-gated certification skills (from bg_custom1.tre fix).
+	-- These certifications were removed from profession skills to prevent non-quest players from using Mandalorian weapons.
+	-- They are now granted only via the Mandalorian quest screenplay.
+	mandoQuestCerts = {
+		[1] = "mando_cert_slugthrower",    -- Ch1 Initiate: grants cert_carbine_nym_slugthrower
+		[2] = "mando_cert_lightning",       -- Ch2 Hunter: grants cert_rifle_lightning
+		[3] = "mando_cert_heavy_lightning", -- Ch3 Verd'ika: grants cert_heavy_lightning_beam
+	},
+
 	-- Chapter trial gifts: clan armory weapons (hidden certs; not usable without Mando Way chapter skill).
 	-- Schematics sold by recruiter after the same chapter completes (see trySellMandoArmorySchematic).
 	mandoWayArmoryChapters = {
@@ -244,6 +253,8 @@ MandoWayOfLife = ScreenPlay:new {
 	ACCOUNT_SCHEMATIC_EXCHANGE_PREFIX = "mando_way:acctSchematicExchange:",
 	-- One-time per login account grant of missing bicep and bracer pieces for Ch5 completers
 	ACCOUNT_BICEP_BRACER_RETRO_PREFIX = "mando_way:acctBicepBracerRetro:",
+	-- One-time per login account grant of quest-gated certification skills for players who completed chapters before the fix
+	ACCOUNT_CERT_RETRO_PREFIX = "mando_way:acctCertRetro:",
 	-- Daily Bounty Mission Fob IFF
 	DAILY_BOUNTY_FOB_IFF = "object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.iff",
 	-- Maximum daily bounty missions per player
@@ -2628,6 +2639,7 @@ function MandoWayOfLife:applyChapterAdvanceAfterTrial(pPlayer, chNew)
 
 	local title = self.chapterTitles[chNew] or ""
 	self:grantChapterRankTitle(pPlayer, chNew)
+	self:grantQuestCertSkills(pPlayer, chNew)
 	self:tryAwardChapterBadge(pPlayer, chNew)
 
 	CreatureObject(pPlayer):sendSystemMessage(
@@ -2789,6 +2801,75 @@ function MandoWayOfLife:grantChapterRankTitle(pPlayer, chapterIndex)
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 	if (pGhost ~= nil) then
 		PlayerObject(pGhost):setTitle(skillName)
+	end
+end
+
+-- Grant quest-gated certification skills (removed from profession skills in bg_custom1.tre)
+function MandoWayOfLife:grantQuestCertSkills(pPlayer, chapterIndex)
+	if (pPlayer == nil) then return end
+	local certSkillName = self.mandoQuestCerts[chapterIndex]
+	if (certSkillName == nil or certSkillName == "") then return end
+
+	if (not CreatureObject(pPlayer):hasSkill(certSkillName)) then
+		awardSkill(pPlayer, certSkillName)
+		self:logDiagPlayer(pPlayer, string.format(
+			"grantQuestCertSkills: awarded cert skill %s for chapter %s",
+			certSkillName,
+			tostring(chapterIndex)
+		))
+	end
+end
+
+-- Retroactively grant quest certification skills to players who completed chapters before the bg_custom1.tre fix
+function MandoWayOfLife:tryGrantAccountCertRetro(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	local accountKey = self.ACCOUNT_CERT_RETRO_PREFIX .. tostring(self:getPlayerAccountId(pPlayer))
+	if (tonumber(readData(accountKey)) or 0) == 1 then
+		return false, "This account already received the certification restoration."
+	end
+
+	local maxChapter = self:getHighestEarnedChapter(pPlayer)
+	if (maxChapter < 1) then
+		return false, "You have not completed any chapters that grant certifications (Ch1+)."
+	end
+
+	local granted = 0
+	local creature = CreatureObject(pPlayer)
+	for ch = 1, math.min(maxChapter, 3) do
+		local certSkillName = self.mandoQuestCerts[ch]
+		if (certSkillName ~= nil and certSkillName ~= "" and not creature:hasSkill(certSkillName)) then
+			awardSkill(pPlayer, certSkillName)
+			if (creature:hasSkill(certSkillName)) then
+				granted = granted + 1
+				self:logDiagPlayer(pPlayer, string.format(
+					"tryGrantAccountCertRetro: awarded cert skill %s for chapter %s",
+					certSkillName,
+					tostring(ch)
+				))
+			else
+				self:logDiagPlayer(pPlayer, string.format(
+					"tryGrantAccountCertRetro FAILED award %s (chapter %s).",
+					certSkillName, tostring(ch)
+				))
+			end
+		end
+	end
+
+	if (granted > 0) then
+		writeData(accountKey, 1)
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryGrantAccountCertRetro OK accountId=%s granted=%s",
+			tostring(self:getPlayerAccountId(pPlayer)),
+			tostring(granted)
+		))
+		CreatureObject(pPlayer):sendSystemMessage(string.format(
+			"[Mandalorian Way] Certification restoration complete: %s weapon certification(s) restored based on your completed chapters.",
+			tostring(granted)
+		))
+		return true, string.format("Restored %s certification(s).", tostring(granted))
+	else
+		return false, "You already have all the certifications for your completed chapters."
 	end
 end
 
