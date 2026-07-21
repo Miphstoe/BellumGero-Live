@@ -27,6 +27,12 @@ talus_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "talus_dung_mite_lair_neutral_small",
+			minDifficulty = 5,
+			maxDifficulty = 9,
+			size = 25,
+		},
+		{
 			lairTemplateName = "talus_dalyrake_nest_neutral_medium",
 			minDifficulty = 7,
 			maxDifficulty = 11,
@@ -106,6 +112,12 @@ talus_destroy_missions = {
 		},
 		{
 			lairTemplateName = "talus_dung_mite_lair_neutral_boss_02",
+			minDifficulty = 11,
+			maxDifficulty = 15,
+			size = 25,
+		},
+		{
+			lairTemplateName = "talus_rot_mite_lair_neutral_small_02",
 			minDifficulty = 11,
 			maxDifficulty = 15,
 			size = 25,
@@ -247,6 +259,12 @@ talus_destroy_missions = {
 			minDifficulty = 23,
 			maxDifficulty = 27,
 			size = 25,
+		},
+		{
+			lairTemplateName = "talus_tortur_pack_neutral_none",
+			minDifficulty = 23,
+			maxDifficulty = 27,
+			size = 30,
 		},
 		{
 			lairTemplateName = "talus_mutated_kahmurra_lair_neutral_medium",

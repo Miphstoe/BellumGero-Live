@@ -69,6 +69,12 @@ dantooine_destroy_missions = {
 			size = 35,
 		},
 		{
+			lairTemplateName = "dantooine_voritor_dasher_neutral_none",
+			minDifficulty = 28,
+			maxDifficulty = 32,
+			size = 25,
+		},
+		{
 			lairTemplateName = "dantooine_dantari_battlelord_squad_neutral_none",
 			minDifficulty = 29,
 			maxDifficulty = 36,

@@ -159,6 +159,12 @@ endor_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "endor_arachne_lair_neutral_boss_01",
+			minDifficulty = 28,
+			maxDifficulty = 32,
+			size = 25,
+		},
+		{
 			lairTemplateName = "endor_hanadak_mature_neutral_small",
 			minDifficulty = 29,
 			maxDifficulty = 33,
