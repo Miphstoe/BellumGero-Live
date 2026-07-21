@@ -1,7 +1,7 @@
 rebel_house_deed = {
 	minimumLevel = 0,
 	maximumLevel = -1,
-	customObjectName = "@deed:rebel_house_deed",
+	customObjectName = "Rebel House Deed",
 	directObjectTemplate = "object/tangible/deed/player_house_deed/rebel_house_deed.iff",
 	craftingValues = {},
 	customizationStringNames = {},
