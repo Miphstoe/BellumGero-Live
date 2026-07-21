@@ -826,6 +826,14 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 			if (skill->getSkillName() == "force_title_jedi_rank_02") {
 				if (missionManager != nullptr)
 					missionManager->removePlayerFromBountyList(creature->getObjectID());
+
+				// Losing the core Jedi skill means the player is no longer Jedi;
+				// jediState must not remain stale, or Jedi-only systems (death XP
+				// penalty, cloning restrictions, etc.) keep firing indefinitely.
+				if (ghost->getJediState() >= 2) {
+					ghost->setJediState(0);
+					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
+				}
 			} else if (skill->getSkillName().contains("force_discipline")) {
 				if (missionManager != nullptr)
 					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
@@ -939,6 +947,15 @@ void SkillManager::surrenderAllSkills(CreatureObject* creature, bool notifyClien
 	MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
 	if (missionManager != nullptr)
 		missionManager->removePlayerFromBountyList(creature->getObjectID());
+
+	// If this wipe actually removed the core Jedi skill (removeForceProgression),
+	// clear the stale jediState too. When Jedi skills are intentionally preserved
+	// (removeForceProgression == false) hasSkill() below still returns true, so this
+	// is a no-op and legitimate Jedi progression is left untouched.
+	if (ghost != nullptr && ghost->getJediState() >= 2 && !creature->hasSkill("force_title_jedi_rank_02")) {
+		ghost->setJediState(0);
+		creature->info("jediState reset to 0 after surrenderAllSkills (force_title_jedi_rank_02 no longer held)", true);
+	}
 
 	Reference<GroupObject*> group = creature->getGroup();
 
@@ -1339,6 +1356,14 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 			if (skill->getSkillName() == "force_title_jedi_rank_02") {
 				if (missionManager != nullptr)
 					missionManager->removePlayerFromBountyList(creature->getObjectID());
+
+				// Losing the core Jedi skill means the player is no longer Jedi;
+				// jediState must not remain stale, or Jedi-only systems (death XP
+				// penalty, cloning restrictions, etc.) keep firing indefinitely.
+				if (ghost->getJediState() >= 2) {
+					ghost->setJediState(0);
+					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
+				}
 			} else if (skill->getSkillName().contains("force_discipline")) {
 				if (missionManager != nullptr)
 					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());

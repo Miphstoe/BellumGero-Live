@@ -9,12 +9,13 @@ PlayerBountySystem = ScreenPlay:new {
 	-- Configuration (can be overridden in mission_manager.lua)
 	minimumBounty = 1000,           -- 1,000 credits minimum
 	maximumBounty = 1000000,        -- 1,000,000 credits maximum
-	pvpOnly = true,                 -- Only allow bounties on PvP kills (not duels)
+	pvpOnly = true,                 -- Only allow bounties on verified qualifying PvP kills
 	cooldownTime = 3600000,         -- 1 hour cooldown per killer (milliseconds)
 	notifyTarget = true,            -- Notify killer when bounty is placed
-	preventDuelBounties = true,     -- Prevent bounties from duel kills
+	preventDuelBounties = true,     -- Duel deaths are always excluded (see onPlayerKilled); kept as documentation of intent
 	preventSameGuild = false,       -- Prevent guild members from placing bounties on each other
 	enabled = true,                 -- Master enable/disable switch
+	placementWindowSeconds = 120,   -- How long the one-use placement authorization from a qualifying death remains valid
 }
 
 registerScreenPlay("PlayerBountySystem", true)
@@ -55,8 +56,24 @@ function PlayerBountySystem:onPlayerLoggedIn(pPlayer)
 		return
 	end
 
-	-- Register PLAYERKILLED observer
-	createObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer)
+	-- Never stack a second identical observer on relog/zone -- without this
+	-- check, every login adds one more PLAYERKILLED observer for the same
+	-- player, and a later death would show the placement popup once per
+	-- registered copy.
+	if not hasObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer) then
+		createObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer)
+	end
+end
+
+function PlayerBountySystem:onPlayerLoggedOut(pPlayer)
+	if pPlayer == nil then
+		return
+	end
+
+	-- A logged-out player cannot complete a placement flow; invalidate any
+	-- outstanding authorization so a delayed/replayed SUI callback cannot
+	-- use it after the fact.
+	self:invalidateAuthorization(pPlayer)
 end
 
 function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
@@ -77,11 +94,23 @@ function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
 		return 0
 	end
 
-	-- Validation: Check if this was a duel kill (optional)
-	if self.preventDuelBounties then
-		-- If victim and killer were in a duel, don't show popup
-		-- The duel system clears duel list on death, so we can't easily check this
-		-- This would need to be tracked separately if desired
+	-- Validation: real qualifying PvP death (not a duel, not NPC/pet/droid/
+	-- environmental, not part of either side's active bounty-hunter mission
+	-- relationship). Duel state is cleared in C++ (CombatManager::freeDuelList)
+	-- before this observer runs, so it cannot be reliably re-derived here --
+	-- the verdict is computed and published in
+	-- PlayerManagerImplementation::killPlayer() *before* that clear happens,
+	-- as per-victim screenplay data, fresh on every death. This is the sole
+	-- enforcement point for pvpOnly.
+	if self.pvpOnly then
+		local qualifies = readScreenPlayData(pVictim, "PlayerBountySystem", "qualifyingPvpDeath")
+		local authKillerId = tonumber(readScreenPlayData(pVictim, "PlayerBountySystem", "qualifyingPvpDeathKillerId")) or 0
+
+		if qualifies ~= "1" or authKillerId ~= killerID then
+			local reason = readScreenPlayData(pVictim, "PlayerBountySystem", "qualifyingPvpDeathReason")
+			print("PLAYER BOUNTY: rejected placement prompt for victim " .. victimID .. " killer " .. killerID .. " reason=" .. tostring(reason))
+			return 0
+		end
 	end
 
 	-- Validation: Check cooldown (prevent spam)
@@ -104,10 +133,59 @@ function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
 		end
 	end
 
-	-- All validations passed, show bounty placement popup
+	-- All validations passed. Create a fresh, one-use, expiring, victim/killer
+	-- -bound authorization for the placement flow. Writing it here
+	-- unconditionally replaces (invalidates) any authorization left over from
+	-- an earlier death.
+	local authExpiry = os.time() + self.placementWindowSeconds
+	writeScreenPlayData(pVictim, "PlayerBountySystem", "authKillerId", tostring(killerID))
+	writeScreenPlayData(pVictim, "PlayerBountySystem", "authExpiry", tostring(authExpiry))
+	writeScreenPlayData(pVictim, "PlayerBountySystem", "authUsed", "0")
+
+	print("PLAYER BOUNTY: authorized placement window for victim " .. victimID .. " killer " .. killerID .. " expires " .. authExpiry)
+
 	self:showBountyConfirmationPopup(pVictim, pKiller)
 
 	return 0
+end
+
+-- Validates a placement-flow authorization against the SUI transaction's own
+-- bound target (never against ambient shared state). Must be true
+-- immediately before every credit-affecting step.
+function PlayerBountySystem:isAuthorizationValid(pVictim, killerID)
+	if pVictim == nil or killerID == nil or killerID == 0 then
+		return false
+	end
+
+	local authKillerId = tonumber(readScreenPlayData(pVictim, "PlayerBountySystem", "authKillerId")) or 0
+	local authExpiry = tonumber(readScreenPlayData(pVictim, "PlayerBountySystem", "authExpiry")) or 0
+	local authUsed = readScreenPlayData(pVictim, "PlayerBountySystem", "authUsed")
+
+	if authUsed == "1" then
+		return false
+	end
+
+	if authExpiry == 0 or os.time() > authExpiry then
+		return false
+	end
+
+	if authKillerId == 0 or authKillerId ~= killerID then
+		return false
+	end
+
+	return true
+end
+
+-- Invalidates (one-use-consumes) the current placement authorization. Called
+-- on success, cancel, validation failure, and logout.
+function PlayerBountySystem:invalidateAuthorization(pVictim)
+	if pVictim == nil then
+		return
+	end
+
+	deleteScreenPlayData(pVictim, "PlayerBountySystem", "authKillerId")
+	deleteScreenPlayData(pVictim, "PlayerBountySystem", "authExpiry")
+	writeScreenPlayData(pVictim, "PlayerBountySystem", "authUsed", "1")
 end
 
 function PlayerBountySystem:showBountyConfirmationPopup(pVictim, pKiller)
@@ -128,7 +206,8 @@ function PlayerBountySystem:showBountyConfirmationPopup(pVictim, pKiller)
 	sui.setOkButtonText("Yes")
 	sui.setCancelButtonText("No")
 
-	-- Store killer ID for callback
+	-- Bind this specific SUI transaction to the killer; the callback must
+	-- read the target back from the SUI itself, never from shared state.
 	sui.setTargetNetworkId(SceneObject(pKiller):getObjectID())
 
 	sui.sendTo(pVictim)
@@ -137,22 +216,35 @@ end
 function PlayerBountySystem:confirmBountyCallback(pVictim, pSui, eventIndex, args)
 	local cancelPressed = (eventIndex == 1)
 
-	if cancelPressed or pVictim == nil then
+	if pVictim == nil then
 		return
 	end
 
-	-- Get killer ID from stored data
+	if cancelPressed then
+		self:invalidateAuthorization(pVictim)
+		return
+	end
+
 	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
 	if pPageData == nil then
+		self:invalidateAuthorization(pVictim)
 		return
 	end
 
 	local suiPageData = LuaSuiPageData(pPageData)
 	local killerID = suiPageData:getTargetNetworkId()
+
+	if not self:isAuthorizationValid(pVictim, killerID) then
+		CreatureObject(pVictim):sendSystemMessage("This bounty placement window has expired or is no longer valid.")
+		self:invalidateAuthorization(pVictim)
+		return
+	end
+
 	local pKiller = getSceneObject(killerID)
 
 	if pKiller == nil or not SceneObject(pKiller):isPlayerCreature() then
 		CreatureObject(pVictim):sendSystemMessage("Target is no longer available.")
+		self:invalidateAuthorization(pVictim)
 		return
 	end
 
@@ -165,20 +257,14 @@ function PlayerBountySystem:showBountyAmountInput(pVictim, pKiller)
 		return
 	end
 
-	local victimID = SceneObject(pVictim):getObjectID()
-	local killerID = SceneObject(pKiller):getObjectID()
-
-	-- Store killer ID in shared memory for callback to retrieve
-	writeData(victimID .. ":bounty_target", killerID)
-
-	local sui = SuiInputBox.new("PlayerBountySystem", "bountyAmountCallback")
-
-	sui.setTitle("Bounty Amount")
-
 	local killerName = CreatureObject(pKiller):getFirstName()
 	local victimCash = CreatureObject(pVictim):getCashCredits()
 	local victimBank = CreatureObject(pVictim):getBankCredits()
 	local totalCredits = victimCash + victimBank
+
+	local sui = SuiInputBox.new("PlayerBountySystem", "bountyAmountCallback")
+
+	sui.setTitle("Bounty Amount")
 
 	local promptText = "Enter the bounty amount to place on " .. killerName .. ".\n\n"
 	promptText = promptText .. "Your Available Credits: " .. totalCredits .. " cr\n"
@@ -190,32 +276,49 @@ function PlayerBountySystem:showBountyAmountInput(pVictim, pKiller)
 	sui.setOkButtonText("Place Bounty")
 	sui.setCancelButtonText("Cancel")
 
+	-- Bind this transaction to the killer directly on the SUI itself, rather
+	-- than relying on shared writeData() keyed only by victim ID.
+	sui.setTargetNetworkId(SceneObject(pKiller):getObjectID())
+
 	sui.sendTo(pVictim)
 end
 
 function PlayerBountySystem:bountyAmountCallback(pVictim, pSui, eventIndex, args)
 	local cancelPressed = (eventIndex == 1)
 
-	if cancelPressed or pVictim == nil or args == nil or args == "" then
+	if pVictim == nil then
 		return
 	end
 
-	-- Get killer ID from shared memory
-	local victimID = SceneObject(pVictim):getObjectID()
-	local killerID = readData(victimID .. ":bounty_target")
-
-	if killerID == nil or killerID == 0 then
-		CreatureObject(pVictim):sendSystemMessage("Error: Bounty target not found.")
+	if cancelPressed then
+		self:invalidateAuthorization(pVictim)
 		return
 	end
 
-	-- Clean up stored data
-	deleteData(victimID .. ":bounty_target")
+	if args == nil or args == "" then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+	if pPageData == nil then
+		self:invalidateAuthorization(pVictim)
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local killerID = suiPageData:getTargetNetworkId()
+
+	if not self:isAuthorizationValid(pVictim, killerID) then
+		CreatureObject(pVictim):sendSystemMessage("This bounty placement window has expired or is no longer valid.")
+		self:invalidateAuthorization(pVictim)
+		return
+	end
 
 	local pKiller = getSceneObject(killerID)
 
 	if pKiller == nil or not SceneObject(pKiller):isPlayerCreature() then
 		CreatureObject(pVictim):sendSystemMessage("Target is no longer available.")
+		self:invalidateAuthorization(pVictim)
 		return
 	end
 
@@ -263,6 +366,10 @@ function PlayerBountySystem:placeBounty(pVictim, pKiller, bountyAmount)
 	local killerName = CreatureObject(pKiller):getFirstName()
 	local victimName = CreatureObject(pVictim):getFirstName()
 
+	-- Consume the authorization now, before any credits move, so a duplicate
+	-- or replayed callback for this same death cannot place a second bounty.
+	self:invalidateAuthorization(pVictim)
+
 	-- Deduct credits using smart wallet pattern (prefer cash, then bank)
 	local cash = CreatureObject(pVictim):getCashCredits()
 
@@ -296,7 +403,7 @@ function PlayerBountySystem:placeBounty(pVictim, pKiller, bountyAmount)
 	writeData(cooldownKey, cooldownExpiry)
 
 	-- Log for debugging
-	print("PLAYER BOUNTY: " .. victimName .. " placed " .. bountyAmount .. " credits on " .. killerName)
+	print("PLAYER BOUNTY: " .. victimName .. " placed " .. bountyAmount .. " credits on " .. killerName .. " (victim=" .. victimID .. ", killer=" .. killerID .. ")")
 end
 
 return PlayerBountySystem

@@ -70,7 +70,7 @@ enable_factional_recon_missions = "true"
 
 enable_factional_entertainer_missions = "true"
 
-enable_same_account_bounty_missions = "true"  -- Changed to true for testing
+enable_same_account_bounty_missions = "false"
 
 playerBountyKillBuffer = 30 * 60 * 1000 -- Buffer before player bounty can be put back on terminal after target is killed, set 0 to disable
 
@@ -81,10 +81,10 @@ playerPlacedBounties = {
 	enabled = true,                          -- Enable/disable player-placed bounties
 	minimumBounty = 1000,                    -- Minimum bounty amount (1,000 credits)
 	maximumBounty = 1000000,                 -- Maximum bounty amount (1,000,000 credits)
-	pvpOnly = true,                          -- Only allow bounties on PvP kills (not NPC kills)
+	pvpOnly = true,                          -- Require the verified qualifying-PvP-death flag set by PlayerManagerImplementation::killPlayer (real player kill, not self/duel/active-bounty-mission)
 	cooldownPerKiller = 3600000,             -- 1 hour cooldown per specific killer (prevents spam)
 	notifyTarget = true,                     -- Notify player when a bounty is placed on them
-	preventDuelBounties = true,              -- Prevent bounties from duel kills
+	preventDuelBounties = true,              -- Informational only: duel deaths are always excluded in C++ regardless of this setting
 	preventSameGuild = false,                -- Prevent guild members from placing bounties on each other
 }
 

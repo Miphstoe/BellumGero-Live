@@ -1344,6 +1344,35 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 		}
 	}
 
+	// Player-placed bounty PvP eligibility must be captured now, before
+	// CombatManager::freeDuelList() below clears duel state -- by the time the
+	// PLAYERKILLED observer (and the Lua PlayerBountySystem listening on it)
+	// runs, areInDuel() would already report false for what was in fact a
+	// duel death. Qualifying requires: a real player killer, not a self-kill,
+	// not a duel, and not a kill/death that was part of either side's active
+	// bounty-hunter mission relationship (bounty hunter legally completing
+	// their mission, or a bounty target defending against their hunter).
+	bool qualifiesForPlayerBounty = false;
+	String playerBountyDisqualifyReason;
+
+	if (!attacker->isPlayerCreature()) {
+		playerBountyDisqualifyReason = "killer_not_player";
+	} else {
+		CreatureObject* attackerCreo = attacker->asCreatureObject();
+
+		if (attackerCreo == nullptr || attackerCreo->getObjectID() == player->getObjectID()) {
+			playerBountyDisqualifyReason = "self_kill";
+		} else if (CombatManager::instance()->areInDuel(attackerCreo, player)) {
+			playerBountyDisqualifyReason = "duel";
+		} else if (attackerCreo->hasBountyMissionFor(player)) {
+			playerBountyDisqualifyReason = "attacker_has_active_bounty_mission_on_victim";
+		} else if (player->hasBountyMissionFor(attackerCreo)) {
+			playerBountyDisqualifyReason = "victim_has_active_bounty_mission_on_attacker";
+		} else {
+			qualifiesForPlayerBounty = true;
+		}
+	}
+
 	if (player->isRidingMount()) {
 		player->updateCooldownTimer("mount_dismount", 0);
 		player->executeObjectControllerAction(STRING_HASHCODE("dismount"));
@@ -1554,6 +1583,18 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	player->dropFromDefenderLists();
 	player->setTargetID(0, true);
+
+	// Publish the pre-freeDuelList() eligibility verdict for the
+	// PLAYERKILLED observer flow (Lua PlayerBountySystem in particular) to
+	// consume. This is intentionally re-written fresh on every death, so a
+	// newer qualifying death always replaces any prior authorization.
+	ManagedReference<PlayerObject*> victimGhostForBounty = player->getPlayerObject();
+
+	if (victimGhostForBounty != nullptr) {
+		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeath", qualifiesForPlayerBounty ? "1" : "0");
+		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathKillerId", String::valueOf(attacker->getObjectID()));
+		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathReason", qualifiesForPlayerBounty ? "ok" : playerBountyDisqualifyReason);
+	}
 
 	player->notifyObjectKillObservers(attacker);
 
@@ -1891,7 +1932,16 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 
 
 	// Jedi experience loss.
-	if (ghost->getJediState() >= 2) {
+	// Defensive check: jediState alone is not trusted here. It is only meant to be
+	// >= 2 while the player actually holds force_title_jedi_rank_02; if that skill
+	// was ever surrendered/removed through a path that failed to reset jediState
+	// (stale state), this independently verifies actual Jedi qualification instead
+	// of penalizing a non-Jedi player's death.
+	if (ghost->getJediState() >= 2 && !player->hasSkill("force_title_jedi_rank_02")) {
+		player->error("Prevented Jedi XP death penalty on player " + String::valueOf(player->getObjectID())
+			+ " with stale jediState=" + String::valueOf(ghost->getJediState()) + " but no force_title_jedi_rank_02 skill.");
+		ghost->setJediState(0);
+	} else if (ghost->getJediState() >= 2) {
 		int jediXpCap = ghost->getXpCap("jedi_general");
 		int xpLoss = (int)(jediXpCap * -0.02);
 		int curExp = ghost->getExperience("jedi_general");
