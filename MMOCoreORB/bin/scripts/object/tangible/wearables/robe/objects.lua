@@ -218,6 +218,13 @@ object_tangible_wearables_robe_shared_robe_jedi_dark_s01 = SharedTangibleObjectT
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_dark_s01, "object/tangible/wearables/robe/shared_robe_jedi_dark_s01.iff")
 
+object_tangible_wearables_robe_shared_robe_jedi_hued_s01 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_hued_s01.iff",
+	gameObjectType = 16777221
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_robe_shared_robe_jedi_hued_s01, "object/tangible/wearables/robe/shared_robe_jedi_hued_s01.iff")
+
 object_tangible_wearables_robe_shared_robe_jedi_dark_s02 = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/wearables/robe/shared_robe_jedi_dark_s02.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

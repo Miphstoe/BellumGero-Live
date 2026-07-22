@@ -48,6 +48,7 @@
 includeFile("tangible/wearables/robe/aakuan_robe.lua")
 includeFile("tangible/wearables/robe/robe_inquisitor.lua")
 includeFile("tangible/wearables/robe/robe_jedi_dark_s01.lua")
+includeFile("tangible/wearables/robe/robe_jedi_hued_s01.lua")
 includeFile("tangible/wearables/robe/robe_jedi_dark_s02.lua")
 includeFile("tangible/wearables/robe/robe_jedi_dark_s03.lua")
 includeFile("tangible/wearables/robe/robe_jedi_dark_s04.lua")
