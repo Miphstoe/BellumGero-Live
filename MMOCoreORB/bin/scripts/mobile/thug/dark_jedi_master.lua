@@ -70,7 +70,7 @@ dark_jedi_master = Creature:new {
 			groups = {
 				{group = "ancient_crystal_of_the_sith_group", chance = 10000000}
 			},
-			lootChance = 100000, -- 1.00% total chance
+			lootChance = 250000, -- 2.50% total chance
 		}
 },
 
