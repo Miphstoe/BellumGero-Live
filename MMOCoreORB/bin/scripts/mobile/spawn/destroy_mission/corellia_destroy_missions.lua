@@ -279,6 +279,12 @@ corellia_destroy_missions = {
 			size = 30,
 		},
 		{
+			lairTemplateName = "corellia_giant_dalyrake_lair_neutral_medium",
+			minDifficulty = 18,
+			maxDifficulty = 22,
+			size = 25,
+		},
+		{
 			lairTemplateName = "corellia_razor_cat_pride_neutral_medium_boss_01",
 			minDifficulty = 20,
 			maxDifficulty = 24,

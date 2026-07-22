@@ -51,6 +51,12 @@ tatooine_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "tatooine_domestic_eopie_lair_neutral_small",
+			minDifficulty = 4,
+			maxDifficulty = 8,
+			size = 25,
+		},
+		{
 			lairTemplateName = "tatooine_eopie_lair_neutral_small",
 			minDifficulty = 5,
 			maxDifficulty = 9,
