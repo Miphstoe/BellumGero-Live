@@ -109,6 +109,19 @@ class ArmorObject extends WearableObject {
 	 */
 	public native int handleObjectMenuSelect(CreatureObject player, byte selectedID);
 
+	/**
+	 * Bellum Gero: Optional cosmetic armor flag.
+	 * Armor is normal by default. If this flag is set, the piece should only be used visually.
+	 */
+	@read
+	public native boolean isCosmeticArmor();
+
+	public native void setCosmeticArmor(boolean cosmetic);
+
+	public native void applyCosmeticArmorNameTag();
+
+	public native void clearCosmeticArmorNameTag();
+
 	@local
 	public native void updateCraftingValues(CraftingValues values, boolean firstUpdate);
 

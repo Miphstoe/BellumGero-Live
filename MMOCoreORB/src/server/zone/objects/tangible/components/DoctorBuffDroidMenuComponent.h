@@ -26,7 +26,8 @@ public:
 		MENU_SET_AD = 86,
 		MENU_TOGGLE_AD = 87,
 		MENU_PET_BUFFS = 88,
-		MENU_PET_JANTA_BUFFS = 89
+		MENU_PET_JANTA_BUFFS = 89,
+		MENU_VIEW_INVENTORY = 90
 	};
 
 	enum LoadMode {
@@ -50,6 +51,9 @@ public:
 	static bool performResistance(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType type);
 	static bool performPetBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta = false);
 	static void promptAdTextInput(SceneObject* sceneObject, CreatureObject* player);
+	static void openDroidInventory(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
+	static void promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent::ServiceType service, byte attr, int maxQty);
+	static void withdrawBuffStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType service, byte attr, int quantity);
 
 	void fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const override;
 	int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const override;

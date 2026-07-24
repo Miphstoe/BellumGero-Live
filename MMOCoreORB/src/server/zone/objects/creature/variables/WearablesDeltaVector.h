@@ -119,19 +119,22 @@ public:
 	bool add(const ManagedReference<TangibleObject*>& element, DeltaMessage* message = nullptr, int updates = 1) override {
 		if (element->isArmorObject()) {
 			ManagedReference<ArmorObject*> armor = cast<ArmorObject*>(element.get());
-			uint8 hitLocations = armor->getHitLocation();
 
-			if (hitLocations & ArmorObjectTemplate::CHEST)
-				addArmor(ArmorObjectTemplate::CHEST, armor);
+			if (armor != nullptr && !armor->isCosmeticArmor()) {
+				uint8 hitLocations = armor->getHitLocation();
 
-			if (hitLocations & ArmorObjectTemplate::ARMS)
-				addArmor(ArmorObjectTemplate::ARMS, armor);
+				if (hitLocations & ArmorObjectTemplate::CHEST)
+					addArmor(ArmorObjectTemplate::CHEST, armor);
 
-			if (hitLocations & ArmorObjectTemplate::LEGS)
-				addArmor(ArmorObjectTemplate::LEGS, armor);
+				if (hitLocations & ArmorObjectTemplate::ARMS)
+					addArmor(ArmorObjectTemplate::ARMS, armor);
 
-			if (hitLocations & ArmorObjectTemplate::HEAD)
-				addArmor(ArmorObjectTemplate::HEAD, armor);
+				if (hitLocations & ArmorObjectTemplate::LEGS)
+					addArmor(ArmorObjectTemplate::LEGS, armor);
+
+				if (hitLocations & ArmorObjectTemplate::HEAD)
+					addArmor(ArmorObjectTemplate::HEAD, armor);
+			}
 		}
 
 		return DeltaVector<ManagedReference<TangibleObject*> >::add(element, message, updates);

@@ -221,6 +221,7 @@ includeFile("bellum/bounty_camp_daily_tier5_theater.lua")
 includeFile("bellum/mando_way_of_life.lua")
 includeFile("bellum/mando_spynet_contract_waypoint_disk_menu.lua")
 includeFile("bellum/mando_daily_bounty_fob_menu.lua")
+includeFile("bellum/mando_daily_holo_story.lua")
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")
 includeFile("bellum/convos/mando_foundling_informant_conv_handler.lua")
 includeFile("bellum/convos/mando_spynet_operative_conv_handler.lua")
@@ -836,8 +837,8 @@ includeFile("static_spawns/master_bounty_guild.lua")
 includeFile("bellum/painting_exchange_vendor.lua")
 includeFile("bellum/convos/painting_exchange_vendor_conv_handler.lua")
 
--- Entertainer Paid Buff Service
-includeFile("bellum/entertainer_paid_buff_service.lua")
+-- Entertainer Paid Buff Service (disabled)
+--includeFile("bellum/entertainer_paid_buff_service.lua")
 
 -- Mandalorian Way of Life (loaded again after vendors/bounty so start() runs last among globals — original Bellum ordering)
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")

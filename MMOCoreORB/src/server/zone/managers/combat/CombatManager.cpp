@@ -1402,6 +1402,18 @@ float CombatManager::applyDamageModifiers(CreatureObject* attacker, WeaponObject
 	if (damageDivisor != 0)
 		damage /= damageDivisor;
 
+	// Percent-based outgoing damage bonus (e.g. the Lytus Family Artifact buff,
+	// "private_damage_percent_bonus" = 10 for +10%). Applied here, at damage
+	// calculation time, rather than only when the granting item is used, so a
+	// non-Jedi player who later switches to a lightsaber still gets no bonus
+	// from it -- lightsaber damage is explicitly excluded via isJediWeapon().
+	if (weapon != nullptr && !weapon->isJediWeapon()) {
+		int percentDamageBonus = attacker->getSkillMod("private_damage_percent_bonus");
+
+		if (percentDamageBonus != 0)
+			damage *= (1.0f + (percentDamageBonus / 100.0f));
+	}
+
 	// States Damage Reduction
 	float intimidateMod = attacker->getSkillMod("private_damage_divisor_intimidate");
 	float stunMod = attacker->getSkillMod("private_damage_divisor_stun");
@@ -2426,7 +2438,19 @@ ArmorObject* CombatManager::getArmorObject(CreatureObject* defender, uint8 hitLo
 	if (armor.isEmpty())
 		return nullptr;
 
-	return armor.get(System::random(armor.size() - 1));
+	Vector<ManagedReference<ArmorObject*>> validArmor;
+
+	for (int i = 0; i < armor.size(); ++i) {
+		ArmorObject* armorPiece = armor.get(i);
+
+		if (armorPiece != nullptr && !armorPiece->isCosmeticArmor())
+			validArmor.add(armorPiece);
+	}
+
+	if (validArmor.isEmpty())
+		return nullptr;
+
+	return validArmor.get(System::random(validArmor.size() - 1));
 }
 
 ArmorObject* CombatManager::getPSGArmor(CreatureObject* defender) const {

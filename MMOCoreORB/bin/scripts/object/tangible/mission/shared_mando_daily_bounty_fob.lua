@@ -42,7 +42,7 @@
 
 
 object_tangible_mission_shared_mando_daily_bounty_fob = SharedTangibleObjectTemplate:new {
-	clientTemplateFileName = "object/tangible/mission/shared_mando_daily_bounty_fob.iff"
+	clientTemplateFileName = "object/tangible/mission/shared_mission_datadisk.iff"
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_mission_shared_mando_daily_bounty_fob, "object/tangible/mission/shared_mando_daily_bounty_fob.iff")

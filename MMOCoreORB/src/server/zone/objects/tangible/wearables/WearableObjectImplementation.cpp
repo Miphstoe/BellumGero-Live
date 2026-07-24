@@ -15,14 +15,24 @@
 #include "server/zone/objects/tangible/wearables/ModSortingHelper.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/objects/scene/components/ObjectMenuComponent.h" // for setObjectMenuComponent()
+#include "server/zone/objects/tangible/wearables/ArmorObject.h"
 
 void WearableObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
 	// Give CLOTHING the exact same radial/UI as armor by attaching the armor menu component.
-	// If certain clothing templates must keep their own menu, add a template-name check here.
-	if (!isArmorObject()) {
-		setObjectMenuComponent("ArmorObjectMenuComponent");
+	// Templates that specify their own menu component (rings, hero rings, robes, goggles, etc.) keep it --
+	// only plain clothing with the generic default menu component falls back to the armor menu.
+	//
+	// Note: bin/scripts/object/tangible/wearables/base/wearables_base.lua defaults objectMenuComponent
+	// to "WearableObjectMenuComponent" for ordinary clothing, so plain clothing never actually reports
+	// an empty value here -- treat that inherited default the same as empty.
+	if (!isArmorObject() && templateObject != nullptr) {
+		String currentMenuComponent = templateObject->getObjectMenuComponent();
+
+		if (currentMenuComponent.isEmpty() || currentMenuComponent == "WearableObjectMenuComponent") {
+			setObjectMenuComponent("ArmorObjectMenuComponent");
+		}
 	}
 
 	// Wearable has too many attachments on it for the allowed socket count
@@ -83,7 +93,9 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 		return;
 	}
 
-	if (isEquipped()) {
+	bool applyModsWhileEquipped = isEquipped();
+
+	if (applyModsWhileEquipped) {
 		removeSkillModsFrom(player);
 	}
 
@@ -120,7 +132,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	}
 
 	if (!appliedAnyMod) {
-		if (isEquipped()) {
+		if (applyModsWhileEquipped) {
 			applySkillModsTo(player);
 		}
 
@@ -145,7 +157,7 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 	attachment->destroyObjectFromWorld(true);
 	attachment->destroyObjectFromDatabase(true);
 
-	if (isEquipped()) {
+	if (applyModsWhileEquipped) {
 		applySkillModsTo(player);
 	}
 }

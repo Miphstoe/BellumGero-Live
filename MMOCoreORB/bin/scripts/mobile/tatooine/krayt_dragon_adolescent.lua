@@ -33,6 +33,8 @@ krayt_dragon_adolescent = Creature:new {
 	lootGroups = {
 	{
         groups = {
+			--{group = "krayt_tissue_epic", chance = 50000},
+			--{group = "krayt_tissue_rare", chance = 100000},
 			{group = "krayt_tissue_uncommon", chance = 1000000},         -- 10.00% of group, 8.00% total
 			{group = "krayt_dragon_common", chance = 4000000},           -- 40.00% of group, 32.00% total
 			{group = "krayt_pearls", chance = 1000000},                  -- 10.00% of group, 8.00% total
@@ -44,6 +46,8 @@ krayt_dragon_adolescent = Creature:new {
 	},
 	{
         groups = {
+			--{group = "krayt_tissue_epic", chance = 50000},
+			--{group = "krayt_tissue_rare", chance = 100000},
 			{group = "krayt_tissue_uncommon", chance = 2000000},         -- 20.00% of group, 4.00% total
 			{group = "krayt_dragon_common", chance = 3000000},           -- 30.00% of group, 6.00% total
 			{group = "krayt_pearls", chance = 2000000},                  -- 20.00% of group, 4.00% total

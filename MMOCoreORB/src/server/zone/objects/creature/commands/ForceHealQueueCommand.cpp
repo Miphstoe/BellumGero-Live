@@ -54,9 +54,14 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 	int currentForce = playerObject->getForcePower();
 	int totalCost = getFrsModifiedForceCost(creature);
 	float effectiveForceCostMultiplier = getFrsModifiedExtraForceCost(creature, forceCostMultiplier);
-	int frsHealAmount = healAmount > 0 ? getFrsModifiedBuffValue(creature, healAmount) : 0;
-	int frsHealWoundAmount = healWoundAmount > 0 ? getFrsModifiedBuffValue(creature, healWoundAmount) : 0;
-	int frsHealBattleFatigue = healBattleFatigue > 0 ? getFrsModifiedBuffValue(creature, healBattleFatigue) : 0;
+
+	// Temporary items (e.g. the Ancient Crystal of the Sith) can grant a percentage bonus to
+	// force heal amounts via the "force_heal_bonus" skill mod (a Buff, not a permanent skill).
+	float forceHealBonusMultiplier = 1.f + (creature->getSkillMod("force_heal_bonus") / 100.f);
+
+	int frsHealAmount = healAmount > 0 ? (int)(getFrsModifiedBuffValue(creature, healAmount) * forceHealBonusMultiplier + 0.5f) : 0;
+	int frsHealWoundAmount = healWoundAmount > 0 ? (int)(getFrsModifiedBuffValue(creature, healWoundAmount) * forceHealBonusMultiplier + 0.5f) : 0;
+	int frsHealBattleFatigue = healBattleFatigue > 0 ? (int)(getFrsModifiedBuffValue(creature, healBattleFatigue) * forceHealBonusMultiplier + 0.5f) : 0;
 	bool healPerformed = false;
 
 	// Attribute Wound Healing

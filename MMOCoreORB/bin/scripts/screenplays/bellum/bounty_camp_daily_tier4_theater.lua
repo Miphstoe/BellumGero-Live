@@ -39,13 +39,13 @@ function BellumBountyDailyTier4Theater:onObjectsSpawned(pPlayer, spawnedList)
 end
 
 function BellumBountyDailyTier4Theater:onTheaterCreated(pPlayer)
-	if (pPlayer == nil or MandoWayOfLife == nil or MandoWayOfLife.logDiag == nil) then return end
-	self:logDiagPlayer(pPlayer, string.format("Daily Bounty Tier4: theater created"))
+	if (pPlayer == nil or MandoWayOfLife == nil or MandoWayOfLife.logSpynetDebug == nil) then return end
+	MandoWayOfLife:logSpynetDebug(pPlayer, "Daily Bounty Tier4: theater created")
 end
 
 function BellumBountyDailyTier4Theater:onEnteredActiveArea(pPlayer, spawnedList)
-	if (pPlayer == nil or MandoWayOfLife == nil or MandoWayOfLife.logDiag == nil) then return end
-	self:logDiagPlayer(pPlayer, string.format("Daily Bounty Tier4: entered active area"))
+	if (pPlayer == nil or MandoWayOfLife == nil or MandoWayOfLife.logSpynetDebug == nil) then return end
+	MandoWayOfLife:logSpynetDebug(pPlayer, "Daily Bounty Tier4: entered active area")
 end
 
 function BellumBountyDailyTier4Theater:notifyBountyMobileKilled(pVictim, pAttacker)
@@ -59,6 +59,9 @@ end
 function BellumBountyDailyTier4Theater:onSpynetMarkDown(pOwner)
 	if (pOwner ~= nil and MandoWayOfLife ~= nil) then
 		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Tier 4 complete. Return to your fob for the final mission.")
+if (MandoDailyHoloStory ~= nil) then
+pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 4) end)
+end
 	end
 end
 

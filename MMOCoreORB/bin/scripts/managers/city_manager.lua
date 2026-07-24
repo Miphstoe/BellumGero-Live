@@ -80,7 +80,7 @@ CitizensPerRank = {2, 4, 6, 8, 10, 15}
 RadiusPerRank = {150, 200, 300, 400, 450, 600}
 
 -- Maximum for each rank.  ex. rank 1 = DecorationsPerRank * 1, rank 6 = DecorationsPerRank * 6
-DecorationsPerRank = 10
+DecorationsPerRank = 16
 TrainersPerRank = 10
 MissionTerminalsPerRank = 10
 FactionTroopsMax = 25

@@ -34,7 +34,7 @@ grassland_voritor_tracker = Creature:new {
 			groups = {
 				{group = "voritor_lizard_common", chance = 10000000}
 			},
-			lootChance = 1900000
+			lootChance = 350000
 		}
 	},
 

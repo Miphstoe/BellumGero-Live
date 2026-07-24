@@ -7145,3 +7145,21 @@ object_tangible_furniture_all_shared_frn_all_ito_droid = SharedTangibleObjectTem
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_all_ito_droid, "object/tangible/furniture/all/shared_frn_all_ito_droid.iff")
+
+object_tangible_furniture_all_shared_frn_mando_clan_banner = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_mando_clan_banner.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_mando_clan_banner, "object/tangible/furniture/all/shared_frn_mando_clan_banner.iff")
+
+object_tangible_furniture_all_shared_frn_mando_helmet_trophy = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_mando_helmet_trophy.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_mando_helmet_trophy, "object/tangible/furniture/all/shared_frn_mando_helmet_trophy.iff")
+
+object_tangible_furniture_all_shared_frn_mando_helmet_holo = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/all/shared_frn_mando_helmet_holo.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_all_shared_frn_mando_helmet_holo, "object/tangible/furniture/all/shared_frn_mando_helmet_holo.iff")

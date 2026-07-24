@@ -322,8 +322,12 @@ MandoWayOfLife = ScreenPlay:new {
 	},
 
 	
-	-- Daily Bounty Mission Fob IFF
+	-- Daily Bounty Mission Fob IFF (legacy datadisk while the movie-style
+	-- tracking fob client asset is debugged; swap back to
+	-- object/tangible/mission/mando_tracking_fob.iff once stable)
 	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
+	-- Movie-style tracking fob still honored if already in a player's inventory
+	DAILY_BOUNTY_FOB_IFF_LEGACY = "object/tangible/mission/mando_tracking_fob.iff",
 	-- Maximum daily bounty missions per player
 	DAILY_BOUNTY_MAX_MISSIONS = 5,
 	-- Daily bounty mission data key prefix (per player, per day)
@@ -3845,6 +3849,11 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
 	-- Increment mission count
 	self:incrementDailyBountyCount(pPlayer)
 
+	-- Holographic guild contact delivers the story beat for this stage
+	if (MandoDailyHoloStory ~= nil) then
+		pcall(function() MandoDailyHoloStory:onMissionAccepted(pPlayer, tier) end)
+	end
+
 	self:logDiagPlayer(pPlayer, string.format(
 		"tryAcceptDailyBountyMission OK: tier=%s count=%s.",
 		tostring(tier),
@@ -3878,7 +3887,7 @@ function MandoWayOfLife:tryGrantDailyBountyFob(pPlayer)
 			local pItem = SceneObject(pInventory):getContainerObject(i)
 			if (pItem ~= nil) then
 				local templateOk, tmpl = pcall(function() return SceneObject(pItem):getTemplateObjectPath() end)
-				if (templateOk and tmpl == self.DAILY_BOUNTY_FOB_IFF) then
+				if (templateOk and (tmpl == self.DAILY_BOUNTY_FOB_IFF or tmpl == self.DAILY_BOUNTY_FOB_IFF_LEGACY)) then
 					return false, "You already have a Daily Bounty Mission Fob in your inventory."
 				end
 			end

@@ -36,9 +36,13 @@ public:
 			return GENERALERROR;
 		}
 
-		// Use the command-queue target if set; otherwise fall back to the
-		// creature's server-side selected target (client chat commands send targetID=0).
-		uint64 effectiveTarget = (target != 0) ? target : creature->getTargetID();
+		// Pay the entertainer the patron is actively watching/listening to.
+		// Fall back to explicit/selected targets for manual command use.
+		uint64 effectiveTarget = creature->getWatchToID();
+		if (effectiveTarget == 0)
+			effectiveTarget = creature->getListenID();
+		if (effectiveTarget == 0)
+			effectiveTarget = (target != 0) ? target : creature->getTargetID();
 
 		*f << creature;
 		*f << effectiveTarget;

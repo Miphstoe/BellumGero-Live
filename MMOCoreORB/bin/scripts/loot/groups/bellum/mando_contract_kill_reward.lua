@@ -1,7 +1,9 @@
 -- Mandalorian Way of Life — guaranteed drop from contract target kill
 -- One item drawn from this pool per kill.
 -- Pool: BH schematics (10), DW Mando schematics (11), jetpack parts (3),
---       krayt scales (1), krayt tissues common/uncommon/rare (3) = 28 items
+--       krayt scales (1), krayt tissues common/uncommon/rare (3),
+--       DWB classics: DE-10 schematic, Executioner's Hack schematic,
+--       Mandalorian Wine schematic, rebreather, DE-10 barrel = 33 items
 
 mando_contract_kill_reward = {
 	description = "",
@@ -40,6 +42,12 @@ mando_contract_kill_reward = {
 		{itemTemplate = "krayt_dragon_tissue_common",          weight = 500000},
 		{itemTemplate = "krayt_dragon_tissue_uncommon",        weight = 350000},
 		{itemTemplate = "krayt_dragon_tissue_rare",            weight = 200000},
+		-- Death Watch Bunker classics (3.5% total)
+		{itemTemplate = "pistol_de10_schematic",               weight = 100000},
+		{itemTemplate = "executioners_hack_schematic",         weight = 100000},
+		{itemTemplate = "mandalorian_wine_schematic",          weight = 50000},
+		{itemTemplate = "mandalorian_rebreather",              weight = 50000},
+		{itemTemplate = "de10_pistol_barrel",                  weight = 50000},
 	}
 }
 

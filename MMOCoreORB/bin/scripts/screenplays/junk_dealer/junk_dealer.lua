@@ -178,10 +178,57 @@ function JunkDealer:isCustomBlockedItem(pItem)
 	local blockedTemplates = {
 		"object/tangible/tool/sarlacc_trash_can.iff",
 		"object/tangible/collection/reward/fish_tank_reward.iff",
+		-- Locked Briefcase: must be sliced by a smuggler for credits, never sold as junk
+		"object/tangible/loot/misc/briefcase_s01.iff",
+		-- Locked Container: must be sliced by a smuggler for credits, never sold as junk
+		"object/tangible/container/loot/player_loot_crate.iff",
 	}
 
 	for _, t in ipairs(blockedTemplates) do
 		if templatePath == t then
+			return true
+		end
+	end
+
+	return false
+end
+
+function JunkDealer:isItemLocked(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	-- Items locked via the radial menu (item_locked == "1") cannot be deleted,
+	-- so they must not be sellable to junk dealers either.
+	return TangibleObject(pItem):getLuaStringData("item_locked") == "1"
+end
+
+function JunkDealer:isContainerObject(pItem)
+	if pItem == nil then
+		return false
+	end
+
+	local sceno = SceneObject(pItem)
+
+	-- Preferred: native isContainerObject() (C++ binding). It is true for any real
+	-- storage container (backpacks, loot chests, briefcases - all Container subclasses)
+	-- and false for weapons/armor/clothing/loot, so it never filters out sellable gear.
+	-- It only exists after a server rebuild, so it is guarded: an unregistered binding
+	-- is simply nil on the object (no error), and we fall back to pure-Lua detection.
+	if sceno.isContainerObject ~= nil then
+		return sceno:isContainerObject()
+	end
+
+	-- Pre-rebuild fallback (pure Lua):
+	-- Locked storage containers (loot chests / briefcases) report a locked status.
+	if TangibleObject(pItem):isContainerLocked() then
+		return true
+	end
+
+	-- Catch storage containers / backpacks by template path so even empty ones are blocked.
+	local templatePath = sceno:getTemplateObjectPath()
+	if templatePath ~= nil then
+		if string.find(templatePath, "^object/tangible/container/") or string.find(templatePath, "backpack") then
 			return true
 		end
 	end
@@ -297,7 +344,7 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 				local craftersName = ""
 
 				-- IMPORTANT: Skip containers/backpacks - don't sell them!
-				if SceneObject(pItem):getContainerObjectsSize() > 0 then
+				if SceneObject(pItem):getContainerObjectsSize() > 0 or self:isContainerObject(pItem) then
 					goto continue
 				end
 
@@ -338,7 +385,7 @@ function JunkDealer:scanContainerForJunk(pPlayer, pContainer, dealerType, skipIt
 				local isTreasureMap = self:isTreasureMap(pItem)
 
 				-- Block protected item types
-				if self:isCustomBlockedItem(pItem) or self:isAttachment(pItem) or self:isLightsaberCrystalOrPearl(pItem) then
+				if self:isCustomBlockedItem(pItem) or self:isAttachment(pItem) or self:isLightsaberCrystalOrPearl(pItem) or self:isItemLocked(pItem) then
 					goto continue
 				end
 
@@ -470,7 +517,8 @@ function JunkDealer:sellAllJunkOnly(pPlayer, pSui, pInventory)
 		-- Search for item in inventory and all backpacks
 		local pItem = self:findItemInContainers(pPlayer, oid)
 
-		if pItem ~= nil then
+		if pItem ~= nil and not self:isItemLocked(pItem) and not self:isContainerObject(pItem)
+			and not self:isCustomBlockedItem(pItem) and not self:isAttachment(pItem) and not self:isLightsaberCrystalOrPearl(pItem) then
 			local value = 0
 
 			-- Check if item is a schematic first
@@ -592,6 +640,20 @@ function JunkDealer:sellItem(pPlayer, pSui, rowIndex, pInventory)
 	-- Safety check: prevent selling protected item types by template path
 	if self:isCustomBlockedItem(pItem) or self:isAttachment(pItem) or self:isLightsaberCrystalOrPearl(pItem) then
 		CreatureObject(pPlayer):sendSystemMessage("You cannot sell that item to a junk dealer.")
+		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+		return
+	end
+
+	-- Safety check: never sell containers/backpacks (locked or not)
+	if SceneObject(pItem):getContainerObjectsSize() > 0 or self:isContainerObject(pItem) then
+		CreatureObject(pPlayer):sendSystemMessage("You cannot sell a container to a junk dealer.")
+		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
+		return
+	end
+
+	-- Safety check: prevent selling locked items
+	if self:isItemLocked(pItem) then
+		CreatureObject(pPlayer):sendSystemMessage("That item is locked and cannot be sold to a junk dealer. Unlock it first using the radial menu.")
 		deleteStringData(SceneObject(pPlayer):getObjectID() .. ":junkDealerType")
 		return
 	end

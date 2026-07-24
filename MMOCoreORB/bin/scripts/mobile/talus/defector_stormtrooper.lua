@@ -49,6 +49,12 @@ defector_stormtrooper = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "lytus_family_artefact_damage_buff_group", chance = 10000000}
+			},
+			lootChance = 100000, -- 1%
 		}
   },
 
