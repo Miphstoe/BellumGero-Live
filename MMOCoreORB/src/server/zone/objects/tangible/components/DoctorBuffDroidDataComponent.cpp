@@ -5,6 +5,8 @@
 #include "server/zone/objects/scene/SceneObject.h"
 
 namespace {
+// Field names are kept identical to the pre-upgrade schema so existing live droid rows
+// deserialize into these (now legacy-only) fields for one-time migration.
 const char* const kBuffStockAttrNames[9] = {
 	"buffStockAttr0", "buffStockAttr1", "buffStockAttr2",
 	"buffStockAttr3", "buffStockAttr4", "buffStockAttr5",
@@ -46,16 +48,16 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	ownerId = 0;
 
 	for (int i = 0; i < 9; ++i) {
-		buffStockPerAttr[i] = 0;
-		buffPackPowerPerAttr[i] = 0.0f;
-		buffPackDurationPerAttr[i] = 0.0f;
-		jantaBuffStockPerAttr[i] = 0;
-		jantaBuffPackPowerPerAttr[i] = 0.0f;
-		jantaBuffPackDurationPerAttr[i] = 0.0f;
+		legacyBuffStockPerAttr[i] = 0;
+		legacyBuffPowerPerAttr[i] = 0.0f;
+		legacyBuffDurationPerAttr[i] = 0.0f;
+		legacyJantaBuffStockPerAttr[i] = 0;
+		legacyJantaBuffPowerPerAttr[i] = 0.0f;
+		legacyJantaBuffDurationPerAttr[i] = 0.0f;
 	}
 
-	poisonStock = 0;
-	diseaseStock = 0;
+	legacyPoisonStock = 0;
+	legacyDiseaseStock = 0;
 	earningsBalance = 0;
 
 	buffPrice = 10000;
@@ -73,10 +75,10 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	diseaseEnabled = true;
 	jantaEnabled = true;
 
-	poisonPackPower = 0.0f;
-	diseasePackPower = 0.0f;
-	poisonPackDuration = 0.0f;
-	diseasePackDuration = 0.0f;
+	legacyPoisonPackPower = 0.0f;
+	legacyDiseasePackPower = 0.0f;
+	legacyPoisonPackDuration = 0.0f;
+	legacyDiseasePackDuration = 0.0f;
 	ownerHealingMod = 100;
 	bivoliStock = 0;
 	bivoliStrength = 0.0f;
@@ -94,15 +96,15 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 
 	addSerializableVariable("ownerId", &ownerId);
 	for (int i = 0; i < 9; ++i) {
-		addSerializableVariable(kBuffStockAttrNames[i], &buffStockPerAttr[i]);
-		addSerializableVariable(kBuffPowerAttrNames[i], &buffPackPowerPerAttr[i]);
-		addSerializableVariable(kBuffDurationAttrNames[i], &buffPackDurationPerAttr[i]);
-		addSerializableVariable(kJantaBuffStockAttrNames[i], &jantaBuffStockPerAttr[i]);
-		addSerializableVariable(kJantaBuffPowerAttrNames[i], &jantaBuffPackPowerPerAttr[i]);
-		addSerializableVariable(kJantaBuffDurationAttrNames[i], &jantaBuffPackDurationPerAttr[i]);
+		addSerializableVariable(kBuffStockAttrNames[i], &legacyBuffStockPerAttr[i]);
+		addSerializableVariable(kBuffPowerAttrNames[i], &legacyBuffPowerPerAttr[i]);
+		addSerializableVariable(kBuffDurationAttrNames[i], &legacyBuffDurationPerAttr[i]);
+		addSerializableVariable(kJantaBuffStockAttrNames[i], &legacyJantaBuffStockPerAttr[i]);
+		addSerializableVariable(kJantaBuffPowerAttrNames[i], &legacyJantaBuffPowerPerAttr[i]);
+		addSerializableVariable(kJantaBuffDurationAttrNames[i], &legacyJantaBuffDurationPerAttr[i]);
 	}
-	addSerializableVariable("poisonStock", &poisonStock);
-	addSerializableVariable("diseaseStock", &diseaseStock);
+	addSerializableVariable("poisonStock", &legacyPoisonStock);
+	addSerializableVariable("diseaseStock", &legacyDiseaseStock);
 	addSerializableVariable("earningsBalance", &earningsBalance);
 	addSerializableVariable("buffPrice", &buffPrice);
 	addSerializableVariable("woundPrice", &woundPrice);
@@ -116,10 +118,10 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	addSerializableVariable("poisonEnabled", &poisonEnabled);
 	addSerializableVariable("diseaseEnabled", &diseaseEnabled);
 	addSerializableVariable("jantaEnabled", &jantaEnabled);
-	addSerializableVariable("poisonPackPower", &poisonPackPower);
-	addSerializableVariable("diseasePackPower", &diseasePackPower);
-	addSerializableVariable("poisonPackDuration", &poisonPackDuration);
-	addSerializableVariable("diseasePackDuration", &diseasePackDuration);
+	addSerializableVariable("poisonPackPower", &legacyPoisonPackPower);
+	addSerializableVariable("diseasePackPower", &legacyDiseasePackPower);
+	addSerializableVariable("poisonPackDuration", &legacyPoisonPackDuration);
+	addSerializableVariable("diseasePackDuration", &legacyDiseasePackDuration);
 	addSerializableVariable("ownerHealingMod", &ownerHealingMod);
 	addSerializableVariable("bivoliStock", &bivoliStock);
 	addSerializableVariable("bivoliStrength", &bivoliStrength);
@@ -140,15 +142,15 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 
 	SERIALIZE_JSON_MEMBER(ownerId);
 	for (int i = 0; i < 9; ++i) {
-		j["buffStockAttr" + std::to_string(i)] = buffStockPerAttr[i];
-		j["buffPowerAttr" + std::to_string(i)] = buffPackPowerPerAttr[i];
-		j["buffDurationAttr" + std::to_string(i)] = buffPackDurationPerAttr[i];
-		j["jantaBuffStockAttr" + std::to_string(i)] = jantaBuffStockPerAttr[i];
-		j["jantaBuffPowerAttr" + std::to_string(i)] = jantaBuffPackPowerPerAttr[i];
-		j["jantaBuffDurationAttr" + std::to_string(i)] = jantaBuffPackDurationPerAttr[i];
+		j["buffStockAttr" + std::to_string(i)] = legacyBuffStockPerAttr[i];
+		j["buffPowerAttr" + std::to_string(i)] = legacyBuffPowerPerAttr[i];
+		j["buffDurationAttr" + std::to_string(i)] = legacyBuffDurationPerAttr[i];
+		j["jantaBuffStockAttr" + std::to_string(i)] = legacyJantaBuffStockPerAttr[i];
+		j["jantaBuffPowerAttr" + std::to_string(i)] = legacyJantaBuffPowerPerAttr[i];
+		j["jantaBuffDurationAttr" + std::to_string(i)] = legacyJantaBuffDurationPerAttr[i];
 	}
-	SERIALIZE_JSON_MEMBER(poisonStock);
-	SERIALIZE_JSON_MEMBER(diseaseStock);
+	j["poisonStock"] = legacyPoisonStock;
+	j["diseaseStock"] = legacyDiseaseStock;
 	SERIALIZE_JSON_MEMBER(earningsBalance);
 	SERIALIZE_JSON_MEMBER(buffPrice);
 	SERIALIZE_JSON_MEMBER(woundPrice);
@@ -162,10 +164,10 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(poisonEnabled);
 	SERIALIZE_JSON_MEMBER(diseaseEnabled);
 	SERIALIZE_JSON_MEMBER(jantaEnabled);
-	SERIALIZE_JSON_MEMBER(poisonPackPower);
-	SERIALIZE_JSON_MEMBER(diseasePackPower);
-	SERIALIZE_JSON_MEMBER(poisonPackDuration);
-	SERIALIZE_JSON_MEMBER(diseasePackDuration);
+	j["poisonPackPower"] = legacyPoisonPackPower;
+	j["diseasePackPower"] = legacyDiseasePackPower;
+	j["poisonPackDuration"] = legacyPoisonPackDuration;
+	j["diseasePackDuration"] = legacyDiseasePackDuration;
 	SERIALIZE_JSON_MEMBER(ownerHealingMod);
 	SERIALIZE_JSON_MEMBER(bivoliStock);
 	SERIALIZE_JSON_MEMBER(bivoliStrength);
@@ -199,237 +201,110 @@ uint64 DoctorBuffDroidDataComponent::getOwnerId() const {
 	return ownerId;
 }
 
-int DoctorBuffDroidDataComponent::getStock(ServiceType type) const {
-	Locker locker(&dataMutex);
-
-	switch (type) {
-	case SERVICE_BUFFS: {
-		int total = 0;
-		for (int i = 0; i < 9; ++i)
-			total += buffStockPerAttr[i];
-		return total;
-	}
-	case SERVICE_JANTA: {
-		int total = 0;
-		for (int i = 0; i < 9; ++i)
-			total += jantaBuffStockPerAttr[i];
-		return total;
-	}
-	case SERVICE_POISON:
-		return poisonStock;
-	case SERVICE_DISEASE:
-		return diseaseStock;
-	case SERVICE_WOUNDS:
-	default:
-		return 0;
-	}
-}
-
-float DoctorBuffDroidDataComponent::getPackDuration(ServiceType type) const {
-	Locker locker(&dataMutex);
-
-	switch (type) {
-	case SERVICE_POISON:
-		return poisonPackDuration;
-	case SERVICE_DISEASE:
-		return diseasePackDuration;
-	default:
-		return 0.0f;
-	}
-}
-
-uint32 DoctorBuffDroidDataComponent::getLoadedBuffAttributes() const {
-	Locker locker(&dataMutex);
-	uint32 mask = 0;
-	for (uint8 i = 0; i < 9; ++i) {
-		if (buffStockPerAttr[i] > 0)
-			mask |= (1u << i);
-	}
-	return mask;
-}
-
-uint32 DoctorBuffDroidDataComponent::getLoadedJantaBuffAttributes() const {
-	Locker locker(&dataMutex);
-	uint32 mask = 0;
-	for (uint8 i = 0; i < 9; ++i) {
-		if (jantaBuffStockPerAttr[i] > 0)
-			mask |= (1u << i);
-	}
-	return mask;
-}
-
-int DoctorBuffDroidDataComponent::getBuffStockByAttr(byte attr) const {
+int DoctorBuffDroidDataComponent::getLegacyBuffStock(byte attr) const {
 	if (attr >= 9)
 		return 0;
 	Locker locker(&dataMutex);
-	return buffStockPerAttr[attr];
+	return legacyBuffStockPerAttr[attr];
 }
 
-float DoctorBuffDroidDataComponent::getBuffPackPowerByAttr(byte attr) const {
+float DoctorBuffDroidDataComponent::getLegacyBuffPower(byte attr) const {
 	if (attr >= 9)
 		return 0.0f;
 	Locker locker(&dataMutex);
-	return buffPackPowerPerAttr[attr];
+	return legacyBuffPowerPerAttr[attr];
 }
 
-float DoctorBuffDroidDataComponent::getBuffPackDurationByAttr(byte attr) const {
+float DoctorBuffDroidDataComponent::getLegacyBuffDuration(byte attr) const {
 	if (attr >= 9)
 		return 0.0f;
 	Locker locker(&dataMutex);
-	return buffPackDurationPerAttr[attr];
+	return legacyBuffDurationPerAttr[attr];
 }
 
-bool DoctorBuffDroidDataComponent::consumeBuffStock(byte attr, int amount) {
-	if (attr >= 9 || amount <= 0)
+int DoctorBuffDroidDataComponent::getLegacyJantaBuffStock(byte attr) const {
+	if (attr >= 9)
+		return 0;
+	Locker locker(&dataMutex);
+	return legacyJantaBuffStockPerAttr[attr];
+}
+
+float DoctorBuffDroidDataComponent::getLegacyJantaBuffPower(byte attr) const {
+	if (attr >= 9)
+		return 0.0f;
+	Locker locker(&dataMutex);
+	return legacyJantaBuffPowerPerAttr[attr];
+}
+
+float DoctorBuffDroidDataComponent::getLegacyJantaBuffDuration(byte attr) const {
+	if (attr >= 9)
+		return 0.0f;
+	Locker locker(&dataMutex);
+	return legacyJantaBuffDurationPerAttr[attr];
+}
+
+int DoctorBuffDroidDataComponent::getLegacyPoisonStock() const {
+	Locker locker(&dataMutex);
+	return legacyPoisonStock;
+}
+
+float DoctorBuffDroidDataComponent::getLegacyPoisonPower() const {
+	Locker locker(&dataMutex);
+	return legacyPoisonPackPower;
+}
+
+float DoctorBuffDroidDataComponent::getLegacyPoisonDuration() const {
+	Locker locker(&dataMutex);
+	return legacyPoisonPackDuration;
+}
+
+int DoctorBuffDroidDataComponent::getLegacyDiseaseStock() const {
+	Locker locker(&dataMutex);
+	return legacyDiseaseStock;
+}
+
+float DoctorBuffDroidDataComponent::getLegacyDiseasePower() const {
+	Locker locker(&dataMutex);
+	return legacyDiseasePackPower;
+}
+
+float DoctorBuffDroidDataComponent::getLegacyDiseaseDuration() const {
+	Locker locker(&dataMutex);
+	return legacyDiseasePackDuration;
+}
+
+bool DoctorBuffDroidDataComponent::hasLegacyStock() const {
+	Locker locker(&dataMutex);
+
+	if (legacyPoisonStock > 0 || legacyDiseaseStock > 0)
 		return true;
-	Locker locker(&dataMutex);
-	if (buffStockPerAttr[attr] < amount)
-		return false;
-	buffStockPerAttr[attr] -= amount;
-	return true;
-}
 
-int DoctorBuffDroidDataComponent::getJantaBuffStockByAttr(byte attr) const {
-	if (attr >= 9)
-		return 0;
-	Locker locker(&dataMutex);
-	return jantaBuffStockPerAttr[attr];
-}
-
-float DoctorBuffDroidDataComponent::getJantaBuffPackPowerByAttr(byte attr) const {
-	if (attr >= 9)
-		return 0.0f;
-	Locker locker(&dataMutex);
-	return jantaBuffPackPowerPerAttr[attr];
-}
-
-float DoctorBuffDroidDataComponent::getJantaBuffPackDurationByAttr(byte attr) const {
-	if (attr >= 9)
-		return 0.0f;
-	Locker locker(&dataMutex);
-	return jantaBuffPackDurationPerAttr[attr];
-}
-
-bool DoctorBuffDroidDataComponent::consumeJantaBuffStock(byte attr, int amount) {
-	if (attr >= 9 || amount <= 0)
-		return true;
-	Locker locker(&dataMutex);
-	if (jantaBuffStockPerAttr[attr] < amount)
-		return false;
-	jantaBuffStockPerAttr[attr] -= amount;
-	return true;
-}
-
-void DoctorBuffDroidDataComponent::addStock(ServiceType type, int amount, float effectiveness, byte attr, float duration) {
-	if (amount <= 0)
-		return;
-
-	Locker locker(&dataMutex);
-
-	if (type == SERVICE_BUFFS) {
-		if (attr >= 9)
-			return;
-
-		int& stock   = buffStockPerAttr[attr];
-		float& power = buffPackPowerPerAttr[attr];
-		float& dur   = buffPackDurationPerAttr[attr];
-
-		if (effectiveness > 0.0f) {
-			if (stock == 0 || power == 0.0f)
-				power = effectiveness;
-			else
-				power = ((stock * power) + (amount * effectiveness)) / (stock + amount);
-		}
-
-		if (duration > 0.0f) {
-			if (stock == 0 || dur == 0.0f)
-				dur = duration;
-			else
-				dur = ((stock * dur) + (amount * duration)) / (stock + amount);
-		}
-
-		stock += amount;
-		return;
+	for (int i = 0; i < 9; ++i) {
+		if (legacyBuffStockPerAttr[i] > 0 || legacyJantaBuffStockPerAttr[i] > 0)
+			return true;
 	}
 
-	if (type == SERVICE_JANTA) {
-		if (attr >= 9)
-			return;
-
-		int& stock   = jantaBuffStockPerAttr[attr];
-		float& power = jantaBuffPackPowerPerAttr[attr];
-		float& dur   = jantaBuffPackDurationPerAttr[attr];
-
-		if (effectiveness > 0.0f) {
-			if (stock == 0 || power == 0.0f)
-				power = effectiveness;
-			else
-				power = ((stock * power) + (amount * effectiveness)) / (stock + amount);
-		}
-
-		if (duration > 0.0f) {
-			if (stock == 0 || dur == 0.0f)
-				dur = duration;
-			else
-				dur = ((stock * dur) + (amount * duration)) / (stock + amount);
-		}
-
-		stock += amount;
-		return;
-	}
-
-	int* stock = nullptr;
-	float* power = nullptr;
-	float* dur = nullptr;
-
-	switch (type) {
-	case SERVICE_POISON:
-		stock = &poisonStock;
-		power = &poisonPackPower;
-		dur   = &poisonPackDuration;
-		break;
-	case SERVICE_DISEASE:
-		stock = &diseaseStock;
-		power = &diseasePackPower;
-		dur   = &diseasePackDuration;
-		break;
-	case SERVICE_JANTA:
-		stock = &jantaStock;
-		power = &jantaStrength;
-		dur   = &jantaDuration;
-		break;
-	default:
-		return;
-	}
-
-	if (effectiveness > 0.0f) {
-		if (*stock == 0 || *power == 0.0f)
-			*power = effectiveness;
-		else
-			*power = ((*stock * *power) + (amount * effectiveness)) / (*stock + amount);
-	}
-
-	if (duration > 0.0f) {
-		if (*stock == 0 || *dur == 0.0f)
-			*dur = duration;
-		else
-			*dur = ((*stock * *dur) + (amount * duration)) / (*stock + amount);
-	}
-
-	*stock += amount;
+	return false;
 }
 
-float DoctorBuffDroidDataComponent::getPackPower(ServiceType type) const {
+void DoctorBuffDroidDataComponent::clearLegacyStock() {
 	Locker locker(&dataMutex);
 
-	switch (type) {
-	case SERVICE_POISON:
-		return poisonPackPower;
-	case SERVICE_DISEASE:
-		return diseasePackPower;
-	default:
-		return 0.0f;
+	for (int i = 0; i < 9; ++i) {
+		legacyBuffStockPerAttr[i] = 0;
+		legacyBuffPowerPerAttr[i] = 0.0f;
+		legacyBuffDurationPerAttr[i] = 0.0f;
+		legacyJantaBuffStockPerAttr[i] = 0;
+		legacyJantaBuffPowerPerAttr[i] = 0.0f;
+		legacyJantaBuffDurationPerAttr[i] = 0.0f;
 	}
+
+	legacyPoisonStock = 0;
+	legacyDiseaseStock = 0;
+	legacyPoisonPackPower = 0.0f;
+	legacyDiseasePackPower = 0.0f;
+	legacyPoisonPackDuration = 0.0f;
+	legacyDiseasePackDuration = 0.0f;
 }
 
 int DoctorBuffDroidDataComponent::getOwnerHealingMod() const {
@@ -618,34 +493,6 @@ float DoctorBuffDroidDataComponent::getActiveJantaTimeRemaining(uint64 nowMs) co
 		return 0.0f;
 
 	return (activeJantaExpiresAt - nowMs) / 1000.0f;
-}
-
-bool DoctorBuffDroidDataComponent::consumeStock(ServiceType type, int amount) {
-	if (amount <= 0)
-		return true;
-
-	Locker locker(&dataMutex);
-	int* stock = nullptr;
-
-	switch (type) {
-	case SERVICE_POISON:
-		stock = &poisonStock;
-		break;
-	case SERVICE_DISEASE:
-		stock = &diseaseStock;
-		break;
-	case SERVICE_JANTA:
-		stock = &jantaStock;
-		break;
-	default:
-		return true;
-	}
-
-	if (*stock < amount)
-		return false;
-
-	*stock -= amount;
-	return true;
 }
 
 int DoctorBuffDroidDataComponent::getPrice(ServiceType type) const {

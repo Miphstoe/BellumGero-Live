@@ -6,14 +6,12 @@
 
 class DoctorBuffDroidWithdrawQuantitySuiCallback : public SuiCallback {
 	ManagedWeakReference<SceneObject*> droidRef;
-	DoctorBuffDroidDataComponent::ServiceType service;
-	byte attr;
+	uint64 itemObjectId;
 	int maxQty;
 
 public:
-	DoctorBuffDroidWithdrawQuantitySuiCallback(ZoneServer* serv, SceneObject* droid,
-		DoctorBuffDroidDataComponent::ServiceType svc, byte attribute, int max)
-		: SuiCallback(serv), droidRef(droid), service(svc), attr(attribute), maxQty(max) {}
+	DoctorBuffDroidWithdrawQuantitySuiCallback(ZoneServer* serv, SceneObject* droid, uint64 itemId, int max)
+		: SuiCallback(serv), droidRef(droid), itemObjectId(itemId), maxQty(max) {}
 
 	void run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) override {
 		if (eventIndex == 1 || !suiBox->isInputBox() || args == nullptr || args->size() < 1)
@@ -40,7 +38,7 @@ public:
 			}
 			if (qty > maxQty)
 				qty = maxQty;
-			DoctorBuffDroidMenuComponent::withdrawBuffStock(droid, player, data, service, attr, qty);
+			DoctorBuffDroidMenuComponent::withdrawBuffStock(droid, player, data, itemObjectId, qty);
 		} catch (Exception& e) {
 			player->sendSystemMessage("Invalid quantity entered.");
 		}

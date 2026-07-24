@@ -591,6 +591,197 @@ const char* getEnhancePackIFF(byte attr) {
 	default:                          return "object/tangible/medicine/crafted/medpack_enhance_health_b.iff";
 	}
 }
+
+// Real loaded packs now sit as actual items inside the droid's own container instead of being
+// destroyed and folded into an averaged scalar stat, so different-strength packs for the same
+// attribute stay distinct instead of blending. These helpers classify/query those real items.
+// Bivoli supplies and legacy Janta food never enter the container — they remain scalar (unchanged).
+//
+// Classifies a real item already sitting in the droid's container into the (service, attr) pool
+// it belongs to. attr is only meaningful for BUFFS/JANTA — POISON/DISEASE are single pools and
+// report attr = 0.
+bool classifyLoadedItem(SceneObject* item, DoctorBuffDroidDataComponent::ServiceType& outService, byte& outAttr) {
+	if (item == nullptr)
+		return false;
+
+	if (isBivoliSupply(item) || isJantaSupply(item))
+		return false;
+
+	if (isJantaMedicalPack(item)) {
+		byte attr = getPackAttribute(item);
+		if (attr >= 9)
+			return false;
+		outService = DoctorBuffDroidDataComponent::SERVICE_JANTA;
+		outAttr = attr;
+		return true;
+	}
+
+	if (!isValidSupply(item))
+		return false;
+
+	DoctorBuffDroidDataComponent::ServiceType service = getSupplyType(item);
+
+	if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS) {
+		byte attr = getPackAttribute(item);
+		if (attr >= 9)
+			return false;
+		outService = service;
+		outAttr = attr;
+		return true;
+	}
+
+	if (service == DoctorBuffDroidDataComponent::SERVICE_POISON || service == DoctorBuffDroidDataComponent::SERVICE_DISEASE) {
+		outService = service;
+		outAttr = 0;
+		return true;
+	}
+
+	return false;
+}
+
+bool matchesLoadedSupply(SceneObject* item, DoctorBuffDroidDataComponent::ServiceType service, byte attr) {
+	DoctorBuffDroidDataComponent::ServiceType itemService;
+	byte itemAttr;
+	if (!classifyLoadedItem(item, itemService, itemAttr))
+		return false;
+
+	if (itemService != service)
+		return false;
+
+	if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS || service == DoctorBuffDroidDataComponent::SERVICE_JANTA)
+		return itemAttr == attr;
+
+	// POISON/DISEASE are single pools — attr isn't a discriminator for them.
+	return true;
+}
+
+// FIFO by container order (transferObject appends), so the oldest-loaded pack is consumed/found first.
+SceneObject* findLoadedItem(SceneObject* droid, DoctorBuffDroidDataComponent::ServiceType service, byte attr) {
+	if (droid == nullptr)
+		return nullptr;
+
+	for (int i = 0; i < droid->getContainerObjectsSize(); ++i) {
+		SceneObject* item = droid->getContainerObject(i);
+		if (matchesLoadedSupply(item, service, attr))
+			return item;
+	}
+
+	return nullptr;
+}
+
+int sumLoadedAmount(SceneObject* droid, DoctorBuffDroidDataComponent::ServiceType service, byte attr) {
+	if (droid == nullptr)
+		return 0;
+
+	int total = 0;
+	for (int i = 0; i < droid->getContainerObjectsSize(); ++i) {
+		SceneObject* item = droid->getContainerObject(i);
+		if (matchesLoadedSupply(item, service, attr))
+			total += getSupplyAmount(item);
+	}
+
+	return total;
+}
+
+uint32 loadedAttributeMask(SceneObject* droid, DoctorBuffDroidDataComponent::ServiceType service) {
+	uint32 mask = 0;
+	for (uint8 attr = 0; attr < 9; ++attr) {
+		if (sumLoadedAmount(droid, service, attr) > 0)
+			mask |= (1u << attr);
+	}
+	return mask;
+}
+
+// Consumes `amount` charges from a real loaded item: decrements a FactoryCrate's useCount
+// (destroying it once empty, per FactoryCrateImplementation::setUseCount), or destroys a bare
+// single-charge pack outright.
+void consumeLoadedAmount(SceneObject* item, int amount) {
+	if (item == nullptr || amount <= 0)
+		return;
+
+	if (item->isFactoryCrate()) {
+		FactoryCrate* crate = cast<FactoryCrate*>(item);
+		if (crate != nullptr) {
+			int newCount = crate->getUseCount() - amount;
+			crate->setUseCount(newCount > 0 ? (uint32)newCount : 0, true);
+			return;
+		}
+	}
+
+	destroyLoadedSupply(item);
+}
+
+// Manufactures `quantity` charges (as one or more FactoryCrates, batched at 500) of an EnhancePack
+// with the given real power/duration/attr and transfers them into `destination`. Used both for
+// withdrawing a specific loaded item back to the owner's inventory, and for one-time migration of
+// legacy averaged stock into a real item inside the droid's own container. `lockContext` is the
+// already-locked CreatureObject used for lock ordering (the player driving the current action).
+// Returns the number of charges actually created/transferred.
+int createSupplyCrates(ZoneServer* zoneServer, byte attr, float power, float duration, int quantity,
+	SceneObject* destination, CreatureObject* lockContext) {
+
+	if (zoneServer == nullptr || destination == nullptr || lockContext == nullptr || quantity <= 0)
+		return 0;
+
+	if (power <= 0.0f)
+		power = 500.0f;
+	if (duration <= 0.0f)
+		duration = 7200.0f;
+
+	uint32 templateCRC = String(getEnhancePackIFF(attr)).hashCode();
+	ManagedReference<SceneObject*> protoObj = zoneServer->createObject(templateCRC, 1);
+
+	if (protoObj == nullptr || !protoObj->isPharmaceuticalObject()
+		|| !cast<PharmaceuticalObject*>(protoObj.get())->isEnhancePack()) {
+		if (protoObj != nullptr)
+			protoObj->destroyObjectFromDatabase(true);
+		return 0;
+	}
+
+	EnhancePack* proto = cast<EnhancePack*>(protoObj.get());
+	int totalCreated = 0;
+
+	Locker protoLocker(proto, lockContext);
+
+	EnhancePackImplementation* impl = dynamic_cast<EnhancePackImplementation*>(proto->_getImplementation());
+	if (impl == nullptr) {
+		proto->destroyObjectFromDatabase(true);
+		return 0;
+	}
+
+	impl->setPackValues(power, duration, attr);
+	proto->setUseCount(1, false);
+
+	static const int MAX_CRATE_SIZE = 500;
+	int remaining = quantity;
+
+	while (remaining > 0) {
+		int crateQty = Math::min(remaining, MAX_CRATE_SIZE);
+		String emptyType = "";
+
+		Reference<FactoryCrate*> crate = proto->createFactoryCrate(crateQty, emptyType, false);
+		if (crate == nullptr)
+			break;
+
+		{
+			Locker crateLocker(crate, lockContext);
+			crate->setUseCount((uint32)crateQty, false);
+		}
+
+		if (!destination->transferObject(crate, -1, true)) {
+			crate->destroyObjectFromDatabase(true);
+			break;
+		}
+
+		destination->broadcastObject(crate, true);
+		remaining -= crateQty;
+		totalCreated += crateQty;
+	}
+
+	proto->destroyObjectFromDatabase(true);
+
+	return totalCreated;
+}
 }
 
 DoctorBuffDroidDataComponent* DoctorBuffDroidMenuComponent::getDroidData(SceneObject* sceneObject) {
@@ -636,8 +827,8 @@ void DoctorBuffDroidMenuComponent::sendPriceSummary(CreatureObject* player, Doct
 	player->sendSystemMessage(msg.toString());
 }
 
-void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data) {
-	if (player == nullptr || data == nullptr)
+void DoctorBuffDroidMenuComponent::sendStockSummary(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data) {
+	if (sceneObject == nullptr || player == nullptr || data == nullptr)
 		return;
 
 	Time now;
@@ -646,31 +837,31 @@ void DoctorBuffDroidMenuComponent::sendStockSummary(CreatureObject* player, Doct
 	StringBuffer msg;
 	msg << "Doctor Buff Droid stock:";
 
-	uint32 attrMask = data->getLoadedBuffAttributes();
+	uint32 attrMask = loadedAttributeMask(sceneObject, DoctorBuffDroidDataComponent::SERVICE_BUFFS);
 	if (attrMask == 0) {
 		msg << " Buffs: 0 use(s)";
 	} else {
 		for (uint8 attr = 0; attr < 9; ++attr) {
-			int stock = data->getBuffStockByAttr(attr);
+			int stock = sumLoadedAmount(sceneObject, DoctorBuffDroidDataComponent::SERVICE_BUFFS, attr);
 			if (stock > 0)
 				msg << " " << BuffAttribute::getName(attr, true) << ": " << stock << " use(s)";
 		}
 	}
 
-	uint32 jantaAttrMask = data->getLoadedJantaBuffAttributes();
+	uint32 jantaAttrMask = loadedAttributeMask(sceneObject, DoctorBuffDroidDataComponent::SERVICE_JANTA);
 	if (jantaAttrMask == 0) {
 		msg << " | Janta Buffs: 0 use(s)";
 	} else {
 		msg << " | Janta Buffs:";
 		for (uint8 attr = 0; attr < 9; ++attr) {
-			int stock = data->getJantaBuffStockByAttr(attr);
+			int stock = sumLoadedAmount(sceneObject, DoctorBuffDroidDataComponent::SERVICE_JANTA, attr);
 			if (stock > 0)
 				msg << " " << BuffAttribute::getName(attr, true) << ": " << stock << " use(s)";
 		}
 	}
 
-	msg << " | Poison resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON)
-		<< " use(s) | Disease resist: " << data->getStock(DoctorBuffDroidDataComponent::SERVICE_DISEASE)
+	msg << " | Poison resist: " << sumLoadedAmount(sceneObject, DoctorBuffDroidDataComponent::SERVICE_POISON, 0)
+		<< " use(s) | Disease resist: " << sumLoadedAmount(sceneObject, DoctorBuffDroidDataComponent::SERVICE_DISEASE, 0)
 		<< " use(s) | Bivoli: " << data->getBivoliStock() << " charge(s)";
 
 	if (data->getJantaStock() > 0)
@@ -753,7 +944,6 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 		if (mode == LOAD_STANDARD && (jantaSupply || jantaPack))
 			continue;
 
-		DoctorBuffDroidDataComponent::ServiceType service = getSupplyType(item);
 		int amount = getSupplyAmount(item);
 
 		if (amount <= 0)
@@ -793,17 +983,21 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 			if (effectiveness <= 0.0f || duration <= 0.0f || attr >= 9)
 				continue;
 
-			data->addStock(DoctorBuffDroidDataComponent::SERVICE_JANTA, amount, effectiveness, attr, duration);
-			destroyLoadedSupply(item);
+			// Real item moves into the droid's own container intact — its true power/duration/attr
+			// stay with it, so multiple different-strength packs coexist instead of being folded
+			// into a single averaged stat.
+			if (!sceneObject->transferObject(item, -1, true))
+				continue;
+
+			sceneObject->broadcastObject(item, true);
 			loaded += amount;
 			continue;
 		}
 
-		float effectiveness = getPackEffectiveness(item);
-		float duration = getPackDuration(item);
-		byte attr = getPackAttribute(item);
-		data->addStock(service, amount, effectiveness, attr, duration);
-		destroyLoadedSupply(item);
+		if (!sceneObject->transferObject(item, -1, true))
+			continue;
+
+		sceneObject->broadcastObject(item, true);
 		loaded += amount;
 	}
 
@@ -823,7 +1017,7 @@ bool DoctorBuffDroidMenuComponent::loadSupplies(SceneObject* sceneObject, Creatu
 		player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " Janta supply units into the Doctor Buff Droid.");
 	else
 		player->sendSystemMessage("Loaded " + String::valueOf(loaded) + " valid supply units into the Doctor Buff Droid.");
-	sendStockSummary(player, data);
+	sendStockSummary(sceneObject, player, data);
 	return true;
 }
 
@@ -909,6 +1103,19 @@ void DoctorBuffDroidMenuComponent::promptAdTextInput(SceneObject* sceneObject, C
 	player->sendMessage(box->generateMessage());
 }
 
+int DoctorBuffDroidMenuComponent::getLoadedItemQuantity(SceneObject* sceneObject, uint64 itemObjectId) {
+	if (sceneObject == nullptr || itemObjectId == 0)
+		return 0;
+
+	for (int i = 0; i < sceneObject->getContainerObjectsSize(); ++i) {
+		SceneObject* item = sceneObject->getContainerObject(i);
+		if (item != nullptr && item->getObjectID() == itemObjectId)
+			return getSupplyAmount(item);
+	}
+
+	return 0;
+}
+
 void DoctorBuffDroidMenuComponent::openDroidInventory(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data) {
 	if (sceneObject == nullptr || player == nullptr || data == nullptr)
 		return;
@@ -916,17 +1123,50 @@ void DoctorBuffDroidMenuComponent::openDroidInventory(SceneObject* sceneObject, 
 	Time now;
 	uint64 nowMs = now.getMiliTime();
 
-	// Parallel vectors: one entry per selectable supply row.
-	// The owner can select a row to open the withdraw-quantity dialog.
-	// Service type == -1 marks an informational-only row (empty droid notice).
-	Vector<int> entryServiceTypes;
-	Vector<int> entryAttrs;
-	Vector<int> entryMaxQtys;
+	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::NONE);
+	box->setPromptTitle("Doctor Buff Droid - Current Inventory");
+
+	int rowCount = 0;
+
+	// One row per real loaded item — its true power/duration/quantity are read straight off
+	// the item, so different-strength packs for the same attribute show as separate rows
+	// instead of a single blended average.
+	for (int i = 0; i < sceneObject->getContainerObjectsSize(); ++i) {
+		SceneObject* item = sceneObject->getContainerObject(i);
+
+		DoctorBuffDroidDataComponent::ServiceType service;
+		byte attr;
+		if (!classifyLoadedItem(item, service, attr))
+			continue;
+
+		int qty = getSupplyAmount(item);
+		if (qty <= 0)
+			continue;
+
+		String label;
+		if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS)
+			label = "Medical Buff [" + BuffAttribute::getName(attr, true) + "]";
+		else if (service == DoctorBuffDroidDataComponent::SERVICE_JANTA)
+			label = "Janta Buff [" + BuffAttribute::getName(attr, true) + "]";
+		else if (service == DoctorBuffDroidDataComponent::SERVICE_POISON)
+			label = "Poison Resistance";
+		else
+			label = "Disease Resistance";
+
+		float power = getMedicalPackEffectiveness(item);
+		float duration = (service == DoctorBuffDroidDataComponent::SERVICE_JANTA) ? getJantaDuration(item) : getPackDuration(item);
+
+		box->addMenuItem(label + ": power " + String::valueOf((int)power) + ", duration " + String::valueOf((int)duration)
+			+ "s, " + String::valueOf(qty) + " use(s)", item->getObjectID());
+		++rowCount;
+	}
 
 	// Build prompt text with Bivoli info (not withdrawable as packs).
 	StringBuffer prompt;
 	prompt << "Select a supply row to withdraw packs into your inventory (owner only)."
 	       << "\nSelect \"Remove My Buffs\" to clear your own active buffs.";
+	if (rowCount == 0)
+		prompt << "\nNo withdrawable supplies are currently loaded.";
 	int bivoliStock = data->getBivoliStock();
 	if (bivoliStock > 0)
 		prompt << "\nBivoli Food: " << bivoliStock << " charge(s)";
@@ -941,92 +1181,53 @@ void DoctorBuffDroidMenuComponent::openDroidInventory(SceneObject* sceneObject, 
 			secsLeftCeil++;
 		prompt << "\nActive Bivoli: +" << activeBivoliBonus << " wound treatment (" << secsLeftCeil << "s remaining)";
 	}
-
-	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::NONE);
-	box->setPromptTitle("Doctor Buff Droid - Current Inventory");
 	box->setPromptText(prompt.toString());
 
-	for (uint8 attr = 0; attr < 9; ++attr) {
-		int stock = data->getBuffStockByAttr(attr);
-		if (stock <= 0)
-			continue;
-		box->addMenuItem("Medical Buff [" + BuffAttribute::getName(attr, true) + "]: " + String::valueOf(stock) + " use(s)");
-		entryServiceTypes.add((int)DoctorBuffDroidDataComponent::SERVICE_BUFFS);
-		entryAttrs.add((int)attr);
-		entryMaxQtys.add(stock);
-	}
-
-	for (uint8 attr = 0; attr < 9; ++attr) {
-		int stock = data->getJantaBuffStockByAttr(attr);
-		if (stock <= 0)
-			continue;
-		box->addMenuItem("Janta Buff [" + BuffAttribute::getName(attr, true) + "]: " + String::valueOf(stock) + " use(s)");
-		entryServiceTypes.add((int)DoctorBuffDroidDataComponent::SERVICE_JANTA);
-		entryAttrs.add((int)attr);
-		entryMaxQtys.add(stock);
-	}
-
-	int poisonStock = data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON);
-	if (poisonStock > 0) {
-		box->addMenuItem("Poison Resistance: " + String::valueOf(poisonStock) + " use(s)");
-		entryServiceTypes.add((int)DoctorBuffDroidDataComponent::SERVICE_POISON);
-		entryAttrs.add((int)BuffAttribute::POISON);
-		entryMaxQtys.add(poisonStock);
-	}
-
-	int diseaseStock = data->getStock(DoctorBuffDroidDataComponent::SERVICE_DISEASE);
-	if (diseaseStock > 0) {
-		box->addMenuItem("Disease Resistance: " + String::valueOf(diseaseStock) + " use(s)");
-		entryServiceTypes.add((int)DoctorBuffDroidDataComponent::SERVICE_DISEASE);
-		entryAttrs.add((int)BuffAttribute::DISEASE);
-		entryMaxQtys.add(diseaseStock);
-	}
-
-	if (entryServiceTypes.size() == 0) {
-		box->addMenuItem("No withdrawable supplies are currently loaded.");
-		entryServiceTypes.add(-1);
-		entryAttrs.add(-1);
-		entryMaxQtys.add(0);
-	}
-
-	int removeBuffsIndex = entryServiceTypes.size();
+	// Always the last row; carries no object ID (defaults to 0, which is never a real object ID).
 	box->addMenuItem("--- Remove My Active Doctor Buffs ---");
 
-	box->setCallback(new DoctorBuffDroidInventorySuiCallback(player->getZoneServer(), sceneObject,
-		entryServiceTypes, entryAttrs, entryMaxQtys, removeBuffsIndex));
+	box->setCallback(new DoctorBuffDroidInventorySuiCallback(player->getZoneServer(), sceneObject));
 	player->getPlayerObject()->addSuiBox(box);
 	player->sendMessage(box->generateMessage());
 }
 
-void DoctorBuffDroidMenuComponent::promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player,
-	DoctorBuffDroidDataComponent::ServiceType service, byte attr, int maxQty) {
+void DoctorBuffDroidMenuComponent::promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player, uint64 itemObjectId, int maxQty) {
 	if (sceneObject == nullptr || player == nullptr || maxQty <= 0)
 		return;
 
-	String label;
-	if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS)
-		label = "Medical Buff [" + BuffAttribute::getName(attr, true) + "]";
-	else if (service == DoctorBuffDroidDataComponent::SERVICE_JANTA)
-		label = "Janta Buff [" + BuffAttribute::getName(attr, true) + "]";
-	else if (service == DoctorBuffDroidDataComponent::SERVICE_POISON)
-		label = "Poison Resistance";
-	else if (service == DoctorBuffDroidDataComponent::SERVICE_DISEASE)
-		label = "Disease Resistance";
-	else
-		label = "Supply";
+	String label = "Supply";
+	for (int i = 0; i < sceneObject->getContainerObjectsSize(); ++i) {
+		SceneObject* item = sceneObject->getContainerObject(i);
+		if (item == nullptr || item->getObjectID() != itemObjectId)
+			continue;
+
+		DoctorBuffDroidDataComponent::ServiceType service;
+		byte attr;
+		if (!classifyLoadedItem(item, service, attr))
+			break;
+
+		if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS)
+			label = "Medical Buff [" + BuffAttribute::getName(attr, true) + "]";
+		else if (service == DoctorBuffDroidDataComponent::SERVICE_JANTA)
+			label = "Janta Buff [" + BuffAttribute::getName(attr, true) + "]";
+		else if (service == DoctorBuffDroidDataComponent::SERVICE_POISON)
+			label = "Poison Resistance";
+		else if (service == DoctorBuffDroidDataComponent::SERVICE_DISEASE)
+			label = "Disease Resistance";
+		break;
+	}
 
 	ManagedReference<SuiInputBox*> box = new SuiInputBox(player, SuiWindowType::NONE);
 	box->setPromptTitle("Withdraw Supplies");
 	box->setPromptText("Enter the number of [" + label + "] packs to withdraw (max " + String::valueOf(maxQty) + ").\nPacks are created in stacks of up to 28.");
 	box->setMaxInputSize(6);
-	box->setCallback(new DoctorBuffDroidWithdrawQuantitySuiCallback(player->getZoneServer(), sceneObject, service, attr, maxQty));
+	box->setCallback(new DoctorBuffDroidWithdrawQuantitySuiCallback(player->getZoneServer(), sceneObject, itemObjectId, maxQty));
 	player->getPlayerObject()->addSuiBox(box);
 	player->sendMessage(box->generateMessage());
 }
 
 void DoctorBuffDroidMenuComponent::withdrawBuffStock(SceneObject* sceneObject, CreatureObject* player,
-	DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType service,
-	byte attr, int quantity) {
+	DoctorBuffDroidDataComponent* data, uint64 itemObjectId, int quantity) {
 	if (sceneObject == nullptr || player == nullptr || data == nullptr || quantity <= 0)
 		return;
 
@@ -1038,144 +1239,59 @@ void DoctorBuffDroidMenuComponent::withdrawBuffStock(SceneObject* sceneObject, C
 	if (inventory == nullptr)
 		return;
 
-	// Resolve pack power/duration and clamp quantity to available stock.
-	float packPower = 0.0f;
-	float packDuration = 0.0f;
-	byte packAttr = attr;
-
-	if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS) {
-		int stock = data->getBuffStockByAttr(attr);
-		if (stock <= 0) {
-			player->sendSystemMessage("No supplies of that type are loaded in the droid.");
-			return;
+	// Resolve the specific loaded item the owner selected — never a scalar average.
+	SceneObject* item = nullptr;
+	for (int i = 0; i < sceneObject->getContainerObjectsSize(); ++i) {
+		SceneObject* candidate = sceneObject->getContainerObject(i);
+		if (candidate != nullptr && candidate->getObjectID() == itemObjectId) {
+			item = candidate;
+			break;
 		}
-		if (quantity > stock)
-			quantity = stock;
-		packPower = data->getBuffPackPowerByAttr(attr);
-		packDuration = data->getBuffPackDurationByAttr(attr);
+	}
 
-	} else if (service == DoctorBuffDroidDataComponent::SERVICE_JANTA) {
-		int stock = data->getJantaBuffStockByAttr(attr);
-		if (stock <= 0) {
-			player->sendSystemMessage("No supplies of that type are loaded in the droid.");
-			return;
-		}
-		if (quantity > stock)
-			quantity = stock;
-		packPower = data->getJantaBuffPackPowerByAttr(attr);
-		packDuration = data->getJantaBuffPackDurationByAttr(attr);
+	DoctorBuffDroidDataComponent::ServiceType service;
+	byte attr;
+	int stock = (item != nullptr) ? getSupplyAmount(item) : 0;
 
-	} else if (service == DoctorBuffDroidDataComponent::SERVICE_POISON) {
-		int stock = data->getStock(DoctorBuffDroidDataComponent::SERVICE_POISON);
-		if (stock <= 0) {
-			player->sendSystemMessage("No supplies of that type are loaded in the droid.");
-			return;
-		}
-		if (quantity > stock)
-			quantity = stock;
-		packPower = data->getPackPower(DoctorBuffDroidDataComponent::SERVICE_POISON);
-		packDuration = data->getPackDuration(DoctorBuffDroidDataComponent::SERVICE_POISON);
-		packAttr = (byte)BuffAttribute::POISON;
-
-	} else if (service == DoctorBuffDroidDataComponent::SERVICE_DISEASE) {
-		int stock = data->getStock(DoctorBuffDroidDataComponent::SERVICE_DISEASE);
-		if (stock <= 0) {
-			player->sendSystemMessage("No supplies of that type are loaded in the droid.");
-			return;
-		}
-		if (quantity > stock)
-			quantity = stock;
-		packPower = data->getPackPower(DoctorBuffDroidDataComponent::SERVICE_DISEASE);
-		packDuration = data->getPackDuration(DoctorBuffDroidDataComponent::SERVICE_DISEASE);
-		packAttr = (byte)BuffAttribute::DISEASE;
-
-	} else {
+	if (item == nullptr || stock <= 0 || !classifyLoadedItem(item, service, attr)) {
+		player->sendSystemMessage("That supply is no longer loaded in the droid.");
 		return;
 	}
 
-	if (packPower <= 0.0f)
-		packPower = 500.0f;
-	if (packDuration <= 0.0f)
-		packDuration = 7200.0f;
+	if (quantity > stock)
+		quantity = stock;
 
-	// Create one EnhancePack prototype — each factory crate will clone it.
-	// useCount=1 on the prototype means each extracted pack is a single-use item,
-	// matching how player-crafted pharmaceutical packs work.
-	uint32 templateCRC = String(getEnhancePackIFF(packAttr)).hashCode();
-	ManagedReference<SceneObject*> protoObj = zoneServer->createObject(templateCRC, 1);
-
-	if (protoObj == nullptr || !protoObj->isPharmaceuticalObject()
-		|| !cast<PharmaceuticalObject*>(protoObj.get())->isEnhancePack()) {
-		if (protoObj != nullptr)
-			protoObj->destroyObjectFromDatabase(true);
-		player->sendSystemMessage("Failed to create supply crates. Please try again.");
-		return;
-	}
-
-	EnhancePack* proto = cast<EnhancePack*>(protoObj.get());
-
-	{
-		Locker protoLocker(proto, player);
-
-		EnhancePackImplementation* impl = dynamic_cast<EnhancePackImplementation*>(proto->_getImplementation());
-		if (impl == nullptr) {
-			proto->destroyObjectFromDatabase(true);
-			player->sendSystemMessage("Failed to create supply crates. Please try again.");
+	if (quantity >= stock) {
+		// Withdrawing everything — move the real item back intact instead of manufacturing a copy.
+		if (!inventory->transferObject(item, -1, true)) {
+			player->sendSystemMessage("Failed to withdraw supplies. Your inventory may be full.");
 			return;
 		}
 
-		impl->setPackValues(packPower, packDuration, packAttr);
-		proto->setUseCount(1, false);
-
-		// Create factory crates in batches of up to 500 (standard max factory output size).
-		// createFactoryCrate clones the prototype into each crate — the original is unused
-		// after this loop and must be destroyed.
-		static const int MAX_CRATE_SIZE = 500;
-		int remaining = quantity;
-		int totalCreated = 0;
-
-		while (remaining > 0) {
-			int crateQty = Math::min(remaining, MAX_CRATE_SIZE);
-			String emptyType = "";
-
-			Reference<FactoryCrate*> crate = proto->createFactoryCrate(crateQty, emptyType, false);
-			if (crate == nullptr)
-				break;
-
-			{
-				Locker crateLocker(crate, player);
-				crate->setUseCount((uint32)crateQty, false);
-			}
-
-			if (!inventory->transferObject(crate, -1, true)) {
-				crate->destroyObjectFromDatabase(true);
-				break;
-			}
-
-			inventory->broadcastObject(crate, true);
-			remaining -= crateQty;
-			totalCreated += crateQty;
-		}
-
-		// Prototype was cloned into each crate — the original is no longer needed.
-		proto->destroyObjectFromDatabase(true);
-
-		if (totalCreated <= 0) {
-			player->sendSystemMessage("Failed to create supply crates. Your inventory may be full.");
-			return;
-		}
-
-		// Deduct the amount actually created from the droid's stock.
-		if (service == DoctorBuffDroidDataComponent::SERVICE_BUFFS)
-			data->consumeBuffStock(attr, totalCreated);
-		else if (service == DoctorBuffDroidDataComponent::SERVICE_JANTA)
-			data->consumeJantaBuffStock(attr, totalCreated);
-		else
-			data->consumeStock(service, totalCreated);
-
+		inventory->broadcastObject(item, true);
 		persistDroidState(sceneObject);
-		player->sendSystemMessage("Withdrew " + String::valueOf(totalCreated) + " supply pack(s) into your inventory as factory crate(s).");
+		player->sendSystemMessage("Withdrew " + String::valueOf(quantity) + " supply pack(s) into your inventory.");
+		return;
 	}
+
+	// Partial withdrawal: manufacture a new crate from the real item's own power/duration/attr,
+	// then shrink the original by the withdrawn amount.
+	byte packAttr = (service == DoctorBuffDroidDataComponent::SERVICE_POISON) ? (byte)BuffAttribute::POISON
+		: (service == DoctorBuffDroidDataComponent::SERVICE_DISEASE) ? (byte)BuffAttribute::DISEASE
+		: attr;
+	float packPower = getMedicalPackEffectiveness(item);
+	float packDuration = (service == DoctorBuffDroidDataComponent::SERVICE_JANTA) ? getJantaDuration(item) : getPackDuration(item);
+
+	int totalCreated = createSupplyCrates(zoneServer, packAttr, packPower, packDuration, quantity, inventory, player);
+
+	if (totalCreated <= 0) {
+		player->sendSystemMessage("Failed to create supply crates. Your inventory may be full.");
+		return;
+	}
+
+	consumeLoadedAmount(item, totalCreated);
+	persistDroidState(sceneObject);
+	player->sendSystemMessage("Withdrew " + String::valueOf(totalCreated) + " supply pack(s) into your inventory as factory crate(s).");
 }
 
 bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta) {
@@ -1190,7 +1306,7 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 		return false;
 	}
 
-	uint32 attrMask = useJanta ? data->getLoadedJantaBuffAttributes() : data->getLoadedBuffAttributes();
+	uint32 attrMask = loadedAttributeMask(sceneObject, service);
 	if (attrMask == 0) {
 		if (useJanta)
 			player->sendSystemMessage("This Doctor Buff Droid is out of Janta buff pack supplies.");
@@ -1221,15 +1337,19 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 		for (uint8 attr = 0; attr < 9; ++attr) {
 			if (!(attrMask & (1u << attr)))
 				continue;
-			int stock = useJanta ? data->getJantaBuffStockByAttr(attr) : data->getBuffStockByAttr(attr);
-			if (stock <= 0)
+
+			// Find the real loaded item for this attribute — its true power/duration are read
+			// directly off it, never from a blended average, so different-strength packs each
+			// apply their own real value.
+			SceneObject* supplyItem = findLoadedItem(sceneObject, service, attr);
+			if (supplyItem == nullptr)
 				continue;
 
-			float packPower = useJanta ? data->getJantaBuffPackPowerByAttr(attr) : data->getBuffPackPowerByAttr(attr);
+			float packPower = getMedicalPackEffectiveness(supplyItem);
 			if (packPower <= 0.0f)
 				packPower = 500.0f;
 
-			float buffDuration = useJanta ? data->getJantaBuffPackDurationByAttr(attr) : data->getBuffPackDurationByAttr(attr);
+			float buffDuration = useJanta ? getJantaDuration(supplyItem) : getPackDuration(supplyItem);
 			if (buffDuration <= 0.0f)
 				buffDuration = 7200.f;
 
@@ -1240,10 +1360,7 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 			// player gets fresh values and a full duration from the current droid session.
 			removeDoctorBuff(player, attr);
 			playerManager->healEnhance(player, player, attr, buffAmount, buffDuration, 0);
-			if (useJanta)
-				data->consumeJantaBuffStock(attr);
-			else
-				data->consumeBuffStock(attr);
+			consumeLoadedAmount(supplyItem, 1);
 		}
 	}
 
@@ -1300,7 +1417,9 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 		return false;
 	}
 
-	if (data->getStock(type) <= 0) {
+	// POISON/DISEASE are single pools — attr isn't a discriminator, so pass 0.
+	SceneObject* supplyItem = findLoadedItem(sceneObject, type, 0);
+	if (supplyItem == nullptr) {
 		player->sendSystemMessage("That Doctor Buff Droid is out of resistance supplies.");
 		return false;
 	}
@@ -1311,10 +1430,10 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 		return false;
 	}
 
-	if (!data->consumeStock(type)) {
-		player->sendSystemMessage("That Doctor Buff Droid ran out of supplies.");
-		return false;
-	}
+	// Read the real pack's power/duration before consuming it — consumeLoadedAmount may destroy it.
+	float packPower = getPackEffectiveness(supplyItem);
+	float resistDuration = getPackDuration(supplyItem);
+	consumeLoadedAmount(supplyItem, 1);
 
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 	if (playerManager != nullptr) {
@@ -1322,8 +1441,7 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 
 		int attribute = type == DoctorBuffDroidDataComponent::SERVICE_POISON ? BuffAttribute::POISON : BuffAttribute::DISEASE;
 
-		// Resistance pack power falls back to 60 for droids loaded before this update
-		float packPower = data->getPackPower(type);
+		// Resistance pack power falls back to 60 for malformed/legacy packs
 		if (packPower <= 0.0f)
 			packPower = 60.0f;
 
@@ -1331,7 +1449,6 @@ bool DoctorBuffDroidMenuComponent::performResistance(SceneObject* sceneObject, C
 		int healMod = getOwnerHealingWoundTreatment(sceneObject, data, player);
 		int resistAmount = calculateDroidBuffPower(packPower, envMod, healMod);
 
-		float resistDuration = data->getPackDuration(type);
 		if (resistDuration <= 0.0f)
 			resistDuration = 7200.f;
 
@@ -1360,7 +1477,7 @@ bool DoctorBuffDroidMenuComponent::performPetBuff(SceneObject* sceneObject, Crea
 		return false;
 	}
 
-	uint32 attrMask = useJanta ? data->getLoadedJantaBuffAttributes() : data->getLoadedBuffAttributes();
+	uint32 attrMask = loadedAttributeMask(sceneObject, service);
 	if (attrMask == 0) {
 		if (useJanta)
 			player->sendSystemMessage("This Doctor Buff Droid is out of Janta buff pack supplies.");
@@ -1417,15 +1534,16 @@ bool DoctorBuffDroidMenuComponent::performPetBuff(SceneObject* sceneObject, Crea
 		for (uint8 attr = 0; attr < 9; ++attr) {
 			if (!(attrMask & (1u << attr)))
 				continue;
-			int stock = useJanta ? data->getJantaBuffStockByAttr(attr) : data->getBuffStockByAttr(attr);
-			if (stock <= 0)
+
+			SceneObject* supplyItem = findLoadedItem(sceneObject, service, attr);
+			if (supplyItem == nullptr)
 				continue;
 
-			float packPower = useJanta ? data->getJantaBuffPackPowerByAttr(attr) : data->getBuffPackPowerByAttr(attr);
+			float packPower = getMedicalPackEffectiveness(supplyItem);
 			if (packPower <= 0.0f)
 				packPower = 500.0f;
 
-			float buffDuration = useJanta ? data->getJantaBuffPackDurationByAttr(attr) : data->getBuffPackDurationByAttr(attr);
+			float buffDuration = useJanta ? getJantaDuration(supplyItem) : getPackDuration(supplyItem);
 			if (buffDuration <= 0.0f)
 				buffDuration = 7200.f;
 
@@ -1435,10 +1553,7 @@ bool DoctorBuffDroidMenuComponent::performPetBuff(SceneObject* sceneObject, Crea
 			// rebuffing always replaces it — even if the pet's current buff was stronger.
 			removeDoctorBuff(activePet, attr);
 			playerManager->healEnhance(player, activePet, attr, buffAmount, buffDuration, 0);
-			if (useJanta)
-				data->consumeJantaBuffStock(attr);
-			else
-				data->consumeBuffStock(attr);
+			consumeLoadedAmount(supplyItem, 1);
 		}
 	}
 
@@ -1447,6 +1562,36 @@ bool DoctorBuffDroidMenuComponent::performPetBuff(SceneObject* sceneObject, Crea
 	activePet->playEffect("clienteffect/healing_healenhance.cef", "");
 	player->sendSystemMessage("Doctor Buff Droid " + String(serviceLabel) + " applied to your pet.");
 	return true;
+}
+
+void DoctorBuffDroidMenuComponent::migrateLegacyStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data) {
+	if (sceneObject == nullptr || player == nullptr || data == nullptr || !data->hasLegacyStock())
+		return;
+
+	ZoneServer* zoneServer = player->getZoneServer();
+	if (zoneServer == nullptr)
+		return;
+
+	for (byte attr = 0; attr < 9; ++attr) {
+		int buffStock = data->getLegacyBuffStock(attr);
+		if (buffStock > 0)
+			createSupplyCrates(zoneServer, attr, data->getLegacyBuffPower(attr), data->getLegacyBuffDuration(attr), buffStock, sceneObject, player);
+
+		int jantaStock = data->getLegacyJantaBuffStock(attr);
+		if (jantaStock > 0)
+			createSupplyCrates(zoneServer, attr, data->getLegacyJantaBuffPower(attr), data->getLegacyJantaBuffDuration(attr), jantaStock, sceneObject, player);
+	}
+
+	int poisonStock = data->getLegacyPoisonStock();
+	if (poisonStock > 0)
+		createSupplyCrates(zoneServer, (byte)BuffAttribute::POISON, data->getLegacyPoisonPower(), data->getLegacyPoisonDuration(), poisonStock, sceneObject, player);
+
+	int diseaseStock = data->getLegacyDiseaseStock();
+	if (diseaseStock > 0)
+		createSupplyCrates(zoneServer, (byte)BuffAttribute::DISEASE, data->getLegacyDiseasePower(), data->getLegacyDiseaseDuration(), diseaseStock, sceneObject, player);
+
+	data->clearLegacyStock();
+	persistDroidState(sceneObject);
 }
 
 void DoctorBuffDroidMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
@@ -1458,6 +1603,8 @@ void DoctorBuffDroidMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 	DoctorBuffDroidDataComponent* data = getDroidData(sceneObject);
 	if (data == nullptr)
 		return;
+
+	migrateLegacyStock(sceneObject, player, data);
 
 	menuResponse->addRadialMenuItem(MENU_ROOT, 3, "Doctor Buff Droid");
 	menuResponse->addRadialMenuItemToRadialID(MENU_ROOT, MENU_BUFFS, 3, "Get Buffs");

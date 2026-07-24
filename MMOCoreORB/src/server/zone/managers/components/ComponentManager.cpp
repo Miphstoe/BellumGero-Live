@@ -23,6 +23,7 @@
 #include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidZoneComponent.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidContainerComponent.h"
 #include "server/zone/objects/tangible/components/LytusFamilyArtefactMenuComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
@@ -268,6 +269,7 @@ ComponentManager::ComponentManager() {
 	components.put("VendorMenuComponent", new VendorMenuComponent());
 	components.put("DoctorBuffDroidMenuComponent", new DoctorBuffDroidMenuComponent());
 	components.put("DoctorBuffDroidZoneComponent", new DoctorBuffDroidZoneComponent());
+	components.put("DoctorBuffDroidContainerComponent", new DoctorBuffDroidContainerComponent());
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());
