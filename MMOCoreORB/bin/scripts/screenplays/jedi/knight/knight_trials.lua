@@ -629,3 +629,42 @@ function KnightTrials:notifyKilledForPoints(pPlayer, pVictim)
 
 	return 0
 end
+
+-- Player: /ktStatus (CheckForceStatusCommand-style slash command, C++ KtStatusCommand -> here).
+function ktStatusRun(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	if (CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+		CreatureObject(pPlayer):sendSystemMessage("You have completed the Knight Trials and hold the rank of Jedi Knight.")
+		return
+	end
+
+	-- Consider the player "on trial" if the state machine says so, OR they've activated at a shrine,
+	-- OR they've already accrued points -- covers players whose startedTrials flag didn't get set
+	-- by whatever activation path they came through, so points aren't silently hidden.
+	local currentPoints = JediTrials:getKnightTrialPoints(pPlayer)
+	local activatedAtShrine = tonumber(readScreenPlayData(pPlayer, "KnightTrials", "activatedAtShrine")) == 1
+
+	if (JediTrials:isOnKnightTrials(pPlayer) or activatedAtShrine or currentPoints > 0) then
+		local statusMsg = string.format("Knight Trials PvE Progression: %d / %d points", currentPoints, KNIGHT_TRIALS_REQUIRED_POINTS)
+
+		local council = JediTrials:getJediCouncil(pPlayer)
+		if (council == JediTrials.COUNCIL_LIGHT) then
+			statusMsg = statusMsg .. " (Light Council)"
+		elseif (council == JediTrials.COUNCIL_DARK) then
+			statusMsg = statusMsg .. " (Dark Council)"
+		end
+
+		CreatureObject(pPlayer):sendSystemMessage(statusMsg)
+		return
+	end
+
+	if (JediTrials:isEligibleForKnightTrials(pPlayer)) then
+		CreatureObject(pPlayer):sendSystemMessage("You are eligible for the Knight Trials. Seek out a Force Shrine to begin.")
+		return
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage("You are not currently on the Knight Trials.")
+end
