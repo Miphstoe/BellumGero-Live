@@ -45,4 +45,5 @@
 --Children folder includes
 
 -- Server Objects
+includeFile("tangible/harvesting/instant_travel_vehicle_transponder.lua")
 includeFile("tangible/harvesting/shellfish_harvester.lua")

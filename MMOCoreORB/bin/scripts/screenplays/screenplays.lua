@@ -62,6 +62,9 @@ includeFile("tools/tools.lua")
 includeFile("tools/shuttle_dropoff.lua")
 includeFile("tools/firework_event.lua")
 
+-- Veteran rewards
+includeFile("veteran_rewards/instant_travel_vehicle.lua")
+
 includeFile("trainers/trainerData.lua")
 includeFile("trainers/skillTrainer.lua")
 includeFile("trainers/trainerConvHandler.lua")
