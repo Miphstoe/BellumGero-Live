@@ -5272,7 +5272,7 @@ ObjectTemplates:addClientTemplate(object_mobile_shared_boba_fett, "object/mobile
 
 -- Bellum: holographic bounty hunter (bg_custom1, boba fett chain + holo shader)
 object_mobile_shared_mando_holo_bh = SharedCreatureObjectTemplate:new {
-	clientTemplateFileName = "object/mobile/shared_boba_fett.iff"
+	clientTemplateFileName = "object/mobile/shared_mando_holo_bh.iff"
 }
 
 ObjectTemplates:addClientTemplate(object_mobile_shared_mando_holo_bh, "object/mobile/shared_mando_holo_bh.iff")

@@ -3,6 +3,7 @@
 -- (boba_fett appearance chain re-shaded with the holo membrane shader).
 object_mobile_mando_holo_bh = object_mobile_shared_mando_holo_bh:new {
 	templateType = NPCCREATURE,
+	objectMenuComponent = "MandoDailyHoloMenuComponent",
 
 	armor = 3,
 

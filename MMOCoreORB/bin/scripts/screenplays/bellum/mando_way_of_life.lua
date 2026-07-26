@@ -3791,6 +3791,30 @@ function MandoWayOfLife:incrementDailyBountyCount(pPlayer)
 	writeData(key, current + 1)
 end
 
+function MandoWayOfLife:dailyBountyReadyKey(pPlayer)
+	local key = self:dailyBountyDataKey(pPlayer)
+	if (key == nil) then return nil end
+	return key .. ":ready"
+end
+
+function MandoWayOfLife:getDailyBountyReadyTier(pPlayer)
+	local key = self:dailyBountyReadyKey(pPlayer)
+	if (key == nil) then return 0 end
+	return readData(key) or 0
+end
+
+function MandoWayOfLife:markDailyBountyTierComplete(pPlayer, tier)
+	local key = self:dailyBountyReadyKey(pPlayer)
+	if (key == nil or self:getDailyBountyCount(pPlayer) ~= tier) then return false end
+	writeData(key, tier)
+	return true
+end
+
+function MandoWayOfLife:clearDailyBountyReadyTier(pPlayer)
+	local key = self:dailyBountyReadyKey(pPlayer)
+	if (key ~= nil) then deleteData(key) end
+end
+
 -- Get current mission tier (1-5) based on completed missions today
 function MandoWayOfLife:getCurrentMissionTier(pPlayer)
 	local count = self:getDailyBountyCount(pPlayer)
@@ -3817,7 +3841,7 @@ function MandoWayOfLife:showDailyBountyStatus(pPlayer)
 end
 
 -- Returns ok, playerMessage
-function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
+function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	if (pPlayer == nil) then return false, "No player." end
 
 	if (not self:isMandoTribesman(pPlayer)) then
@@ -3827,6 +3851,17 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
 	local count = self:getDailyBountyCount(pPlayer)
 	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS) then
 		return false, "You have completed all 5 daily bounty missions. Return tomorrow for more."
+	end
+	if (count == 0 and source ~= "fob") then
+		return false, "Use your tracking fob to initiate today's hunt."
+	end
+	if (count > 0) then
+		if (source ~= "holo") then
+			return false, "The tracking fob only initiates the first hunt. Speak with your holographic guild contact to continue."
+		end
+		if (self:getDailyBountyReadyTier(pPlayer) ~= count) then
+			return false, "Complete your active bounty before requesting the next target."
+		end
 	end
 
 	local tier = self:getCurrentMissionTier(pPlayer)
@@ -3848,6 +3883,7 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
 
 	-- Increment mission count
 	self:incrementDailyBountyCount(pPlayer)
+	self:clearDailyBountyReadyTier(pPlayer)
 
 	-- Holographic guild contact delivers the story beat for this stage
 	if (MandoDailyHoloStory ~= nil) then

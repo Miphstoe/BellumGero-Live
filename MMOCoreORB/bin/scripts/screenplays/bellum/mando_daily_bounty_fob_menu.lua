@@ -21,7 +21,12 @@ function MandoDailyBountyFobMenuComponent:fillObjectMenuResponse(pSceneObject, p
 	-- Add menu options
 	local menuResponse = LuaObjectMenuResponse(pMenuResponse)
 	menuResponse:addRadialMenuItem(120, 3, "Mission Status")
-	menuResponse:addRadialMenuItem(121, 3, "Accept Next Mission")
+	local count = MandoWayOfLife:getDailyBountyCount(pPlayer)
+	if (count == 0) then
+		menuResponse:addRadialMenuItem(121, 3, "Begin Daily Hunt")
+	elseif (count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
+		menuResponse:addRadialMenuItem(122, 3, "Recall Guild Contact")
+	end
 end
 
 function MandoDailyBountyFobMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedID)
@@ -40,8 +45,13 @@ function MandoDailyBountyFobMenuComponent:handleObjectMenuSelect(pObject, pPlaye
 		MandoWayOfLife:showDailyBountyStatus(pPlayer)
 	elseif (selectedID == 121) then
 		-- Accept next mission
-		local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer)
+		local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, "fob")
 		CreatureObject(pPlayer):sendSystemMessage(msg)
+	elseif (selectedID == 122) then
+		local count = MandoWayOfLife:getDailyBountyCount(pPlayer)
+		if (count > 0 and count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
+			MandoDailyHoloStory:onCampCompleted(pPlayer, count)
+		end
 	end
 
 	return 0

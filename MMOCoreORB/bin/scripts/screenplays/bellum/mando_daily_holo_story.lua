@@ -11,7 +11,7 @@ MandoDailyHoloStory = ScreenPlay:new {
 	screenplayName = "MandoDailyHoloStory",
 
 	HOLO_TEMPLATE = "mando_holo_bh",
-	HOLO_LIFETIME_MS = 45 * 1000,
+	HOLO_LIFETIME_MS = 120 * 1000,
 	LINE_GAP_MS = 5 * 1000,
 }
 
@@ -127,17 +127,23 @@ function MandoDailyHoloStory:spawnHolo(pPlayer)
 	local z = SceneObject(pPlayer):getPositionZ()
 	local y = SceneObject(pPlayer):getPositionY()
 	local cell = SceneObject(pPlayer):getParentID()
+	local heading = SceneObject(pPlayer):getDirectionAngle()
+	local radians = math.rad(heading)
+	local spawnX = x + math.sin(radians) * 2
+	local spawnY = y + math.cos(radians) * 2
 
 	-- materialize ~2m in front of the player's current position
-	local pHolo = spawnMobile(zone, self.HOLO_TEMPLATE, 0, x + 1.5, z, y + 1.5, 0, cell)
+	local pHolo = spawnMobile(zone, self.HOLO_TEMPLATE, 0, spawnX, z, spawnY, heading + 180, cell)
 	if (pHolo == nil) then
 		MandoWayOfLife:logDiagPlayer(pPlayer, "HoloStory: spawnMobile FAILED zone=" .. tostring(zone))
 		return nil
 	end
 
+	SceneObject(pHolo):faceObject(pPlayer, true)
 	local holoID = SceneObject(pHolo):getObjectID()
 	local playerID = SceneObject(pPlayer):getObjectID()
 	writeData("mando_way:holo_story:" .. tostring(playerID) .. ":holoId", holoID)
+	writeData("mando_way:holo_story:" .. tostring(holoID) .. ":ownerId", playerID)
 
 	createEvent(self.HOLO_LIFETIME_MS, "MandoDailyHoloStory", "despawnHoloEvent", pHolo, "")
 	return pHolo
@@ -149,6 +155,7 @@ function MandoDailyHoloStory:despawnHoloForPlayer(pPlayer)
 	local oid = tonumber(readData(key)) or 0
 	if (oid ~= 0) then
 		local pOld = getSceneObject(oid)
+		deleteData("mando_way:holo_story:" .. tostring(oid) .. ":ownerId")
 		if (pOld ~= nil) then
 			SceneObject(pOld):destroyObjectFromWorld()
 		end
@@ -158,8 +165,22 @@ end
 
 function MandoDailyHoloStory:despawnHoloEvent(pHolo)
 	if (pHolo ~= nil) then
+		local holoID = SceneObject(pHolo):getObjectID()
+		local ownerID = readData("mando_way:holo_story:" .. tostring(holoID) .. ":ownerId") or 0
+		if (ownerID ~= 0) then
+			local ownerKey = "mando_way:holo_story:" .. tostring(ownerID) .. ":holoId"
+			if ((readData(ownerKey) or 0) == holoID) then deleteData(ownerKey) end
+		end
+		deleteData("mando_way:holo_story:" .. tostring(holoID) .. ":ownerId")
 		SceneObject(pHolo):destroyObjectFromWorld()
 	end
+end
+
+function MandoDailyHoloStory:isOwner(pHolo, pPlayer)
+	if (pHolo == nil or pPlayer == nil) then return false end
+	local holoID = SceneObject(pHolo):getObjectID()
+	local ownerID = readData("mando_way:holo_story:" .. tostring(holoID) .. ":ownerId") or 0
+	return ownerID == SceneObject(pPlayer):getObjectID()
 end
 
 function MandoDailyHoloStory:sayLineEvent(pHolo, line)
@@ -216,6 +237,7 @@ end
 -- Called when a daily camp's mark goes down.
 function MandoDailyHoloStory:onCampCompleted(pPlayer, tier)
 	if (pPlayer == nil) then return end
+	MandoWayOfLife:markDailyBountyTierComplete(pPlayer, tier)
 	local pHolo = self:spawnHolo(pPlayer)
 	if (pHolo == nil) then return end
 
@@ -229,9 +251,36 @@ function MandoDailyHoloStory:onCampCompleted(pPlayer, tier)
 		-- twist: not the real target; chain continues
 		lines[#lines + 1] = self:pick(self.TWISTS, seed, 20 + tier)
 		lines[#lines + 1] = string.format(
-			"%s is still out there - but running out of places to hide. Return to your fob when you're ready.",
+			"%s is still out there - but running out of places to hide. Open this transmission when you're ready for the next bounty.",
 			dossier.name)
 	end
 
 	self:deliverLines(pHolo, lines)
+end
+
+MandoDailyHoloMenuComponent = {}
+
+function MandoDailyHoloMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (not MandoDailyHoloStory:isOwner(pSceneObject, pPlayer)) then return end
+	local menuResponse = LuaObjectMenuResponse(pMenuResponse)
+	menuResponse:addRadialMenuItem(120, 3, "Mission Status")
+	local count = MandoWayOfLife:getDailyBountyCount(pPlayer)
+	if (count > 0 and count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
+		menuResponse:addRadialMenuItem(121, 3, "Receive Next Bounty")
+	end
+end
+
+function MandoDailyHoloMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedID)
+	if (not MandoDailyHoloStory:isOwner(pObject, pPlayer)) then
+		if (pPlayer ~= nil) then CreatureObject(pPlayer):sendSystemMessage("This transmission is keyed to another hunter.") end
+		return 0
+	end
+	SceneObject(pObject):faceObject(pPlayer, true)
+	if (selectedID == 120) then
+		MandoWayOfLife:showDailyBountyStatus(pPlayer)
+	elseif (selectedID == 121) then
+		local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, "holo")
+		CreatureObject(pPlayer):sendSystemMessage(msg)
+	end
+	return 0
 end
