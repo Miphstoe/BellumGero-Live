@@ -339,6 +339,26 @@ void ChatManagerImplementation::initiateRooms() {
 		pvpBroadcastRoom->setTitle("PvP death broadcasts.");
 		pvpBroadcastRoom->setChatRoomType(ChatRoom::CUSTOM);
 	}
+
+	// Knight alignment order rooms - recreated fresh every boot, membership is re-synced
+	// per-player via updateOrderRoomMembership() rather than persisted to disk.
+	if (orderLightRoom == nullptr) {
+		orderLightRoom = createRoom("Order of the Light", galaxyRoom);
+		orderLightRoom->setCanEnter(true);
+		orderLightRoom->setChatRoomType(ChatRoom::ORDER_LIGHT);
+		orderLightRoom->setTitle("Order of the Light");
+
+		info("Created Order of the Light chat room (roomID " + String::valueOf(orderLightRoom->getRoomID()) + ")", true);
+	}
+
+	if (orderDarkRoom == nullptr) {
+		orderDarkRoom = createRoom("Order of the Dark", galaxyRoom);
+		orderDarkRoom->setCanEnter(true);
+		orderDarkRoom->setChatRoomType(ChatRoom::ORDER_DARK);
+		orderDarkRoom->setTitle("Order of the Dark");
+
+		info("Created Order of the Dark chat room (roomID " + String::valueOf(orderDarkRoom->getRoomID()) + ")", true);
+	}
 }
 
 void ChatManagerImplementation::initiatePlanetRooms() {
@@ -741,6 +761,26 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 	if (!channel->hasPlayer(sender))
 		return;
 
+	// Re-verify alignment eligibility at send-time for the order rooms - covers the case where
+	// a player's Knight alignment/progression was revoked after they joined but before they left.
+	int channelType = channel->getChatRoomType();
+
+	if ((channelType == ChatRoom::ORDER_LIGHT || channelType == ChatRoom::ORDER_DARK) &&
+			channel->checkEnterPermission(sender) != ChatManager::SUCCESS) {
+		{
+			Locker locker(channel);
+			Locker clocker(sender, channel);
+
+			channel->removePlayer(sender);
+		}
+
+		sender->sendSystemMessage("You are not authorized to access this communication channel.");
+
+		warning("Rejected message from " + name + " to order room '" + channel->getName() + "': no longer eligible, removed from room.");
+
+		return;
+	}
+
 	Zone* zone = sender->getZone();
 	if( zone == nullptr )
 		return;
@@ -812,6 +852,12 @@ void ChatManagerImplementation::handleChatEnterRoomById(CreatureObject* player, 
 
 	if (result != ChatManager::SUCCESS) {
 		player->sendMessage(coer);
+
+		int roomType = room->getChatRoomType();
+
+		if (roomType == ChatRoom::ORDER_LIGHT || roomType == ChatRoom::ORDER_DARK)
+			warning("Rejected unauthorized join attempt by " + player->getFirstName() + " to order room '" + room->getName() + "' (error " + String::valueOf(result) + ").");
+
 		return;
 	}
 
@@ -823,6 +869,95 @@ void ChatManagerImplementation::handleChatEnterRoomById(CreatureObject* player, 
 		room->broadcastMessage(coer);
 	}
 
+}
+
+void ChatManagerImplementation::updateOrderRoomMembership(CreatureObject* player) {
+	if (player == nullptr || !player->isPlayerCreature())
+		return;
+
+	if (orderLightRoom == nullptr || orderDarkRoom == nullptr)
+		return;
+
+	bool eligibleLight = orderLightRoom->checkEnterPermission(player) == ChatManager::SUCCESS;
+	bool eligibleDark = orderDarkRoom->checkEnterPermission(player) == ChatManager::SUCCESS;
+
+	// A player can never be eligible for both simultaneously (single councilType value), but
+	// guard against it defensively rather than assuming that invariant holds forever.
+	if (eligibleLight && eligibleDark) {
+		error("Player " + player->getFirstName() + " resolved eligible for both order rooms simultaneously - ambiguous FRS council data, denying both.");
+		eligibleLight = false;
+		eligibleDark = false;
+	}
+
+	bool inLight = orderLightRoom->hasPlayer(player);
+	bool inDark = orderDarkRoom->hasPlayer(player);
+
+	// Purge stale persisted membership even if the player isn't currently online in the room
+	// (e.g. an admin revoked eligibility while the player was offline) - otherwise the player
+	// would keep silently failing to rejoin the room on every future login indefinitely.
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+	if (ghost != nullptr) {
+		Locker locker(player);
+
+		if (!eligibleLight)
+			ghost->removeChatRoom(orderLightRoom->getRoomID());
+
+		if (!eligibleDark)
+			ghost->removeChatRoom(orderDarkRoom->getRoomID());
+	}
+
+	if (!eligibleLight && inLight) {
+		{
+			Locker locker(orderLightRoom);
+			Locker clocker(player, orderLightRoom);
+
+			orderLightRoom->removePlayer(player);
+		}
+
+		player->sendSystemMessage("Your previous order communication access has been revoked.");
+		info("Revoked Order of the Light access for " + player->getFirstName() + ".", true);
+	}
+
+	if (!eligibleDark && inDark) {
+		{
+			Locker locker(orderDarkRoom);
+			Locker clocker(player, orderDarkRoom);
+
+			orderDarkRoom->removePlayer(player);
+		}
+
+		player->sendSystemMessage("Your previous order communication access has been revoked.");
+		info("Revoked Order of the Dark access for " + player->getFirstName() + ".", true);
+	}
+
+	if (eligibleLight && !inLight) {
+		handleChatEnterRoomById(player, orderLightRoom->getRoomID(), -1);
+
+		player->sendSystemMessage("You have been granted access to the Order of the Light communication channel.");
+		info("Granted Order of the Light access to " + player->getFirstName() + ".", true);
+
+		for (int i = 0; i < orderLightRoom->getPlayerSize(); ++i) {
+			CreatureObject* member = orderLightRoom->getPlayer(i);
+
+			if (member != nullptr && member != player)
+				member->sendSystemMessage("The Force shines brightly as " + player->getFirstName() + " joins the Order of the Light.");
+		}
+	}
+
+	if (eligibleDark && !inDark) {
+		handleChatEnterRoomById(player, orderDarkRoom->getRoomID(), -1);
+
+		player->sendSystemMessage("You have been granted access to the Order of the Dark communication channel.");
+		info("Granted Order of the Dark access to " + player->getFirstName() + ".", true);
+
+		for (int i = 0; i < orderDarkRoom->getPlayerSize(); ++i) {
+			CreatureObject* member = orderDarkRoom->getPlayer(i);
+
+			if (member != nullptr && member != player)
+				member->sendSystemMessage("The darkness grows stronger as " + player->getFirstName() + " joins the Order of the Dark.");
+		}
+	}
 }
 
 void ChatManagerImplementation::handleSocialInternalMessage(CreatureObject* sender, const UnicodeString& arguments) {
@@ -954,6 +1089,14 @@ void ChatManagerImplementation::sendRoomList(CreatureObject* player) {
 				if (!room->hasInvited(player))
 					continue;
 			}
+
+			// Order of the Light / Order of the Dark are alignment-gated: hide them from the
+			// room list entirely for players who don't currently qualify for that specific room.
+			int roomType = room->getChatRoomType();
+
+			if ((roomType == ChatRoom::ORDER_LIGHT || roomType == ChatRoom::ORDER_DARK) &&
+					room->checkEnterPermission(player) != ChatManager::SUCCESS)
+				continue;
 
 			crl->addChannel(room);
 		}

@@ -69,6 +69,8 @@ class ChatRoom extends ManagedObject {
 	public static final int GROUP = 3;
 	public static final int PLANET = 4;
 	public static final int CUSTOM = 5;
+	public static final int ORDER_LIGHT = 6;
+	public static final int ORDER_DARK = 7;
 
 	public ChatRoom() {
 		server = null;
