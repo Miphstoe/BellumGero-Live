@@ -234,6 +234,9 @@ MandoWayOfLife = ScreenPlay:new {
 	-- false = recruiter comes from TatooineMosEisleyScreenPlay mobiles (Cantina); true = duplicate spawn from start().
 	SPAWN_RECRUITER_ON_START = false,
 
+	-- Socket count stamped on every scripted Mandalorian armor grant (engine MAXSOCKETS is 4).
+	ARMOR_SOCKET_COUNT = 4,
+
 	-- Global writeData key prefix: one armor reissue per login account (see tryGrantAccountArmorRetro).
 	ACCOUNT_ARMOR_RETRO_DATA_PREFIX = "mando_way:acctArmorRetro:",
 	-- One title reissue per login account (see tryGrantAccountTitleRetro).
@@ -322,12 +325,11 @@ MandoWayOfLife = ScreenPlay:new {
 	},
 
 	
-	-- Daily Bounty Mission Fob IFF (legacy datadisk while the movie-style
-	-- tracking fob client asset is debugged; swap back to
-	-- object/tangible/mission/mando_tracking_fob.iff once stable)
-	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_daily_bounty_fob.iff",
-	-- Movie-style tracking fob still honored if already in a player's inventory
-	DAILY_BOUNTY_FOB_IFF_LEGACY = "object/tangible/mission/mando_tracking_fob.iff",
+	-- Daily Bounty Mission Fob IFF (movie-style tracking fob, custom client asset
+	-- in bg_custom1.tre: dark body with red beacon light)
+	DAILY_BOUNTY_FOB_IFF = "object/tangible/mission/mando_tracking_fob.iff",
+	-- Legacy datadisk fob still honored if already in a player's inventory
+	DAILY_BOUNTY_FOB_IFF_LEGACY = "object/tangible/mission/mando_daily_bounty_fob.iff",
 	-- Maximum daily bounty missions per player
 	DAILY_BOUNTY_MAX_MISSIONS = 5,
 	-- Daily bounty mission data key prefix (per player, per day)
@@ -2967,6 +2969,17 @@ function MandoWayOfLife:trySellMandoArmorySchematic(pPlayer, tier)
 	return true, "Done. Give that datapad to a master weaponsmith you trust. Experiments matter."
 end
 
+-- The `socket = 4` field in the armor object templates is not read by the engine; wearables only
+-- receive sockets from crafting or an explicit setMaxSockets call. Every scripted Mandalorian armor
+-- grant must therefore stamp the socket count on the freshly created item.
+function MandoWayOfLife:giveSocketedArmor(pInventory, template)
+	local pItem = giveItem(pInventory, template, -1)
+	if (pItem ~= nil) then
+		TangibleObject(pItem):setMaxSockets(self.ARMOR_SOCKET_COUNT)
+	end
+	return pItem
+end
+
 function MandoWayOfLife:grantReward(pPlayer, chapter)
 	if (pPlayer == nil) then return end
 	local reward = self.chapterRewards[chapter]
@@ -2983,7 +2996,7 @@ function MandoWayOfLife:grantReward(pPlayer, chapter)
 	if (type(reward) == "table") then
 		-- Multiple pieces (e.g. Clanbound set)
 		for _, template in ipairs(reward) do
-			local pItem = giveItem(pInventory, template, -1)
+			local pItem = self:giveSocketedArmor(pInventory, template)
 			if (pItem == nil) then
 				CreatureObject(pPlayer):sendSystemMessage(
 					"[MandoWayOfLife] ERROR: could not grant " .. template .. ". Contact a GM."
@@ -2991,7 +3004,7 @@ function MandoWayOfLife:grantReward(pPlayer, chapter)
 			end
 		end
 	else
-		local pItem = giveItem(pInventory, reward, -1)
+		local pItem = self:giveSocketedArmor(pInventory, reward)
 		if (pItem == nil) then
 			CreatureObject(pPlayer):sendSystemMessage(
 				"[MandoWayOfLife] ERROR: could not grant reward for chapter " .. chapter .. ". Contact a GM."
@@ -3097,7 +3110,7 @@ function MandoWayOfLife:tryGrantAccountArmorRetro(pPlayer)
 				tostring(requiredSlots)
 			)
 		end
-		local pItem = giveItem(pInventory, template, -1)
+		local pItem = self:giveSocketedArmor(pInventory, template)
 		if (pItem == nil) then
 			self:logDiagPlayer(pPlayer, string.format("tryGrantAccountArmorRetro FAILED at %s", template))
 			return false,
@@ -3169,7 +3182,7 @@ function MandoWayOfLife:tryGrantCharacterBicepBracerRetro(pPlayer)
 	end
 
 	for _, template in ipairs(templates) do
-		local pItem = giveItem(pInventory, template, -1)
+		local pItem = self:giveSocketedArmor(pInventory, template)
 		if (pItem == nil) then
 			self:logDiagPlayer(pPlayer, string.format("tryGrantAccountBicepBracerRetro FAILED at %s", template))
 			return false,
@@ -3606,7 +3619,7 @@ function MandoWayOfLife:tryExchangeMandalorianArmor(pPlayer)
 			local newTmpl = self.armorExchangeMap[oldTmpl]
 			if (newTmpl ~= nil) then
 				-- Create new custom armor
-				local pNewArmor = giveItem(pInventory, newTmpl, -1)
+				local pNewArmor = self:giveSocketedArmor(pInventory, newTmpl)
 				if (pNewArmor ~= nil) then
 					-- Destroy old armor
 					SceneObject(pOldArmor):destroyObjectFromWorld(true)
@@ -3695,7 +3708,7 @@ function MandoWayOfLife:tryExchangeMandalorianArmorByTier(pPlayer, tier)
 				local tierArmorTmpl = tierData.armor[tierArmorIndex]
 				
 				if (tierArmorTmpl ~= nil) then
-					local pNewArmor = giveItem(pInventory, tierArmorTmpl, -1)
+					local pNewArmor = self:giveSocketedArmor(pInventory, tierArmorTmpl)
 					if (pNewArmor ~= nil) then
 						-- Destroy old armor
 						SceneObject(pOldArmor):destroyObjectFromWorld(true)
@@ -3713,7 +3726,7 @@ function MandoWayOfLife:tryExchangeMandalorianArmorByTier(pPlayer, tier)
 				-- Exchange any custom armor piece for the same tier's socketed version
 				for _, tierArmorTmpl in ipairs(tierData.armor) do
 					if (string.find(oldTmpl, tierArmorTmpl) or string.find(tierArmorTmpl, oldTmpl)) then
-						local pNewArmor = giveItem(pInventory, tierArmorTmpl, -1)
+						local pNewArmor = self:giveSocketedArmor(pInventory, tierArmorTmpl)
 						if (pNewArmor ~= nil) then
 							-- Destroy old armor
 							SceneObject(pOldArmor):destroyObjectFromWorld(true)

@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_tribesman_bicep_r = object_ta
 
 	rating = HEAVY,
 	maxCondition = 62000,
+	socket = 4,
 
 	kinetic = 75,
 	energy = 75,
