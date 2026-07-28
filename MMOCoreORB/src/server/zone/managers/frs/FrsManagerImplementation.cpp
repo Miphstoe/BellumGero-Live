@@ -16,6 +16,7 @@
 #include "server/zone/objects/player/sui/callbacks/EnclaveVotingTerminalSuiCallback.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/mission/MissionManager.h"
 #include "templates/faction/Factions.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "server/zone/managers/player/PlayerMap.h"
@@ -616,6 +617,20 @@ void FrsManagerImplementation::setPlayerRank(CreatureObject* player, int rank) {
 		}
 
 		updatePlayerSkills(player);
+	}
+
+	ZoneServer* zoneServer = player->getZoneServer();
+
+	if (zoneServer != nullptr && player->hasSkill("force_title_jedi_rank_02")) {
+		MissionManager* missionManager = zoneServer->getMissionManager();
+
+		if (missionManager != nullptr) {
+			if (missionManager->hasPlayerBountyTargetInList(playerID)) {
+				missionManager->updatePlayerBountyReward(playerID, ghost->calculateBhReward());
+			} else {
+				missionManager->addPlayerToBountyList(playerID, ghost->calculateBhReward());
+			}
+		}
 	}
 }
 
