@@ -129,6 +129,12 @@ naboo_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "naboo_falumpaset_domesticated_neutral_medium",
+			minDifficulty = 10,
+			maxDifficulty = 14,
+			size = 25,
+		},
+		{
 			lairTemplateName = "naboo_borvos_camp_neutral_small_theater",
 			minDifficulty = 10,
 			maxDifficulty = 14,

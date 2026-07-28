@@ -69,6 +69,12 @@ dathomir_destroy_missions = {
 			size = 30,
 		},
 		{
+			lairTemplateName = "dathomir_domesticated_brackaset_lair_neutral_medium",
+			minDifficulty = 23,
+			maxDifficulty = 27,
+			size = 25,
+		},
+		{
 			lairTemplateName = "dathomir_brackaset_lair_neutral_medium",
 			minDifficulty = 24,
 			maxDifficulty = 28,
