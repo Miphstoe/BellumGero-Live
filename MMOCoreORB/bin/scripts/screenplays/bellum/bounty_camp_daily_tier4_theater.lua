@@ -58,10 +58,10 @@ end
 
 function BellumBountyDailyTier4Theater:onSpynetMarkDown(pOwner)
 	if (pOwner ~= nil and MandoWayOfLife ~= nil) then
-		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Tier 4 complete. Speak with your holographic guild contact for the final mission.")
-if (MandoDailyHoloStory ~= nil) then
-pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 4) end)
-end
+		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Tier 4 complete. Await the final transmission.")
+		if (MandoDailyHoloStory ~= nil) then
+			pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 4) end)
+		end
 	end
 end
 

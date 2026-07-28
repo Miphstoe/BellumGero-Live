@@ -189,14 +189,17 @@ function MandoDailyHoloStory:sayLineEvent(pHolo, line)
 end
 
 function MandoDailyHoloStory:deliverLines(pHolo, lines)
-	if (pHolo == nil) then return end
+	if (pHolo == nil) then return 0 end
 	local delay = 1000
+	local finishDelay = delay
 	for i = 1, #lines do
 		if (lines[i] ~= nil and lines[i] ~= "") then
 			createEvent(delay, "MandoDailyHoloStory", "sayLineEvent", pHolo, lines[i])
+			finishDelay = delay + 3000
 			delay = delay + self.LINE_GAP_MS
 		end
 	end
+	return finishDelay
 end
 
 -- ---------------------------------------------------------------------------
@@ -231,7 +234,8 @@ function MandoDailyHoloStory:onMissionAccepted(pPlayer, tier)
 		lines[#lines + 1] = self:pick(self.ESCALATIONS, seed, 10 + tier)
 	end
 
-	self:deliverLines(pHolo, lines)
+	local finishDelay = self:deliverLines(pHolo, lines)
+	createEvent(finishDelay, "MandoDailyHoloStory", "despawnHoloEvent", pHolo, "")
 end
 
 -- Called when a daily camp's mark goes down.
@@ -239,7 +243,13 @@ function MandoDailyHoloStory:onCampCompleted(pPlayer, tier)
 	if (pPlayer == nil) then return end
 	MandoWayOfLife:markDailyBountyTierComplete(pPlayer, tier)
 	local pHolo = self:spawnHolo(pPlayer)
-	if (pHolo == nil) then return end
+	if (pHolo == nil) then
+		if (tier < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS) then
+			local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, "auto")
+			CreatureObject(pPlayer):sendSystemMessage(msg)
+		end
+		return
+	end
 
 	local seed = self:storySeed(pPlayer)
 	local dossier = self:getDossier(pPlayer)
@@ -248,15 +258,38 @@ function MandoDailyHoloStory:onCampCompleted(pPlayer, tier)
 	if (tier >= 5) then
 		lines[#lines + 1] = "Good job, hunter. You took out the rogue IG88 trader."
 		lines[#lines + 1] = self:pick(self.FINALES, seed, 50)
+		lines[#lines + 1] = "This is the Way."
 	else
 		-- twist: not the real target; chain continues
 		lines[#lines + 1] = self:pick(self.TWISTS, seed, 20 + tier)
 		lines[#lines + 1] = string.format(
-			"%s is still out there - but running out of places to hide. Open this transmission when you're ready for the next bounty.",
+			"%s is still out there - but running out of places to hide. The next waypoint will follow this transmission.",
 			dossier.name)
+		lines[#lines + 1] = "This is the Way."
 	end
 
-	self:deliverLines(pHolo, lines)
+	local finishDelay = self:deliverLines(pHolo, lines)
+	local holoID = SceneObject(pHolo):getObjectID()
+	createEvent(finishDelay, "MandoDailyHoloStory", "finishCompletionEvent", pPlayer, tostring(tier) .. ":" .. tostring(holoID))
+end
+
+function MandoDailyHoloStory:finishCompletionEvent(pPlayer, args)
+	if (pPlayer == nil) then return end
+	local tierText, holoText = string.match(args or "", "^(%d+):(%d+)$")
+	local tier = tonumber(tierText)
+	local holoID = tonumber(holoText)
+	if (tier == nil or holoID == nil) then return end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local currentHoloID = tonumber(readData("mando_way:holo_story:" .. tostring(playerID) .. ":holoId")) or 0
+	if (currentHoloID ~= holoID) then return end
+
+	self:despawnHoloForPlayer(pPlayer)
+	if (tier >= MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS) then return end
+	if (MandoWayOfLife:getDailyBountyCount(pPlayer) ~= tier or MandoWayOfLife:getDailyBountyReadyTier(pPlayer) ~= tier) then return end
+
+	local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, "auto")
+	CreatureObject(pPlayer):sendSystemMessage(msg)
 end
 
 MandoDailyHoloMenuComponent = {}
@@ -265,10 +298,6 @@ function MandoDailyHoloMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuR
 	if (not MandoDailyHoloStory:isOwner(pSceneObject, pPlayer)) then return end
 	local menuResponse = LuaObjectMenuResponse(pMenuResponse)
 	menuResponse:addRadialMenuItem(120, 3, "Mission Status")
-	local count = MandoWayOfLife:getDailyBountyCount(pPlayer)
-	if (count > 0 and count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
-		menuResponse:addRadialMenuItem(121, 3, "Receive Next Bounty")
-	end
 end
 
 function MandoDailyHoloMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedID)
@@ -279,9 +308,6 @@ function MandoDailyHoloMenuComponent:handleObjectMenuSelect(pObject, pPlayer, se
 	SceneObject(pObject):faceObject(pPlayer, true)
 	if (selectedID == 120) then
 		MandoWayOfLife:showDailyBountyStatus(pPlayer)
-	elseif (selectedID == 121) then
-		local ok, msg = MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, "holo")
-		CreatureObject(pPlayer):sendSystemMessage(msg)
 	end
 	return 0
 end

@@ -140,6 +140,7 @@ end
 local function finishBountyCamp(theater, pOwner, ownerID)
 	if (pOwner == nil) then return end
 	local taskName = theater.taskName
+	theater:removeTheaterWaypoint(pOwner)
 
 	-- Grant loot if lootGroup is specified (for daily bounty missions)
 	if (theater.lootGroup ~= nil and theater.lootLevel ~= nil) then
@@ -190,10 +191,16 @@ local function activateBoss(theater, ownerID, pOwner)
 	if (bossOid == 0) then return end
 	local pBoss = getSceneObject(bossOid)
 	if (pBoss == nil) then return end
+	local bossAgent = AiAgent(pBoss)
+	bossAgent:removeObjectFlag(AI_NOAIAGGRO)
 	CreatureObject(pBoss):setOptionsBitmask(AIENABLED)   -- clears INVULNERABLE
 	CreatureObject(pBoss):setPvpStatusBitmask(35)        -- ATTACKABLE + AGGRESSIVE + ENEMY
 	if (pOwner ~= nil) then
-		AiAgent(pBoss):setDefender(pOwner)
+		spatialChat(pBoss, "Target acquired. Your contract terminates here, hunter.")
+		bossAgent:addDefender(pOwner)
+		bossAgent:setDefender(pOwner)
+		CreatureObject(pBoss):engageCombat(pOwner)
+		bossAgent:enqueueAttack()
 		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] The IG-88 assassin droid powers up and locks onto you!")
 	end
 end

@@ -3869,7 +3869,7 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		return false, "Use your tracking fob to initiate today's hunt."
 	end
 	if (count > 0) then
-		if (source ~= "holo") then
+		if (source ~= "holo" and source ~= "auto") then
 			return false, "The tracking fob only initiates the first hunt. Speak with your holographic guild contact to continue."
 		end
 		if (self:getDailyBountyReadyTier(pPlayer) ~= count) then
@@ -3899,7 +3899,7 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	self:clearDailyBountyReadyTier(pPlayer)
 
 	-- Holographic guild contact delivers the story beat for this stage
-	if (MandoDailyHoloStory ~= nil) then
+	if (source ~= "auto" and MandoDailyHoloStory ~= nil) then
 		pcall(function() MandoDailyHoloStory:onMissionAccepted(pPlayer, tier) end)
 	end
 
