@@ -5270,6 +5270,13 @@ object_mobile_shared_boba_fett = SharedCreatureObjectTemplate:new {
 
 ObjectTemplates:addClientTemplate(object_mobile_shared_boba_fett, "object/mobile/shared_boba_fett.iff")
 
+-- Bellum: holographic bounty hunter (bg_custom1, boba fett chain + holo shader)
+object_mobile_shared_mando_holo_bh = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_mando_holo_bh.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_mando_holo_bh, "object/mobile/shared_mando_holo_bh.iff")
+
 object_mobile_shared_bocatt = SharedCreatureObjectTemplate:new {
 	clientTemplateFileName = "object/mobile/shared_bocatt.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

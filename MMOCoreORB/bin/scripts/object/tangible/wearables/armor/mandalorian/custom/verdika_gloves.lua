@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_gloves = object_tangi
 
 	rating = MEDIUM,
 	maxCondition = 42000,
+	socket = 4,
 
 	kinetic = 65,
 	energy = 65,

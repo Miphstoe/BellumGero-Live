@@ -60,11 +60,22 @@ function BellumBountyCampTheaterHelpers.applyBountyMobPresentation(theater, pPla
 	local henchLevel = tonumber(theater.henchLevel) or 42
 	local markName = theater.markDisplayName or "Wanted Outlaw"
 	local henchName = theater.henchDisplayName or "Outlaw Thief"
+	local bossIndex = tonumber(theater.bossIndex)
+	local bossLevel = tonumber(theater.bossLevel) or 100
+	local bossName = theater.bossDisplayName or "IG-88 Assassin Droid"
 
 	for i = 1, #spawnedList, 1 do
 		local pMob = spawnedList[i]
 		if (SpawnMobiles.isValidMobile(pMob)) then
-			if (i == markIndex) then
+			if (bossIndex ~= nil and i == bossIndex) then
+				-- Dormant boss: invulnerable, non-attackable, will not aggro
+				-- until the mark and every henchman are dead (see notifyBountyMobileKilled).
+				AiAgent(pMob):setLevel(bossLevel)
+				CreatureObject(pMob):setCustomObjectName(bossName)
+				CreatureObject(pMob):setOptionsBitmask(AIENABLED + INVULNERABLE)
+				CreatureObject(pMob):setPvpStatusBitmask(0)
+				AiAgent(pMob):setNoAiAggro()
+			elseif (i == markIndex) then
 				AiAgent(pMob):setLevel(markLevel)
 				CreatureObject(pMob):setCustomObjectName(markName)
 			else
@@ -93,14 +104,27 @@ function BellumBountyCampTheaterHelpers.setupKillObservers(theater, pPlayer, spa
 	local playerID = SceneObject(pPlayer):getObjectID()
 	local taskName = theater.taskName
 
+	local bossIndex = tonumber(theater.bossIndex)
+	local pending = 0
 	for i = 1, #spawnedList, 1 do
 		local pMob = spawnedList[i]
 		if (SpawnMobiles.isValidMobile(pMob)) then
 			local mobID = SceneObject(pMob):getObjectID()
 			writeData(mobID .. taskName .. ":bountyOwner", playerID)
 			writeData(mobID .. taskName .. ":isMark", (i == markIndex) and 1 or 0)
+			if (bossIndex ~= nil and i == bossIndex) then
+				writeData(mobID .. taskName .. ":isBoss", 1)
+				writeData(playerID .. taskName .. ":bossOid", mobID)
+			else
+				writeData(mobID .. taskName .. ":isBoss", 0)
+				-- mark + every henchman must die before the boss wakes
+				pending = pending + 1
+			end
 			createObserver(OBJECTDESTRUCTION, taskName, "notifyBountyMobileKilled", pMob)
 		end
+	end
+	if (bossIndex ~= nil) then
+		writeData(playerID .. taskName .. ":pendingKills", pending)
 	end
 	local obs = 0
 	for j = 1, #spawnedList, 1 do
@@ -108,7 +132,77 @@ function BellumBountyCampTheaterHelpers.setupKillObservers(theater, pPlayer, spa
 			obs = obs + 1
 		end
 	end
-	spynetDbg(pPlayer, string.format("bountyCamp setupKillObservers: task=%s validMobiles=%s markIndex=%s", taskName, tostring(obs), tostring(markIndex)))
+	spynetDbg(pPlayer, string.format("bountyCamp setupKillObservers: task=%s validMobiles=%s markIndex=%s bossIndex=%s pending=%s", taskName, tostring(obs), tostring(markIndex), tostring(bossIndex), tostring(pending)))
+end
+
+-- Complete a bounty camp once its decisive kill lands (the mark for normal
+-- camps, the boss for boss camps): grant loot, fire the completion hook.
+local function finishBountyCamp(theater, pOwner, ownerID)
+	if (pOwner == nil) then return end
+	local taskName = theater.taskName
+	theater:removeTheaterWaypoint(pOwner)
+
+	-- Grant loot if lootGroup is specified (for daily bounty missions)
+	if (theater.lootGroup ~= nil and theater.lootLevel ~= nil) then
+		local pInventory = SceneObject(pOwner):getSlottedObject("inventory")
+		if (pInventory ~= nil) then
+			local itemID = createLoot(pInventory, theater.lootGroup, theater.lootLevel, false)
+			if (itemID ~= nil and itemID ~= 0) then
+				CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] You received a schematic from the mark's belongings.")
+			end
+		end
+	end
+
+	-- Only complete the Spynet trial while the private contract is active. Setting :campFinished before
+	-- completePrivateContract could soft-lock the player (campFinished=1 but chapter never advanced).
+	local active = (MandoWayOfLife ~= nil and MandoWayOfLife.readInt ~= nil and MandoWayOfLife:readInt(pOwner, "privateContractActive") == 1)
+	if (not active) then
+		-- If this is a daily bounty mission (not a Spynet trial), still call onSpynetMarkDown for completion message
+		if (theater.lootGroup ~= nil and theater.onSpynetMarkDown ~= nil) then
+			theater:onSpynetMarkDown(pOwner)
+		else
+			CreatureObject(pOwner):sendSystemMessage(
+				"[Spynet trial] The mark fell but your trial was not active. Speak with the Mandalorian Operative on Corellia."
+			)
+			if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+				MandoWayOfLife:logDiagPlayer(pOwner, string.format(
+					"notifyBountyMobileKilled: mark kill skipped (privateContractActive~=1) task=%s ownerOid=%s",
+					tostring(taskName),
+					tostring(ownerID)
+				))
+			end
+		end
+	else
+		if (theater.onSpynetMarkDown ~= nil) then
+			spynetDbg(pOwner, string.format("bountyCamp markDown: task=%s -> onSpynetMarkDown (completePrivateContract path)", tostring(taskName)))
+			theater:onSpynetMarkDown(pOwner)
+		else
+			spynetDbg(pOwner, string.format("bountyCamp markDown: task=%s -> theater:finish only", tostring(taskName)))
+			theater:finish(pOwner)
+		end
+		writeData(ownerID .. taskName .. ":campFinished", 1)
+	end
+end
+
+-- Wake a dormant boss: strip invulnerability, flag it hostile, sic it on the player.
+local function activateBoss(theater, ownerID, pOwner)
+	local taskName = theater.taskName
+	local bossOid = tonumber(readData(ownerID .. taskName .. ":bossOid")) or 0
+	if (bossOid == 0) then return end
+	local pBoss = getSceneObject(bossOid)
+	if (pBoss == nil) then return end
+	local bossAgent = AiAgent(pBoss)
+	bossAgent:removeObjectFlag(AI_NOAIAGGRO)
+	CreatureObject(pBoss):setOptionsBitmask(AIENABLED)   -- clears INVULNERABLE
+	CreatureObject(pBoss):setPvpStatusBitmask(35)        -- ATTACKABLE + AGGRESSIVE + ENEMY
+	if (pOwner ~= nil) then
+		spatialChat(pBoss, "Target acquired. Your contract terminates here, hunter.")
+		bossAgent:addDefender(pOwner)
+		bossAgent:setDefender(pOwner)
+		CreatureObject(pBoss):engageCombat(pOwner)
+		bossAgent:enqueueAttack()
+		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] The IG-88 assassin droid powers up and locks onto you!")
+	end
 end
 
 function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVictim, pAttacker)
@@ -131,18 +225,21 @@ function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVicti
 	end
 
 	local isMark = readData(mobileID .. taskName .. ":isMark")
+	local isBoss = readData(mobileID .. taskName .. ":isBoss")
 	local pOwner = getSceneObject(ownerID)
 
 	spynetDbg(pOwner, string.format(
-		"bountyCamp notifyKilled: task=%s victimOid=%s isMark=%s attackerIsPlayer=%s",
+		"bountyCamp notifyKilled: task=%s victimOid=%s isMark=%s isBoss=%s attackerIsPlayer=%s",
 		tostring(taskName),
 		tostring(mobileID),
 		tostring(isMark),
+		tostring(isBoss),
 		tostring(pAttacker ~= nil and SceneObject(pAttacker):isPlayerCreature())
 	))
 
 	deleteData(mobileID .. taskName .. ":bountyOwner")
 	deleteData(mobileID .. taskName .. ":isMark")
+	deleteData(mobileID .. taskName .. ":isBoss")
 
 	local pPayee = resolveCreditRecipient(pAttacker)
 	if (pPayee ~= nil) then
@@ -150,8 +247,14 @@ function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVicti
 		local hiH = tonumber(theater.bountyHenchCreditMax) or 1000
 		local loM = tonumber(theater.bountyMarkCreditMin) or 7500
 		local hiM = tonumber(theater.bountyMarkCreditMax) or 12000
+		local loB = tonumber(theater.bountyBossCreditMin) or loM
+		local hiB = tonumber(theater.bountyBossCreditMax) or hiM
 
-		if (isMark == 1) then
+		if (isBoss == 1) then
+			local amt = getRandomNumber(loB, hiB)
+			CreatureObject(pPayee):addCashCredits(amt, true)
+			CreatureObject(pPayee):sendSystemMessage("Spynet bounty paid: " .. tostring(amt) .. " credits (boss).")
+		elseif (isMark == 1) then
 			local amt = getRandomNumber(loM, hiM)
 			CreatureObject(pPayee):addCashCredits(amt, true)
 			CreatureObject(pPayee):sendSystemMessage("Spynet bounty paid: " .. tostring(amt) .. " credits (mark).")
@@ -162,47 +265,29 @@ function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVicti
 		end
 	end
 
-	if (isMark == 1 and pOwner ~= nil) then
-		-- Grant loot if lootGroup is specified (for daily bounty missions)
-		if (theater.lootGroup ~= nil and theater.lootLevel ~= nil) then
-			local pInventory = SceneObject(pOwner):getSlottedObject("inventory")
-			if (pInventory ~= nil) then
-				local itemID = createLoot(pInventory, theater.lootGroup, theater.lootLevel, false)
-				if (itemID ~= nil and itemID ~= 0) then
-					CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] You received a schematic from the mark's belongings.")
-				end
-			end
-		end
-
-		-- Only complete the Spynet trial while the private contract is active. Setting :campFinished before
-		-- completePrivateContract could soft-lock the player (campFinished=1 but chapter never advanced).
-		local active = (MandoWayOfLife ~= nil and MandoWayOfLife.readInt ~= nil and MandoWayOfLife:readInt(pOwner, "privateContractActive") == 1)
-		if (not active) then
-			-- If this is a daily bounty mission (not a Spynet trial), still call onSpynetMarkDown for completion message
-			if (theater.lootGroup ~= nil and theater.onSpynetMarkDown ~= nil) then
-				theater:onSpynetMarkDown(pOwner)
-			else
-				CreatureObject(pOwner):sendSystemMessage(
-					"[Spynet trial] The mark fell but your trial was not active. Speak with the Mandalorian Operative on Corellia."
-				)
-				if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
-					MandoWayOfLife:logDiagPlayer(pOwner, string.format(
-						"notifyBountyMobileKilled: mark kill skipped (privateContractActive~=1) task=%s ownerOid=%s",
-						tostring(taskName),
-						tostring(ownerID)
-					))
-				end
+	-- Boss camps (e.g. tier 5): the mark + every henchman must fall before the
+	-- dormant boss wakes; killing the boss is what completes the camp.
+	if (theater.bossIndex ~= nil) then
+		if (isBoss == 1) then
+			if (pOwner ~= nil) then
+				finishBountyCamp(theater, pOwner, ownerID)
+				writeData(ownerID .. taskName .. ":campFinished", 1)
 			end
 		else
-			if (theater.onSpynetMarkDown ~= nil) then
-				spynetDbg(pOwner, string.format("bountyCamp markDown: task=%s -> onSpynetMarkDown (completePrivateContract path)", tostring(taskName)))
-				theater:onSpynetMarkDown(pOwner)
-			else
-				spynetDbg(pOwner, string.format("bountyCamp markDown: task=%s -> theater:finish only", tostring(taskName)))
-				theater:finish(pOwner)
+			local pending = (tonumber(readData(ownerID .. taskName .. ":pendingKills")) or 0) - 1
+			if (pending < 0) then pending = 0 end
+			writeData(ownerID .. taskName .. ":pendingKills", pending)
+			spynetDbg(pOwner, string.format("bountyCamp boss gate: task=%s pending=%s", tostring(taskName), tostring(pending)))
+			if (pending <= 0) then
+				activateBoss(theater, ownerID, pOwner)
 			end
-			writeData(ownerID .. taskName .. ":campFinished", 1)
 		end
+		return 1
+	end
+
+	-- Normal camps (tiers 1-4): the mark's death completes the camp.
+	if (isMark == 1 and pOwner ~= nil) then
+		finishBountyCamp(theater, pOwner, ownerID)
 	end
 
 	return 1

@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_tribesman_shoes = object_tang
 
 	rating = HEAVY,
 	maxCondition = 56000,
+	socket = 4,
 
 	kinetic = 75,
 	energy = 75,

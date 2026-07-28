@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_gloves = object_tan
 
 	rating = HEAVY,
 	maxCondition = 54000,
+	socket = 4,
 
 	kinetic = 70,
 	energy = 70,

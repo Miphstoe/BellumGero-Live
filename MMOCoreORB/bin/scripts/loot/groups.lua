@@ -114,6 +114,11 @@ includeFile("groups/bellum/mando_chapter_loot_1.lua")
 includeFile("groups/bellum/mando_chapter_loot_2.lua")
 includeFile("groups/bellum/mando_chapter_loot_3.lua")
 includeFile("groups/bellum/mando_chapter_loot_4.lua")
+includeFile("groups/bellum/mando_daily_bounty_tier1_loot.lua")
+includeFile("groups/bellum/mando_daily_bounty_tier2_loot.lua")
+includeFile("groups/bellum/mando_daily_bounty_tier3_loot.lua")
+includeFile("groups/bellum/mando_daily_bounty_tier4_loot.lua")
+includeFile("groups/bellum/mando_daily_bounty_tier5_loot.lua")
 
 -- death_watch_bunker sub-folder
 includeFile("groups/death_watch_bunker/death_watch_bunker_art.lua")

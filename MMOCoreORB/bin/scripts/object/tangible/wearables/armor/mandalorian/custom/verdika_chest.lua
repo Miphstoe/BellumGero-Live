@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_chest = object_tangib
 
 	rating = MEDIUM,
 	maxCondition = 48000,
+	socket = 4,
 
 	kinetic = 65,
 	energy = 65,

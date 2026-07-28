@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_clanbound_legs = object_tangi
 
 	rating = HEAVY,
 	maxCondition = 56000,
+	socket = 4,
 
 	kinetic = 70,
 	energy = 70,
