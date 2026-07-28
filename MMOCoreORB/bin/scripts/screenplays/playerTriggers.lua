@@ -47,4 +47,7 @@ function PlayerTriggers:playerLoggedOut(pPlayer)
     if AcklayPrivateInstance and AcklayPrivateInstance.onPlayerLoggedOut then
         AcklayPrivateInstance:onPlayerLoggedOut(pPlayer)
     end
+    if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedOut then
+        PlayerBountySystem:onPlayerLoggedOut(pPlayer)
+    end
 end

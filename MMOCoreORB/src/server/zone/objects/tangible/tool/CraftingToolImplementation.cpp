@@ -41,6 +41,12 @@ void CraftingToolImplementation::loadTemplateData(SharedObjectTemplate* template
 void CraftingToolImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
+	if (getServerObjectCRC() == STRING_HASHCODE(
+		"object/tangible/crafting/station/bio_engineer_creature_tool.iff") &&
+		getCustomObjectName().isEmpty()) {
+		setCustomObjectName("Bio-Engineer Creature Crafting Tool", false);
+	}
+
 	if (getContainerObjectsSize() > 0) {
 		status = TOOL_FINISHED; // "@crafting:tool_status_finished"
 	} else {

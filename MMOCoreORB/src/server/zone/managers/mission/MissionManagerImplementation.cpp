@@ -134,7 +134,8 @@ void MissionManagerImplementation::loadPlayerBounties() {
 		return;
 	}
 
-	int i = 0;
+	int loaded = 0;
+	int quarantined = 0;
 
 	try {
 		ObjectDatabaseIterator iterator(playerBountyDatabase);
@@ -144,24 +145,88 @@ void MissionManagerImplementation::loadPlayerBounties() {
 		while (iterator.getNextKey(objectID)) {
 			Reference<PlayerBounty*> bounty = Core::getObjectBroker()->lookUp(objectID).castTo<PlayerBounty*>();
 
-			if (bounty != nullptr) {
-				++i;
-
-				bounty->setOnline(false);
-
-				playerBountyList.put(bounty->getTargetPlayerID(), bounty);
-
-				if (ConfigManager::instance()->isProgressMonitorActivated())
-					printf("\r\tLoading player bounties [%d] / [?]\t", i);
-			} else {
+			if (bounty == nullptr) {
 				error("Failed to deserialize player bounty with objectID: " + String::valueOf(objectID));
+				continue;
 			}
+
+			uint64 targetId = bounty->getTargetPlayerID();
+
+			// Migrate legacy pre-split records. Prior to the reward-accounting
+			// split, addBountyPlacer() summed placer amounts directly into the
+			// single combined `reward` field (double-counted against the
+			// constructor payout), so that field cannot be trusted as either
+			// component. bountyPlacers itself was always correct per-placer,
+			// so player-funded records are rebuilt from that; pure Jedi
+			// records (no placers) carry their reward forward as jediReward.
+			if (bounty->getSchemaVersion() < 1) {
+				if (bounty->getNumberOfBountyPlacers() > 0) {
+					bounty->setJediReward(0);
+					bounty->recalculatePlayerPlacedRewardFromExistingPlacers();
+				} else {
+					bounty->setJediReward(bounty->getReward());
+				}
+
+				bounty->setSchemaVersion(1);
+
+				info("Migrated legacy player bounty record for target " + String::valueOf(targetId) + " to split reward schema.", true);
+			}
+
+			String invalidReason;
+
+			ManagedReference<CreatureObject*> target = server->getObject(targetId).castTo<CreatureObject*>();
+
+			if (target == nullptr) {
+				invalidReason = "target object no longer exists";
+			} else if (!target->isPlayerCreature()) {
+				invalidReason = "target is not a player character";
+			} else {
+				bool isQualifyingJedi = target->hasSkill("force_title_jedi_rank_02");
+				bool hasActivePlayerPlacedReward = bounty->isPlayerPlacedBountyActive() && bounty->getPlayerPlacedReward() > 0 && bounty->getNumberOfBountyPlacers() > 0;
+
+				if (bounty->isPlayerPlacedBountyConsumed() && !isQualifyingJedi) {
+					invalidReason = "player-funded bounty already consumed and target is not Jedi";
+				} else if (bounty->isPlayerPlacedBountyActive() && bounty->getPlayerPlacedReward() <= 0) {
+					invalidReason = "player-placed bounty marked active with a zero/negative reward";
+				} else if (bounty->getNumberOfBountyPlacers() > 0 && bounty->getPlayerPlacedReward() <= 0 && !isQualifyingJedi) {
+					invalidReason = "bounty placers exist with no reward and target is not Jedi";
+				} else if (!hasActivePlayerPlacedReward && !isQualifyingJedi) {
+					invalidReason = "no active player-funded reward and target does not qualify as Jedi";
+				}
+			}
+
+			if (!invalidReason.isEmpty()) {
+				error("Quarantining invalid startup bounty record " + String::valueOf(objectID) + " for target " + String::valueOf(targetId) + ": " + invalidReason);
+
+				ObjectManager::instance()->destroyObjectFromDatabase(objectID);
+				++quarantined;
+				continue;
+			}
+
+			// Never trust a persisted online flag or a stale Jedi reward at
+			// startup; both are recalculated independently below/at login.
+			bounty->setOnline(false);
+
+			if (target->hasSkill("force_title_jedi_rank_02")) {
+				ManagedReference<PlayerObject*> targetGhost = target->getPlayerObject();
+
+				if (targetGhost != nullptr)
+					bounty->setJediReward(targetGhost->calculateBhReward());
+			} else {
+				bounty->setJediReward(0);
+			}
+
+			playerBountyList.put(targetId, bounty);
+			++loaded;
+
+			if (ConfigManager::instance()->isProgressMonitorActivated())
+				printf("\r\tLoading player bounties [%d] / [?]\t", loaded);
 		}
 	} catch (DatabaseException& e) {
 		error("Database exception in MissionManager::loadPlayerBounties(): " + e.getMessage());
 	}
 
-	info(i > 0) << "Loaded " << i << " player bounties.";
+	info(loaded > 0 || quarantined > 0) << "Loaded " << loaded << " player bounties, quarantined " << quarantined << " invalid record(s).";
 }
 
 void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* missionTerminal, CreatureObject* player, int counter) {
@@ -2309,37 +2374,55 @@ void MissionManagerImplementation::addPlayerToBountyList(uint64 targetId, int re
 	Locker listLocker(&playerBountyListMutex);
 
 	if (!playerBountyList.contains(targetId)) {
+		// jediPayout only -- no player-placed component on a fresh record.
 		PlayerBounty* bounty = new PlayerBounty(targetId, reward);
 		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
 		playerBountyList.put(targetId, bounty);
 
-		info("Adding player " + String::valueOf(targetId) + " to bounty hunter list.", true);
+		info("Adding player " + String::valueOf(targetId) + " to bounty hunter list (Jedi reward=" + String::valueOf(reward) + ").", true);
+	} else {
+		// A player-placed bounty record already exists for this target (e.g.
+		// they were funded before becoming Jedi). Set the Jedi component
+		// without touching the existing player-placed reward/placers.
+		PlayerBounty* bounty = playerBountyList.get(targetId);
+		bounty->setJediReward(reward);
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
+
+		info("Player " + String::valueOf(targetId) + " already has a bounty record; set Jedi reward=" + String::valueOf(reward) + " without touching the player-funded portion.", true);
 	}
 }
 
 void MissionManagerImplementation::addPlayerPlacedBounty(uint64 targetId, uint64 placerId, int amount) {
 	Locker listLocker(&playerBountyListMutex);
 
+	if (amount <= 0) {
+		error("addPlayerPlacedBounty rejected: non-positive amount " + String::valueOf(amount) + " from placer " + String::valueOf(placerId) + " on target " + String::valueOf(targetId));
+		return;
+	}
+
 	if (playerBountyList.contains(targetId)) {
-		// Add to existing bounty
+		// Add to existing bounty. addBountyPlacer() is the sole place that
+		// mutates playerPlacedReward, so this adds the amount exactly once.
 		PlayerBounty* bounty = playerBountyList.get(targetId);
 		bounty->addBountyPlacer(placerId, amount);
 		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
 
-		info("Player " + String::valueOf(placerId) + " added " + String::valueOf(amount) + " credits to bounty on player " + String::valueOf(targetId) + ". New total: " + String::valueOf(bounty->getReward()), true);
+		info("Player " + String::valueOf(placerId) + " added " + String::valueOf(amount) + " credits to the player-funded bounty on player " + String::valueOf(targetId) + ". New player-funded total: " + String::valueOf(bounty->getPlayerPlacedReward()), true);
 	} else {
-		// Create new bounty with this placer
-		PlayerBounty* bounty = new PlayerBounty(targetId, amount);
+		// Create new bounty with zero Jedi reward, then add the placer's
+		// contribution exactly once via addBountyPlacer(). The amount must
+		// never also be passed to the constructor, or it is counted twice.
+		PlayerBounty* bounty = new PlayerBounty(targetId, 0);
 		bounty->addBountyPlacer(placerId, amount);
 
 		// Set online status if target is online
 		ManagedReference<CreatureObject*> target = server->getObject(targetId).castTo<CreatureObject*>();
 		if (target != nullptr && target->isPlayerCreature()) {
 			bounty->setOnline(true);
-			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (ONLINE)", true);
+			info("Player " + String::valueOf(placerId) + " placed a player-funded bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (ONLINE)", true);
 		} else {
 			bounty->setOnline(false);
-			info("Player " + String::valueOf(placerId) + " placed bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (OFFLINE)", true);
+			info("Player " + String::valueOf(placerId) + " placed a player-funded bounty of " + String::valueOf(amount) + " credits on player " + String::valueOf(targetId) + " (OFFLINE)", true);
 		}
 
 		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
@@ -2371,7 +2454,10 @@ void MissionManagerImplementation::updatePlayerBountyReward(uint64 targetId, int
 	Locker listLocker(&playerBountyListMutex);
 
 	if (playerBountyList.contains(targetId)) {
-		playerBountyList.get(targetId)->setReward(reward);
+		// Jedi-only recalculation (e.g. on login or force_discipline change).
+		// setJediReward() never touches playerPlacedReward, so a funded
+		// player-placed bounty survives this call untouched.
+		playerBountyList.get(targetId)->setJediReward(reward);
 	}
 }
 
@@ -2459,19 +2545,36 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 	if (creature == nullptr)
 		return false;
 
+	if (!creature->isPlayerCreature())
+		return false;
+
 	auto targetGhost = creature->getPlayerObject();
 
 	if (targetGhost == nullptr)
 		return false;
 
-	// Only apply visibility requirement to Jedi bounties (not player-placed bounties)
-	// Player-placed bounties have at least one placer, Jedi bounties have none
-	bool isPlayerPlacedBounty = bounty->getNumberOfBountyPlacers() > 0;
+	// A target qualifies through exactly one of two independently-verified
+	// sources: an active, unconsumed, funded player-placed bounty, or actual
+	// current Jedi qualification with sufficient visibility. List membership,
+	// a consumed bounty, or a zero/stale reward are never sufficient alone --
+	// this is re-checked here regardless of what added the target to the map.
+	bool hasActivePlayerPlacedReward = bounty->isPlayerPlacedBountyActive()
+		&& bounty->getPlayerPlacedReward() > 0
+		&& bounty->getNumberOfBountyPlacers() > 0;
 
-	if (!isPlayerPlacedBounty) {
+	bool isQualifyingJedi = creature->hasSkill("force_title_jedi_rank_02");
+
+	if (hasActivePlayerPlacedReward) {
+		// Player-funded bounties bypass the Jedi visibility gate by design.
+	} else if (isQualifyingJedi) {
 		float terminalVisibilityThreshold = VisibilityManager::instance()->getTerminalVisThreshold();
 		if (targetGhost->getVisibility() < terminalVisibilityThreshold)
 			return false;
+	} else {
+		// Neither a funded player-placed bounty nor actual Jedi qualification:
+		// e.g. a consumed/stale record, or a former Jedi who surrendered
+		// their skill. Not a valid target regardless of list membership.
+		return false;
 	}
 
 	auto playerGhost = player->getPlayerObject();
@@ -2522,44 +2625,95 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 	return true;
 }
 
-void MissionManagerImplementation::completePlayerBounty(uint64 targetId, uint64 bountyHunter) {
+// Called exactly once per successful bounty-hunter kill, from
+// BountyMissionObjectiveImplementation::complete(). Atomically: confirms the
+// bounty is still active, marks the player-funded portion consumed so it can
+// never be paid out again, fails every other hunter's mission on the same
+// target, and either drops the record entirely (non-Jedi, nothing left to
+// track) or persists it (Jedi bounty continues under normal visibility
+// rules). The whole sequence runs under playerBountyListMutex so two
+// near-simultaneous completions on the same target cannot both succeed.
+void MissionManagerImplementation::consumePlayerPlacedBounty(uint64 targetId, uint64 bountyHunter) {
 	Locker listLocker(&playerBountyListMutex);
 
-	if (playerBountyList.contains(targetId)) {
-		PlayerBounty* target = playerBountyList.get(targetId);
+	if (!playerBountyList.contains(targetId)) {
+		info("consumePlayerPlacedBounty: no bounty record found for target " + String::valueOf(targetId) + "; nothing to consume.", true);
+		return;
+	}
 
-		Time currentTime;
+	PlayerBounty* bounty = playerBountyList.get(targetId);
 
-		uint64 curTime = currentTime.getMiliTime();
+	// Idempotency guard: if a duplicate/replayed completion callback reaches
+	// this method for a bounty whose player-funded portion is already
+	// consumed, only the mission-failure/cooldown bookkeeping below still
+	// runs; the reward itself cannot be paid out a second time from here.
+	bool hadActivePlayerPlacedReward = bounty->isPlayerPlacedBountyActive() && bounty->getPlayerPlacedReward() > 0;
 
-		if (ConfigManager::instance()->getBool("Core3.MissionManager.PlayerBountyCooldown", false)) {
-			target->addMissionCooldown(bountyHunter, curTime);
-		}
+	if (bounty->isPlayerPlacedBountyConsumed()) {
+		error("Duplicate payout attempt rejected for target " + String::valueOf(targetId) + " by bounty hunter " + String::valueOf(bountyHunter) + " -- player-funded bounty was already consumed.");
+	}
 
-		target->setLastBountyKill(curTime);
-		uint64 lastDebuff = target->getLastBountyDebuff();
+	Time currentTime;
+	uint64 curTime = currentTime.getMiliTime();
 
-		if (curTime-lastDebuff > playerBountyDebuffLength)
-			target->setLastBountyDebuff(curTime);
+	if (ConfigManager::instance()->getBool("Core3.MissionManager.PlayerBountyCooldown", false)) {
+		bounty->addMissionCooldown(bountyHunter, curTime);
+	}
 
-		Vector<uint64> activeBountyHunters;
+	bounty->setLastBountyKill(curTime);
+	uint64 lastDebuff = bounty->getLastBountyDebuff();
 
-		for (int i = 0; i < target->getBountyHunters()->size(); i++)
-			activeBountyHunters.add(target->getBountyHunters()->get(i));
+	if (curTime - lastDebuff > playerBountyDebuffLength)
+		bounty->setLastBountyDebuff(curTime);
 
-		auto bhSize = activeBountyHunters.size();
+	// Fail every other hunter's active mission on this target so no one else
+	// can complete (and be paid for) a bounty that has already been resolved.
+	Vector<uint64> activeBountyHunters;
 
-		for (int i = 0; i < bhSize; i++) {
-			if (activeBountyHunters.get(i) != bountyHunter) {
-				//Fail mission.
-				failPlayerBountyMission(activeBountyHunters.get(i), targetId);
-			} else {
-				ManagedReference<CreatureObject*> creo = server->getObject(activeBountyHunters.get(i)).castTo<CreatureObject*>();
+	for (int i = 0; i < bounty->getBountyHunters()->size(); i++)
+		activeBountyHunters.add(bounty->getBountyHunters()->get(i));
+
+	for (int i = 0; i < activeBountyHunters.size(); i++) {
+		uint64 hunterId = activeBountyHunters.get(i);
+
+		if (hunterId != bountyHunter) {
+			failPlayerBountyMission(hunterId, targetId);
+		} else {
+			ManagedReference<CreatureObject*> creo = server->getObject(hunterId).castTo<CreatureObject*>();
+
+			if (creo != nullptr) {
 				auto ghost = creo->getPlayerObject();
+
 				if (ghost != nullptr)
 					ghost->schedulePvpTefRemovalTask(false, false, true);
 			}
 		}
+	}
+
+	if (hadActivePlayerPlacedReward) {
+		info("Player-funded bounty on target " + String::valueOf(targetId) + " consumed by bounty hunter " + String::valueOf(bountyHunter)
+			+ " (reward paid: " + String::valueOf(bounty->getPlayerPlacedReward()) + ").", true);
+
+		bounty->consumePlayerPlacedBounty();
+	}
+
+	bool isQualifyingJedi = false;
+	ManagedReference<CreatureObject*> targetCreature = server->getObject(targetId).castTo<CreatureObject*>();
+
+	if (targetCreature != nullptr)
+		isQualifyingJedi = targetCreature->hasSkill("force_title_jedi_rank_02");
+
+	if (!isQualifyingJedi && bounty->getJediReward() <= 0) {
+		// Nothing left to track: not Jedi, and the player-funded portion is
+		// consumed. Remove entirely so no zero-reward shell can be reused by
+		// login, restart, or terminal generation.
+		playerBountyList.remove(playerBountyList.find(targetId));
+
+		ObjectManager::instance()->destroyObjectFromDatabase(bounty->_getObjectID());
+
+		info("Removed fully-consumed player bounty record for target " + String::valueOf(targetId) + " (non-Jedi, no remaining bounty source).", true);
+	} else {
+		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
 	}
 }
 
@@ -2764,19 +2918,55 @@ bool MissionManagerImplementation::sendPlayerBountyDebug(CreatureObject* creatur
 	PlayerBounty* playerBounty = playerBountyList.get(target->getObjectID());
 
 	ManagedReference<SuiListBox*> box = new SuiListBox(creature, 0);
-	box->setPromptTitle("Jedi Visibility");
-	String promptText = "Player: " + target->getFirstName() + "\n" + "Visibility: " + String::valueOf(targetGhost->getVisibility()) + "\n";
+	box->setPromptTitle("Player Bounty Debug");
+
+	bool isQualifyingJedi = target->hasSkill("force_title_jedi_rank_02");
+	String isOnlineStr = target->isOnline() ? "True" : "False";
+	String isJediStr = isQualifyingJedi ? "True" : "False";
+
+	String promptText = "Player: " + target->getFirstName() + " (" + String::valueOf(target->getObjectID()) + ")\n";
+	promptText += "Online: " + isOnlineStr + "\n";
+	promptText += "Actual Jedi (force_title_jedi_rank_02): " + isJediStr + "\n";
+	promptText += "Jedi Visibility: " + String::valueOf(targetGhost->getVisibility()) + "\n";
 
 	if (playerBounty == nullptr) {
 		promptText += "-- No player bounty data --\n";
 	} else {
-		promptText += "-- Bounty Data --\n";
-		promptText += "Current Reward: " + String::valueOf(getRealBountyReward(target, playerBounty)) + "\n";
-		promptText += "Bounty Reward: " + String::valueOf(playerBounty->getReward()) + "\n";
+		String activeStr = playerBounty->isPlayerPlacedBountyActive() ? "True" : "False";
+		String consumedStr = playerBounty->isPlayerPlacedBountyConsumed() ? "True" : "False";
 		String onlineStatus = playerBounty->isOnline() ? "True" : "False";
-		promptText += "Online Status: " + onlineStatus + "\n";
+
+		promptText += "-- Bounty Data --\n";
+		promptText += "Current Terminal Reward: " + String::valueOf(getRealBountyReward(target, playerBounty)) + "\n";
+		promptText += "Jedi Reward: " + String::valueOf(playerBounty->getJediReward()) + "\n";
+		promptText += "Player-Funded Reward: " + String::valueOf(playerBounty->getPlayerPlacedReward()) + "\n";
+		promptText += "Player-Funded Active: " + activeStr + "\n";
+		promptText += "Player-Funded Consumed: " + consumedStr + "\n";
+		promptText += "Bounty Record Online Status: " + onlineStatus + "\n";
+		promptText += "Last Bounty Kill: " + String::valueOf(playerBounty->getLastBountyKill()) + "\n";
+		promptText += "Last Bounty Debuff: " + String::valueOf(playerBounty->getLastBountyDebuff()) + "\n";
+
+		int placerCount = playerBounty->getNumberOfBountyPlacers();
+		promptText += "Bounty Placers: " + String::valueOf(placerCount) + "\n";
+
+		if (placerCount > 0) {
+			ManagedReference<PlayerManager*> placerPlayerManager = creature->getZoneServer()->getPlayerManager();
+			const VectorMap<uint64, int>* placers = playerBounty->getBountyPlacers();
+
+			for (int i = 0; i < placers->size(); i++) {
+				uint64 placerId = placers->elementAt(i).getKey();
+				int placerAmount = placers->elementAt(i).getValue();
+				String placerName = placerPlayerManager->getPlayerName(placerId);
+
+				if (placerName.isEmpty())
+					placerName = "Unknown player";
+
+				promptText += "  - " + placerName + " (" + String::valueOf(placerId) + "): " + String::valueOf(placerAmount) + " cr\n";
+			}
+		}
+
 		int activeCount = playerBounty->numberOfActiveMissions();
-		promptText += "Active Bounty Count: " + String::valueOf(activeCount) + "\n";
+		promptText += "Active Bounty Hunters: " + String::valueOf(activeCount) + "\n";
 		if (activeCount > 0) {
 			promptText += "\nPlayers holding active bounties:";
 			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();

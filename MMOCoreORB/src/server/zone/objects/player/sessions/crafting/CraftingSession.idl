@@ -117,6 +117,32 @@ class CraftingSession extends Facade {
 	public native void selectDraftSchematic(int index);
 
 	/**
+	 * Opens the custom Minimum CL category selector used by the
+	 * Bio-Engineer Creature Crafting Tool.
+	 */
+	@preLocked
+	public native void openBioEngineerCategorySelection();
+
+	/**
+	 * Opens the creature selector for one Minimum CL category.
+	 */
+	@preLocked
+	public native void openBioEngineerCreatureSelection(int minimumLevel);
+
+	/**
+	 * Replaces the client schematic list with the selected creature so the
+	 * normal one-item confirmation can continue the standard workflow.
+	 */
+	@preLocked
+	public native void selectBioEngineerCreatureSchematic(int schematicIndex);
+
+	@local
+	private native boolean isBioEngineerCreatureCraftingTool();
+
+	@local
+	private native int getBioEngineerMinimumLevel(DraftSchematic draftSchematic);
+
+	/**
 	 * Creates the needed objects when a schematic is selected
 	 */
 	private native boolean createSessionObjects(DraftSchematic draftSchematic);

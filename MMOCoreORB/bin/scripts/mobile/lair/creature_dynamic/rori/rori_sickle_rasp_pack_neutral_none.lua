@@ -6,7 +6,9 @@ rori_sickle_rasp_pack_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
-	buildingType = "none"
+	buildingType = "none",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
+	customName = "Mixed Rasp Pack",
 }
 
 addLairTemplate("rori_sickle_rasp_pack_neutral_none", rori_sickle_rasp_pack_neutral_none)

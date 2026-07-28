@@ -286,6 +286,12 @@ object_intangible_pet_shared_3po_protocol_droid_silver = SharedIntangibleObjectT
 
 ObjectTemplates:addClientTemplate(object_intangible_pet_shared_3po_protocol_droid_silver, "object/intangible/pet/shared_3po_protocol_droid_silver.iff")
 
+object_intangible_pet_shared_acklay_hue = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/pet/shared_acklay_hue.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_intangible_pet_shared_acklay_hue, "object/intangible/pet/shared_acklay_hue.iff")
+
 object_intangible_pet_shared_angler_hue = SharedIntangibleObjectTemplate:new {
 	clientTemplateFileName = "object/intangible/pet/shared_angler_hue.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

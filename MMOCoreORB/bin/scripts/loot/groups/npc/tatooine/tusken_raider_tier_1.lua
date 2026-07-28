@@ -9,6 +9,7 @@ tusken_raider_tier_1 = {
 		{groupTemplate = "bone_armor", weight = 500000},
 		{groupTemplate = "chitin_armor", weight = 500000},
 		{groupTemplate = "clothing_attachments", weight = 600000},
+		{itemTemplate = "coffee_table_modern_style_02", weight = 500000},
 		{groupTemplate = "color_crystals", weight = 350000},
 		{groupTemplate = "junk", weight = 900000},
 		{groupTemplate = "power_crystals", weight = 500000},

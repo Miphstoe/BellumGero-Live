@@ -429,10 +429,30 @@ int PlayerObjectImplementation::calculateBhReward() {
 	if (getJediState() >= 4) // Minimum if player is knight
 		minReward = 50000;
 
+	ManagedReference<CreatureObject*> player = getParentRecursively(SceneObjectType::PLAYERCREATURE).castTo<CreatureObject*>();
+
 	int skillPoints = getSpentJediSkillPoints();
 	int reward = skillPoints * 1000;
 
 	int frsRank = getFrsData()->getRank();
+
+	if (player != nullptr) {
+		if (player->hasSkill("force_rank_light_master") || player->hasSkill("force_rank_dark_master")) {
+			frsRank = Math::max(frsRank, 11);
+		} else {
+			for (int i = 10; i >= 1; --i) {
+				String rankSuffix = String::valueOf(i);
+
+				if (i < 10)
+					rankSuffix = "0" + rankSuffix;
+
+				if (player->hasSkill("force_rank_light_rank_" + rankSuffix) || player->hasSkill("force_rank_dark_rank_" + rankSuffix)) {
+					frsRank = Math::max(frsRank, i);
+					break;
+				}
+			}
+		}
+	}
 
 	if (frsRank > 0)
 		reward += frsRank * 100000; // +100k per frs rank
@@ -1775,6 +1795,13 @@ void PlayerObjectImplementation::notifyOnline() {
 		if (frsManager != nullptr) {
 			frsManager->playerLoggedIn(playerCreature);
 		}
+	}
+
+	// Re-sync Knight order chat room (Order of the Light / Order of the Dark) membership on
+	// every login - covers relogging, and grants access to existing qualifying Knights who
+	// completed their trials before this feature existed, without needing to repeat anything.
+	if (chatManager != nullptr) {
+		chatManager->updateOrderRoomMembership(playerCreature);
 	}
 
 	// Screenplay login triggers

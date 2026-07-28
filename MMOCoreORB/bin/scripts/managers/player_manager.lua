@@ -44,7 +44,7 @@
 --GENERAL PLAYER SETTINGS
 -----------------------------------
 
-onlineCharactersPerAccount = 4 --How many characters are allowed online from a single account.
+onlineCharactersPerAccount = 5 --How many characters are allowed online from a single account.
 allowSameAccountPvpRatingCredit = 0
 
 --Blue frog / GM buff values
@@ -70,7 +70,7 @@ baseStoredShips = 3
 -----------------------------------
 --VETERAN REWARDS CONFIG
 -----------------------------------
-veteranRewardMilestones = {2, 4, 8, 12, 16, 20, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345, 365} --days, must be sorted low to high
+veteranRewardMilestones = {2, 4, 8, 12, 16, 20, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345, 365, 380, 395, 410, 425, 440, 455, 470, 485, 500, 515, 530, 545} --days, must be sorted low to high
 
 veteranRewardAdditionalMilestones = 15 --frequency, in days, of additional milestones (beyond the established ones)
 
@@ -177,6 +177,9 @@ veteranRewards = {
 
 	-- 365 Day Reward
 	{templateFile = "reward:special/character_slot_unlock", milestone=365, oneTime=true, description="Unlock 1 additional character slot on this galaxy (One-Time Choice Reward)", jtlReward = false},
+
+	-- 545 Day Reward
+	{templateFile = "object/tangible/harvesting/instant_travel_vehicle_transponder.iff", milestone=545, oneTime=true, description="Instant Travel Vehicle Transponder", jtlReward = false},
 }
 
 -- { "stringId", "songFilePath" }

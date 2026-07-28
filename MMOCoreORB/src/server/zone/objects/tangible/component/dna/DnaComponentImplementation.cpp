@@ -39,6 +39,7 @@ void DnaComponentImplementation::fillAttributeList(AttributeListMessage* alm, Cr
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
 	alm->insertAttribute("dna_comp_source", source);
+	alm->insertAttribute("@obj_attr_n:dna_source_level", getLevel());
 
 	switch (quality) {
 	case 1:

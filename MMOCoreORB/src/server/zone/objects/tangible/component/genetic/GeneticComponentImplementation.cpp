@@ -5,6 +5,7 @@
 #include "server/zone/objects/tangible/component/genetic/GeneticComponent.h"
 #include "templates/tangible/SharedWeaponObjectTemplate.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/managers/crafting/labratories/Genetics.h"
 
 // #define DEBUG_GENETIC_LAB
 
@@ -298,6 +299,12 @@ void GeneticComponentImplementation::fillAttributeList(AttributeListMessage* alm
 	alm->insertAttribute("volume", 1);
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
+
+	// This is the same stat-based level calculation used when the genetic
+	// template is turned into a pet deed. A creature schematic may still
+	// raise the final deed to its species minimum CL.
+	int predictedLevel = Genetics::calculatePetLevel(_this.getReferenceUnsafeStaticCast());
+	alm->insertAttribute("@obj_attr_n:dna_predicted_level", predictedLevel);
 
 	switch (quality){
 		case 1:
