@@ -67,10 +67,23 @@ end
 
 function BellumBountyDailyTier5Theater:onSpynetMarkDown(pOwner)
 	if (pOwner ~= nil and MandoWayOfLife ~= nil) then
+		self:removeTheaterWaypoint(pOwner)
 		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] All 5 daily missions complete! Return tomorrow for more. This is the Way.")
-if (MandoDailyHoloStory ~= nil) then
-pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 5) end)
-end
+		if (MandoDailyHoloStory ~= nil) then
+			pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 5) end)
+		end
+
+		local pInventory = SceneObject(pOwner):getSlottedObject("inventory")
+		if (pInventory ~= nil) then
+			local itemID = createLoot(pInventory, "mando_daily_bounty_tier5_loot", self.lootLevel, false)
+			if (itemID ~= nil and itemID ~= 0) then
+				CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Your guild contact awarded you an additional top tier reward.")
+			else
+				CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Your final reward could not be placed in your inventory. Clear a slot and contact staff.")
+			end
+		else
+			CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] Your final reward could not be placed in your inventory. Clear a slot and contact staff.")
+		end
 	end
 end
 

@@ -246,6 +246,7 @@ function MandoDailyHoloStory:onCampCompleted(pPlayer, tier)
 	local lines = {}
 
 	if (tier >= 5) then
+		lines[#lines + 1] = "Good job, hunter. You took out the rogue IG88 trader."
 		lines[#lines + 1] = self:pick(self.FINALES, seed, 50)
 	else
 		-- twist: not the real target; chain continues
