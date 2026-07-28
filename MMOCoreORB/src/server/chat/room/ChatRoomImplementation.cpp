@@ -3,10 +3,13 @@
 		See file COPYING for copying conditions.*/
 
 #include "server/chat/room/ChatRoom.h"
+#include "engine/log/Logger.h"
 #include "server/zone/objects/group/GroupObject.h"
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/player/variables/FrsData.h"
+#include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/Zone.h"
 
@@ -297,6 +300,46 @@ int ChatRoomImplementation::checkEnterPermission(CreatureObject* player) {
 			return ChatManager::NOTINVITED;
 
 		return ChatManager::SUCCESS;
+
+	case ChatRoom::ORDER_LIGHT:
+	case ChatRoom::ORDER_DARK: {
+		// Authoritative Knight alignment source: the FRS council value set once at Knight
+		// Trials completion (jedi_trials.lua unlockJediKnight), not the screenplay-side
+		// "JediCouncil" working value or the player's displayed title (both of which can
+		// drift or be hidden). Requires both the Jedi Knight title skill AND a matching
+		// FRS council value, so a partial/legacy progression state is never eligible.
+		if (!player->isPlayerCreature())
+			return ChatManager::NOTINVITED;
+
+		if (!player->hasSkill("force_title_jedi_rank_03"))
+			return ChatManager::NOTINVITED;
+
+		ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+
+		if (ghost == nullptr)
+			return ChatManager::NOTINVITED;
+
+		FrsData* frsData = ghost->getFrsData();
+
+		if (frsData == nullptr)
+			return ChatManager::NOTINVITED;
+
+		int council = frsData->getCouncilType();
+
+		if (council != FrsManager::COUNCIL_LIGHT && council != FrsManager::COUNCIL_DARK) {
+			Logger::console.warning("Player " + player->getFirstName() + " holds the Jedi Knight title but has no valid FRS council value (" + String::valueOf(council) + ") - ambiguous alignment data, denying order room access.");
+
+			return ChatManager::NOTINVITED;
+		}
+
+		if (roomType == ChatRoom::ORDER_LIGHT && council == FrsManager::COUNCIL_LIGHT)
+			return ChatManager::SUCCESS;
+
+		if (roomType == ChatRoom::ORDER_DARK && council == FrsManager::COUNCIL_DARK)
+			return ChatManager::SUCCESS;
+
+		return ChatManager::NOTINVITED;
+	}
 
 	default:
 		break;

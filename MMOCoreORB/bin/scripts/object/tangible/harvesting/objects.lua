@@ -99,3 +99,16 @@ object_tangible_harvesting_shared_shellfish_harvester = SharedTangibleObjectTemp
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_harvesting_shared_shellfish_harvester, "object/tangible/harvesting/shared_shellfish_harvester.iff")
+
+object_tangible_harvesting_shared_instant_travel_vehicle_transponder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/event_perk/shared_shuttle_beacon.iff",
+	detailedDescription = "A veteran reward transponder used to summon an Instant Travel Vehicle. The shuttle can transport the owner and eligible group members to any valid shuttleport or starport on the current planet.",
+	junkDealerNeeded = 0,
+	junkValue = 0,
+	noTrade = 1,
+	objectName = "Instant Travel Vehicle Transponder",
+	targetable = 1,
+	gameObjectType = 8211
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_harvesting_shared_instant_travel_vehicle_transponder, "object/tangible/harvesting/shared_instant_travel_vehicle_transponder.iff")

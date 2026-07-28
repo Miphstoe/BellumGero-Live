@@ -1777,6 +1777,13 @@ void PlayerObjectImplementation::notifyOnline() {
 		}
 	}
 
+	// Re-sync Knight order chat room (Order of the Light / Order of the Dark) membership on
+	// every login - covers relogging, and grants access to existing qualifying Knights who
+	// completed their trials before this feature existed, without needing to repeat anything.
+	if (chatManager != nullptr) {
+		chatManager->updateOrderRoomMembership(playerCreature);
+	}
+
 	// Screenplay login triggers
 	Lua* lua = DirectorManager::instance()->getLuaInstance();
 	Reference<LuaFunction*> luaOnPlayerLoggedIn = lua->createFunction("PlayerTriggers", "playerLoggedIn", 0);

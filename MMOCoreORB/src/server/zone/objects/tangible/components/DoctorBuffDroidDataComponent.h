@@ -18,9 +18,6 @@ public:
 private:
 	uint64 ownerId;
 
-	int buffStock;
-	int poisonStock;
-	int diseaseStock;
 	int earningsBalance;
 
 	int buffPrice;
@@ -38,20 +35,25 @@ private:
 	bool diseaseEnabled;
 	bool jantaEnabled;
 
-	// Per-stat buff storage — index is BuffAttribute value (0=Health … 8=Willpower)
-	int buffStockPerAttr[9];
-	float buffPackPowerPerAttr[9];
-	float buffPackDurationPerAttr[9];
-	int jantaBuffStockPerAttr[9];
-	float jantaBuffPackPowerPerAttr[9];
-	float jantaBuffPackDurationPerAttr[9];
+	// Legacy pooled/averaged buff storage — index is BuffAttribute value (0=Health … 8=Willpower).
+	// Superseded by real items sitting in the droid's own container (see DoctorBuffDroidMenuComponent),
+	// which store each loaded pack's true power/duration instead of blending them into an average.
+	// These fields are kept only so any pre-upgrade stock on a live droid can be migrated once
+	// (materialized into a real item, then zeroed via clearLegacyStock()) — see getLegacy*/hasLegacyStock.
+	int legacyBuffStockPerAttr[9];
+	float legacyBuffPowerPerAttr[9];
+	float legacyBuffDurationPerAttr[9];
+	int legacyJantaBuffStockPerAttr[9];
+	float legacyJantaBuffPowerPerAttr[9];
+	float legacyJantaBuffDurationPerAttr[9];
 
-	// Weighted-average pack effectiveness and duration for poison/disease
-	float poisonPackPower;
-	float diseasePackPower;
-
-	float poisonPackDuration;
-	float diseasePackDuration;
+	// Legacy weighted-average pack effectiveness/duration for poison/disease
+	int legacyPoisonStock;
+	int legacyDiseaseStock;
+	float legacyPoisonPackPower;
+	float legacyDiseasePackPower;
+	float legacyPoisonPackDuration;
+	float legacyDiseasePackDuration;
 
 	// Cached owner healing_wound_treatment skill mod, updated when supplies are loaded
 	int ownerHealingMod;
@@ -92,31 +94,24 @@ public:
 	void setOwnerId(uint64 id);
 	uint64 getOwnerId() const;
 
-	// Returns total charges for BUFFS (sum across all attrs), or stock for POISON/DISEASE
-	int getStock(ServiceType type) const;
-	// attr = BuffAttribute value (0-8); used for SERVICE_BUFFS to track per-stat stock
-	void addStock(ServiceType type, int amount, float effectiveness = 0.0f, byte attr = 0, float duration = 0.0f);
-
-	// Per-stat buff queries (attr = BuffAttribute value 0-8)
-	int getBuffStockByAttr(byte attr) const;
-	float getBuffPackPowerByAttr(byte attr) const;
-	float getBuffPackDurationByAttr(byte attr) const;
-	bool consumeBuffStock(byte attr, int amount = 1);
-	int getJantaBuffStockByAttr(byte attr) const;
-	float getJantaBuffPackPowerByAttr(byte attr) const;
-	float getJantaBuffPackDurationByAttr(byte attr) const;
-	bool consumeJantaBuffStock(byte attr, int amount = 1);
-
-	// Bitmask of which attrs have stock > 0; bit N set ↔ buffStockPerAttr[N] > 0
-	uint32 getLoadedBuffAttributes() const;
-	uint32 getLoadedJantaBuffAttributes() const;
-
-	// Poison/disease only — returns the stored weighted-average pack effectiveness
-	float getPackPower(ServiceType type) const;
-	float getPackDuration(ServiceType type) const;
-
-	// Consume stock for POISON or DISEASE (not BUFFS — use consumeBuffStock for those)
-	bool consumeStock(ServiceType type, int amount = 1);
+	// Legacy pre-upgrade stock migration only. Real stock now lives as actual items in the
+	// droid's own container (see DoctorBuffDroidMenuComponent); these accessors exist solely so
+	// migrateLegacyStock() can read any pre-upgrade averaged stock once, materialize it into a
+	// real item, and zero it out via clearLegacyStock().
+	int getLegacyBuffStock(byte attr) const;
+	float getLegacyBuffPower(byte attr) const;
+	float getLegacyBuffDuration(byte attr) const;
+	int getLegacyJantaBuffStock(byte attr) const;
+	float getLegacyJantaBuffPower(byte attr) const;
+	float getLegacyJantaBuffDuration(byte attr) const;
+	int getLegacyPoisonStock() const;
+	float getLegacyPoisonPower() const;
+	float getLegacyPoisonDuration() const;
+	int getLegacyDiseaseStock() const;
+	float getLegacyDiseasePower() const;
+	float getLegacyDiseaseDuration() const;
+	bool hasLegacyStock() const;
+	void clearLegacyStock();
 
 	int getOwnerHealingMod() const;
 	void setOwnerHealingMod(int mod);
