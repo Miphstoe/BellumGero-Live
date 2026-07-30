@@ -8,6 +8,8 @@
 #define DPSCOMMAND_H_
 
 #include "server/zone/managers/combat/DpsSessionManager.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/objects/creature/ai/CreatureTemplate.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/player/sui/SuiWindowType.h"
@@ -35,6 +37,50 @@ public:
 		return "1-minute";
 	}
 
+	static bool getTrainingDummyInfo(SceneObject* object, uint64& objectID,
+		String& profileLabel, String& profileDescription) {
+		objectID = 0;
+		profileLabel = "";
+		profileDescription = "";
+
+		if (object == nullptr || !object->isAiAgent())
+			return false;
+
+		AiAgent* agent = object->asAiAgent();
+
+		if (agent == nullptr)
+			return false;
+
+		const CreatureTemplate* creatureTemplate = agent->getCreatureTemplate();
+
+		if (creatureTemplate == nullptr)
+			return false;
+
+		const String& templateName = creatureTemplate->getTemplateName();
+
+		if (templateName == "training_dummy_raw") {
+			profileLabel = "Dummy - Raw";
+			profileDescription = "Armor 0 | No resistances | Raw output baseline";
+		} else if (templateName == "training_dummy_standard") {
+			profileLabel = "Dummy - Standard";
+			profileDescription = "Armor 1 | Mercenary Sentry defenses";
+		} else if (templateName == "training_dummy_acklay") {
+			profileLabel = "Dummy - Acklay";
+			profileDescription = "Armor 2 | Geo Lab Acklay defenses";
+		} else if (templateName == "training_dummy_krayt") {
+			profileLabel = "Dummy - Canyon Krayt";
+			profileDescription = "Armor 3 | Canyon Krayt defenses";
+		} else if (templateName == "training_dummy_jedi_hunter") {
+			profileLabel = "Dummy - Jedi Hunter";
+			profileDescription = "Armor 3 | Resists 90 | Lightsaber 40 | jk_hunt_bh PvP profile";
+		} else {
+			return false;
+		}
+
+		objectID = object->getObjectID();
+		return objectID != 0;
+	}
+
 	static void showMessage(CreatureObject* player, const String& title, const String& text) {
 		if (player == nullptr || player->getPlayerObject() == nullptr)
 			return;
@@ -48,13 +94,19 @@ public:
 		player->sendMessage(box->generateMessage());
 	}
 
-	static void sendArmedMessage(CreatureObject* player, uint64 durationMillis) {
+	static void sendArmedMessage(CreatureObject* player, uint64 durationMillis,
+		uint64 targetObjectID = 0, const String& targetLabel = "",
+		const String& targetProfile = "") {
 		if (player == nullptr)
 			return;
 
 		StringBuffer message;
-		message << "DPS " << getDurationLabel(durationMillis)
-			<< " test armed. Timing begins with your first credited damage event and ends automatically.";
+		message << "DPS " << getDurationLabel(durationMillis) << " test armed";
+
+		if (targetObjectID != 0)
+			message << " and locked to " << targetLabel;
+
+		message << ". Timing begins with your first credited damage event and ends automatically.";
 		player->sendSystemMessage(message.toString());
 	}
 
@@ -72,27 +124,36 @@ public:
 		help << "The test is only armed until the first successful credited damage event. "
 			 << "That first event starts the clock and produces a confirmation message. "
 			 << "The test then ends automatically after 1 or 5 minutes. Your own damage, "
-			 << "creature-pet damage, combat-droid damage, and supported damage-over-time ticks are tracked separately.";
+			 << "creature-pet damage, combat-droid damage, and supported damage-over-time ticks are tracked separately.\n\n";
+		help << "When a Training Dummy is selected before starting the test, the session is locked "
+			 << "to that exact dummy. Damage dealt to any other target is ignored. Starting without "
+			 << "a Training Dummy selected continues to run a normal freeform DPS test.\n\n";
+		help << "Results include sustained DPS, best completed 10-second DPS, average damage event, "
+			 << "events per second, owner percentages, and direct-versus-DOT percentages.";
 
 		showMessage(player, "DPS Meter Help", help.toString());
 	}
 
-	static bool startTimedSession(CreatureObject* player, uint64 durationMillis) {
+	static bool startTimedSession(CreatureObject* player, uint64 durationMillis,
+		uint64 targetObjectID = 0, const String& targetLabel = "",
+		const String& targetProfile = "") {
 		DpsSessionManager* manager = DpsSessionManager::instance();
 
 		if (manager == nullptr || player == nullptr)
 			return false;
 
-		if (!manager->startSession(player, false, 0, durationMillis)) {
+		if (!manager->startSession(player, false, targetObjectID, durationMillis,
+			targetLabel, targetProfile)) {
 			player->sendSystemMessage("You already have an active DPS test. Stop or reset it before starting another.");
 			return false;
 		}
 
-		sendArmedMessage(player, durationMillis);
+		sendArmedMessage(player, durationMillis, targetObjectID, targetLabel,
+			targetProfile);
 		return true;
 	}
 
-	static void showMenu(CreatureObject* player);
+	static void showMenu(CreatureObject* player, SceneObject* selectedObject = nullptr);
 };
 
 class DpsSessionSuiCallback : public SuiCallback {
@@ -128,12 +189,21 @@ public:
 		if (manager == nullptr)
 			return;
 
+		uint64 selectedDummyID = 0;
+		String selectedDummyLabel;
+		String selectedDummyProfile;
+		ManagedReference<SceneObject*> usingObject = suiBox->getUsingObject().get();
+		DpsCommandUi::getTrainingDummyInfo(usingObject, selectedDummyID,
+			selectedDummyLabel, selectedDummyProfile);
+
 		switch (action) {
 		case DpsCommandUi::START_ONE_MINUTE:
-			DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS);
+			DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 			break;
 		case DpsCommandUi::START_FIVE_MINUTES:
-			DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS);
+			DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 			break;
 		case DpsCommandUi::STOP_SESSION: {
 			String report;
@@ -150,7 +220,13 @@ public:
 		case DpsCommandUi::RESTART_SESSION: {
 			if (manager->restartSession(player)) {
 				uint64 durationMillis = manager->getConfiguredDurationMillis(player);
-				DpsCommandUi::sendArmedMessage(player, durationMillis);
+				uint64 targetObjectID = 0;
+				String targetLabel;
+				String targetProfile;
+				manager->getSessionTargetInfo(player, targetObjectID, targetLabel,
+					targetProfile);
+				DpsCommandUi::sendArmedMessage(player, durationMillis, targetObjectID,
+					targetLabel, targetProfile);
 			}
 			break;
 		}
@@ -171,7 +247,7 @@ public:
 	}
 };
 
-inline void DpsCommandUi::showMenu(CreatureObject* player) {
+inline void DpsCommandUi::showMenu(CreatureObject* player, SceneObject* selectedObject) {
 	if (player == nullptr || player->getPlayerObject() == nullptr)
 		return;
 
@@ -183,10 +259,16 @@ inline void DpsCommandUi::showMenu(CreatureObject* player) {
 	bool active = manager->hasActiveSession(player);
 	bool updates = manager->getLiveUpdates(player);
 	uint64 configuredDuration = manager->getConfiguredDurationMillis(player);
+	uint64 selectedDummyID = 0;
+	String selectedDummyLabel;
+	String selectedDummyProfile;
+	bool hasSelectedDummy = !active &&
+		getTrainingDummyInfo(selectedObject, selectedDummyID, selectedDummyLabel,
+			selectedDummyProfile);
 
 	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::NONE, SuiListBox::HANDLESINGLEBUTTON);
 	box->setPromptTitle("DPS Meter");
-	box->setUsingObject(player);
+	box->setUsingObject(hasSelectedDummy ? selectedObject : player);
 	box->setCancelButton(true, "@cancel");
 	box->setOkButton(true, "@ok");
 	box->setCallback(new DpsSessionSuiCallback(player->getZoneServer()));
@@ -197,6 +279,10 @@ inline void DpsCommandUi::showMenu(CreatureObject* player) {
 
 	if (active)
 		prompt << "Configured test: " << getDurationLabel(configuredDuration) << "\n";
+	else if (hasSelectedDummy)
+		prompt << "Selected target: " << selectedDummyLabel << "\n";
+	else
+		prompt << "Mode: Freeform outgoing damage\n";
 
 	prompt << "10-second updates: " << (updates ? "ON" : "OFF") << "\n\n";
 	prompt << "Select an action:";
@@ -207,8 +293,10 @@ inline void DpsCommandUi::showMenu(CreatureObject* player) {
 		box->addMenuItem("View Current Status", VIEW_STATUS);
 		box->addMenuItem("Restart Same Timed Test", RESTART_SESSION);
 	} else {
-		box->addMenuItem("Start 1-Minute DPS Test", START_ONE_MINUTE);
-		box->addMenuItem("Start 5-Minute DPS Test", START_FIVE_MINUTES);
+		box->addMenuItem(hasSelectedDummy ?
+			"Start 1-Minute Test Against Selected Dummy" : "Start 1-Minute DPS Test", START_ONE_MINUTE);
+		box->addMenuItem(hasSelectedDummy ?
+			"Start 5-Minute Test Against Selected Dummy" : "Start 5-Minute DPS Test", START_FIVE_MINUTES);
 		box->addMenuItem("View Last Session", VIEW_STATUS);
 	}
 
@@ -239,10 +327,27 @@ public:
 		if (manager == nullptr)
 			return GENERALERROR;
 
+		ManagedReference<SceneObject*> selectedObject = nullptr;
+		uint64 selectedTargetID = target;
+
+		// Slash commands do not always receive the client's selected target as
+		// their target argument. Fall back to the player's current target ID.
+		if (selectedTargetID == 0)
+			selectedTargetID = player->getTargetID();
+
+		if (selectedTargetID != 0 && server->getZoneServer() != nullptr)
+			selectedObject = server->getZoneServer()->getObject(selectedTargetID);
+
+		uint64 selectedDummyID = 0;
+		String selectedDummyLabel;
+		String selectedDummyProfile;
+		DpsCommandUi::getTrainingDummyInfo(selectedObject, selectedDummyID,
+			selectedDummyLabel, selectedDummyProfile);
+
 		String argumentString = arguments.toString().trim().toLowerCase();
 
 		if (argumentString.isEmpty()) {
-			DpsCommandUi::showMenu(player);
+			DpsCommandUi::showMenu(player, selectedObject);
 			return SUCCESS;
 		}
 
@@ -251,9 +356,11 @@ public:
 		tokenizer.getStringToken(action);
 
 		if (action == "1" || action == "1m" || action == "one") {
-			DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS);
+			DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 		} else if (action == "5" || action == "5m" || action == "five") {
-			DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS);
+			DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 		} else if (action == "start") {
 			String durationToken;
 
@@ -261,9 +368,11 @@ public:
 				tokenizer.getStringToken(durationToken);
 
 			if (durationToken.isEmpty() || durationToken == "1" || durationToken == "1m" || durationToken == "one") {
-				DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS);
+				DpsCommandUi::startTimedSession(player, DpsSessionManager::ONE_MINUTE_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 			} else if (durationToken == "5" || durationToken == "5m" || durationToken == "five") {
-				DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS);
+				DpsCommandUi::startTimedSession(player, DpsSessionManager::FIVE_MINUTES_MILLIS,
+				selectedDummyID, selectedDummyLabel, selectedDummyProfile);
 			} else {
 				player->sendSystemMessage("Invalid DPS duration. Use /dps start 1 or /dps start 5.");
 				return INVALIDPARAMETERS;
@@ -280,7 +389,13 @@ public:
 		} else if (action == "reset" || action == "restart") {
 			if (manager->restartSession(player)) {
 				uint64 durationMillis = manager->getConfiguredDurationMillis(player);
-				DpsCommandUi::sendArmedMessage(player, durationMillis);
+				uint64 targetObjectID = 0;
+				String targetLabel;
+				String targetProfile;
+				manager->getSessionTargetInfo(player, targetObjectID, targetLabel,
+					targetProfile);
+				DpsCommandUi::sendArmedMessage(player, durationMillis, targetObjectID,
+					targetLabel, targetProfile);
 			}
 		} else if (action == "updates") {
 			String setting;

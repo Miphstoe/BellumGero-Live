@@ -30,6 +30,12 @@ public:
 	uint64 targetObjectID;
 	uint64 fixedDurationMillis;
 
+	String targetLabel;
+	String targetProfile;
+
+	static const int MAX_TEN_SECOND_BUCKETS = 30;
+	uint64 tenSecondDamage[MAX_TEN_SECOND_BUCKETS];
+
 	uint64 totalDamage;
 	uint64 directDamage;
 	uint64 dotDamage;
@@ -43,7 +49,8 @@ public:
 
 	DpsSessionData();
 
-	void resetStatistics(uint64 now, uint64 targetID, uint64 durationMillis);
+	void resetStatistics(uint64 now, uint64 targetID, uint64 durationMillis,
+		const String& newTargetLabel = "", const String& newTargetProfile = "");
 };
 
 class DpsSessionManager : public Singleton<DpsSessionManager>, public Object {
@@ -82,10 +89,15 @@ public:
 	DpsSessionManager();
 
 	bool startSession(CreatureObject* player, bool forceRestart = false, uint64 targetObjectID = 0,
-		uint64 fixedDurationMillis = ONE_MINUTE_MILLIS);
+		uint64 fixedDurationMillis = ONE_MINUTE_MILLIS, const String& targetLabel = "",
+		const String& targetProfile = "");
 	bool stopSession(CreatureObject* player, String& report);
 	bool restartSession(CreatureObject* player);
-	bool restartSession(CreatureObject* player, uint64 targetObjectID, uint64 fixedDurationMillis);
+	bool restartSession(CreatureObject* player, uint64 targetObjectID, uint64 fixedDurationMillis,
+		const String& targetLabel = "", const String& targetProfile = "");
+
+	bool getSessionTargetInfo(CreatureObject* player, uint64& targetObjectID,
+		String& targetLabel, String& targetProfile);
 
 	bool hasActiveSession(CreatureObject* player);
 	bool hasActiveSession(uint64 playerID);

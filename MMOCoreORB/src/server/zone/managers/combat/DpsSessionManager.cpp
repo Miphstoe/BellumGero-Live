@@ -29,6 +29,12 @@ DpsSessionData::DpsSessionData() {
 	targetObjectID = 0;
 	fixedDurationMillis = DpsSessionManager::ONE_MINUTE_MILLIS;
 
+	targetLabel = "";
+	targetProfile = "";
+
+	for (int i = 0; i < MAX_TEN_SECOND_BUCKETS; ++i)
+		tenSecondDamage[i] = 0;
+
 	totalDamage = 0;
 	directDamage = 0;
 	dotDamage = 0;
@@ -39,7 +45,8 @@ DpsSessionData::DpsSessionData() {
 	damageEvents = 0;
 }
 
-void DpsSessionData::resetStatistics(uint64 now, uint64 targetID, uint64 durationMillis) {
+void DpsSessionData::resetStatistics(uint64 now, uint64 targetID, uint64 durationMillis,
+	const String& newTargetLabel, const String& newTargetProfile) {
 	active = true;
 	completedByTimer = false;
 	finalReportSent = false;
@@ -57,6 +64,12 @@ void DpsSessionData::resetStatistics(uint64 now, uint64 targetID, uint64 duratio
 
 	targetObjectID = targetID;
 	fixedDurationMillis = durationMillis > 0 ? durationMillis : DpsSessionManager::ONE_MINUTE_MILLIS;
+
+	targetLabel = newTargetLabel;
+	targetProfile = newTargetProfile;
+
+	for (int i = 0; i < MAX_TEN_SECOND_BUCKETS; ++i)
+		tenSecondDamage[i] = 0;
 
 	totalDamage = 0;
 	directDamage = 0;
@@ -159,6 +172,37 @@ String DpsSessionManager::buildReportLocked(const DpsSessionData* session, uint6
 	double playerDps = elapsedSeconds > 0.0 ? session->playerDamage / elapsedSeconds : 0.0;
 	double petDps = elapsedSeconds > 0.0 ? session->petDamage / elapsedSeconds : 0.0;
 	double droidDps = elapsedSeconds > 0.0 ? session->droidDamage / elapsedSeconds : 0.0;
+	double directDps = elapsedSeconds > 0.0 ? session->directDamage / elapsedSeconds : 0.0;
+	double dotDps = elapsedSeconds > 0.0 ? session->dotDamage / elapsedSeconds : 0.0;
+	double averageEvent = session->damageEvents > 0 ?
+		(double)session->totalDamage / session->damageEvents : 0.0;
+	double eventsPerSecond = elapsedSeconds > 0.0 ?
+		session->damageEvents / elapsedSeconds : 0.0;
+
+	double playerPercent = session->totalDamage > 0 ?
+		session->playerDamage * 100.0 / session->totalDamage : 0.0;
+	double petPercent = session->totalDamage > 0 ?
+		session->petDamage * 100.0 / session->totalDamage : 0.0;
+	double droidPercent = session->totalDamage > 0 ?
+		session->droidDamage * 100.0 / session->totalDamage : 0.0;
+	double directPercent = session->totalDamage > 0 ?
+		session->directDamage * 100.0 / session->totalDamage : 0.0;
+	double dotPercent = session->totalDamage > 0 ?
+		session->dotDamage * 100.0 / session->totalDamage : 0.0;
+
+	uint32 completedTenSecondBuckets = (uint32)(elapsedMillis / LIVE_UPDATE_INTERVAL_MILLIS);
+
+	if (completedTenSecondBuckets > DpsSessionData::MAX_TEN_SECOND_BUCKETS)
+		completedTenSecondBuckets = DpsSessionData::MAX_TEN_SECOND_BUCKETS;
+
+	uint64 bestTenSecondDamage = 0;
+
+	for (uint32 i = 0; i < completedTenSecondBuckets; ++i) {
+		if (session->tenSecondDamage[i] > bestTenSecondDamage)
+			bestTenSecondDamage = session->tenSecondDamage[i];
+	}
+
+	double bestTenSecondDps = bestTenSecondDamage / 10.0;
 
 	StringBuffer report;
 	report << (finalReport ? "DPS SESSION RESULTS" : "DPS SESSION STATUS") << "\n\n";
@@ -178,34 +222,58 @@ String DpsSessionManager::buildReportLocked(const DpsSessionData* session, uint6
 		report << "State: Complete\n";
 	}
 
-	if (session->targetObjectID != 0)
-		report << "Target Restriction: " << session->targetObjectID << "\n";
-	else
+	if (session->targetObjectID != 0) {
+		report << "Target: " << (session->targetLabel.isEmpty() ?
+			String::valueOf(session->targetObjectID) : session->targetLabel) << "\n";
+	} else {
 		report << "Mode: Timed freeform outgoing damage\n";
+	}
 
-	report << "Configured Duration: " << String::format("%.1f", session->fixedDurationMillis / 1000.0) << " seconds\n";
+	report << "Configured Duration: "
+		<< String::format("%.1f", session->fixedDurationMillis / 1000.0)
+		<< " seconds\n";
 	report << "Duration: " << String::format("%.1f", elapsedSeconds) << " seconds\n";
 
 	if (session->active && session->firstDamageTime != 0) {
 		uint64 remainingMillis = session->fixedDurationMillis > elapsedMillis ?
 			session->fixedDurationMillis - elapsedMillis : 0;
-		report << "Time Remaining: " << String::format("%.1f", remainingMillis / 1000.0) << " seconds\n";
+		report << "Time Remaining: " << String::format("%.1f", remainingMillis / 1000.0)
+			<< " seconds\n";
 	}
 
+	report << "\nPERFORMANCE\n";
 	report << "Total Damage: " << session->totalDamage << "\n";
 	report << "Average DPS: " << String::format("%.1f", totalDps) << "\n";
+
+	if (completedTenSecondBuckets > 0)
+		report << "Best 10-Second DPS: " << String::format("%.1f", bestTenSecondDps) << "\n";
+	else
+		report << "Best 10-Second DPS: Pending first complete interval\n";
+
+	report << "Average Damage Event: " << String::format("%.1f", averageEvent) << "\n";
+	report << "Events Per Second: " << String::format("%.2f", eventsPerSecond) << "\n";
 	report << "Damage Events: " << session->damageEvents << "\n";
 	report << "Largest Damage Event: " << session->largestHit << "\n";
 	report << "Unique Targets Damaged: " << session->uniqueTargets.size() << "\n\n";
 
 	report << "OWNER BREAKDOWN\n";
-	report << "Player: " << session->playerDamage << " damage | " << String::format("%.1f", playerDps) << " DPS\n";
-	report << "Creature Pets: " << session->petDamage << " damage | " << String::format("%.1f", petDps) << " DPS\n";
-	report << "Combat Droids: " << session->droidDamage << " damage | " << String::format("%.1f", droidDps) << " DPS\n\n";
+	report << "Player: " << session->playerDamage << " | "
+		<< String::format("%.1f", playerDps) << " DPS | "
+		<< String::format("%.1f", playerPercent) << "%\n";
+	report << "Creature Pets: " << session->petDamage << " | "
+		<< String::format("%.1f", petDps) << " DPS | "
+		<< String::format("%.1f", petPercent) << "%\n";
+	report << "Combat Droids: " << session->droidDamage << " | "
+		<< String::format("%.1f", droidDps) << " DPS | "
+		<< String::format("%.1f", droidPercent) << "%\n\n";
 
 	report << "DAMAGE SOURCE BREAKDOWN\n";
-	report << "Direct Combat: " << session->directDamage << "\n";
-	report << "Non-Direct (DOT / Traps): " << session->dotDamage << "\n";
+	report << "Direct Combat: " << session->directDamage << " | "
+		<< String::format("%.1f", directDps) << " DPS | "
+		<< String::format("%.1f", directPercent) << "%\n";
+	report << "DOT / Traps: " << session->dotDamage << " | "
+		<< String::format("%.1f", dotDps) << " DPS | "
+		<< String::format("%.1f", dotPercent) << "%\n";
 
 	if (session->totalDamage == 0)
 		report << "\nNo successful outgoing damage has been recorded for this session.";
@@ -266,7 +334,9 @@ void DpsSessionManager::sendFinalReportWindow(CreatureObject* player, const Stri
 	player->sendMessage(box->generateMessage());
 }
 
-bool DpsSessionManager::startSession(CreatureObject* player, bool forceRestart, uint64 targetObjectID, uint64 fixedDurationMillis) {
+bool DpsSessionManager::startSession(CreatureObject* player, bool forceRestart,
+	uint64 targetObjectID, uint64 fixedDurationMillis, const String& targetLabel,
+	const String& targetProfile) {
 	if (player == nullptr || !player->isPlayerCreature() || player->getPlayerObject() == nullptr)
 		return false;
 
@@ -279,7 +349,8 @@ bool DpsSessionManager::startSession(CreatureObject* player, bool forceRestart, 
 		return false;
 
 	session->resetStatistics(now, targetObjectID,
-		fixedDurationMillis > 0 ? fixedDurationMillis : ONE_MINUTE_MILLIS);
+		fixedDurationMillis > 0 ? fixedDurationMillis : ONE_MINUTE_MILLIS,
+		targetLabel, targetProfile);
 	return true;
 }
 
@@ -292,15 +363,42 @@ bool DpsSessionManager::restartSession(CreatureObject* player) {
 
 	Reference<DpsSessionData*> session = getOrCreateSessionLocked(player->getObjectID());
 	uint64 targetObjectID = session->targetObjectID;
-	uint64 durationMillis = session->fixedDurationMillis > 0 ? session->fixedDurationMillis : ONE_MINUTE_MILLIS;
+	uint64 durationMillis = session->fixedDurationMillis > 0 ?
+		session->fixedDurationMillis : ONE_MINUTE_MILLIS;
+	String targetLabel = session->targetLabel;
+	String targetProfile = session->targetProfile;
 
-	session->resetStatistics(now, targetObjectID, durationMillis);
+	session->resetStatistics(now, targetObjectID, durationMillis,
+		targetLabel, targetProfile);
 	return true;
 }
 
-bool DpsSessionManager::restartSession(CreatureObject* player, uint64 targetObjectID, uint64 fixedDurationMillis) {
+bool DpsSessionManager::restartSession(CreatureObject* player, uint64 targetObjectID,
+	uint64 fixedDurationMillis, const String& targetLabel, const String& targetProfile) {
 	return startSession(player, true, targetObjectID,
-		fixedDurationMillis > 0 ? fixedDurationMillis : ONE_MINUTE_MILLIS);
+		fixedDurationMillis > 0 ? fixedDurationMillis : ONE_MINUTE_MILLIS,
+		targetLabel, targetProfile);
+}
+
+bool DpsSessionManager::getSessionTargetInfo(CreatureObject* player,
+	uint64& targetObjectID, String& targetLabel, String& targetProfile) {
+	targetObjectID = 0;
+	targetLabel = "";
+	targetProfile = "";
+
+	if (player == nullptr)
+		return false;
+
+	Locker locker(&sessionsLock);
+	Reference<DpsSessionData*> session = sessions.get(player->getObjectID());
+
+	if (session == nullptr || session->sessionID == 0)
+		return false;
+
+	targetObjectID = session->targetObjectID;
+	targetLabel = session->targetLabel;
+	targetProfile = session->targetProfile;
+	return targetObjectID != 0;
 }
 
 bool DpsSessionManager::stopSession(CreatureObject* player, String& report) {
@@ -438,6 +536,15 @@ void DpsSessionManager::recordDamage(TangibleObject* attacker, TangibleObject* d
 		session->lastDamageTime = now;
 		session->totalDamage += damage;
 		session->damageEvents++;
+
+		uint64 damageElapsedMillis = now >= session->firstDamageTime ?
+			now - session->firstDamageTime : 0;
+		uint32 bucketIndex = (uint32)(damageElapsedMillis / LIVE_UPDATE_INTERVAL_MILLIS);
+
+		if (bucketIndex >= DpsSessionData::MAX_TEN_SECOND_BUCKETS)
+			bucketIndex = DpsSessionData::MAX_TEN_SECOND_BUCKETS - 1;
+
+		session->tenSecondDamage[bucketIndex] += damage;
 
 		if ((uint64)damage > session->largestHit)
 			session->largestHit = damage;
