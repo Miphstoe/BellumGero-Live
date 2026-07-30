@@ -27,6 +27,12 @@ yavin4_destroy_missions = {
 			size = 20,
 		},
 		{
+			lairTemplateName = "yavin4_tybis_herd_neutral_none",
+			minDifficulty = 12,
+			maxDifficulty = 16,
+			size = 25,
+		},
+		{
 			lairTemplateName = "yavin4_choku_lair_neutral_medium",
 			minDifficulty = 14,
 			maxDifficulty = 18,
@@ -52,6 +58,12 @@ yavin4_destroy_missions = {
 		},
 		{
 			lairTemplateName = "yavin4_mamien_lair_neutral_boss_03",
+			minDifficulty = 17,
+			maxDifficulty = 21,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_spined_puc_giant_neutral_medium_boss_01",
 			minDifficulty = 17,
 			maxDifficulty = 21,
 			size = 25,
@@ -87,6 +99,12 @@ yavin4_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "yavin4_skreeg_warrior_neutral_medium_boss_01",
+			minDifficulty = 28,
+			maxDifficulty = 32,
+			size = 25,
+		},
+		{
 			lairTemplateName = "yavin4_crystal_snake_giant_neutral_medium_boss_01",
 			minDifficulty = 29,
 			maxDifficulty = 33,
@@ -98,7 +116,6 @@ yavin4_destroy_missions = {
 			maxDifficulty = 65,
 			size = 25,
 		},
-
 		{
 			lairTemplateName = "yavin4_mawgax_lair_neutral_medium",
 			minDifficulty = 30,
@@ -115,6 +132,12 @@ yavin4_destroy_missions = {
 			lairTemplateName = "yavin4_angler_giant_neutral_medium_boss_01",
 			minDifficulty = 33,
 			maxDifficulty = 37,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_qurvel_lair_neutral_medium",
+			minDifficulty = 35,
+			maxDifficulty = 39,
 			size = 25,
 		},
 		{

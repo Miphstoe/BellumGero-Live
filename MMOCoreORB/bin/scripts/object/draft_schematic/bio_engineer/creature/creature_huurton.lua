@@ -44,6 +44,7 @@
 object_draft_schematic_bio_engineer_creature_creature_huurton = object_draft_schematic_bio_engineer_creature_shared_creature_huurton:new {
 
    templateType = DRAFTSCHEMATIC,
+   lab = BIO_CREATURE_LAB,
    factoryCrateSize = 0,	
 
    customObjectName = "Huurton",

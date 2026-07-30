@@ -20,6 +20,8 @@
 #include "server/zone/objects/player/sui/callbacks/EnclaveCouncilRankSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/objects/creature/CreatureObject.h"
+#include "server/chat/ChatManager.h"
 
 const char LuaPlayerObject::className[] = "LuaPlayerObject";
 
@@ -835,6 +837,23 @@ int LuaPlayerObject::setFrsCouncil(lua_State* L) {
 	FrsData* frsData = realObject->getFrsData();
 
 	frsData->setCouncilType(councilType);
+
+	// Immediately re-sync Knight order chat room (Order of the Light / Order of the Dark)
+	// membership - this is the single authoritative point where a player's persistent
+	// alignment is set, covering both the normal Knight Trials unlock and GM corrections
+	// (e.g. /gmfsvillage "Make Light/Dark Jedi Knight").
+	ManagedReference<CreatureObject*> player = realObject->getParentRecursively(SceneObjectType::PLAYERCREATURE).castTo<CreatureObject*>();
+
+	if (player != nullptr) {
+		auto zoneServer = realObject->getZoneServer();
+
+		if (zoneServer != nullptr) {
+			ChatManager* chatManager = zoneServer->getChatManager();
+
+			if (chatManager != nullptr)
+				chatManager->updateOrderRoomMembership(player);
+		}
+	}
 
 	return 0;
 }

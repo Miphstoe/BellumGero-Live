@@ -36,9 +36,13 @@ public:
 	};
 
 	static DoctorBuffDroidDataComponent* getDroidData(SceneObject* sceneObject);
+	// One-time repair for droids that still have pre-upgrade pooled/averaged stock: materializes
+	// it into real items in the droid's own container, then zeroes the legacy fields. Safe to call
+	// on every menu open — it's a no-op once a droid has no legacy stock left.
+	static void migrateLegacyStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static void sendOwnerOnlyMessage(CreatureObject* player);
 	static void sendPriceSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data);
-	static void sendStockSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data);
+	static void sendStockSummary(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static void sendEarningsSummary(CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static bool storeDroid(SceneObject* sceneObject, CreatureObject* player);
 	static bool loadSupplies(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, LoadMode mode = LOAD_STANDARD);
@@ -52,8 +56,11 @@ public:
 	static bool performPetBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta = false);
 	static void promptAdTextInput(SceneObject* sceneObject, CreatureObject* player);
 	static void openDroidInventory(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
-	static void promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent::ServiceType service, byte attr, int maxQty);
-	static void withdrawBuffStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType service, byte attr, int quantity);
+	// Returns the withdrawable quantity of the real loaded item with this object ID, or 0 if it's
+	// no longer loaded in the droid's container.
+	static int getLoadedItemQuantity(SceneObject* sceneObject, uint64 itemObjectId);
+	static void promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player, uint64 itemObjectId, int maxQty);
+	static void withdrawBuffStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, uint64 itemObjectId, int quantity);
 
 	void fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const override;
 	int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const override;

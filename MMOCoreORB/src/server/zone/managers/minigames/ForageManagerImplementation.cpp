@@ -368,6 +368,8 @@ bool ForageManagerImplementation::forageGiveResource(TransactionLog& trx, Creatu
 
 	ManagedReference<ResourceSpawn*> resource = nullptr;
 
+	bool isEggForage = (resType == "meat_egg");
+
 	if(resType.isEmpty()) {
 		//Get a list of the flora on the planet.
 		Vector<ManagedReference<ResourceSpawn*> > resources;
@@ -402,7 +404,7 @@ bool ForageManagerImplementation::forageGiveResource(TransactionLog& trx, Creatu
 		}
 	}
 
-	int quantity = System::random(30) + 10;
+	int quantity = isEggForage ? (System::random(500) + 500) : (System::random(30) + 10);
 	resourceManager->harvestResourceToPlayer(trx, player, resource, quantity);
 	return true;
 }

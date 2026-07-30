@@ -43,9 +43,11 @@
 
 object_tangible_component_dna_dna_template_generic = object_tangible_component_dna_shared_dna_template_generic:new {
 
-	numberExperimentalProperties = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-	experimentalProperties = {"XX", "XX", "UT", "CR", "CD", "DR", "HR", "FL", "MA", "PE", "OQ", "SR"},
-	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+	-- DNA samples, not resources, determine these experimental caps. Keep the
+	-- twelve crafting attributes and groups, but advertise no resource weights.
+	numberExperimentalProperties = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	experimentalProperties = {},
+	experimentalWeights = {},
 	experimentalGroupTitles = {"null", "null", "expPhysiqueProfile", "expPhysiqueProfile", "expProwessProfile", "expProwessProfile", "expMentalProfile", "expMentalProfile", "expPsychologicalProfile", "expPsychologicalProfile", "expAggressionProfile", "expAggressionProfile"},
 	experimentalSubGroupTitles = {"null", "null", "hardiness", "fortitude", "dexterity", "endurance", "intellect", "cleverness", "dependability", "courage", "fierceness", "power"},
 	experimentalMin = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},

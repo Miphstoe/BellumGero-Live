@@ -33,6 +33,12 @@ naboo_destroy_missions = {
 			size = 20,
 		},
 		{
+			lairTemplateName = "naboo_krevol_lair_neutral_boss_01",
+			minDifficulty = 4,
+			maxDifficulty = 8,
+			size = 25,
+		},
+		{
 			lairTemplateName = "naboo_flewt_lair_neutral_boss_02",
 			minDifficulty = 5,
 			maxDifficulty = 9,
@@ -117,6 +123,18 @@ naboo_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "naboo_nightspider_lair_neutral_small_03",
+			minDifficulty = 9,
+			maxDifficulty = 13,
+			size = 25,
+		},
+		{
+			lairTemplateName = "naboo_falumpaset_domesticated_neutral_medium",
+			minDifficulty = 10,
+			maxDifficulty = 14,
+			size = 25,
+		},
+		{
 			lairTemplateName = "naboo_borvos_camp_neutral_small_theater",
 			minDifficulty = 10,
 			maxDifficulty = 14,
@@ -156,6 +174,12 @@ naboo_destroy_missions = {
 			lairTemplateName = "naboo_rsf_camp_neutral_medium_theater",
 			minDifficulty = 12,
 			maxDifficulty = 16,
+			size = 25,
+		},
+		{
+			lairTemplateName = "naboo_krevol_lair_neutral_boss_03",
+			minDifficulty = 13,
+			maxDifficulty = 17,
 			size = 25,
 		},
 		{

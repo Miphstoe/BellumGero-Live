@@ -69,6 +69,7 @@ object_tangible_wearables_armor_mandalorian_custom_tribesman_helmet = object_tan
 
 	rating = HEAVY,
 	maxCondition = 60000,
+	socket = 4,
 
 	kinetic = 75,
 	energy = 75,

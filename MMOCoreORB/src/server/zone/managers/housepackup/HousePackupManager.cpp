@@ -777,6 +777,19 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         // This ensures items keep their properties when the house is packed and redeeded
         // serializeObjectState() writes both the length field and the data
         serializeObjectState(obj, blob);
+
+        // Targeted debug logging (gated by Logger's per-instance debug flag; off by default)
+        ManagedReference<SceneObject*> immediateParent = obj->getParent().get();
+        SceneObject* rootParent = obj->getRootParent();
+        debug() << "Pack item[" << idx << "] objID=" << objID
+                << " tpl=" << tpl
+                << " name=\"" << obj->getDisplayedName() << "\""
+                << " immediateParentID=" << (immediateParent != nullptr ? immediateParent->getObjectID() : 0)
+                << " rootParentID=" << (rootParent != nullptr ? rootParent->getObjectID() : 0)
+                << " cellIdx=" << cellIdx << " cellNumber=" << cellNumber
+                << " parentIdx=" << parentIdx
+                << " pos=(" << obj->getPositionX() << ", " << obj->getPositionY() << ", " << obj->getPositionZ() << ")"
+                << " writtenToBlob=true";
     }
 
     // Remember payload (RAM) and also persist to disk so it survives restarts.
@@ -923,6 +936,15 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
 
     uint32 restored = 0, failedCreate = 0, failedTransfer = 0;
 
+    // Items that could not be placed anywhere are NEVER destroyed; their object IDs
+    // are collected here so we can tell the placer/admins exactly what needs recovery.
+    Vector<uint64> unresolvedObjIDs;
+
+    // Primary/first cell of the new building — last-resort safe fallback destination
+    // when an item's originally-saved cell can't accept it back (never used to skip
+    // resolving the correct cell first).
+    ManagedReference<CellObject*> primaryCell = cells.get(0);
+
     for (uint32 k = 0; k < count; ++k) {
         // Layout sizes:
         // v1: tpl(4) + cIdx(2)              + 7*f32
@@ -1002,19 +1024,39 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             continue;
         }
 
-        if (!cell) { failedTransfer++; raw->destroyObjectFromWorld(true); raw->destroyObjectFromDatabase(true); created.set(k, nullptr); continue; }
+        if (!cell) cell = primaryCell; // never leave a resolvable building without a destination
 
         if (pIdx == (uint16)0xFFFF) {
             // TOP-LEVEL: put into the cell first, then set local transform (no world Z hacks).
-            bool ok = cell->transferObject(raw, /*containmentType*/-1, /*notifyClient*/false, /*allowOverflow*/false, /*notifyRoot*/true);
-            if (!ok) ok = cell->transferObject(raw, 0, false, false, true);
+            bool ok = (cell != nullptr) && cell->transferObject(raw, /*containmentType*/-1, /*notifyClient*/false, /*allowOverflow*/false, /*notifyRoot*/true);
+            String failReason = ok ? "" : "transfer to saved cell rejected";
+
+            // Safe fallback: try the building's primary cell if the saved cell rejected the item
+            // (never used to skip resolving the correct cell first -- only after it failed).
+            if (!ok && cell != primaryCell && primaryCell != nullptr) {
+                ok = primaryCell->transferObject(raw, -1, false, false, true);
+                if (ok) failReason = "";
+            }
+
+            debug() << "Restore item[" << k << "] objID=" << savedObjID << " tpl=" << tpl
+                    << " savedCellNumber=" << cellNumber
+                    << " destCellID=" << (ok ? (cell != nullptr ? cell->getObjectID() : primaryCell->getObjectID()) : 0)
+                    << " transferResult=" << (ok ? "OK" : "FAILED")
+                    << (failReason.isEmpty() ? "" : (" reason=" + failReason));
 
             if (!ok) {
+                // NEVER destroy a packed item just because it couldn't be placed this time.
+                // Leave it as-is (already un-parented, still valid in the database with its
+                // ObjVars intact) and surface it so it can be recovered manually.
                 failedTransfer++;
-                raw->destroyObjectFromWorld(true);
-                raw->destroyObjectFromDatabase(true);
+                unresolvedObjIDs.add(savedObjID != 0 ? savedObjID : raw->getObjectID());
                 created.set(k, nullptr);
-                if (placer) placer->sendSystemMessage("  FAILED to place item in its cell.");
+                if (placer) {
+                    placer->sendSystemMessage(
+                        "  Could not restore an item (ID " + String::valueOf((int64)raw->getObjectID()) +
+                        "). It was NOT deleted -- please contact an administrator to recover it."
+                    );
+                }
             } else {
                 raw->setPosition(px, py, pz);          // cell-local
                 raw->setDirection(qw, qx, qy, qz);     // cell-local
@@ -1040,15 +1082,43 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
 
             SceneObject* child  = created.get(k);
             SceneObject* parent = (pIdx < created.size()) ? created.get(pIdx) : nullptr;
-            if (!child || !parent) continue;
 
-            bool ok = parent->transferObject(child, /*containmentType*/-1, /*notifyClient*/false, /*allowOverflow*/false, /*notifyRoot*/true);
-            if (!ok) ok = parent->transferObject(child, 0, false, false, true);
+            if (!child) continue; // create/transfer already failed & was logged in pass one
+
+            // If the intended parent container never made it back (its own placement failed),
+            // fall back to the building's primary cell rather than silently stranding the child
+            // with no parent and no notice.
+            bool ok = false;
+            String failReason;
+
+            if (parent != nullptr) {
+                ok = parent->transferObject(child, /*containmentType*/-1, /*notifyClient*/false, /*allowOverflow*/false, /*notifyRoot*/true);
+                if (!ok) failReason = "transfer to saved parent container rejected";
+            } else {
+                failReason = "saved parent container missing";
+            }
+
+            if (!ok && primaryCell != nullptr) {
+                ok = primaryCell->transferObject(child, -1, false, false, true);
+                if (ok) failReason = "";
+            }
+
+            debug() << "Restore child[" << k << "] objID=" << child->getObjectID()
+                    << " parentIdx=" << pIdx
+                    << " transferResult=" << (ok ? "OK" : "FAILED")
+                    << (failReason.isEmpty() ? "" : (" reason=" + failReason));
+
             if (!ok) {
+                // NEVER destroy -- keep the child in the database for manual recovery.
                 failedTransfer++;
-                child->destroyObjectFromWorld(true);
-                child->destroyObjectFromDatabase(true);
+                unresolvedObjIDs.add(child->getObjectID());
                 created.set(k, nullptr);
+                if (placer) {
+                    placer->sendSystemMessage(
+                        "  Could not restore a contained item (ID " + String::valueOf((int64)child->getObjectID()) +
+                        "). It was NOT deleted -- please contact an administrator to recover it."
+                    );
+                }
             } else {
                 restored++;
             }
@@ -1060,12 +1130,31 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
     removeFile(pathForDeed(deedOID));
     removeFile(pathForDeedLegacy(deedOID));
 
+    // Persist any unresolved (but NOT destroyed) object IDs to a recovery file so an
+    // administrator can locate and manually place them even after this session ends.
+    if (!unresolvedObjIDs.isEmpty()) {
+        String recoveryPath = String(PACK_DIR) + "/unresolved-" + String::valueOf((int64)deedOID) + ".txt";
+        ensurePackDir();
+        std::FILE* f = std::fopen(recoveryPath.toCharArray(), "w");
+        if (f != nullptr) {
+            for (int i = 0; i < unresolvedObjIDs.size(); ++i) {
+                std::fprintf(f, "%llu\n", (unsigned long long)unresolvedObjIDs.get(i));
+            }
+            std::fclose(f);
+        }
+        warning("HousePackup: " + String::valueOf((int)unresolvedObjIDs.size()) +
+                " item(s) could not be restored for deed OID " + String::valueOf((int64)deedOID) +
+                " -- object IDs preserved (not deleted) and listed in " + recoveryPath);
+    }
+
     if (placer) {
         placer->sendSystemMessage(
             "Restore complete: " +
             String::valueOf(restored) + " restored, " +
             String::valueOf(failedCreate) + " create fails, " +
-            String::valueOf(failedTransfer) + " transfer fails."
+            String::valueOf(failedTransfer) + " transfer fails" +
+            (unresolvedObjIDs.isEmpty() ? String("") :
+                String(". Unresolved items were NOT deleted; contact an administrator for recovery."))
         );
     }
 

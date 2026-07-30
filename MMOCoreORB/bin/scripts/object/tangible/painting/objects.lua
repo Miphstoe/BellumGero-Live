@@ -4760,3 +4760,15 @@ object_tangible_painting_shared_painting_zabrak_m = SharedTangibleObjectTemplate
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_painting_shared_painting_zabrak_m, "object/tangible/painting/shared_painting_zabrak_m.iff")
+
+object_tangible_painting_shared_painting_mando_clan = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_painting_mando_clan.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_painting_mando_clan, "object/tangible/painting/shared_painting_mando_clan.iff")
+
+object_tangible_painting_shared_painting_mando_holo = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_painting_mando_holo.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_painting_mando_holo, "object/tangible/painting/shared_painting_mando_holo.iff")

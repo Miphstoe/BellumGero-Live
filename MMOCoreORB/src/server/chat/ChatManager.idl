@@ -45,6 +45,8 @@ class ChatManager extends ManagedService implements Logger {
 	ChatRoom servicesRoom;
 	ChatRoom pvpBroadcastRoom;
 	ChatRoom systemRoom;
+	ChatRoom orderLightRoom;
+	ChatRoom orderDarkRoom;
 
 	transient ChatRoomMap roomMap;
 
@@ -212,6 +214,15 @@ class ChatManager extends ManagedService implements Logger {
 	private native void broadcastQueryResultsToRoom(ChatRoom room);
 
 	public native void sendRoomList(CreatureObject player);
+
+	/**
+	 * Centralized eligibility check for the Knight alignment order rooms (Order of the Light /
+	 * Order of the Dark). Joins the player to whichever order room they currently qualify for
+	 * (per ChatRoom::checkEnterPermission), and removes them from the other/former room if they
+	 * no longer qualify. Safe to call repeatedly (idempotent) - on login, and whenever the
+	 * player's FRS council value changes (grant, GM correction, or alignment change).
+	 */
+	public native void updateOrderRoomMembership(CreatureObject player);
 
 	//////////////////////////////////////////////////////
 
@@ -480,6 +491,20 @@ class ChatManager extends ManagedService implements Logger {
 	 */
 	public ChatRoom getSystemRoom() {
 		return systemRoom;
+	}
+
+	/*
+	 * Returns the Order of the Light chat room (Light-aligned Jedi Knights)
+	 */
+	public ChatRoom getOrderLightRoom() {
+		return orderLightRoom;
+	}
+
+	/*
+	 * Returns the Order of the Dark chat room (Dark-aligned Jedi Knights)
+	 */
+	public ChatRoom getOrderDarkRoom() {
+		return orderDarkRoom;
 	}
 
 	@read

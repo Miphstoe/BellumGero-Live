@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_hunter_helmet = object_tangib
 
 	rating = LIGHT,
 	maxCondition = 34000,
+	socket = 4,
 
 	kinetic = 60,
 	energy = 60,

@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_chest = object_tangi
 
 	rating = LIGHT,
 	maxCondition = 30000,
+	socket = 4,
 
 	kinetic = 55,
 	energy = 55,

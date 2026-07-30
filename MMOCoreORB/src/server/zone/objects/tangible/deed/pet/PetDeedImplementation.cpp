@@ -153,12 +153,9 @@ void PetDeedImplementation::initializeTransientMembers() {
 void PetDeedImplementation::setupAttacks() {
 	attacks.removeAll();
 
-	info(true) << "PetDeed::setupAttacks: special1 = " << special1 << ", special2 = " << special2;
-
 	if (special1 != "none" && special1 != "defaultattack") {
 		String args = "";
 		if (special1.contains("creature") || special1.contains("poison") || special1.contains("disease")) {
-			info(true) << "PetDeed::setupAttacks: Adding special1 attack: " << special1;
 			attacks.addAttack(special1, args);
 		} else if (special1.contains("blind")) {
 			attacks.addAttack(special1, "blindChance=50");
@@ -180,7 +177,6 @@ void PetDeedImplementation::setupAttacks() {
 	if (special2 != "none" && special2 != "defaultattack") {
 		String args = "";
 		if (special2.contains("creature") || special2.contains("poison") || special2.contains("disease")) {
-			info(true) << "PetDeed::setupAttacks: Adding special2 attack: " << special2;
 			attacks.addAttack(special2, args);
 		} else if (special2.contains("blind")) {
 			attacks.addAttack(special2, "blindChance=50");
@@ -321,10 +317,6 @@ void PetDeedImplementation::updateCraftingValues(CraftingValues* values, bool fi
 		special2 = component->getSpecial2();
 		ranged = component->getRanged();
 
-		// Debug logging
-		info(true) << "PetDeed: Loaded special1 = " << special1;
-		info(true) << "PetDeed: Loaded special2 = " << special2;
-
 		// Attributes
 		cleverness = component->getCleverness();
 		endurance = component->getEndurance();
@@ -379,6 +371,54 @@ void PetDeedImplementation::updateCraftingValues(CraftingValues* values, bool fi
 
 		// Calculate and set level
 		level = Genetics::calculatePetLevel(component);
+	}
+
+	// Final Conditioning is only present on creature schematics assigned to
+	// BIO_CREATURE_LAB. Every update starts by restoring the Genetic
+	// Template values above, so these final values never stack across repeated
+	// experimentation updates.
+	bool hasFinalConditioning = values->hasExperimentalAttribute("hp") ||
+		values->hasExperimentalAttribute("mindamage") ||
+		values->hasExperimentalAttribute("maxdamage") ||
+		values->hasExperimentalAttribute("accuracy");
+
+	if (hasFinalConditioning) {
+		if (values->hasExperimentalAttribute("hp")) {
+			float baseAverageHam = (health + action + mind) / 3.f;
+			float conditionedAverageHam = values->getCurrentValue("hp");
+
+			if (baseAverageHam > 0.f && conditionedAverageHam >= baseAverageHam) {
+				float vitalityMultiplier = conditionedAverageHam / baseAverageHam;
+				vitalityMultiplier = Math::max(1.f, Math::min(vitalityMultiplier, 1.05f));
+
+				health = (int)round(health * vitalityMultiplier);
+				action = (int)round(action * vitalityMultiplier);
+				mind = (int)round(mind * vitalityMultiplier);
+			}
+		}
+
+		if (values->hasExperimentalAttribute("mindamage"))
+			damageMin = (int)round(values->getCurrentValue("mindamage"));
+
+		if (values->hasExperimentalAttribute("maxdamage"))
+			damageMax = (int)round(values->getCurrentValue("maxdamage"));
+
+		if (values->hasExperimentalAttribute("accuracy"))
+			chanceHit = values->getCurrentValue("accuracy");
+
+		// Preserve the existing crafted-pet damage safety limits.
+		if (damageMax > 1000)
+			damageMax = 1000;
+
+		if (damageMin > damageMax)
+			damageMin = damageMax;
+
+		// Recalculate the deed CL from the conditioned combat values so the
+		// displayed and control-device level continues to reflect the pet's
+		// actual final strength.
+		int averageHam = (health + action + mind) / 3;
+		regen = Math::max(1, averageHam / 10);
+		level = calculatePetLevel();
 	}
 
 	CreatureTemplateManager* creatureTemplateManager = CreatureTemplateManager::instance();

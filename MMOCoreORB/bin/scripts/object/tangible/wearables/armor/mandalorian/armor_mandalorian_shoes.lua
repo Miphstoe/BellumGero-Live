@@ -116,6 +116,7 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_shoes = object_tan
 	-- LIGHT, MEDIUM, HEAVY
 	rating = LIGHT,
 	maxCondition = 40000,
+	socket = 4,
 
 	kinetic = 58,
 	energy = 58,

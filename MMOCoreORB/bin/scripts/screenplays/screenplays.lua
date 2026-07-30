@@ -62,6 +62,9 @@ includeFile("tools/tools.lua")
 includeFile("tools/shuttle_dropoff.lua")
 includeFile("tools/firework_event.lua")
 
+-- Veteran rewards
+includeFile("veteran_rewards/instant_travel_vehicle.lua")
+
 includeFile("trainers/trainerData.lua")
 includeFile("trainers/skillTrainer.lua")
 includeFile("trainers/trainerConvHandler.lua")
@@ -221,6 +224,7 @@ includeFile("bellum/bounty_camp_daily_tier5_theater.lua")
 includeFile("bellum/mando_way_of_life.lua")
 includeFile("bellum/mando_spynet_contract_waypoint_disk_menu.lua")
 includeFile("bellum/mando_daily_bounty_fob_menu.lua")
+includeFile("bellum/mando_daily_holo_story.lua")
 includeFile("bellum/convos/mando_trialmaster_conv_handler.lua")
 includeFile("bellum/convos/mando_foundling_informant_conv_handler.lua")
 includeFile("bellum/convos/mando_spynet_operative_conv_handler.lua")

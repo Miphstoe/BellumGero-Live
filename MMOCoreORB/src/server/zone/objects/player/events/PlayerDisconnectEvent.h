@@ -6,6 +6,7 @@
 #define PLAYERDISCONNECTEVENT_H_
 
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/managers/combat/DpsSessionManager.h"
 
 namespace server {
 namespace zone {
@@ -29,6 +30,9 @@ public:
 			return;
 
 		ManagedReference<SceneObject*> par = play->getParent().get();
+
+		if (par != nullptr && par->isCreatureObject())
+			DpsSessionManager::instance()->removeSession(par->getObjectID());
 
 		Locker locker(par);
 

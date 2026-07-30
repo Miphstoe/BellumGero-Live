@@ -23,6 +23,7 @@
 #include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidZoneComponent.h"
+#include "server/zone/objects/tangible/components/DoctorBuffDroidContainerComponent.h"
 #include "server/zone/objects/tangible/components/LytusFamilyArtefactMenuComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
@@ -125,6 +126,7 @@
 #include "server/zone/objects/structure/components/GarageZoneComponent.h"
 #include "server/zone/objects/structure/components/GarageDataComponent.h"
 #include "server/zone/objects/creature/components/TrainerMenuComponent.h"
+#include "server/zone/objects/creature/components/TrainingDummyMenuComponent.h"
 #include "server/zone/objects/creature/components/CityFactionTroopMenuComponent.h"
 #include "server/zone/objects/creature/components/SarlaccMenuComponent.h"
 #include "server/zone/objects/creature/components/PetMenuComponent.h"
@@ -268,6 +270,7 @@ ComponentManager::ComponentManager() {
 	components.put("VendorMenuComponent", new VendorMenuComponent());
 	components.put("DoctorBuffDroidMenuComponent", new DoctorBuffDroidMenuComponent());
 	components.put("DoctorBuffDroidZoneComponent", new DoctorBuffDroidZoneComponent());
+	components.put("DoctorBuffDroidContainerComponent", new DoctorBuffDroidContainerComponent());
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());
@@ -329,6 +332,7 @@ ComponentManager::ComponentManager() {
 	dataObjectFactory.registerObject<FireworkShowDataComponent>("FireworkShowDataComponent");
 
 	components.put("TrainerMenuComponent", new TrainerMenuComponent());
+	components.put("TrainingDummyMenuComponent", new TrainingDummyMenuComponent());
 	components.put("CityFactionTroopMenuComponent", new CityFactionTroopMenuComponent());
 	components.put("PetMenuComponent", new PetMenuComponent());
 

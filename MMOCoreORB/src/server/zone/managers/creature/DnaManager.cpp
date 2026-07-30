@@ -732,10 +732,14 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 		break;
 	}
 
-	if (candidateAttacks.size() <= 0) {
-		candidateAttacks.add("defaultattack");
-		attackCount = 1;
-	}
+	// Genetic templates and pet deeds only store two crafted specials. Preserve
+	// the existing quality-roll behavior, but never advertise a third attack that
+	// cannot reach the finished pet.
+	if (attackCount > 2)
+		attackCount = 2;
+
+	if (candidateAttacks.size() <= 0)
+		attackCount = 0;
 
 	if (attackCount > candidateAttacks.size())
 		attackCount = candidateAttacks.size();
@@ -752,10 +756,10 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 		attackPool.remove(pickIndex);
 	}
 
-	if (selectedAttacks.size() <= 0)
-		selectedAttacks.add("defaultattack");
-
-	prototype->setSpecialAttackOne(selectedAttacks.get(0));
+	if (selectedAttacks.size() > 0)
+		prototype->setSpecialAttackOne(selectedAttacks.get(0));
+	else
+		prototype->setSpecialAttackOne("defaultattack");
 
 	if (selectedAttacks.size() > 1)
 		prototype->setSpecialAttackTwo(selectedAttacks.get(1));

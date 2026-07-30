@@ -39,6 +39,12 @@ rori_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "rori_sickle_rasp_pack_neutral_none",
+			minDifficulty = 5,
+			maxDifficulty = 9,
+			size = 25,
+		},
+		{
 			lairTemplateName = "rori_sickle_rasp_nest_neutral_medium",
 			minDifficulty = 6,
 			maxDifficulty = 10,

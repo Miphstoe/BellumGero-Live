@@ -131,7 +131,7 @@ void BountyMissionObjectiveImplementation::complete() {
 
 	owner->getZoneServer()->getPlayerManager()->awardExperience(owner, "bountyhunter", expGain, true, 1);
 
-	owner->getZoneServer()->getMissionManager()->completePlayerBounty(mission->getTargetObjectId(), owner->getObjectID());
+	owner->getZoneServer()->getMissionManager()->consumePlayerPlacedBounty(mission->getTargetObjectId(), owner->getObjectID());
 
 	completedMission = true;
 
@@ -687,37 +687,46 @@ void BountyMissionObjectiveImplementation::handlePlayerKilled(ManagedObject* arg
 	if (target == nullptr)
 		return;
 
-	int minXpLoss = -50000;
-	int maxXpLoss = -500000;
+	// Jedi-only bounty death penalties. The mere existence of a PlayerBounty
+	// record is not proof of Jedi status -- player-funded bounties can target
+	// any player, Jedi or not. Only an actual, currently-held Jedi skill
+	// authorizes visibility clearing, jedi_general XP loss, and the
+	// associated messaging.
+	if (target->hasSkill("force_title_jedi_rank_02")) {
+		int minXpLoss = -50000;
+		int maxXpLoss = -500000;
 
-	VisibilityManager::instance()->clearVisibility(target);
-	int rewardCreds = mission->getRewardCredits() + mission->getBonusCredits();
-	int xpLoss = rewardCreds * -2;
+		VisibilityManager::instance()->clearVisibility(target);
+		int rewardCreds = mission->getRewardCredits() + mission->getBonusCredits();
+		int xpLoss = rewardCreds * -2;
 
-	if (xpLoss > minXpLoss)
-		xpLoss = minXpLoss;
-	else if (xpLoss < maxXpLoss)
-		xpLoss = maxXpLoss;
+		if (xpLoss > minXpLoss)
+			xpLoss = minXpLoss;
+		else if (xpLoss < maxXpLoss)
+			xpLoss = maxXpLoss;
 
-	auto playerManager = zoneServer->getPlayerManager();
+		auto playerManager = zoneServer->getPlayerManager();
 
-	if (playerManager != nullptr)
-		playerManager->awardExperience(target, "jedi_general", xpLoss, true);
+		if (playerManager != nullptr)
+			playerManager->awardExperience(target, "jedi_general", xpLoss, true);
 
-	StringIdChatParameter message("base_player", "prose_revoke_xp");
-	message.setDI(xpLoss * -1);
-	message.setTO("exp_n", "jedi_general");
-	target->sendSystemMessage(message);
+		StringIdChatParameter message("base_player", "prose_revoke_xp");
+		message.setDI(xpLoss * -1);
+		message.setTO("exp_n", "jedi_general");
+		target->sendSystemMessage(message);
 
-	// 24-hour visibility grace period for Jedi Padawans killed by a Bounty Hunter
-	if (target->hasSkill("force_title_jedi_rank_02") && !target->hasSkill("force_title_jedi_rank_03")) {
-		PlayerObject* targetGhost = target->getPlayerObject();
-		if (targetGhost != nullptr) {
-			uint64 graceEnd = Time().getMiliTime() + (24ULL * 60 * 60 * 1000);
-			Locker ghostLocker(targetGhost);
-			targetGhost->setScreenPlayData("BGBHKill", "visGraceEnd", String::valueOf(graceEnd));
+		// 24-hour visibility grace period for Jedi Padawans killed by a Bounty Hunter
+		if (!target->hasSkill("force_title_jedi_rank_03")) {
+			PlayerObject* targetGhost = target->getPlayerObject();
+			if (targetGhost != nullptr) {
+				uint64 graceEnd = Time().getMiliTime() + (24ULL * 60 * 60 * 1000);
+				Locker ghostLocker(targetGhost);
+				targetGhost->setScreenPlayData("BGBHKill", "visGraceEnd", String::valueOf(graceEnd));
+			}
+			target->sendSystemMessage("You have been slain by a Bounty Hunter. Your Force presence will remain dormant for 24 hours.");
 		}
-		target->sendSystemMessage("You have been slain by a Bounty Hunter. Your Force presence will remain dormant for 24 hours.");
+	} else {
+		info(true) << "Bounty target " << target->getObjectID() << " is not an actual Jedi; skipping Jedi death penalties (visibility clear / jedi_general XP loss).";
 	}
 
 	complete();

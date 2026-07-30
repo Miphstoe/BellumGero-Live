@@ -6,7 +6,9 @@ dantooine_voritor_dasher_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
-	buildingType = "none"
+	buildingType = "none",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_leaf_small.iff",
+	customName = "Voritor Dasher",
 }
 
 addLairTemplate("dantooine_voritor_dasher_neutral_none", dantooine_voritor_dasher_neutral_none)

@@ -6,6 +6,7 @@
  */
 
 #include "CombatManager.h"
+#include "DpsSessionManager.h"
 #include "CreatureAttackData.h"
 #include "DefenderHitList.h"
 #include "server/zone/objects/scene/variables/DeltaVector.h"
@@ -1507,6 +1508,12 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 		return 0;
 	}
 
+	// Snapshot primary HAM so the DPS meter records damage actually removed,
+	// including spillover while excluding overkill beyond the target's current HAM.
+	int initialPrimaryHam = Math::max(0, defender->getHAM(CreatureAttribute::HEALTH))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::ACTION))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::MIND));
+
 	String xpType;
 	if (data.isForceAttack()) {
 		xpType = "jedi_general";
@@ -1684,6 +1691,14 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 	int totalDamage = (int)(healthDamage + actionDamage + mindDamage);
 	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, totalDamage);
 
+	int finalPrimaryHam = Math::max(0, defender->getHAM(CreatureAttribute::HEALTH))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::ACTION))
+		+ Math::max(0, defender->getHAM(CreatureAttribute::MIND));
+	int appliedDamage = Math::max(0, initialPrimaryHam - finalPrimaryHam);
+
+	if (appliedDamage > 0)
+		DpsSessionManager::instance()->recordDamage(attacker, defender, appliedDamage, DpsSessionManager::DIRECT_DAMAGE);
+
 	if (attacker->isPlayerCreature()) {
 		showHitLocationFlyText(attacker->asCreatureObject(), defender, hitLocation);
 	}
@@ -1752,9 +1767,16 @@ int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, T
 		}
 	}
 
+	int initialConditionDamage = defender->getConditionDamage();
+
 	defender->inflictDamage(attacker, 0, damage, true, xpType, true, true);
 
 	defender->notifyObservers(ObserverEventType::DAMAGERECEIVED, attacker, damage);
+
+	int appliedDamage = Math::max(0, defender->getConditionDamage() - initialConditionDamage);
+
+	if (appliedDamage > 0)
+		DpsSessionManager::instance()->recordDamage(attacker, defender, appliedDamage, DpsSessionManager::DIRECT_DAMAGE);
 
 	return damage;
 }

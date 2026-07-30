@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_verdika_helmet = object_tangi
 
 	rating = MEDIUM,
 	maxCondition = 44000,
+	socket = 4,
 
 	kinetic = 65,
 	energy = 65,

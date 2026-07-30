@@ -68,6 +68,7 @@ object_tangible_wearables_armor_mandalorian_custom_initiate_helmet = object_tang
 
 	rating = LIGHT,
 	maxCondition = 28000,
+	socket = 4,
 
 	kinetic = 55,
 	energy = 55,

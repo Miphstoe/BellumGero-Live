@@ -1021,6 +1021,14 @@ object_draft_schematic_item_shared_item_food_station = SharedDraftSchematicObjec
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_item_shared_item_food_station, "object/draft_schematic/item/shared_item_food_station.iff")
 
+-- Bio-Engineer Creature Crafting Tool draft schematic client template.
+-- The matching client IFF must exist at this exact path.
+object_draft_schematic_item_shared_item_bio_engineer_creature_tool = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/item/shared_item_bio_engineer_creature_tool.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_item_shared_item_bio_engineer_creature_tool, "object/draft_schematic/item/shared_item_bio_engineer_creature_tool.iff")
+
 object_draft_schematic_item_shared_item_food_tool = SharedDraftSchematicObjectTemplate:new {
 	clientTemplateFileName = "object/draft_schematic/item/shared_item_food_tool.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

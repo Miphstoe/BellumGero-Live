@@ -15,6 +15,12 @@ dathomir_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "dathomir_shear_mite_lurking_neutral_none",
+			minDifficulty = 13,
+			maxDifficulty = 17,
+			size = 25,
+		},
+		{
 			lairTemplateName = "dathomir_purbole_lair_neutral_medium_boss_01",
 			minDifficulty = 14,
 			maxDifficulty = 18,
@@ -61,6 +67,12 @@ dathomir_destroy_missions = {
 			minDifficulty = 23,
 			maxDifficulty = 27,
 			size = 30,
+		},
+		{
+			lairTemplateName = "dathomir_domesticated_brackaset_lair_neutral_medium",
+			minDifficulty = 23,
+			maxDifficulty = 27,
+			size = 25,
 		},
 		{
 			lairTemplateName = "dathomir_brackaset_lair_neutral_medium",

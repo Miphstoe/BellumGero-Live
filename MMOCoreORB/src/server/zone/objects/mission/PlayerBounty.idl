@@ -11,7 +11,28 @@ include system.util.VectorMap;
 class PlayerBounty extends ManagedObject {
 	protected unsigned long targetPlayerID;
 
+	// Legacy combined reward field. Pre-split records (schemaVersion < 1) store
+	// their total here; it is migrated into jediReward/playerPlacedReward on
+	// load and is not authoritative once schemaVersion >= 1. Kept only so old
+	// serialized objects deserialize without crashing.
 	protected int reward;
+
+	// 0 = legacy/unmigrated record, 1 = split jedi/player-placed reward accounting.
+	protected int schemaVersion;
+
+	// Reward attributable to the target's own Jedi bounty (set from
+	// calculateBhReward()); independent of any player-funded contribution.
+	protected int jediReward;
+
+	// Sum of all player-funded contributions currently active on this target.
+	protected int playerPlacedReward;
+
+	// True while a player-funded bounty is active (unconsumed) on this target.
+	protected boolean playerPlacedBountyActive;
+
+	// True once the player-funded portion has been paid out by a bounty
+	// hunter; the funded reward/placers are cleared and must never be reused.
+	protected boolean playerPlacedBountyConsumed;
 
 	protected boolean online;
 
@@ -28,9 +49,19 @@ class PlayerBounty extends ManagedObject {
 	@dereferenced
 	protected VectorMap<unsigned long, int> bountyPlacers;
 
-	public PlayerBounty(unsigned long targetID, int payout) {
+	// jediPayout is the Jedi-bounty reward component only (0 when this record
+	// is being created purely to hold a player-funded bounty on a non-Jedi
+	// target). Player-funded reward must be added afterward via
+	// addBountyPlacer(), exactly once per placement, never through this
+	// constructor.
+	public PlayerBounty(unsigned long targetID, int jediPayout) {
 		targetPlayerID = targetID;
-		reward = payout;
+		schemaVersion = 1;
+		jediReward = jediPayout;
+		playerPlacedReward = 0;
+		playerPlacedBountyActive = false;
+		playerPlacedBountyConsumed = false;
+		reward = jediPayout;
 		online = true;
 		bountyHunterIDs.setNoDuplicateInsertPlan();
 		missionCooldownList.setNoDuplicateInsertPlan();
@@ -39,7 +70,11 @@ class PlayerBounty extends ManagedObject {
 		lastBountyDebuff = 0;
 	}
 
-	public void setReward(int amount) {
+	// Sets the Jedi-bounty reward component only. Must never touch
+	// playerPlacedReward -- Jedi reward recalculation (e.g. on login or
+	// force_discipline change) must not overwrite a funded player bounty.
+	public void setJediReward(int amount) {
+		jediReward = amount;
 		reward = amount;
 	}
 
@@ -52,10 +87,70 @@ class PlayerBounty extends ManagedObject {
 		return targetPlayerID;
 	}
 
+	// Effective terminal-facing total: the Jedi reward plus the player-funded
+	// reward, but only while the player-funded portion is active and has not
+	// already been paid out.
 	@read
 	public int getReward() {
-		return reward;
+		int total = jediReward;
+
+		if (playerPlacedBountyActive && !playerPlacedBountyConsumed) {
+			total = total + playerPlacedReward;
+		}
+
+		return total;
 	}
+
+	@read
+	public int getJediReward() {
+		return jediReward;
+	}
+
+	@read
+	public int getPlayerPlacedReward() {
+		return playerPlacedReward;
+	}
+
+	@read
+	public boolean isPlayerPlacedBountyActive() {
+		return playerPlacedBountyActive && !playerPlacedBountyConsumed;
+	}
+
+	@read
+	public boolean isPlayerPlacedBountyConsumed() {
+		return playerPlacedBountyConsumed;
+	}
+
+	@read
+	public int getSchemaVersion() {
+		return schemaVersion;
+	}
+
+	public void setSchemaVersion(int version) {
+		schemaVersion = version;
+	}
+
+	// Pays out and permanently clears the player-funded portion of this
+	// bounty. Safe to call more than once: once consumed, subsequent calls
+	// are no-ops that cannot re-arm or duplicate the reward.
+	public void consumePlayerPlacedBounty() {
+		if (playerPlacedBountyConsumed) {
+			return;
+		}
+
+		playerPlacedReward = 0;
+		playerPlacedBountyActive = false;
+		playerPlacedBountyConsumed = true;
+		bountyPlacers.removeAll();
+	}
+
+	// Legacy-schema migration only: bountyPlacers already holds correct
+	// per-placer amounts from before the reward-accounting split, so this
+	// recomputes playerPlacedReward as their sum without re-adding through
+	// addBountyPlacer() (which would double the totals it is meant to fix).
+	// Implemented native: chained VectorMap accessor calls (elementAt(i).getKey())
+	// are not reliably code-generated from inline IDL method bodies.
+	public native void recalculatePlayerPlacedRewardFromExistingPlacers();
 
 	@read
 	public boolean isOnline() {
@@ -109,6 +204,10 @@ class PlayerBounty extends ManagedObject {
 		missionCooldownList.put(enemyID, newTime);
 	}
 
+	// Adds a player-funded contribution exactly once: bountyPlacers tracks who
+	// paid what, and playerPlacedReward is the sole reward accumulator for
+	// this component. This must never also flow through the constructor's
+	// jediPayout or through setJediReward(), or the amount is counted twice.
 	public void addBountyPlacer(unsigned long placerID, int amount) {
 		if (bountyPlacers.contains(placerID)) {
 			int currentAmount = bountyPlacers.get(placerID);
@@ -116,7 +215,10 @@ class PlayerBounty extends ManagedObject {
 		} else {
 			bountyPlacers.put(placerID, amount);
 		}
-		reward = reward + amount;
+
+		playerPlacedReward = playerPlacedReward + amount;
+		playerPlacedBountyActive = true;
+		playerPlacedBountyConsumed = false;
 	}
 
 	@read
