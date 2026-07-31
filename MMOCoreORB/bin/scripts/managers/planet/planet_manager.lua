@@ -96,7 +96,13 @@ corellia = {
 		{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.664289, oz = 0, ow = 0.747476, x = -133.192, z = 28, y = -4711.16, parentid = 0},
 		{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.346712, oz = 0, ow = 0.937972, x = -5049.64, z = 21, y = -2304.52, parentid = 0},
 		{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = 0.290803, oz = 0, ow = 0.956783, x = 3330.38, z = 308, y = 5517.14, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.666281, oz = 0, ow = 0.745701, x = -136.437, z = 28, y = -4730.23, parentid = 0}
+		{templateFile = "object/tangible/terminal/terminal_character_builder.iff", ox = 0, oy = -0.666281, oz = 0, ow = 0.745701, x = -136.437, z = 28, y = -4730.23, parentid = 0},
+
+		-- Test Center Training Dummies near the Coronet character builders.
+		-- These use mobileTemplate so their full benchmark profile and AI are loaded.
+		{mobileTemplate = "training_dummy_standard", heading = -90, x = -132.7, z = 28, y = -4754.3, parent = 0, testCenterOnly = 1},
+		{mobileTemplate = "training_dummy_acklay", heading = -90, x = -134.1, z = 28, y = -4762.2, parent = 0, testCenterOnly = 1},
+		{mobileTemplate = "training_dummy_jedi_hunter", heading = -90, x = -136.8, z = 28, y = -4770.1, parent = 0, testCenterOnly = 1}
 	}
 }
 
