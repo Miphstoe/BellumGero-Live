@@ -341,8 +341,6 @@ MandoWayOfLife = ScreenPlay:new {
 	DAILY_BOUNTY_FOB_IFF_LEGACY = "object/tangible/mission/mando_daily_bounty_fob.iff",
 	-- One-time per login account grant of quest-gated certification skills for players who completed chapters before the fix
 	ACCOUNT_CERT_RETRO_PREFIX = "mando_way:acctCertRetro:",
-	-- Daily Bounty Mission Fob IFF
-	DAILY_BOUNTY_FOB_IFF = "object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.iff",
 	-- Maximum daily bounty missions per player
 	DAILY_BOUNTY_MAX_MISSIONS = 5,
 	-- Daily bounty mission data key prefix (per player, per day)
