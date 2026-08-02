@@ -1,6 +1,6 @@
 -- Mandalorian Daily Bounty - Tier 5 Loot (Highest drop rates)
 -- Best chances for DW Mando schematics and jetpack
--- BH 16% + DW armor 44% + jetpack 20% + decor/trophies 8% + furniture schematics 12%
+-- BH 10% + DW armor 41% + jetpack 20% + jetpack parts 9% + decor/trophies 8% + furniture schematics 12%
 -- Total = 10,000,000
 
 mando_daily_bounty_tier5_loot = {
@@ -8,30 +8,34 @@ mando_daily_bounty_tier5_loot = {
 	minimumLevel = 0,
 	maximumLevel = 0,
 	lootItems = {
-		-- BH armor schematics (16% of pool)
-		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 160000},
-		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 160000},
-		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 160000},
-		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 160000},
-		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 160000},
-		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 160000},
-		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 160000},
-		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 160000},
-		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 160000},
-		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 160000},
-		-- DW Mandalorian armor schematics (44% of pool - highest)
-		{itemTemplate = "dw_mando_helmet_schematic",           weight = 440000},
-		{itemTemplate = "dw_mando_chest_plate_schematic",      weight = 440000},
-		{itemTemplate = "dw_mando_belt_schematic",             weight = 440000},
-		{itemTemplate = "dw_mando_boots_schematic",            weight = 440000},
-		{itemTemplate = "dw_mando_bracer_l_schematic",         weight = 440000},
-		{itemTemplate = "dw_mando_bracer_r_schematic",         weight = 440000},
-		{itemTemplate = "dw_mando_bicep_l_schematic",          weight = 440000},
-		{itemTemplate = "dw_mando_bicep_r_schematic",          weight = 440000},
-		{itemTemplate = "dw_mando_gloves_schematic",           weight = 440000},
-		{itemTemplate = "dw_mando_leggings_schematic",         weight = 440000},
+		-- BH armor schematics (10% of pool)
+		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 100000},
+		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 100000},
+		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 100000},
+		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 100000},
+		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 100000},
+		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 100000},
+		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 100000},
+		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 100000},
+		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 100000},
+		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 100000},
+		-- DW Mandalorian armor schematics (41% of pool - highest)
+		{itemTemplate = "dw_mando_helmet_schematic",           weight = 410000},
+		{itemTemplate = "dw_mando_chest_plate_schematic",      weight = 410000},
+		{itemTemplate = "dw_mando_belt_schematic",             weight = 410000},
+		{itemTemplate = "dw_mando_boots_schematic",            weight = 410000},
+		{itemTemplate = "dw_mando_bracer_l_schematic",         weight = 410000},
+		{itemTemplate = "dw_mando_bracer_r_schematic",         weight = 410000},
+		{itemTemplate = "dw_mando_bicep_l_schematic",          weight = 410000},
+		{itemTemplate = "dw_mando_bicep_r_schematic",          weight = 410000},
+		{itemTemplate = "dw_mando_gloves_schematic",           weight = 410000},
+		{itemTemplate = "dw_mando_leggings_schematic",         weight = 410000},
 		-- DW Mandalorian jetpack schematic (20% - best)
 		{itemTemplate = "dw_mando_jetpack_schematic",          weight = 2000000},
+		-- Jetpack parts - crafting components (9% of pool - best)
+		{itemTemplate = "fuel_dispersion_unit",                weight = 300000},
+		{itemTemplate = "injector_tank",                       weight = 300000},
+		{itemTemplate = "ducted_fan",                          weight = 300000},
 		-- Decor and trophies (8% of pool)
 		{itemTemplate = "dwb_viewscreen_s1",                   weight = 75000},
 		{itemTemplate = "dwb_viewscreen_s2",                   weight = 75000},

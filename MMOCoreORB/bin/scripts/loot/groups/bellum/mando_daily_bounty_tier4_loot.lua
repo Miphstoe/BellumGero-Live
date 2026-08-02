@@ -1,6 +1,6 @@
 -- Mandalorian Daily Bounty - Tier 4 Loot (High drop rates)
 -- Better chances for DW Mando schematics and jetpack
--- BH 22% + DW armor 45% + jetpack 15% + decor/trophies 7% + furniture schematics 11%
+-- BH 14.5% + DW armor 45% + jetpack 15% + jetpack parts 7.5% + decor/trophies 7% + furniture schematics 11%
 -- Total = 10,000,000
 
 mando_daily_bounty_tier4_loot = {
@@ -8,17 +8,17 @@ mando_daily_bounty_tier4_loot = {
 	minimumLevel = 0,
 	maximumLevel = 0,
 	lootItems = {
-		-- BH armor schematics (22% of pool)
-		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 220000},
-		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 220000},
-		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 220000},
-		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 220000},
-		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 220000},
-		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 220000},
-		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 220000},
-		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 220000},
-		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 220000},
-		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 220000},
+		-- BH armor schematics (14.5% of pool)
+		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 145000},
+		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 145000},
+		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 145000},
+		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 145000},
+		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 145000},
+		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 145000},
+		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 145000},
+		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 145000},
+		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 145000},
+		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 145000},
 		-- DW Mandalorian armor schematics (45% of pool - high)
 		{itemTemplate = "dw_mando_helmet_schematic",           weight = 450000},
 		{itemTemplate = "dw_mando_chest_plate_schematic",      weight = 450000},
@@ -32,6 +32,10 @@ mando_daily_bounty_tier4_loot = {
 		{itemTemplate = "dw_mando_leggings_schematic",         weight = 450000},
 		-- DW Mandalorian jetpack schematic (15% - good)
 		{itemTemplate = "dw_mando_jetpack_schematic",          weight = 1500000},
+		-- Jetpack parts - crafting components (7.5% of pool)
+		{itemTemplate = "fuel_dispersion_unit",                weight = 250000},
+		{itemTemplate = "injector_tank",                       weight = 250000},
+		{itemTemplate = "ducted_fan",                          weight = 250000},
 		-- Decor and trophies (7% of pool)
 		{itemTemplate = "art_lg_s1",                           weight = 75000},
 		{itemTemplate = "art_lg_s2",                           weight = 75000},

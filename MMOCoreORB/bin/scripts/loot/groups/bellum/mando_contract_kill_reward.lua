@@ -12,16 +12,16 @@ mando_contract_kill_reward = {
 	maximumLevel = 0,
 	lootItems = {
 		-- Bounty Hunter armor schematics
-		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 320000},
-		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 320000},
-		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 320000},
-		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 320000},
-		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 320000},
-		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 320000},
-		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 320000},
-		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 320000},
-		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 320000},
-		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 320000},
+		{itemTemplate = "bounty_hunter_belt_schematic",        weight = 260000},
+		{itemTemplate = "bounty_hunter_bicep_l_schematic",     weight = 260000},
+		{itemTemplate = "bounty_hunter_bicep_r_schematic",     weight = 260000},
+		{itemTemplate = "bounty_hunter_boots_schematic",       weight = 260000},
+		{itemTemplate = "bounty_hunter_bracer_l_schematic",    weight = 260000},
+		{itemTemplate = "bounty_hunter_bracer_r_schematic",    weight = 260000},
+		{itemTemplate = "bounty_hunter_chest_plate_schematic", weight = 260000},
+		{itemTemplate = "bounty_hunter_gloves_schematic",      weight = 260000},
+		{itemTemplate = "bounty_hunter_helmet_schematic",      weight = 260000},
+		{itemTemplate = "bounty_hunter_leggings_schematic",    weight = 260000},
 		-- DW Mandalorian armor schematics (rarer than BH)
 		{itemTemplate = "dw_mando_helmet_schematic",           weight = 250000},
 		{itemTemplate = "dw_mando_chest_plate_schematic",      weight = 250000},
@@ -34,10 +34,10 @@ mando_contract_kill_reward = {
 		{itemTemplate = "dw_mando_gloves_schematic",           weight = 250000},
 		{itemTemplate = "dw_mando_leggings_schematic",         weight = 250000},
 		{itemTemplate = "dw_mando_jetpack_schematic",          weight = 250000},
-		-- Jetpack parts (crafting mats)
-		{itemTemplate = "fuel_dispersion_unit",                weight = 500000},
-		{itemTemplate = "injector_tank",                       weight = 500000},
-		{itemTemplate = "ducted_fan",                          weight = 500000},
+		-- Jetpack parts (crafting mats — 7% each, most reliable source)
+		{itemTemplate = "fuel_dispersion_unit",                weight = 700000},
+		{itemTemplate = "injector_tank",                       weight = 700000},
+		{itemTemplate = "ducted_fan",                          weight = 700000},
 		-- Krayt mats (armor enhancement components)
 		{itemTemplate = "krayt_dragon_scales",                 weight = 350000},
 		{itemTemplate = "krayt_dragon_tissue_common",          weight = 500000},
