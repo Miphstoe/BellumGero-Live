@@ -10,10 +10,12 @@
 #include "server/zone/managers/crafting/CraftingManager.h"
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/managers/skill/SkillModManager.h"
+#include "server/zone/objects/manufactureschematic/craftingvalues/CraftingValues.h"
 #include "server/zone/objects/tangible/attachment/Attachment.h"
 #include "server/zone/objects/tangible/terminal/characterbuilder/CharacterBuilderTerminal.h"
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
+#include "templates/SharedTangibleObjectTemplate.h"
 
 
 class ObjectCommand : public QueueCommand {
@@ -42,6 +44,57 @@ public:
 				String objectTemplate;
 				args.getStringToken(objectTemplate);
 
+				int quantity = 1;
+				int quality = 0;
+				bool qualitySpecified = false;
+				Vector<String> visibleComponents;
+
+				// Preserve the original command behavior: the first numeric argument
+				// after the template is still quantity/use count.
+				if (args.hasMoreTokens())
+					quantity = args.getIntToken();
+
+				// The next token is quality only when the entire token is numeric.
+				// Otherwise it remains the first visible-component name, preserving
+				// existing createitem commands that add visible components.
+				if (args.hasMoreTokens()) {
+					String nextToken;
+					args.getStringToken(nextToken);
+
+					bool numericQuality = !nextToken.isEmpty();
+					int firstDigit = 0;
+
+					if (numericQuality && nextToken.charAt(0) == '-')
+						firstDigit = 1;
+
+					if (firstDigit >= nextToken.length())
+						numericQuality = false;
+
+					for (int i = firstDigit; numericQuality && i < nextToken.length(); ++i) {
+						char value = nextToken.charAt(i);
+
+						if (value < '0' || value > '9')
+							numericQuality = false;
+					}
+
+					if (numericQuality) {
+						quality = Integer::valueOf(nextToken);
+						qualitySpecified = true;
+					} else
+						visibleComponents.add(nextToken);
+				}
+
+				while (args.hasMoreTokens()) {
+					String visName;
+					args.getStringToken(visName);
+					visibleComponents.add(visName);
+				}
+
+				if (qualitySpecified && (quality < 0 || quality > 100)) {
+					creature->sendSystemMessage("Quality must be between 0 and 100.");
+					return INVALIDPARAMETERS;
+				}
+
 				ManagedReference<CraftingManager*> craftingManager = creature->getZoneServer()->getCraftingManager();
 				if(craftingManager == nullptr) {
 					return GENERALERROR;
@@ -51,6 +104,13 @@ public:
 
 				if (shot == nullptr || !shot->isSharedTangibleObjectTemplate()) {
 					creature->sendSystemMessage("Templates must be tangible objects, or descendants of tangible objects, only.");
+					return INVALIDPARAMETERS;
+				}
+
+				SharedTangibleObjectTemplate* tangibleTemplate = dynamic_cast<SharedTangibleObjectTemplate*>(shot.get());
+
+				if (tangibleTemplate == nullptr) {
+					creature->sendSystemMessage("Unable to read the tangible template's crafting attributes.");
 					return INVALIDPARAMETERS;
 				}
 
@@ -84,20 +144,139 @@ public:
 				String serial = craftingManager->generateSerial();
 				object->setSerialNumber(serial);
 
-				int quantity = 1;
+				bool qualityApplied = false;
+				int appliedAttributes = 0;
 
-				if (args.hasMoreTokens())
-					quantity = args.getIntToken();
+				if (qualitySpecified) {
+					// Safe first-pass allowlist: ordinary crafted component objects.
+					// These implementations consume their own template attributes and do
+					// not require a ManufactureSchematic, installed child components, or
+					// a live crafting session.
+					bool supportedComponent = objectTemplate.contains("object/tangible/component/");
 
+					// These component families have specialized generation semantics that
+					// a single 0-100 percentage cannot safely reconstruct.
+					bool specializedComponent =
+						objectTemplate.contains("/component/dna/") ||
+						objectTemplate.contains("/component/genetic/") ||
+						objectTemplate.contains("/component/lightsaber/");
+
+					bool qualitySupported = supportedComponent && !specializedComponent;
+
+					if (qualitySupported) {
+						const Vector<String>* attributes = tangibleTemplate->getExperimentalAttributes();
+						const Vector<String>* groups = tangibleTemplate->getExperimentalGroups();
+						const Vector<float>* minimums = tangibleTemplate->getExperimentalMin();
+						const Vector<float>* maximums = tangibleTemplate->getExperimentalMax();
+						const Vector<short>* precisions = tangibleTemplate->getExperimentalPrecision();
+
+						bool validTemplateData =
+							attributes != nullptr &&
+							groups != nullptr &&
+							minimums != nullptr &&
+							maximums != nullptr &&
+							precisions != nullptr &&
+							groups->size() >= attributes->size() &&
+							minimums->size() >= attributes->size() &&
+							maximums->size() >= attributes->size() &&
+							precisions->size() >= attributes->size();
+
+						if (validTemplateData) {
+							CraftingValues generatedValues;
+							float qualityRatio = quality / 100.0f;
+
+							for (int i = 0; i < attributes->size(); ++i) {
+								const String& attribute = attributes->get(i);
+
+								// Positional fillers and session-dependent values are not
+								// synthesized by the admin quality command.
+								if (attribute.isEmpty() ||
+									attribute == "null" ||
+									attribute == "useCount" ||
+									attribute == "sockets") {
+									continue;
+								}
+
+								const String& group = groups->get(i);
+								float minimum = minimums->get(i);
+								float maximum = maximums->get(i);
+								int precision = precisions->get(i);
+								bool hidden = group.isEmpty() || group == "null";
+
+								generatedValues.addExperimentalAttribute(
+									attribute,
+									group,
+									minimum,
+									maximum,
+									precision,
+									hidden,
+									1
+								);
+
+								float generatedValue = minimum + ((maximum - minimum) * qualityRatio);
+
+								generatedValues.setCurrentValue(
+									attribute,
+									generatedValue,
+									minimum,
+									maximum
+								);
+
+								generatedValues.setCurrentPercentage(
+									attribute,
+									qualityRatio,
+									1.0f
+								);
+
+								++appliedAttributes;
+							}
+
+							if (appliedAttributes > 0) {
+								try {
+									object->updateCraftingValues(&generatedValues, true);
+									qualityApplied = true;
+								} catch (Exception& e) {
+									object->destroyObjectFromDatabase(true);
+									creature->sendSystemMessage("The item could not safely accept generated crafting values.");
+									return GENERALERROR;
+								}
+							}
+						}
+
+						if (qualityApplied) {
+							creature->sendSystemMessage(
+								"Generated component at " + String::valueOf(quality) +
+								"% quality using " + String::valueOf(appliedAttributes) +
+								" crafting attribute(s)."
+							);
+
+							if (objectTemplate.contains("socket_bank")) {
+								creature->sendSystemMessage(
+									"Warning: quality was applied to the socket-bank shell only; no modules were installed."
+								);
+							}
+						} else {
+							creature->sendSystemMessage(
+								"This component has no compatible crafting-quality attributes. The item was created normally."
+							);
+						}
+					} else {
+						creature->sendSystemMessage(
+							"Quality is not supported for this object type. The item was created normally."
+						);
+					}
+				}
+
+				// Quantity remains independent of generated quality and retains the
+				// original command's 1-100 behavior.
 				if(quantity > 1 && quantity <= 100)
 					object->setUseCount(quantity);
 
-				// load visible components
-				while (args.hasMoreTokens()) {
-					String visName;
-					args.getStringToken(visName);
-
+				// Load visible components.
+				for (int i = 0; i < visibleComponents.size(); ++i) {
+					const String& visName = visibleComponents.get(i);
 					uint32 visId = visName.hashCode();
+
 					if (ComponentMap::instance()->getFromID(visId).getId() == 0)
 						continue;
 
@@ -107,6 +286,9 @@ public:
 				if (inventory->transferObject(object, -1, true)) {
 					inventory->broadcastObject(object, true);
 					creature->info(true) << "/object createitem " << objectTemplate << " created oid: " << object->getObjectID() << " \"" << object->getDisplayedName() << "\"";
+
+					if (qualityApplied)
+						creature->info(true) << " quality=" << quality;
 				} else {
 					object->destroyObjectFromDatabase(true);
 					creature->sendSystemMessage("Error transferring object to inventory.");
@@ -191,27 +373,27 @@ public:
 			} else if (commandType.beginsWith("createattachment")) {
 				String attachmentType;
 				args.getStringToken(attachmentType);
-				
+
 				String statName;
 				args.getStringToken(statName);
-				
+
 				int statValue = 25; // default value
 				if (args.hasMoreTokens())
 					statValue = args.getIntToken();
-				
+
 				// Validate stat value range (1-25)
 				if (statValue < 1 || statValue > 25) {
 					creature->sendSystemMessage("Stat value must be between 1 and 25.");
 					return INVALIDPARAMETERS;
 				}
-				
+
 				// Determine template and validate stat name
 				String objectTemplate;
 				bool isValidStat = false;
-				
+
 				if (attachmentType == "AA" || attachmentType == "aa") {
 					objectTemplate = "object/tangible/gem/armor.iff";
-					
+
 					// Validate against exact armor attachment stat list
 					if (statName == "blind_defense" || statName == "block" || statName == "camouflage" ||
 						statName == "carbine_accuracy" || statName == "carbine_hit_while_moving" || statName == "carbine_speed" ||
@@ -235,7 +417,7 @@ public:
 					}
 				} else if (attachmentType == "CA" || attachmentType == "ca") {
 					objectTemplate = "object/tangible/gem/clothing.iff";
-					
+
 					// Validate against exact clothing attachment stat list
 					if (statName == "armor_assembly" || statName == "armor_experimentation" || statName == "armor_repair" ||
 						statName == "blind_defense" || statName == "block" || statName == "camouflage" ||
@@ -279,40 +461,40 @@ public:
 					creature->sendSystemMessage("Attachment type must be 'AA' (armor) or 'CA' (clothing).");
 					return INVALIDPARAMETERS;
 				}
-				
+
 				if (!isValidStat) {
 					creature->sendSystemMessage("Invalid stat name '" + statName + "' for " + attachmentType + " attachment.");
 					return INVALIDPARAMETERS;
 				}
-				
+
 				ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
 				if (inventory == nullptr || inventory->isContainerFullRecursive()) {
 					creature->sendSystemMessage("Your inventory is full, so the attachment could not be created.");
 					return INVALIDPARAMETERS;
 				}
-				
+
 				// Create the attachment object
 				ManagedReference<TangibleObject*> attachment = (server->getZoneServer()->createObject(objectTemplate.hashCode(), 1)).castTo<TangibleObject*>();
-				
+
 				if (attachment == nullptr) {
 					creature->sendSystemMessage("Failed to create attachment object.");
 					return INVALIDPARAMETERS;
 				}
-				
+
 				Locker locker(attachment);
-				
+
 				attachment->createChildObjects();
-				
+
 				// Set crafter name and serial number
 				String name = "Generated with Object Command";
 				attachment->setCraftersName(name);
-				
+
 				ManagedReference<CraftingManager*> craftingManager = creature->getZoneServer()->getCraftingManager();
 				if (craftingManager != nullptr) {
 					String serial = craftingManager->generateSerial();
 					attachment->setSerialNumber(serial);
 				}
-				
+
 				// Cast to Attachment and add the specific skill mod
 				ManagedReference<Attachment*> attachmentObj = attachment.castTo<Attachment*>();
 				if (attachmentObj != nullptr) {
@@ -321,16 +503,16 @@ public:
 						skillMods->put(statName, statValue);
 					}
 				}
-				
+
 				// Set the custom name for the attachment
 				String attachmentTypePrefix = (attachmentType == "AA" || attachmentType == "aa") ? "AA" : "CA";
 				StringBuffer customName;
 				customName << attachmentTypePrefix << " - (" << statValue << ") " << statName;
 				attachment->setCustomObjectName(customName.toString(), false);
-				
+
 				// Add magic bit to show it has modifiers
 				attachment->addMagicBit(false);
-				
+
 				if (inventory->transferObject(attachment, -1, true)) {
 					inventory->broadcastObject(attachment, true);
 					creature->info(true) << "/object createattachment " << attachmentType << " " << statName << " " << statValue 
@@ -483,7 +665,7 @@ public:
 			}
 
 		} catch (Exception& e) {
-			creature->sendSystemMessage("SYNTAX: /object createitem <objectTemplatePath> [<quantity>]");
+			creature->sendSystemMessage("SYNTAX: /object createitem <objectTemplatePath> [<quantity>] [<quality 0-100>] [<visible components...>]");
 			creature->sendSystemMessage("SYNTAX: /object createattachment <AA|CA> <statname> <value>");
 			creature->sendSystemMessage("SYNTAX: /object createresource <resourceName> [<quantity>]");
 			creature->sendSystemMessage("SYNTAX: /object createloot <loottemplate> [<level>]");

@@ -26,6 +26,20 @@
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 
+namespace {
+	int getArmorModuleLevel(HashTable<String, ManagedReference<DroidComponent*> >& modules) {
+		if (!modules.containsKey("armor_module"))
+			return 0;
+
+		ManagedReference<DroidComponent*> armorComponent = modules.get("armor_module");
+
+		if (armorComponent == nullptr || !armorComponent->hasKey("armor_module"))
+			return 0;
+
+		return (int)armorComponent->getAttributeValue("armor_module");
+	}
+}
+
 void DroidDeedImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	DeedImplementation::loadTemplateData(templateData);
 
@@ -76,21 +90,13 @@ void DroidDeedImplementation::onCloneObject(SceneObject* objectToClone) {
 void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
 	DeedImplementation::fillAttributeList(alm, object);
 
-	// Use species to set challenge_level
-	if (species == DroidObject::PROBOT) {
-		level = 19;
-	} else if (species == DroidObject::LE_REPAIR || species == DroidObject::DZ70 || (species == DroidObject::R_SERIES && combatRating > 0)) {
-		level = 18;
-	} else if (species == DroidObject::R_SERIES) {
-		level = 7;
-	} else {
-		level = 1;
-	}
+	int armorModuleLevel = getArmorModuleLevel(modules);
+	int displayLevel = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
 
-	alm->insertAttribute("challenge_level", level);
+	alm->insertAttribute("challenge_level", displayLevel);
 
 	// HAM
-	int maxHam = DroidMechanics::determineHam(overallQuality,species);
+	int maxHam = DroidMechanics::determineHam(overallQuality, species);
 	alm->insertAttribute("creature_health", maxHam);
 	alm->insertAttribute("creature_action", maxHam);
 	alm->insertAttribute("creature_mind", maxHam);
@@ -129,6 +135,29 @@ void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 			}
 
 			if (module == nullptr) {
+				continue;
+			}
+
+			String moduleName = module->getModuleName();
+
+			// The finished deed already displays the combat results derived
+			// from Combat Module Rating: attack speed, accuracy and damage.
+			// Keep the raw rating visible on components/socket banks only.
+			if (moduleName == "combat_module")
+				continue;
+
+			// Stim Power is determined only after Class A stimpacks are loaded
+			// into the generated droid. The deed should preview the dispenser's
+			// crafted Capacity and Delivery Speed without showing a false zero.
+			if (moduleName == "stimpack_module") {
+				if (comp->hasKey("stimpack_capacity"))
+					alm->insertAttribute("stimpack_capacity",
+						(int)comp->getAttributeValue("stimpack_capacity"));
+
+				if (comp->hasKey("stimpack_speed"))
+					alm->insertAttribute("stimpack_speed",
+						(int)comp->getAttributeValue("stimpack_speed"));
+
 				continue;
 			}
 
@@ -212,9 +241,66 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 	}
 	modules.removeAll();
 
-	overallQuality = values->getCurrentPercentage("power_level"); // effectiveness
-	if (overallQuality < 0)
-		overallQuality = 0.1f;
+	ManagedReference<ManufactureSchematic*> manufact = values->getManufactureSchematic();
+
+	// Find the separately crafted chassis before calculating final quality.
+	// The generic crafting system linearly adds the chassis power_level to
+	// the deed's power_level value, so remove that raw addition first and
+	// replace it with the intentionally bounded chassis contribution below.
+	float chassisPowerLevel = -1.0f;
+
+	if (manufact != nullptr) {
+		for (int i = 0; i < manufact->getSlotCount(); ++i) {
+			Reference<IngredientSlot*> chassisSlot = manufact->getSlot(i);
+
+			if (chassisSlot == nullptr || !chassisSlot->isComponentSlot())
+				continue;
+
+			ComponentSlot* componentSlot = cast<ComponentSlot*>(chassisSlot.get());
+
+			if (componentSlot == nullptr)
+				continue;
+
+			ManagedReference<DroidComponent*> component = cast<DroidComponent*>(componentSlot->getPrototype());
+
+			if (component == nullptr || !component->hasKey("power_level"))
+				continue;
+
+			if (!component->getObjectTemplate()->getFullTemplateString().contains("droid_chassis"))
+				continue;
+
+			chassisPowerLevel = component->getAttributeValue("power_level");
+			break;
+		}
+	}
+
+	// The basic and advanced schematics use actual power-level ranges of
+	// 0-50 and 50-100. Store the deed's real value as normalized 0.0-1.0.
+	float finalPowerLevel = values->getCurrentValue("power_level");
+
+	if (chassisPowerLevel >= 0.0f)
+		finalPowerLevel -= chassisPowerLevel;
+
+	overallQuality = finalPowerLevel / 100.0f;
+
+	if (chassisPowerLevel >= 0.0f) {
+		float chassisRatio = chassisPowerLevel / 50.0f;
+
+		if (chassisRatio < 0.0f)
+			chassisRatio = 0.0f;
+
+		if (chassisRatio > 1.0f)
+			chassisRatio = 1.0f;
+
+		// Chassis 0 = -5 quality points, 25 = neutral, 50 = +5.
+		overallQuality += (chassisRatio - 0.5f) * 0.10f;
+	}
+
+	if (overallQuality < 0.0f)
+		overallQuality = 0.0f;
+
+	if (overallQuality > 1.0f)
+		overallQuality = 1.0f;
 
 	combatRating = values->getCurrentValue("cmbt_module");
 	if (combatRating < 0)
@@ -227,7 +313,8 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 	// we need to stack modules if they are stackable.
 	// walk all components and ensure we have all modules that are stackable there.
 
-	ManagedReference<ManufactureSchematic*> manufact = values->getManufactureSchematic();
+	if (manufact == nullptr)
+		return;
 
 	for (int i = 0; i < manufact->getSlotCount(); ++i) {
 		// Droid Component Slots
@@ -294,7 +381,11 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 		}
 
 	}
-	// module stacking is completed!
+
+	// Module stacking is complete. Calculate and persist the finished droid's
+	// challenge level from its actual HAM, DPS, accuracy, armor and resistance.
+	int armorModuleLevel = getArmorModuleLevel(modules);
+	level = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
 }
 
 void DroidDeedImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -415,9 +506,13 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		droid->setCustomObjectName(StringIdManager::instance()->getStringId(*droid->getObjectName()), true);
 		droid->createChildObjects();
 		droid->setControlDevice(controlDevice);
-		droid->setLevel(level);
 
-		float maxHam = DroidMechanics::determineHam(overallQuality, species);
+		int armorModuleLevel = getArmorModuleLevel(modules);
+		int droidLevel = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
+		droid->setLevel(droidLevel);
+
+		int maxHam = (int)round(DroidMechanics::determineHam(overallQuality, species));
+		droid->setMaximumHAM(maxHam);
 
 		for (int i = 0; i < 9; ++i) {
 			if (i % 3 == 0) {

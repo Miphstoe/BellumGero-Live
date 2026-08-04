@@ -118,64 +118,65 @@ void DroidDataStorageModuleDataComponent::updateCraftingValues(CraftingValues* v
 	rating = values->getCurrentValue("data_module");
 }
 
-void DroidDataStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	if (droid != nullptr) {
-		auto petControlDevice = droid->getControlDevice().get().castTo<PetControlDevice*>();
+void DroidDataStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
+	// Display the actual datapad capacity rather than the internal 1-6 tier.
+	// The tier is still used to choose the correct droid_datapad_N template.
+	alm->insertAttribute("data_module", getStorageCapacity());
 
-		if (petControlDevice == nullptr) {
-			return;
-		}
+	// The CreatureObject passed into an attribute request is often the player
+	// examining a standalone module, deed, or socket cluster. Determine
+	// whether this module is actually installed in a called droid from its
+	// parent hierarchy instead of treating every non-null object as the droid.
+	ManagedReference<DroidObject*> droid = getDroidObject();
 
-		auto droidDatapad = petControlDevice->getDatapad();
+	if (droid == nullptr)
+		return;
 
-		if (droidDatapad == nullptr) {
-			return;
-		}
+	auto petControlDevice = droid->getControlDevice().get().castTo<PetControlDevice*>();
 
-		int containerSize = droidDatapad->getContainerObjectsSize();
-		int currentDataSize = 0;
-		Vector<String> storedCommands;
+	if (petControlDevice == nullptr)
+		return;
 
-		for (int i = 0; i < containerSize; i++) {
-			auto commandModule = droidDatapad->getContainerObject(i).castTo<IntangibleObject*>();
+	auto droidDatapad = petControlDevice->getDatapad();
 
-			if (commandModule == nullptr) {
-				continue;
-			}
+	if (droidDatapad == nullptr)
+		return;
 
-			currentDataSize += commandModule->getDataSize();
+	int containerSize = droidDatapad->getContainerObjectsSize();
+	int currentDataSize = 0;
+	Vector<String> storedCommands;
 
-			const auto itemIdentifier = commandModule->getItemIdentifier();
+	for (int i = 0; i < containerSize; i++) {
+		auto commandModule = droidDatapad->getContainerObject(i).castTo<IntangibleObject*>();
 
-			if (itemIdentifier.isEmpty()) {
-				continue;
-			}
+		if (commandModule == nullptr)
+			continue;
 
+		currentDataSize += commandModule->getDataSize();
+
+		const auto itemIdentifier = commandModule->getItemIdentifier();
+
+		if (!itemIdentifier.isEmpty())
 			storedCommands.add(itemIdentifier);
-		}
-
-		// Used Memory
-		alm->insertAttribute("droid_program_expended_memory", currentDataSize);
-
-		// Loaded Droid Programs
-		int totalPrograms = storedCommands.size();
-
-		if (totalPrograms > 0) {
-			alm->insertAttribute("droid_program_loaded", "");
-
-			for (int i = 0; i < totalPrograms; i++) {
-				String programName = storedCommands.get(i);
-
-				alm->insertAttribute("droid_program", "@space/droid_commands:" + programName);
-			}
-		}
-
-		// Pilot's Required Cert
-		alm->insertAttribute("data_module_cert_needed", getStorageRating());
-	} else {
-		// convert module rating to actual rating
-		alm->insertAttribute("data_module", getStorageRating());
 	}
+
+	// Used Memory
+	alm->insertAttribute("droid_program_expended_memory", currentDataSize);
+
+	// Loaded Droid Programs
+	int totalPrograms = storedCommands.size();
+
+	if (totalPrograms > 0) {
+		alm->insertAttribute("droid_program_loaded", "");
+
+		for (int i = 0; i < totalPrograms; i++) {
+			String programName = storedCommands.get(i);
+			alm->insertAttribute("droid_program", "@space/droid_commands:" + programName);
+		}
+	}
+
+	// Pilot's Required Certification
+	alm->insertAttribute("data_module_cert_needed", getStorageRating());
 }
 
 void DroidDataStorageModuleDataComponent::addToStack(BaseDroidModuleComponent* other) {
@@ -185,7 +186,13 @@ void DroidDataStorageModuleDataComponent::addToStack(BaseDroidModuleComponent* o
 		return;
 	}
 
-	rating = rating + otherModule->rating;
+	// Standalone modules store compact tier markers (1, 3, 5, 7, 9, 11).
+	// Stack their actual capacities instead so two 50-capacity modules
+	// correctly produce 100 capacity rather than the old Tier 3 result (75).
+	rating = getStorageCapacity() + otherModule->getStorageCapacity();
+
+	if (rating > 150)
+		rating = 150;
 
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 
@@ -233,24 +240,39 @@ int DroidDataStorageModuleDataComponent::handleObjectMenuSelect(CreatureObject* 
 	return 0;
 }
 
+int DroidDataStorageModuleDataComponent::getStorageCapacity() {
+	// New stacked modules store their direct capacity. Standalone modules and
+	// legacy objects still use compact tier markers, so support both formats.
+	if (rating > 11)
+		return rating > 150 ? 150 : rating;
+
+	if (rating <= 2)
+		return 25;
+	else if (rating <= 4)
+		return 50;
+	else if (rating <= 6)
+		return 75;
+	else if (rating <= 8)
+		return 100;
+	else if (rating <= 10)
+		return 125;
+
+	return 150;
+}
+
 int DroidDataStorageModuleDataComponent::getStorageRating() {
-	switch(rating) {
-		case 1:
-		case 2:
-			return 1;
-		case 3:
-		case 4:
-			return 2;
-		case 5:
-		case 6:
-			return 3;
-		case 7:
-		case 8:
-			return 4;
-		case 9:
-		case 10:
-			return 5;
-	}
+	int capacity = getStorageCapacity();
+
+	if (capacity <= 25)
+		return 1;
+	else if (capacity <= 50)
+		return 2;
+	else if (capacity <= 75)
+		return 3;
+	else if (capacity <= 100)
+		return 4;
+	else if (capacity <= 125)
+		return 5;
 
 	return 6;
 }

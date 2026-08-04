@@ -7,6 +7,10 @@
 #include "server/zone/ZoneServer.h"
 #include "templates/tangible/DroidCraftingModuleTemplate.h"
 
+namespace {
+	const int DROID_CRAFTING_STATION_RATING = 25;
+}
+
 DroidCraftingModuleDataComponent::DroidCraftingModuleDataComponent() : craftingType(0) {
 	setLoggingName("DroidCraftingModule");
 }
@@ -54,7 +58,31 @@ void DroidCraftingModuleDataComponent::initialize(DroidObject* droid) {
 }
 
 void DroidCraftingModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	alm->insertAttribute(attributeListString, "Installed");
+	// A module inside a socket cluster can be examined before its transient
+	// display data has been populated. Reload the template-backed display
+	// information when necessary so both General and Combat clusters can
+	// identify the installed station type.
+	if (attributeListString.isEmpty()) {
+		SceneObject* craftedModule = getParent();
+
+		if (craftedModule != nullptr) {
+			Reference<DroidCraftingModuleTemplate*> moduleTemplate =
+				cast<DroidCraftingModuleTemplate*>(craftedModule->getObjectTemplate());
+
+			if (moduleTemplate != nullptr) {
+				craftingType = moduleTemplate->getCraftingType();
+				attributeListString = moduleTemplate->getAttributeListString();
+			}
+		}
+	}
+
+	StringBuffer stationStatus;
+	stationStatus << "Installed (Rating " << DROID_CRAFTING_STATION_RATING << ")";
+
+	if (!attributeListString.isEmpty())
+		alm->insertAttribute(attributeListString, stationStatus.toString());
+	else
+		alm->insertAttribute("stationmod", DROID_CRAFTING_STATION_RATING);
 }
 
 void DroidCraftingModuleDataComponent::fillObjectMenuResponse(SceneObject* droidObject, ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -134,7 +162,7 @@ void DroidCraftingModuleDataComponent::onCall() {
 	if (craftingStation == nullptr) {
 		String stationTemplate = moduleTemplate->getCraftingStationTemplate();
 		craftingStation = (craftedModule->getZoneServer()->createObject(stationTemplate.hashCode(), 0)).castTo<CraftingStation*>();
-		craftingStation->setEffectiveness(25);
+		craftingStation->setEffectiveness(DROID_CRAFTING_STATION_RATING);
 	}
 }
 
