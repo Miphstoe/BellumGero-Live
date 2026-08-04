@@ -227,9 +227,18 @@ function VillageJediManager:onSkillRevoked(pPlayer, pSkill)
 		local skillName = droppedSkill:getName()
 
 		if skillName == "force_title_jedi_rank_03" then
-			writeScreenPlayData(pPlayer, "KnightTrials", "completedTrials", 0)
-			writeScreenPlayData(pPlayer, "KnightTrials", "startedTrials", 0)
-			deleteScreenPlayData(pPlayer, "KnightTrials", "trialsCompleted")
+			-- Dropping Knight rank must be treated as abandoning the current Knight
+			-- Trial attempt entirely, not a toggle between Light/Dark. Route through
+			-- the single authoritative reset so PvE points, the council/alignment
+			-- choice, trial phase, hunt target, shrine assignment, and kill observers
+			-- are all cleared - otherwise leftover points/council data lets a single
+			-- kill instantly re-grant the old Knight status once the player is
+			-- eligible again. See KnightTrials:resetKnightTrialProgression.
+			local hadProgression = KnightTrials:resetKnightTrialProgression(pPlayer)
+
+			if (hadProgression) then
+				CreatureObject(pPlayer):sendSystemMessage("You have relinquished your Jedi Knight rank. Your Knight Trial progress and previous alignment choice have been reset. You must complete the Knight Trials again before choosing a new path.")
+			end
 		end
 	end
 

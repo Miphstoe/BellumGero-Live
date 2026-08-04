@@ -338,8 +338,7 @@ function KnightTrials:failTrialsIneligible(pPlayer)
 	sui.setOkButtonText("@jedi_trials:button_close")
 	sui.sendTo(pPlayer)
 
-	JediTrials:resetTrialData(pPlayer, "knight")
-	self:unsetTrialShrine(pPlayer)
+	self:resetKnightTrialProgression(pPlayer)
 end
 
 function KnightTrials:showCurrentTrial(pPlayer)
@@ -537,20 +536,82 @@ function KnightTrials:giveWrongFactionWarning(pPlayer, councilType)
 	sui.sendTo(pPlayer)
 end
 
-function KnightTrials:resetCompletedTrialsToStart(pPlayer)
+-- Single authoritative reset for Knight Trial progression. Wipes every piece of
+-- Knight Trial state (PvE points, council/alignment choice, trial phase, hunt
+-- target, shrine assignment, kill observers) so the next Knight attempt is a
+-- fresh run that must begin again at the normal starting point (activating at
+-- a Force Shrine).
+--
+-- Called whenever a player's current Knight Trial attempt must be abandoned:
+--   - Voluntarily surrendering Jedi Knight rank (VillageJediManager:onSkillRevoked)
+--     in order to switch Force alignment.
+--   - Losing Knight Trial eligibility mid-attempt (failTrialsIneligible).
+--   - The Force Shrine "meditate" safety net catching a player who still has
+--     completedTrials set but no longer holds force_title_jedi_rank_03
+--     (ForceShrineMenuComponent:doMeditate).
+--
+-- Idempotent: safe to call on a player with no trial state, with partial or
+-- corrupted trial data, or more than once in a row - later calls are no-ops
+-- other than re-confirming observers are dropped. Returns true if the player
+-- actually had Knight Trial progression to clear (used by callers to decide
+-- whether a "you have been reset" message is warranted).
+function KnightTrials:resetKnightTrialProgression(pPlayer)
 	if (pPlayer == nil) then
-		return
+		return false
 	end
 
-	-- Drop the global points observer
-	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	local playerName = SceneObject(pPlayer):getCustomObjectName()
+	local playerID = SceneObject(pPlayer):getObjectID()
 
+	local previousCouncil = JediTrials:getJediCouncil(pPlayer)
+	local previousPhase = JediTrials:getCurrentTrial(pPlayer)
+	local previousPoints = JediTrials:getKnightTrialPoints(pPlayer)
+	local wasStarted = tonumber(readScreenPlayData(pPlayer, "KnightTrials", "startedTrials")) == 1
+	local wasCompleted = tonumber(readScreenPlayData(pPlayer, "KnightTrials", "completedTrials")) == 1
+
+	local hadProgression = wasStarted or wasCompleted or (previousPoints ~= nil and previousPoints > 0)
+		or (previousCouncil ~= nil and previousCouncil ~= 0)
+
+	-- Drop any leftover kill observers first so a kill landing mid-reset can't
+	-- award points or hunt credit toward the attempt we're about to erase.
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledForPoints", pPlayer)
+	dropObserver(KILLEDCREATURE, "KnightTrials", "notifyKilledHuntTarget", pPlayer)
+
+	-- PvE points are a Knight Trial-specific progression counter, not a shared
+	-- lifetime PvE/PvP statistic, so it's safe to zero out here without
+	-- touching any other player statistics.
+	deleteScreenPlayData(pPlayer, "KnightTrials", "accruedPoints")
+
+	-- Clears KnightTrials trialsCompleted/startedTrials/activatedAtShrine, the
+	-- JediTrials council (Light/Dark alignment) choice, the current trial
+	-- index, and the trial failure count.
 	JediTrials:resetTrialData(pPlayer, "knight")
 	deleteScreenPlayData(pPlayer, "KnightTrials", "completedTrials")
 
-	JediTrials:setStartedTrials(pPlayer)
-	JediTrials:setTrialsCompleted(pPlayer, 0)
-	JediTrials:setCurrentTrial(pPlayer, 0)
+	-- Clear any in-progress hunt target and the assigned trial shrine so a
+	-- fresh attempt starts clean rather than resuming the old hunt/shrine.
+	self:unsetTrialShrine(pPlayer)
+	deleteScreenPlayData(pPlayer, "JediTrials", "huntTarget")
+	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetCount")
+	deleteScreenPlayData(pPlayer, "JediTrials", "huntTargetGoal")
+
+	-- Defensive: clear any leftover FRS council/rank tied to the old Knight
+	-- alignment. The native FRS system (FrsManagerImplementation::
+	-- handleSkillRevoked) already does this whenever the player actually
+	-- holds an FRS rank skill; this covers a Knight who never engaged the FRS
+	-- ladder, where that native cleanup has nothing to surrender and never runs.
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	if (pGhost ~= nil and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
+		PlayerObject(pGhost):setFrsCouncil(0)
+		PlayerObject(pGhost):setFrsRank(-1)
+	end
+
+	printLuaError("KnightTrials:resetKnightTrialProgression - Player: " .. playerName .. " (" .. playerID ..
+		"), previous council: " .. tostring(previousCouncil) .. ", previous phase: " .. tostring(previousPhase) ..
+		", previous points: " .. tostring(previousPoints) .. ", hadProgression: " .. tostring(hadProgression) ..
+		" - Knight Trial state reset complete.")
+
+	return hadProgression
 end
 
 -- Global kill observer for PvE points (awards points for ANY creature killed, independent of trials)
