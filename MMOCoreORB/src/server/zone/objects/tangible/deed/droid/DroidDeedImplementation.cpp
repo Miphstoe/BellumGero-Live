@@ -27,6 +27,25 @@
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 
 namespace {
+	bool hasCombatDroidOperatorCertification(CreatureObject* player) {
+		if (player == nullptr)
+			return false;
+
+		return player->hasSkill("crafting_architect_master")
+			|| player->hasSkill("crafting_armorsmith_master")
+			|| player->hasSkill("crafting_chef_master")
+			|| player->hasSkill("crafting_droidengineer_master")
+			|| player->hasSkill("crafting_shipwright_master")
+			|| player->hasSkill("crafting_tailor_master")
+			|| player->hasSkill("crafting_weaponsmith_master")
+			|| player->hasSkill("outdoors_bio_engineer_master")
+			|| player->hasSkill("outdoors_ranger_master")
+			|| player->hasSkill("science_doctor_master")
+			|| player->hasSkill("social_dancer_master")
+			|| player->hasSkill("social_musician_master")
+			|| player->hasSkill("social_imagedesigner_master");
+	}
+
 	int getArmorModuleLevel(HashTable<String, ManagedReference<DroidComponent*> >& modules) {
 		if (!modules.containsKey("armor_module"))
 			return 0;
@@ -409,6 +428,25 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		}
 
 		bool bombDroid = isBombDroid();
+
+		// Match the combat-droid classification used by the control-device
+		// call restriction. Bomb droids remain exempt from the dedicated
+		// combat-droid slot and certification requirement.
+		bool requiresCombatDroidCertification =
+			!bombDroid &&
+			(modules.containsKey("combat_module") ||
+			 species == DroidObject::PROBOT ||
+			 species == DroidObject::DZ70);
+
+		if (requiresCombatDroidCertification &&
+				!hasCombatDroidOperatorCertification(player)) {
+			player->sendSystemMessage(
+				"You must master an eligible elite non-combat profession "
+				"to operate a combat droid."
+			);
+
+			return 1;
+		}
 
 		if (player->isDead()) {
 			player->sendSystemMessage("@pet/pet_menu:cant_call"); // "You cannot call this pet right now."
