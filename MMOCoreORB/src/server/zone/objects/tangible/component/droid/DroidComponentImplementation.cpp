@@ -81,9 +81,12 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 			alm->insertAttribute("power_level", (int)powerLevel);
 	}
 
-	// Droid Storage Compartment Quality contributes to the effectiveness
-	// of full-size crafting stations that use this component.
-	if (hasKey("usemodifier")) {
+	// Storage Compartment Quality is functional only on the standalone
+	// Droid Storage Compartment. Other droid components may inherit
+	// usemodifier from electronics subcomponents during crafting, but that
+	// value has no direct gameplay function on the finished component.
+	if (objectTemplate.contains("droid_storage_compartment") &&
+			hasKey("usemodifier")) {
 		float useModifier = getAttributeValue("usemodifier");
 
 		if (useModifier > AttributesMap::VALUENOTFOUND)
