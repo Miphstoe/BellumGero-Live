@@ -36,6 +36,7 @@ namespace {
 
 			Reference<BaseDroidModuleComponent*> module =
 				activeDroid->getModule("medical_module");
+
 			DroidMedicalModuleDataComponent* medicalModule =
 				cast<DroidMedicalModuleDataComponent*>(module.get());
 
@@ -55,7 +56,13 @@ namespace {
 		if (player == nullptr)
 			return;
 
-		int currentRating = player->getSkillMod("private_medical_rating");
+		// Remove only the contribution previously applied by a Medical Droid.
+		// Other sources of private_medical_rating, such as buildings or camps,
+		// must remain untouched while the active droid rating is recalculated.
+		int currentRating = player->getSkillModOfType(
+			"private_medical_rating",
+			SkillModManager::DROID
+		);
 
 		if (currentRating > 0) {
 			player->removeSkillMod(
@@ -94,12 +101,14 @@ String DroidMedicalModuleDataComponent::getModuleName() const {
 
 void DroidMedicalModuleDataComponent::initializeTransientMembers() {
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
+
 	if (droidComponent == nullptr) {
 		info("droidComponent was null");
 		return;
 	}
-	if(droidComponent->hasKey( "medical_module")) {
-		rating = droidComponent->getAttributeValue( "medical_module");
+
+	if (droidComponent->hasKey("medical_module")) {
+		rating = droidComponent->getAttributeValue("medical_module");
 	}
 }
 
@@ -108,7 +117,7 @@ void DroidMedicalModuleDataComponent::updateCraftingValues(CraftingValues* value
 }
 
 int DroidMedicalModuleDataComponent::getMedicalRating() {
-	switch(rating) {
+	switch (rating) {
 		case 1:
 		case 2:
 			return 55;
@@ -125,11 +134,13 @@ int DroidMedicalModuleDataComponent::getMedicalRating() {
 		case 10:
 			return 100;
 	}
+
 	return 110;
 }
+
 void DroidMedicalModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	// convert module rating to actual rating
-	alm->insertAttribute( "medical_module", getMedicalRating() );
+	// Convert the internal module rating to the actual medical rating.
+	alm->insertAttribute("medical_module", getMedicalRating());
 }
 
 String DroidMedicalModuleDataComponent::toString() const {
@@ -137,31 +148,47 @@ String DroidMedicalModuleDataComponent::toString() const {
 }
 
 void DroidMedicalModuleDataComponent::addToStack(BaseDroidModuleComponent* other) {
-	DroidMedicalModuleDataComponent* otherModule = cast<DroidMedicalModuleDataComponent*>(other);
-	if(otherModule == nullptr)
+	DroidMedicalModuleDataComponent* otherModule =
+		cast<DroidMedicalModuleDataComponent*>(other);
+
+	if (otherModule == nullptr)
 		return;
+
 	rating = rating + otherModule->rating;
+
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
+
 	if (droidComponent != nullptr)
-		droidComponent->changeAttributeValue("medical_module",(float)rating);
+		droidComponent->changeAttributeValue("medical_module", (float)rating);
 }
 
 void DroidMedicalModuleDataComponent::copy(BaseDroidModuleComponent* other) {
-	DroidMedicalModuleDataComponent* otherModule = cast<DroidMedicalModuleDataComponent*>(other);
-	if(otherModule == nullptr)
+	DroidMedicalModuleDataComponent* otherModule =
+		cast<DroidMedicalModuleDataComponent*>(other);
+
+	if (otherModule == nullptr)
 		return;
+
 	rating = otherModule->rating;
+
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
-	if (droidComponent != nullptr)
-		droidComponent->addProperty("medical_module",(float)rating,0,"exp_effectiveness");
+
+	if (droidComponent != nullptr) {
+		droidComponent->addProperty(
+			"medical_module",
+			(float)rating,
+			0,
+			"exp_effectiveness"
+		);
+	}
 }
 
 void DroidMedicalModuleDataComponent::onCall() {
-	// no op
+	// No op.
 }
 
 void DroidMedicalModuleDataComponent::onStore() {
-	// no op on store
+	// No op.
 }
 
 void DroidMedicalModuleDataComponent::loadSkillMods(CreatureObject* player) {
@@ -175,6 +202,6 @@ void DroidMedicalModuleDataComponent::unloadSkillMods(CreatureObject* player) {
 	// Exclude this droid while recalculating so storing it, losing power, dying,
 	// or moving out of range immediately falls back to the next eligible droid.
 	ManagedReference<DroidObject*> droid = getDroidObject();
+
 	refreshActiveMedicalRating(player, droid.get());
 }
-
