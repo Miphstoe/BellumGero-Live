@@ -74,6 +74,15 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 			alm->insertAttribute("power_level", (int)powerLevel);
 	}
 
+	// Droid Storage Compartment Quality contributes to the effectiveness
+	// of full-size crafting stations that use this component.
+	if (hasKey("usemodifier")) {
+		float useModifier = getAttributeValue("usemodifier");
+
+		if (useModifier > AttributesMap::VALUENOTFOUND)
+			alm->insertAttribute("usemodifier", (int)useModifier);
+	}
+
 	bool socketCluster = isSocketCluster();
 	bool standaloneModuleDisplayed = false;
 
