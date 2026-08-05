@@ -44,15 +44,15 @@ object_tangible_component_droid_droid_interplanetary_survey = object_tangible_co
 	gameObjectType = 262148,
 	objectMenuComponent = "SurveyDroidMenuComponent",
 
-	numberExperimentalProperties = {1, 1, 3},
-	experimentalProperties = {"XX", "XX", "OQ", "SR", "UT"},
-	experimentalWeights = {1, 1, 1, 1, 1},
-	experimentalGroupTitles = {"null", "null", "exp_count"},
-	experimentalSubGroupTitles = {"null", "null", "droid_count"},
-	experimentalMin = {0, 0, 3},
-	experimentalMax = {0, 0, 15},
-	experimentalPrecision = {0, 0, 0},
-	experimentalCombineType = {0, 0, 1},
+	numberExperimentalProperties = {1, 1, 3, 3},
+	experimentalProperties = {"XX", "XX", "OQ", "SR", "UT", "OQ", "SR", "UT"},
+	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1},
+	experimentalGroupTitles = {"null", "null", "exp_count", "exp_quality"},
+	experimentalSubGroupTitles = {"null", "null", "droid_count", "mechanism_quality"},
+	experimentalMin = {0, 0, 3, 0},
+	experimentalMax = {0, 0, 15, 100},
+	experimentalPrecision = {0, 0, 0, 0},
+	experimentalCombineType = {0, 0, 1, 1},
 }
 
 ObjectTemplates:addTemplate(object_tangible_component_droid_droid_interplanetary_survey, "object/tangible/component/droid/droid_interplanetary_survey.iff")
