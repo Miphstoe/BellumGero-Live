@@ -62,7 +62,9 @@ namespace {
 
 		DroidObject* droid = cast<DroidObject*>(pet);
 
-		return droid != nullptr && droid->isCombatDroid() && !droid->isBombDroid();
+		// Combat capability always takes priority over a Detonation Module.
+		// A combat-capable bomb droid must still use the dedicated combat slot.
+		return droid != nullptr && droid->isCombatDroid();
 	}
 }
 
@@ -152,12 +154,13 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 
 	bool isBombDroid = false;
 
-	// Bomb Droid bool only can be true on initial call
+	// Only a pure bomb droid receives bomb-droid call exemptions. A droid that
+	// also has combat capability remains a combat droid for all call checks.
 	if (pet->isDroid()) {
 		auto droid = pet.castTo<DroidObject*>();
 
 		if (droid != nullptr)
-			isBombDroid = droid->isBombDroid();
+			isBombDroid = droid->isBombDroid() && !droid->isCombatDroid();
 	}
 
 	bool isCallingCombatDroid = petType == PetManager::DROIDPET && usesCombatDroidSlot(pet);
@@ -396,7 +399,6 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
 		message.setDI(1);
 		player->sendSystemMessage(message);
-
 		player->addPendingTask("call_pet", callPet, 1 * 1000); // 1 sec delay before starting call
 
 		if (petControlObserver == nullptr) {

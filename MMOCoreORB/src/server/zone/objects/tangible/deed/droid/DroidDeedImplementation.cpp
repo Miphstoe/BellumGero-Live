@@ -127,6 +127,15 @@ void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 		float damageMin = DroidMechanics::determineMinDamage(species,combatRating);
 		float damageMax = DroidMechanics::determineMaxDamage(species,combatRating);
 
+		// Unsupported/custom chassis use the same safe fallback applied when
+		// the Combat Module initializes the called droid. This prevents the deed
+		// from advertising an invalid zero attack speed or zero accuracy.
+		if (attackSpeed <= 0.0f)
+			attackSpeed = 2.0f;
+
+		if (chanceHit <= 0.0f)
+			chanceHit = 0.20f;
+
 		StringBuffer attdisplayValue;
 		StringBuffer hitdisplayValue;
 
@@ -427,16 +436,16 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 			return 1;
 		}
 
-		bool bombDroid = isBombDroid();
+		bool combatDroid =
+			modules.containsKey("combat_module") ||
+			species == DroidObject::PROBOT ||
+			species == DroidObject::DZ70;
 
-		// Match the combat-droid classification used by the control-device
-		// call restriction. Bomb droids remain exempt from the dedicated
-		// combat-droid slot and certification requirement.
-		bool requiresCombatDroidCertification =
-			!bombDroid &&
-			(modules.containsKey("combat_module") ||
-			 species == DroidObject::PROBOT ||
-			 species == DroidObject::DZ70);
+		// A droid carrying both Combat and Detonation Modules is still a combat
+		// droid for certification, active-slot and call-restriction purposes.
+		// Only a pure bomb droid receives the normal bomb-droid exemptions.
+		bool bombDroid = isBombDroid() && !combatDroid;
+		bool requiresCombatDroidCertification = combatDroid;
 
 		if (requiresCombatDroidCertification &&
 				!hasCombatDroidOperatorCertification(player)) {

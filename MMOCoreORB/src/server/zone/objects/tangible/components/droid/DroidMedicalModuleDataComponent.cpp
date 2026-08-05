@@ -5,6 +5,79 @@
 #include "DroidMedicalModuleDataComponent.h"
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/objects/creature/ai/DroidObject.h"
+#include "server/zone/objects/player/PlayerObject.h"
+
+namespace {
+	int getHighestActiveMedicalRating(CreatureObject* player, DroidObject* excludedDroid = nullptr) {
+		if (player == nullptr)
+			return 0;
+
+		PlayerObject* ghost = player->getPlayerObject();
+
+		if (ghost == nullptr)
+			return 0;
+
+		int highestRating = 0;
+
+		for (int i = 0; i < ghost->getActivePetsSize(); ++i) {
+			ManagedReference<AiAgent*> activePet = ghost->getActivePet(i);
+
+			if (activePet == nullptr || !activePet->isDroidObject())
+				continue;
+
+			DroidObject* activeDroid = cast<DroidObject*>(activePet.get());
+
+			if (activeDroid == nullptr || activeDroid == excludedDroid ||
+					activeDroid->isDead() || activeDroid->isIncapacitated() ||
+					!activeDroid->hasPower() || !player->isInRange(activeDroid, 15))
+				continue;
+
+			Reference<BaseDroidModuleComponent*> module =
+				activeDroid->getModule("medical_module");
+			DroidMedicalModuleDataComponent* medicalModule =
+				cast<DroidMedicalModuleDataComponent*>(module.get());
+
+			if (medicalModule == nullptr)
+				continue;
+
+			int activeRating = medicalModule->getMedicalRating();
+
+			if (activeRating > highestRating)
+				highestRating = activeRating;
+		}
+
+		return highestRating;
+	}
+
+	void refreshActiveMedicalRating(CreatureObject* player, DroidObject* excludedDroid = nullptr) {
+		if (player == nullptr)
+			return;
+
+		int currentRating = player->getSkillMod("private_medical_rating");
+
+		if (currentRating > 0) {
+			player->removeSkillMod(
+				SkillModManager::DROID,
+				"private_medical_rating",
+				currentRating,
+				true
+			);
+		}
+
+		int highestRating = getHighestActiveMedicalRating(player, excludedDroid);
+
+		if (highestRating > 0) {
+			player->addSkillMod(
+				SkillModManager::DROID,
+				"private_medical_rating",
+				highestRating,
+				true
+			);
+		}
+	}
+}
 
 DroidMedicalModuleDataComponent::DroidMedicalModuleDataComponent() {
 	setLoggingName("DroidMedicalModule");
@@ -92,14 +165,16 @@ void DroidMedicalModuleDataComponent::onStore() {
 }
 
 void DroidMedicalModuleDataComponent::loadSkillMods(CreatureObject* player) {
-	// add the rating to the player as a private medical center for right now we ignore the part about not usable in a static cantina we will handle that in the injury treatment task
-	// only add this is the payer didnt have it already.
-	player->removeAllSkillModsOfType(SkillModManager::DROID,true);
-	player->addSkillMod(SkillModManager::DROID,"private_medical_rating",getMedicalRating(),true);
+	// Multiple active droids may carry Medical Modules. Apply only the highest
+	// currently eligible rating rather than allowing their periodic tasks to
+	// overwrite one another or remove unrelated Droid skill mods.
+	refreshActiveMedicalRating(player);
 }
 
 void DroidMedicalModuleDataComponent::unloadSkillMods(CreatureObject* player) {
-	player->removeAllSkillModsOfType(SkillModManager::DROID,true);
-	//player->removeSkillMod(SkillModManager::DROID,"private_medical_rating",true);
+	// Exclude this droid while recalculating so storing it, losing power, dying,
+	// or moving out of range immediately falls back to the next eligible droid.
+	ManagedReference<DroidObject*> droid = getDroidObject();
+	refreshActiveMedicalRating(player, droid.get());
 }
 

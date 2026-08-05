@@ -12,6 +12,7 @@
 DroidDataStorageModuleDataComponent::DroidDataStorageModuleDataComponent() {
 	setLoggingName("DroidDataStorageModule");
 	rating = 0;
+	capacityFormatV2 = false;
 }
 
 DroidDataStorageModuleDataComponent::~DroidDataStorageModuleDataComponent() {
@@ -82,6 +83,8 @@ void DroidDataStorageModuleDataComponent::initializeTransientMembers() {
 
 	if (droidComponent != nullptr && droidComponent->hasKey("data_module")) {
 		rating = droidComponent->getAttributeValue("data_module");
+		capacityFormatV2 = droidComponent->hasKey("data_module_capacity_v2") &&
+			droidComponent->getAttributeValue("data_module_capacity_v2") > 0;
 	}
 
 	// Handle conversion by moving old droids datapad onto PCD
@@ -116,6 +119,7 @@ void DroidDataStorageModuleDataComponent::initializeTransientMembers() {
 
 void DroidDataStorageModuleDataComponent::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
 	rating = values->getCurrentValue("data_module");
+	capacityFormatV2 = false;
 }
 
 void DroidDataStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
@@ -186,18 +190,23 @@ void DroidDataStorageModuleDataComponent::addToStack(BaseDroidModuleComponent* o
 		return;
 	}
 
-	// Standalone modules store compact tier markers (1, 3, 5, 7, 9, 11).
-	// Stack their actual capacities instead so two 50-capacity modules
-	// correctly produce 100 capacity rather than the old Tier 3 result (75).
+	// Convert both inputs to real capacities before stacking. The explicit
+	// format marker keeps new direct-capacity values distinguishable from
+	// legacy raw tier sums such as 18, which historically meant Tier 6.
 	rating = getStorageCapacity() + otherModule->getStorageCapacity();
 
 	if (rating > 150)
 		rating = 150;
 
+	capacityFormatV2 = true;
+
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 
 	if (droidComponent != nullptr) {
 		droidComponent->changeAttributeValue("data_module", (float)rating);
+
+		if (!droidComponent->changeAttributeValue("data_module_capacity_v2", 1.0f))
+			droidComponent->addProperty("data_module_capacity_v2", 1.0f, 0, "null");
 	}
 }
 
@@ -209,11 +218,15 @@ void DroidDataStorageModuleDataComponent::copy(BaseDroidModuleComponent* other) 
 	}
 
 	rating = otherModule->rating;
+	capacityFormatV2 = otherModule->capacityFormatV2;
 
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 
 	if (droidComponent != nullptr) {
 		droidComponent->addProperty("data_module", (float)rating, 0, "exp_effectiveness");
+
+		if (capacityFormatV2)
+			droidComponent->addProperty("data_module_capacity_v2", 1.0f, 0, "null");
 	}
 }
 
@@ -241,10 +254,15 @@ int DroidDataStorageModuleDataComponent::handleObjectMenuSelect(CreatureObject* 
 }
 
 int DroidDataStorageModuleDataComponent::getStorageCapacity() {
-	// New stacked modules store their direct capacity. Standalone modules and
-	// legacy objects still use compact tier markers, so support both formats.
-	if (rating > 11)
+	// New stacked modules store direct capacity and carry an explicit marker.
+	// Unmarked values always use the legacy compact/raw-sum interpretation,
+	// preserving old deeds and droids where any value above 10 meant Tier 6.
+	if (capacityFormatV2) {
+		if (rating < 25)
+			return 25;
+
 		return rating > 150 ? 150 : rating;
+	}
 
 	if (rating <= 2)
 		return 25;

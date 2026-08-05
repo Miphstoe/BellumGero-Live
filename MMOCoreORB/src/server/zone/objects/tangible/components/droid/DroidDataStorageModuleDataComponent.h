@@ -18,6 +18,7 @@ class DroidDataStorageModuleDataComponent : public BaseDroidModuleComponent {
 
 protected:
 	int rating;
+	bool capacityFormatV2;
 
 public:
 	DroidDataStorageModuleDataComponent();

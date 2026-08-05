@@ -102,6 +102,15 @@ void DroidCombatModuleDataComponent::initialize(DroidObject* droid) {
 	float toHit = DroidMechanics::determineHit(droid->getSpecies(), maxHam);
 	float speed = DroidMechanics::determineSpeed(droid->getSpecies(), maxHam);
 
+	// Unsupported/custom chassis do not have a dedicated combat profile. Never
+	// apply zero attack speed or zero accuracy to a droid that accepts a Combat
+	// Module; use a deliberately weak but safe fallback instead.
+	if (speed <= 0.0f)
+		speed = 2.0f;
+
+	if (toHit <= 0.0f)
+		toHit = 0.20f;
+
 	droid->setHitChance(toHit);
 	droid->setMaxDamage(maxDmg);
 	droid->setMinDamage(minDmg);
