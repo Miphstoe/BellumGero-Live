@@ -62,8 +62,15 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 
 	//alm->insertAttribute("decayrate", (int)durability);
 
-	if (quality > AttributesMap::VALUENOTFOUND)
+	// Mechanism Quality is only functional for the Interplanetary Survey Droid.
+	// Hide legacy mechanism_quality values from all other droid components.
+	String objectTemplate = getObjectTemplate()->getFullTemplateString();
+
+	if (objectTemplate.contains("droid_interplanetary_survey") &&
+			hasKey("mechanism_quality") &&
+			quality > AttributesMap::VALUENOTFOUND) {
 		alm->insertAttribute("mechanism_quality", (int)quality);
+	}
 
 	// Chassis Power Level is a functional crafting result used by the
 	// finished droid deed. Display it on every chassis/component that has it.
