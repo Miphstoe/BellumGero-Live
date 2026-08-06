@@ -66,6 +66,13 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 	// Hide legacy mechanism_quality values from all other droid components.
 	String objectTemplate = getObjectTemplate()->getFullTemplateString();
 
+	// Interplanetary Survey Droids are multi-use components. Display their
+	// final crafted count without exposing Quantity on unrelated components.
+	if (objectTemplate.contains("droid_interplanetary_survey") &&
+			getUseCount() > 1) {
+		alm->insertAttribute("quantity", getUseCount());
+	}
+
 	if (objectTemplate.contains("droid_interplanetary_survey") &&
 			hasKey("mechanism_quality") &&
 			quality > AttributesMap::VALUENOTFOUND) {
