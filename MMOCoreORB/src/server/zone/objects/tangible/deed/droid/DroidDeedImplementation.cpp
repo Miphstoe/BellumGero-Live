@@ -554,7 +554,7 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 			return 1;
 		}
 
-		Reference<CreatureManager*> creatureManager = player->getZone()->getCreatureManager();\
+		Reference<CreatureManager*> creatureManager = player->getZone()->getCreatureManager();
 
 		if (creatureManager == nullptr) {
 			return 1;
