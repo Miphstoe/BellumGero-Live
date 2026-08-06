@@ -857,3 +857,35 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Added six craftable Mandalorian melee weapons with custom retextured meshes, recolored elemental particle trails, and serrated/crested geometry: Beskar Pike, Stun Baton, Acid Baton, Power Hammer, Beskar Knuckler, and Lava Blade. Wired Core3 shared/server weapon templates, draft schematics, loot schematic items, hidden armory certification skills, and rare-bonus loot pool entries; registered all new shared object templates and staged the TRE master/client/server copies.
 - **Files:** `scripts/build_mando_melee_weapons.py`, `manifests/mando_melee_weapons.toml`, `manifests/mando_melee_draft_schematics.toml`, `manifests/mando_melee_loot_schematics.toml`, `bin/scripts/object/weapon/melee/shared_mando_melee_weapons.lua`, `bin/scripts/object/weapon/melee/mando_melee_weapons.lua`, `bin/scripts/object/weapon/melee/objects.lua`, `bin/scripts/object/weapon/melee/serverobjects.lua`, `bin/scripts/object/draft_schematic/weapon/mando_melee_schematics.lua`, `bin/scripts/object/draft_schematic/weapon/objects.lua`, `bin/scripts/object/draft_schematic/weapon/serverobjects.lua`, `bin/scripts/object/tangible/loot/loot_schematic/mando_melee_schematics.lua`, `bin/scripts/object/tangible/loot/loot_schematic/objects.lua`, `bin/scripts/object/tangible/loot/loot_schematic/serverobjects.lua`, `bin/scripts/managers/crafting/schematics.lua`, `bin/scripts/skills/bellum/mando_armory_certs.lua`, `bin/scripts/loot/items/bellum/mando_melee_schematics.lua`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups/bellum/mando_contract_rare_bonus.lua`, `/mnt/c/Dev-BG/bg_custom1.tre`, `/mnt/c/BellumGero/bg_custom1.tre`, `/trefiles/bg_custom1.tre`
 - **Notes:** TRE updated in three stages (weapons, draft schematics, loot schematics), with a fourth CEF pass adding `clienteffect/combat_melee_acid_baton_splat.cef` and wiring the acid baton's `clientdata/weapon/client_melee_mando_acid_baton.cdf` hit slot to it. Synced to client and server copies; validated 3961/3961 records on server. Client TRE changes require a full SWGEmu restart. Hidden cert skills are `mando_way_cert_beskar_pike` etc. and must be granted by the chapter trial screenplay before the matching weapon can be equipped.
+
+### 2026-08-05 — Fix Mandalorian melee template loader paths
+
+- **Summary:** Corrected the shared and server Lua include paths so the Mandalorian melee weapon templates are loaded and can be resolved by commands such as `/object createitem`.
+- **Files:** `bin/scripts/object/weapon/melee/objects.lua`, `bin/scripts/object/weapon/melee/serverobjects.lua`, `bellumgero_change_log.md`
+- **Notes:** Requires a Core3 restart to reload the corrected template registrations.
+
+### 2026-08-05 — Silence supported sprite appearances and restore stock APT alias
+
+- **Summary:** Treated client-only `SPRT` appearances like other non-collision appearance formats that Core3 intentionally ignores, preventing misleading `unknown appearance type SPRT` errors. Added `appearance/godclient_cylinder_30.apt` as an alias of the stock `godclient_cylinder_30m.apt` to the development, client, and server custom TREs so stock no-build templates resolve their historical filename.
+- **Files:** `src/templates/manager/TemplateManager.cpp`, `bellumgero_change_log.md`, `/mnt/c/Dev-BG/bg_custom1.tre`, `/mnt/c/BellumGero/bg_custom1.tre`, `/trefiles/bg_custom1.tre`
+- **Notes:** Timestamped backups were created before replacing each TRE. Requires rebuilding and restarting Core3; the client TRE update requires a client restart.
+
+### Tooling / repo-adjacent
+
+#### 2026-08-05 — Activate Mandalorian Lava Blade client data
+
+- **Summary:** Updated the Mandalorian melee asset manifest so the Lava Blade shared object template references its generated client-data file instead of the retail vibroblade client data. Applied the corrected template to the development and game-client TREs.
+- **Files:** `/home/EnderWookie/localswgserver/tools/BellumGero-TRE-Force/manifests/mando_melee_weapons.toml`, `/mnt/c/Dev-BG/bg_custom1.tre`, `/mnt/c/BellumGero/bg_custom1.tre`, `bellumgero_change_log.md`
+- **Notes:** Backups were created as `bg_custom1.tre.bak-20260805-225927` and `bg_custom1.tre.bak-20260805-225943`. The server TRE already contains and registers the Lava Blade template and assets; Core3 must be restarted because it started before that TRE was deployed. The client must be launched fresh to reload the corrected archive.
+
+### 2026-08-05 — Fix Mandalorian FOB attribute component
+
+- **Summary:** Replaced the nonexistent `MandoDailyBountyFobAttributeListComponent` with Core3's registered generic `AttributeListComponent` on all three current and legacy Mandalorian bounty FOB templates, preventing null-component stack traces when players examine a FOB.
+- **Files:** `bin/scripts/object/tangible/mission/mando_tracking_fob.lua`, `bin/scripts/object/tangible/mission/mando_daily_bounty_fob.lua`, `bin/scripts/object/tangible/loot/quest/force_sensitive/mandalorian_mission_fob.lua`, `bellumgero_change_log.md`
+- **Notes:** Identified persisted object `281475003523074` directly from `sceneobjects.db` as the custom `mando_tracking_fob`. Requires a Core3 restart to reload the corrected templates.
+
+### 2026-08-05 — Restore attribute components after transient initialization
+
+- **Summary:** Restored each scene object's template-configured attribute-list component during transient initialization, preventing persisted or deserialized objects from emitting `nullptr attribute list component` when their attributes are requested.
+- **Files:** `src/server/zone/objects/scene/SceneObjectImplementation.cpp`, `bellumgero_change_log.md`
+- **Notes:** Requires rebuilding and restarting Core3.
