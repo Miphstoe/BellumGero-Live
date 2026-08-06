@@ -1,4 +1,3 @@
-
 #ifndef SCHEDULESHUTTLETASK_H_
 #define SCHEDULESHUTTLETASK_H_
 
@@ -63,6 +62,12 @@ public:
 			error() << " zoneServer is nullptr.";
 			return;
 		}
+
+		// A shuttle registration task may have been scheduled several minutes
+		// earlier during server loading. Do not let it run after shutdown begins,
+		// when travel points, regions, and zone objects are being removed.
+		if (zoneServer->isServerShuttingDown())
+			return;
 
 		if (zoneServer->isServerLoading()) {
 			schedule(1000);

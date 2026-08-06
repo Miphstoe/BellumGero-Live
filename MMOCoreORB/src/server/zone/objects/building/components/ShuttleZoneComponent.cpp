@@ -34,6 +34,10 @@ void ShuttleZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* zo
 	if (zoneServer == nullptr)
 		return;
 
+	// Do not create new delayed shuttle-registration tasks after shutdown begins.
+	if (zoneServer->isServerShuttingDown())
+		return;
+
 	Reference<ScheduleShuttleTask*> task = new ScheduleShuttleTask(shuttle, zone);
 
 	if (task == nullptr)
