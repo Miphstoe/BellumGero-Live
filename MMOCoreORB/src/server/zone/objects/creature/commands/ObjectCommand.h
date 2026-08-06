@@ -161,7 +161,13 @@ public:
 						objectTemplate.contains("/component/genetic/") ||
 						objectTemplate.contains("/component/lightsaber/");
 
-					bool qualitySupported = supportedComponent && !specializedComponent;
+					// Socket banks require installed child modules and must not be
+					// generated as quality-only empty shells.
+					bool socketBankComponent = objectTemplate.contains("socket_bank");
+					bool qualitySupported =
+						supportedComponent &&
+						!specializedComponent &&
+						!socketBankComponent;
 
 					if (qualitySupported) {
 						const Vector<String>* attributes = tangibleTemplate->getExperimentalAttributes();
@@ -249,17 +255,15 @@ public:
 								"% quality using " + String::valueOf(appliedAttributes) +
 								" crafting attribute(s)."
 							);
-
-							if (objectTemplate.contains("socket_bank")) {
-								creature->sendSystemMessage(
-									"Warning: quality was applied to the socket-bank shell only; no modules were installed."
-								);
-							}
 						} else {
 							creature->sendSystemMessage(
 								"This component has no compatible crafting-quality attributes. The item was created normally."
 							);
 						}
+					} else if (socketBankComponent) {
+						creature->sendSystemMessage(
+							"Quality is not supported for socket-bank shells. The item was created normally."
+						);
 					} else {
 						creature->sendSystemMessage(
 							"Quality is not supported for this object type. The item was created normally."
@@ -297,7 +301,6 @@ public:
 				// Like createitem, but sets SEA socket count (createitem leaves sockets at 0).
 				String objectTemplate;
 				args.getStringToken(objectTemplate);
-
 				int maxSockets = WearableObject::MAXSOCKETS;
 				if (args.hasMoreTokens())
 					maxSockets = args.getIntToken();

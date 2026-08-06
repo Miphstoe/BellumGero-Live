@@ -117,6 +117,9 @@ void DroidMedicalModuleDataComponent::updateCraftingValues(CraftingValues* value
 }
 
 int DroidMedicalModuleDataComponent::getMedicalRating() {
+	if (rating <= 0)
+		return 0;
+
 	switch (rating) {
 		case 1:
 		case 2:

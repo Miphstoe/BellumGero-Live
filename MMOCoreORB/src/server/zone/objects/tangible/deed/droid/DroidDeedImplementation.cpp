@@ -99,6 +99,10 @@ void DroidDeedImplementation::onCloneObject(SceneObject* objectToClone) {
 
 			if (comp != nullptr) {
 				ManagedReference<DroidComponent*> cloneComponent = cast<DroidComponent*>(ObjectManager::instance()->cloneObject(comp));
+
+				if (cloneComponent == nullptr)
+					continue;
+
 				cloneComponent->setParent(nullptr);
 				modules.put(key, cloneComponent);
 			}
@@ -206,35 +210,73 @@ void DroidDeedImplementation::processModule(BaseDroidModuleComponent* module, ui
 	if (module->isStackable()) {
 		if (modules.containsKey(module->getModuleName())) {
 			// add to the stack if stackable.
-			DroidComponent* comp = modules.get(module->getModuleName());
-			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(comp->getDataObjectComponent()->get());
+			ManagedReference<DroidComponent*> comp = modules.get(module->getModuleName());
+
+			if (comp == nullptr)
+				return;
+
+			DataObjectComponentReference* data = comp->getDataObjectComponent();
+
+			if (data == nullptr || data->get() == nullptr ||
+					!data->get()->isDroidModuleData())
+				return;
+
+			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
 
 			if (bmodule != nullptr)
 				bmodule->addToStack(module);
 		} else {
 			ManagedReference<DroidComponent*> dcomp = (this->getZoneServer()->createObject(crc, 1)).castTo<DroidComponent*>();
+
+			if (dcomp == nullptr)
+				return;
+
 			dcomp->setParent(nullptr);
 
-			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(dcomp->getDataObjectComponent()->get());
+			DataObjectComponentReference* data = dcomp->getDataObjectComponent();
 
-			if (bmodule != nullptr) {
-				bmodule->copy(module);
-				bmodule->setSpecies(species);
+			if (data == nullptr || data->get() == nullptr ||
+					!data->get()->isDroidModuleData()) {
+				dcomp->destroyObjectFromDatabase(true);
+				return;
 			}
 
+			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
+
+			if (bmodule == nullptr) {
+				dcomp->destroyObjectFromDatabase(true);
+				return;
+			}
+
+			bmodule->copy(module);
+			bmodule->setSpecies(species);
 			modules.put(module->getModuleName(), dcomp);
 		}
 	} else {
 		ManagedReference<DroidComponent*> dcomp = (this->getZoneServer()->createObject(crc, 1)).castTo<DroidComponent*>();
+
+		if (dcomp == nullptr)
+			return;
+
 		dcomp->setParent(nullptr);
 
-		BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(dcomp->getDataObjectComponent()->get());
+		DataObjectComponentReference* data = dcomp->getDataObjectComponent();
 
-		if (bmodule != nullptr) {
-			bmodule->copy(module);
-			bmodule->setSpecies(species);
+		if (data == nullptr || data->get() == nullptr ||
+				!data->get()->isDroidModuleData()) {
+			dcomp->destroyObjectFromDatabase(true);
+			return;
 		}
 
+		BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
+
+		if (bmodule == nullptr) {
+			dcomp->destroyObjectFromDatabase(true);
+			return;
+		}
+
+		bmodule->copy(module);
+		bmodule->setSpecies(species);
 		modules.put(module->getModuleName(), dcomp);
 	}
 }
@@ -366,30 +408,35 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 			// pull out the objects
 			ManagedReference<SceneObject*> craftingComponents = component->getSlottedObject("crafted_components");
 
-			if (craftingComponents != nullptr) {
-				SceneObject* satchel = craftingComponents->getContainerObject(0);
+			if (craftingComponents == nullptr ||
+					craftingComponents->getContainerObjectsSize() == 0)
+				continue;
 
-				for (int i = 0; i < satchel->getContainerObjectsSize(); ++i) {
-					ManagedReference<SceneObject*> sceno = satchel->getContainerObject(i);
+			ManagedReference<SceneObject*> satchel = craftingComponents->getContainerObject(0);
 
-					if (sceno != nullptr) {
-						// now we have the component used in this socket item
-						ManagedReference<DroidComponent*> sub = cast<DroidComponent*>( sceno.get());
+			if (satchel == nullptr)
+				continue;
 
-						if (sub != nullptr) {
-							DataObjectComponentReference* data = sub->getDataObjectComponent();
-							BaseDroidModuleComponent* module = nullptr;
+			for (int j = 0; j < satchel->getContainerObjectsSize(); ++j) {
+				ManagedReference<SceneObject*> sceno = satchel->getContainerObject(j);
 
-							if (data != nullptr && data->get() != nullptr && data->get()->isDroidModuleData()){
-								module = cast<BaseDroidModuleComponent*>(data->get());
-							}
+				if (sceno != nullptr) {
+					// now we have the component used in this socket item
+					ManagedReference<DroidComponent*> sub = cast<DroidComponent*>( sceno.get());
 
-							if (module == nullptr) {
-								continue;
-							}
+					if (sub != nullptr) {
+						DataObjectComponentReference* data = sub->getDataObjectComponent();
+						BaseDroidModuleComponent* module = nullptr;
 
-							processModule(module, sceno->getServerObjectCRC());
+						if (data != nullptr && data->get() != nullptr && data->get()->isDroidModuleData()){
+							module = cast<BaseDroidModuleComponent*>(data->get());
 						}
+
+						if (module == nullptr) {
+							continue;
+						}
+
+						processModule(module, sceno->getServerObjectCRC());
 					}
 				}
 			}
@@ -591,7 +638,13 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 				error("Error transferring droid module from Deed to Object");
 			}
 
-			BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(comp->getDataObjectComponent()->get());
+			DataObjectComponentReference* componentData = comp->getDataObjectComponent();
+
+			if (componentData == nullptr || componentData->get() == nullptr ||
+					!componentData->get()->isDroidModuleData())
+				continue;
+
+			BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(componentData->get());
 
 			if (data != nullptr) {
 				data->initialize(droid);
@@ -668,7 +721,13 @@ bool DroidDeedImplementation::isBombDroid() {
 			continue;
 		}
 
-		BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(droidComponent->getDataObjectComponent()->get());
+		DataObjectComponentReference* componentData = droidComponent->getDataObjectComponent();
+
+		if (componentData == nullptr || componentData->get() == nullptr ||
+				!componentData->get()->isDroidModuleData())
+			continue;
+
+		BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(componentData->get());
 
 		if (data == nullptr || !data->isDetonationModule()) {
 			continue;
