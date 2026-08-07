@@ -2,7 +2,7 @@
 object_tangible_mission_mando_tracking_fob = object_tangible_mission_shared_mando_tracking_fob:new {
 	gameObjectType = 8211,
 	objectMenuComponent = "MandoDailyBountyFobMenuComponent",
-	attributeListComponent = "MandoDailyBountyFobAttributeListComponent",
+	attributeListComponent = "AttributeListComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_mission_mando_tracking_fob, "object/tangible/mission/mando_tracking_fob.iff")

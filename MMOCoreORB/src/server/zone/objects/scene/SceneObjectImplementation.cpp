@@ -83,6 +83,14 @@ void SceneObjectImplementation::initializeTransientMembers() {
 			spaceZoneComponent = ComponentManager::instance()->getComponent<SpaceZoneComponent*>("SpaceZoneComponent");
 
 		createObjectMenuComponent();
+
+		String attributeListComponentName = templateObject->getAttributeListComponent();
+		if (!attributeListComponentName.isEmpty()) {
+			attributeListComponent = ComponentManager::instance()->getComponent<AttributeListComponent*>(attributeListComponentName);
+
+			if (attributeListComponent == nullptr)
+				info() << "attributeList component null for " << templateObject->getFullTemplateString();
+		}
 	}
 
 	if (dataObjectComponent != nullptr) {

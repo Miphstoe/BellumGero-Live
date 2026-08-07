@@ -11,6 +11,15 @@ mando_contract_rare_bonus = {
 	lootItems = {
 		{itemTemplate = "jet_pack_base",            weight = 1900000},
 		{itemTemplate = "acklay_ris_armor_schematic", weight = 1900000},
+		{itemTemplate = "peko_albatross_feather",   weight = 2200000},
+		{itemTemplate = "jetpack_stabilizer",       weight = 2200000},
+		-- Mando weapon schematics (3% total)
+		{itemTemplate = "mando_beskar_pike_schematic",  weight = 50000},
+		{itemTemplate = "mando_power_hammer_schematic", weight = 50000},
+		{itemTemplate = "mando_stun_baton_schematic",   weight = 50000},
+		{itemTemplate = "mando_acid_baton_schematic",   weight = 50000},
+		{itemTemplate = "mando_knuckler_schematic",     weight = 50000},
+		{itemTemplate = "mando_lava_blade_schematic",   weight = 50000},
 		{itemTemplate = "peko_albatross_feather",   weight = 2050000},
 		{itemTemplate = "jetpack_stabilizer",       weight = 2050000},
 		-- Rare Mando trophies (15% total)

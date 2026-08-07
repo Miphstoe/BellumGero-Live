@@ -4205,3 +4205,35 @@ object_draft_schematic_weapon_shared_rifle_lightning_heavy = SharedDraftSchemati
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_rifle_lightning_heavy, "object/draft_schematic/weapon/shared_rifle_lightning_heavy.iff")
+
+--------------------------------------------------------------------
+
+object_draft_schematic_weapon_shared_mando_beskar_pike = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_beskar_pike.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_beskar_pike, "object/draft_schematic/weapon/shared_mando_beskar_pike.iff")
+
+object_draft_schematic_weapon_shared_mando_stun_baton = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_stun_baton.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_stun_baton, "object/draft_schematic/weapon/shared_mando_stun_baton.iff")
+
+object_draft_schematic_weapon_shared_mando_acid_baton = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_acid_baton.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_acid_baton, "object/draft_schematic/weapon/shared_mando_acid_baton.iff")
+
+object_draft_schematic_weapon_shared_mando_power_hammer = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_power_hammer.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_power_hammer, "object/draft_schematic/weapon/shared_mando_power_hammer.iff")
+
+object_draft_schematic_weapon_shared_mando_knuckler = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_knuckler.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_knuckler, "object/draft_schematic/weapon/shared_mando_knuckler.iff")
+
+object_draft_schematic_weapon_shared_mando_lava_blade = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/weapon/shared_mando_lava_blade.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_weapon_shared_mando_lava_blade, "object/draft_schematic/weapon/shared_mando_lava_blade.iff")
