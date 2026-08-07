@@ -1,10 +1,22 @@
 /*
- * 				Copyright <SWGEmu>
+				 Copyright <SWGEmu>
 		See file COPYING for copying conditions. */
 
 #include "DroidArmorModuleDataComponent.h"
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
+
+namespace {
+	int clampArmorModuleRating(float rating) {
+		if (rating < 0)
+			return 0;
+
+		if (rating > 6)
+			return 6;
+
+		return (int)rating;
+	}
+}
 
 DroidArmorModuleDataComponent::DroidArmorModuleDataComponent() {
 	armorModule = 0;
@@ -29,20 +41,20 @@ void DroidArmorModuleDataComponent::initializeTransientMembers() {
 	}
 
 	if (droidComponent->hasKey("armor_module")) {
-		armorModule = droidComponent->getAttributeValue("armor_module");
+		armorModule = clampArmorModuleRating(droidComponent->getAttributeValue("armor_module"));
+
+		// Keep old or previously stacked components consistent with the
+		// effective gameplay cap used by the called droid.
+		droidComponent->changeAttributeValue("armor_module", armorModule);
 	}
 }
 
 void DroidArmorModuleDataComponent::initialize(DroidObject* droid) {
 	// Change droid resist and armor stat
 
-	int level = armorModule;
+	int level = clampArmorModuleRating(armorModule);
 	unsigned int armor = 0;
 	float resist = 0;
-
-	// Capped at 6
-	if (level > 6)
-		level = 6;
 
 	// Set armor type
 	if (level == 0) {
@@ -73,8 +85,9 @@ void DroidArmorModuleDataComponent::initialize(DroidObject* droid) {
 }
 
 void DroidArmorModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	// Armor/resists filled from AiAgent, but add total module level  here for deeds/components
-	alm->insertAttribute("armor_module", armorModule);
+	// Armor/resists are filled from AiAgent. Display the effective capped
+	// module level on deeds and components so the shown value matches gameplay.
+	alm->insertAttribute("armor_module", clampArmorModuleRating(armorModule));
 }
 
 int DroidArmorModuleDataComponent::getBatteryDrain() {
@@ -86,7 +99,7 @@ String DroidArmorModuleDataComponent::toString() const {
 }
 
 void DroidArmorModuleDataComponent::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
-	armorModule = values->getCurrentValue("armor_module");
+	armorModule = clampArmorModuleRating(values->getCurrentValue("armor_module"));
 }
 
 void DroidArmorModuleDataComponent::addToStack(BaseDroidModuleComponent* other) {
@@ -95,16 +108,17 @@ void DroidArmorModuleDataComponent::addToStack(BaseDroidModuleComponent* other) 
 	if (otherModule == nullptr)
 		return;
 
-	armorModule = armorModule + otherModule->armorModule;
+	// Armor Module effectiveness has no gameplay benefit above rating 6.
+	armorModule = clampArmorModuleRating(armorModule + otherModule->armorModule);
 
-	// Save stat in parent sceno
+	// Save capped stat in parent sceno
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 	if (droidComponent == nullptr)
 		return;
 
 	// Attribute should have already been created in copy method
-	if (!droidComponent->changeAttributeValue( "armor_module", armorModule)) {
-		info( "addToStack updateAttributeValue failed");
+	if (!droidComponent->changeAttributeValue("armor_module", armorModule)) {
+		info("addToStack updateAttributeValue failed");
 		return;
 	}
 }
@@ -115,9 +129,9 @@ void DroidArmorModuleDataComponent::copy(BaseDroidModuleComponent* other) {
 	if (otherModule == nullptr)
 		return;
 
-	armorModule = otherModule->armorModule;
+	armorModule = clampArmorModuleRating(otherModule->armorModule);
 
-	// Save stat in parent sceno
+	// Save capped stat in parent sceno
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 	if (droidComponent == nullptr)
 		return;
