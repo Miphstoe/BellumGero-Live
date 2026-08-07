@@ -17,34 +17,6 @@
 #include "templates/building/SharedBuildingObjectTemplate.h"
 #include "server/zone/objects/intangible/TheaterObject.h"
 
-#include <chrono>
-
-namespace {
-	using RoriFacilityDiagnosticClock = std::chrono::steady_clock;
-
-	const char* const RORI_HYPERDRIVE_RESEARCH_FACILITY_TEMPLATE =
-			"object/building/general/rori_hyperdrive_research_facility.iff";
-
-	bool isRoriHyperdriveResearchFacility(SceneObject* sceneObject) {
-		if (sceneObject == nullptr)
-			return false;
-
-		SharedObjectTemplate* objectTemplate = sceneObject->getObjectTemplate();
-
-		if (objectTemplate == nullptr)
-			return false;
-
-		return objectTemplate->getFullTemplateString() ==
-				RORI_HYPERDRIVE_RESEARCH_FACILITY_TEMPLATE;
-	}
-
-	long long getRoriFacilityElapsedMs(
-			const RoriFacilityDiagnosticClock::time_point& startTime) {
-		return std::chrono::duration_cast<std::chrono::milliseconds>(
-				RoriFacilityDiagnosticClock::now() - startTime).count();
-	}
-}
-
 void GroundZoneComponent::notifyInsertToZone(SceneObject* sceneObject, Zone* newZone) const {
 	debug("inserting to zone");
 
@@ -369,46 +341,14 @@ void GroundZoneComponent::notifyRemoveFromZone(SceneObject* sceneObject) const {
 }
 
 void GroundZoneComponent::destroyObjectFromWorld(SceneObject* sceneObject, bool sendSelfDestroy) const {
-	const bool roriFacilityDiagnostic = isRoriHyperdriveResearchFacility(sceneObject);
-	const uint64 diagnosticObjectID = sceneObject != nullptr ? sceneObject->getObjectID() : 0;
-	const auto totalStartTime = RoriFacilityDiagnosticClock::now();
-
-	auto stageStartTime = RoriFacilityDiagnosticClock::now();
 	ManagedReference<SceneObject*> par = sceneObject->getParent().get();
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=getParent elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime)
-				<< " parentID=" << (par != nullptr ? par->getObjectID() : 0);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 
 	if (!sceneObject->isActiveArea()) {
 		sceneObject->broadcastDestroy(sceneObject, sendSelfDestroy);
 	}
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=broadcastDestroy elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
-
 	Zone* rootZone = sceneObject->getZone();
 	Zone* zone = sceneObject->getLocalZone();
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=zoneLookup elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime)
-				<< " rootZone=" << (rootZone != nullptr ? rootZone->getZoneName() : "null")
-				<< " localZone=" << (zone != nullptr ? zone->getZoneName() : "null");
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 
 	if (par != nullptr) {
 		uint64 parentID = sceneObject->getParentID();
@@ -430,67 +370,22 @@ void GroundZoneComponent::destroyObjectFromWorld(SceneObject* sceneObject, bool 
 		zone->removeObject(sceneObject, nullptr, false);
 	}
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=parentOrLocalZoneRemoval elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
-
 	removeObjectFromZone(sceneObject, rootZone, par);
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=removeObjectFromZone elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=destroyObjectFromWorldTotal elapsedMs="
-				<< getRoriFacilityElapsedMs(totalStartTime);
-	}
 }
 
 void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* zone, SceneObject* par) const {
 	if (zone == nullptr)
 		return;
 
-	const bool roriFacilityDiagnostic = isRoriHyperdriveResearchFacility(sceneObject);
-	const uint64 diagnosticObjectID = sceneObject->getObjectID();
-	const auto totalStartTime = RoriFacilityDiagnosticClock::now();
-
-	auto stageStartTime = RoriFacilityDiagnosticClock::now();
 	Locker locker(zone);
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=zoneLock elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 	zone->dropSceneObject(sceneObject);
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=dropSceneObject elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
 
 	if (sceneObject->isActiveArea()) {
 		return;
 	}
 
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 	zone->remove(sceneObject);
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=zoneTreeRemove elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 
 	SharedBuildingObjectTemplate* objtemplate = dynamic_cast<SharedBuildingObjectTemplate*>(sceneObject->getObjectTemplate());
 
@@ -502,14 +397,6 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 		}
 	}
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=terrainModificationRemoval elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
-
 	if (sceneObject->isTheaterObject()) {
 		TheaterObject* theater = static_cast<TheaterObject*>(sceneObject);
 
@@ -518,24 +405,9 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 		}
 	}
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=theaterTerrainRemoval elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 	locker.release();
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=zoneUnlock elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime);
-	}
-
 	SortedVector<ManagedReference<TreeEntry*> > closeSceneObjects;
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 
 	CloseObjectsVector* closeobjects = sceneObject->getCloseObjects();
 	ManagedReference<SceneObject*> vectorOwner = sceneObject;
@@ -552,16 +424,6 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 			closeobjects = vectorOwner->getCloseObjects();
 		}
 	}
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=resolveCloseObjects elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime)
-				<< " vectorOwnerID=" << (vectorOwner != nullptr ? vectorOwner->getObjectID() : 0)
-				<< " initialCloseObjectCount=" << (closeobjects != nullptr ? closeobjects->size() : 0);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
 
 	if (closeobjects != nullptr) {
 		removeAllObjectsFromCOV(closeobjects, closeSceneObjects, sceneObject, vectorOwner);
@@ -584,20 +446,10 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 		}
 	}
 
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=closeObjectCleanup elapsedMs="
-				<< getRoriFacilityElapsedMs(stageStartTime)
-				<< " remainingCloseObjectCount=" << (closeobjects != nullptr ? closeobjects->size() : 0);
-	}
-
-	stageStartTime = RoriFacilityDiagnosticClock::now();
-
 	TangibleObject* tano = sceneObject->asTangibleObject();
 
 	if (tano != nullptr) {
 		SortedVector<ManagedReference<ActiveArea*> >* activeAreas = tano->getActiveAreas();
-		const int initialActiveAreaCount = activeAreas->size();
 
 		while (activeAreas->size() > 0) {
 			Locker _alocker(sceneObject->getContainerLock());
@@ -607,13 +459,6 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 			_alocker.release();
 
 			area->enqueueExitEvent(sceneObject);
-		}
-
-		if (roriFacilityDiagnostic) {
-			info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-					<< " stage=activeAreaCleanup elapsedMs="
-					<< getRoriFacilityElapsedMs(stageStartTime)
-					<< " initialActiveAreaCount=" << initialActiveAreaCount;
 		}
 	} else if (sceneObject->isStaticObjectClass()) {
 		// hack to get around notifyEnter/Exit only working with tangible objects
@@ -631,19 +476,6 @@ void GroundZoneComponent::removeObjectFromZone(SceneObject* sceneObject, Zone* z
 				}
 			}
 		}
-
-		if (roriFacilityDiagnostic) {
-			info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-					<< " stage=staticNavMeshCleanup elapsedMs="
-					<< getRoriFacilityElapsedMs(stageStartTime)
-					<< " activeAreasChecked=" << objects.size();
-		}
-	}
-
-	if (roriFacilityDiagnostic) {
-		info(true) << "[RORI-FACILITY-DIAG] objectID=" << diagnosticObjectID
-				<< " stage=removeObjectFromZoneTotal elapsedMs="
-				<< getRoriFacilityElapsedMs(totalStartTime);
 	}
 }
 
@@ -654,20 +486,8 @@ void GroundZoneComponent::notifySelfPositionUpdate(SceneObject* sceneObject) con
 void GroundZoneComponent::removeAllObjectsFromCOV(CloseObjectsVector *closeobjects,
 					SortedVector<ManagedReference<TreeEntry *> > &closeSceneObjects,
 					SceneObject *sceneObject, SceneObject *vectorOwner) {
-	const bool roriFacilityDiagnostic = isRoriHyperdriveResearchFacility(sceneObject);
-	const uint64 diagnosticObjectID = sceneObject != nullptr ? sceneObject->getObjectID() : 0;
-	const auto totalStartTime = RoriFacilityDiagnosticClock::now();
-
 	for (int i = 0; closeobjects->size() != 0 && i < 100; i++) {
-		const int sizeBefore = closeobjects->size();
-		const auto passStartTime = RoriFacilityDiagnosticClock::now();
-
-		auto stageStartTime = RoriFacilityDiagnosticClock::now();
 		closeobjects->safeCopyTo(closeSceneObjects);
-		const long long copyElapsedMs = getRoriFacilityElapsedMs(stageStartTime);
-		const int copiedObjectCount = closeSceneObjects.size();
-
-		stageStartTime = RoriFacilityDiagnosticClock::now();
 
 		for (auto& obj : closeSceneObjects) {
 			if (obj != nullptr && obj != sceneObject && obj->getCloseObjects() != nullptr) {
@@ -683,26 +503,6 @@ void GroundZoneComponent::removeAllObjectsFromCOV(CloseObjectsVector *closeobjec
 			}
 		}
 
-		const long long removalElapsedMs = getRoriFacilityElapsedMs(stageStartTime);
-
 		closeSceneObjects.removeAll();
-
-		if (roriFacilityDiagnostic) {
-			Logger::console.info(true) << "[RORI-FACILITY-COV] objectID=" << diagnosticObjectID
-					<< " pass=" << (i + 1)
-					<< " sizeBefore=" << sizeBefore
-					<< " copiedObjects=" << copiedObjectCount
-					<< " sizeAfter=" << closeobjects->size()
-					<< " copyMs=" << copyElapsedMs
-					<< " removalMs=" << removalElapsedMs
-					<< " passTotalMs=" << getRoriFacilityElapsedMs(passStartTime);
-		}
-	}
-
-	if (roriFacilityDiagnostic) {
-		Logger::console.info(true) << "[RORI-FACILITY-COV] objectID=" << diagnosticObjectID
-				<< " stage=complete"
-				<< " remainingCloseObjects=" << closeobjects->size()
-				<< " totalMs=" << getRoriFacilityElapsedMs(totalStartTime);
 	}
 }
