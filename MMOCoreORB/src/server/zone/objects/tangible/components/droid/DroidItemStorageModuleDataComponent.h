@@ -46,7 +46,15 @@ public:
 
 	void updateCraftingValues(CraftingValues* values, bool firstUpdate);
 
+	// Internal creature_inventory_N tier, from 1 through 6.
 	int getStorageRating();
+
+	// Effective inventory capacity represented by that tier.
+	int getStorageCapacity();
+
+	int getRating() {
+		return rating;
+	}
 
 	void fillObjectMenuResponse(SceneObject* droidObject, ObjectMenuResponse* menuResponse, CreatureObject* player);
 

@@ -38,20 +38,43 @@ void DroidItemStorageModuleDataComponent::updateCraftingValues(CraftingValues* v
 }
 
 int DroidItemStorageModuleDataComponent::getStorageRating() {
-    // cap raw rating at 100
-    const int r = rating > 100 ? 100 : rating;
+	// Cap raw rating at 100 and select the matching fixed inventory tier.
+	const int r = rating > 100 ? 100 : rating;
 
-    if      (r <= 10)  return 1;  //  1–10 → Module_1
-    else if (r <= 20)  return 2;  // 11–20 → Module_2
-    else if (r <= 40)  return 3;  // 21–40 → Module_3
-    else if (r <= 60)  return 4;  // 41–60 → Module_4
-    else if (r <= 80)  return 5;  // 61–80 → Module_5
-    else               return 6;  // 81–100 → Module_6
+	if (r <= 10)
+		return 1;
+	else if (r <= 20)
+		return 2;
+	else if (r <= 40)
+		return 3;
+	else if (r <= 60)
+		return 4;
+	else if (r <= 80)
+		return 5;
+
+	return 6;
+}
+
+int DroidItemStorageModuleDataComponent::getStorageCapacity() {
+	switch (getStorageRating()) {
+		case 1:
+			return 10;
+		case 2:
+			return 20;
+		case 3:
+			return 40;
+		case 4:
+			return 60;
+		case 5:
+			return 80;
+		default:
+			return 100;
+	}
 }
 
 void DroidItemStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	// convert module rating to actual rating
-	alm->insertAttribute( "storage_module", rating > 100 ? 100 : rating );
+	// Display the capacity of the inventory template the droid actually gets.
+	alm->insertAttribute("storage_module", getStorageCapacity());
 }
 
 String DroidItemStorageModuleDataComponent::toString() const {
@@ -64,6 +87,9 @@ void DroidItemStorageModuleDataComponent::addToStack(BaseDroidModuleComponent* o
 		return;
 
 	rating = rating + otherModule->rating;
+
+	if (rating > 100)
+		rating = 100;
 
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
 	if (droidComponent != nullptr)
