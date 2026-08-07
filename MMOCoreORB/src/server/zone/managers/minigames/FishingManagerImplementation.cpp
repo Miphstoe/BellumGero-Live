@@ -727,17 +727,37 @@ void FishingManagerImplementation::success(CreatureObject* player, int fish, Sce
 		}
 	}
 
-	// 1% chance to reel in a Fish Tank as a bonus alongside the normal catch
-	if (System::random(99) == 0) {
+	// 1% chance to reel in a Fish Tank as a bonus alongside the normal catch.
+	// Bad-luck protection: track consecutive misses per-player and guarantee
+	// the Fish Tank once FISH_TANK_PITY_THRESHOLD catches pass without a hit.
+	static const int FISH_TANK_PITY_THRESHOLD = 300;
+	static const char* FISH_TANK_PITY_KEY = "tankPityCount";
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	int pityCount = 0;
+
+	if (ghost != nullptr) {
+		String pityCountString = ghost->getScreenPlayData("Fishing", FISH_TANK_PITY_KEY);
+		pityCount = pityCountString.isEmpty() ? 0 : Integer::valueOf(pityCountString);
+	}
+
+	if (System::random(99) == 0 || pityCount >= FISH_TANK_PITY_THRESHOLD) {
 		TransactionLog trxTank(TrxCode::FISHING, player);
 		uint64 tankID = lootManager->createLoot(trxTank, marker, "fish_tank_reward", 1);
 
 		if (tankID > 0) {
 			player->sendSystemMessage("You reel in something extraordinary... a Fish Tank!");
 			trxTank.commit();
+
+			if (ghost != nullptr)
+				ghost->setScreenPlayData("Fishing", FISH_TANK_PITY_KEY, "0");
 		} else {
 			trxTank.abort() << "FishingManager -- Failed to create Fish Tank bonus loot";
+			error("Failed to create Fish Tank bonus loot for " + player->getDisplayedName()
+					+ " (lootManager->createLoot returned 0 for \"fish_tank_reward\", pityCount=" + String::valueOf(pityCount) + ")");
 		}
+	} else if (ghost != nullptr) {
+		ghost->setScreenPlayData("Fishing", FISH_TANK_PITY_KEY, String::valueOf(pityCount + 1));
 	}
 
 	stopFishing(player, boxID, false);
