@@ -92,6 +92,20 @@
 #include "server/login/SessionAPIClient.h"
 #endif // WITH_SESSION_API
 
+namespace {
+	void invalidateSquadLeaderBenefits(CreatureObject* player) {
+		if (player == nullptr)
+			return;
+
+		// Persistent Squad Leader modifiers deactivate through their existing
+		// observer. Command buffs have no observer, so remove those immediately.
+		player->removeBuff(STRING_HASHCODE("rally"));
+		player->removeBuff(STRING_HASHCODE("retreat"));
+		player->removeBuff(STRING_HASHCODE("steadyaim"));
+		player->notifyObservers(ObserverEventType::BHTEFCHANGED);
+	}
+}
+
 void PlayerObjectImplementation::initializeTransientMembers() {
 	playerLogLevel = ConfigManager::instance()->getPlayerLogLevel();
 
@@ -1846,6 +1860,11 @@ void PlayerObjectImplementation::notifyOnline() {
 	if (getForcePowerMax() > 0 && getForcePower() < getForcePowerMax())
 		activateForcePowerRegen();
 
+	// Buffs are restored before login TEF timers are resumed. Revalidate Squad
+	// Leader benefits here so a restart/relog cannot preserve them through a TEF.
+	if (hasPvpTef())
+		invalidateSquadLeaderBenefits(playerCreature);
+
 	schedulePvpTefRemovalTask();
 
 	MissionManager* missionManager = zoneServer->getMissionManager();
@@ -2864,6 +2883,7 @@ void PlayerObjectImplementation::updateLastCombatActionTimestamp(bool updateGcwC
 		return;
 
 	bool alreadyHasTef = hasTef();
+	bool alreadyHasPvpTef = hasPvpTef();
 
 	if (updateGcwCrackdownAction) {
 		lastCrackdownGcwCombatActionTimestamp.updateToCurrentTime();
@@ -2871,12 +2891,8 @@ void PlayerObjectImplementation::updateLastCombatActionTimestamp(bool updateGcwC
 	}
 
 	if (updateBhAction) {
-		bool alreadyHasBhTef = hasBhTef();
 		lastBhPvpCombatActionTimestamp.updateToCurrentTime();
 		lastBhPvpCombatActionTimestamp.addMiliTime(FactionManager::TEFTIMER);
-
-		if (!alreadyHasBhTef)
-			parent->notifyObservers(ObserverEventType::BHTEFCHANGED);
 	}
 
 	if (updateGcwAction) {
@@ -2890,6 +2906,9 @@ void PlayerObjectImplementation::updateLastCombatActionTimestamp(bool updateGcwC
 		updateInRangeBuildingPermissions();
 		parent->setPvpStatusBit(ObjectFlag::TEF);
 	}
+
+	if (!alreadyHasPvpTef && hasPvpTef())
+		invalidateSquadLeaderBenefits(parent);
 }
 
 void PlayerObjectImplementation::updateLastBhPvpCombatActionTimestamp() {
@@ -2906,6 +2925,8 @@ void PlayerObjectImplementation::updateLastPvpAreaCombatActionTimestamp() {
 	if (parent == nullptr)
 		return;
 
+	bool alreadyHasPvpTef = hasPvpTef();
+
 	lastPvpAreaCombatActionTimestamp.updateToCurrentTime();
 	lastPvpAreaCombatActionTimestamp.addMiliTime(FactionManager::TEFTIMER);
 
@@ -2915,6 +2936,9 @@ void PlayerObjectImplementation::updateLastPvpAreaCombatActionTimestamp() {
 	}
 
 	schedulePvpTefRemovalTask();
+
+	if (!alreadyHasPvpTef)
+		invalidateSquadLeaderBenefits(parent);
 }
 
 bool PlayerObjectImplementation::hasTef() const {
@@ -2972,7 +2996,6 @@ void PlayerObjectImplementation::schedulePvpTefRemovalTask(bool removeCrackdownG
 
 		if (removeBhTefNow) {
 			lastBhPvpCombatActionTimestamp.updateToCurrentTime();
-			parent->notifyObservers(ObserverEventType::BHTEFCHANGED);
 		}
 
 		if (pvpTefTask->isScheduled()) {

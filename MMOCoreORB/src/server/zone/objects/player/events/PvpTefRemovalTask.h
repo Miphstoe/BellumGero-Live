@@ -53,7 +53,10 @@ public:
 				player->broadcastPvpStatusBitmask();
 		}
 
-		if (!ghost->hasBhTef())
+		// This observer is the existing internal TEF-state hook used by Squad
+		// Leader buffs. Wake it once PvP TEF eligibility has returned, even if a
+		// separate crackdown TEF is still active.
+		if (!ghost->hasPvpTef())
 			player->notifyObservers(ObserverEventType::BHTEFCHANGED);
 	}
 };

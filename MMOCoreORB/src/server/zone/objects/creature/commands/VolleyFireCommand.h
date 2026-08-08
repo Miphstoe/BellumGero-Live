@@ -95,6 +95,9 @@ public:
         if (member->isDead() || member->isIncapacitated())
             continue;
 
+		if (hasPvpTef(member))
+			continue;
+
         // Keep original requirement: only order members already in combat
         if (!member->isInCombat())
             continue;
