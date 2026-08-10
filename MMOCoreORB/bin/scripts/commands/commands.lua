@@ -856,3 +856,7 @@ RunSlashCommandsFile("reaperStrike.lua")
 RunSlashCommandsFile("reaperBlast.lua")
 RunSlashCommandsFile("reaperShot.lua")
 RunSlashCommandsFile("lightningBarrage.lua")
+
+-- Bellum Gero World Builder
+RunSlashCommandsFile("worldbuilder.lua")
+RunSlashCommandsFile("wb.lua")

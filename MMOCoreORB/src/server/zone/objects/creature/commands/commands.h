@@ -852,6 +852,7 @@
 #include "EPBSPayCommand.h"
 #include "EPBSPetPayCommand.h"
 #include "EPBSSetupCommand.h"
+#include "WorldBuilderCommand.h"
 
 
 #endif /* COMMANDSNEW_H_ */

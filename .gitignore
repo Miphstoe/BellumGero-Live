@@ -7,3 +7,13 @@ compile_commands.json
 .ccache/
 MMOCoreORB/bin/scripts/managers/ghoutput.xml
 MMOCoreORB/bin/scripts/managers/resource_manager_spawns.lua
+
+# Bellum Gero World Builder local projects
+MMOCoreORB/bin/worldbuilder/projects/*.wbp*
+
+# World Builder generated exports
+MMOCoreORB/bin/worldbuilder/projects/*_export.lua
+
+# Local World Builder development backups/packages
+*.pre_worldbuilder
+FMWorldBuilder-*-Source.zip

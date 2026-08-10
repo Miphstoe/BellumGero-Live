@@ -1,0 +1,6 @@
+{
+  "base_tre": "C:/SWGEmuTC/The-Hunted/clientdata/bg_custom1_BASE.tre",
+  "output_tre_name": "bg_custom1.tre",
+  "client_tre_dir": "C:/SWGEmuTC/The-Hunted",
+  "server_tre_dir": "//wsl$/Ubuntu/home/youruser/The-Hunted/MMOCoreORB/bin/tre"
+}
