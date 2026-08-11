@@ -54,3 +54,4 @@ includeFile("weapon/melee/sword/serverobjects.lua")
 includeFile("weapon/melee/unarmed/serverobjects.lua")
 
 -- Server Objects
+includeFile("weapon/melee/mando_melee_weapons.lua")

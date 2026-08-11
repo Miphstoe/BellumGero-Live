@@ -19,8 +19,8 @@ TieredFRSRebelEvent.EVENT_RESPAWN_DELAY = 10     -- our event respawn delay in s
 TieredFRSRebelEvent.RESPAWN_CUTOFF_BUFFER = 15   -- cutoff fires at (END_TIME - buffer)
 
 -- Absolute start and end times (server local time)
-TieredFRSRebelEvent.START_TIME = { year = 2026, month = 8, day = 2, hour = 18, min = 00, sec = 0 }
-TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 8, day = 2, hour = 19, min = 00, sec = 0 }
+TieredFRSRebelEvent.START_TIME = { year = 2026, month = 8, day = 9, hour = 18, min = 00, sec = 0 }
+TieredFRSRebelEvent.END_TIME   = { year = 2026, month = 8, day = 9, hour = 18, min = 20, sec = 0 }
 
 -- Weekly schedule (alternative to absolute times)
 TieredFRSRebelEvent.WEEKLY = { dow = "sunday", hour = 3, min = 0, sec = 0 }

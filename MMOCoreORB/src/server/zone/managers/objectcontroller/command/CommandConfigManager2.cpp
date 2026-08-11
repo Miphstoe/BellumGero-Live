@@ -176,6 +176,7 @@
 #include "server/zone/objects/creature/commands/DiveShotCommand.h"
 #include "server/zone/objects/creature/commands/DizzyAttackCommand.h"
 #include "server/zone/objects/creature/commands/DoubleTapCommand.h"
+#include "server/zone/objects/creature/commands/DpsCommand.h"
 #include "server/zone/objects/creature/commands/WorldBuilderCommand.h"
 #include "server/zone/objects/creature/commands/DragIncapacitatedPlayerCommand.h"
 #include "server/zone/objects/creature/commands/DrainForceCommand.h"
@@ -591,6 +592,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<DiveShotCommand>(String("diveShot").toLowerCase());
 	commandFactory.registerCommand<DizzyAttackCommand>(String("dizzyAttack").toLowerCase());
 	commandFactory.registerCommand<DoubleTapCommand>(String("doubleTap").toLowerCase());
+	commandFactory.registerCommand<DpsCommand>(String("dps").toLowerCase());
 	commandFactory.registerCommand<WorldBuilderCommand>(String("worldbuilder").toLowerCase());
 	commandFactory.registerCommand<WorldBuilderCommand>(String("wb").toLowerCase());
 	commandFactory.registerCommand<DragIncapacitatedPlayerCommand>(String("dragIncapacitatedPlayer").toLowerCase());

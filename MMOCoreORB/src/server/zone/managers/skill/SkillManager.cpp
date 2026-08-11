@@ -834,6 +834,17 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 					ghost->setJediState(0);
 					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
 				}
+			} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
+				// Dropping Knight rank must revert jediState back down to the
+				// Padawan tier (the player still holds force_title_jedi_rank_02,
+				// which can never be surrendered while a Jedi). Leaving jediState
+				// at its Light/Dark Knight value (4/8) here would let stale
+				// alignment state leak into systems that key off jediState
+				// instead of the force_title_jedi_rank_03 skill directly.
+				if (ghost->getJediState() >= 4) {
+					ghost->setJediState(2);
+					creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
+				}
 			} else if (skill->getSkillName().contains("force_discipline")) {
 				if (missionManager != nullptr)
 					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
@@ -868,7 +879,7 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	creature->sendMessage(msg4);
 
 	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
-	
+
 	JediManager::instance()->onSkillRevoked(creature, skill);
 
 	return true;
@@ -1363,6 +1374,13 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 				if (ghost->getJediState() >= 2) {
 					ghost->setJediState(0);
 					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
+				}
+			} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
+				// See the matching branch in SkillManager::surrenderSkill - keeps
+				// jediState consistent regardless of which surrender path is used.
+				if (ghost->getJediState() >= 4) {
+					ghost->setJediState(2);
+					creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
 				}
 			} else if (skill->getSkillName().contains("force_discipline")) {
 				if (missionManager != nullptr)

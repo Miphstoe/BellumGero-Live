@@ -87,6 +87,11 @@ public:
 		suiTrainerType->addMenuItem("Junk Dealer", 36);
 		suiTrainerType->addMenuItem("Imperial Recruiter", 37);
 		suiTrainerType->addMenuItem("Rebel Recruiter", 38);
+		suiTrainerType->addMenuItem("Training Dummy - Raw", 39);
+		suiTrainerType->addMenuItem("Training Dummy - Standard", 40);
+		suiTrainerType->addMenuItem("Training Dummy - Acklay", 41);
+		suiTrainerType->addMenuItem("Training Dummy - Canyon Krayt", 42);
+		suiTrainerType->addMenuItem("Training Dummy - Jedi Hunter", 43);
 		
 
 		ghost->addSuiBox(suiTrainerType);

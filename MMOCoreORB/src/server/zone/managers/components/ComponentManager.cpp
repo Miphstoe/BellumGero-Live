@@ -126,6 +126,7 @@
 #include "server/zone/objects/structure/components/GarageZoneComponent.h"
 #include "server/zone/objects/structure/components/GarageDataComponent.h"
 #include "server/zone/objects/creature/components/TrainerMenuComponent.h"
+#include "server/zone/objects/creature/components/TrainingDummyMenuComponent.h"
 #include "server/zone/objects/creature/components/CityFactionTroopMenuComponent.h"
 #include "server/zone/objects/creature/components/SarlaccMenuComponent.h"
 #include "server/zone/objects/creature/components/PetMenuComponent.h"
@@ -331,6 +332,7 @@ ComponentManager::ComponentManager() {
 	dataObjectFactory.registerObject<FireworkShowDataComponent>("FireworkShowDataComponent");
 
 	components.put("TrainerMenuComponent", new TrainerMenuComponent());
+	components.put("TrainingDummyMenuComponent", new TrainingDummyMenuComponent());
 	components.put("CityFactionTroopMenuComponent", new CityFactionTroopMenuComponent());
 	components.put("PetMenuComponent", new PetMenuComponent());
 

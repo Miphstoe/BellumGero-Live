@@ -14,6 +14,7 @@
 #include "server/zone/managers/skill/SkillManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/combat/CombatManager.h"
+#include "server/zone/managers/combat/DpsSessionManager.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/creature/PetManager.h"
 #include "server/zone/managers/reaction/ReactionManager.h"
@@ -1092,6 +1093,12 @@ int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 	int currentValue = hamList.get(damageType);
 	int newValue = currentValue - (int)damage;
 
+	// CombatManager records normal attacks after the entire attack is resolved.
+	// This path captures external non-combat damage such as DOT ticks and traps
+	// without counting self-inflicted ability costs or duplicating normal attacks.
+	bool trackNonDirectDamage = !isCombatAction && attacker != nullptr &&
+		attacker != asCreatureObject() && damage > 0 && damageType % 3 == 0;
+
 	// info(true) << "Inflict Damage: Type = " << damageType << " Damage Amount = " << damage << " Current Value = " << currentValue;
 
 	if (!destroy && newValue <= 0)
@@ -1138,6 +1145,13 @@ int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 	}
 
 	setHAM(damageType, newValue, notifyClient);
+
+	if (trackNonDirectDamage) {
+		int appliedDamage = Math::max(0, Math::max(0, currentValue) - Math::max(0, getHAM(damageType)));
+
+		if (appliedDamage > 0)
+			DpsSessionManager::instance()->recordDamage(attacker, asCreatureObject(), appliedDamage, DpsSessionManager::DAMAGE_OVER_TIME);
+	}
 
 	if (attacker == nullptr)
 		attacker = asCreatureObject();

@@ -12,6 +12,7 @@
 #include "server/zone/Zone.h"
 #include "server/zone/managers/creature/CreatureManager.h"
 #include "server/zone/managers/city/CityManager.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 
 class RecruitSkillTrainerSuiCallback : public SuiCallback {
 public:
@@ -57,6 +58,7 @@ public:
 		int option = Integer::valueOf(args->get(0).toString());
 
 		String trainerTemplatePath = "";
+		bool isTrainingDummy = false;
 
 		switch (option) {
 
@@ -175,7 +177,30 @@ public:
 				break;		
 
 		case 38: trainerTemplatePath = "rebel_recruiter";
+				break;
 
+		case 39: trainerTemplatePath = "training_dummy_raw";
+				isTrainingDummy = true;
+				break;
+
+		case 40: trainerTemplatePath = "training_dummy_standard";
+				isTrainingDummy = true;
+				break;
+
+		case 41: trainerTemplatePath = "training_dummy_acklay";
+				isTrainingDummy = true;
+				break;
+
+		case 42: trainerTemplatePath = "training_dummy_krayt";
+				isTrainingDummy = true;
+				break;
+
+		case 43: trainerTemplatePath = "training_dummy_jedi_hunter";
+				isTrainingDummy = true;
+				break;
+
+		default:
+				return;
 		}
 
 		if (trainerTemplatePath != "") {
@@ -209,8 +234,21 @@ public:
 				return;
 			}
 
-			// Ensure command-placed NPCs are removable via radial
-			trainer->setObjectMenuComponent("TrainerMenuComponent");
+			// spawnCreature() loads the mobile template after the persistent AI
+			// object has initialized. Rebuild the behavior tree so the Training
+			// Dummy's STATIONARY + NOAIAGGRO creature bitmask takes effect.
+			if (isTrainingDummy && trainer->isAiAgent()) {
+				AiAgent* trainingDummy = trainer->asAiAgent();
+
+				if (trainingDummy != nullptr)
+					trainingDummy->setAITemplate();
+			}
+
+			// Normal recruits use the city removal radial. Training Dummies use
+			// their combined Reset + city removal component.
+			trainer->setObjectMenuComponent(
+				isTrainingDummy ? "TrainingDummyMenuComponent" : "TrainerMenuComponent"
+			);
 
 			trainer->rotate(player->getDirectionAngle());
 			city->subtractFromCityTreasury(1000);
