@@ -60,7 +60,8 @@ public:
 		ACTION_CLOSE = 29,
 		ACTION_NEW_PROJECT = 30,
 		ACTION_LOAD_PROJECT = 31,
-		ACTION_MANAGE_PROJECTS = 32
+		ACTION_MANAGE_PROJECTS = 32,
+		ACTION_OBJECT_LIBRARY = 33
 	};
 
 	enum ProjectManageAction {
@@ -102,6 +103,8 @@ public:
 	static void showProjectDeleteConfirmation(CreatureObject* player, const String& projectName, bool deleteBackup, int step);
 	static void showMenu(CreatureObject* player);
 };
+
+#include "WorldBuilderObjectLibrary.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
 public:
@@ -449,6 +452,10 @@ public:
 			break;
 		case WorldBuilderCommandUi::ACTION_OBJECT_LIST:
 			WorldBuilderCommandUi::showObjectList(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_OBJECT_LIBRARY:
+			WorldBuilderObjectLibrary::showRoot(player);
 			reopen = false;
 			break;
 		case WorldBuilderCommandUi::ACTION_SPAWN_TEMPLATE:
@@ -799,7 +806,8 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 		box->setPromptText(prompt.toString());
 
 		box->addMenuItem("Object List / Select", ACTION_OBJECT_LIST);
-		box->addMenuItem("Spawn New Template...", ACTION_SPAWN_TEMPLATE);
+		box->addMenuItem("Object Library / Browse Templates...", ACTION_OBJECT_LIBRARY);
+		box->addMenuItem("Spawn New Template... (Manual / Advanced)", ACTION_SPAWN_TEMPLATE);
 		box->addMenuItem("Spawn Last Template Again", ACTION_SPAWN_LAST);
 		box->addMenuItem("Move Forward [step]", ACTION_MOVE_FORWARD);
 		box->addMenuItem("Move Back [step]", ACTION_MOVE_BACK);
@@ -889,6 +897,9 @@ public:
 				return SUCCESS;
 			} else if (action == "manage" || action == "manageprojects") {
 				WorldBuilderCommandUi::showProjectManagementList(player);
+				return SUCCESS;
+			} else if (action == "library" || action == "assets" || action == "browse") {
+				WorldBuilderObjectLibrary::showRoot(player);
 				return SUCCESS;
 			} else if (action == "save") {
 				result = manager->saveProject(player, message);
