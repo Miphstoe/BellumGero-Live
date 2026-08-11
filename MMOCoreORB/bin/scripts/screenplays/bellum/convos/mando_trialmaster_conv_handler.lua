@@ -143,9 +143,12 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	local pFallback = convoTemplate:getScreen("intro")
 	if (pFallback == nil) then return nil end
 	local pCloned = LuaConversationScreen(pFallback):cloneScreen()
-	LuaConversationScreen(pCloned):setCustomDialogText(
+	local cloned = LuaConversationScreen(pCloned)
+	cloned:setCustomDialogText(
 		"My comm array is throwing static, hunter. Give me a moment and speak to me again. If this keeps up, tell the clan staff."
 	)
+	cloned:removeAllOptions()
+	cloned:addOption("Nothing.", "bye")
 	return pCloned
 end
 

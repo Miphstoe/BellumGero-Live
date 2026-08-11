@@ -3988,8 +3988,15 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	end
 
 	if (not started) then
-		if (theater.taskFinish ~= nil) then
-			theater:taskFinish(pPlayer)
+		local playerID = SceneObject(pPlayer):getObjectID()
+		local partialObjectKeys = { "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
+		for i = 1, #partialObjectKeys, 1 do
+			local dataKey = playerID .. theater.taskName .. partialObjectKeys[i]
+			local pObject = getSceneObject(readData(dataKey))
+			if (pObject ~= nil) then
+				SceneObject(pObject):destroyObjectFromWorld()
+			end
+			deleteData(dataKey)
 		end
 		self:logDiagPlayer(pPlayer, string.format(
 			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",

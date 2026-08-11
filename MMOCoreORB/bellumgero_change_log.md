@@ -901,3 +901,9 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Aligned FOB re-sync gating with the Recruiter, made blank-conversation error logging safe when the Mandalorian screenplay global is unavailable, preserved the re-sync option clone independently, restored the holographic story beat when recovering a dead chain, and cleaned partial theater resources after failed starts.
 - **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_daily_bounty_fob_menu.lua`, `bellumgero_change_log.md`
 - **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Make Recruiter and theater recovery non-destructive
+
+- **Summary:** Restricted the Recruiter error fallback to a valid exit option so it cannot route into a missing conversation screen. Failed daily theater starts now remove only their partially created anchor and active areas, preserving unrelated quest waypoints.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
