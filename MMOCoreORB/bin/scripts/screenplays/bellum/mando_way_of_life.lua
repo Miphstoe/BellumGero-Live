@@ -3972,10 +3972,30 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		return false, "Mission system error. Contact staff."
 	end
 
-	-- Start the theater
-	theater:start(pPlayer)
+	-- Start the theater. Task:start() returns false when this tier's persisted
+	-- ":taskStarted:" flag is still set from a previous day — daily theaters are
+	-- never explicitly finished on normal completion, so the flag survives in
+	-- server data. Self-heal: finish the stale task (cleans old anchor, areas,
+	-- and quest waypoint), then retry once.
+	local started = theater:start(pPlayer)
+	if (not started and theater.hasTaskStarted ~= nil and theater:hasTaskStarted(pPlayer)) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission: stale task state for %s - finishing and retrying.",
+			theaterName
+		))
+		theater:finish(pPlayer)
+		started = theater:start(pPlayer)
+	end
 
-	-- Increment mission count
+	if (not started) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",
+			theaterName
+		))
+		return false, "The guild cannot fix a trace on a camp from this position. Move to open terrain and try again."
+	end
+
+	-- Increment mission count only after the camp actually exists
 	self:incrementDailyBountyCount(pPlayer)
 	self:clearDailyBountyReadyTier(pPlayer)
 
@@ -3994,6 +4014,84 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		"Bounty mission accepted (Tier %s/5). Check your datapad for the waypoint. This is the Way.",
 		tostring(tier)
 	)
+end
+
+-- Returns ok, playerMessage. Re-pins the datapad waypoint for the active daily
+-- tier, rebuilding the camp when its theater no longer exists (server restart,
+-- failed spawn, stale ":taskStarted:" flag). Never consumes an extra daily count.
+-- Callable from the Recruiter conversation and the tracking fob radial.
+function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen run daily contracts."
+	end
+
+	local count = self:getDailyBountyCount(pPlayer)
+	if (count == 0) then
+		return false, "You have not begun today's hunt. Use your tracking fob to begin."
+	end
+
+	local ready = self:getDailyBountyReadyTier(pPlayer)
+	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS and ready >= self.DAILY_BOUNTY_MAX_MISSIONS) then
+		return false, "All five contracts are closed for today. Return tomorrow. This is the Way."
+	end
+
+	-- Camp complete but the next tier never auto-started (lost holo or event):
+	-- kick the chain forward instead of re-pinning a finished camp.
+	if (ready == count and count < self.DAILY_BOUNTY_MAX_MISSIONS) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"resyncDailyBountyWaypoint: tier %s ready - restarting the auto-chain.", tostring(count)))
+		return self:tryAcceptDailyBountyMission(pPlayer, "auto")
+	end
+
+	-- Active tier equals the accepted count.
+	local tier = count
+	local theaterName = "BellumBountyDailyTier" .. tier .. "Theater"
+	local theater = _G[theaterName]
+	if (theater == nil) then
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: theater " .. theaterName .. " not found.")
+		return false, "Mission system error. Contact staff."
+	end
+
+	local pTheater = theater:getTheaterObject(pPlayer)
+	if (pTheater ~= nil) then
+		-- Theater alive: re-pin the quest-task waypoint at its anchor.
+		local pGhost = CreatureObject(pPlayer):getPlayerObject()
+		if (pGhost == nil) then
+			return false, "I cannot reach your datapad."
+		end
+		PlayerObject(pGhost):removeWaypointBySpecialType(WAYPOINTQUESTTASK)
+		local wpId = PlayerObject(pGhost):addWaypoint(
+			SceneObject(pTheater):getZoneName(),
+			theater.waypointDescription or "Daily Bounty Camp",
+			"",
+			SceneObject(pTheater):getWorldPositionX(),
+			0,
+			SceneObject(pTheater):getWorldPositionY(),
+			WAYPOINT_YELLOW, true, true, WAYPOINTQUESTTASK)
+		if (wpId == nil) then
+			self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint: addWaypoint returned nil for " .. theaterName .. ".")
+			return false, "Your datapad rejected the waypoint. Relog and ask me again."
+		end
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint OK: waypoint re-pinned for " .. theaterName .. ".")
+		return true, string.format(
+			"Waypoint re-synced to your active Tier %s bounty camp. This is the Way.", tostring(tier))
+	end
+
+	-- Theater lost (restart wiped the anchor, spawn failed after the count was
+	-- consumed, etc.): rebuild the same tier without touching the daily count.
+	self:logDiagPlayer(pPlayer, string.format(
+		"resyncDailyBountyWaypoint: theater object missing for %s - rebuilding camp.", theaterName))
+	theater:finish(pPlayer)
+	if (theater:start(pPlayer)) then
+		return true, string.format(
+			"Your Tier %s camp went dark, so the guild traced a new one. Check your datapad. This is the Way.",
+			tostring(tier))
+	end
+
+	self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: rebuild of " .. theaterName .. " did not start.")
+	return false, "The guild cannot fix a trace from this position. Move to open terrain and ask me again."
 end
 
 -- Returns ok, playerMessage

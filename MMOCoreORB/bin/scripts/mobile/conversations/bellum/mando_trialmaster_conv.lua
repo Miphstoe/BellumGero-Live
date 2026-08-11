@@ -305,6 +305,16 @@ mando_daily_bounty_fob = ConvoScreen:new {
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_daily_bounty_fob)
 
+-- Recruiter-only (handler): re-sync / rebuild the active daily bounty waypoint
+mando_daily_waypoint_reset = ConvoScreen:new {
+	id = "mando_daily_waypoint_reset",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_daily_waypoint_reset)
+
 -- Recruiter-only (handler): One-time per login account grant of missing bicep and bracer pieces
 mando_bicep_bracer_retro = ConvoScreen:new {
 	id = "mando_bicep_bracer_retro",
