@@ -3963,6 +3963,8 @@ function MandoWayOfLife:cleanupDailyBountyTheater(pPlayer, theater)
 		end
 	end
 
+	deleteData(playerID .. theater.taskName .. ":campFinished")
+	deleteData(playerID .. theater.taskName .. ":pendingKills")
 	if (theater.setTaskFinished ~= nil) then
 		theater:setTaskFinished(pPlayer)
 	end

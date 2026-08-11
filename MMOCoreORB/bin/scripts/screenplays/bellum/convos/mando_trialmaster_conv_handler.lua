@@ -125,31 +125,42 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 		return result
 	end
 
+	local errorMessage
 	if (not ok) then
-		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
-			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
-		else
-			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
-		end
+		errorMessage = "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result)
 	else
-		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
-			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen returned a nil screen (blank-convo guard tripped).")
-		else
-			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen returned a nil screen (blank-convo guard tripped).")
-		end
+		errorMessage = "getInitialScreen returned a nil screen (blank-convo guard tripped)."
 	end
 
-	local convoTemplate = LuaConversationTemplate(pConvTemplate)
-	local pFallback = convoTemplate:getScreen("intro")
-	if (pFallback == nil) then return nil end
-	local pCloned = LuaConversationScreen(pFallback):cloneScreen()
-	local cloned = LuaConversationScreen(pCloned)
-	cloned:setCustomDialogText(
-		"My comm array is throwing static, hunter. Give me a moment and speak to me again. If this keeps up, tell the clan staff."
-	)
-	cloned:removeAllOptions()
-	cloned:addOption("Nothing.", "bye")
-	return pCloned
+	local logOk = false
+	if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+		logOk = pcall(MandoWayOfLife.logDiagPlayer, MandoWayOfLife, pPlayer, errorMessage)
+	end
+	if (not logOk) then
+		printLuaError("[MandoTrialmasterConvoHandler] " .. errorMessage)
+	end
+
+	local fallbackOk, fallbackResult = pcall(function()
+		local convoTemplate = LuaConversationTemplate(pConvTemplate)
+		local pFallback = convoTemplate:getScreen("intro")
+		if (pFallback == nil) then return nil end
+		local pCloned = LuaConversationScreen(pFallback):cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(
+			"My comm array is throwing static, hunter. Give me a moment and speak to me again. If this keeps up, tell the clan staff."
+		)
+		cloned:removeAllOptions()
+		cloned:addOption("Nothing.", "bye")
+		return pCloned
+	end)
+	if (fallbackOk) then
+		if (fallbackResult == nil) then
+			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen fallback intro screen missing.")
+		end
+		return fallbackResult
+	end
+	printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen fallback ERROR: " .. tostring(fallbackResult))
+	return nil
 end
 
 function MandoTrialmasterConvoHandler:getInitialScreenUnsafe(pPlayer, pNpc, pConvTemplate)
