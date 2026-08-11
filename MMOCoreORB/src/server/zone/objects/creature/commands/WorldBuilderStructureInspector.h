@@ -1,7 +1,7 @@
 /*
  * WorldBuilderStructureInspector.h
  *
- * Bellum Gero World Builder V1.6.4 structure/introspection groundwork.
+ * Bellum Gero World Builder V1.9.4 structure/runtime diagnostics.
  *
  * Read-only inspector for buildings/caves, portal cells, snapshot hierarchy,
  * and interior-layout metadata.
@@ -341,10 +341,28 @@ inline void WorldBuilderStructureInspector::showMetadata(CreatureObject* player,
 		prompt << "Resolved from: " << source;
 
 		if (runtimeStructure != nullptr) {
+			TemplateManager* templateManager = TemplateManager::instance();
+			uint32 runtimeServerCRC = runtimeStructure->getServerObjectCRC();
+			SharedObjectTemplate* runtimeAttachedTemplate = runtimeStructure->getObjectTemplate();
+			SharedObjectTemplate* runtimeRegisteredTemplate =
+				templateManager != nullptr ? templateManager->getTemplate(runtimeServerCRC) : nullptr;
+			String runtimeRegisteredPath =
+				templateManager != nullptr ? templateManager->getTemplateFile(runtimeServerCRC) : String("");
+
 			prompt << "\nRuntime object ID: " << runtimeStructure->getObjectID()
 				<< "\nRuntime building class: " << (runtimeStructure->isBuildingObject() ? "YES" : "NO")
 				<< "\nRuntime game object type: " << runtimeStructure->getGameObjectType()
-				<< "\nRuntime parent ID: " << runtimeStructure->getParentID();
+				<< "\nRuntime parent ID: " << runtimeStructure->getParentID()
+				<< "\nRuntime server CRC: " << runtimeServerCRC
+				<< "\nRuntime CRC template path: " << (runtimeRegisteredPath.isEmpty() ? String("<not registered>") : runtimeRegisteredPath)
+				<< "\nRuntime CRC template game object type: "
+				<< (runtimeRegisteredTemplate != nullptr ? String::valueOf(runtimeRegisteredTemplate->getGameObjectType()) : String("<none>"))
+				<< "\nRuntime attached template: "
+				<< (runtimeAttachedTemplate != nullptr ? runtimeAttachedTemplate->getFullTemplateString() : String("<none>"))
+				<< "\nRuntime attached template game object type: "
+				<< (runtimeAttachedTemplate != nullptr ? String::valueOf(runtimeAttachedTemplate->getGameObjectType()) : String("<none>"))
+				<< "\nRuntime attached template is SharedBuilding: "
+				<< (runtimeAttachedTemplate != nullptr && runtimeAttachedTemplate->isSharedBuildingObjectTemplate() ? "YES" : "NO");
 		} else {
 			prompt << "\nRuntime structure object: NOT AVAILABLE";
 		}
@@ -474,6 +492,15 @@ inline void WorldBuilderStructureInspector::show(CreatureObject* player) {
 	ManagedReference<SceneObject*> runtimeRoot =
 		player->getZoneServer()->getObject(snapshotResolution.rootObjectID);
 
+	uint32 expectedServerCRC = snapshotResolution.rootServerTemplate.hashCode();
+	uint32 runtimeServerCRC = runtimeRoot != nullptr ? runtimeRoot->getServerObjectCRC() : 0;
+	SharedObjectTemplate* runtimeAttachedTemplate =
+		runtimeRoot != nullptr ? runtimeRoot->getObjectTemplate() : nullptr;
+	SharedObjectTemplate* runtimeRegisteredTemplate =
+		templateManager != nullptr && runtimeRoot != nullptr ? templateManager->getTemplate(runtimeServerCRC) : nullptr;
+	String runtimeRegisteredPath =
+		templateManager != nullptr && runtimeRoot != nullptr ? templateManager->getTemplateFile(runtimeServerCRC) : String("");
+
 	StringBuffer diagnostics;
 	diagnostics << "SNAPSHOT DIAGNOSTICS"
 		<< "\nLookup object ID: " << snapshotResolution.lookupObjectID
@@ -484,13 +511,50 @@ inline void WorldBuilderStructureInspector::show(CreatureObject* player) {
 		<< "\nSnapshot root object ID: " << snapshotResolution.rootObjectID
 		<< "\nSnapshot root shared template: " << snapshotResolution.rootSharedTemplate
 		<< "\nExpected server template: " << snapshotResolution.rootServerTemplate
+		<< "\nExpected server CRC: " << expectedServerCRC
 		<< "\nServer template registered: " << (serverTemplate != nullptr ? "YES" : "NO")
-		<< "\nRuntime snapshot root loaded: " << (runtimeRoot != nullptr ? "YES" : "NO");
+		<< "\nRegistered server template game object type: "
+		<< (serverTemplate != nullptr ? String::valueOf(serverTemplate->getGameObjectType()) : String("<none>"))
+		<< "\nRegistered server template is SharedBuilding: "
+		<< (serverTemplate != nullptr && serverTemplate->isSharedBuildingObjectTemplate() ? "YES" : "NO");
+
+	if (serverTemplate != nullptr && serverTemplate->isSharedBuildingObjectTemplate()) {
+		SharedBuildingObjectTemplate* registeredBuildingTemplate =
+			static_cast<SharedBuildingObjectTemplate*>(serverTemplate);
+		diagnostics << "\nRegistered server template cell count: "
+			<< registeredBuildingTemplate->getTotalCellNumber();
+	}
+
+	diagnostics << "\nRuntime snapshot root loaded: " << (runtimeRoot != nullptr ? "YES" : "NO");
 
 	if (runtimeRoot != nullptr) {
 		diagnostics << "\nRuntime root is BuildingObject: " << (runtimeRoot->isBuildingObject() ? "YES" : "NO")
 			<< "\nRuntime root game object type: " << runtimeRoot->getGameObjectType()
-			<< "\nRuntime root parent ID: " << runtimeRoot->getParentID();
+			<< "\nRuntime root parent ID: " << runtimeRoot->getParentID()
+			<< "\nRuntime root server CRC: " << runtimeServerCRC
+			<< "\nRuntime root CRC matches expected: " << (runtimeServerCRC == expectedServerCRC ? "YES" : "NO")
+			<< "\nRuntime root CRC template path: "
+			<< (runtimeRegisteredPath.isEmpty() ? String("<not registered>") : runtimeRegisteredPath)
+			<< "\nRuntime root CRC template game object type NOW: "
+			<< (runtimeRegisteredTemplate != nullptr ? String::valueOf(runtimeRegisteredTemplate->getGameObjectType()) : String("<none>"))
+			<< "\nRuntime root attached template: "
+			<< (runtimeAttachedTemplate != nullptr ? runtimeAttachedTemplate->getFullTemplateString() : String("<none>"))
+			<< "\nRuntime root attached template game object type: "
+			<< (runtimeAttachedTemplate != nullptr ? String::valueOf(runtimeAttachedTemplate->getGameObjectType()) : String("<none>"))
+			<< "\nRuntime root attached template is SharedBuilding: "
+			<< (runtimeAttachedTemplate != nullptr && runtimeAttachedTemplate->isSharedBuildingObjectTemplate() ? "YES" : "NO");
+
+		if (serverTemplate != nullptr && runtimeRegisteredTemplate != nullptr) {
+			diagnostics << "\nRegistered-vs-runtime-CRC template GOT match: "
+				<< (serverTemplate->getGameObjectType() == runtimeRegisteredTemplate->getGameObjectType() ? "YES" : "NO");
+		}
+
+		if (serverTemplate != nullptr) {
+			bool staleRuntimeClassSuspected =
+				serverTemplate->isSharedBuildingObjectTemplate() && !runtimeRoot->isBuildingObject();
+			diagnostics << "\nStale/runtime-class mismatch suspected: "
+				<< (staleRuntimeClassSuspected ? "YES" : "NO");
+		}
 	}
 
 	ManagedReference<SceneObject*> currentContainer = nullptr;

@@ -34,6 +34,7 @@ DEFAULT_SEEDS = (
     "object/building/general/shared_dantooine_force_crystal_hunter_sd_cave.iff",
     "object/building/general/shared_lok_evil_droid_engineer_cave.iff",
     "object/building/tatooine/shared_cave_tatooine_droid_01.iff",
+    "object/building/tatooine/shared_cave_tatooine_style_01.iff",
     "interiorlayout/force_crystal_cave_v1.ilf",
 )
 
@@ -41,6 +42,7 @@ DISCOVERY_KEYWORDS = (
     "force_crystal",
     "evil_droid_engineer_cave",
     "cave_tatooine_droid_01",
+    "cave_tatooine_style_01",
 )
 
 # Structural references only. Do not follow texture/shader/mesh chains.

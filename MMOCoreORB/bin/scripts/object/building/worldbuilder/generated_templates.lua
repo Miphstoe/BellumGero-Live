@@ -1,0 +1,5 @@
+-- Bellum Gero World Builder generated structural template registrations.
+--
+-- This file is intentionally empty in source control.
+-- bellum_worldbuilder.py overwrites it when publishing a WBP V2 structural project.
+-- The generated Lua must remain paired with the exact TRE produced by that bake.

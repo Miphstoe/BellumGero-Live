@@ -114,6 +114,7 @@ public:
 #include "WorldBuilderObjectLibrary.h"
 #include "WorldBuilderStructureInspector.h"
 #include "WorldBuilderStructurePreview.h"
+#include "WorldBuilderPublishedRefresh.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
 public:
@@ -980,6 +981,35 @@ public:
 			} else if (action == "cellinfo" || action == "cellcontext") {
 				WorldBuilderCommandUi::sendMessage(player, "World Builder Cell Context", WorldBuilderStructurePreview::getCellContext(player));
 				return SUCCESS;
+			} else if (action == "refreshpublished" || action == "preparerepublish" || action == "refreshpublish") {
+				if (!tokenizer.hasMoreTokens()) {
+					WorldBuilderCommandUi::sendMessage(player, "World Builder Published Refresh",
+						"Usage: /wb refreshpublished <project> [confirm]\n\nRun without confirm first for the mandatory safety dry-run.");
+					return SUCCESS;
+				}
+
+				String projectName;
+				tokenizer.getStringToken(projectName);
+				bool confirmRefresh = false;
+
+				if (tokenizer.hasMoreTokens()) {
+					String confirmation;
+					tokenizer.getStringToken(confirmation);
+					confirmation = confirmation.toLowerCase();
+
+					if (confirmation != "confirm") {
+						WorldBuilderCommandUi::sendMessage(player, "World Builder Published Refresh",
+							"The only accepted second argument is 'confirm'. Run the command without it first for a dry-run.");
+						return SUCCESS;
+					}
+
+					confirmRefresh = true;
+				}
+
+				String refreshMessage;
+				bool refreshResult = WorldBuilderPublishedRefresh::run(player, projectName, confirmRefresh, refreshMessage);
+				WorldBuilderCommandUi::sendMessage(player, "World Builder Published Refresh", refreshMessage);
+				return refreshResult ? SUCCESS : INVALIDPARAMETERS;
 			} else if (action == "save") {
 				result = manager->saveProject(player, message);
 			} else if (action == "close") {
