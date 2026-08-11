@@ -66,7 +66,8 @@ public:
 		ACTION_STRUCTURE_PREVIEW = 35,
 		ACTION_STRUCTURE_PREVIEW_CLEAR = 36,
 		ACTION_CELL_CONTEXT = 37,
-		ACTION_ADD_STRUCTURE = 38
+		ACTION_ADD_STRUCTURE = 38,
+		ACTION_STRUCTURE_LIBRARY = 39
 	};
 
 	enum ProjectManageAction {
@@ -114,6 +115,7 @@ public:
 #include "WorldBuilderObjectLibrary.h"
 #include "WorldBuilderStructureInspector.h"
 #include "WorldBuilderStructurePreview.h"
+#include "WorldBuilderStructureLibrary.h"
 #include "WorldBuilderPublishedRefresh.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
@@ -472,6 +474,10 @@ public:
 			break;
 		case WorldBuilderCommandUi::ACTION_OBJECT_LIBRARY:
 			WorldBuilderObjectLibrary::showRoot(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_STRUCTURE_LIBRARY:
+			WorldBuilderStructureLibrary::showRoot(player);
 			reopen = false;
 			break;
 		case WorldBuilderCommandUi::ACTION_STRUCTURE_INSPECTOR:
@@ -852,6 +858,7 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 
 		box->addMenuItem("Object List / Select", ACTION_OBJECT_LIST);
 		box->addMenuItem("Object Library / Browse Templates...", ACTION_OBJECT_LIBRARY);
+		box->addMenuItem("Structure Library / Browse Buildings & Caves...", ACTION_STRUCTURE_LIBRARY);
 		box->addMenuItem("Add Structure to Project...", ACTION_ADD_STRUCTURE);
 		box->addMenuItem("Structure Inspector (Target / Current Interior)...", ACTION_STRUCTURE_INSPECTOR);
 		box->addMenuItem("Structure Preview / Test...", ACTION_STRUCTURE_PREVIEW);
@@ -950,6 +957,9 @@ public:
 				return SUCCESS;
 			} else if (action == "library" || action == "assets" || action == "browse") {
 				WorldBuilderObjectLibrary::showRoot(player);
+				return SUCCESS;
+			} else if (action == "structures" || action == "structurelibrary" || action == "buildings") {
+				WorldBuilderStructureLibrary::showRoot(player);
 				return SUCCESS;
 			} else if (action == "structureinfo" || action == "structure" || action == "inspectstructure") {
 				WorldBuilderStructureInspector::show(player);

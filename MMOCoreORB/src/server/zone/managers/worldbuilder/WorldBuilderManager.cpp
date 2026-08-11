@@ -1762,7 +1762,7 @@ bool WorldBuilderManager::addStructure(CreatureObject* player, const String& req
 	result << "Added Structure WB #" << state.localID << " " << getTemplateShortName(serverTemplate)
 		<< " | cells " << (portalLayout != nullptr ? portalLayout->getCellTotalNumber() : 0)
 		<< " | spawned " << distance << "m in front of you and initially faced toward you."
-		<< " This is now saved in the .wbp project, but structural TRE/ILF publishing is intentionally not enabled yet.";
+		<< " This is saved in the .wbp project and is ready for WBP V2 TRE/ILF publishing after final validation.";
 	message = result.toString();
 	return true;
 }
@@ -2582,7 +2582,7 @@ String WorldBuilderManager::getStatus(CreatureObject* player) {
 	status << "Objects: " << session->objects.size() << " | World " << worldObjects << " | Structures " << structures << " | Interior " << interiors << " | Group " << session->groupIDs.size() << "\n";
 	status << "Move Step: " << session->moveStep << "m | Rotate Step: " << session->rotateStep << " deg\n";
 	if (structures > 0 || interiors > 0)
-		status << "Project Format: V2 STRUCTURAL (runtime editing enabled; TRE/ILF publishing not enabled yet)\n";
+		status << "Project Format: V2 STRUCTURAL (runtime editing + TRE/ILF publishing enabled)\n";
 
 	int index = findObjectIndexByLocalID(session, session->selectedLocalID);
 	if (index >= 0) {
@@ -2610,7 +2610,7 @@ String WorldBuilderManager::getHelp(CreatureObject* player) const {
 	help << "PROJECT\n";
 	help << "/wb new <name> | /wb projects | /wb load <name> | /wb save | /wb close\n";
 	help << "/wb export - Generate a Lua placement screenplay\n\n";
-	help << "STRUCTURES / INTERIORS (V1.8)\n";
+	help << "STRUCTURES / INTERIORS (V1.9.7)\n";
 	help << "/wb addstructure <server building/cave template> [distance]\n";
 	help << "Structure spawns become persistent .wbp records and initially face toward you. Enter a project-owned cell, then normal /wb spawn records new static objects as durable interior placements by Structure WB ID + Cell number/room.\n";
 	help << "/wb cellinfo - Show current runtime CellID, room, and local coordinates\n";
