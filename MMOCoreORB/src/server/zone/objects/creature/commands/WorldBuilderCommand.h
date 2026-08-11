@@ -61,7 +61,12 @@ public:
 		ACTION_NEW_PROJECT = 30,
 		ACTION_LOAD_PROJECT = 31,
 		ACTION_MANAGE_PROJECTS = 32,
-		ACTION_OBJECT_LIBRARY = 33
+		ACTION_OBJECT_LIBRARY = 33,
+		ACTION_STRUCTURE_INSPECTOR = 34,
+		ACTION_STRUCTURE_PREVIEW = 35,
+		ACTION_STRUCTURE_PREVIEW_CLEAR = 36,
+		ACTION_CELL_CONTEXT = 37,
+		ACTION_ADD_STRUCTURE = 38
 	};
 
 	enum ProjectManageAction {
@@ -77,7 +82,9 @@ public:
 		INPUT_LOAD_PROJECT = 2,
 		INPUT_SPAWN_TEMPLATE = 3,
 		INPUT_MOVE_STEP = 4,
-		INPUT_ROTATE_STEP = 5
+		INPUT_ROTATE_STEP = 5,
+		INPUT_STRUCTURE_PREVIEW = 6,
+		INPUT_ADD_STRUCTURE = 7
 	};
 
 	static void sendMessage(CreatureObject* player, const String& title, const String& text) {
@@ -105,6 +112,8 @@ public:
 };
 
 #include "WorldBuilderObjectLibrary.h"
+#include "WorldBuilderStructureInspector.h"
+#include "WorldBuilderStructurePreview.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
 public:
@@ -392,6 +401,12 @@ public:
 			case WorldBuilderCommandUi::INPUT_ROTATE_STEP:
 				result = manager->setRotateStep(player, Float::valueOf(input), message);
 				break;
+			case WorldBuilderCommandUi::INPUT_STRUCTURE_PREVIEW:
+				result = WorldBuilderStructurePreview::spawn(player, input, 12.0f, message);
+				break;
+			case WorldBuilderCommandUi::INPUT_ADD_STRUCTURE:
+				result = manager->addStructure(player, input, 15.0f, message);
+				break;
 			default:
 				return;
 			}
@@ -456,6 +471,31 @@ public:
 			break;
 		case WorldBuilderCommandUi::ACTION_OBJECT_LIBRARY:
 			WorldBuilderObjectLibrary::showRoot(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_STRUCTURE_INSPECTOR:
+			WorldBuilderStructureInspector::show(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_ADD_STRUCTURE:
+			WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_ADD_STRUCTURE,
+				"Add Structure to World Builder Project",
+				"Enter a registered SERVER building/cave template. The structure will be saved to this project and initially face toward you:",
+				"object/building/tatooine/cave_tatooine_style_01.iff");
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_STRUCTURE_PREVIEW:
+			WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_STRUCTURE_PREVIEW,
+				"World Builder Structure Preview",
+				"Enter a registered SERVER building/cave template path. This preview is transient and is not saved to the project yet:",
+				"object/building/tatooine/cave_tatooine_style_01.iff");
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_STRUCTURE_PREVIEW_CLEAR:
+			result = WorldBuilderStructurePreview::clear(player, message);
+			break;
+		case WorldBuilderCommandUi::ACTION_CELL_CONTEXT:
+			WorldBuilderCommandUi::sendMessage(player, "World Builder Cell Context", WorldBuilderStructurePreview::getCellContext(player));
 			reopen = false;
 			break;
 		case WorldBuilderCommandUi::ACTION_SPAWN_TEMPLATE:
@@ -799,6 +839,10 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 		box->addMenuItem("New Project (Never Overwrites)", ACTION_NEW_PROJECT);
 		box->addMenuItem("Load Saved Project...", ACTION_LOAD_PROJECT);
 		box->addMenuItem("Manage Saved Projects...", ACTION_MANAGE_PROJECTS);
+		box->addMenuItem("Structure Inspector (Target / Current Interior)...", ACTION_STRUCTURE_INSPECTOR);
+		box->addMenuItem("Structure Preview / Test...", ACTION_STRUCTURE_PREVIEW);
+		box->addMenuItem("Current Cell Context", ACTION_CELL_CONTEXT);
+		box->addMenuItem("Clear Structure Preview", ACTION_STRUCTURE_PREVIEW_CLEAR);
 		box->addMenuItem("Help / Command List", ACTION_HELP);
 	} else {
 		StringBuffer prompt;
@@ -807,6 +851,11 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 
 		box->addMenuItem("Object List / Select", ACTION_OBJECT_LIST);
 		box->addMenuItem("Object Library / Browse Templates...", ACTION_OBJECT_LIBRARY);
+		box->addMenuItem("Add Structure to Project...", ACTION_ADD_STRUCTURE);
+		box->addMenuItem("Structure Inspector (Target / Current Interior)...", ACTION_STRUCTURE_INSPECTOR);
+		box->addMenuItem("Structure Preview / Test...", ACTION_STRUCTURE_PREVIEW);
+		box->addMenuItem("Current Cell Context", ACTION_CELL_CONTEXT);
+		box->addMenuItem("Clear Structure Preview", ACTION_STRUCTURE_PREVIEW_CLEAR);
 		box->addMenuItem("Spawn New Template... (Manual / Advanced)", ACTION_SPAWN_TEMPLATE);
 		box->addMenuItem("Spawn Last Template Again", ACTION_SPAWN_LAST);
 		box->addMenuItem("Move Forward [step]", ACTION_MOVE_FORWARD);
@@ -900,6 +949,36 @@ public:
 				return SUCCESS;
 			} else if (action == "library" || action == "assets" || action == "browse") {
 				WorldBuilderObjectLibrary::showRoot(player);
+				return SUCCESS;
+			} else if (action == "structureinfo" || action == "structure" || action == "inspectstructure") {
+				WorldBuilderStructureInspector::show(player);
+				return SUCCESS;
+			} else if (action == "addstructure" || action == "placestructure") {
+				if (!tokenizer.hasMoreTokens()) {
+					WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_ADD_STRUCTURE,
+						"Add Structure to World Builder Project",
+						"Enter a registered SERVER building/cave template. It will be saved to the active project and initially face toward you:",
+						"object/building/tatooine/cave_tatooine_style_01.iff");
+					return SUCCESS;
+				}
+				String structureTemplate; tokenizer.getStringToken(structureTemplate);
+				float distance = tokenizer.hasMoreTokens() ? tokenizer.getFloatToken() : 15.0f;
+				result = manager->addStructure(player, structureTemplate, distance, message);
+			} else if (action == "structurepreview" || action == "previewstructure") {
+				if (!tokenizer.hasMoreTokens()) {
+					WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_STRUCTURE_PREVIEW,
+						"World Builder Structure Preview",
+						"Enter a registered SERVER building/cave template path. This preview is transient and is not saved to the project yet:",
+						"object/building/tatooine/cave_tatooine_style_01.iff");
+					return SUCCESS;
+				}
+				String structureTemplate; tokenizer.getStringToken(structureTemplate);
+				float distance = tokenizer.hasMoreTokens() ? tokenizer.getFloatToken() : 12.0f;
+				result = WorldBuilderStructurePreview::spawn(player, structureTemplate, distance, message);
+			} else if (action == "structureclear" || action == "clearstructure") {
+				result = WorldBuilderStructurePreview::clear(player, message);
+			} else if (action == "cellinfo" || action == "cellcontext") {
+				WorldBuilderCommandUi::sendMessage(player, "World Builder Cell Context", WorldBuilderStructurePreview::getCellContext(player));
 				return SUCCESS;
 			} else if (action == "save") {
 				result = manager->saveProject(player, message);

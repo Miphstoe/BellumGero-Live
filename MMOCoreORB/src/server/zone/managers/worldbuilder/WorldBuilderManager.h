@@ -14,11 +14,19 @@
 
 #include "engine/engine.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/cell/CellObject.h"
+
+enum WorldBuilderObjectKind {
+	WB_OBJECT_STATIC = 0,
+	WB_OBJECT_STRUCTURE = 1,
+	WB_OBJECT_INTERIOR = 2
+};
 
 class WorldBuilderObjectState : public Object {
 public:
 	uint32 localID;
 	uint64 runtimeObjectID;
+	int objectKind;
 	String objectTemplate;
 	String snapshotTemplate;
 	float x;
@@ -30,6 +38,9 @@ public:
 	float qz;
 	float snapshotGameObjectType;
 	uint64 parentID;
+	uint32 structureLocalID;
+	int cellNumber;
+	String roomName;
 
 	WorldBuilderObjectState();
 };
@@ -82,14 +93,19 @@ private:
 
 	int findObjectIndexByLocalID(WorldBuilderSession* session, uint32 localID) const;
 	int findObjectIndexByRuntimeID(WorldBuilderSession* session, uint64 runtimeID) const;
+	int findStructureIndexByRuntimeID(WorldBuilderSession* session, uint64 runtimeID) const;
+	bool isPlayerInsideProjectStructure(WorldBuilderSession* session, CreatureObject* player, uint32* structureLocalID = nullptr) const;
 	bool isInGroup(WorldBuilderSession* session, uint32 localID) const;
 
-	bool captureObjectState(WorldBuilderObjectState& state, CreatureObject* player) const;
+	bool captureObjectState(WorldBuilderSession* session, WorldBuilderObjectState& state, CreatureObject* player) const;
+	bool resolvePlayerProjectInteriorContext(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state) const;
+	ManagedReference<CellObject*> resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, uint32 structureLocalID, int cellNumber, String& errorMessage) const;
+	bool validateStructureTemplate(const String& serverTemplate, String& errorMessage) const;
 	WorldBuilderProjectState captureProjectState(WorldBuilderSession* session, CreatureObject* player) const;
 	void pushUndoState(WorldBuilderSession* session, CreatureObject* player);
 	bool restoreProjectState(WorldBuilderSession* session, CreatureObject* player, const WorldBuilderProjectState& state, String& message);
 
-	ManagedReference<SceneObject*> spawnStateObject(CreatureObject* player, WorldBuilderObjectState& state, String& errorMessage);
+	ManagedReference<SceneObject*> spawnStateObject(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state, String& errorMessage);
 	void destroyRuntimeObject(CreatureObject* player, WorldBuilderObjectState& state) const;
 	void destroyAllRuntimeObjects(WorldBuilderSession* session, CreatureObject* player) const;
 
@@ -118,6 +134,7 @@ public:
 	void getSavedProjectStatus(const String& projectName, bool& hasActiveProject, bool& hasBackup);
 
 	bool spawnTemplate(CreatureObject* player, const String& objectTemplate, float distance, String& message);
+	bool addStructure(CreatureObject* player, const String& structureTemplate, float distance, String& message);
 	bool spawnLastTemplate(CreatureObject* player, float distance, String& message);
 	bool selectTarget(CreatureObject* player, String& message);
 	bool selectObject(CreatureObject* player, uint32 localID, String& message);

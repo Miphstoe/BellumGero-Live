@@ -9,11 +9,16 @@
 #include "templates/manager/TemplateManager.h"
 #include "templates/SharedObjectTemplate.h"
 #include "templates/tangible/SharedStructureObjectTemplate.h"
+#include "templates/building/SharedBuildingObjectTemplate.h"
+#include "templates/appearance/PortalLayout.h"
+#include "templates/appearance/CellProperty.h"
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/scene/SceneObjectType.h"
+#include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/cell/CellObject.h"
 
 #include <cstdio>
 #include <cstring>
@@ -162,7 +167,8 @@ bool wbWriteLine(std::FILE* file, const String& line) {
 }
 
 // Project-management operations validate a backup before allowing it to replace
-// an active project. The project format currently requires this exact V1 header.
+// an active project. V1 is the original flat/static format; V2 adds durable
+// structure + interior-cell relationships while keeping V1 load compatibility.
 bool wbProjectFileHasValidHeader(const String& path) {
 	std::FILE* file = std::fopen(path.toCharArray(), "rb");
 	if (file == nullptr)
@@ -178,7 +184,11 @@ bool wbProjectFileHasValidHeader(const String& path) {
 		if (line.isEmpty())
 			continue;
 
-		valid = line == "BELLUM_GERO_WORLD_BUILDER 1";
+		StringTokenizer tokenizer(line);
+		String magic;
+		tokenizer.getStringToken(magic);
+		int version = tokenizer.hasMoreTokens() ? tokenizer.getIntToken() : 0;
+		valid = magic == "BELLUM_GERO_WORLD_BUILDER" && (version == 1 || version == 2);
 		break;
 	}
 
@@ -192,8 +202,8 @@ const float WorldBuilderManager::DEFAULT_ROTATE_STEP = 5.0f;
 const float WorldBuilderManager::DEFAULT_SPAWN_DISTANCE = 3.0f;
 
 WorldBuilderObjectState::WorldBuilderObjectState() :
-	localID(0), runtimeObjectID(0), x(0), z(0), y(0), qw(1), qx(0), qy(0), qz(0),
-	snapshotGameObjectType(-1.0f), parentID(0) {
+	localID(0), runtimeObjectID(0), objectKind(WB_OBJECT_STATIC), x(0), z(0), y(0), qw(1), qx(0), qy(0), qz(0),
+	snapshotGameObjectType(-1.0f), parentID(0), structureLocalID(0), cellNumber(0) {
 }
 
 WorldBuilderProjectState::WorldBuilderProjectState() : selectedLocalID(0), nextLocalID(1) {
@@ -307,6 +317,179 @@ int WorldBuilderManager::findObjectIndexByRuntimeID(WorldBuilderSession* session
 	return -1;
 }
 
+
+int WorldBuilderManager::findStructureIndexByRuntimeID(WorldBuilderSession* session, uint64 runtimeID) const {
+	if (session == nullptr || runtimeID == 0)
+		return -1;
+
+	for (int i = 0; i < session->objects.size(); ++i) {
+		const WorldBuilderObjectState& state = session->objects.get(i);
+		if (state.objectKind == WB_OBJECT_STRUCTURE && state.runtimeObjectID == runtimeID)
+			return i;
+	}
+
+	return -1;
+}
+
+
+bool WorldBuilderManager::isPlayerInsideProjectStructure(WorldBuilderSession* session, CreatureObject* player, uint32* structureLocalID) const {
+	if (structureLocalID != nullptr)
+		*structureLocalID = 0;
+
+	if (session == nullptr || player == nullptr || player->getZoneServer() == nullptr)
+		return false;
+
+	ManagedReference<SceneObject*> parent = player->getParent().get();
+	if (parent == nullptr && player->getParentID() != 0)
+		parent = player->getZoneServer()->getObject(player->getParentID());
+
+	if (parent == nullptr || !parent->isCellObject())
+		return false;
+
+	ManagedReference<SceneObject*> root = parent->getParent().get();
+	if (root == nullptr && parent->getParentID() != 0)
+		root = player->getZoneServer()->getObject(parent->getParentID());
+
+	if (root == nullptr)
+		return false;
+
+	int structureIndex = findStructureIndexByRuntimeID(session, root->getObjectID());
+	if (structureIndex < 0)
+		return false;
+
+	if (structureLocalID != nullptr)
+		*structureLocalID = session->objects.get(structureIndex).localID;
+
+	return true;
+}
+
+bool WorldBuilderManager::validateStructureTemplate(const String& requestedTemplate, String& errorMessage) const {
+	String serverTemplate = requestedTemplate.trim();
+	if (serverTemplate.isEmpty()) {
+		errorMessage = "Specify a registered SERVER building/cave template path.";
+		return false;
+	}
+
+	int slash = serverTemplate.lastIndexOf("/");
+	String filename = slash >= 0 ? serverTemplate.subString(slash + 1) : serverTemplate;
+	if (filename.beginsWith("shared_")) {
+		errorMessage = "Use the SERVER structure template, not the shared/client path.";
+		return false;
+	}
+
+	Reference<SharedObjectTemplate*> templateData = TemplateManager::instance()->getTemplate(serverTemplate.hashCode());
+	if (templateData == nullptr) {
+		errorMessage = "Server structure template is not registered: " + serverTemplate;
+		return false;
+	}
+
+	if (!templateData->isSharedBuildingObjectTemplate()) {
+		errorMessage = "Template is registered, but it is not a building/cave template: " + serverTemplate;
+		return false;
+	}
+
+	SharedBuildingObjectTemplate* buildingTemplate = static_cast<SharedBuildingObjectTemplate*>(templateData.get());
+	String registeredPath = buildingTemplate->getFullTemplateString();
+	if (!registeredPath.isEmpty() && registeredPath != serverTemplate) {
+		errorMessage = "Structure registration mismatch. Requested '" + serverTemplate + "' but Core3 resolved metadata as '" + registeredPath + "'. Refusing to persist a renamed/copied structure with inconsistent template identity.";
+		return false;
+	}
+
+	String expectedShared = deriveSnapshotTemplate(serverTemplate);
+	String clientTemplate = buildingTemplate->getClientTemplateFileName();
+	if (!clientTemplate.isEmpty() && clientTemplate != expectedShared) {
+		errorMessage = "Structure client-template mismatch. Server template points at '" + clientTemplate + "' instead of expected '" + expectedShared + "'.";
+		return false;
+	}
+
+	const PortalLayout* portalLayout = buildingTemplate->getPortalLayout();
+	if (portalLayout == nullptr || portalLayout->getCellTotalNumber() <= 0) {
+		errorMessage = "Structure has no usable portal/cell layout. World Builder requires a POB with interior cells.";
+		return false;
+	}
+
+	return true;
+}
+
+ManagedReference<CellObject*> WorldBuilderManager::resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, uint32 structureLocalID, int cellNumber, String& errorMessage) const {
+	if (session == nullptr || player == nullptr || player->getZoneServer() == nullptr) {
+		errorMessage = "World Builder could not resolve the project/zone server.";
+		return nullptr;
+	}
+
+	int structureIndex = findObjectIndexByLocalID(session, structureLocalID);
+	if (structureIndex < 0 || session->objects.get(structureIndex).objectKind != WB_OBJECT_STRUCTURE) {
+		errorMessage = "Interior object references missing structure WB #" + String::valueOf(structureLocalID) + ".";
+		return nullptr;
+	}
+
+	uint64 runtimeRootID = session->objects.get(structureIndex).runtimeObjectID;
+	ManagedReference<SceneObject*> root = player->getZoneServer()->getObject(runtimeRootID);
+	if (root == nullptr || !root->isBuildingObject()) {
+		errorMessage = "Runtime structure WB #" + String::valueOf(structureLocalID) + " is unavailable.";
+		return nullptr;
+	}
+
+	BuildingObject* building = root->asBuildingObject();
+	if (building == nullptr || cellNumber <= 0) {
+		errorMessage = "Invalid structure/cell relationship for WB #" + String::valueOf(structureLocalID) + ".";
+		return nullptr;
+	}
+
+	ManagedReference<CellObject*> cell = building->getCell(cellNumber);
+	if (cell == nullptr) {
+		errorMessage = "Structure WB #" + String::valueOf(structureLocalID) + " does not have Cell " + String::valueOf(cellNumber) + ".";
+		return nullptr;
+	}
+
+	return cell;
+}
+
+bool WorldBuilderManager::resolvePlayerProjectInteriorContext(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state) const {
+	if (session == nullptr || player == nullptr || player->getZoneServer() == nullptr)
+		return false;
+
+	ManagedReference<SceneObject*> parent = player->getParent().get();
+	if (parent == nullptr && player->getParentID() != 0)
+		parent = player->getZoneServer()->getObject(player->getParentID());
+
+	if (parent == nullptr || !parent->isCellObject())
+		return false;
+
+	CellObject* cell = cast<CellObject*>(parent.get());
+	if (cell == nullptr)
+		return false;
+
+	ManagedReference<SceneObject*> root = parent->getParent().get();
+	if (root == nullptr && parent->getParentID() != 0)
+		root = player->getZoneServer()->getObject(parent->getParentID());
+
+	if (root == nullptr || !root->isBuildingObject())
+		return false;
+
+	int structureIndex = findStructureIndexByRuntimeID(session, root->getObjectID());
+	if (structureIndex < 0)
+		return false;
+
+	state.objectKind = WB_OBJECT_INTERIOR;
+	state.structureLocalID = session->objects.get(structureIndex).localID;
+	state.cellNumber = cell->getCellNumber();
+	state.parentID = cell->getObjectID();
+	state.roomName = "";
+
+	SharedObjectTemplate* rootTemplate = root->getObjectTemplate();
+	if (rootTemplate != nullptr) {
+		const PortalLayout* layout = rootTemplate->getPortalLayout();
+		if (layout != nullptr) {
+			const CellProperty* property = layout->getCellProperty(state.cellNumber);
+			if (property != nullptr)
+				state.roomName = property->getName();
+		}
+	}
+
+	return true;
+}
+
 bool WorldBuilderManager::isInGroup(WorldBuilderSession* session, uint32 localID) const {
 	if (session == nullptr)
 		return false;
@@ -319,7 +502,7 @@ bool WorldBuilderManager::isInGroup(WorldBuilderSession* session, uint32 localID
 	return false;
 }
 
-bool WorldBuilderManager::captureObjectState(WorldBuilderObjectState& state, CreatureObject* player) const {
+bool WorldBuilderManager::captureObjectState(WorldBuilderSession* session, WorldBuilderObjectState& state, CreatureObject* player) const {
 	if (player == nullptr || state.runtimeObjectID == 0)
 		return false;
 
@@ -345,6 +528,39 @@ bool WorldBuilderManager::captureObjectState(WorldBuilderObjectState& state, Cre
 
 	ManagedReference<SceneObject*> parent = object->getParent().get();
 	state.parentID = parent != nullptr ? parent->getObjectID() : 0;
+
+	if (state.objectKind == WB_OBJECT_STRUCTURE) {
+		state.parentID = 0;
+		state.structureLocalID = 0;
+		state.cellNumber = 0;
+		state.roomName = "";
+	} else if (state.objectKind == WB_OBJECT_INTERIOR && parent != nullptr && parent->isCellObject()) {
+		CellObject* cell = cast<CellObject*>(parent.get());
+		if (cell != nullptr) {
+			state.cellNumber = cell->getCellNumber();
+
+			ManagedReference<SceneObject*> root = parent->getParent().get();
+			if (root == nullptr && parent->getParentID() != 0)
+				root = zoneServer->getObject(parent->getParentID());
+
+			if (root != nullptr) {
+				int structureIndex = findStructureIndexByRuntimeID(session, root->getObjectID());
+				if (structureIndex >= 0)
+					state.structureLocalID = session->objects.get(structureIndex).localID;
+
+				SharedObjectTemplate* rootTemplate = root->getObjectTemplate();
+				if (rootTemplate != nullptr) {
+					const PortalLayout* layout = rootTemplate->getPortalLayout();
+					if (layout != nullptr) {
+						const CellProperty* property = layout->getCellProperty(state.cellNumber);
+						if (property != nullptr)
+							state.roomName = property->getName();
+					}
+				}
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -359,7 +575,7 @@ WorldBuilderProjectState WorldBuilderManager::captureProjectState(WorldBuilderSe
 
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState state = session->objects.get(i);
-		captureObjectState(state, player);
+		captureObjectState(session, state, player);
 		state.runtimeObjectID = 0;
 		result.objects.add(state);
 	}
@@ -378,9 +594,9 @@ void WorldBuilderManager::pushUndoState(WorldBuilderSession* session, CreatureOb
 	session->redoStack.removeAll();
 }
 
-ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(CreatureObject* player, WorldBuilderObjectState& state, String& errorMessage) {
-	if (player == nullptr || player->getZone() == nullptr || player->getZoneServer() == nullptr) {
-		errorMessage = "World Builder could not resolve your current zone.";
+ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state, String& errorMessage) {
+	if (session == nullptr || player == nullptr || player->getZone() == nullptr || player->getZoneServer() == nullptr) {
+		errorMessage = "World Builder could not resolve your current project/zone.";
 		return nullptr;
 	}
 
@@ -390,13 +606,53 @@ ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(CreatureObj
 		return nullptr;
 	}
 
+	ZoneServer* zoneServer = player->getZoneServer();
+
+	if (state.objectKind == WB_OBJECT_STRUCTURE) {
+		if (!validateStructureTemplate(state.objectTemplate, errorMessage))
+			return nullptr;
+
+		ManagedReference<SceneObject*> object = zoneServer->createObject(state.objectTemplate.hashCode(), 0);
+		if (object == nullptr || !object->isBuildingObject()) {
+			if (object != nullptr) {
+				Locker locker(object, player);
+				object->destroyObjectFromWorld(true);
+				object->destroyObjectFromDatabase(true);
+			}
+			errorMessage = "Core3 did not create a BuildingObject from: " + state.objectTemplate;
+			return nullptr;
+		}
+
+		BuildingObject* building = object->asBuildingObject();
+		if (building == nullptr) {
+			errorMessage = "Created structure could not be cast to BuildingObject.";
+			return nullptr;
+		}
+
+		Locker objectLocker(building, player);
+		building->createCellObjects();
+		building->initializePosition(state.x, state.z, state.y);
+		building->setDirection(state.qw, state.qx, state.qy, state.qz);
+
+		if (!player->getZone()->transferObject(building, -1, true)) {
+			building->destroyObjectFromWorld(true);
+			building->destroyObjectFromDatabase(true);
+			errorMessage = "Core3 could not transfer the World Builder structure into the current zone.";
+			return nullptr;
+		}
+
+		building->createChildObjects();
+		state.runtimeObjectID = building->getObjectID();
+		state.parentID = 0;
+		return building;
+	}
+
 	SharedStructureObjectTemplate* structureTemplate = dynamic_cast<SharedStructureObjectTemplate*>(sharedTemplate.get());
 	if (structureTemplate != nullptr && structureTemplate->getGameObjectType() != SceneObjectType::STATICOBJECT) {
-		errorMessage = "World Builder V1 does not spawn real deed/structure objects. Use a static/template equivalent instead: " + state.objectTemplate;
+		errorMessage = "Use /wb addstructure for real building/cave templates. Normal object placement only accepts static/template equivalents: " + state.objectTemplate;
 		return nullptr;
 	}
 
-	ZoneServer* zoneServer = player->getZoneServer();
 	ManagedReference<SceneObject*> object = zoneServer->createObject(state.objectTemplate.hashCode(), 0);
 
 	if (object == nullptr || object->isIntangibleObject()) {
@@ -408,11 +664,28 @@ ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(CreatureObj
 	object->initializePosition(state.x, state.z, state.y);
 	object->setDirection(state.qw, state.qx, state.qy, state.qz);
 
-	if (state.parentID != 0) {
+	if (state.objectKind == WB_OBJECT_INTERIOR) {
+		String cellError;
+		ManagedReference<CellObject*> cell = resolveRuntimeCell(session, player, state.structureLocalID, state.cellNumber, cellError);
+		if (cell == nullptr) {
+			object->destroyObjectFromDatabase(true);
+			errorMessage = cellError;
+			return nullptr;
+		}
+
+		if (!cell->transferObject(object, -1)) {
+			object->destroyObjectFromDatabase(true);
+			errorMessage = "Could not transfer interior WB object into structure WB #" + String::valueOf(state.structureLocalID) + " Cell " + String::valueOf(state.cellNumber) + ".";
+			return nullptr;
+		}
+
+		state.parentID = cell->getObjectID();
+	} else if (state.parentID != 0) {
+		// Legacy V1 behavior for objects saved against an existing runtime cell.
 		ManagedReference<SceneObject*> parent = zoneServer->getObject(state.parentID);
 		if (parent == nullptr || !parent->isCellObject()) {
 			object->destroyObjectFromDatabase(true);
-			errorMessage = "Saved parent/cell " + String::valueOf(state.parentID) + " is unavailable.";
+			errorMessage = "Saved legacy parent/cell " + String::valueOf(state.parentID) + " is unavailable.";
 			return nullptr;
 		}
 
@@ -444,9 +717,17 @@ void WorldBuilderManager::destroyAllRuntimeObjects(WorldBuilderSession* session,
 	if (session == nullptr)
 		return;
 
+	// Remove interior/world preview children first, then structure roots/cells.
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState& state = session->objects.elementAt(i);
-		destroyRuntimeObject(player, state);
+		if (state.objectKind != WB_OBJECT_STRUCTURE)
+			destroyRuntimeObject(player, state);
+	}
+
+	for (int i = 0; i < session->objects.size(); ++i) {
+		WorldBuilderObjectState& state = session->objects.elementAt(i);
+		if (state.objectKind == WB_OBJECT_STRUCTURE)
+			destroyRuntimeObject(player, state);
 	}
 }
 
@@ -454,25 +735,36 @@ bool WorldBuilderManager::restoreProjectState(WorldBuilderSession* session, Crea
 	if (session == nullptr || player == nullptr)
 		return false;
 
+	uint32 occupiedStructure = 0;
+	if (isPlayerInsideProjectStructure(session, player, &occupiedStructure)) {
+		message = "Exit project Structure WB #" + String::valueOf(occupiedStructure) + " before undo/redo restores or rebuilds project runtime objects.";
+		return false;
+	}
+
 	destroyAllRuntimeObjects(session, player);
-	session->objects.removeAll();
+	session->objects = state.objects;
 	session->groupIDs = state.groupIDs;
 	session->selectedLocalID = state.selectedLocalID;
 	session->nextLocalID = state.nextLocalID;
 
-	for (int i = 0; i < state.objects.size(); ++i) {
-		WorldBuilderObjectState objectState = state.objects.get(i);
-		String error;
-		ManagedReference<SceneObject*> object = spawnStateObject(player, objectState, error);
+	for (int pass = 0; pass < 2; ++pass) {
+		for (int i = 0; i < session->objects.size(); ++i) {
+			WorldBuilderObjectState& objectState = session->objects.elementAt(i);
+			bool structurePass = objectState.objectKind == WB_OBJECT_STRUCTURE;
+			if ((pass == 0) != structurePass)
+				continue;
 
-		if (object == nullptr) {
-			destroyAllRuntimeObjects(session, player);
-			session->objects.removeAll();
-			message = "Restore failed while respawning #" + String::valueOf(objectState.localID) + ": " + error;
-			return false;
+			objectState.runtimeObjectID = 0;
+			String error;
+			ManagedReference<SceneObject*> object = spawnStateObject(session, player, objectState, error);
+
+			if (object == nullptr) {
+				destroyAllRuntimeObjects(session, player);
+				session->objects.removeAll();
+				message = "Restore failed while respawning #" + String::valueOf(objectState.localID) + ": " + error;
+				return false;
+			}
 		}
-
-		session->objects.add(objectState);
 	}
 
 	if (findObjectIndexByLocalID(session, session->selectedLocalID) < 0)
@@ -492,7 +784,7 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 	}
 
 	for (int i = 0; i < session->objects.size(); ++i)
-		captureObjectState(session->objects.elementAt(i), player);
+		captureObjectState(session, session->objects.elementAt(i), player);
 
 	String path = getProjectFilePath(session->projectName);
 	String tempPath = path + ".tmp";
@@ -508,8 +800,16 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 	}
 
 	bool writeOK = true;
+	bool structuralProject = false;
+	for (int i = 0; i < session->objects.size(); ++i) {
+		const WorldBuilderObjectState& state = session->objects.get(i);
+		if (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_INTERIOR) {
+			structuralProject = true;
+			break;
+		}
+	}
 
-	writeOK = writeOK && wbWriteLine(file, "BELLUM_GERO_WORLD_BUILDER 1");
+	writeOK = writeOK && wbWriteLine(file, structuralProject ? "BELLUM_GERO_WORLD_BUILDER 2" : "BELLUM_GERO_WORLD_BUILDER 1");
 	writeOK = writeOK && wbWriteLine(file, "PROJECT " + session->projectName);
 	writeOK = writeOK && wbWriteLine(file, "PLANET " + session->planetName);
 	writeOK = writeOK && wbWriteLine(file, "MOVE_STEP " + String::valueOf(session->moveStep));
@@ -521,11 +821,26 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 	for (int i = 0; writeOK && i < session->objects.size(); ++i) {
 		const WorldBuilderObjectState& state = session->objects.get(i);
 		StringBuffer line;
-		line << "OBJECT " << state.localID << " " << state.objectTemplate << " "
-			 << (state.snapshotTemplate.isEmpty() ? deriveSnapshotTemplate(state.objectTemplate) : state.snapshotTemplate) << " "
-			 << state.x << " " << state.z << " " << state.y << " "
-			 << state.qw << " " << state.qx << " " << state.qy << " " << state.qz << " "
-			 << state.snapshotGameObjectType << " " << state.parentID;
+		String snapshotTemplate = state.snapshotTemplate.isEmpty() ? deriveSnapshotTemplate(state.objectTemplate) : state.snapshotTemplate;
+
+		if (structuralProject && state.objectKind == WB_OBJECT_STRUCTURE) {
+			line << "STRUCTURE " << state.localID << " " << state.objectTemplate << " " << snapshotTemplate << " "
+				 << state.x << " " << state.z << " " << state.y << " "
+				 << state.qw << " " << state.qx << " " << state.qy << " " << state.qz << " "
+				 << state.snapshotGameObjectType;
+		} else if (structuralProject && state.objectKind == WB_OBJECT_INTERIOR) {
+			line << "INTERIOR " << state.localID << " " << state.objectTemplate << " " << snapshotTemplate << " "
+				 << state.x << " " << state.z << " " << state.y << " "
+				 << state.qw << " " << state.qx << " " << state.qy << " " << state.qz << " "
+				 << state.snapshotGameObjectType << " " << state.structureLocalID << " " << state.cellNumber << " "
+				 << (state.roomName.isEmpty() ? String("-") : state.roomName);
+		} else {
+			line << "OBJECT " << state.localID << " " << state.objectTemplate << " " << snapshotTemplate << " "
+				 << state.x << " " << state.z << " " << state.y << " "
+				 << state.qw << " " << state.qx << " " << state.qy << " " << state.qz << " "
+				 << state.snapshotGameObjectType << " " << state.parentID;
+		}
+
 		writeOK = wbWriteLine(file, line.toString());
 	}
 
@@ -631,6 +946,7 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 	char buffer[8192];
 	bool validHeader = false;
 	bool parseOK = true;
+	int projectVersion = 0;
 
 	while (std::fgets(buffer, sizeof(buffer), file) != nullptr) {
 		String line(buffer);
@@ -645,11 +961,12 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 
 		if (type == "BELLUM_GERO_WORLD_BUILDER") {
 			int version = tokenizer.hasMoreTokens() ? tokenizer.getIntToken() : 0;
-			if (version != 1) {
+			if (version != 1 && version != 2) {
 				message = "Unsupported World Builder project version: " + String::valueOf(version);
 				parseOK = false;
 				break;
 			}
+			projectVersion = version;
 			validHeader = true;
 		} else if (type == "PROJECT") {
 			if (tokenizer.hasMoreTokens())
@@ -699,6 +1016,57 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 			state.parentID = UnsignedLong::valueOf(parentToken);
 			state.runtimeObjectID = 0;
 
+			session->objects.add(state);
+		} else if (type == "STRUCTURE") {
+			if (projectVersion < 2) {
+				message = "STRUCTURE record requires World Builder project version 2.";
+				parseOK = false;
+				break;
+			}
+
+			WorldBuilderObjectState state;
+			state.objectKind = WB_OBJECT_STRUCTURE;
+			state.localID = tokenizer.getIntToken();
+			tokenizer.getStringToken(state.objectTemplate);
+			tokenizer.getStringToken(state.snapshotTemplate);
+			state.x = tokenizer.getFloatToken();
+			state.z = tokenizer.getFloatToken();
+			state.y = tokenizer.getFloatToken();
+			state.qw = tokenizer.getFloatToken();
+			state.qx = tokenizer.getFloatToken();
+			state.qy = tokenizer.getFloatToken();
+			state.qz = tokenizer.getFloatToken();
+			state.snapshotGameObjectType = tokenizer.getFloatToken();
+			state.runtimeObjectID = 0;
+			state.parentID = 0;
+			session->objects.add(state);
+		} else if (type == "INTERIOR") {
+			if (projectVersion < 2) {
+				message = "INTERIOR record requires World Builder project version 2.";
+				parseOK = false;
+				break;
+			}
+
+			WorldBuilderObjectState state;
+			state.objectKind = WB_OBJECT_INTERIOR;
+			state.localID = tokenizer.getIntToken();
+			tokenizer.getStringToken(state.objectTemplate);
+			tokenizer.getStringToken(state.snapshotTemplate);
+			state.x = tokenizer.getFloatToken();
+			state.z = tokenizer.getFloatToken();
+			state.y = tokenizer.getFloatToken();
+			state.qw = tokenizer.getFloatToken();
+			state.qx = tokenizer.getFloatToken();
+			state.qy = tokenizer.getFloatToken();
+			state.qz = tokenizer.getFloatToken();
+			state.snapshotGameObjectType = tokenizer.getFloatToken();
+			state.structureLocalID = tokenizer.getIntToken();
+			state.cellNumber = tokenizer.getIntToken();
+			String room;
+			tokenizer.getStringToken(room);
+			state.roomName = room == "-" ? String("") : room;
+			state.runtimeObjectID = 0;
+			state.parentID = 0;
 			session->objects.add(state);
 		} else if (type == "GROUP") {
 			while (tokenizer.hasMoreTokens())
@@ -815,12 +1183,19 @@ bool WorldBuilderManager::loadProject(CreatureObject* player, const String& proj
 		return false;
 	}
 
-	for (int i = 0; i < session->objects.size(); ++i) {
-		String error;
-		if (spawnStateObject(player, session->objects.elementAt(i), error) == nullptr) {
-			destroyAllRuntimeObjects(session, player);
-			message = "Project load aborted at object #" + String::valueOf(session->objects.get(i).localID) + ": " + error;
-			return false;
+	for (int pass = 0; pass < 2; ++pass) {
+		for (int i = 0; i < session->objects.size(); ++i) {
+			WorldBuilderObjectState& state = session->objects.elementAt(i);
+			bool structurePass = state.objectKind == WB_OBJECT_STRUCTURE;
+			if ((pass == 0) != structurePass)
+				continue;
+
+			String error;
+			if (spawnStateObject(session, player, state, error) == nullptr) {
+				destroyAllRuntimeObjects(session, player);
+				message = "Project load aborted at object #" + String::valueOf(state.localID) + ": " + error;
+				return false;
+			}
 		}
 	}
 
@@ -1117,6 +1492,12 @@ bool WorldBuilderManager::closeProject(CreatureObject* player, bool saveFirst, S
 		return false;
 	}
 
+	uint32 occupiedStructure = 0;
+	if (isPlayerInsideProjectStructure(session, player, &occupiedStructure)) {
+		message = "Exit project Structure WB #" + String::valueOf(occupiedStructure) + " before closing the project so World Builder does not destroy the runtime structure around your character.";
+		return false;
+	}
+
 	if (saveFirst) {
 		String saveMessage;
 		if (!saveSession(session, player, saveMessage, false)) {
@@ -1150,6 +1531,13 @@ bool WorldBuilderManager::exportLua(CreatureObject* player, String& message) {
 	if (session == nullptr) {
 		message = "No World Builder project is open.";
 		return false;
+	}
+
+	for (int i = 0; i < session->objects.size(); ++i) {
+		if (session->objects.get(i).objectKind != WB_OBJECT_STATIC) {
+			message = "This project contains structure/interior records. V1.8 intentionally blocks Lua export until the structural snapshot + ILF publisher is implemented, so temporary runtime Cell IDs cannot leak into production output.";
+			return false;
+		}
 	}
 
 	String saveMessage;
@@ -1251,11 +1639,17 @@ bool WorldBuilderManager::spawnTemplate(CreatureObject* player, const String& ob
 	state.y = player->getPositionY() + (distance * cos(radians));
 	state.z = player->getPositionZ();
 
-	ManagedReference<SceneObject*> parent = player->getParent().get();
-	state.parentID = parent != nullptr && parent->isCellObject() ? parent->getObjectID() : 0;
+	ManagedReference<SceneObject*> playerParent = player->getParent().get();
+	if (playerParent == nullptr && player->getParentID() != 0)
+		playerParent = player->getZoneServer()->getObject(player->getParentID());
+
+	if (!resolvePlayerProjectInteriorContext(session, player, state)) {
+		state.objectKind = WB_OBJECT_STATIC;
+		state.parentID = playerParent != nullptr && playerParent->isCellObject() ? playerParent->getObjectID() : 0;
+	}
 
 	String error;
-	ManagedReference<SceneObject*> object = spawnStateObject(player, state, error);
+	ManagedReference<SceneObject*> object = spawnStateObject(session, player, state, error);
 	if (object == nullptr) {
 		if (session->undoStack.size() > 0)
 			session->undoStack.remove(session->undoStack.size() - 1);
@@ -1272,7 +1666,7 @@ bool WorldBuilderManager::spawnTemplate(CreatureObject* player, const String& ob
 			object->teleport(state.x, state.z, state.y, state.parentID);
 		else
 			object->teleport(state.x, state.z, state.y);
-		captureObjectState(state, player);
+		captureObjectState(session, state, player);
 	}
 
 	session->objects.add(state);
@@ -1280,7 +1674,96 @@ bool WorldBuilderManager::spawnTemplate(CreatureObject* player, const String& ob
 	session->lastTemplate = templatePath;
 	autosave(session, player);
 
-	message = "Spawned and selected WB #" + String::valueOf(state.localID) + " " + getTemplateShortName(templatePath) + ".";
+	StringBuffer result;
+	result << "Spawned and selected WB #" << state.localID << " " << getTemplateShortName(templatePath);
+	if (state.objectKind == WB_OBJECT_INTERIOR)
+		result << " as interior decoration in Structure WB #" << state.structureLocalID << " Cell " << state.cellNumber << " (" << (state.roomName.isEmpty() ? String("unnamed") : state.roomName) << ").";
+	else
+		result << ".";
+	message = result.toString();
+	return true;
+}
+
+bool WorldBuilderManager::addStructure(CreatureObject* player, const String& requestedTemplate, float distance, String& message) {
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+	if (session == nullptr) {
+		message = "Open or create a World Builder project first.";
+		return false;
+	}
+
+	if (player == nullptr || player->getZone() == nullptr || player->getZone()->getZoneName() != session->planetName) {
+		message = "You are not on the project planet.";
+		return false;
+	}
+
+	if (player->getParentID() != 0) {
+		message = "Stand outdoors/in the world before adding a new project structure.";
+		return false;
+	}
+
+	String serverTemplate = requestedTemplate.trim();
+	String validationError;
+	if (!validateStructureTemplate(serverTemplate, validationError)) {
+		message = validationError;
+		return false;
+	}
+
+	if (distance <= 0.0f)
+		distance = 15.0f;
+	if (distance > 100.0f)
+		distance = 100.0f;
+
+	pushUndoState(session, player);
+
+	WorldBuilderObjectState state;
+	state.objectKind = WB_OBJECT_STRUCTURE;
+	state.localID = session->nextLocalID++;
+	state.objectTemplate = serverTemplate;
+	state.snapshotTemplate = deriveSnapshotTemplate(serverTemplate);
+
+	Vector3 playerWorld = player->getWorldPosition();
+	float heading = player->getDirectionAngle();
+	float radians = Math::deg2rad(heading);
+	state.x = playerWorld.getX() + distance * sin(radians);
+	state.y = playerWorld.getY() + distance * cos(radians);
+	state.z = playerWorld.getZ();
+
+	String error;
+	ManagedReference<SceneObject*> object = spawnStateObject(session, player, state, error);
+	if (object == nullptr) {
+		session->undoStack.remove(session->undoStack.size() - 1);
+		--session->nextLocalID;
+		message = error;
+		return false;
+	}
+
+	float facingHeading = heading + 180.0f;
+	while (facingHeading > 180.0f)
+		facingHeading -= 360.0f;
+	while (facingHeading < -180.0f)
+		facingHeading += 360.0f;
+
+	if (facingHeading != 0.0f) {
+		Locker objectLocker(object, player);
+		object->rotate(facingHeading);
+		object->incrementMovementCounter();
+		object->teleport(state.x, state.z, state.y);
+	}
+
+	captureObjectState(session, state, player);
+	session->objects.add(state);
+	session->selectedLocalID = state.localID;
+	autosave(session, player);
+
+	Reference<SharedObjectTemplate*> templateData = TemplateManager::instance()->getTemplate(serverTemplate.hashCode());
+	const PortalLayout* portalLayout = templateData != nullptr ? templateData->getPortalLayout() : nullptr;
+
+	StringBuffer result;
+	result << "Added Structure WB #" << state.localID << " " << getTemplateShortName(serverTemplate)
+		<< " | cells " << (portalLayout != nullptr ? portalLayout->getCellTotalNumber() : 0)
+		<< " | spawned " << distance << "m in front of you and initially faced toward you."
+		<< " This is now saved in the .wbp project, but structural TRE/ILF publishing is intentionally not enabled yet.";
+	message = result.toString();
 	return true;
 }
 
@@ -1330,7 +1813,7 @@ bool WorldBuilderManager::selectObject(CreatureObject* player, uint32 localID, S
 	session->selectedLocalID = localID;
 	autosave(session, player);
 	WorldBuilderObjectState state = session->objects.get(index);
-	captureObjectState(state, player);
+	captureObjectState(session, state, player);
 	StringBuffer status;
 	status << "Selected WB #" << localID << " " << getTemplateShortName(state.objectTemplate)
 		   << " | x=" << state.x << " z=" << state.z << " y=" << state.y;
@@ -1397,6 +1880,14 @@ bool WorldBuilderManager::moveSelected(CreatureObject* player, const String& dir
 	if (index < 0) {
 		message = "Select a World Builder object first.";
 		return false;
+	}
+
+	if (session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE) {
+		uint32 occupiedStructure = 0;
+		if (isPlayerInsideProjectStructure(session, player, &occupiedStructure) && occupiedStructure == session->objects.get(index).localID) {
+			message = "Exit the selected structure before moving it.";
+			return false;
+		}
 	}
 
 	if (amount <= 0.0f)
@@ -1482,7 +1973,18 @@ bool WorldBuilderManager::rotateObject(CreatureObject* player, WorldBuilderObjec
 	else
 		object->teleport(object->getPositionX(), object->getPositionZ(), object->getPositionY());
 
-	captureObjectState(state, player);
+	// Rotation does not change the object's parent/cell relationship or position.
+	// Refresh only the stored quaternion here. rotateObject() is a low-level helper
+	// used by both single-object and group rotation and intentionally has no
+	// WorldBuilderSession parameter.
+	const Quaternion* updatedDirection = object->getDirection();
+	if (updatedDirection != nullptr) {
+		state.qw = updatedDirection->getW();
+		state.qx = updatedDirection->getX();
+		state.qy = updatedDirection->getY();
+		state.qz = updatedDirection->getZ();
+	}
+
 	return true;
 }
 
@@ -1497,6 +1999,14 @@ bool WorldBuilderManager::rotateSelected(CreatureObject* player, const String& a
 	if (index < 0) {
 		message = "Select a World Builder object first.";
 		return false;
+	}
+
+	if (session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE) {
+		uint32 occupiedStructure = 0;
+		if (isPlayerInsideProjectStructure(session, player, &occupiedStructure) && occupiedStructure == session->objects.get(index).localID) {
+			message = "Exit the selected structure before rotating it.";
+			return false;
+		}
 	}
 
 	if (degrees == 0.0f)
@@ -1529,19 +2039,32 @@ bool WorldBuilderManager::snapSelectedToPlayer(CreatureObject* player, String& m
 	}
 
 	WorldBuilderObjectState& state = session->objects.elementAt(index);
-	if (state.parentID != 0) {
-		ManagedReference<SceneObject*> playerParent = player->getParent().get();
-		if (playerParent == nullptr || playerParent->getObjectID() != state.parentID) {
-			message = "For cell objects, stand in the same cell before using snap.";
+
+	float targetX = 0.0f, targetZ = 0.0f, targetY = 0.0f;
+	if (state.objectKind == WB_OBJECT_STRUCTURE) {
+		if (player->getParentID() != 0) {
+			message = "Stand outdoors before snapping a structure root to your position.";
 			return false;
 		}
+		Vector3 world = player->getWorldPosition();
+		targetX = world.getX();
+		targetZ = world.getZ();
+		targetY = world.getY();
+	} else {
+		if (state.parentID != 0) {
+			ManagedReference<SceneObject*> playerParent = player->getParent().get();
+			if (playerParent == nullptr || playerParent->getObjectID() != state.parentID) {
+				message = "For cell/interior objects, stand in the same runtime cell before using snap.";
+				return false;
+			}
+		}
+		targetX = player->getPositionX();
+		targetZ = player->getPositionZ();
+		targetY = player->getPositionY();
 	}
 
 	pushUndoState(session, player);
-	float dx = player->getPositionX() - state.x;
-	float dz = player->getPositionZ() - state.z;
-	float dy = player->getPositionY() - state.y;
-	if (!translateObject(player, state, dx, dz, dy, message)) {
+	if (!translateObject(player, state, targetX - state.x, targetZ - state.z, targetY - state.y, message)) {
 		session->undoStack.remove(session->undoStack.size() - 1);
 		return false;
 	}
@@ -1567,9 +2090,30 @@ bool WorldBuilderManager::putSelectedInFront(CreatureObject* player, float dista
 
 	WorldBuilderObjectState& state = session->objects.elementAt(index);
 	float radians = Math::deg2rad(player->getDirectionAngle());
-	float targetX = player->getPositionX() + distance * sin(radians);
-	float targetY = player->getPositionY() + distance * cos(radians);
-	float targetZ = player->getPositionZ();
+	float targetX = 0.0f, targetZ = 0.0f, targetY = 0.0f;
+
+	if (state.objectKind == WB_OBJECT_STRUCTURE) {
+		uint32 occupiedStructure = 0;
+		if (isPlayerInsideProjectStructure(session, player, &occupiedStructure) && occupiedStructure == state.localID) {
+			message = "Exit the selected structure before moving it in front of you.";
+			return false;
+		}
+		Vector3 world = player->getWorldPosition();
+		targetX = world.getX() + distance * sin(radians);
+		targetY = world.getY() + distance * cos(radians);
+		targetZ = world.getZ();
+	} else {
+		if (state.parentID != 0) {
+			ManagedReference<SceneObject*> playerParent = player->getParent().get();
+			if (playerParent == nullptr || playerParent->getObjectID() != state.parentID) {
+				message = "For cell/interior objects, stand in the same runtime cell before using front.";
+				return false;
+			}
+		}
+		targetX = player->getPositionX() + distance * sin(radians);
+		targetY = player->getPositionY() + distance * cos(radians);
+		targetZ = player->getPositionZ();
+	}
 
 	pushUndoState(session, player);
 	if (!translateObject(player, state, targetX - state.x, targetZ - state.z, targetY - state.y, message)) {
@@ -1593,9 +2137,14 @@ bool WorldBuilderManager::duplicateSelected(CreatureObject* player, float forwar
 		return false;
 	}
 
+	if (session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE) {
+		message = "Structure duplication is intentionally disabled in V1.8 until structure + interior descendants can be cloned as one durable hierarchy.";
+		return false;
+	}
+
 	pushUndoState(session, player);
 	WorldBuilderObjectState source = session->objects.get(index);
-	captureObjectState(source, player);
+	captureObjectState(session, source, player);
 	WorldBuilderObjectState copy = source;
 	copy.localID = session->nextLocalID++;
 	copy.runtimeObjectID = 0;
@@ -1607,7 +2156,7 @@ bool WorldBuilderManager::duplicateSelected(CreatureObject* player, float forwar
 	copy.y += forwardOffset * cos(radians);
 
 	String error;
-	if (spawnStateObject(player, copy, error) == nullptr) {
+	if (spawnStateObject(session, player, copy, error) == nullptr) {
 		session->undoStack.remove(session->undoStack.size() - 1);
 		--session->nextLocalID;
 		message = error;
@@ -1633,19 +2182,47 @@ bool WorldBuilderManager::deleteSelected(CreatureObject* player, String& message
 		return false;
 	}
 
-	pushUndoState(session, player);
 	uint32 deletedID = session->objects.get(index).localID;
-	destroyRuntimeObject(player, session->objects.elementAt(index));
-	session->objects.remove(index);
+	bool deletingStructure = session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE;
+	if (deletingStructure) {
+		uint32 occupiedStructure = 0;
+		if (isPlayerInsideProjectStructure(session, player, &occupiedStructure) && occupiedStructure == deletedID) {
+			message = "Exit Structure WB #" + String::valueOf(deletedID) + " before deleting it.";
+			return false;
+		}
+	}
+
+	pushUndoState(session, player);
+	int descendants = 0;
+
+	if (deletingStructure) {
+		// Interior preview objects are destroyed first; the structure/cells go last.
+		for (int i = session->objects.size() - 1; i >= 0; --i) {
+			WorldBuilderObjectState& state = session->objects.elementAt(i);
+			if (state.objectKind == WB_OBJECT_INTERIOR && state.structureLocalID == deletedID) {
+				destroyRuntimeObject(player, state);
+				session->objects.remove(i);
+				++descendants;
+			}
+		}
+
+		index = findObjectIndexByLocalID(session, deletedID);
+	}
+
+	if (index >= 0) {
+		destroyRuntimeObject(player, session->objects.elementAt(index));
+		session->objects.remove(index);
+	}
 
 	for (int i = session->groupIDs.size() - 1; i >= 0; --i) {
-		if (session->groupIDs.get(i) == deletedID)
+		uint32 groupID = session->groupIDs.get(i);
+		if (groupID == deletedID || findObjectIndexByLocalID(session, groupID) < 0)
 			session->groupIDs.remove(i);
 	}
 
 	if (session->objects.size() > 0) {
 		int newIndex = index;
-		if (newIndex >= session->objects.size())
+		if (newIndex < 0 || newIndex >= session->objects.size())
 			newIndex = session->objects.size() - 1;
 		session->selectedLocalID = session->objects.get(newIndex).localID;
 	} else {
@@ -1653,7 +2230,12 @@ bool WorldBuilderManager::deleteSelected(CreatureObject* player, String& message
 	}
 
 	autosave(session, player);
-	message = "Deleted WB #" + String::valueOf(deletedID) + ". Use /wb undo if that was accidental.";
+	StringBuffer result;
+	result << "Deleted WB #" << deletedID;
+	if (deletingStructure)
+		result << " structure and " << descendants << " linked interior object(s)";
+	result << ". Use /wb undo if that was accidental.";
+	message = result.toString();
 	return true;
 }
 
@@ -1662,8 +2244,14 @@ bool WorldBuilderManager::groupAddSelected(CreatureObject* player, String& messa
 	if (session == nullptr)
 		return false;
 
-	if (findObjectIndexByLocalID(session, session->selectedLocalID) < 0) {
+	int selectedIndex = findObjectIndexByLocalID(session, session->selectedLocalID);
+	if (selectedIndex < 0) {
 		message = "Select a World Builder object first.";
+		return false;
+	}
+
+	if (session->objects.get(selectedIndex).objectKind == WB_OBJECT_STRUCTURE) {
+		message = "Structure roots cannot join ordinary object groups in V1.8. Move/rotate the structure directly; its cells/interior children follow its transform.";
 		return false;
 	}
 
@@ -1714,6 +2302,14 @@ bool WorldBuilderManager::groupMove(CreatureObject* player, const String& direct
 		return false;
 	}
 
+	for (int i = 0; i < session->groupIDs.size(); ++i) {
+		int checkIndex = findObjectIndexByLocalID(session, session->groupIDs.get(i));
+		if (checkIndex >= 0 && session->objects.get(checkIndex).objectKind == WB_OBJECT_STRUCTURE) {
+			message = "Structure roots cannot be manipulated through ordinary groups in V1.8. Select the structure and move/rotate it directly.";
+			return false;
+		}
+	}
+
 	if (amount <= 0.0f)
 		amount = session->moveStep;
 
@@ -1756,6 +2352,14 @@ bool WorldBuilderManager::groupRotate(CreatureObject* player, const String& axis
 		return false;
 	}
 
+	for (int i = 0; i < session->groupIDs.size(); ++i) {
+		int checkIndex = findObjectIndexByLocalID(session, session->groupIDs.get(i));
+		if (checkIndex >= 0 && session->objects.get(checkIndex).objectKind == WB_OBJECT_STRUCTURE) {
+			message = "Structure roots cannot be manipulated through ordinary groups in V1.8. Select the structure and move/rotate it directly.";
+			return false;
+		}
+	}
+
 	if (degrees == 0.0f)
 		degrees = session->rotateStep;
 
@@ -1790,6 +2394,14 @@ bool WorldBuilderManager::groupDuplicate(CreatureObject* player, float forwardOf
 	if (forwardOffset == 0.0f)
 		forwardOffset = 1.0f;
 
+	for (int i = 0; i < session->groupIDs.size(); ++i) {
+		int index = findObjectIndexByLocalID(session, session->groupIDs.get(i));
+		if (index >= 0 && session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE) {
+			message = "Group duplicate is blocked because the group contains a structure root. Structural hierarchy cloning is a later publishing feature.";
+			return false;
+		}
+	}
+
 	pushUndoState(session, player);
 	Vector<uint32> newGroup;
 	float radians = Math::deg2rad(player->getDirectionAngle());
@@ -1803,14 +2415,14 @@ bool WorldBuilderManager::groupDuplicate(CreatureObject* player, float forwardOf
 			continue;
 
 		WorldBuilderObjectState copy = session->objects.get(index);
-		captureObjectState(copy, player);
+		captureObjectState(session, copy, player);
 		copy.localID = session->nextLocalID++;
 		copy.runtimeObjectID = 0;
 		copy.x += dx;
 		copy.y += dy;
 
 		String error;
-		if (spawnStateObject(player, copy, error) == nullptr) {
+		if (spawnStateObject(session, player, copy, error) == nullptr) {
 			WorldBuilderProjectState before = session->undoStack.get(session->undoStack.size() - 1);
 			session->undoStack.remove(session->undoStack.size() - 1);
 			String restoreMessage;
@@ -1953,16 +2565,35 @@ String WorldBuilderManager::getStatus(CreatureObject* player) {
 	if (session == nullptr)
 		return "No World Builder project is open. Use /wb to create or browse saved projects.";
 
+	int structures = 0;
+	int interiors = 0;
+	int worldObjects = 0;
+	for (int i = 0; i < session->objects.size(); ++i) {
+		if (session->objects.get(i).objectKind == WB_OBJECT_STRUCTURE)
+			++structures;
+		else if (session->objects.get(i).objectKind == WB_OBJECT_INTERIOR)
+			++interiors;
+		else
+			++worldObjects;
+	}
+
 	StringBuffer status;
 	status << "Project: " << session->projectName << " [" << session->planetName << "]\n";
-	status << "Objects: " << session->objects.size() << " | Group: " << session->groupIDs.size() << "\n";
+	status << "Objects: " << session->objects.size() << " | World " << worldObjects << " | Structures " << structures << " | Interior " << interiors << " | Group " << session->groupIDs.size() << "\n";
 	status << "Move Step: " << session->moveStep << "m | Rotate Step: " << session->rotateStep << " deg\n";
+	if (structures > 0 || interiors > 0)
+		status << "Project Format: V2 STRUCTURAL (runtime editing enabled; TRE/ILF publishing not enabled yet)\n";
 
 	int index = findObjectIndexByLocalID(session, session->selectedLocalID);
 	if (index >= 0) {
 		WorldBuilderObjectState state = session->objects.get(index);
-		captureObjectState(state, player);
-		status << "Selected: WB #" << state.localID << " " << getTemplateShortName(state.objectTemplate) << "\n";
+		captureObjectState(session, state, player);
+		status << "Selected: WB #" << state.localID << " " << getTemplateShortName(state.objectTemplate);
+		if (state.objectKind == WB_OBJECT_STRUCTURE)
+			status << " [STRUCTURE]";
+		else if (state.objectKind == WB_OBJECT_INTERIOR)
+			status << " [INTERIOR " << (state.roomName.isEmpty() ? String("Cell ") + String::valueOf(state.cellNumber) : state.roomName) << " -> Structure #" << state.structureLocalID << "]";
+		status << "\n";
 		status << "x=" << state.x << " z=" << state.z << " y=" << state.y << " | parent=" << state.parentID << "\n";
 		status << "quat=" << state.qw << "," << state.qx << "," << state.qy << "," << state.qz << "\n";
 		status << "Snapshot Type: " << (state.snapshotGameObjectType < 0.0f ? String("AUTO") : String::valueOf(state.snapshotGameObjectType));
@@ -1979,6 +2610,11 @@ String WorldBuilderManager::getHelp(CreatureObject* player) const {
 	help << "PROJECT\n";
 	help << "/wb new <name> | /wb projects | /wb load <name> | /wb save | /wb close\n";
 	help << "/wb export - Generate a Lua placement screenplay\n\n";
+	help << "STRUCTURES / INTERIORS (V1.8)\n";
+	help << "/wb addstructure <server building/cave template> [distance]\n";
+	help << "Structure spawns become persistent .wbp records and initially face toward you. Enter a project-owned cell, then normal /wb spawn records new static objects as durable interior placements by Structure WB ID + Cell number/room.\n";
+	help << "/wb cellinfo - Show current runtime CellID, room, and local coordinates\n";
+	help << "V2 structural projects are intentionally NOT publishable to TRE/ILF yet; the current V1 baker will refuse their project version.\n\n";
 	help << "OBJECTS\n";
 	help << "/wb spawn <object/template.iff> [distance]\n";
 	help << "/wb last [distance] - Spawn the last template again\n";
@@ -2113,10 +2749,17 @@ void WorldBuilderManager::getObjectMenu(CreatureObject* player, Vector<String>& 
 
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState state = session->objects.get(i);
-		captureObjectState(state, player);
+		captureObjectState(session, state, player);
 		StringBuffer label;
 		label << (state.localID == session->selectedLocalID ? "* " : "  ")
-			  << "#" << state.localID << " " << getTemplateShortName(state.objectTemplate)
+			  << "#" << state.localID << " ";
+
+		if (state.objectKind == WB_OBJECT_STRUCTURE)
+			label << "[STRUCTURE] ";
+		else if (state.objectKind == WB_OBJECT_INTERIOR)
+			label << "[INTERIOR " << (state.roomName.isEmpty() ? String("Cell ") + String::valueOf(state.cellNumber) : state.roomName) << " -> #" << state.structureLocalID << "] ";
+
+		label << getTemplateShortName(state.objectTemplate)
 			  << " | " << state.x << ", " << state.z << ", " << state.y;
 		if (isInGroup(session, state.localID))
 			label << " [G]";
