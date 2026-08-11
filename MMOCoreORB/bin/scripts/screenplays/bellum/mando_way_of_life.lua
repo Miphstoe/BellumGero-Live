@@ -3988,6 +3988,9 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	end
 
 	if (not started) then
+		if (theater.taskFinish ~= nil) then
+			theater:taskFinish(pPlayer)
+		end
 		self:logDiagPlayer(pPlayer, string.format(
 			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",
 			theaterName
@@ -4042,7 +4045,7 @@ function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
 	if (ready == count and count < self.DAILY_BOUNTY_MAX_MISSIONS) then
 		self:logDiagPlayer(pPlayer, string.format(
 			"resyncDailyBountyWaypoint: tier %s ready - restarting the auto-chain.", tostring(count)))
-		return self:tryAcceptDailyBountyMission(pPlayer, "auto")
+		return self:tryAcceptDailyBountyMission(pPlayer, "holo")
 	end
 
 	-- Active tier equals the accepted count.

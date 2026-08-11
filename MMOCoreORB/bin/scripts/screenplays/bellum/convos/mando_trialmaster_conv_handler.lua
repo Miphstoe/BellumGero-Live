@@ -60,6 +60,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 				"Re-sync my daily hunt waypoint.",
 				"mando_daily_waypoint_reset"
 			)
+			added = true
 		end
 	end
 
@@ -125,9 +126,17 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 	end
 
 	if (not ok) then
-		MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
+		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
+		else
+			printf("[MandoTrialmasterConvoHandler] getInitialScreen ERROR (blank-convo guard tripped): %s\n", tostring(result))
+		end
 	else
-		MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen returned a nil screen (blank-convo guard tripped).")
+		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen returned a nil screen (blank-convo guard tripped).")
+		else
+			printf("[MandoTrialmasterConvoHandler] getInitialScreen returned a nil screen (blank-convo guard tripped).\n")
+		end
 	end
 
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
