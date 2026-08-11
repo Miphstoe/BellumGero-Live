@@ -907,3 +907,9 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Restricted the Recruiter error fallback to a valid exit option so it cannot route into a missing conversation screen. Failed daily theater starts now remove only their partially created anchor and active areas, preserving unrelated quest waypoints.
 - **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
 - **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Complete waypoint-safe daily hunt recovery
+
+- **Summary:** Reused task-scoped theater cleanup for stale starts and rebuild failures without bulk-removing quest waypoints. Recruiter re-sync is now active-tier only, fallback logging uses the DirectorManager-registered error function, and nil-player calls retain their prior behavior.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.

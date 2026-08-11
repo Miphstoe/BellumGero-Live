@@ -50,12 +50,11 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		)
 		added = true
 
-		-- Daily hunt recovery: offered whenever today's hunt has begun but is
-		-- not fully closed out, so a lost waypoint or dead auto-chain can be
-		-- repaired without staff intervention.
+		-- Daily hunt recovery: offered only while a tier is active, so the
+		-- option always repairs a waypoint instead of advancing the chain.
 		local dailyCount = MandoWayOfLife:getDailyBountyCount(pPlayer)
 		local dailyReady = MandoWayOfLife:getDailyBountyReadyTier(pPlayer)
-		if (dailyCount > 0 and not (dailyCount >= MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and dailyReady >= MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS)) then
+		if (dailyCount > 0 and dailyReady ~= dailyCount) then
 			cloned:addOption(
 				"Re-sync my daily hunt waypoint.",
 				"mando_daily_waypoint_reset"
@@ -119,6 +118,7 @@ end
 -- pcall, log the failure, and fall back to the template intro screen so the
 -- Recruiter can never go blank again.
 function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
+	if (pPlayer == nil) then return nil end
 	local ok, result = pcall(self.getInitialScreenUnsafe, self, pPlayer, pNpc, pConvTemplate)
 
 	if (ok and result ~= nil) then
@@ -129,13 +129,13 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
 			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
 		else
-			printf("[MandoTrialmasterConvoHandler] getInitialScreen ERROR (blank-convo guard tripped): %s\n", tostring(result))
+			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result))
 		end
 	else
 		if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
 			MandoWayOfLife:logDiagPlayer(pPlayer, "getInitialScreen returned a nil screen (blank-convo guard tripped).")
 		else
-			printf("[MandoTrialmasterConvoHandler] getInitialScreen returned a nil screen (blank-convo guard tripped).\n")
+			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen returned a nil screen (blank-convo guard tripped).")
 		end
 	end
 

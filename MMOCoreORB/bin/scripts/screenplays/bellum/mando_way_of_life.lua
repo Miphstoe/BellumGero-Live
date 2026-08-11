@@ -3934,6 +3934,42 @@ function MandoWayOfLife:showDailyBountyStatus(pPlayer)
 	CreatureObject(pPlayer):sendSystemMessage(statusMsg)
 end
 
+function MandoWayOfLife:cleanupDailyBountyTheater(pPlayer, theater)
+	if (pPlayer == nil or theater == nil or theater.taskName == nil) then return end
+
+	if (theater.despawnTheaterObjects ~= nil) then
+		theater:despawnTheaterObjects(pPlayer)
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local objectKeys = { "activeAreaId", "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
+	for i = 1, #objectKeys, 1 do
+		local dataKey = playerID .. theater.taskName .. objectKeys[i]
+		local pObject = getSceneObject(readData(dataKey))
+		if (pObject ~= nil) then
+			SceneObject(pObject):destroyObjectFromWorld()
+		end
+		deleteData(dataKey)
+	end
+
+	if (theater.theater ~= nil) then
+		for i = 1, #theater.theater, 1 do
+			local dataKey = playerID .. theater.taskName .. "theaterObject" .. i
+			local pObject = getSceneObject(readData(dataKey))
+			if (pObject ~= nil) then
+				SceneObject(pObject):destroyObjectFromWorld()
+			end
+			deleteData(dataKey)
+		end
+	end
+
+	if (theater.setTaskFinished ~= nil) then
+		theater:setTaskFinished(pPlayer)
+	end
+	dropObserver(LOGGEDIN, theater.taskName, "onLoggedIn", pPlayer)
+	dropObserver(LOGGEDOUT, theater.taskName, "onLoggedOut", pPlayer)
+end
+
 -- Returns ok, playerMessage
 function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	if (pPlayer == nil) then return false, "No player." end
@@ -3975,29 +4011,20 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	-- Start the theater. Task:start() returns false when this tier's persisted
 	-- ":taskStarted:" flag is still set from a previous day — daily theaters are
 	-- never explicitly finished on normal completion, so the flag survives in
-	-- server data. Self-heal: finish the stale task (cleans old anchor, areas,
-	-- and quest waypoint), then retry once.
+	-- server data. Self-heal the stale task without touching unrelated quest
+	-- waypoints, then retry once.
 	local started = theater:start(pPlayer)
 	if (not started and theater.hasTaskStarted ~= nil and theater:hasTaskStarted(pPlayer)) then
 		self:logDiagPlayer(pPlayer, string.format(
 			"tryAcceptDailyBountyMission: stale task state for %s - finishing and retrying.",
 			theaterName
 		))
-		theater:finish(pPlayer)
+		self:cleanupDailyBountyTheater(pPlayer, theater)
 		started = theater:start(pPlayer)
 	end
 
 	if (not started) then
-		local playerID = SceneObject(pPlayer):getObjectID()
-		local partialObjectKeys = { "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
-		for i = 1, #partialObjectKeys, 1 do
-			local dataKey = playerID .. theater.taskName .. partialObjectKeys[i]
-			local pObject = getSceneObject(readData(dataKey))
-			if (pObject ~= nil) then
-				SceneObject(pObject):destroyObjectFromWorld()
-			end
-			deleteData(dataKey)
-		end
+		self:cleanupDailyBountyTheater(pPlayer, theater)
 		self:logDiagPlayer(pPlayer, string.format(
 			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",
 			theaterName
@@ -4071,7 +4098,6 @@ function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
 		if (pGhost == nil) then
 			return false, "I cannot reach your datapad."
 		end
-		PlayerObject(pGhost):removeWaypointBySpecialType(WAYPOINTQUESTTASK)
 		local wpId = PlayerObject(pGhost):addWaypoint(
 			SceneObject(pTheater):getZoneName(),
 			theater.waypointDescription or "Daily Bounty Camp",
@@ -4093,13 +4119,14 @@ function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
 	-- consumed, etc.): rebuild the same tier without touching the daily count.
 	self:logDiagPlayer(pPlayer, string.format(
 		"resyncDailyBountyWaypoint: theater object missing for %s - rebuilding camp.", theaterName))
-	theater:finish(pPlayer)
+	self:cleanupDailyBountyTheater(pPlayer, theater)
 	if (theater:start(pPlayer)) then
 		return true, string.format(
 			"Your Tier %s camp went dark, so the guild traced a new one. Check your datapad. This is the Way.",
 			tostring(tier))
 	end
 
+	self:cleanupDailyBountyTheater(pPlayer, theater)
 	self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: rebuild of " .. theaterName .. " did not start.")
 	return false, "The guild cannot fix a trace from this position. Move to open terrain and ask me again."
 end
