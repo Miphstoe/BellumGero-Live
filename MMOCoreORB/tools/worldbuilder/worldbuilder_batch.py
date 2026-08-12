@@ -22,6 +22,7 @@ import datetime as _dt
 import hashlib
 import json
 import os
+import re
 import shutil
 import struct
 import tempfile
@@ -272,6 +273,331 @@ def _config_list_paths(config: dict, config_path: Path, key: str) -> List[Path]:
         if resolved is not None:
             result.append(resolved)
     return result
+
+
+@dataclass
+class EffectiveTreStack:
+    config_lua: Path
+    tre_dir: Path
+    tre_names: List[str]
+    tre_paths: List[Path]
+
+
+class EffectiveTreResolver:
+    """Resolve assets in the same lower-TRE priority order used by Core3.
+
+    The generated bg_worldbuilder.tre is intentionally excluded. Canonical
+    server TREs are searched first, followed by any explicitly configured
+    supplemental TREs, with extracted reference roots used only as a final
+    development fallback.
+    """
+
+    def __init__(
+        self,
+        tre_paths: Sequence[Path],
+        asset_roots: Sequence[Path] = (),
+        asset_tres: Sequence[Path] = (),
+        preopened: Optional[Dict[Path, wb.TreArchive]] = None,
+    ) -> None:
+        self.tre_paths = [Path(path).resolve() for path in tre_paths]
+        self.asset_roots = [Path(path).resolve() for path in asset_roots]
+        self.asset_tres = []
+        canonical = set(self.tre_paths)
+        for path in asset_tres:
+            resolved = Path(path).resolve()
+            if resolved not in canonical and resolved not in self.asset_tres:
+                self.asset_tres.append(resolved)
+
+        self._tre_cache: Dict[Path, wb.TreArchive] = {}
+        for path, archive in (preopened or {}).items():
+            self._tre_cache[Path(path).resolve()] = archive
+
+    def _open(self, path: Path) -> wb.TreArchive:
+        resolved = path.resolve()
+        if resolved not in self._tre_cache:
+            self._tre_cache[resolved] = wb.open_tre(resolved)
+        return self._tre_cache[resolved]
+
+    def canonical_archives(self) -> Iterable[wb.TreArchive]:
+        for path in self.tre_paths:
+            yield self._open(path)
+
+    def read(self, archive_path: str) -> bytes:
+        key = wb.normalize_archive_path(archive_path)
+        searched: List[str] = []
+
+        for path in self.tre_paths:
+            searched.append(str(path))
+            archive = self._open(path)
+            record = archive.record_by_name_optional(key)
+            if record is not None:
+                if wb.is_tre_tombstone(record):
+                    raise wb.WorldBuilderError(
+                        f"Required structural asset {archive_path!r} is masked/deleted "
+                        f"by higher-priority TRE {path}"
+                    )
+                return archive.extract_record(record)
+
+        for path in self.asset_tres:
+            searched.append(str(path))
+            archive = self._open(path)
+            record = archive.record_by_name_optional(key)
+            if record is not None:
+                if wb.is_tre_tombstone(record):
+                    raise wb.WorldBuilderError(
+                        f"Required structural asset {archive_path!r} is masked/deleted "
+                        f"by supplemental TRE {path}"
+                    )
+                return archive.extract_record(record)
+
+        for root in self.asset_roots:
+            searched.append(str(root))
+            candidate = root / Path(key)
+            if candidate.is_file():
+                return candidate.read_bytes()
+
+        raise wb.WorldBuilderError(
+            f"Required structural asset {archive_path!r} was not found. Searched: "
+            + ", ".join(searched)
+        )
+
+
+def _server_config_lua_path(config: dict, config_path: Path) -> Path:
+    explicit = _resolve_path(config_path, config.get("server_config_lua"))
+    if explicit is not None:
+        if not explicit.is_file():
+            raise wb.WorldBuilderError(f"Configured server_config_lua does not exist: {explicit}")
+        return explicit
+
+    candidates: List[Path] = []
+
+    for parent in (config_path.parent, *config_path.parents):
+        if parent.name == "MMOCoreORB":
+            candidates.append(parent / "bin/conf/config.lua")
+            break
+
+    server_lua_value = config.get("server_template_lua_target")
+    if server_lua_value:
+        server_lua = _resolve_path(config_path, str(server_lua_value))
+        if server_lua is not None:
+            for parent in server_lua.parents:
+                if parent.name == "MMOCoreORB":
+                    candidate = parent / "bin/conf/config.lua"
+                    if candidate not in candidates:
+                        candidates.append(candidate)
+                    break
+
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate.resolve()
+
+    raise wb.WorldBuilderError(
+        "Could not locate MMOCoreORB/bin/conf/config.lua for canonical TRE ordering. "
+        "Keep worldbuilder_config.json in MMOCoreORB/tools/worldbuilder or set "
+        "the optional 'server_config_lua' path explicitly."
+    )
+
+
+def _strip_lua_line_comments(text: str) -> str:
+    """Remove -- comments without treating dashes inside quoted strings as comments."""
+    output: List[str] = []
+    for line in text.splitlines():
+        quote: Optional[str] = None
+        escaped = False
+        kept: List[str] = []
+        index = 0
+        while index < len(line):
+            char = line[index]
+            if quote is not None:
+                kept.append(char)
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == quote:
+                    quote = None
+                index += 1
+                continue
+
+            if char in ('"', "'"):
+                quote = char
+                kept.append(char)
+                index += 1
+                continue
+
+            if char == "-" and index + 1 < len(line) and line[index + 1] == "-":
+                break
+
+            kept.append(char)
+            index += 1
+
+        output.append("".join(kept))
+    return "\n".join(output)
+
+
+def _read_server_tre_order(config_lua: Path) -> List[str]:
+    try:
+        text = config_lua.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise wb.WorldBuilderError(f"Could not read server TRE config {config_lua}: {exc}") from exc
+
+    clean = _strip_lua_line_comments(text)
+    match = re.search(r"\bTreFiles\s*=\s*\{", clean)
+    if match is None:
+        raise wb.WorldBuilderError(f"Could not find TreFiles table in {config_lua}")
+
+    start = match.end()
+    depth = 1
+    quote: Optional[str] = None
+    escaped = False
+    index = start
+    while index < len(clean):
+        char = clean[index]
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+
+    if depth != 0:
+        raise wb.WorldBuilderError(f"TreFiles table in {config_lua} is not balanced")
+
+    block = clean[start:index]
+    names = re.findall(r"[\"']([^\"']+\.tre)[\"']", block, flags=re.IGNORECASE)
+    if not names:
+        raise wb.WorldBuilderError(f"TreFiles table in {config_lua} contains no TRE filenames")
+
+    seen: Set[str] = set()
+    duplicates: List[str] = []
+    for name in names:
+        key = name.lower()
+        if key in seen:
+            duplicates.append(name)
+        seen.add(key)
+    if duplicates:
+        raise wb.WorldBuilderError(
+            f"TreFiles table in {config_lua} contains duplicate TRE entries: "
+            + ", ".join(duplicates)
+        )
+
+    return names
+
+
+def _effective_tre_stack(
+    config: dict,
+    config_path: Path,
+    source_tre: Path,
+    output_name: str,
+) -> EffectiveTreStack:
+    config_lua = _server_config_lua_path(config, config_path)
+    tre_names = _read_server_tre_order(config_lua)
+    lower_names = [name.lower() for name in tre_names]
+
+    output_key = output_name.lower()
+    source_key = source_tre.name.lower()
+    if output_key not in lower_names:
+        raise wb.WorldBuilderError(
+            f"{config_lua} does not list {output_name}. Add the World Builder overlay to TreFiles "
+            "before publishing production content."
+        )
+    if source_key not in lower_names:
+        raise wb.WorldBuilderError(
+            f"{config_lua} does not list the configured base TRE {source_tre.name}."
+        )
+
+    output_index = lower_names.index(output_key)
+    source_index = lower_names.index(source_key)
+    if source_index <= output_index:
+        raise wb.WorldBuilderError(
+            f"{source_tre.name} must be lower priority than {output_name} in {config_lua}."
+        )
+
+    effective_names = tre_names[output_index + 1 :]
+    tre_dir = _config_required_path(config, config_path, "server_tre_dir")
+    paths: List[Path] = []
+    missing: List[Path] = []
+
+    source_resolved = source_tre.resolve()
+    for name in effective_names:
+        if name.lower() == source_key:
+            path = source_resolved
+        else:
+            path = (tre_dir / name).resolve()
+        paths.append(path)
+        if not path.is_file():
+            missing.append(path)
+
+    if missing:
+        preview = "\n".join(f"  {path}" for path in missing[:12])
+        extra = "" if len(missing) <= 12 else f"\n  ... and {len(missing) - 12} more"
+        raise wb.WorldBuilderError(
+            "The canonical server TRE stack is incomplete. World Builder will not guess at a "
+            "different source order. Missing:\n" + preview + extra
+        )
+
+    return EffectiveTreStack(
+        config_lua=config_lua,
+        tre_dir=tre_dir,
+        tre_names=effective_names,
+        tre_paths=paths,
+    )
+
+
+def _make_effective_resolver(
+    config: dict,
+    config_path: Path,
+    source_tre: Path,
+    output_name: str,
+    source_archive: Optional[wb.TreArchive] = None,
+) -> Tuple[EffectiveTreStack, EffectiveTreResolver]:
+    stack = _effective_tre_stack(config, config_path, source_tre, output_name)
+    preopened: Dict[Path, wb.TreArchive] = {}
+    if source_archive is not None:
+        preopened[source_tre.resolve()] = source_archive
+    resolver = EffectiveTreResolver(
+        stack.tre_paths,
+        asset_roots=_config_list_paths(config, config_path, "asset_roots"),
+        asset_tres=_config_list_paths(config, config_path, "asset_tres"),
+        preopened=preopened,
+    )
+    return stack, resolver
+
+
+def _infer_snapshot_types_from_effective_stack(
+    resolver: EffectiveTreResolver,
+) -> Dict[str, Tuple[float, int]]:
+    inferred: Dict[str, Tuple[float, int]] = {}
+    seen_snapshot_paths: Set[str] = set()
+
+    for archive in resolver.canonical_archives():
+        for record in archive.records:
+            path = wb.normalize_archive_path(record.name)
+            if not (path.startswith("snapshot/") and path.endswith(".ws")):
+                continue
+            if path in seen_snapshot_paths:
+                continue
+            seen_snapshot_paths.add(path)
+            try:
+                info = wb.parse_snapshot(archive.extract_record(record))
+            except wb.WorldBuilderError:
+                continue
+            for node in info.nodes:
+                if 0 <= node.name_id < len(info.names):
+                    template = info.names[node.name_id]
+                    inferred.setdefault(template, (node.game_object_type, node.unknown2))
+
+    return inferred
 
 
 def _canonical_publish_id(value: str) -> str:
@@ -914,10 +1240,18 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     source_archive = wb.open_tre(source_tre)
     validate_clean_structural_base(source_archive)
 
-    asset_roots = _config_list_paths(config, config_path, "asset_roots")
-    asset_tres = _config_list_paths(config, config_path, "asset_tres")
-    resolver = wb.AssetResolver(source_archive, asset_roots, asset_tres)
-    inferred_types = wb.infer_snapshot_types(source_archive)
+    source_stack, resolver = _make_effective_resolver(
+        config,
+        config_path,
+        source_tre,
+        output_name,
+        source_archive=source_archive,
+    )
+    inferred_types = (
+        _infer_snapshot_types_from_effective_stack(resolver)
+        if approved
+        else {}
+    )
 
     projects_by_planet: Dict[str, List[ApprovedProject]] = {}
     for entry in approved:
@@ -929,11 +1263,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
 
     for planet in sorted(projects_by_planet):
         snapshot_path = f"snapshot/{planet}.ws"
-        snapshot_record = source_archive.record_by_name_optional(snapshot_path)
-        if snapshot_record is not None:
-            snapshot_raw = source_archive.extract_record(snapshot_record)
-        else:
-            snapshot_raw = resolver.read(snapshot_path)
+        snapshot_raw = resolver.read(snapshot_path)
 
         original_snapshots[snapshot_path] = snapshot_raw
         allowed_reserved: Set[int] = set()
@@ -1079,6 +1409,11 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         "base_tre_sha256": _sha256_file(source_tre),
         "source_role": "normal-bellum-gero-custom-tre",
         "output_role": "dedicated-worldbuilder-overlay",
+        "effective_source_stack": {
+            "server_config_lua": str(source_stack.config_lua),
+            "tre_dir": str(source_stack.tre_dir),
+            "tre_files": source_stack.tre_names,
+        },
         "publish_set": str(publish_set_path),
         "active_oid_registry": str(oid_registry_path),
         "active_deployed_state": str(deployed_state_path),
@@ -1116,6 +1451,8 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         "validation": {
             "source_tre_no_worldbuilder_namespace": True,
             "source_tre_reserved_oid_band_unused": True,
+            "canonical_server_tre_order_used": True,
+            "generated_overlay_excluded_from_source_stack": True,
             "tre_v5_checksum_ordering": True,
             "tre_v5_stored_payload_md5": True,
             "overlay_contains_only_generated_paths": True,
@@ -1181,10 +1518,13 @@ def _dependency_comparison(config_path: Path, config: dict, expected: dict) -> d
 
     source_archive = wb.open_tre(source_tre)
     validate_clean_structural_base(source_archive)
-    resolver = wb.AssetResolver(
-        source_archive,
-        _config_list_paths(config, config_path, "asset_roots"),
-        _config_list_paths(config, config_path, "asset_tres"),
+    output_name = str(config.get("output_tre_name") or CANDIDATE_TRE_NAME_FALLBACK)
+    _, resolver = _make_effective_resolver(
+        config,
+        config_path,
+        source_tre,
+        output_name,
+        source_archive=source_archive,
     )
 
     changed: List[dict] = []

@@ -3,6 +3,7 @@
   "output_tre_name": "bg_worldbuilder.tre",
   "client_tre_dir": "/absolute/path/to/SWG/client",
   "server_tre_dir": "/absolute/path/to/server/trefiles",
+  "server_config_lua": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/conf/config.lua",
   "server_template_lua_target": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/scripts/object/building/worldbuilder/generated_templates.lua",
   "publish_set": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/publish/worldbuilder_publish_set.json",
   "oid_registry": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/publish/worldbuilder_oid_registry.json",

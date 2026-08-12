@@ -394,6 +394,21 @@ def cmd_status(args: argparse.Namespace) -> int:
         print(f"  Client source: {'MISSING' if not client_source.exists() else client_source}")
 
     print()
+    print("CANONICAL SOURCE STACK")
+    try:
+        stack = batch._effective_tre_stack(config, config_path, source_tre, output_name)
+        print(f"  Config:     {stack.config_lua}")
+        print(f"  Lower TREs: {len(stack.tre_names)}")
+        if stack.tre_names:
+            preview = " -> ".join(stack.tre_names[:3])
+            if len(stack.tre_names) > 3:
+                preview += " -> ... -> " + stack.tre_names[-1]
+            print(f"  Priority:   {preview}")
+        print("  Status:     READY")
+    except Exception as exc:
+        print(f"  Status:     ERROR - {exc}")
+
+    print()
     print("WORLD BUILDER OVERLAY")
     expected = state.get("tre_sha256")
     for label, path in (("Server", server_overlay), ("Client", client_overlay)):

@@ -167,6 +167,16 @@ class TreRecord:
     name: str = ""
 
 
+def is_tre_tombstone(rec: TreRecord) -> bool:
+    """Return True for the zero-length deletion/masking records used by patch TREs."""
+    return (
+        rec.uncompressed_size == 0
+        and rec.data_offset == 0
+        and rec.compression == 0
+        and rec.compressed_size == 0
+    )
+
+
 @dataclasses.dataclass
 class TreArchive:
     path: Path
@@ -193,6 +203,11 @@ class TreArchive:
         return None
 
     def extract_record(self, rec: TreRecord) -> bytes:
+        if is_tre_tombstone(rec):
+            raise WorldBuilderError(
+                f"TRE record {rec.name!r} is a deletion/masking record"
+            )
+
         start = rec.data_offset
         end = start + rec.compressed_size
         if start < TRE_HEADER_SIZE or end > len(self.raw) or end < start:
@@ -671,6 +686,8 @@ def open_tre(path: Path) -> TreArchive:
         records.append(rec)
 
     for rec in records:
+        if is_tre_tombstone(rec):
+            continue
         if rec.data_offset < TRE_HEADER_SIZE or rec.data_offset + rec.compressed_size > metadata_offset:
             raise WorldBuilderError(f"Invalid data range for TRE record {rec.name}")
 

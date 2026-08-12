@@ -98,13 +98,31 @@ Structural OIDs remain in the dedicated World Builder range:
 
 Logical project objects retain their existing OIDs across rebuilds. Removed logical keys are retained as tombstones and are never reassigned to another key.
 
-## Dependencies on bg_custom1
+## Canonical lower-TRE source stack
 
-A new `bg_custom1.tre` does not automatically require a World Builder rebuild.
+World Builder resolves source snapshots and structural assets from the same lower-TRE priority order configured for Core3. It reads `MMOCoreORB/bin/conf/config.lua`, finds `bg_worldbuilder.tre`, skips that generated overlay, and then searches every lower-priority TRE in order.
 
-The deployed state tracks only source records that the World Builder overlay actually depends on, including affected planet snapshots and structural source files used to generate project-specific assets.
+With the normal Bellum Gero order this begins with:
 
-`wb status` reports `CURRENT` when those records are unchanged even if unrelated content inside `bg_custom1.tre` has changed.
+1. `bg_custom1.tre`
+2. `default_patch.tre`
+3. the remaining patch/data TRE stack
+
+This means a World Builder project can be published on a planet even when `snapshot/<planet>.ws` is not present in `bg_custom1.tre`. The publisher takes the effective lower snapshot from whichever configured TRE owns it, preserves every existing node, adds all approved World Builder projects for that planet, and writes the resulting snapshot into `bg_worldbuilder.tre`.
+
+The generated `bg_worldbuilder.tre` is never used as a bake source. Each bake starts again from the current normal lower-TRE stack and reapplies the complete approved World Builder desired state.
+
+The actual server TRE files are authoritative for publishing. Explicit `asset_tres` are searched only after the canonical server stack, and extracted `asset_roots` such as `WorldBuilderStructureRefs` are development fallbacks searched last.
+
+The publisher auto-detects `MMOCoreORB/bin/conf/config.lua` when the local config remains in the standard `MMOCoreORB/tools/worldbuilder` folder. The optional `server_config_lua` setting exists only for non-standard layouts. No `config-local.lua` is required for World Builder.
+
+## Dependency freshness
+
+A new `bg_custom1.tre` or lower stock/custom TRE does not automatically require a World Builder rebuild.
+
+The deployed state tracks only source records that the World Builder overlay actually depends on, including affected planet snapshots and structural source files used to generate project-specific assets. Resolution uses the same canonical lower-TRE stack during both bake and freshness checks.
+
+`wb status` reports `CURRENT` when those resolved records are unchanged even if unrelated content inside the TRE stack has changed.
 
 If a tracked dependency changes, `wb status` reports `STALE` and instructs you to run:
 
@@ -112,7 +130,7 @@ If a tracked dependency changes, `wb status` reports `STALE` and instructs you t
 wb bake
 ```
 
-`wb deploy` also rechecks those dependencies and refuses to deploy a candidate that was built against stale source records.
+`wb deploy` also resolves dependencies from the current canonical lower-TRE stack and refuses to deploy a candidate that was built against stale source records.
 
 ## Other developer workflow
 
