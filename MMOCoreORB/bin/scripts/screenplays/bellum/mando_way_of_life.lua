@@ -839,11 +839,17 @@ function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	local idx = self:readInt(pPlayer, "foundling.planetIndex")
 	if (idx < 1 or idx > #self.planetData) then return end
 
-	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
-	if (oid ~= 0 and getSceneObject(oid) ~= nil) then return end
-
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
 	local done = self:readInt(pPlayer, "foundling.planetDone")
+	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
+	if (oid ~= 0 and getSceneObject(oid) ~= nil) then
+		if (counting == 1 and done == 1) then
+			self:grantReturnToInformantWaypoint(pPlayer)
+		elseif (counting ~= 1) then
+			self:grantInformantWaypoint(pPlayer, self.planetData[idx])
+		end
+		return
+	end
 
 	-- No live NPC - re-spawn one for this player.
 	-- Do not grant a "find informant" waypoint while mid-quota (player should be doing missions).
