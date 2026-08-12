@@ -8,8 +8,8 @@ remains the source of truth for building snapshot nodes, project-specific shared
 IFFs, ILFs, validation, and TRE-v5 repacking.
 
 The batch workflow is desired-state based:
-  clean Bellum Gero base TRE + approved publish set + persistent OID registry
-      -> candidate TRE + candidate generated_templates.lua + manifests
+  normal bg_custom1.tre + approved publish set + persistent OID registry
+      -> minimal bg_worldbuilder.tre overlay + generated_templates.lua + manifests
 
 The active OID registry and deployed-state files are changed only by deploy-set,
 never by bake-set. This keeps candidate generation non-destructive.
@@ -23,8 +23,10 @@ import hashlib
 import json
 import os
 import shutil
+import struct
 import tempfile
 import sys
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -36,12 +38,12 @@ else:
     import bellum_worldbuilder as wb
 
 
-BATCH_SCHEMA_VERSION = 1
+BATCH_SCHEMA_VERSION = 2
 PUBLISH_SET_SCHEMA_VERSION = 1
 OID_REGISTRY_SCHEMA_VERSION = 1
 DEPLOYED_STATE_SCHEMA_VERSION = 1
 
-CANDIDATE_TRE_NAME_FALLBACK = "bg_custom1.tre"
+CANDIDATE_TRE_NAME_FALLBACK = "bg_worldbuilder.tre"
 CANDIDATE_LUA_NAME = "generated_templates.lua"
 CANDIDATE_MANIFEST_NAME = "worldbuilder_publish.json"
 CANDIDATE_ID_MAP_NAME = "worldbuilder_ids.json"
@@ -445,47 +447,175 @@ def validate_clean_structural_base(archive: wb.TreArchive) -> None:
         )
 
 
-def validate_base_preservation(
-    base: wb.TreArchive,
+
+def write_overlay_tre_v5(files: Dict[str, bytes], output_path: Path, names_compression: int = 2) -> None:
+    """Write a minimal TRE-v5 containing exactly the supplied archive files."""
+    normalized: Dict[str, bytes] = {}
+    for raw_name, data in files.items():
+        name = wb.normalize_archive_path(raw_name)
+        prior = normalized.get(name)
+        if prior is not None and prior != data:
+            raise wb.WorldBuilderError(f"Conflicting overlay data supplied for {name}")
+        normalized[name] = data
+
+    ordered_names = sorted(normalized, key=lambda name: (wb.soe_tre_crc(name), name))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        dir=str(output_path.parent),
+        prefix=output_path.name + ".tmp.",
+    ) as temp:
+        temp_path = Path(temp.name)
+        temp.write(b"\0" * wb.TRE_HEADER_SIZE)
+        records: List[wb.TreRecord] = []
+        payload_md5: List[bytes] = []
+
+        for name in ordered_names:
+            raw = normalized[name]
+            compressed = zlib.compress(raw, 9)
+            data_offset = temp.tell()
+            temp.write(compressed)
+            payload_md5.append(hashlib.md5(compressed).digest())
+            records.append(
+                wb.TreRecord(
+                    hash_or_crc=wb.soe_tre_crc(name),
+                    uncompressed_size=len(raw),
+                    data_offset=data_offset,
+                    compression=2,
+                    compressed_size=len(compressed),
+                    name_offset=0,
+                    name=name,
+                )
+            )
+
+        names_blob = bytearray()
+        for rec in records:
+            rec.name_offset = len(names_blob)
+            names_blob += rec.name.encode("utf-8") + b"\0"
+
+        metadata_offset = temp.tell()
+        info = b"".join(
+            struct.pack(
+                "<6I",
+                rec.hash_or_crc,
+                rec.uncompressed_size,
+                rec.data_offset,
+                rec.compression,
+                rec.compressed_size,
+                rec.name_offset,
+            )
+            for rec in records
+        )
+        info_c = zlib.compress(info, 9)
+
+        if names_compression == 0:
+            names_c = bytes(names_blob)
+        elif names_compression == 2:
+            names_c = zlib.compress(bytes(names_blob), 9)
+        else:
+            raise wb.WorldBuilderError(
+                f"Unsupported TRE names compression for overlay output: {names_compression}"
+            )
+
+        temp.write(info_c)
+        temp.write(names_c)
+        for digest in payload_md5:
+            temp.write(digest)
+
+        header = wb.MAGIC + struct.pack(
+            "<7I",
+            len(records),
+            metadata_offset,
+            2,
+            len(info_c),
+            names_compression,
+            len(names_c),
+            len(names_blob),
+        )
+        temp.seek(0)
+        temp.write(header)
+
+    try:
+        reopened = wb.open_tre(temp_path)
+        wb.validate_tre_v5_metadata(reopened, require_md5=True)
+        actual_names = sorted(wb.normalize_archive_path(rec.name) for rec in reopened.records)
+        if actual_names != sorted(normalized):
+            raise wb.WorldBuilderError("Overlay TRE path set changed during write")
+        for name, expected in normalized.items():
+            if reopened.extract(name) != expected:
+                raise wb.WorldBuilderError(f"Overlay TRE post-build validation failed for {name}")
+        os.replace(temp_path, output_path)
+    except Exception:
+        temp_path.unlink(missing_ok=True)
+        raise
+
+
+def validate_overlay_snapshot_preservation(
     finished: wb.TreArchive,
-    replacements: Dict[str, bytes],
     original_snapshots: Dict[str, bytes],
 ) -> None:
-    replacement_names = {wb.normalize_archive_path(name) for name in replacements}
-
-    # Every base record that the build did not intentionally replace must retain
-    # its exact stored payload bytes. This protects unrelated Bellum Gero TRE
-    # content, including manually authored custom assets.
-    for rec in base.records:
-        name = wb.normalize_archive_path(rec.name)
-        if name in replacement_names:
-            continue
-        final_rec = finished.record_by_name_optional(name)
-        if final_rec is None:
-            raise wb.WorldBuilderError(f"Candidate TRE lost untouched base record {name}")
-        old_payload = base.raw[rec.data_offset:rec.data_offset + rec.compressed_size]
-        new_payload = finished.raw[final_rec.data_offset:final_rec.data_offset + final_rec.compressed_size]
-        if old_payload != new_payload:
-            raise wb.WorldBuilderError(f"Candidate TRE changed untouched base payload {name}")
-
-    # Affected snapshots are intentionally replaced, but all pre-existing nodes
-    # must survive with identical metadata/hierarchy. Only new WB roots/nodes may
-    # be added.
+    """Ensure patched overlay snapshots preserve every pre-existing source node."""
     for snapshot_path, original_raw in original_snapshots.items():
         original_tree = wb.parse_snapshot_tree(original_raw)
         final_tree = wb.parse_snapshot_tree(finished.extract(snapshot_path))
         final_by_id = {node.info.object_id: node for node in final_tree.flatten()}
+
         for node in original_tree.flatten():
             final_node = final_by_id.get(node.info.object_id)
             if final_node is None:
                 raise wb.WorldBuilderError(
-                    f"Candidate {snapshot_path} lost pre-existing snapshot OID {node.info.object_id}"
+                    f"Overlay {snapshot_path} lost pre-existing snapshot OID {node.info.object_id}"
                 )
             if _snapshot_node_signature(final_node) != _snapshot_node_signature(node):
                 raise wb.WorldBuilderError(
-                    f"Candidate {snapshot_path} modified pre-existing snapshot OID {node.info.object_id}"
+                    f"Overlay {snapshot_path} modified pre-existing snapshot OID {node.info.object_id}"
                 )
 
+
+def _collect_dependency_records(
+    resolver: wb.AssetResolver,
+    original_snapshots: Dict[str, bytes],
+    results: Sequence[BatchProjectResult],
+) -> dict:
+    records: Dict[str, dict] = {}
+
+    def add(path: str, data: bytes, kind: str) -> None:
+        normalized = wb.normalize_archive_path(path)
+        digest = _sha256_bytes(data)
+        existing = records.get(normalized)
+        if existing is None:
+            records[normalized] = {
+                "sha256": digest,
+                "kinds": [kind],
+            }
+            return
+        if existing["sha256"] != digest:
+            raise wb.WorldBuilderError(
+                f"Dependency {normalized} resolved to conflicting data during one batch build"
+            )
+        if kind not in existing["kinds"]:
+            existing["kinds"].append(kind)
+            existing["kinds"].sort()
+
+    for path, data in sorted(original_snapshots.items()):
+        add(path, data, "snapshot")
+
+    for result in results:
+        for structure in result.bake_result.structures:
+            dependencies = (
+                ("shared_building_iff", structure.source_shared_template),
+                ("portal_layout", structure.source_portal_layout),
+                ("interior_layout", structure.source_interior_layout),
+            )
+            for kind, path in dependencies:
+                if not path or path == "<empty>":
+                    continue
+                add(path, resolver.read(path), kind)
+
+    return {
+        "records": {path: records[path] for path in sorted(records)},
+    }
 
 def validate_global_reserved_oids(
     archive: wb.TreArchive,
@@ -743,7 +873,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     config_path = config_path.resolve()
     config = wb.load_config(config_path)
 
-    base_tre = _config_required_path(config, config_path, "base_tre")
+    source_tre = _config_required_path(config, config_path, "base_tre")
     publish_set_path = _config_required_path(config, config_path, "publish_set")
     oid_registry_path = _config_required_path(config, config_path, "oid_registry")
     deployed_state_path = _config_required_path(config, config_path, "deployed_state")
@@ -751,6 +881,10 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     output_name = str(config.get("output_tre_name") or CANDIDATE_TRE_NAME_FALLBACK)
     if Path(output_name).name != output_name:
         raise wb.WorldBuilderError("output_tre_name must be a filename, not a path")
+    if output_name.lower() == source_tre.name.lower():
+        raise wb.WorldBuilderError(
+            "Dedicated World Builder overlay output must use a different filename than base_tre"
+        )
 
     candidate_tre = candidate_dir / output_name
     candidate_lua = candidate_dir / CANDIDATE_LUA_NAME
@@ -758,50 +892,49 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     candidate_id_map = candidate_dir / CANDIDATE_ID_MAP_NAME
     candidate_registry = candidate_dir / CANDIDATE_REGISTRY_NAME
 
-    if not base_tre.exists():
-        raise wb.WorldBuilderError(f"Canonical base TRE not found: {base_tre}")
-    if candidate_tre.resolve() == base_tre.resolve():
-        raise wb.WorldBuilderError("Refusing to bake a batch candidate over the canonical base TRE")
-
-    server_dir = _resolve_path(config_path, config.get("server_tre_dir"))
-    if server_dir is not None and (server_dir / output_name).resolve() == base_tre.resolve():
-        raise wb.WorldBuilderError(
-            "base_tre points at the active server TRE destination. Batch publishing requires a separate, "
-            "immutable clean-base copy so deployment can never overwrite its own future build input."
-        )
+    if not source_tre.exists():
+        raise wb.WorldBuilderError(f"Normal Bellum Gero source TRE not found: {source_tre}")
+    if candidate_tre.resolve() == source_tre.resolve():
+        raise wb.WorldBuilderError("Refusing to bake the World Builder overlay over bg_custom1.tre")
 
     approved = load_publish_set(publish_set_path)
     previous_state = load_deployed_state(deployed_state_path)
+    if previous_state.get("projects") and previous_state.get("mode") not in (
+        None,
+        "desired-state-multi-project-worldbuilder-overlay-v2",
+    ):
+        raise wb.WorldBuilderError(
+            "The deployed-state file describes the older combined-bg_custom1 publishing mode. "
+            "Migrate/clear that state before using the dedicated World Builder TRE publisher."
+        )
+
     active_registry = StructuralOIDRegistry.load(oid_registry_path, deployed_state_path)
     registry = active_registry.clone()
 
-    base_archive = wb.open_tre(base_tre)
-    validate_clean_structural_base(base_archive)
-    resolver = wb.AssetResolver(
-        base_archive,
-        _config_list_paths(config, config_path, "asset_roots"),
-        _config_list_paths(config, config_path, "asset_tres"),
-    )
-    inferred_types = wb.infer_snapshot_types(base_archive)
+    source_archive = wb.open_tre(source_tre)
+    validate_clean_structural_base(source_archive)
+
+    asset_roots = _config_list_paths(config, config_path, "asset_roots")
+    asset_tres = _config_list_paths(config, config_path, "asset_tres")
+    resolver = wb.AssetResolver(source_archive, asset_roots, asset_tres)
+    inferred_types = wb.infer_snapshot_types(source_archive)
 
     projects_by_planet: Dict[str, List[ApprovedProject]] = {}
     for entry in approved:
         projects_by_planet.setdefault(entry.project.planet, []).append(entry)
 
-    replacements: Dict[str, bytes] = {}
+    overlay_files: Dict[str, bytes] = {}
     original_snapshots: Dict[str, bytes] = {}
     results: List[BatchProjectResult] = []
 
     for planet in sorted(projects_by_planet):
         snapshot_path = f"snapshot/{planet}.ws"
-        snapshot_record = base_archive.record_by_name_optional(snapshot_path)
+        snapshot_record = source_archive.record_by_name_optional(snapshot_path)
         if snapshot_record is not None:
-            snapshot_raw = base_archive.extract_record(snapshot_record)
+            snapshot_raw = source_archive.extract_record(snapshot_record)
         else:
-            # Some planets are not overridden by the normal Bellum Gero custom
-            # TRE. In that case, use the clean source snapshot from the configured
-            # read-only asset roots/TREs and add it to the candidate bg_custom1.
             snapshot_raw = resolver.read(snapshot_path)
+
         original_snapshots[snapshot_path] = snapshot_raw
         allowed_reserved: Set[int] = set()
 
@@ -819,18 +952,23 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
 
             for path, data in project_assets.items():
                 normalized = wb.normalize_archive_path(path)
-                prior = replacements.get(normalized)
+                prior = overlay_files.get(normalized)
                 if prior is not None and prior != data:
                     raise wb.WorldBuilderError(
                         f"Two approved World Builder projects generated conflicting archive path {normalized}"
                     )
-                replacements[normalized] = data
+                overlay_files[normalized] = data
 
             result = BatchProjectResult(
                 approved=approved_project,
                 bake_result=bake_result,
-                asset_replacements={wb.normalize_archive_path(k): v for k, v in project_assets.items()},
-                oid_assignments=_result_oid_assignments(registry, approved_project.publish_id),
+                asset_replacements={
+                    wb.normalize_archive_path(k): v
+                    for k, v in project_assets.items()
+                },
+                oid_assignments=_result_oid_assignments(
+                    registry, approved_project.publish_id
+                ),
             )
             result.fingerprint = _project_fingerprint(result)
             results.append(result)
@@ -838,43 +976,67 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
             allowed_reserved.update(_all_result_oids(bake_result))
             snapshot_raw = baked_snapshot
 
-        replacements[snapshot_path] = snapshot_raw
+        overlay_files[snapshot_path] = snapshot_raw
 
-    # Ensure registry active_keys includes every current assignment and no stale
-    # project keys. allocate() marks all desired keys active during the bake.
     current_prefixes = tuple(_project_oid_prefix(entry.publish_id) for entry in approved)
     stray_active = [
-        key for key in registry.active_keys
+        key
+        for key in registry.active_keys
         if not current_prefixes or not key.startswith(current_prefixes)
     ]
     if stray_active:
-        raise wb.WorldBuilderError("Internal OID registry active-key mismatch: " + ", ".join(stray_active[:5]))
+        raise wb.WorldBuilderError(
+            "Internal OID registry active-key mismatch: " + ", ".join(stray_active[:5])
+        )
 
-    # Empty publish set is valid: repack the clean base into a normalized candidate
-    # and generate an empty combined Lua. All historical registry keys become retired.
     candidate_dir.mkdir(parents=True, exist_ok=True)
-    wb.repack_tre_v2(base_archive, replacements, candidate_tre)
+
+    write_overlay_tre_v5(
+        overlay_files,
+        candidate_tre,
+        names_compression=source_archive.names_compression,
+    )
+
     finished = wb.open_tre(candidate_tre)
     wb.validate_tre_v5_metadata(finished, require_md5=True)
 
-    validate_base_preservation(base_archive, finished, replacements, original_snapshots)
+    final_paths = sorted(
+        wb.normalize_archive_path(rec.name)
+        for rec in finished.records
+    )
+    expected_paths = sorted(overlay_files)
+    if final_paths != expected_paths:
+        raise wb.WorldBuilderError(
+            "Dedicated World Builder TRE contains paths outside the generated overlay set"
+        )
+
+    validate_overlay_snapshot_preservation(finished, original_snapshots)
     validate_global_reserved_oids(finished, registry.active_assignments())
+
     for result in results:
         validate_project_snapshot_roots(finished, result)
         validate_project_assets(finished, resolver, result)
 
     expected_wb_paths = sorted(
         path
-        for path in replacements
+        for path in overlay_files
         if any(path.startswith(prefix) for prefix in WB_ARCHIVE_PREFIXES)
     )
     final_wb_paths = sorted(
-        wb.normalize_archive_path(rec.name)
-        for rec in finished.records
-        if any(wb.normalize_archive_path(rec.name).startswith(prefix) for prefix in WB_ARCHIVE_PREFIXES)
+        path
+        for path in final_paths
+        if any(path.startswith(prefix) for prefix in WB_ARCHIVE_PREFIXES)
     )
     if final_wb_paths != expected_wb_paths:
-        raise wb.WorldBuilderError("Candidate World Builder archive namespace does not exactly match the approved project set")
+        raise wb.WorldBuilderError(
+            "Candidate World Builder archive namespace does not exactly match the approved project set"
+        )
+
+    dependencies = _collect_dependency_records(
+        resolver,
+        original_snapshots,
+        results,
+    )
 
     combined_lua = _combined_server_lua(results)
     _atomic_write_bytes(candidate_lua, combined_lua.encode("utf-8"))
@@ -882,7 +1044,10 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     registry_payload = registry.to_payload()
     _atomic_write_json(candidate_registry, registry_payload)
 
-    project_entries = [_project_manifest_entry(result) for result in sorted(results, key=lambda item: item.approved.publish_id)]
+    project_entries = [
+        _project_manifest_entry(result)
+        for result in sorted(results, key=lambda item: item.approved.publish_id)
+    ]
     changes = _diff_projects(project_entries, previous_state)
 
     id_map_payload = {
@@ -909,9 +1074,11 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     manifest_payload = {
         "version": BATCH_SCHEMA_VERSION,
         "generated": _now_iso(),
-        "mode": "desired-state-multi-project-structural-v1",
-        "base_tre": str(base_tre),
-        "base_tre_sha256": _sha256_file(base_tre),
+        "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
+        "base_tre": str(source_tre),
+        "base_tre_sha256": _sha256_file(source_tre),
+        "source_role": "normal-bellum-gero-custom-tre",
+        "output_role": "dedicated-worldbuilder-overlay",
         "publish_set": str(publish_set_path),
         "active_oid_registry": str(oid_registry_path),
         "active_deployed_state": str(deployed_state_path),
@@ -928,6 +1095,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
             "oid_registry_sha256": _sha256_file(candidate_registry),
             "id_map_sha256": _sha256_file(candidate_id_map),
         },
+        "dependencies": dependencies,
         "snapshot_id_policy": {
             "strategy": wb.WB_STRUCTURAL_OID_STRATEGY,
             "reserved_min": wb.WB_STRUCTURAL_OID_MIN,
@@ -943,23 +1111,23 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         },
         "projects": project_entries,
         "changes_from_last_deploy": changes,
-        "added_or_replaced_archive_paths": sorted(replacements),
+        "overlay_archive_paths": final_paths,
         "worldbuilder_archive_paths": final_wb_paths,
         "validation": {
-            "clean_base_no_worldbuilder_namespace": True,
-            "clean_base_reserved_oid_band_unused": True,
+            "source_tre_no_worldbuilder_namespace": True,
+            "source_tre_reserved_oid_band_unused": True,
             "tre_v5_checksum_ordering": True,
             "tre_v5_stored_payload_md5": True,
-            "untouched_base_payloads_byte_identical": True,
+            "overlay_contains_only_generated_paths": True,
             "preexisting_nodes_preserved_in_affected_snapshots": True,
             "global_reserved_oid_set_matches_registry": True,
             "worldbuilder_namespace_matches_approved_set": True,
             "project_structure_roots_cells_assets": True,
+            "dependency_hashes_recorded": True,
         },
     }
     _atomic_write_json(candidate_manifest, manifest_payload)
     return manifest_payload
-
 
 # ---------------------------------------------------------------------------
 # Transactional deployment
@@ -980,14 +1148,113 @@ def _prepare_deployed_state(manifest: dict) -> dict:
         "version": DEPLOYED_STATE_SCHEMA_VERSION,
         "deployed": _now_iso(),
         "mode": manifest.get("mode"),
-        "base_tre": manifest.get("base_tre"),
         "base_tre_sha256": manifest.get("base_tre_sha256"),
+        "dependencies": manifest.get("dependencies", {"records": {}}),
         "tre_sha256": manifest["hashes"]["tre_sha256"],
         "server_template_lua_sha256": manifest["hashes"]["server_template_lua_sha256"],
         "oid_registry_sha256": manifest["hashes"]["oid_registry_sha256"],
         "projects": manifest.get("projects", []),
     }
 
+
+
+def _dependency_comparison(config_path: Path, config: dict, expected: dict) -> dict:
+    records = expected.get("records", {}) if isinstance(expected, dict) else {}
+    if not isinstance(records, dict):
+        raise wb.WorldBuilderError("World Builder dependency records are malformed")
+
+    if not records:
+        return {"stale": False, "checked": 0, "changed": []}
+
+    source_tre = _config_required_path(config, config_path, "base_tre")
+    if not source_tre.is_file():
+        return {
+            "stale": True,
+            "checked": 0,
+            "changed": [
+                {
+                    "path": str(source_tre),
+                    "reason": "normal Bellum Gero source TRE is missing",
+                }
+            ],
+        }
+
+    source_archive = wb.open_tre(source_tre)
+    validate_clean_structural_base(source_archive)
+    resolver = wb.AssetResolver(
+        source_archive,
+        _config_list_paths(config, config_path, "asset_roots"),
+        _config_list_paths(config, config_path, "asset_tres"),
+    )
+
+    changed: List[dict] = []
+    checked = 0
+
+    for path, meta in sorted(records.items()):
+        checked += 1
+        expected_sha = meta.get("sha256") if isinstance(meta, dict) else None
+        try:
+            current = resolver.read(path)
+        except Exception as exc:
+            changed.append(
+                {
+                    "path": path,
+                    "reason": f"dependency can no longer be resolved: {exc}",
+                }
+            )
+            continue
+
+        current_sha = _sha256_bytes(current)
+        if not expected_sha or current_sha != expected_sha:
+            changed.append(
+                {
+                    "path": path,
+                    "reason": "source record changed",
+                    "expected_sha256": expected_sha,
+                    "current_sha256": current_sha,
+                }
+            )
+
+    return {
+        "stale": bool(changed),
+        "checked": checked,
+        "changed": changed,
+    }
+
+
+def dependency_status(config_path: Path) -> dict:
+    config_path = config_path.resolve()
+    config = wb.load_config(config_path)
+    state_path = _config_required_path(config, config_path, "deployed_state")
+    state = load_deployed_state(state_path)
+    return _dependency_comparison(
+        config_path,
+        config,
+        state.get("dependencies", {}),
+    )
+
+
+def _verify_manifest_dependencies_current(
+    config_path: Path,
+    config: dict,
+    manifest: dict,
+) -> None:
+    status = _dependency_comparison(
+        config_path,
+        config,
+        manifest.get("dependencies", {}),
+    )
+    if not status["stale"]:
+        return
+
+    lines = [
+        "The validated bg_worldbuilder.tre candidate is stale because one or more "
+        "source records changed after it was baked."
+    ]
+    for item in status["changed"]:
+        lines.append(f"  {item['path']}: {item['reason']}")
+    lines.append("Run 'wb bake' again before deployment.")
+    raise wb.WorldBuilderError("\n".join(lines))
 
 def _verify_previous_deployment_not_drifted(
     state_path: Path,
@@ -1041,7 +1308,19 @@ def _transactional_promote(items: Sequence[Tuple[bytes, Path]], stamp: str) -> L
         for _, destination in staged:
             backup: Optional[Path] = None
             if destination.exists():
-                backup = destination.with_name(destination.name + f".bak-{stamp}")
+                backup_root = (
+                    Path.home()
+                    / "worldbuilder_deploy_backups"
+                    / stamp
+                )
+                resolved_destination = destination.resolve()
+                backup = backup_root.joinpath(
+                    *resolved_destination.parts[1:]
+                )
+                backup.parent.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
                 shutil.copy2(destination, backup)
             backups[destination] = backup
 
@@ -1102,6 +1381,7 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
 
     candidate_archive = wb.open_tre(candidate_tre)
     wb.validate_tre_v5_metadata(candidate_archive, require_md5=True)
+    _verify_manifest_dependencies_current(config_path, config, manifest)
 
     refresh_required = manifest.get("changes_from_last_deploy", {}).get("refresh_required", [])
     if refresh_required and not confirm_refreshed:
@@ -1120,13 +1400,6 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
 
     output_name = candidate_tre.name
     client_tre, server_tre, server_lua, registry_path, state_path = _destination_paths(config, config_path, output_name)
-    base_tre = _config_required_path(config, config_path, "base_tre")
-    if base_tre.resolve() in {client_tre.resolve(), server_tre.resolve()}:
-        raise wb.WorldBuilderError(
-            "Refusing deployment because the canonical base TRE is also configured as an active TRE destination. "
-            "Keep the clean base at a separate immutable path."
-        )
-
     _verify_previous_deployment_not_drifted(state_path, client_tre, server_tre, server_lua)
 
     tre_bytes = candidate_tre.read_bytes()
@@ -1173,7 +1446,7 @@ def cmd_bake_set(args) -> int:
     manifest = build_candidate(Path(args.config), getattr(args, "default_game_type", None))
     changes = manifest["changes_from_last_deploy"]
     print("World Builder batch candidate validated.")
-    print(f"Base TRE: {manifest['base_tre']}")
+    print(f"Source TRE: {manifest['base_tre']}")
     print(f"Candidate TRE: {Path(manifest['candidate_dir']) / manifest['artifacts']['tre']}")
     print(f"Projects: {len(manifest['projects'])}")
     print(

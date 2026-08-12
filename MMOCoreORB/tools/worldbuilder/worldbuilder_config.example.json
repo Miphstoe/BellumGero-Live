@@ -1,6 +1,6 @@
 {
-  "base_tre": "/absolute/path/to/clean/bg_custom1_worldbuilder_base.tre",
-  "output_tre_name": "bg_custom1.tre",
+  "base_tre": "/absolute/path/to/server/trefiles/bg_custom1.tre",
+  "output_tre_name": "bg_worldbuilder.tre",
   "client_tre_dir": "/absolute/path/to/SWG/client",
   "server_tre_dir": "/absolute/path/to/server/trefiles",
   "server_template_lua_target": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/scripts/object/building/worldbuilder/generated_templates.lua",
