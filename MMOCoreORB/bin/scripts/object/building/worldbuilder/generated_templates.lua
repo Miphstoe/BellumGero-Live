@@ -1,5 +1,6 @@
 -- Bellum Gero World Builder generated structural template registrations.
 --
 -- This file is intentionally empty in source control.
--- bellum_worldbuilder.py overwrites it when publishing a WBP V2 structural project.
--- The generated Lua must remain paired with the exact TRE produced by that bake.
+-- The batch publisher deploys one combined generated_templates.lua containing
+-- registrations for every approved structural project in the matching TRE.
+-- The generated Lua and final TRE must always be deployed as an exact pair.

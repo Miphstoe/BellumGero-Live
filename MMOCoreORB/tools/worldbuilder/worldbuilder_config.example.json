@@ -1,6 +1,15 @@
 {
-  "base_tre": "C:/SWGEmuTC/The-Hunted/clientdata/bg_custom1_BASE.tre",
+  "base_tre": "/absolute/path/to/clean/bg_custom1_worldbuilder_base.tre",
   "output_tre_name": "bg_custom1.tre",
-  "client_tre_dir": "C:/SWGEmuTC/The-Hunted",
-  "server_tre_dir": "//wsl$/Ubuntu/home/youruser/The-Hunted/MMOCoreORB/bin/tre"
+  "client_tre_dir": "/absolute/path/to/SWG/client",
+  "server_tre_dir": "/absolute/path/to/server/trefiles",
+  "server_template_lua_target": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/scripts/object/building/worldbuilder/generated_templates.lua",
+  "publish_set": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/publish/worldbuilder_publish_set.json",
+  "oid_registry": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/publish/worldbuilder_oid_registry.json",
+  "deployed_state": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/publish/worldbuilder_deployed_state.json",
+  "candidate_dir": "/absolute/path/to/BellumGero-Live/MMOCoreORB/bin/worldbuilder/candidate",
+  "asset_roots": [
+    "/absolute/path/to/BellumGero-Live/MMOCoreORB/tools/worldbuilder/WorldBuilderStructureRefs"
+  ],
+  "asset_tres": []
 }

@@ -53,7 +53,7 @@ import sys
 import tempfile
 import zlib
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 
 MAGIC = b"EERT5000"
@@ -1599,45 +1599,68 @@ def bake_snapshot_v2(
     resolver: AssetResolver,
     inferred_types: Dict[str, Tuple[float, int]],
     default_game_type: Optional[float],
+    publish_id: Optional[str] = None,
+    oid_allocator: Optional[Callable[[str], int]] = None,
+    allowed_reserved_oids: Optional[Set[int]] = None,
 ) -> Tuple[bytes, Dict[str, bytes], StructuralBakeResult]:
     tree = parse_snapshot_tree(raw)
     info = tree.base
     all_existing = tree.flatten()
 
-    # V1.9.5: never allocate structural snapshot IDs directly above the
-    # target snapshot's current maximum.  That low-ID frontier can overlap
-    # Core3's normal runtime object allocator during startup (the V1.9.3
-    # cave test proved exactly that: the intended root OID had already been
-    # taken by a runtime cave-wall StaticObject before Lok loaded).
-    #
-    # Use a dedicated high band and allocate downward.  Any existing use of
-    # the band in the CLEAN bake input is treated as unsafe because the
-    # current publisher is intentionally single-structural-project per base
-    # TRE; multi-project aggregation/ID registry is a later milestone.
-    reserved_existing = [
+    # V1.9.7 batch hook: the clean-base safety rule remains the default.
+    # During one desired-state batch build, later projects may receive the
+    # in-memory snapshot produced by earlier projects on the same planet. The
+    # caller must explicitly provide the exact reserved OIDs that are allowed
+    # to already exist. Anything else is still treated as a contaminated base.
+    reserved_existing = {
         node.info.object_id
         for node in all_existing
         if WB_STRUCTURAL_OID_MIN <= node.info.object_id <= WB_STRUCTURAL_OID_MAX
-    ]
-    if reserved_existing:
+    }
+    allowed_reserved = set(allowed_reserved_oids or ())
+    missing_allowed = allowed_reserved - reserved_existing
+    if missing_allowed:
         raise WorldBuilderError(
-            "Clean V2 base snapshot already uses the Bellum Gero World Builder "
-            f"reserved structural ID band 0x{WB_STRUCTURAL_OID_MIN:08X}-"
-            f"0x{WB_STRUCTURAL_OID_MAX:08X} (first collision: "
-            f"0x{min(reserved_existing):08X}). Use the canonical clean base TRE; "
-            "do not bake a structural output into another structural output."
+            "Batch structural publisher allowed-reserved set does not match the in-memory snapshot; "
+            f"first missing OID: 0x{min(missing_allowed):08X}"
+        )
+    unexpected_reserved = reserved_existing - allowed_reserved
+    if unexpected_reserved:
+        raise WorldBuilderError(
+            "V2 base snapshot already uses the Bellum Gero World Builder reserved structural ID band "
+            f"0x{WB_STRUCTURAL_OID_MIN:08X}-0x{WB_STRUCTURAL_OID_MAX:08X} "
+            f"(first unexpected collision: 0x{min(unexpected_reserved):08X}). "
+            "Use the canonical clean base TRE; generated World Builder TREs must never become batch inputs."
         )
 
     next_oid = WB_STRUCTURAL_OID_MAX
+    allocated_this_call: Set[int] = set()
 
-    def allocate_structural_oid() -> int:
+    def allocate_structural_oid(logical_key: str) -> int:
         nonlocal next_oid
-        if next_oid < WB_STRUCTURAL_OID_MIN:
+        if oid_allocator is not None:
+            oid = int(oid_allocator(logical_key))
+        else:
+            if next_oid < WB_STRUCTURAL_OID_MIN:
+                raise WorldBuilderError(
+                    "Bellum Gero World Builder structural snapshot ID band exhausted"
+                )
+            oid = next_oid
+            next_oid -= 1
+
+        if not (WB_STRUCTURAL_OID_MIN <= oid <= WB_STRUCTURAL_OID_MAX):
             raise WorldBuilderError(
-                "Bellum Gero World Builder structural snapshot ID band exhausted"
+                f"Structural OID allocator returned 0x{oid:08X} outside the reserved World Builder range"
             )
-        oid = next_oid
-        next_oid -= 1
+        if oid in reserved_existing:
+            raise WorldBuilderError(
+                f"Structural OID allocator attempted to reuse existing in-memory snapshot OID 0x{oid:08X}"
+            )
+        if oid in allocated_this_call:
+            raise WorldBuilderError(
+                f"Structural OID allocator returned duplicate OID 0x{oid:08X} within one project bake"
+            )
+        allocated_this_call.add(oid)
         return oid
 
     names = list(info.names)
@@ -1646,6 +1669,7 @@ def bake_snapshot_v2(
     replacements: Dict[str, bytes] = {}
     id_map: Dict[int, int] = {}
     published: List[PublishedStructure] = []
+    slug = project_slug(publish_id if publish_id is not None else project.name)
 
     # WBP V2 may still contain ordinary static/world OBJECT records. Bake them
     # with the same rules as V1, while using the recursive max-ID allocator.
@@ -1657,11 +1681,10 @@ def bake_snapshot_v2(
             )
         name_id = _add_name(names, name_to_id, obj.snapshot_template)
         game_type, unknown2 = _resolve_static_game_type(obj, inferred_types, default_game_type)
-        oid = allocate_structural_oid()
+        oid = allocate_structural_oid(f"{slug}/object/{obj.local_id}")
         id_map[obj.local_id] = oid
         nodes_to_add.append(build_snapshot_node(oid, name_id, obj, game_type, unknown2))
 
-    slug = project_slug(project.name)
     interiors_by_structure: Dict[int, List[ProjectInterior]] = {}
     for interior in project.interiors:
         interiors_by_structure.setdefault(interior.structure_local_id, []).append(interior)
@@ -1721,13 +1744,13 @@ def bake_snapshot_v2(
         replacements[custom_shared] = custom_iff_bytes
 
         custom_name_id = _add_name(names, name_to_id, custom_shared)
-        root_oid = allocate_structural_oid()
+        root_oid = allocate_structural_oid(f"{slug}/structure/{structure.local_id}")
         id_map[structure.local_id] = root_oid
 
         child_blobs: List[bytes] = []
         cell_oids: List[int] = []
         for cell_number in range(1, portal.cell_count + 1):
-            cell_oid = allocate_structural_oid()
+            cell_oid = allocate_structural_oid(f"{slug}/structure/{structure.local_id}/cell/{cell_number}")
             cell_oids.append(cell_oid)
             child_blobs.append(
                 _build_snapshot_node_raw(
@@ -2142,6 +2165,16 @@ def _server_lua_output(args: argparse.Namespace, config: Optional[dict], output_
     return output_tre.with_suffix(output_tre.suffix + ".worldbuilder_templates.lua")
 
 
+def cmd_bake_set(args: argparse.Namespace) -> int:
+    from worldbuilder_batch import cmd_bake_set as batch_impl
+    return int(batch_impl(args))
+
+
+def cmd_deploy_set(args: argparse.Namespace) -> int:
+    from worldbuilder_batch import cmd_deploy_set as batch_impl
+    return int(batch_impl(args))
+
+
 def cmd_bake_tre(args: argparse.Namespace) -> int:
     project, base, output, config, asset_roots, asset_tres = _resolve_build_paths(args)
     print(f"Baking project {project.name} (WBP V{project.version}) into {output}")
@@ -2291,6 +2324,21 @@ def make_parser() -> argparse.ArgumentParser:
     p.add_argument("--default-game-type", type=float, help="explicit fallback only when static type inference fails")
     _add_structural_asset_args(p)
     p.set_defaults(func=cmd_bake_tre)
+
+    p = sub.add_parser("bake-set", help="build one validated structural candidate TRE from the approved WBP publish set")
+    p.add_argument("--config", required=True, help="batch World Builder config")
+    p.add_argument("--default-game-type", type=float, help="explicit fallback only when static type inference fails")
+    p.set_defaults(func=cmd_bake_set)
+
+    p = sub.add_parser("deploy-set", help="transactionally deploy a validated batch candidate TRE + generated Lua")
+    p.add_argument("--config", required=True, help="batch World Builder config")
+    p.add_argument("--manifest", help="candidate worldbuilder_publish.json override")
+    p.add_argument(
+        "--confirm-refreshed",
+        action="store_true",
+        help="confirm required /wb refreshpublished commands were completed against the old live TRE before shutdown",
+    )
+    p.set_defaults(func=cmd_deploy_set)
 
     p = sub.add_parser("deploy", help="copy an already-built TRE to configured client/server dirs with backups")
     p.add_argument("tre")
