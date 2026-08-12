@@ -919,3 +919,9 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Daily theater cleanup now removes stale completion and pending-kill bookkeeping before rebuilding a camp. Recruiter recovery logging and fallback-screen construction are independently protected so secondary Lua errors cannot escape the blank-conversation guard.
 - **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
 - **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Persist daily tier completion outside holo delivery
+
+- **Summary:** Each daily bounty theater now records its ready tier directly when the decisive target dies, before optional holographic story delivery. Restart recovery can no longer rebuild and reward an already-cleared tier solely because the holo subsystem was unavailable.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_daily_tier1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier3_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier4_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier5_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
