@@ -1,7 +1,7 @@
 /*
  * WorldBuilderStructureInspector.h
  *
- * Bellum Gero World Builder V1.9.4 structure/runtime diagnostics.
+ * Bellum Gero World Builder V1.9.8 structure/runtime diagnostics + published-parent identity.
  *
  * Read-only inspector for buildings/caves, portal cells, snapshot hierarchy,
  * and interior-layout metadata.
@@ -22,6 +22,7 @@
 #define WORLDBUILDERSTRUCTUREINSPECTOR_H_
 
 #include "templates/manager/TemplateManager.h"
+#include "server/zone/managers/worldbuilder/WorldBuilderPublishedStructureResolver.h"
 #include "templates/building/SharedBuildingObjectTemplate.h"
 #include "templates/building/InteriorLayoutTemplate.h"
 #include "templates/appearance/PortalLayout.h"
@@ -341,6 +342,22 @@ inline void WorldBuilderStructureInspector::showMetadata(CreatureObject* player,
 		prompt << "Resolved from: " << source;
 
 		if (runtimeStructure != nullptr) {
+			WorldBuilderPublishedStructureIdentity publishedIdentity;
+			String identityError;
+			if (WorldBuilderPublishedStructureResolver::identifyRuntimeRoot(player, runtimeStructure, publishedIdentity, identityError)) {
+				prompt << "\nPublished World Builder Identity: YES"
+					<< "\n  Publish ID: " << publishedIdentity.publishID
+					<< "\n  Structure local ID: " << publishedIdentity.structureLocalID
+					<< "\n  Generated server template: " << publishedIdentity.serverTemplate
+					<< "\n  Generated shared template: " << publishedIdentity.sharedTemplate
+					<< "\n  Root OID: " << publishedIdentity.rootObjectID
+					<< "\n  Eligible as WBP V3 EXTENDS parent: YES";
+			} else {
+				prompt << "\nPublished World Builder Identity: NO"
+					<< "\n  Extension binding eligibility: NO"
+					<< "\n  Reason: " << identityError;
+			}
+
 			TemplateManager* templateManager = TemplateManager::instance();
 			uint32 runtimeServerCRC = runtimeStructure->getServerObjectCRC();
 			SharedObjectTemplate* runtimeAttachedTemplate = runtimeStructure->getObjectTemplate();

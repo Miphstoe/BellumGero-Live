@@ -67,7 +67,9 @@ public:
 		ACTION_STRUCTURE_PREVIEW_CLEAR = 36,
 		ACTION_CELL_CONTEXT = 37,
 		ACTION_ADD_STRUCTURE = 38,
-		ACTION_STRUCTURE_LIBRARY = 39
+		ACTION_STRUCTURE_LIBRARY = 39,
+		ACTION_BIND_EXTENSION = 40,
+		ACTION_EXTENSION_STATUS = 41
 	};
 
 	enum ProjectManageAction {
@@ -484,6 +486,13 @@ public:
 			WorldBuilderStructureInspector::show(player);
 			reopen = false;
 			break;
+		case WorldBuilderCommandUi::ACTION_BIND_EXTENSION:
+			result = manager->bindPublishedStructure(player, message);
+			break;
+		case WorldBuilderCommandUi::ACTION_EXTENSION_STATUS:
+			WorldBuilderCommandUi::sendMessage(player, "World Builder Extension Targets", manager->getExtensionStatus(player));
+			reopen = false;
+			break;
 		case WorldBuilderCommandUi::ACTION_ADD_STRUCTURE:
 			WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_ADD_STRUCTURE,
 				"Add Structure to World Builder Project",
@@ -861,6 +870,8 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 		box->addMenuItem("Structure Library / Browse Buildings & Caves...", ACTION_STRUCTURE_LIBRARY);
 		box->addMenuItem("Add Structure to Project...", ACTION_ADD_STRUCTURE);
 		box->addMenuItem("Structure Inspector (Target / Current Interior)...", ACTION_STRUCTURE_INSPECTOR);
+		box->addMenuItem("Extend Published WB Structure (Target / Current Interior)", ACTION_BIND_EXTENSION);
+		box->addMenuItem("Extension Targets / Status...", ACTION_EXTENSION_STATUS);
 		box->addMenuItem("Structure Preview / Test...", ACTION_STRUCTURE_PREVIEW);
 		box->addMenuItem("Current Cell Context", ACTION_CELL_CONTEXT);
 		box->addMenuItem("Clear Structure Preview", ACTION_STRUCTURE_PREVIEW_CLEAR);
@@ -964,6 +975,21 @@ public:
 			} else if (action == "structureinfo" || action == "structure" || action == "inspectstructure") {
 				WorldBuilderStructureInspector::show(player);
 				return SUCCESS;
+			} else if (action == "extend" || action == "bindextension" || action == "extendpublished") {
+				result = manager->bindPublishedStructure(player, message);
+			} else if (action == "extensions" || action == "extensionstatus") {
+				WorldBuilderCommandUi::sendMessage(player, "World Builder Extension Targets", manager->getExtensionStatus(player));
+				return SUCCESS;
+			} else if (action == "unextend" || action == "unbindextension") {
+				if (!tokenizer.hasMoreTokens()) {
+					message = "Usage: /wb unextend <publish_id> <structure_local_id>";
+				} else {
+					String publishID; tokenizer.getStringToken(publishID);
+					if (!tokenizer.hasMoreTokens())
+						message = "Usage: /wb unextend <publish_id> <structure_local_id>";
+					else
+						result = manager->unbindPublishedStructure(player, publishID, tokenizer.getIntToken(), message);
+				}
 			} else if (action == "addstructure" || action == "placestructure") {
 				if (!tokenizer.hasMoreTokens()) {
 					WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_ADD_STRUCTURE,

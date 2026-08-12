@@ -1,7 +1,7 @@
 /*
  * WorldBuilderPublishedRefresh.h
  *
- * Bellum Gero World Builder V1.9.6
+ * Bellum Gero World Builder V1.9.8
  * Safe structural republish preparation for published WBP V2 structures.
  *
  * This helper deliberately does NOT destroy the live runtime structure. It
@@ -151,6 +151,18 @@ private:
 			return false;
 		}
 
+		// Snapshot-published World Builder cells are authoritative by their exact
+		// snapshot OIDs. Core3 may load those CellObjects correctly without
+		// exposing them through BuildingObject::getCell(), so validate the
+		// structural cell count here and validate every runtime cell by snapshot
+		// OID below instead of depending on the BuildingObject cell map.
+		if (building->getTotalCellNumber() != rootNode->getNodeCount()) {
+			report << "\n  FAIL: runtime BuildingObject template cell count "
+				<< building->getTotalCellNumber() << " does not match snapshot cell count "
+				<< rootNode->getNodeCount() << ".";
+			return false;
+		}
+
 		Vector<uint64> expectedCellOIDs;
 		for (int i = 0; i < rootNode->getNodeCount(); ++i) {
 			WorldSnapshotNode* cellNode = rootNode->getNode(i);
@@ -192,12 +204,9 @@ private:
 				return false;
 			}
 
-			ManagedReference<CellObject*> registeredCell = building->getCell(cellNumber);
-			if (registeredCell == nullptr || registeredCell->getObjectID() != cellOID) {
-				report << "\n  FAIL: BuildingObject Cell " << cellNumber << " registration does not match snapshot OID.";
-				return false;
-			}
-
+			// Do not require BuildingObject::getCell(cellNumber) here. The exact
+			// snapshot-authored CellObject OID, runtime type, parent OID, and
+			// containment checks are the authoritative published hierarchy.
 			int contents = runtimeCellObject->getContainerObjectsSize();
 			if (contents != 0) {
 				report << "\n  FAIL: Cell " << cellNumber << " (OID " << cellOID << ") contains "

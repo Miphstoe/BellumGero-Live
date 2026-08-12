@@ -2389,5 +2389,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 130
 
 
+# Bellum Gero World Builder V1.9.8 - WBP V3 project-extension layer.
+# Imported late so the proven V1/V2 implementation is defined first, then extended.
+import worldbuilder_project_extensions as _wb_project_extensions
+_wb_project_extensions.install(sys.modules[__name__])
+
 if __name__ == "__main__":
     raise SystemExit(main())

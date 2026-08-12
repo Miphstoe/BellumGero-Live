@@ -22,6 +22,19 @@ enum WorldBuilderObjectKind {
 	WB_OBJECT_INTERIOR = 2
 };
 
+class WorldBuilderExtensionTarget : public Object {
+public:
+	String publishID;
+	uint32 structureLocalID;
+
+	WorldBuilderExtensionTarget() : structureLocalID(0) {
+	}
+
+	WorldBuilderExtensionTarget(const String& parentPublishID, uint32 parentStructureLocalID)
+		: publishID(parentPublishID), structureLocalID(parentStructureLocalID) {
+	}
+};
+
 class WorldBuilderObjectState : public Object {
 public:
 	uint32 localID;
@@ -39,6 +52,7 @@ public:
 	float snapshotGameObjectType;
 	uint64 parentID;
 	uint32 structureLocalID;
+	String structurePublishID;
 	int cellNumber;
 	String roomName;
 
@@ -60,12 +74,14 @@ public:
 	String projectName;
 	String planetName;
 	String lastTemplate;
+	int projectVersion;
 	float moveStep;
 	float rotateStep;
 	uint32 selectedLocalID;
 	uint32 nextLocalID;
 	Vector<WorldBuilderObjectState> objects;
 	Vector<uint32> groupIDs;
+	Vector<WorldBuilderExtensionTarget> extensionTargets;
 	Vector<WorldBuilderProjectState> undoStack;
 	Vector<WorldBuilderProjectState> redoStack;
 
@@ -94,13 +110,15 @@ private:
 	int findObjectIndexByLocalID(WorldBuilderSession* session, uint32 localID) const;
 	int findObjectIndexByRuntimeID(WorldBuilderSession* session, uint64 runtimeID) const;
 	int findStructureIndexByRuntimeID(WorldBuilderSession* session, uint64 runtimeID) const;
+	bool hasExtensionTarget(WorldBuilderSession* session, const String& publishID, uint32 structureLocalID) const;
 	bool isPlayerInsideProjectStructure(WorldBuilderSession* session, CreatureObject* player, uint32* structureLocalID = nullptr) const;
 	bool isInGroup(WorldBuilderSession* session, uint32 localID) const;
 
 	bool captureObjectState(WorldBuilderSession* session, WorldBuilderObjectState& state, CreatureObject* player) const;
 	bool resolvePlayerProjectInteriorContext(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state) const;
-	ManagedReference<CellObject*> resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, uint32 structureLocalID, int cellNumber, String& errorMessage) const;
+	ManagedReference<CellObject*> resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, const WorldBuilderObjectState& state, String& errorMessage) const;
 	bool validateStructureTemplate(const String& serverTemplate, String& errorMessage) const;
+	bool validateExtensionReferences(WorldBuilderSession* session, String& errorMessage) const;
 	WorldBuilderProjectState captureProjectState(WorldBuilderSession* session, CreatureObject* player) const;
 	void pushUndoState(WorldBuilderSession* session, CreatureObject* player);
 	bool restoreProjectState(WorldBuilderSession* session, CreatureObject* player, const WorldBuilderProjectState& state, String& message);
@@ -132,6 +150,10 @@ public:
 	bool restoreProjectBackup(CreatureObject* player, const String& projectName, String& message);
 	bool deleteSavedProject(CreatureObject* player, const String& projectName, bool deleteBackup, String& message);
 	void getSavedProjectStatus(const String& projectName, bool& hasActiveProject, bool& hasBackup);
+
+	bool bindPublishedStructure(CreatureObject* player, String& message);
+	bool unbindPublishedStructure(CreatureObject* player, const String& publishID, uint32 structureLocalID, String& message);
+	String getExtensionStatus(CreatureObject* player);
 
 	bool spawnTemplate(CreatureObject* player, const String& objectTemplate, float distance, String& message);
 	bool addStructure(CreatureObject* player, const String& structureTemplate, float distance, String& message);

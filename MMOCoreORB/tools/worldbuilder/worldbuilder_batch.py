@@ -1823,3 +1823,8 @@ def cmd_deploy_set(args) -> int:
     print(f"TRE SHA256: {result['tre_sha256']}")
     print("The client and server received byte-identical candidate TREs.")
     return 0
+
+# Bellum Gero World Builder V1.9.8 - desired-state WBP V3 extension composer.
+# Install after the proven batch implementation is defined so wrappers preserve V1/V2 behavior.
+import worldbuilder_batch_extensions as _wb_batch_extensions
+_wb_batch_extensions.install(sys.modules[__name__])
