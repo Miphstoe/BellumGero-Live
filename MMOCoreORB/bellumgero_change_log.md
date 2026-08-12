@@ -925,3 +925,9 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Each daily bounty theater now records its ready tier directly when the decisive target dies, before optional holographic story delivery. Restart recovery can no longer rebuild and reward an already-cleared tier solely because the holo subsystem was unavailable.
 - **Files:** `bin/scripts/screenplays/bellum/bounty_camp_daily_tier1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier3_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier4_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier5_theater.lua`, `bellumgero_change_log.md`
 - **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Remove surviving daily camp mob observers
+
+- **Summary:** Bounty camp observer setup now records player/task-owned mobile IDs. Theater recovery drops each old kill observer, removes per-mob ownership/role keys, destroys surviving camp mobs, and clears boss/completion bookkeeping even when the anchor or decor is already gone.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.

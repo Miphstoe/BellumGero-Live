@@ -3940,6 +3940,9 @@ function MandoWayOfLife:cleanupDailyBountyTheater(pPlayer, theater)
 	if (theater.despawnTheaterObjects ~= nil) then
 		theater:despawnTheaterObjects(pPlayer)
 	end
+	if (theater.onTheaterDespawn ~= nil) then
+		theater:onTheaterDespawn(pPlayer)
+	end
 
 	local playerID = SceneObject(pPlayer):getObjectID()
 	local objectKeys = { "activeAreaId", "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
