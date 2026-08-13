@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-08-13 — Preserve manually removed Foundling waypoints
+
+- **Summary:** Limited waypoint replacement for an already-loaded informant to login recovery and explicit contact resets. Ordinary Trialmaster conversations no longer recreate a player-deleted waypoint when the existing contact is healthy.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`
+- **Notes:** Lua-only; zone restart or screenplay reload required.
+
 ### 2026-08-11 — Restore Foundling informant waypoint on login
 
 - **Summary:** Fixed Foundling login recovery so an already-loaded shared informant restores the correct datapad waypoint. The waypoint remains intentionally absent while an unfinished planet quota is active, and the return waypoint is restored once that quota is complete.

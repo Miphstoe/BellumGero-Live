@@ -159,7 +159,7 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 
 	-- Arc started but not complete: player is mid-arc
 	if (MandoWayOfLife:readInt(pPlayer, "chapter0Started") == 1) then
-		MandoWayOfLife:ensureFoundlingInformant(pPlayer)
+		MandoWayOfLife:ensureFoundlingInformant(pPlayer, false)
 		return self:withRecruiterRetroOptions(pPlayer, pNpc, convoTemplate:getScreen("arc_in_progress"))
 	end
 

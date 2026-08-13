@@ -831,7 +831,7 @@ end
 
 -- If Foundling arc is active but the player's informant link is missing (restart, death, stale OID),
 -- link or spawn the planet singleton and re-grant the appropriate waypoint.
-function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
+function MandoWayOfLife:ensureFoundlingInformant(pPlayer, refreshWaypoint)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then return end
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
@@ -843,10 +843,12 @@ function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	local done = self:readInt(pPlayer, "foundling.planetDone")
 	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
 	if (oid ~= 0 and getSceneObject(oid) ~= nil) then
-		if (counting == 1 and done == 1) then
-			self:grantReturnToInformantWaypoint(pPlayer)
-		elseif (counting ~= 1) then
-			self:grantInformantWaypoint(pPlayer, self.planetData[idx])
+		if (refreshWaypoint) then
+			if (counting == 1 and done == 1) then
+				self:grantReturnToInformantWaypoint(pPlayer)
+			elseif (counting ~= 1) then
+				self:grantInformantWaypoint(pPlayer, self.planetData[idx])
+			end
 		end
 		return
 	end
@@ -977,7 +979,7 @@ function MandoWayOfLife:resyncFoundlingContactAndWaypoints(pPlayer)
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
 	self:logDiagPlayer(pPlayer, "resyncFoundlingContactAndWaypoints: despawn + ensureFoundlingInformant.")
 	self:despawnInformant(pPlayer)
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 	CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Recruiter] Contact and waypoint refreshed for your current Foundling world.")
 end
 
@@ -1778,7 +1780,7 @@ function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 
 	-- Re-spawn informant if missing; handles zone restarts, NPC death, stale OIDs.
 	-- Grants the correct waypoint type based on counting/done state.
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 
 	-- Resume quota-completion poll if mid-count
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
