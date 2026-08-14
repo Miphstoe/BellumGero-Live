@@ -36,6 +36,8 @@ class FactoryHopperObserver extends Observer {
 			strongRef.openHopper(observable, arg1);
 		} else if(eventType == ObserverEventType.CLOSECONTAINER) {
 			strongRef.closeHopper(observable, arg1);
+		} else if (eventType == ObserverEventType.CONTAINERCONTENTSCHANGED) {
+			strongRef.scheduleManufacturingQueueEvaluation();
 		}
 
 		return 0;

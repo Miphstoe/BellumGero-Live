@@ -10,6 +10,7 @@
 
 #include "CombatQueueCommand.h"
 #include "server/zone/objects/group/GroupObject.h"
+#include "server/zone/objects/player/PlayerObject.h"
 
 class SquadLeaderCommand : public CombatQueueCommand {
 protected:
@@ -70,6 +71,9 @@ public:
 			return false;
 		}
 
+		if (hasPvpTef(target))
+			return false;
+
 		if (target == leader)
 			return true;
 
@@ -93,6 +97,15 @@ public:
 			return false;
 
 		return true;
+	}
+
+	static bool hasPvpTef(CreatureObject* target) {
+		if (target == nullptr || !target->isPlayerCreature())
+			return false;
+
+		PlayerObject* ghost = target->getPlayerObject();
+
+		return ghost != nullptr && ghost->hasPvpTef();
 	}
 
 /*	bool shoutCommand(CreatureObject* player, GroupObject* group) {
@@ -196,6 +209,7 @@ public:
 
 	void setAction(String action) {
 		this->action = action;
+		actionCRC = action.hashCode();
 	}
 };
 

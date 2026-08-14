@@ -46,7 +46,7 @@ object_tangible_loot_loot_schematic_death_watch_mandalorian_chest_plate_schemati
 	customName = "Mandalorian Armor Chest Plate Schematic",
 	objectMenuComponent = "LootSchematicMenuComponent",
 	attributeListComponent = "LootSchematicAttributeListComponent",
-	requiredSkill = "crafting_armorsmith_master",
+	requiredSkill = "crafting_armorsmith_novice",
 	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_mandalorian_chest_plate.iff",
 	targetUseCount = 3,
 }

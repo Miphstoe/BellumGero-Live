@@ -908,9 +908,7 @@ void SlicingSessionImplementation::handleContainerSlice() {
 
 		TransactionLog trx(TrxCode::SLICECONTAINER, player, container);
 
-		if (System::random(10) != 4) {
-			lootManager->createLoot(trx, container, "looted_container");
-		}
+		lootManager->createLoot(trx, container, "looted_container", player->getLevel());
 
 		inventory->transferObject(container, -1);
 		container->sendTo(player, true);

@@ -32,6 +32,7 @@ float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 	}
 
 	bool disableGroupVis = ConfigManager::instance()->getBool("Core3.PlayerManager.DisableGroupVisibility", false);
+	bool disableMobVis = ConfigManager::instance()->getBool("Core3.PlayerManager.DisableMobVisibility", false);
 
 	for (int i = 0; i < closeObjects.size(); ++i) {
 		SceneObject* obj = static_cast<SceneObject*>(closeObjects.get(i));
@@ -45,6 +46,9 @@ float VisibilityManager::calculateVisibilityIncrease(CreatureObject* creature) {
 		CreatureObject* c = obj->asCreatureObject();
 
 		if (c == nullptr || (!c->isNonPlayerCreatureObject() && !c->isPlayerCreature()))
+			continue;
+
+		if (disableMobVis && c->isNonPlayerCreatureObject() && !c->isPlayerCreature())
 			continue;
 
 		if (c->isDead() || c->isIncapacitated() || (c->isPlayerCreature() && c->getPlayerObject()->hasGodMode()))

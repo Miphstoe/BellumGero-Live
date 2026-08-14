@@ -56,6 +56,19 @@ namespace {
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
 
+int CombatManager::applyForceRun2OutgoingDamageReduction(TangibleObject* attacker, int resolvedDamage) {
+	if (attacker == nullptr || resolvedDamage <= 0 || !attacker->isCreatureObject())
+		return resolvedDamage;
+
+	CreatureObject* attackingCreature = attacker->asCreatureObject();
+
+	if (attackingCreature == nullptr || !attackingCreature->hasBuff(BuffCRC::JEDI_FORCE_RUN_2))
+		return resolvedDamage;
+
+	// Integer division matches Core3's normal final HAM-damage truncation.
+	return resolvedDamage / 10;
+}
+
 /*
 * Notes:
 * Every player that uses an attack ability, including peace, is considered the attacker in a CombatManager instance.
@@ -1570,6 +1583,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		healthDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		healthDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)healthDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Health Damaged: " << healthDamage << "\n";
@@ -1605,6 +1619,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		actionDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		actionDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)actionDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Action Damaged: " << actionDamage << "\n";
@@ -1639,6 +1654,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		mindDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		mindDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)mindDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Mind Damaged: " << mindDamage << "\n";
@@ -1767,6 +1783,8 @@ int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, T
 		}
 	}
 
+	damage = applyForceRun2OutgoingDamageReduction(attacker, damage);
+
 	int initialConditionDamage = defender->getConditionDamage();
 
 	defender->inflictDamage(attacker, 0, damage, true, xpType, true, true);
@@ -1832,8 +1850,14 @@ void CombatManager::applyDots(CreatureObject* attacker, CreatureObject* defender
 
 		if (effect.isDotDamageofHit()) {
 			// determine if we should use unmitigated damage
-			if (dotType != CreatureState::BLEEDING)
+			if (dotType != CreatureState::BLEEDING) {
 				damageToApply = unmitDamage;
+			} else if (attacker->hasBuff(BuffCRC::JEDI_FORCE_RUN_2)) {
+				// Bleed strength is derived from the already reduced direct hit. Restore
+				// its pre-FR2 basis because each tick applies the active FR2 penalty.
+				int64 restoredDamage = (int64)damageToApply * 10;
+				damageToApply = restoredDamage > 0x7FFFFFFF ? 0x7FFFFFFF : (int)restoredDamage;
+			}
 		}
 
 		int potency = effect.getDotPotency();
@@ -2941,6 +2965,8 @@ float CombatManager::doObjectDetonation(TangibleObject* attackerTanO, CreatureOb
 				armor->inflictDamage(armor, 0, damage * 0.2, true, true);
 			}
 		}
+
+		damage = applyForceRun2OutgoingDamageReduction(attackerTanO, (int)damage);
 
 		// Handle spill over damage for all pools
 		if (defender->isCreatureObject() && !defender->isVehicleObject()) {

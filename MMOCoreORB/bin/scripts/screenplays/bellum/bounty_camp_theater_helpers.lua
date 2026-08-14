@@ -106,10 +106,12 @@ function BellumBountyCampTheaterHelpers.setupKillObservers(theater, pPlayer, spa
 
 	local bossIndex = tonumber(theater.bossIndex)
 	local pending = 0
+	writeData(playerID .. taskName .. ":bountyMobCount", #spawnedList)
 	for i = 1, #spawnedList, 1 do
 		local pMob = spawnedList[i]
 		if (SpawnMobiles.isValidMobile(pMob)) then
 			local mobID = SceneObject(pMob):getObjectID()
+			writeData(playerID .. taskName .. ":bountyMobOid:" .. i, mobID)
 			writeData(mobID .. taskName .. ":bountyOwner", playerID)
 			writeData(mobID .. taskName .. ":isMark", (i == markIndex) and 1 or 0)
 			if (bossIndex ~= nil and i == bossIndex) then
@@ -121,6 +123,8 @@ function BellumBountyCampTheaterHelpers.setupKillObservers(theater, pPlayer, spa
 				pending = pending + 1
 			end
 			createObserver(OBJECTDESTRUCTION, taskName, "notifyBountyMobileKilled", pMob)
+		else
+			deleteData(playerID .. taskName .. ":bountyMobOid:" .. i)
 		end
 	end
 	if (bossIndex ~= nil) then
@@ -297,7 +301,29 @@ function BellumBountyCampTheaterHelpers.clearCampFlags(theater, pPlayer)
 	if (pPlayer == nil) then
 		return
 	end
-	deleteData(SceneObject(pPlayer):getObjectID() .. theater.taskName .. ":campFinished")
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local taskName = theater.taskName
+	local mobileCount = tonumber(readData(playerID .. taskName .. ":bountyMobCount")) or 0
+	for i = 1, mobileCount, 1 do
+		local oidKey = playerID .. taskName .. ":bountyMobOid:" .. i
+		local mobID = tonumber(readData(oidKey)) or 0
+		if (mobID ~= 0) then
+			local pMob = getSceneObject(mobID)
+			if (pMob ~= nil) then
+				dropObserver(OBJECTDESTRUCTION, taskName, "notifyBountyMobileKilled", pMob)
+				SceneObject(pMob):destroyObjectFromWorld()
+			end
+			deleteData(mobID .. taskName .. ":bountyOwner")
+			deleteData(mobID .. taskName .. ":isMark")
+			deleteData(mobID .. taskName .. ":isBoss")
+		end
+		deleteData(oidKey)
+	end
+	deleteData(playerID .. taskName .. ":bountyMobCount")
+	deleteData(playerID .. taskName .. ":bossOid")
+	deleteData(playerID .. taskName .. ":campFinished")
+	deleteData(playerID .. taskName .. ":pendingKills")
 end
 
 return BellumBountyCampTheaterHelpers

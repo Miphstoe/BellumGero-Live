@@ -84,6 +84,9 @@ public:
         if (member->isDead() || member->isIncapacitated())
             continue;
 
+		if (hasPvpTef(member))
+			continue;
+
         Locker clocker(member, leader);
 
         sendCombatSpam(member);

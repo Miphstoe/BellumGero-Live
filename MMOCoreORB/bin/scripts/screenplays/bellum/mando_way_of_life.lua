@@ -831,7 +831,7 @@ end
 
 -- If Foundling arc is active but the player's informant link is missing (restart, death, stale OID),
 -- link or spawn the planet singleton and re-grant the appropriate waypoint.
-function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
+function MandoWayOfLife:ensureFoundlingInformant(pPlayer, refreshWaypoint)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then return end
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
@@ -839,11 +839,19 @@ function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	local idx = self:readInt(pPlayer, "foundling.planetIndex")
 	if (idx < 1 or idx > #self.planetData) then return end
 
-	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
-	if (oid ~= 0 and getSceneObject(oid) ~= nil) then return end
-
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
 	local done = self:readInt(pPlayer, "foundling.planetDone")
+	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
+	if (oid ~= 0 and getSceneObject(oid) ~= nil) then
+		if (refreshWaypoint) then
+			if (counting == 1 and done == 1) then
+				self:grantReturnToInformantWaypoint(pPlayer)
+			elseif (counting ~= 1) then
+				self:grantInformantWaypoint(pPlayer, self.planetData[idx])
+			end
+		end
+		return
+	end
 
 	-- No live NPC - re-spawn one for this player.
 	-- Do not grant a "find informant" waypoint while mid-quota (player should be doing missions).
@@ -971,7 +979,7 @@ function MandoWayOfLife:resyncFoundlingContactAndWaypoints(pPlayer)
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
 	self:logDiagPlayer(pPlayer, "resyncFoundlingContactAndWaypoints: despawn + ensureFoundlingInformant.")
 	self:despawnInformant(pPlayer)
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 	CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Recruiter] Contact and waypoint refreshed for your current Foundling world.")
 end
 
@@ -1731,6 +1739,8 @@ end
 function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 	if (pPlayer == nil) then return end
 
+	self:ensureMandalorianArmorWearEligibility(pPlayer)
+
 	local arcDone = self:readInt(pPlayer, "foundling.arcComplete") == 1
 	local ch0 = self:readInt(pPlayer, "chapter0Started") == 1
 
@@ -1772,7 +1782,7 @@ function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 
 	-- Re-spawn informant if missing; handles zone restarts, NPC death, stale OIDs.
 	-- Grants the correct waypoint type based on counting/done state.
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 
 	-- Resume quota-completion poll if mid-count
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
@@ -2888,6 +2898,13 @@ function MandoWayOfLife:grantChapterRankTitle(pPlayer, chapterIndex)
 	end
 end
 
+function MandoWayOfLife:ensureMandalorianArmorWearEligibility(pPlayer)
+	if (pPlayer == nil or self:getHighestEarnedChapter(pPlayer) < 5) then return end
+	if (not CreatureObject(pPlayer):hasSkill("mando_title_mandalorian")) then
+		awardSkill(pPlayer, "mando_title_mandalorian")
+	end
+end
+
 -- Grant quest-gated certification skills (removed from profession skills in bg_custom1.tre)
 function MandoWayOfLife:grantQuestCertSkills(pPlayer, chapterIndex)
 	if (pPlayer == nil) then return end
@@ -3476,7 +3493,6 @@ MandoWayOfLife.schematicExchangeMap = {
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff",
-	["object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff",
 }
 
 -- Returns the number of old Mandalorian armor schematics in the player's top-level inventory.
@@ -3551,6 +3567,9 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	if (pInventory == nil) then
 		return false, "I cannot reach your inventory."
 	end
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		return false, "Make at least one free inventory slot, then try the one-for-one exchange again."
+	end
 
 	local exchanged = 0
 	for _, pOldSchematic in ipairs(oldSchematics) do
@@ -3575,8 +3594,18 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 		end
 	end
 
-	if (exchanged < 1) then
-		return false, "Something blocked the exchange. Contact staff."
+	if (exchanged ~= #oldSchematics) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryExchangeMandalorianSchematics PARTIAL accountId=%s exchanged=%s expected=%s; account claim not set.",
+			tostring(self:getPlayerAccountId(pPlayer)),
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		))
+		return false, string.format(
+			"Only %s of %s armor schematic(s) were replaced. Your account was not marked as claimed; make inventory room and try again.",
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		)
 	end
 
 	writeData(accountKey, 1)
@@ -3590,12 +3619,12 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	))
 
 	CreatureObject(pPlayer):sendSystemMessage(string.format(
-		"[Mandalorian Way] Schematic exchange complete: %s Mandalorian armor schematic(s) replaced with learnable versions. Give them to a Master Armorsmith.",
+		"[Mandalorian Way] One-for-one exchange complete: %s old armor schematic(s) replaced with fresh matching armor schematic(s). Give them to any Armorsmith.",
 		tostring(exchanged)
 	))
 
 	return true, string.format(
-		"Done. I exchanged %s old Mandalorian armor schematic(s) for new learnable versions. Give them to a Master Armorsmith — one exchange per login account. This is the Way.",
+		"Done. I replaced %s old armor schematic(s) one-for-one with fresh matching copies. No complete set or jetpack was required. Any Armorsmith can learn them. This is the Way.",
 		tostring(exchanged)
 	)
 end
@@ -3934,6 +3963,47 @@ function MandoWayOfLife:showDailyBountyStatus(pPlayer)
 	CreatureObject(pPlayer):sendSystemMessage(statusMsg)
 end
 
+function MandoWayOfLife:cleanupDailyBountyTheater(pPlayer, theater)
+	if (pPlayer == nil or theater == nil or theater.taskName == nil) then return end
+
+	if (theater.despawnTheaterObjects ~= nil) then
+		theater:despawnTheaterObjects(pPlayer)
+	end
+	if (theater.onTheaterDespawn ~= nil) then
+		theater:onTheaterDespawn(pPlayer)
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local objectKeys = { "activeAreaId", "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
+	for i = 1, #objectKeys, 1 do
+		local dataKey = playerID .. theater.taskName .. objectKeys[i]
+		local pObject = getSceneObject(readData(dataKey))
+		if (pObject ~= nil) then
+			SceneObject(pObject):destroyObjectFromWorld()
+		end
+		deleteData(dataKey)
+	end
+
+	if (theater.theater ~= nil) then
+		for i = 1, #theater.theater, 1 do
+			local dataKey = playerID .. theater.taskName .. "theaterObject" .. i
+			local pObject = getSceneObject(readData(dataKey))
+			if (pObject ~= nil) then
+				SceneObject(pObject):destroyObjectFromWorld()
+			end
+			deleteData(dataKey)
+		end
+	end
+
+	deleteData(playerID .. theater.taskName .. ":campFinished")
+	deleteData(playerID .. theater.taskName .. ":pendingKills")
+	if (theater.setTaskFinished ~= nil) then
+		theater:setTaskFinished(pPlayer)
+	end
+	dropObserver(LOGGEDIN, theater.taskName, "onLoggedIn", pPlayer)
+	dropObserver(LOGGEDOUT, theater.taskName, "onLoggedOut", pPlayer)
+end
+
 -- Returns ok, playerMessage
 function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	if (pPlayer == nil) then return false, "No player." end
@@ -3972,10 +4042,31 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		return false, "Mission system error. Contact staff."
 	end
 
-	-- Start the theater
-	theater:start(pPlayer)
+	-- Start the theater. Task:start() returns false when this tier's persisted
+	-- ":taskStarted:" flag is still set from a previous day — daily theaters are
+	-- never explicitly finished on normal completion, so the flag survives in
+	-- server data. Self-heal the stale task without touching unrelated quest
+	-- waypoints, then retry once.
+	local started = theater:start(pPlayer)
+	if (not started and theater.hasTaskStarted ~= nil and theater:hasTaskStarted(pPlayer)) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission: stale task state for %s - finishing and retrying.",
+			theaterName
+		))
+		self:cleanupDailyBountyTheater(pPlayer, theater)
+		started = theater:start(pPlayer)
+	end
 
-	-- Increment mission count
+	if (not started) then
+		self:cleanupDailyBountyTheater(pPlayer, theater)
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",
+			theaterName
+		))
+		return false, "The guild cannot fix a trace on a camp from this position. Move to open terrain and try again."
+	end
+
+	-- Increment mission count only after the camp actually exists
 	self:incrementDailyBountyCount(pPlayer)
 	self:clearDailyBountyReadyTier(pPlayer)
 
@@ -3994,6 +4085,84 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		"Bounty mission accepted (Tier %s/5). Check your datapad for the waypoint. This is the Way.",
 		tostring(tier)
 	)
+end
+
+-- Returns ok, playerMessage. Re-pins the datapad waypoint for the active daily
+-- tier, rebuilding the camp when its theater no longer exists (server restart,
+-- failed spawn, stale ":taskStarted:" flag). Never consumes an extra daily count.
+-- Callable from the Recruiter conversation and the tracking fob radial.
+function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen run daily contracts."
+	end
+
+	local count = self:getDailyBountyCount(pPlayer)
+	if (count == 0) then
+		return false, "You have not begun today's hunt. Use your tracking fob to begin."
+	end
+
+	local ready = self:getDailyBountyReadyTier(pPlayer)
+	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS and ready >= self.DAILY_BOUNTY_MAX_MISSIONS) then
+		return false, "All five contracts are closed for today. Return tomorrow. This is the Way."
+	end
+
+	-- Camp complete but the next tier never auto-started (lost holo or event):
+	-- kick the chain forward instead of re-pinning a finished camp.
+	if (ready == count and count < self.DAILY_BOUNTY_MAX_MISSIONS) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"resyncDailyBountyWaypoint: tier %s ready - restarting the auto-chain.", tostring(count)))
+		return self:tryAcceptDailyBountyMission(pPlayer, "holo")
+	end
+
+	-- Active tier equals the accepted count.
+	local tier = count
+	local theaterName = "BellumBountyDailyTier" .. tier .. "Theater"
+	local theater = _G[theaterName]
+	if (theater == nil) then
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: theater " .. theaterName .. " not found.")
+		return false, "Mission system error. Contact staff."
+	end
+
+	local pTheater = theater:getTheaterObject(pPlayer)
+	if (pTheater ~= nil) then
+		-- Theater alive: re-pin the quest-task waypoint at its anchor.
+		local pGhost = CreatureObject(pPlayer):getPlayerObject()
+		if (pGhost == nil) then
+			return false, "I cannot reach your datapad."
+		end
+		local wpId = PlayerObject(pGhost):addWaypoint(
+			SceneObject(pTheater):getZoneName(),
+			theater.waypointDescription or "Daily Bounty Camp",
+			"",
+			SceneObject(pTheater):getWorldPositionX(),
+			0,
+			SceneObject(pTheater):getWorldPositionY(),
+			WAYPOINT_YELLOW, true, true, WAYPOINTQUESTTASK)
+		if (wpId == nil) then
+			self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint: addWaypoint returned nil for " .. theaterName .. ".")
+			return false, "Your datapad rejected the waypoint. Relog and ask me again."
+		end
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint OK: waypoint re-pinned for " .. theaterName .. ".")
+		return true, string.format(
+			"Waypoint re-synced to your active Tier %s bounty camp. This is the Way.", tostring(tier))
+	end
+
+	-- Theater lost (restart wiped the anchor, spawn failed after the count was
+	-- consumed, etc.): rebuild the same tier without touching the daily count.
+	self:logDiagPlayer(pPlayer, string.format(
+		"resyncDailyBountyWaypoint: theater object missing for %s - rebuilding camp.", theaterName))
+	self:cleanupDailyBountyTheater(pPlayer, theater)
+	if (theater:start(pPlayer)) then
+		return true, string.format(
+			"Your Tier %s camp went dark, so the guild traced a new one. Check your datapad. This is the Way.",
+			tostring(tier))
+	end
+
+	self:cleanupDailyBountyTheater(pPlayer, theater)
+	self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: rebuild of " .. theaterName .. " did not start.")
+	return false, "The guild cannot fix a trace from this position. Move to open terrain and ask me again."
 end
 
 -- Returns ok, playerMessage

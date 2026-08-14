@@ -208,6 +208,7 @@ class PlayerObject extends IntangibleObject {
 	protected Vector3 lastLogoutWorldPosition;
 
 	protected string trainerZoneName;
+	protected unsigned long jediTrainerRerollNextTime;
 
 	@dereferenced
 	protected transient Reference<PlayerDisconnectEvent> disconnectEvent;
@@ -376,6 +377,7 @@ class PlayerObject extends IntangibleObject {
 		pvpRating = 1200;
 
 		trainerZoneName = "";
+		jediTrainerRerollNextTime = 0;
 
 		duelList.setNoDuplicateInsertPlan();
 		persistentMessages.setNoDuplicateInsertPlan();
@@ -976,6 +978,15 @@ class PlayerObject extends IntangibleObject {
 	@read
 	public string getTrainerZoneName() {
 		return trainerZoneName;
+	}
+
+	public void setJediTrainerRerollNextTime(unsigned long nextTime) {
+		jediTrainerRerollNextTime = nextTime;
+	}
+
+	@read
+	public unsigned long getJediTrainerRerollNextTime() {
+		return jediTrainerRerollNextTime;
 	}
 
 	@local

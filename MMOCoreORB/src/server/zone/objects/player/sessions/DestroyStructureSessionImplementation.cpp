@@ -28,14 +28,27 @@ int DestroyStructureSessionImplementation::initializeSession() {
 	Locker _lock(structureObject, creatureObject);
 
 	CreatureObject* player = cast<CreatureObject*>( creatureObject.get());
+	StructureManager* structureManager = StructureManager::instance();
+	bool isHarvesterInstallation = structureObject->isHarvesterObject() || structureObject->isGeneratorObject();
+	bool canRedeed = isHarvesterInstallation ?
+		structureManager->canRedeedStructure(player, structureObject) : structureObject->isRedeedable();
+
+	if (isHarvesterInstallation && canRedeed) {
+		info(true) << "Harvester automatic redeed path";
+		redeedRequired = true;
+		return destroyStructure();
+	}
+
+	if (isHarvesterInstallation)
+		info(true) << "Harvester destructive confirmation path";
 
 	String no = "\\#FF6347 @player_structure:can_redeed_no_suffix \\#.";
 	String yes = "\\#32CD32 @player_structure:can_redeed_yes_suffix \\#.";
 
-	String redeed = (structureObject->isRedeedable()) ? yes : no;
+	String redeed = canRedeed ? yes : no;
 
 	StringBuffer maint;
-	maint << "@player_structure:redeed_maintenance \\#" << ((structureObject->isRedeedable()) ? "32CD32 " : "FF6347 ") << structureObject->getSurplusMaintenance() << "/" << structureObject->getRedeedCost() << "\\#.";
+	maint << "@player_structure:redeed_maintenance \\#" << (structureObject->isRedeedable() ? "32CD32 " : "FF6347 ") << structureObject->getSurplusMaintenance() << "/" << structureObject->getRedeedCost() << "\\#.";
 
 	StringBuffer entry;
 	entry << "@player_structure:confirm_destruction_d1 ";
@@ -78,11 +91,14 @@ int DestroyStructureSessionImplementation::sendDestroyCode() {
 	CreatureObject* player = cast<CreatureObject*>( creatureObject.get());
 
 	destroyCode = 0;
+	bool isHarvesterInstallation = structureObject->isHarvesterObject() || structureObject->isGeneratorObject();
+	bool canRedeed = isHarvesterInstallation ?
+		StructureManager::instance()->canRedeedStructure(player, structureObject) : structureObject->isRedeedable();
 
 	String no = "\\#FF6347 @player_structure:will_not_redeed_confirm \\#.";
 	String yes = "\\#32CD32 @player_structure:will_redeed_confirm \\#.";
 
-	String redeed = (structureObject->isRedeedable()) ? yes : no;
+	String redeed = canRedeed ? yes : no;
 
 	StringBuffer entry;
 	entry << "@player_structure:your_structure_prefix ";
@@ -129,7 +145,14 @@ int DestroyStructureSessionImplementation::destroyStructure() {
 		return cancelSession();
 
 	} else {
-		StructureManager::instance()->redeedStructure(creatureObject);
+		int result = StructureManager::instance()->redeedStructure(creatureObject, redeedRequired);
+
+		if (result != 0 && redeedRequired) {
+			// Eligibility changed before execution; do not destroy without confirmation.
+			redeedRequired = false;
+			info(true) << "Harvester destructive confirmation path";
+			return sendDestroyCode();
+		}
 	}
 	return 0;
 }
