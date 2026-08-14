@@ -889,3 +889,45 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Restored each scene object's template-configured attribute-list component during transient initialization, preventing persisted or deserialized objects from emitting `nullptr attribute list component` when their attributes are requested.
 - **Files:** `src/server/zone/objects/scene/SceneObjectImplementation.cpp`, `bellumgero_change_log.md`
 - **Notes:** Requires rebuilding and restarting Core3.
+
+### 2026-08-10 — Fix Recruiter blank conversation and daily FOB waypoint loss
+
+- **Summary:** Guarded the Mandalorian Recruiter initial-screen selection with a logged fallback so runtime Lua errors cannot blank the conversation. Daily bounty startup now self-heals stale task state without consuming the daily count on failure, and active hunts can re-sync their waypoint through the Recruiter or FOB radial.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_daily_bounty_fob_menu.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Harden daily FOB recovery follow-up
+
+- **Summary:** Aligned FOB re-sync gating with the Recruiter, made blank-conversation error logging safe when the Mandalorian screenplay global is unavailable, preserved the re-sync option clone independently, restored the holographic story beat when recovering a dead chain, and cleaned partial theater resources after failed starts.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_daily_bounty_fob_menu.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Make Recruiter and theater recovery non-destructive
+
+- **Summary:** Restricted the Recruiter error fallback to a valid exit option so it cannot route into a missing conversation screen. Failed daily theater starts now remove only their partially created anchor and active areas, preserving unrelated quest waypoints.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Complete waypoint-safe daily hunt recovery
+
+- **Summary:** Reused task-scoped theater cleanup for stale starts and rebuild failures without bulk-removing quest waypoints. Recruiter re-sync is now active-tier only, fallback logging uses the DirectorManager-registered error function, and nil-player calls retain their prior behavior.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Clear stale camp state and isolate Recruiter fallback
+
+- **Summary:** Daily theater cleanup now removes stale completion and pending-kill bookkeeping before rebuilding a camp. Recruiter recovery logging and fallback-screen construction are independently protected so secondary Lua errors cannot escape the blank-conversation guard.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Persist daily tier completion outside holo delivery
+
+- **Summary:** Each daily bounty theater now records its ready tier directly when the decisive target dies, before optional holographic story delivery. Restart recovery can no longer rebuild and reward an already-cleared tier solely because the holo subsystem was unavailable.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_daily_tier1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier3_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier4_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier5_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Remove surviving daily camp mob observers
+
+- **Summary:** Bounty camp observer setup now records player/task-owned mobile IDs. Theater recovery drops each old kill observer, removes per-mob ownership/role keys, destroys surviving camp mobs, and clears boss/completion bookkeeping even when the anchor or decor is already gone.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
