@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-08-13 — Correct Mandalorian armor learning, exchange, and wear gates
+
+- **Summary:** Changed all ten Death Watch Mandalorian armor loot schematics from Master Armorsmith to Novice Armorsmith so any Armorsmith can learn and craft them. The recruiter now confirms and performs an armor-only one-for-one legacy exchange without requiring a complete set or jetpack, leaves the account claim available after partial failure, and requires one free inventory slot. Replaced the stock master-profession wear certifications on all ten crafted armor pieces with the character-earned Mandalorian Tribesman title skill; login restores that skill for verified Chapter 5/badge veterans without changing their selected title.
+- **Files:** `bin/scripts/object/tangible/loot/loot_schematic/death_watch_mandalorian_{belt,bicep_l,bicep_r,boots,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings}_schematic.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/armor_mandalorian_{belt,bicep_l,bicep_r,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings,shoes}.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`
+- **Notes:** The reviewed loot, draft schematic, and crafted-object paths are complete. Each legacy armor schematic maps to one fresh copy of the same IFF; jetpack is excluded from the recruiter exchange. Crafted wearables already receive four sockets through `WearableObjectImplementation::generateSockets`, and Death Watch terminal rewards also explicitly call `setMaxSockets(4)`. Requires a zone/server restart for object-template Lua.
+
 ### 2026-07-23 — Block /teach of Mandalorian quest skills and titles
 
 - **Summary:** Players could `/teach` the Mandalorian Way ranks, titles, and weapon certs (`mando_title_*`, `mando_way_cert_*`, `mando_way_status_cmd`) to other players, bypassing the quest. These skills have no skill/xp/point prerequisites, so `SkillManager::canLearnSkill` always approved them and `getTeachableSkills` did not filter them. Added `mando_` to the teach exclusion list alongside the existing `force_*`/`admin_` guards.

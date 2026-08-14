@@ -36,7 +36,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		local oldCount = MandoWayOfLife:countOldMandalorianSchematics(pPlayer)
 		if (oldCount > 0) then
 			cloned:addOption(
-				"Exchange old Mandalorian armor schematics for learnable versions (once per account).",
+				"Exchange individual old Mandalorian armor schematics one-for-one (once per account).",
 				"mando_schematic_exchange"
 			)
 			added = true
@@ -212,7 +212,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_title_retro_grant ok=%s.", tostring(ok)))
 		return pCloned
 
-	elseif (screenID == "mando_schematic_exchange") then
+	elseif (screenID == "mando_schematic_exchange_grant") then
 		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
 			local luaScreen = LuaConversationScreen(pConvScreen)
 			local pCloned = luaScreen:cloneScreen()
@@ -227,7 +227,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		local cloned = LuaConversationScreen(pCloned)
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
-		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_schematic_exchange ok=%s.", tostring(ok)))
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_schematic_exchange_grant ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "mando_daily_bounty_fob") then

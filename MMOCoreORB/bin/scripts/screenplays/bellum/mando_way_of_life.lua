@@ -1731,6 +1731,8 @@ end
 function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 	if (pPlayer == nil) then return end
 
+	self:ensureMandalorianArmorWearEligibility(pPlayer)
+
 	local arcDone = self:readInt(pPlayer, "foundling.arcComplete") == 1
 	local ch0 = self:readInt(pPlayer, "chapter0Started") == 1
 
@@ -2888,6 +2890,13 @@ function MandoWayOfLife:grantChapterRankTitle(pPlayer, chapterIndex)
 	end
 end
 
+function MandoWayOfLife:ensureMandalorianArmorWearEligibility(pPlayer)
+	if (pPlayer == nil or self:getHighestEarnedChapter(pPlayer) < 5) then return end
+	if (not CreatureObject(pPlayer):hasSkill("mando_title_mandalorian")) then
+		awardSkill(pPlayer, "mando_title_mandalorian")
+	end
+end
+
 -- Grant quest-gated certification skills (removed from profession skills in bg_custom1.tre)
 function MandoWayOfLife:grantQuestCertSkills(pPlayer, chapterIndex)
 	if (pPlayer == nil) then return end
@@ -3476,7 +3485,6 @@ MandoWayOfLife.schematicExchangeMap = {
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff",
-	["object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff",
 }
 
 -- Returns the number of old Mandalorian armor schematics in the player's top-level inventory.
@@ -3551,6 +3559,9 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	if (pInventory == nil) then
 		return false, "I cannot reach your inventory."
 	end
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		return false, "Make at least one free inventory slot, then try the one-for-one exchange again."
+	end
 
 	local exchanged = 0
 	for _, pOldSchematic in ipairs(oldSchematics) do
@@ -3575,8 +3586,18 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 		end
 	end
 
-	if (exchanged < 1) then
-		return false, "Something blocked the exchange. Contact staff."
+	if (exchanged ~= #oldSchematics) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryExchangeMandalorianSchematics PARTIAL accountId=%s exchanged=%s expected=%s; account claim not set.",
+			tostring(self:getPlayerAccountId(pPlayer)),
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		))
+		return false, string.format(
+			"Only %s of %s armor schematic(s) were replaced. Your account was not marked as claimed; make inventory room and try again.",
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		)
 	end
 
 	writeData(accountKey, 1)
@@ -3590,12 +3611,12 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	))
 
 	CreatureObject(pPlayer):sendSystemMessage(string.format(
-		"[Mandalorian Way] Schematic exchange complete: %s Mandalorian armor schematic(s) replaced with learnable versions. Give them to a Master Armorsmith.",
+		"[Mandalorian Way] One-for-one exchange complete: %s old armor schematic(s) replaced with fresh matching armor schematic(s). Give them to any Armorsmith.",
 		tostring(exchanged)
 	))
 
 	return true, string.format(
-		"Done. I exchanged %s old Mandalorian armor schematic(s) for new learnable versions. Give them to a Master Armorsmith — one exchange per login account. This is the Way.",
+		"Done. I replaced %s old armor schematic(s) one-for-one with fresh matching copies. No complete set or jetpack was required. Any Armorsmith can learn them. This is the Way.",
 		tostring(exchanged)
 	)
 end
