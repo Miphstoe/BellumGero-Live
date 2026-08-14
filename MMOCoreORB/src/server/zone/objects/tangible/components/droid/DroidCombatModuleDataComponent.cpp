@@ -36,12 +36,13 @@ void DroidCombatModuleDataComponent::updateCraftingValues(CraftingValues* values
 }
 
 void DroidCombatModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* creature) {
-	// convert module rating to actual rating
-	alm->insertAttribute("cmbt_module", (int)rating);
-
-	// Should insert Base Stuff for hit/min/max/speed values
+	// Standalone Combat Modules and socket banks should show the installed
+	// module rating for crafting verification. A called droid already shows
+	// the derived attack speed, accuracy and damage, so hide the raw total.
 	ManagedReference<DroidObject*> droid = getDroidObject();
+
 	if (droid == nullptr) {
+		alm->insertAttribute("cmbt_module", (int)rating);
 		return;
 	}
 
@@ -100,6 +101,15 @@ void DroidCombatModuleDataComponent::initialize(DroidObject* droid) {
 	int maxDmg = DroidMechanics::determineMaxDamage(droid->getSpecies(), rating);
 	float toHit = DroidMechanics::determineHit(droid->getSpecies(), maxHam);
 	float speed = DroidMechanics::determineSpeed(droid->getSpecies(), maxHam);
+
+	// Unsupported/custom chassis do not have a dedicated combat profile. Never
+	// apply zero attack speed or zero accuracy to a droid that accepts a Combat
+	// Module; use a deliberately weak but safe fallback instead.
+	if (speed <= 0.0f)
+		speed = 2.0f;
+
+	if (toHit <= 0.0f)
+		toHit = 0.20f;
 
 	droid->setHitChance(toHit);
 	droid->setMaxDamage(maxDmg);

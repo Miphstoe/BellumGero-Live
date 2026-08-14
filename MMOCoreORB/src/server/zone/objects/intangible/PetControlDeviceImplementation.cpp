@@ -36,6 +36,36 @@ namespace {
 	static constexpr int PET_ACTIVE_GROWTH_XP_DIVISOR = 25;
 	static constexpr int PET_ACTIVE_GROWTH_MIN_SECONDS = 5;
 	static constexpr int PET_ACTIVE_GROWTH_MAX_PER_KILL_SECONDS = 180;
+
+	bool hasCombatDroidOperatorCertification(CreatureObject* player) {
+		if (player == nullptr)
+			return false;
+
+		return player->hasSkill("crafting_architect_master")
+			|| player->hasSkill("crafting_armorsmith_master")
+			|| player->hasSkill("crafting_chef_master")
+			|| player->hasSkill("crafting_droidengineer_master")
+			|| player->hasSkill("crafting_shipwright_master")
+			|| player->hasSkill("crafting_tailor_master")
+			|| player->hasSkill("crafting_weaponsmith_master")
+			|| player->hasSkill("outdoors_bio_engineer_master")
+			|| player->hasSkill("outdoors_ranger_master")
+			|| player->hasSkill("science_doctor_master")
+			|| player->hasSkill("social_dancer_master")
+			|| player->hasSkill("social_musician_master")
+			|| player->hasSkill("social_imagedesigner_master");
+	}
+
+	bool usesCombatDroidSlot(AiAgent* pet) {
+		if (pet == nullptr || !pet->isDroidObject())
+			return false;
+
+		DroidObject* droid = cast<DroidObject*>(pet);
+
+		// Combat capability always takes priority over a Detonation Module.
+		// A combat-capable bomb droid must still use the dedicated combat slot.
+		return droid != nullptr && droid->isCombatDroid();
+	}
 }
 
 void PetControlDeviceImplementation::callObject(CreatureObject* player, bool initialCall) {
@@ -124,14 +154,16 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 
 	bool isBombDroid = false;
 
-	// Bomb Droid bool only can be true on initial call
+	// Only a pure bomb droid receives bomb-droid call exemptions. A droid that
+	// also has combat capability remains a combat droid for all call checks.
 	if (pet->isDroid()) {
 		auto droid = pet.castTo<DroidObject*>();
 
-		if (droid != nullptr && droid->isBombDroid()) {
-			isBombDroid = true;
-		}
+		if (droid != nullptr)
+			isBombDroid = droid->isBombDroid() && !droid->isCombatDroid();
 	}
+
+	bool isCallingCombatDroid = petType == PetManager::DROIDPET && usesCombatDroidSlot(pet);
 
 	// No Pet active area check
 	if (!isBombDroid) {
@@ -201,6 +233,11 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 
 	if (!growPet(player))
 		return;
+
+	if (petType == PetManager::DROIDPET && isCallingCombatDroid && !hasCombatDroidOperatorCertification(player)) {
+		player->sendSystemMessage("You must master an eligible elite non-combat profession to operate a combat droid.");
+		return;
+	}
 
 	if (petType == PetManager::CREATUREPET && !isValidPet(pet)) {
 		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player,SuiWindowType::PET_FIX_DIALOG);
@@ -335,8 +372,14 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 					return;
 				}
 			} else if (object->isDroidObject() && petType == PetManager::DROIDPET) {
-				if (++currentlySpawned >= maxPets) {
-					player->sendSystemMessage("@pet/pet_menu:at_max"); // You already have the maximum number of pets of this type that you can call.
+				bool activeDroidIsCombat = usesCombatDroidSlot(object.get());
+
+				if (activeDroidIsCombat == isCallingCombatDroid) {
+					if (isCallingCombatDroid)
+						player->sendSystemMessage("You already have an active combat droid.");
+					else
+						player->sendSystemMessage("You already have an active utility droid.");
+
 					return;
 				}
 			}
@@ -356,7 +399,6 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
 		message.setDI(1);
 		player->sendSystemMessage(message);
-
 		player->addPendingTask("call_pet", callPet, 1 * 1000); // 1 sec delay before starting call
 
 		if (petControlObserver == nullptr) {

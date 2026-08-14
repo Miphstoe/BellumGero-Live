@@ -40,3 +40,5 @@
 --this exception also makes it possible to release a modified version
 --which carries forward this exception.
 
+includeFile("weapon/melee/shared_mando_melee_weapons.lua")
+

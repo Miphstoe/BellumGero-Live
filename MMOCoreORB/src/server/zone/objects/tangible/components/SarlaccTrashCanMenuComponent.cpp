@@ -51,7 +51,7 @@ static bool isAccessible(SceneObject* sceneObject, CreatureObject* creature) {
 }
 
 void SarlaccTrashCanMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
-	TangibleObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
+	ItemLockMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	if (isAccessible(sceneObject, player))
 		menuResponse->addRadialMenuItem(RADIAL_CONSUME, 3, "Consume Garbage");
@@ -59,7 +59,7 @@ void SarlaccTrashCanMenuComponent::fillObjectMenuResponse(SceneObject* sceneObje
 
 int SarlaccTrashCanMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
 	if (selectedID != RADIAL_CONSUME)
-		return TangibleObjectMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
+		return ItemLockMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
 
 	if (!isAccessible(sceneObject, creature))
 		return 0;

@@ -26,6 +26,39 @@
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 
+namespace {
+	bool hasCombatDroidOperatorCertification(CreatureObject* player) {
+		if (player == nullptr)
+			return false;
+
+		return player->hasSkill("crafting_architect_master")
+			|| player->hasSkill("crafting_armorsmith_master")
+			|| player->hasSkill("crafting_chef_master")
+			|| player->hasSkill("crafting_droidengineer_master")
+			|| player->hasSkill("crafting_shipwright_master")
+			|| player->hasSkill("crafting_tailor_master")
+			|| player->hasSkill("crafting_weaponsmith_master")
+			|| player->hasSkill("outdoors_bio_engineer_master")
+			|| player->hasSkill("outdoors_ranger_master")
+			|| player->hasSkill("science_doctor_master")
+			|| player->hasSkill("social_dancer_master")
+			|| player->hasSkill("social_musician_master")
+			|| player->hasSkill("social_imagedesigner_master");
+	}
+
+	int getArmorModuleLevel(HashTable<String, ManagedReference<DroidComponent*> >& modules) {
+		if (!modules.containsKey("armor_module"))
+			return 0;
+
+		ManagedReference<DroidComponent*> armorComponent = modules.get("armor_module");
+
+		if (armorComponent == nullptr || !armorComponent->hasKey("armor_module"))
+			return 0;
+
+		return (int)armorComponent->getAttributeValue("armor_module");
+	}
+}
+
 void DroidDeedImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	DeedImplementation::loadTemplateData(templateData);
 
@@ -66,6 +99,10 @@ void DroidDeedImplementation::onCloneObject(SceneObject* objectToClone) {
 
 			if (comp != nullptr) {
 				ManagedReference<DroidComponent*> cloneComponent = cast<DroidComponent*>(ObjectManager::instance()->cloneObject(comp));
+
+				if (cloneComponent == nullptr)
+					continue;
+
 				cloneComponent->setParent(nullptr);
 				modules.put(key, cloneComponent);
 			}
@@ -76,21 +113,13 @@ void DroidDeedImplementation::onCloneObject(SceneObject* objectToClone) {
 void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
 	DeedImplementation::fillAttributeList(alm, object);
 
-	// Use species to set challenge_level
-	if (species == DroidObject::PROBOT) {
-		level = 19;
-	} else if (species == DroidObject::LE_REPAIR || species == DroidObject::DZ70 || (species == DroidObject::R_SERIES && combatRating > 0)) {
-		level = 18;
-	} else if (species == DroidObject::R_SERIES) {
-		level = 7;
-	} else {
-		level = 1;
-	}
+	int armorModuleLevel = getArmorModuleLevel(modules);
+	int displayLevel = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
 
-	alm->insertAttribute("challenge_level", level);
+	alm->insertAttribute("challenge_level", displayLevel);
 
 	// HAM
-	int maxHam = DroidMechanics::determineHam(overallQuality,species);
+	int maxHam = DroidMechanics::determineHam(overallQuality, species);
 	alm->insertAttribute("creature_health", maxHam);
 	alm->insertAttribute("creature_action", maxHam);
 	alm->insertAttribute("creature_mind", maxHam);
@@ -101,6 +130,15 @@ void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 		float chanceHit = DroidMechanics::determineHit(species,maxHam);
 		float damageMin = DroidMechanics::determineMinDamage(species,combatRating);
 		float damageMax = DroidMechanics::determineMaxDamage(species,combatRating);
+
+		// Unsupported/custom chassis use the same safe fallback applied when
+		// the Combat Module initializes the called droid. This prevents the deed
+		// from advertising an invalid zero attack speed or zero accuracy.
+		if (attackSpeed <= 0.0f)
+			attackSpeed = 2.0f;
+
+		if (chanceHit <= 0.0f)
+			chanceHit = 0.20f;
 
 		StringBuffer attdisplayValue;
 		StringBuffer hitdisplayValue;
@@ -132,6 +170,29 @@ void DroidDeedImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 				continue;
 			}
 
+			String moduleName = module->getModuleName();
+
+			// The finished deed already displays the combat results derived
+			// from Combat Module Rating: attack speed, accuracy and damage.
+			// Keep the raw rating visible on components/socket banks only.
+			if (moduleName == "combat_module")
+				continue;
+
+			// Stim Power is determined only after Class A stimpacks are loaded
+			// into the generated droid. The deed should preview the dispenser's
+			// crafted Capacity and Delivery Speed without showing a false zero.
+			if (moduleName == "stimpack_module") {
+				if (comp->hasKey("stimpack_capacity"))
+					alm->insertAttribute("stimpack_capacity",
+						(int)comp->getAttributeValue("stimpack_capacity"));
+
+				if (comp->hasKey("stimpack_speed"))
+					alm->insertAttribute("stimpack_speed",
+						(int)comp->getAttributeValue("stimpack_speed"));
+
+				continue;
+			}
+
 			module->fillAttributeList(alm,object);
 		}
 	}
@@ -149,35 +210,73 @@ void DroidDeedImplementation::processModule(BaseDroidModuleComponent* module, ui
 	if (module->isStackable()) {
 		if (modules.containsKey(module->getModuleName())) {
 			// add to the stack if stackable.
-			DroidComponent* comp = modules.get(module->getModuleName());
-			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(comp->getDataObjectComponent()->get());
+			ManagedReference<DroidComponent*> comp = modules.get(module->getModuleName());
+
+			if (comp == nullptr)
+				return;
+
+			DataObjectComponentReference* data = comp->getDataObjectComponent();
+
+			if (data == nullptr || data->get() == nullptr ||
+					!data->get()->isDroidModuleData())
+				return;
+
+			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
 
 			if (bmodule != nullptr)
 				bmodule->addToStack(module);
 		} else {
 			ManagedReference<DroidComponent*> dcomp = (this->getZoneServer()->createObject(crc, 1)).castTo<DroidComponent*>();
+
+			if (dcomp == nullptr)
+				return;
+
 			dcomp->setParent(nullptr);
 
-			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(dcomp->getDataObjectComponent()->get());
+			DataObjectComponentReference* data = dcomp->getDataObjectComponent();
 
-			if (bmodule != nullptr) {
-				bmodule->copy(module);
-				bmodule->setSpecies(species);
+			if (data == nullptr || data->get() == nullptr ||
+					!data->get()->isDroidModuleData()) {
+				dcomp->destroyObjectFromDatabase(true);
+				return;
 			}
 
+			BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
+
+			if (bmodule == nullptr) {
+				dcomp->destroyObjectFromDatabase(true);
+				return;
+			}
+
+			bmodule->copy(module);
+			bmodule->setSpecies(species);
 			modules.put(module->getModuleName(), dcomp);
 		}
 	} else {
 		ManagedReference<DroidComponent*> dcomp = (this->getZoneServer()->createObject(crc, 1)).castTo<DroidComponent*>();
+
+		if (dcomp == nullptr)
+			return;
+
 		dcomp->setParent(nullptr);
 
-		BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(dcomp->getDataObjectComponent()->get());
+		DataObjectComponentReference* data = dcomp->getDataObjectComponent();
 
-		if (bmodule != nullptr) {
-			bmodule->copy(module);
-			bmodule->setSpecies(species);
+		if (data == nullptr || data->get() == nullptr ||
+				!data->get()->isDroidModuleData()) {
+			dcomp->destroyObjectFromDatabase(true);
+			return;
 		}
 
+		BaseDroidModuleComponent* bmodule = cast<BaseDroidModuleComponent*>(data->get());
+
+		if (bmodule == nullptr) {
+			dcomp->destroyObjectFromDatabase(true);
+			return;
+		}
+
+		bmodule->copy(module);
+		bmodule->setSpecies(species);
 		modules.put(module->getModuleName(), dcomp);
 	}
 }
@@ -212,9 +311,66 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 	}
 	modules.removeAll();
 
-	overallQuality = values->getCurrentPercentage("power_level"); // effectiveness
-	if (overallQuality < 0)
-		overallQuality = 0.1f;
+	ManagedReference<ManufactureSchematic*> manufact = values->getManufactureSchematic();
+
+	// Find the separately crafted chassis before calculating final quality.
+	// The generic crafting system linearly adds the chassis power_level to
+	// the deed's power_level value, so remove that raw addition first and
+	// replace it with the intentionally bounded chassis contribution below.
+	float chassisPowerLevel = -1.0f;
+
+	if (manufact != nullptr) {
+		for (int i = 0; i < manufact->getSlotCount(); ++i) {
+			Reference<IngredientSlot*> chassisSlot = manufact->getSlot(i);
+
+			if (chassisSlot == nullptr || !chassisSlot->isComponentSlot())
+				continue;
+
+			ComponentSlot* componentSlot = cast<ComponentSlot*>(chassisSlot.get());
+
+			if (componentSlot == nullptr)
+				continue;
+
+			ManagedReference<DroidComponent*> component = cast<DroidComponent*>(componentSlot->getPrototype());
+
+			if (component == nullptr || !component->hasKey("power_level"))
+				continue;
+
+			if (!component->getObjectTemplate()->getFullTemplateString().contains("droid_chassis"))
+				continue;
+
+			chassisPowerLevel = component->getAttributeValue("power_level");
+			break;
+		}
+	}
+
+	// The basic and advanced schematics use actual power-level ranges of
+	// 0-50 and 50-100. Store the deed's real value as normalized 0.0-1.0.
+	float finalPowerLevel = values->getCurrentValue("power_level");
+
+	if (chassisPowerLevel >= 0.0f)
+		finalPowerLevel -= chassisPowerLevel;
+
+	overallQuality = finalPowerLevel / 100.0f;
+
+	if (chassisPowerLevel >= 0.0f) {
+		float chassisRatio = chassisPowerLevel / 50.0f;
+
+		if (chassisRatio < 0.0f)
+			chassisRatio = 0.0f;
+
+		if (chassisRatio > 1.0f)
+			chassisRatio = 1.0f;
+
+		// Chassis 0 = -5 quality points, 25 = neutral, 50 = +5.
+		overallQuality += (chassisRatio - 0.5f) * 0.10f;
+	}
+
+	if (overallQuality < 0.0f)
+		overallQuality = 0.0f;
+
+	if (overallQuality > 1.0f)
+		overallQuality = 1.0f;
 
 	combatRating = values->getCurrentValue("cmbt_module");
 	if (combatRating < 0)
@@ -227,7 +383,8 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 	// we need to stack modules if they are stackable.
 	// walk all components and ensure we have all modules that are stackable there.
 
-	ManagedReference<ManufactureSchematic*> manufact = values->getManufactureSchematic();
+	if (manufact == nullptr)
+		return;
 
 	for (int i = 0; i < manufact->getSlotCount(); ++i) {
 		// Droid Component Slots
@@ -251,30 +408,35 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 			// pull out the objects
 			ManagedReference<SceneObject*> craftingComponents = component->getSlottedObject("crafted_components");
 
-			if (craftingComponents != nullptr) {
-				SceneObject* satchel = craftingComponents->getContainerObject(0);
+			if (craftingComponents == nullptr ||
+					craftingComponents->getContainerObjectsSize() == 0)
+				continue;
 
-				for (int i = 0; i < satchel->getContainerObjectsSize(); ++i) {
-					ManagedReference<SceneObject*> sceno = satchel->getContainerObject(i);
+			ManagedReference<SceneObject*> satchel = craftingComponents->getContainerObject(0);
 
-					if (sceno != nullptr) {
-						// now we have the component used in this socket item
-						ManagedReference<DroidComponent*> sub = cast<DroidComponent*>( sceno.get());
+			if (satchel == nullptr)
+				continue;
 
-						if (sub != nullptr) {
-							DataObjectComponentReference* data = sub->getDataObjectComponent();
-							BaseDroidModuleComponent* module = nullptr;
+			for (int j = 0; j < satchel->getContainerObjectsSize(); ++j) {
+				ManagedReference<SceneObject*> sceno = satchel->getContainerObject(j);
 
-							if (data != nullptr && data->get() != nullptr && data->get()->isDroidModuleData()){
-								module = cast<BaseDroidModuleComponent*>(data->get());
-							}
+				if (sceno != nullptr) {
+					// now we have the component used in this socket item
+					ManagedReference<DroidComponent*> sub = cast<DroidComponent*>( sceno.get());
 
-							if (module == nullptr) {
-								continue;
-							}
+					if (sub != nullptr) {
+						DataObjectComponentReference* data = sub->getDataObjectComponent();
+						BaseDroidModuleComponent* module = nullptr;
 
-							processModule(module, sceno->getServerObjectCRC());
+						if (data != nullptr && data->get() != nullptr && data->get()->isDroidModuleData()){
+							module = cast<BaseDroidModuleComponent*>(data->get());
 						}
+
+						if (module == nullptr) {
+							continue;
+						}
+
+						processModule(module, sceno->getServerObjectCRC());
 					}
 				}
 			}
@@ -294,7 +456,11 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 		}
 
 	}
-	// module stacking is completed!
+
+	// Module stacking is complete. Calculate and persist the finished droid's
+	// challenge level from its actual HAM, DPS, accuracy, armor and resistance.
+	int armorModuleLevel = getArmorModuleLevel(modules);
+	level = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
 }
 
 void DroidDeedImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -317,7 +483,26 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 			return 1;
 		}
 
-		bool bombDroid = isBombDroid();
+		bool combatDroid =
+			modules.containsKey("combat_module") ||
+			species == DroidObject::PROBOT ||
+			species == DroidObject::DZ70;
+
+		// A droid carrying both Combat and Detonation Modules is still a combat
+		// droid for certification, active-slot and call-restriction purposes.
+		// Only a pure bomb droid receives the normal bomb-droid exemptions.
+		bool bombDroid = isBombDroid() && !combatDroid;
+		bool requiresCombatDroidCertification = combatDroid;
+
+		if (requiresCombatDroidCertification &&
+				!hasCombatDroidOperatorCertification(player)) {
+			player->sendSystemMessage(
+				"You must master an eligible elite non-combat profession "
+				"to operate a combat droid."
+			);
+
+			return 1;
+		}
 
 		if (player->isDead()) {
 			player->sendSystemMessage("@pet/pet_menu:cant_call"); // "You cannot call this pet right now."
@@ -369,7 +554,7 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 			return 1;
 		}
 
-		Reference<CreatureManager*> creatureManager = player->getZone()->getCreatureManager();\
+		Reference<CreatureManager*> creatureManager = player->getZone()->getCreatureManager();
 
 		if (creatureManager == nullptr) {
 			return 1;
@@ -415,9 +600,13 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		droid->setCustomObjectName(StringIdManager::instance()->getStringId(*droid->getObjectName()), true);
 		droid->createChildObjects();
 		droid->setControlDevice(controlDevice);
-		droid->setLevel(level);
 
-		float maxHam = DroidMechanics::determineHam(overallQuality, species);
+		int armorModuleLevel = getArmorModuleLevel(modules);
+		int droidLevel = DroidMechanics::determineLevel(overallQuality, species, combatRating, armorModuleLevel);
+		droid->setLevel(droidLevel);
+
+		int maxHam = (int)round(DroidMechanics::determineHam(overallQuality, species));
+		droid->setMaximumHAM(maxHam);
 
 		for (int i = 0; i < 9; ++i) {
 			if (i % 3 == 0) {
@@ -449,7 +638,13 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 				error("Error transferring droid module from Deed to Object");
 			}
 
-			BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(comp->getDataObjectComponent()->get());
+			DataObjectComponentReference* componentData = comp->getDataObjectComponent();
+
+			if (componentData == nullptr || componentData->get() == nullptr ||
+					!componentData->get()->isDroidModuleData())
+				continue;
+
+			BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(componentData->get());
 
 			if (data != nullptr) {
 				data->initialize(droid);
@@ -526,7 +721,13 @@ bool DroidDeedImplementation::isBombDroid() {
 			continue;
 		}
 
-		BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(droidComponent->getDataObjectComponent()->get());
+		DataObjectComponentReference* componentData = droidComponent->getDataObjectComponent();
+
+		if (componentData == nullptr || componentData->get() == nullptr ||
+				!componentData->get()->isDroidModuleData())
+			continue;
+
+		BaseDroidModuleComponent* data = cast<BaseDroidModuleComponent*>(componentData->get());
 
 		if (data == nullptr || !data->isDetonationModule()) {
 			continue;

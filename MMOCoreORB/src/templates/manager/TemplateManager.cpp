@@ -917,6 +917,7 @@ AppearanceTemplate* TemplateManager::instantiateAppearanceTemplate(IffStream* if
 		case 'DTLA':
 			appTemplate = new DetailAppearanceTemplate();
 			break;
+		case 'SPRT':
 		case 'SMAT':
 			break;
 		case 'PEFT':

@@ -6478,3 +6478,35 @@ object_tangible_loot_loot_schematic_shared_chest_technical_schematic = SharedTan
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_chest_technical_schematic, "object/tangible/loot/loot_schematic/shared_chest_technical_schematic.iff")
 
 --------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_mando_beskar_pike_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_beskar_pike_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_beskar_pike_schematic, "object/tangible/loot/loot_schematic/shared_mando_beskar_pike_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_mando_stun_baton_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_stun_baton_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_stun_baton_schematic, "object/tangible/loot/loot_schematic/shared_mando_stun_baton_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_mando_acid_baton_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_acid_baton_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_acid_baton_schematic, "object/tangible/loot/loot_schematic/shared_mando_acid_baton_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_mando_power_hammer_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_power_hammer_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_power_hammer_schematic, "object/tangible/loot/loot_schematic/shared_mando_power_hammer_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_mando_knuckler_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_knuckler_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_knuckler_schematic, "object/tangible/loot/loot_schematic/shared_mando_knuckler_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_mando_lava_blade_schematic = SharedTangibleObjectTemplate:new {
+    clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_mando_lava_blade_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_lava_blade_schematic, "object/tangible/loot/loot_schematic/shared_mando_lava_blade_schematic.iff")
+
+--------------------------------------------------------------------

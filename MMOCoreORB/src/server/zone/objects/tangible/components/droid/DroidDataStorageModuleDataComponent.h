@@ -18,6 +18,7 @@ class DroidDataStorageModuleDataComponent : public BaseDroidModuleComponent {
 
 protected:
 	int rating;
+	bool capacityFormatV2;
 
 public:
 	DroidDataStorageModuleDataComponent();
@@ -40,7 +41,11 @@ public:
 
 	int handleObjectMenuSelect(CreatureObject* player, byte selectedID, PetControlDevice* controller);
 
+	// Internal datapad tier, from 1 through 6.
 	int getStorageRating();
+
+	// Actual player-facing datapad capacity, from 25 through 150.
+	int getStorageCapacity();
 
 	String getModuleName() const;
 

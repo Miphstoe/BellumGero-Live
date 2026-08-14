@@ -43,7 +43,7 @@
 
 object_tangible_mission_mando_daily_bounty_fob = object_tangible_mission_shared_mando_daily_bounty_fob:new {
 	objectMenuComponent = "MandoDailyBountyFobMenuComponent",
-	attributeListComponent = "MandoDailyBountyFobAttributeListComponent",
+	attributeListComponent = "AttributeListComponent",
 }
 
 ObjectTemplates:addTemplate(object_tangible_mission_mando_daily_bounty_fob, "object/tangible/mission/mando_daily_bounty_fob.iff")

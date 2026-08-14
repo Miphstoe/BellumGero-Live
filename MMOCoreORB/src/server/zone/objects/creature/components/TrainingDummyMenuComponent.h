@@ -29,3 +29,4 @@ public:
 };
 
 #endif /* TRAININGDUMMYMENUCOMPONENT_H_ */
+

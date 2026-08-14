@@ -959,11 +959,14 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
         float totalFocusBuff = 0.0f;
         float totalWillBuff  = 0.0f;
 
-        // A single performance can apply all three buffs, but each stat still
-        // requires its matching enhancer branch to exist on the performer.
-        // Mind requires the dance enhancer; Focus/Willpower require the music enhancer.
-        if ((isDancePerformance || isMusicPerformance) && danceSkillMod > 0.0f) {
-            totalMindBuff = 1250.0f + danceTapeBonus;
+        // A single performance can apply all three buffs. Mind uses whichever
+        // enhancer matches the active performance type (dance or music), the
+        // same way addEntertainerBuffStrength() caps strength per type above.
+        float mindSkillMod  = isDancePerformance ? danceSkillMod  : musicSkillMod;
+        float mindTapeBonus = isDancePerformance ? danceTapeBonus : musicTapeBonus;
+
+        if ((isDancePerformance || isMusicPerformance) && mindSkillMod > 0.0f) {
+            totalMindBuff = 1250.0f + mindTapeBonus;
         }
 
         if ((isDancePerformance || isMusicPerformance) && musicSkillMod > 0.0f) {
