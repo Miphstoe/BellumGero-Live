@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "deployed": "2026-08-12T08:04:49",
+  "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
+  "base_tre_sha256": "273d3879b20a7424e26ac7548dcaed464c908a90aa8538644b302a12ae94214b",
+  "dependencies": {
+    "records": {}
+  },
+  "tre_sha256": "7e73dc61b7069395852f9d6401997311e8c41a6c218f6a57f7c0abd8479ec4b2",
+  "server_template_lua_sha256": "17129057e35b7a7cf33c2561ab02ae21e5b82d24d6ae25d5e8406e90f21f3ec3",
+  "oid_registry_sha256": "638e95d98e7207369f2a0d7a3aada13c8529ddcd295362d0585892f1da4b601a",
+  "projects": []
+}

@@ -413,6 +413,13 @@ object_building_tatooine_shared_cave_tatooine_style_01 = SharedBuildingObjectTem
 
 ObjectTemplates:addClientTemplate(object_building_tatooine_shared_cave_tatooine_style_01, "object/building/tatooine/shared_cave_tatooine_style_01.iff")
 
+-- Bellum Gero custom Lok Droid Cave
+object_building_tatooine_shared_cave_tatooine_droid_01 = SharedBuildingObjectTemplate:new {
+	clientTemplateFileName = "object/building/tatooine/shared_cave_tatooine_droid_01.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_building_tatooine_shared_cave_tatooine_droid_01, "object/building/tatooine/shared_cave_tatooine_droid_01.iff")
+
 object_building_tatooine_shared_cave_tatooine_style_02 = SharedBuildingObjectTemplate:new {
 	clientTemplateFileName = "object/building/tatooine/shared_cave_tatooine_style_02.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups

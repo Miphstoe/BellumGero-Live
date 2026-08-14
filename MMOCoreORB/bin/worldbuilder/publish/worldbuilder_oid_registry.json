@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "strategy": "reserved-high-band-descending-v1",
+  "reserved_min": 1610612736,
+  "reserved_max": 1879048191,
+  "reserved_min_hex": "0x60000000",
+  "reserved_max_hex": "0x6FFFFFFF",
+  "next_unassigned_oid": 1879048191,
+  "assignments": {},
+  "active_keys": [],
+  "retired_keys": []
+}

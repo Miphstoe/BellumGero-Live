@@ -149,6 +149,7 @@ Core3 = {
 	------TRE config------
 	TrePath = "/trefiles",
 	TreFiles = {
+		"bg_worldbuilder.tre",
 		"bg_custom1.tre",
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
