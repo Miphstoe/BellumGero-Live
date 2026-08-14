@@ -1,52 +1,43 @@
+-- Slicer's Contraband Cache
+-- One item is selected when a locked container is successfully sliced.
+-- Total weight: 10,000,000
+
 looted_container = {
-    description = "",
-    minimumLevel = 0,
-    maximumLevel = 0,
-    lootItems = {
-        -- Junk/Misc Items (15% chance total, excluding locked_container)
-        -- Common
-        {itemTemplate = "broken_decryptor", weight = 62500},
-        {itemTemplate = "camera", weight = 62500},
-        {itemTemplate = "corrupt_datadisk", weight = 62500},
-        {itemTemplate = "corsec_id_badge", weight = 62500},
-        {itemTemplate = "damaged_datapad", weight = 62500},
-        {itemTemplate = "decorative_bowl", weight = 62500},
-        {itemTemplate = "decorative_shisa", weight = 62500},
-        {itemTemplate = "dermal_analyzer", weight = 62500},
-        {itemTemplate = "dud_firework_grey", weight = 62500},
-        {itemTemplate = "dud_firework_red", weight = 62500},
-        {itemTemplate = "empty_cage", weight = 62500},
-        {itemTemplate = "expensive_basket", weight = 62500},
-        {itemTemplate = "expired_ticket", weight = 62500},
-        {itemTemplate = "hyperdrive_part", weight = 62500},
-        {itemTemplate = "ledger", weight = 62500},
-        {itemTemplate = "locked_briefcase", weight = 62500},
-        {itemTemplate = "loudspeaker", weight = 62500},
-        {itemTemplate = "palm_frond", weight = 62500},
-        {itemTemplate = "photographic_image", weight = 62500},
-        {itemTemplate = "recorded_image_1", weight = 62500},
-        {itemTemplate = "recording_rod", weight = 62500},
-        {itemTemplate = "slave_collar", weight = 62500},
-        {itemTemplate = "used_ticket", weight = 62500},
-        {itemTemplate = "worklight", weight = 62500},
-        -- Uncommon
-        {itemTemplate = "force_color_crystal", weight = 31250},
-        {itemTemplate = "force_power_crystal", weight = 62500},
-        {itemTemplate = "jedi_holocron_dark", weight = 31250},
-        {itemTemplate = "jedi_holocron_light", weight = 31250},
-        {itemTemplate = "attachment_clothing", weight = 31250},
-        {itemTemplate = "attachment_armor", weight = 31250},
-        
-        -- Locked Container (10% chance)
-        {itemTemplate = "locked_container", weight = 1000000},
-        
-        -- Weapons (25% chance)
-        {groupTemplate = "weapons_all", weight = 2500000},
-        -- Armors (25% chance)
-        {groupTemplate = "armor_all", weight = 2500000},
-        -- Clothing (25% chance)
-        {groupTemplate = "wearables_all", weight = 2500000},
-       
-    }
+	description = "Slicer's Contraband Cache",
+	minimumLevel = 0,
+	maximumLevel = 0,
+	lootItems = {
+		-- Stolen equipment: 30%
+		{groupTemplate = "weapons_all", weight = 1500000},
+		{groupTemplate = "armor_all", weight = 1000000},
+		{groupTemplate = "wearables_rare", weight = 500000},
+
+		-- Illegal modifications: 16%
+		{groupTemplate = "armor_attachments", weight = 800000},
+		{groupTemplate = "clothing_attachments", weight = 800000},
+
+		-- Smuggled crafting technology: 32%
+		{groupTemplate = "crafting_component_advanced", weight = 1200000},
+		{groupTemplate = "component_enhancement", weight = 800000},
+		{groupTemplate = "damage_type_powerups", weight = 700000},
+		{groupTemplate = "tailor_components", weight = 500000},
+
+		-- Collector finds: 13%
+		{groupTemplate = "furniture_container_schematics", weight = 800000},
+		{groupTemplate = "loot_kit_parts", weight = 500000},
+
+		-- Force-related contraband: 6%
+		{groupTemplate = "color_crystals", weight = 400000},
+		{groupTemplate = "power_crystals", weight = 200000},
+
+		-- Jackpot rewards: 2%
+		{groupTemplate = "endgame_weapon_schematics", weight = 100000},
+		{itemTemplate = "jedi_holocron_dark", weight = 50000},
+		{itemTemplate = "jedi_holocron_light", weight = 50000},
+
+		-- Another encrypted cache: 1%
+		{itemTemplate = "locked_container", weight = 100000}
+	}
 }
+
 addLootGroupTemplate("looted_container", looted_container)
