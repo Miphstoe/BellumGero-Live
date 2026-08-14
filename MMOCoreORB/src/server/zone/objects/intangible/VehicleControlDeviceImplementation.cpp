@@ -34,11 +34,7 @@ bool isInsideBuildingOrCamp(CreatureObject* player) {
 	if (player == nullptr)
 		return false;
 
-	if (player->getCurrentCamp() != nullptr)
-		return true;
-
-	ManagedReference<SceneObject*> rootParent = player->getRootParent();
-	return rootParent != nullptr && rootParent->isBuildingObject();
+	return player->getParent() == nullptr && player->getCurrentCamp() != nullptr;
 }
 }
 
@@ -76,7 +72,7 @@ void VehicleControlDeviceImplementation::generateObject(CreatureObject* player) 
 	}
 
 	if (droid && !isInsideBuildingOrCamp(player)) {
-		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed outdoors at a camp.");
 		return;
 	}
 
@@ -194,7 +190,7 @@ void VehicleControlDeviceImplementation::spawnObject(CreatureObject* player) {
 	}
 
 	if (droid && !isInsideBuildingOrCamp(player)) {
-		player->sendSystemMessage("Doctor Buff Droids may only be deployed inside a building or at a camp.");
+		player->sendSystemMessage("Doctor Buff Droids may only be deployed outdoors at a camp.");
 		return;
 	}
 
