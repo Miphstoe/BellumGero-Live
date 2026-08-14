@@ -22,10 +22,15 @@ function MandoDailyBountyFobMenuComponent:fillObjectMenuResponse(pSceneObject, p
 	local menuResponse = LuaObjectMenuResponse(pMenuResponse)
 	menuResponse:addRadialMenuItem(120, 3, "Mission Status")
 	local count = MandoWayOfLife:getDailyBountyCount(pPlayer)
+	local ready = MandoWayOfLife:getDailyBountyReadyTier(pPlayer)
 	if (count == 0) then
 		menuResponse:addRadialMenuItem(121, 3, "Begin Daily Hunt")
-	elseif (count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
+	elseif (count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and ready == count) then
 		menuResponse:addRadialMenuItem(122, 3, "Recall Guild Contact")
+	elseif (count > 0 and not (count >= MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and ready >= MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS)) then
+		-- A tier is active (accepted but not marked ready): allow field recovery
+		-- of a lost waypoint / dead camp without walking back to the Recruiter.
+		menuResponse:addRadialMenuItem(123, 3, "Re-sync Waypoint")
 	end
 end
 
@@ -52,6 +57,9 @@ function MandoDailyBountyFobMenuComponent:handleObjectMenuSelect(pObject, pPlaye
 		if (count > 0 and count < MandoWayOfLife.DAILY_BOUNTY_MAX_MISSIONS and MandoWayOfLife:getDailyBountyReadyTier(pPlayer) == count) then
 			MandoDailyHoloStory:onCampCompleted(pPlayer, count)
 		end
+	elseif (selectedID == 123) then
+		local ok, msg = MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
+		CreatureObject(pPlayer):sendSystemMessage(msg)
 	end
 
 	return 0

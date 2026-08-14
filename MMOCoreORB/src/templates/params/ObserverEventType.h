@@ -90,7 +90,7 @@ public:
 		CREATUREREVIVED,			// ManagedObject arg1 = healer (optional), long arg2 = 0
 		ZONESWITCHED,				// ManagedObject arg1 = null, long arg2 = hashcode of new zone name
 		TUNEDCRYSTAL,				// ManagedObject arg1 = crystal, long arg2 = 0
-		BHTEFCHANGED,				// ManagedObject arg1 = null, long arg2 = 0
+		BHTEFCHANGED,				// ManagedObject arg1 = null, long arg2 = 0; PvP TEF eligibility changed
 		FACTIONCHANGED,				// ManagedObject arg1 = null, long arg2 = 0
 		SLICED,						// ManagedObject arg1 = player doing slicing, long arg2 = result (1/0)
 		SQUAD,						// ManagedObject arg1 = AiAgent, long arg2 = 0

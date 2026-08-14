@@ -914,7 +914,29 @@ Reference<SceneObject*> StructureManager::getInRangeParkingGarage(SceneObject* o
 	return nullptr;
 }
 
-int StructureManager::redeedStructure(CreatureObject* creature) {
+bool StructureManager::canRedeedStructure(CreatureObject* creature, StructureObject* structureObject) {
+    if (creature == nullptr || structureObject == nullptr || !structureObject->isRedeedable())
+        return false;
+
+    ManagedReference<StructureDeed*> deed =
+        server->getObject(structureObject->getDeedObjectID()).castTo<StructureDeed*>();
+    if (deed == nullptr)
+        return false;
+
+    ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
+    if (inventory == nullptr)
+        return false;
+
+    HarvesterObject* harvester = structureObject->isHarvesterObject() ?
+        cast<HarvesterObject*>(structureObject) : nullptr;
+    int requiredInventorySlots =
+        (harvester != nullptr && harvester->isSelfPowered()) ? 2 : 1;
+
+    return inventory->getCountableObjectsRecursive() <=
+        (inventory->getContainerVolumeLimit() - requiredInventorySlots);
+}
+
+int StructureManager::redeedStructure(CreatureObject* creature, bool requireRedeed) {
     ManagedReference<DestroyStructureSession*> session =
         creature->getActiveSession(SessionFacadeType::DESTROYSTRUCTURE)
             .castTo<DestroyStructureSession*>();
@@ -926,6 +948,9 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
         return 0;
 
     Locker _locker(structureObject);
+
+    if (requireRedeed && !canRedeedStructure(creature, structureObject))
+        return 1;
 
     uint64 deedObjectID = structureObject->getDeedObjectID();
     info(true) << "Attempting to redeed structure. Deed Object ID: " << deedObjectID;
@@ -969,9 +994,7 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
             isSelfPoweredHarvester = harvester->isSelfPowered();
 
         // capacity check
-        if (inventory == nullptr ||
-            inventory->getCountableObjectsRecursive() >
-                (inventory->getContainerVolumeLimit() - (isSelfPoweredHarvester ? 2 : 1))) {
+        if (!canRedeedStructure(creature, structureObject)) {
 
             if (isSelfPoweredHarvester) {
                 creature->sendSystemMessage("@player_structure:inventory_full_selfpowered");

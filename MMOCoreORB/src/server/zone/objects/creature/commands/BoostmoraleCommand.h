@@ -91,6 +91,9 @@ public:
         if (member->isDead() || member->isIncapacitated())
             continue;
 
+		if (hasPvpTef(member))
+			continue;
+
         Locker clocker(member, leader);
 
         for (int j = 0; j < 9; j++) {
@@ -131,6 +134,9 @@ public:
         // Sensible filters
         if (member->isDead() || member->isIncapacitated())
             continue;
+
+		if (hasPvpTef(member))
+			continue;
 
         Locker clocker(member, leader);
 

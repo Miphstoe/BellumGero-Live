@@ -260,6 +260,7 @@ Core3 = {
         AdvancedWaypoints = true,
     	WipeFillingOnClone = true,
     	DisableGroupVisibility = true, -- Group members do not generate Jedi visibility for each other
+    	DisableMobVisibility = true, -- NPC/mob creatures do not generate Jedi visibility
     },
 
 	------Mission Manager Config------

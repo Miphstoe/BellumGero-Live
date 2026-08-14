@@ -1070,6 +1070,9 @@ void CreatureObjectImplementation::setHAM(int type, int value,
 }
 
 int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient, bool isCombatAction) {
+	if (xp == "dotDMG")
+		damage = CombatManager::applyForceRun2OutgoingDamageReduction(attacker, (int)damage);
+
 	if (attacker->isCreatureObject()) {
 		CreatureObject* creature = attacker->asCreatureObject();
 

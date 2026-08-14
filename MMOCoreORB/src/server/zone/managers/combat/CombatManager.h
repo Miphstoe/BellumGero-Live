@@ -204,6 +204,7 @@ public:
 	void finalCombatSpam(TangibleObject* attacker, WeaponObject* item, SortedVector<DefenderHitList*> targetDefenders, const CreatureAttackData & data) const;
 	void broadcastCombatSpam(TangibleObject* attacker, TangibleObject* defender, TangibleObject* item, int damage, const String& file, const String& stringName, byte color) const;
 	void sendMitigationCombatSpam(CreatureObject* defender, TangibleObject* item, uint32 damage, int type) const;
+	static int applyForceRun2OutgoingDamageReduction(TangibleObject* attacker, int resolvedDamage);
 
 	float hitChanceEquation(float attackerAccuracy, float targetDefense) const;
 	float doObjectDetonation(TangibleObject* droid, CreatureObject* defender, float damage, WeaponObject* weapon = nullptr) const;
@@ -317,4 +318,3 @@ protected:
 };
 
 #endif /* COMBATMANAGER_H_ */
-
