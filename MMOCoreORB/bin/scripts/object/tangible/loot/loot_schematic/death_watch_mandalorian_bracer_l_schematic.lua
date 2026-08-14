@@ -46,7 +46,7 @@ object_tangible_loot_loot_schematic_death_watch_mandalorian_bracer_l_schematic =
 	customName = "Mandalorian Armor Left Bracer Schematic",
 	objectMenuComponent = "LootSchematicMenuComponent",
 	attributeListComponent = "LootSchematicAttributeListComponent",
-	requiredSkill = "crafting_armorsmith_master",
+	requiredSkill = "crafting_armorsmith_novice",
 	targetDraftSchematic = "object/draft_schematic/clothing/clothing_armor_mandalorian_bracer_l.iff",
 	targetUseCount = 3,
 }
