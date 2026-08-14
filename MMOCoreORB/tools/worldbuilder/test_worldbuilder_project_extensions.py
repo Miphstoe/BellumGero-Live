@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import struct
+import re
 from pathlib import Path
 
 import bellum_worldbuilder as wb
@@ -87,6 +89,49 @@ def make_child(name: str, parent_id: str = "parent", planet: str = "lok", local_
         )
     ]
     return project
+
+
+def iff_chunk(tag: bytes, payload: bytes) -> bytes:
+    return tag + struct.pack(">I", len(payload)) + payload
+
+
+def static_ship_reference() -> bytes:
+    derv = iff_chunk(b"DERV", b"object/static/base/shared_static_base.iff\0")
+    # Real SWG STAT IFFs place the next chunk immediately after an odd payload.
+    odd = iff_chunk(b"XXXX", b"oddField\0\x01abcdefghij\0")  # exactly 21 bytes
+    appearance = iff_chunk(b"XXXX", b"appearanceFilename\0\x01appearance/tie_fighter.apt\0")
+    version = iff_chunk(b"FORM", b"0007" + odd + appearance)
+    shot = iff_chunk(b"FORM", b"SHOT" + version)
+    return iff_chunk(b"FORM", b"STAT" + derv + shot)
+
+
+def object_template_crc_table(paths) -> bytes:
+    values = sorted(paths)
+    count = len(values)
+    body = b"".join((
+        iff_chunk(b"DATA", struct.pack("<I", count)),
+        iff_chunk(b"CRCT", b"\0" * (count * 4)),
+        iff_chunk(b"STRT", b"\0" * (count * 4)),
+        iff_chunk(b"STNG", b"".join(path.encode("utf-8") + b"\0" for path in values)),
+    ))
+    return iff_chunk(b"FORM", b"CSTB" + iff_chunk(b"FORM", b"0000" + body))
+
+
+def validate_iff_chunk_sizes(raw: bytes, start: int = 0, limit: int | None = None) -> int:
+    limit = len(raw) if limit is None else limit
+    size = struct.unpack_from(">I", raw, start + 4)[0]
+    data_start = start + 8
+    data_end = data_start + size
+    end = data_end
+    if raw[start:start + 4] == b"FORM":
+        cursor = data_start + 4
+        while cursor < data_end:
+            cursor = validate_iff_chunk_sizes(raw, cursor, data_end)
+        if cursor != data_end:
+            raise AssertionError("FORM children do not fill declared size")
+    if end > limit:
+        raise AssertionError("chunk exceeds parent")
+    return end
 
 
 class ProjectParsingTests(unittest.TestCase):
@@ -229,6 +274,146 @@ class ProjectParsingTests(unittest.TestCase):
 
 
 class CompositionTests(unittest.TestCase):
+    def test_ship_scenery_crc_validation_uses_canonical_shared_paths(self):
+        required = {path for _ship, path, _appearance in batch.SHIP_SCENERY_CATALOG}
+        raw = object_template_crc_table(required)
+        resolver = SimpleNamespace(read=lambda path: raw)
+
+        self.assertEqual(batch.validate_ship_scenery_crc_requirements(resolver), raw)
+        self.assertEqual(batch.parse_object_template_crc_strings(raw), required)
+
+    def test_ship_scenery_crc_validation_reports_original_five_vs_missing_eighteen(self):
+        original_five = {
+            "object/static/worldbuilder/ship/rebel/shared_awing.iff",
+            "object/static/worldbuilder/ship/imperial/shared_tie_interceptor.iff",
+            "object/static/worldbuilder/ship/rebel/shared_xwing.iff",
+            "object/static/worldbuilder/ship/rebel/shared_ywing.iff",
+            "object/static/worldbuilder/ship/rebel/shared_z95.iff",
+        }
+        raw = object_template_crc_table(original_five)
+
+        with self.assertRaisesRegex(
+            wb.WorldBuilderError,
+            r"(?s)missing 18 Ship Scenery.*ARC-170: object/static/worldbuilder/ship/republic/shared_arc170\.iff \(CRC 0x6A758872\).*bg_custom1\.tre",
+        ):
+            batch.validate_ship_scenery_crc_requirements(SimpleNamespace(read=lambda path: raw))
+
+    def test_static_ship_scenery_walks_consecutive_unpadded_odd_chunks(self):
+        source = static_ship_reference()
+        odd_start = source.index(b"XXXX" + struct.pack(">I", 21))
+        next_start = odd_start + 8 + 21
+
+        self.assertEqual(source[next_start:next_start + 4], b"XXXX")
+        generated = batch.generate_static_ship_scenery_iff(source, "appearance/xwing_body.apt")
+        self.assertEqual(generated[odd_start + 8:next_start], b"oddField\0\x01abcdefghij\0")
+        self.assertEqual(generated[next_start:next_start + 4], b"XXXX")
+        self.assertNotEqual(generated[next_start:next_start + 1], b"\0")
+        self.assertEqual(validate_iff_chunk_sizes(generated), len(generated))
+
+    def test_static_ship_scenery_iff_rewrites_appearance_and_preserves_structure(self):
+        source = static_ship_reference()
+        generated = batch.generate_static_ship_scenery_iff(source, "appearance/xwing_body.apt")
+
+        self.assertEqual(generated[:12], b"FORM" + struct.pack(">I", len(generated) - 8) + b"STAT")
+        self.assertEqual(validate_iff_chunk_sizes(generated), len(generated))
+        self.assertEqual(generated.count(b"appearanceFilename\0"), 1)
+        self.assertEqual(generated.count(b"appearance/xwing_body.apt\0"), 1)
+        self.assertNotIn(b"appearance/tie_fighter.apt", generated)
+        self.assertIn(b"object/static/base/shared_static_base.iff\0", generated)
+        self.assertEqual(generated, batch.generate_static_ship_scenery_iff(source, "appearance/xwing_body.apt"))
+
+    def test_static_ship_scenery_iff_recalculates_longer_and_shorter_forms(self):
+        source = static_ship_reference()
+        for appearance in ("appearance/a.apt", "appearance/a_much_longer_test_ship_body.apt"):
+            generated = batch.generate_static_ship_scenery_iff(source, appearance)
+            self.assertEqual(struct.unpack_from(">I", generated, 4)[0], len(generated) - 8)
+            self.assertEqual(validate_iff_chunk_sizes(generated), len(generated))
+
+    def test_builtin_ship_assets_exist_without_any_projects(self):
+        source = static_ship_reference()
+        resolved = []
+        def read(path):
+            resolved.append(path)
+            return source if path == batch.SHIP_SCENERY_BASE_IFF else b"appearance-root"
+        resolver = SimpleNamespace(read=read)
+        assets = batch.generate_builtin_ship_scenery_assets(resolver)
+
+        expected = {
+            "ARC-170": ("object/static/worldbuilder/ship/republic/shared_arc170.iff", "appearance/arc170_model.apt"),
+            "X-Wing": ("object/static/worldbuilder/ship/rebel/shared_xwing.iff", "appearance/xwing_model.apt"),
+            "A-Wing": ("object/static/worldbuilder/ship/rebel/shared_awing.iff", "appearance/a_wing_model.apt"),
+            "B-Wing": ("object/static/worldbuilder/ship/rebel/shared_bwing.iff", "appearance/bwing_model.apt"),
+            "Droid Fighter": ("object/static/worldbuilder/ship/separatist/shared_droid_fighter.iff", "appearance/droid_fighter_model.apt"),
+            "Grievous Starship": ("object/static/worldbuilder/ship/separatist/shared_grievous_starship.iff", "appearance/grievous_starship_model.apt"),
+            "Jedi Fighter": ("object/static/worldbuilder/ship/republic/shared_jedifighter.iff", "appearance/jedifighter_model.apt"),
+            "KSE Firespray": ("object/static/worldbuilder/ship/civilian/shared_kse_firespray.iff", "appearance/kse_firespray_model.apt"),
+            "Lambda Shuttle": ("object/static/worldbuilder/ship/imperial/shared_lambda_shuttle.iff", "appearance/lambda_shuttle_model.apt"),
+            "Naboo Starfighter": ("object/static/worldbuilder/ship/republic/shared_naboo_starfighter.iff", "appearance/naboo_starfighter_model.apt"),
+            "SoroSuub Space Yacht": ("object/static/worldbuilder/ship/civilian/shared_soorosuub_space_yacht.iff", "appearance/soorosuub_space_yacht_model.apt"),
+            "TIE Advanced": ("object/static/worldbuilder/ship/imperial/shared_tie_advanced.iff", "appearance/tie_advanced_model.apt"),
+            "TIE Aggressor": ("object/static/worldbuilder/ship/imperial/shared_tie_aggressor.iff", "appearance/tie_aggressor_model.apt"),
+            "TIE Bomber": ("object/static/worldbuilder/ship/imperial/shared_tie_bomber.iff", "appearance/tie_bomber_model.apt"),
+            "TIE Fighter": ("object/static/worldbuilder/ship/imperial/shared_tie_fighter.iff", "appearance/tie_fighter_model.apt"),
+            "TIE Oppressor": ("object/static/worldbuilder/ship/imperial/shared_tie_oppressor.iff", "appearance/tie_oppressor_model.apt"),
+            "V-Wing": ("object/static/worldbuilder/ship/republic/shared_v_wing.iff", "appearance/v_wing_model.apt"),
+            "Y-Wing": ("object/static/worldbuilder/ship/rebel/shared_ywing.iff", "appearance/ywing_model.apt"),
+            "YKL-37R": ("object/static/worldbuilder/ship/civilian/shared_ykl37r.iff", "appearance/ykl37r_model.apt"),
+            "YT-1300": ("object/static/worldbuilder/ship/civilian/shared_yt1300.iff", "appearance/yt1300_model.apt"),
+            "YT-2400": ("object/static/worldbuilder/ship/civilian/shared_yt2400.iff", "appearance/yt2400_model.apt"),
+            "Z-95": ("object/static/worldbuilder/ship/rebel/shared_z95.iff", "appearance/z95_model.apt"),
+            "TIE Interceptor": ("object/static/worldbuilder/ship/imperial/shared_tie_interceptor.iff", "appearance/tie_interceptor_model.apt"),
+        }
+        self.assertEqual(
+            {ship: (path, appearance) for ship, path, appearance in batch.SHIP_SCENERY_CATALOG},
+            expected,
+        )
+        self.assertEqual(set(assets), {path for path, _ in expected.values()})
+        self.assertEqual(len(assets), 23)
+        self.assertTrue(all(path.startswith("object/static/worldbuilder/ship/") for path in assets))
+        self.assertFalse(any(path.startswith("appearance/") for path in assets))
+        self.assertEqual({ship for ship, _path, _appearance in batch.SHIP_SCENERY_CATALOG}, set(expected))
+        self.assertEqual(len({path for _ship, path, _appearance in batch.SHIP_SCENERY_CATALOG}), 23)
+        self.assertEqual(len({appearance for _ship, _path, appearance in batch.SHIP_SCENERY_CATALOG}), 23)
+        for _ship, path, appearance in batch.SHIP_SCENERY_CATALOG:
+            self.assertIn(appearance.encode("utf-8") + b"\0", assets[path])
+            self.assertIn(appearance, resolved)
+
+    def test_ship_scenery_ui_uses_terrain_placement_and_zero_default_offsets(self):
+        mmocore = Path(__file__).resolve().parents[2]
+        library = (mmocore / "src/server/zone/objects/creature/commands/WorldBuilderShipSceneryLibrary.h").read_text(encoding="utf-8")
+        manager = (mmocore / "src/server/zone/managers/worldbuilder/WorldBuilderManager.cpp").read_text(encoding="utf-8")
+        server_lua = (mmocore / "bin/scripts/object/static/worldbuilder/serverobjects.lua").read_text(encoding="utf-8")
+        rows = re.findall(r'\{ "([^"]+)", "([^"]+)", "(object/static/worldbuilder/ship/[^"]+\.iff)", ([-0-9.]+)f \}', library)
+        lua_rows = re.findall(r'\{ "object_static_worldbuilder_ship_([^"]+)", "([^"]+)" \}', server_lua)
+
+        self.assertEqual(len(rows), 23)
+        self.assertEqual(len({name for _category, name, _path, _offset in rows}), 23)
+        self.assertEqual(len({path for _category, _name, path, _offset in rows}), 23)
+        self.assertTrue(all(float(offset) == 0.0 for _category, _name, _path, offset in rows))
+        self.assertEqual(len(lua_rows), 23)
+        self.assertEqual(
+            {f"object/static/worldbuilder/ship/{folder}/shared_{name}.iff" for folder, name in lua_rows},
+            {path for _ship, path, _appearance in batch.SHIP_SCENERY_CATALOG},
+        )
+        self.assertIn('"TIE Interceptor", "object/static/worldbuilder/ship/imperial/tie_interceptor.iff", 0.f', library)
+        self.assertIn("spawnShipScenery(player, action, 10.f", library)
+        self.assertIn("player->getZone()->getHeight(state.x, state.y) + groundOffset", manager)
+
+    def test_builtin_ship_assets_identify_missing_lower_stack_appearance(self):
+        source = static_ship_reference()
+        def read(path):
+            if path == batch.SHIP_SCENERY_BASE_IFF:
+                return source
+            if path == "appearance/ywing_model.apt":
+                raise wb.WorldBuilderError("not found in test stack")
+            return b"appearance-root"
+
+        with self.assertRaisesRegex(
+            wb.WorldBuilderError,
+            "Y-Wing requires 'appearance/ywing_model.apt'.*effective lower TRE stack",
+        ):
+            batch.generate_builtin_ship_scenery_assets(SimpleNamespace(read=read))
+
     def test_generated_server_template_materializes_source_fields_before_registration(self):
         project = make_parent("event_bunker", "corellia")
         published = wb.PublishedStructure(

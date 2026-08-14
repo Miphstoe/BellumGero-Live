@@ -71,7 +71,8 @@ public:
 		ACTION_BIND_EXTENSION = 40,
 		ACTION_EXTENSION_STATUS = 41,
 		ACTION_ADD_EXTERIOR_BUILDING = 42,
-		ACTION_TRAVEL_POINT = 43
+		ACTION_TRAVEL_POINT = 43,
+		ACTION_SHIP_SCENERY_LIBRARY = 44
 	};
 
 	enum ProjectManageAction {
@@ -124,6 +125,7 @@ public:
 #include "WorldBuilderExteriorBuildingLibrary.h"
 #include "WorldBuilderPublishedRefresh.h"
 #include "WorldBuilderTravelPointEditor.h"
+#include "WorldBuilderShipSceneryLibrary.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
 public:
@@ -484,6 +486,10 @@ public:
 			break;
 		case WorldBuilderCommandUi::ACTION_OBJECT_LIBRARY:
 			WorldBuilderObjectLibrary::showRoot(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_SHIP_SCENERY_LIBRARY:
+			WorldBuilderShipSceneryLibrary::showRoot(player);
 			reopen = false;
 			break;
 		case WorldBuilderCommandUi::ACTION_STRUCTURE_LIBRARY:
@@ -881,6 +887,7 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 
 		box->addMenuItem("Object List / Select", ACTION_OBJECT_LIST);
 		box->addMenuItem("Object Library / Browse Templates...", ACTION_OBJECT_LIBRARY);
+		box->addMenuItem("Ship Scenery Library / Static Ships...", ACTION_SHIP_SCENERY_LIBRARY);
 		box->addMenuItem("Structure Library / Browse Buildings & Caves...", ACTION_STRUCTURE_LIBRARY);
 		box->addMenuItem("Add Structure to Project...", ACTION_ADD_STRUCTURE);
 		box->addMenuItem("Exterior Building Library / Cell-less Buildings...", ACTION_ADD_EXTERIOR_BUILDING);
@@ -984,6 +991,9 @@ public:
 				return SUCCESS;
 			} else if (action == "library" || action == "assets" || action == "browse") {
 				WorldBuilderObjectLibrary::showRoot(player);
+				return SUCCESS;
+			} else if (action == "ships" || action == "shipscenery") {
+				WorldBuilderShipSceneryLibrary::showRoot(player);
 				return SUCCESS;
 			} else if (action == "structures" || action == "structurelibrary" || action == "buildings") {
 				WorldBuilderStructureLibrary::showRoot(player);

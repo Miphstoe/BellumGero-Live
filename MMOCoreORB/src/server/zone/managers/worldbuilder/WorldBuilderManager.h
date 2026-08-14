@@ -156,6 +156,8 @@ private:
 
 	bool translateObject(CreatureObject* player, WorldBuilderObjectState& state, float dx, float dz, float dy, String& message);
 	bool rotateObject(CreatureObject* player, WorldBuilderObjectState& state, const String& axis, float degrees, String& message);
+	bool spawnTemplateInternal(CreatureObject* player, const String& objectTemplate, float distance,
+		bool terrainAware, float groundOffset, String& message);
 
 public:
 	WorldBuilderManager();
@@ -179,6 +181,7 @@ public:
 	String getExtensionStatus(CreatureObject* player);
 
 	bool spawnTemplate(CreatureObject* player, const String& objectTemplate, float distance, String& message);
+	bool spawnShipScenery(CreatureObject* player, const String& objectTemplate, float distance, float groundOffset, String& message);
 	bool addStructure(CreatureObject* player, const String& structureTemplate, float distance, String& message);
 	bool addExteriorBuilding(CreatureObject* player, const String& structureTemplate, float distance, String& message);
 	bool selectedExteriorTravelReady(CreatureObject* player, uint32& buildingLocalID, String& templatePath, String& message);

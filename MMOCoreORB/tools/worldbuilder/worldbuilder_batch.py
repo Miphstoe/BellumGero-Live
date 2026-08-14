@@ -54,7 +54,171 @@ CANDIDATE_REGISTRY_NAME = "worldbuilder_oid_registry.json"
 WB_ARCHIVE_PREFIXES = (
     "object/building/worldbuilder/",
     "interiorlayout/worldbuilder/",
+    "object/static/worldbuilder/",
 )
+
+SHIP_SCENERY_BASE_IFF = "object/static/vehicle/shared_static_tie_fighter.iff"
+CANONICAL_OBJECT_TEMPLATE_CRC_TABLE = "misc/object_template_crc_string_table.iff"
+SHIP_SCENERY_CATALOG = (
+    ("ARC-170", "object/static/worldbuilder/ship/republic/shared_arc170.iff", "appearance/arc170_model.apt"),
+    ("A-Wing", "object/static/worldbuilder/ship/rebel/shared_awing.iff", "appearance/a_wing_model.apt"),
+    ("B-Wing", "object/static/worldbuilder/ship/rebel/shared_bwing.iff", "appearance/bwing_model.apt"),
+    ("Droid Fighter", "object/static/worldbuilder/ship/separatist/shared_droid_fighter.iff", "appearance/droid_fighter_model.apt"),
+    ("Grievous Starship", "object/static/worldbuilder/ship/separatist/shared_grievous_starship.iff", "appearance/grievous_starship_model.apt"),
+    ("Jedi Fighter", "object/static/worldbuilder/ship/republic/shared_jedifighter.iff", "appearance/jedifighter_model.apt"),
+    ("KSE Firespray", "object/static/worldbuilder/ship/civilian/shared_kse_firespray.iff", "appearance/kse_firespray_model.apt"),
+    ("Lambda Shuttle", "object/static/worldbuilder/ship/imperial/shared_lambda_shuttle.iff", "appearance/lambda_shuttle_model.apt"),
+    ("Naboo Starfighter", "object/static/worldbuilder/ship/republic/shared_naboo_starfighter.iff", "appearance/naboo_starfighter_model.apt"),
+    ("SoroSuub Space Yacht", "object/static/worldbuilder/ship/civilian/shared_soorosuub_space_yacht.iff", "appearance/soorosuub_space_yacht_model.apt"),
+    ("TIE Advanced", "object/static/worldbuilder/ship/imperial/shared_tie_advanced.iff", "appearance/tie_advanced_model.apt"),
+    ("TIE Aggressor", "object/static/worldbuilder/ship/imperial/shared_tie_aggressor.iff", "appearance/tie_aggressor_model.apt"),
+    ("TIE Bomber", "object/static/worldbuilder/ship/imperial/shared_tie_bomber.iff", "appearance/tie_bomber_model.apt"),
+    ("TIE Fighter", "object/static/worldbuilder/ship/imperial/shared_tie_fighter.iff", "appearance/tie_fighter_model.apt"),
+    ("TIE Interceptor", "object/static/worldbuilder/ship/imperial/shared_tie_interceptor.iff", "appearance/tie_interceptor_model.apt"),
+    ("TIE Oppressor", "object/static/worldbuilder/ship/imperial/shared_tie_oppressor.iff", "appearance/tie_oppressor_model.apt"),
+    ("V-Wing", "object/static/worldbuilder/ship/republic/shared_v_wing.iff", "appearance/v_wing_model.apt"),
+    ("X-Wing", "object/static/worldbuilder/ship/rebel/shared_xwing.iff", "appearance/xwing_model.apt"),
+    ("Y-Wing", "object/static/worldbuilder/ship/rebel/shared_ywing.iff", "appearance/ywing_model.apt"),
+    ("YKL-37R", "object/static/worldbuilder/ship/civilian/shared_ykl37r.iff", "appearance/ykl37r_model.apt"),
+    ("YT-1300", "object/static/worldbuilder/ship/civilian/shared_yt1300.iff", "appearance/yt1300_model.apt"),
+    ("YT-2400", "object/static/worldbuilder/ship/civilian/shared_yt2400.iff", "appearance/yt2400_model.apt"),
+    ("Z-95", "object/static/worldbuilder/ship/rebel/shared_z95.iff", "appearance/z95_model.apt"),
+)
+
+
+def parse_object_template_crc_strings(raw: bytes) -> Set[str]:
+    """Read the canonical unpadded FORM/CSTB object-template string table."""
+    if len(raw) < 24 or raw[:4] != b"FORM" or raw[8:12] != b"CSTB":
+        raise wb.WorldBuilderError("Canonical object-template CRC table is not FORM CSTB")
+    if 8 + struct.unpack_from(">I", raw, 4)[0] != len(raw):
+        raise wb.WorldBuilderError("Canonical object-template CRC table outer FORM size is invalid")
+    version_start = 12
+    if raw[version_start:version_start + 4] != b"FORM":
+        raise wb.WorldBuilderError("Canonical object-template CRC table version FORM is missing")
+    version_end = version_start + 8 + struct.unpack_from(">I", raw, version_start + 4)[0]
+    if version_end != len(raw):
+        raise wb.WorldBuilderError("Canonical object-template CRC table version FORM size is invalid")
+
+    chunks: Dict[bytes, bytes] = {}
+    cursor = version_start + 12
+    while cursor < version_end:
+        if cursor + 8 > version_end:
+            raise wb.WorldBuilderError("Canonical object-template CRC table has a truncated chunk")
+        tag = raw[cursor:cursor + 4]
+        size = struct.unpack_from(">I", raw, cursor + 4)[0]
+        end = cursor + 8 + size
+        if end > version_end or tag in chunks:
+            raise wb.WorldBuilderError("Canonical object-template CRC table chunk layout is invalid")
+        chunks[tag] = raw[cursor + 8:end]
+        cursor = end
+    if cursor != version_end or set(chunks) != {b"DATA", b"CRCT", b"STRT", b"STNG"}:
+        raise wb.WorldBuilderError("Canonical object-template CRC table has unexpected chunks")
+    if len(chunks[b"DATA"]) != 4:
+        raise wb.WorldBuilderError("Canonical object-template CRC table DATA chunk is invalid")
+    count = struct.unpack_from("<I", chunks[b"DATA"], 0)[0]
+    if len(chunks[b"CRCT"]) != count * 4 or len(chunks[b"STRT"]) != count * 4:
+        raise wb.WorldBuilderError("Canonical object-template CRC table index counts are inconsistent")
+    values = chunks[b"STNG"].split(b"\0")
+    if not values or values[-1] != b"" or len(values) - 1 != count:
+        raise wb.WorldBuilderError("Canonical object-template CRC table string count is inconsistent")
+    try:
+        return {wb.normalize_archive_path(value.decode("utf-8")) for value in values[:-1]}
+    except UnicodeDecodeError as exc:
+        raise wb.WorldBuilderError("Canonical object-template CRC table contains invalid UTF-8") from exc
+
+
+def validate_ship_scenery_crc_requirements(resolver: "EffectiveTreResolver") -> bytes:
+    raw = resolver.read(CANONICAL_OBJECT_TEMPLATE_CRC_TABLE)
+    registered = parse_object_template_crc_strings(raw)
+    missing = [
+        (ship, path)
+        for ship, path, _appearance in SHIP_SCENERY_CATALOG
+        if wb.normalize_archive_path(path) not in registered
+    ]
+    if missing:
+        details = "\n".join(
+            f"  {ship}: {path} (CRC 0x{wb.soe_tre_crc(path):08X})"
+            for ship, path in missing
+        )
+        raise wb.WorldBuilderError(
+            f"Canonical lower-stack {CANONICAL_OBJECT_TEMPLATE_CRC_TABLE} is missing "
+            f"{len(missing)} Ship Scenery shared client template entries:\n{details}\n"
+            "Patch the one canonical table in bg_custom1.tre; do not add a CRC table to bg_worldbuilder.tre."
+        )
+    return raw
+
+
+def _rewrite_static_iff_chunk(raw: bytes, start: int, limit: int, appearance: bytes) -> Tuple[bytes, int, int]:
+    if start + 8 > limit:
+        raise wb.WorldBuilderError("Static scenery IFF contains a truncated chunk header")
+    tag = raw[start:start + 4]
+    size = struct.unpack_from(">I", raw, start + 4)[0]
+    data_start = start + 8
+    data_end = data_start + size
+    if data_end > limit:
+        raise wb.WorldBuilderError("Static scenery IFF chunk extends beyond its enclosing FORM")
+
+    payload = raw[data_start:data_end]
+    replacements = 0
+    if tag == b"FORM":
+        if len(payload) < 4:
+            raise wb.WorldBuilderError("Static scenery IFF contains a FORM without a type")
+        rebuilt_children = bytearray()
+        cursor = data_start + 4
+        while cursor < data_end:
+            child, cursor, child_replacements = _rewrite_static_iff_chunk(raw, cursor, data_end, appearance)
+            rebuilt_children += child
+            replacements += child_replacements
+        if cursor != data_end:
+            raise wb.WorldBuilderError("Static scenery IFF child chunks do not fill their FORM")
+        payload = payload[:4] + bytes(rebuilt_children)
+    elif tag == b"XXXX":
+        field = b"appearanceFilename\0"
+        if payload.startswith(field):
+            value_start = len(field)
+            if value_start >= len(payload) or payload[value_start] != 1:
+                raise wb.WorldBuilderError("appearanceFilename XXXX field has an unexpected value encoding")
+            value_start += 1
+            value_end = payload.find(b"\0", value_start)
+            if value_end < 0:
+                raise wb.WorldBuilderError("appearanceFilename XXXX field is not NUL terminated")
+            payload = payload[:value_start] + appearance + b"\0" + payload[value_end + 1:]
+            replacements = 1
+
+    rebuilt = tag + struct.pack(">I", len(payload)) + payload
+    return rebuilt, data_end, replacements
+
+
+def generate_static_ship_scenery_iff(source: bytes, appearance_path: str) -> bytes:
+    """Clone canonical FORM/STAT static scenery with one appearance replacement."""
+    if len(source) < 12 or source[:4] != b"FORM" or source[8:12] != b"STAT":
+        raise wb.WorldBuilderError("Ship scenery base is not the expected FORM STAT static template")
+    appearance = appearance_path.encode("utf-8")
+    if not appearance or b"\0" in appearance:
+        raise wb.WorldBuilderError("Ship scenery appearance path must be non-empty UTF-8 without NUL bytes")
+    rebuilt, end, replacements = _rewrite_static_iff_chunk(source, 0, len(source), appearance)
+    if end != len(source):
+        raise wb.WorldBuilderError("Ship scenery base contains trailing data outside FORM STAT")
+    if replacements != 1:
+        raise wb.WorldBuilderError(
+            f"Ship scenery base must contain exactly one appearanceFilename XXXX field; found {replacements}"
+        )
+    return rebuilt
+
+
+def generate_builtin_ship_scenery_assets(resolver: "EffectiveTreResolver") -> Dict[str, bytes]:
+    source = resolver.read(SHIP_SCENERY_BASE_IFF)
+    generated: Dict[str, bytes] = {}
+    for ship, path, appearance in SHIP_SCENERY_CATALOG:
+        try:
+            resolver.read(appearance)
+        except wb.WorldBuilderError as exc:
+            raise wb.WorldBuilderError(
+                f"Built-in Ship Scenery {ship} requires {appearance!r}, but it could not be "
+                f"resolved from the effective lower TRE stack: {exc}"
+            ) from exc
+        generated[path] = generate_static_ship_scenery_iff(source, appearance)
+    return generated
 
 
 @dataclass
@@ -1322,7 +1486,9 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     for entry in approved:
         projects_by_planet.setdefault(entry.project.planet, []).append(entry)
 
-    overlay_files: Dict[str, bytes] = {}
+    builtin_ship_assets = generate_builtin_ship_scenery_assets(resolver)
+    canonical_crc_table = validate_ship_scenery_crc_requirements(resolver)
+    overlay_files: Dict[str, bytes] = dict(builtin_ship_assets)
     original_snapshots: Dict[str, bytes] = {}
     results: List[BatchProjectResult] = []
 
@@ -1424,7 +1590,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
     )
     if final_wb_paths != expected_wb_paths:
         raise wb.WorldBuilderError(
-            "Candidate World Builder archive namespace does not exactly match the approved project set"
+            "Candidate World Builder archive namespace does not exactly match built-in assets plus the approved project set"
         )
 
     dependencies = _collect_dependency_records(
@@ -1432,6 +1598,19 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         original_snapshots,
         results,
     )
+    dependencies["records"][SHIP_SCENERY_BASE_IFF] = {
+        "sha256": _sha256_bytes(resolver.read(SHIP_SCENERY_BASE_IFF)),
+        "kinds": ["builtin_ship_scenery_base"],
+    }
+    dependencies["records"][CANONICAL_OBJECT_TEMPLATE_CRC_TABLE] = {
+        "sha256": _sha256_bytes(canonical_crc_table),
+        "kinds": ["canonical_object_template_crc_table"],
+    }
+    for _ship, _wrapper, appearance in SHIP_SCENERY_CATALOG:
+        dependencies["records"][appearance] = {
+            "sha256": _sha256_bytes(resolver.read(appearance)),
+            "kinds": ["builtin_ship_scenery_appearance"],
+        }
 
     combined_lua = _combined_server_lua(results)
     _atomic_write_bytes(candidate_lua, combined_lua.encode("utf-8"))
@@ -1516,6 +1695,12 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         "projects": project_entries,
         "travel_points": travel_rows,
         "travel_point_count": len(travel_rows),
+        "builtin_assets": {
+            "ship_scenery_base": SHIP_SCENERY_BASE_IFF,
+            "ship_scenery_count": len(builtin_ship_assets),
+            "ship_scenery_paths": sorted(builtin_ship_assets),
+            "total_count": len(builtin_ship_assets),
+        },
         "changes_from_last_deploy": changes,
         "overlay_archive_paths": final_paths,
         "worldbuilder_archive_paths": final_wb_paths,
@@ -1530,6 +1715,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
             "preexisting_nodes_preserved_in_affected_snapshots": True,
             "global_reserved_oid_set_matches_registry": True,
             "worldbuilder_namespace_matches_approved_set": True,
+            "builtin_ship_scenery_generated_from_canonical_lower_tre": True,
             "project_structure_roots_cells_assets": True,
             "dependency_hashes_recorded": True,
         },
@@ -1874,6 +2060,7 @@ def cmd_bake_set(args) -> int:
     print(f"Source TRE: {manifest['base_tre']}")
     print(f"Candidate TRE: {Path(manifest['candidate_dir']) / manifest['artifacts']['tre']}")
     print(f"Projects: {len(manifest['projects'])}")
+    print(f"Built-in Ship Scenery assets: {manifest['builtin_assets']['ship_scenery_count']}")
     print(
         "Changes: "
         f"added={len(changes['added'])}, updated={len(changes['updated'])}, "

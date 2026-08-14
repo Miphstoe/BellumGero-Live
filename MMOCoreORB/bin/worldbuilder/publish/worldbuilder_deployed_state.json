@@ -1,13 +1,161 @@
 {
   "version": 1,
-  "deployed": "2026-08-12T08:04:49",
+  "deployed": "2026-08-14T16:32:48",
   "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
-  "base_tre_sha256": "273d3879b20a7424e26ac7548dcaed464c908a90aa8538644b302a12ae94214b",
+  "base_tre_sha256": "745e66859c4e3dce055f2d1594d48dc72c37b74f8fb12f3eded35bfe3946c290",
   "dependencies": {
-    "records": {}
+    "records": {
+      "object/static/vehicle/shared_static_tie_fighter.iff": {
+        "sha256": "a42db6f49b9bbeb9cf3d0c9ad802490959d0c9889cc56abf03a07c8cc7380485",
+        "kinds": [
+          "builtin_ship_scenery_base"
+        ]
+      },
+      "appearance/arc170_model.apt": {
+        "sha256": "2f0b783ea17361eff572cbae3311c8e9fc9902e649a82042ffc01877d6ad031d",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/a_wing_model.apt": {
+        "sha256": "e9fa2b94f14451201b3f433bc8f517762f82935b7292b44060ff4959457402c8",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/bwing_model.apt": {
+        "sha256": "884e15b5fcffb62ef2f50bc112d934dd5be84e35fa81fc4f3b0bb31620d368f1",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/droid_fighter_model.apt": {
+        "sha256": "0bd07127ef03547b0b8872b88cd82b5246ca4e06e4761aaafb9febb4b4c028af",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/grievous_starship_model.apt": {
+        "sha256": "0fc15b3b05571cd7a231316d79f6665c917b5d48843aee609e8127cabe01d8fd",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/jedifighter_model.apt": {
+        "sha256": "6d5fff505136e9622bc3d6e0b4e7691eb65c1fbc03cc224679a21527369e2b8b",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/kse_firespray_model.apt": {
+        "sha256": "d8d578b9e79249a93f10c5f149b798c7e6520867345d74d2fe95d2ec2cb9f4f0",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/lambda_shuttle_model.apt": {
+        "sha256": "e2ea39fc42432fbe092a3655fd4d4562081ffa8c5252dabfb08c0dd3820c8679",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/naboo_starfighter_model.apt": {
+        "sha256": "7eed11434b2c6d18e511dbe9a8a68e56c18505fbb09fdc74f61ff64d011bd35d",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/soorosuub_space_yacht_model.apt": {
+        "sha256": "6cfb3f35746ea588df3ecb89477da2caa5c30f97fe0d2cda46d0b513d2d35cb1",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_advanced_model.apt": {
+        "sha256": "56f8c572faf228d8fc4a919f53a19c920427e79eeff834cffd48fea846428a61",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_aggressor_model.apt": {
+        "sha256": "b1ff759b37eb438b95c43a3ce49a8a6efb9345355a596a0a2cebef61cd90a23f",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_bomber_model.apt": {
+        "sha256": "ac3d350b7ea6c890dedff9a01da997b14b05ecc4fe3a0d54092a2af7ca1e7000",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_fighter_model.apt": {
+        "sha256": "c8b985afee8352dcbbc70564eee9fbe049250d59720d097a8dfe512d2d0c3ffa",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_interceptor_model.apt": {
+        "sha256": "964b42a1f8adf5240488db3a82d7891bb2eda7425e5273c73ccdc0b08fc5675f",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/tie_oppressor_model.apt": {
+        "sha256": "62b56809626f9d57c8613bb924cac8d3c66e71ca9f39e4ab5c7dad929df437fb",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/v_wing_model.apt": {
+        "sha256": "cc997625f8bba21d7a45785a41aa7805095723042b658abacb488febdacd6544",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/xwing_model.apt": {
+        "sha256": "3a038f7806c05b2af7cc8b73586792d394f2c6671f1a969ee2589047fd658281",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/ywing_model.apt": {
+        "sha256": "7020bf3ab2cf01171943a01bc355d6709b3909c7a593e43e46cc22b679e1f245",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/ykl37r_model.apt": {
+        "sha256": "c919dae693f388325c757cea3c385cec0a1c555bc4d4bd8e02288539518ce355",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/yt1300_model.apt": {
+        "sha256": "d41d135b3bea46f507eb14d3e89081440a8ba46f7d572608a0c1560a0c3c9bb8",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/yt2400_model.apt": {
+        "sha256": "bb24a2f12776d9b43c9b72a18a7ea3556aa15562b0256699260472104d372454",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      },
+      "appearance/z95_model.apt": {
+        "sha256": "d772568f88c182a8553142e61a79edbc0e292709a3ef062ff1c2374f4277f958",
+        "kinds": [
+          "builtin_ship_scenery_appearance"
+        ]
+      }
+    }
   },
-  "tre_sha256": "7e73dc61b7069395852f9d6401997311e8c41a6c218f6a57f7c0abd8479ec4b2",
+  "tre_sha256": "db03c007e308ac59bea34f2a38934c240be2bbe3ffe0d8a0f04e712c83091a2d",
   "server_template_lua_sha256": "17129057e35b7a7cf33c2561ab02ae21e5b82d24d6ae25d5e8406e90f21f3ec3",
+  "server_travel_lua_sha256": "935fde5e272e49f44304c885c1f05bd3b372de8573e91bd5f07e087c90ef2545",
   "oid_registry_sha256": "638e95d98e7207369f2a0d7a3aada13c8529ddcd295362d0585892f1da4b601a",
-  "projects": []
+  "projects": [],
+  "travel_points": [],
+  "travel_point_count": 0
 }
