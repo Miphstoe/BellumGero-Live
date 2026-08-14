@@ -192,7 +192,104 @@ class ProjectParsingTests(unittest.TestCase):
                 wb.read_project(path)
 
 
+    def test_v3_travel_point_name_round_trips_utf8_hex(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_project(Path(tmp), "travel.wbp", """
+                BELLUM_GERO_WORLD_BUILDER 3
+                PROJECT travel
+                PLANET corellia
+                MOVE_STEP 0.1
+                ROTATE_STEP 5
+                SELECTED 1
+                NEXT_ID 2
+                LAST_TEMPLATE -
+                STRUCTURE 1 object/building/corellia/shuttleport_corellia.iff object/building/corellia/shared_shuttleport_corellia.iff 0 0 0 1 0 0 0 512
+                TRAVEL_POINT 1 10 0 10 1 1 3 4576656e74204f7574706f7374
+            """)
+            project = wb.read_project(path)
+            self.assertEqual(project.travel_points[0].point_name, "Event Outpost")
+            self.assertTrue(project.is_structural)
+
+    def test_v3_travel_point_rejects_out_of_range(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_project(Path(tmp), "far.wbp", """
+                BELLUM_GERO_WORLD_BUILDER 3
+                PROJECT travel
+                PLANET corellia
+                MOVE_STEP 0.1
+                ROTATE_STEP 5
+                SELECTED 1
+                NEXT_ID 2
+                LAST_TEMPLATE -
+                STRUCTURE 1 object/building/corellia/shuttleport_corellia.iff object/building/corellia/shared_shuttleport_corellia.iff 0 0 0 1 0 0 0 512
+                TRAVEL_POINT 1 121 0 0 1 1 3 466172
+            """)
+            with self.assertRaises(wb.WorldBuilderError):
+                wb.read_project(path)
+
+
 class CompositionTests(unittest.TestCase):
+    def test_generated_server_template_materializes_source_fields_before_registration(self):
+        project = make_parent("event_bunker", "corellia")
+        published = wb.PublishedStructure(
+            local_id=4,
+            root_object_id=1004,
+            cell_object_ids=[],
+            game_object_type=512,
+            source_server_template="object/building/corellia/shuttleport_corellia.iff",
+            source_shared_template="object/building/corellia/shared_shuttleport_corellia.iff",
+            source_portal_layout="",
+            source_interior_layout="",
+            custom_server_template="object/building/worldbuilder/event_bunker/structure_4.iff",
+            custom_shared_template="object/building/worldbuilder/event_bunker/shared_structure_4.iff",
+            custom_interior_layout="",
+            portal_crc=0,
+            cell_count=0,
+            interior_local_ids=[],
+        )
+
+        lua = wb.generate_server_template_lua(project, [published])
+        custom = "object_building_worldbuilder_event_bunker_structure_4"
+        source = "object_building_corellia_shuttleport_corellia"
+        copy_start = lua.index(f"for key, value in pairs({source}) do")
+        registration = lua.index(f"ObjectTemplates:addTemplate({custom}")
+
+        self.assertLess(copy_start, registration)
+        self.assertIn(f'if key ~= "__index" and rawget({custom}, key) == nil then', lua)
+        self.assertIn(f"rawset({custom}, key, value)", lua)
+        self.assertIn('clientTemplateFileName = "object/building/worldbuilder/event_bunker/shared_structure_4.iff"', lua)
+        self.assertIn("gameObjectType = 512", lua)
+        self.assertIn("totalCellNumber = 0", lua)
+
+    def test_travel_lua_is_deterministic_and_escaped(self):
+        project = make_parent("travel", "corellia")
+        project.version = wb.WBP_EXTENSION_VERSION
+        project.travel_points = [wb.ProjectTravelPoint(1, 'Event "Outpost"', 10, 0, 10, True, True, 3)]
+        result = SimpleNamespace(approved=SimpleNamespace(project=project, publish_id="travel"))
+        lua, rows = batch._combined_travel_lua([result])
+        self.assertIn('name = "Event \\"Outpost\\""', lua)
+        self.assertEqual(rows[0]["structure_local_id"], 1)
+
+    def test_travel_lua_preserves_wbp_x_z_y_fields(self):
+        project = make_parent("coordinates", "corellia")
+        project.version = wb.WBP_EXTENSION_VERSION
+        project.travel_points = [wb.ProjectTravelPoint(1, "Corellian Outpost", -177.864, 28.0, -4891.75, True, True, 3)]
+        result = SimpleNamespace(approved=SimpleNamespace(project=project, publish_id="coordinates"))
+        lua, rows = batch._combined_travel_lua([result])
+        self.assertIn("x = -177.864", lua)
+        self.assertIn("z = 28", lua)
+        self.assertIn("y = -4891.75", lua)
+        self.assertEqual((rows[0]["x"], rows[0]["z"], rows[0]["y"]), (-177.864, 28.0, -4891.75))
+
+    def test_travel_lua_rejects_unsafe_proximity(self):
+        first = make_parent("one", "corellia"); first.version = wb.WBP_EXTENSION_VERSION
+        second = make_parent("two", "corellia"); second.version = wb.WBP_EXTENSION_VERSION
+        first.travel_points = [wb.ProjectTravelPoint(1, "One", 0, 0, 0, True, True, 3)]
+        second.travel_points = [wb.ProjectTravelPoint(1, "Two", 100, 0, 0, True, True, 3)]
+        results = [SimpleNamespace(approved=SimpleNamespace(project=first, publish_id="one")), SimpleNamespace(approved=SimpleNamespace(project=second, publish_id="two"))]
+        with self.assertRaises(wb.WorldBuilderError):
+            batch._combined_travel_lua(results)
+
     def _with_fake_ilf_api(self, callback):
         names = [
             "read_string_param",

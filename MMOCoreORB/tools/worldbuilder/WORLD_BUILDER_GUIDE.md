@@ -1,5 +1,63 @@
 # Bellum Gero World Builder — V1 Guide
 
+## Exterior buildings and travel destinations
+
+The Structure Library remains limited to POB buildings and caves with usable
+interior cells. Cell-less buildings use **Exterior Building Library / Cell-less
+Buildings** or `/wb exterior`; direct placement uses
+`/wb addexterior <server_template> [distance]`. They persist as `STRUCTURE`
+records and retain the structural publishing/OID lifecycle.
+
+Template child objects are authoritative. The Corellia, Naboo, and Tatooine
+municipal shuttleports bring their registered travel terminal, ticket collector,
+and player shuttle with them. They must not be baked as separate WBP objects.
+By contrast, `object/building/general/landing_pad_s01.iff` has no registered
+childObjects, so its intentionally bare preview must not receive invented
+shuttle or transport scenery.
+
+WBP V3 travel metadata uses `TRAVEL_POINT <building-id> <x> <z> <y>
+<interplanetary-0|1> <incoming-0|1> <landing-range> <UTF-8-name-hex>`. Names
+round-trip with spaces and Unicode; landing range is 0.5–64m and the point must
+remain within 120m of its linked building. Permanent destinations live in the
+generated `scripts/managers/planet/worldbuilder_travel_points.lua`; deployment
+requires a cold server start because planet travel data loads at zone startup.
+
+The Exterior Building Library has the same category, All, Search, and paged
+browsing model as the other libraries. `[Travel Ready]` is derived strictly from
+the registered SERVER template's childObjects: a travel terminal, ticket
+collector, and recognized player shuttle/transport are all required. Filename
+text is never used, so `shuttleport_general` and `landing_pad_s01` are not
+misclassified.
+
+Each exterior-library template offers **Preview Exterior Building**, **Clear
+Exterior Preview**, and **Add to Project**. Preview creates a real but wholly
+transient `BuildingObject`, including exactly the childObjects inherited from
+its SERVER template. It never enters the WBP or undo history. Clear explicitly
+removes outdoor childObjects before removing the root, and Add clears an active
+exterior preview first when the developer is outdoors.
+
+Select a Travel Ready exterior building and use `/wb travel` (or **Travel Point
+/ Selected Shuttleport...**) to create/rename its destination, set the outdoor
+arrival position, toggle incoming/interplanetary travel, set the landing range,
+or remove it. The session registers only its own transient destinations before
+spawning/rebuilding shuttleports, allowing ticket and schedule testing without
+publishing. Close, load failure, delete, undo, and redo unregister only names
+owned by that session. Moving the building moves its point by the same delta;
+rotation rebuilds template children; duplication intentionally does not copy the
+destination.
+
+The 120m authoring limit leaves safety margin below Core3's 128m shuttle
+association search. Publication fails for duplicate names or WB destinations
+within 128m of one another on a planet. Existing live names and nearby stock
+destinations are rejected during transient registration rather than replaced.
+
+Batch candidates contain `bg_worldbuilder.tre`, `generated_templates.lua`, and
+`worldbuilder_travel_points.lua`. Deploy-set stages, verifies, backs up, promotes,
+and rolls back these artifacts together. Full fingerprints include travel data;
+separate structural fingerprints ensure a travel-only edit does not request
+`/wb refreshpublished`, while legacy deployed-state files without that field use
+the conservative refresh behavior.
+
 ## What this solves
 
 Bellum Gero World Builder turns the **running SWG client into the placement editor**. Instead of editing `snapshot/<planet>.ws`, rebuilding a TRE, restarting, taking screenshots, and repeating, a developer can spawn an object, nudge it, rotate it, duplicate it, test real collision, and see every adjustment immediately in the actual client.

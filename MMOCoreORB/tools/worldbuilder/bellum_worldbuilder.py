@@ -1604,6 +1604,15 @@ def generate_server_template_lua(project: Project, published: Sequence[Published
             f"\tgameObjectType = {entry.game_object_type},",
             f"\ttotalCellNumber = {entry.cell_count}",
             "}",
+            # Object:new() exposes most source values only through __index.
+            # Core3 template parsing enumerates raw table fields with lua_next(),
+            # so materialize every source SERVER field that is not an explicit
+            # World Builder override before registering the generated template.
+            f"for key, value in pairs({source_server_var}) do",
+            f'\tif key ~= "__index" and rawget({custom_server_var}, key) == nil then',
+            f"\t\trawset({custom_server_var}, key, value)",
+            "\tend",
+            "end",
             f'ObjectTemplates:addTemplate({custom_server_var}, "{entry.custom_server_template}")',
             "",
         ]
@@ -1718,9 +1727,13 @@ def bake_snapshot_v2(
             )
 
         portal_path = normalize_archive_path(read_string_param(source_iff, "portalLayoutFilename"))
-        if not portal_path:
-            raise WorldBuilderError(f"STRUCTURE #{structure.local_id}: shared template has no portalLayoutFilename")
-        portal = parse_portal_layout(resolver.read(portal_path), portal_path)
+        portal = parse_portal_layout(resolver.read(portal_path), portal_path) if portal_path else None
+        cell_count = portal.cell_count if portal is not None else 0
+
+        if cell_count == 0 and interiors_by_structure.get(structure.local_id):
+            raise WorldBuilderError(
+                f"STRUCTURE #{structure.local_id}: zero-cell exterior buildings cannot own INTERIOR records"
+            )
 
         source_ilf_path = normalize_archive_path(read_string_param(source_iff, "interiorLayoutFileName"))
         if source_ilf_path:
@@ -1729,11 +1742,11 @@ def bake_snapshot_v2(
             source_ilf = empty_ilf()
             source_ilf_path = "<empty>"
 
-        custom_ilf = f"interiorlayout/worldbuilder/{slug}/structure_{structure.local_id}.ilf"
+        custom_ilf = f"interiorlayout/worldbuilder/{slug}/structure_{structure.local_id}.ilf" if cell_count else ""
         custom_shared = f"object/building/worldbuilder/{slug}/shared_structure_{structure.local_id}.iff"
         custom_server = f"object/building/worldbuilder/{slug}/structure_{structure.local_id}.iff"
 
-        custom_iff_bytes = patch_string_param(source_iff, "interiorLayoutFileName", custom_ilf)
+        custom_iff_bytes = patch_string_param(source_iff, "interiorLayoutFileName", custom_ilf) if cell_count else source_iff
         if normalize_archive_path(read_string_param(custom_iff_bytes, "portalLayoutFilename")) != portal_path:
             raise WorldBuilderError(
                 f"STRUCTURE #{structure.local_id}: portal layout changed while cloning shared IFF"
@@ -1742,7 +1755,7 @@ def bake_snapshot_v2(
         ilf_nodes: List[bytes] = []
         interior_ids: List[int] = []
         for interior in interiors_by_structure.get(structure.local_id, []):
-            if interior.cell_number > portal.cell_count:
+            if interior.cell_number > cell_count:
                 raise WorldBuilderError(
                     f"INTERIOR #{interior.local_id}: Cell {interior.cell_number} exceeds "
                     f"STRUCTURE #{structure.local_id} portal cell count {portal.cell_count}"
@@ -1756,8 +1769,9 @@ def bake_snapshot_v2(
             ilf_nodes.append(build_ilf_node(interior, portal_room))
             interior_ids.append(interior.local_id)
 
-        custom_ilf_bytes = append_ilf_nodes(source_ilf, ilf_nodes, source_ilf_path)
-        replacements[custom_ilf] = custom_ilf_bytes
+        if cell_count:
+            custom_ilf_bytes = append_ilf_nodes(source_ilf, ilf_nodes, source_ilf_path)
+            replacements[custom_ilf] = custom_ilf_bytes
         replacements[custom_shared] = custom_iff_bytes
 
         custom_name_id = _add_name(names, name_to_id, custom_shared)
@@ -1766,7 +1780,7 @@ def bake_snapshot_v2(
 
         child_blobs: List[bytes] = []
         cell_oids: List[int] = []
-        for cell_number in range(1, portal.cell_count + 1):
+        for cell_number in range(1, cell_count + 1):
             cell_oid = allocate_structural_oid(f"{slug}/structure/{structure.local_id}/cell/{cell_number}")
             cell_oids.append(cell_oid)
             child_blobs.append(
@@ -1799,7 +1813,7 @@ def bake_snapshot_v2(
                 structure.qw, structure.qx, structure.qy, structure.qz,
                 structure.x, structure.z, structure.y,
                 game_type,
-                portal.crc,
+                portal.crc if portal is not None else 0,
                 child_blobs,
             )
         )
@@ -1816,8 +1830,8 @@ def bake_snapshot_v2(
                 custom_server_template=custom_server,
                 custom_shared_template=custom_shared,
                 custom_interior_layout=custom_ilf,
-                portal_crc=portal.crc,
-                cell_count=portal.cell_count,
+                portal_crc=portal.crc if portal is not None else 0,
+                cell_count=cell_count,
                 interior_local_ids=interior_ids,
             )
         )
@@ -1955,6 +1969,10 @@ def bake_tre_v2(
             raise WorldBuilderError(f"Final TRE STRUCTURE #{entry.local_id} cell hierarchy mismatch")
 
         custom_iff = finished.extract(entry.custom_shared_template)
+        if entry.cell_count == 0:
+            if entry.custom_interior_layout or entry.interior_local_ids or root.children:
+                raise WorldBuilderError(f"Final TRE zero-cell STRUCTURE #{entry.local_id} unexpectedly contains interior data")
+            continue
         if normalize_archive_path(read_string_param(custom_iff, "interiorLayoutFileName")) != normalize_archive_path(entry.custom_interior_layout):
             raise WorldBuilderError(f"Final TRE STRUCTURE #{entry.local_id} shared IFF does not point at custom ILF")
         if normalize_archive_path(read_string_param(custom_iff, "portalLayoutFilename")) != normalize_archive_path(entry.source_portal_layout):

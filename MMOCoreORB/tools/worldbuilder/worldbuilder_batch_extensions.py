@@ -332,6 +332,10 @@ def install(batch) -> None:
         for structure in result.bake_result.structures:
             root_template = structure.custom_shared_template
             custom_iff = finished.extract(root_template)
+            if structure.cell_count == 0:
+                if structure.custom_interior_layout or structure.interior_local_ids:
+                    raise wb.WorldBuilderError(f"Candidate zero-cell STRUCTURE #{structure.local_id} unexpectedly contains interior data")
+                continue
             if wb.normalize_archive_path(wb.read_string_param(custom_iff, "interiorLayoutFileName")) != wb.normalize_archive_path(structure.custom_interior_layout):
                 raise wb.WorldBuilderError(
                     f"Candidate project {result.approved.publish_id} STRUCTURE #{structure.local_id} shared IFF does not point at its custom ILF"
@@ -398,6 +402,14 @@ def install(batch) -> None:
         received = getattr(result.bake_result, "external_contributions", [])
         if received:
             entry["received_external_contributions"] = received
+        if project.extensions or project.external_interiors or received:
+            structural_payload = {
+                "base_structural_fingerprint": entry["structural_fingerprint"],
+                "extensions": [dataclasses.asdict(value) for value in project.extensions],
+                "external_interiors": [dataclasses.asdict(value) for value in project.external_interiors],
+                "received_external_contributions": received,
+            }
+            entry["structural_fingerprint"] = _canonical_json_hash(structural_payload)
         return entry
 
     def build_candidate(config_path: Path, default_game_type=None) -> dict:

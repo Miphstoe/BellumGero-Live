@@ -19,7 +19,8 @@
 enum WorldBuilderObjectKind {
 	WB_OBJECT_STATIC = 0,
 	WB_OBJECT_STRUCTURE = 1,
-	WB_OBJECT_INTERIOR = 2
+	WB_OBJECT_INTERIOR = 2,
+	WB_OBJECT_EXTERIOR_BUILDING = 3
 };
 
 class WorldBuilderExtensionTarget : public Object {
@@ -33,6 +34,19 @@ public:
 	WorldBuilderExtensionTarget(const String& parentPublishID, uint32 parentStructureLocalID)
 		: publishID(parentPublishID), structureLocalID(parentStructureLocalID) {
 	}
+};
+
+class WorldBuilderTravelPointState : public Object {
+public:
+	uint32 buildingLocalID;
+	String pointName;
+	float x, z, y;
+	bool interplanetaryTravelAllowed;
+	bool incomingTravelAllowed;
+	float landingRange;
+
+	WorldBuilderTravelPointState() : buildingLocalID(0), x(0), z(0), y(0),
+		interplanetaryTravelAllowed(true), incomingTravelAllowed(true), landingRange(3.f) {}
 };
 
 class WorldBuilderObjectState : public Object {
@@ -63,6 +77,7 @@ class WorldBuilderProjectState : public Object {
 public:
 	Vector<WorldBuilderObjectState> objects;
 	Vector<uint32> groupIDs;
+	Vector<WorldBuilderTravelPointState> travelPoints;
 	uint32 selectedLocalID;
 	uint32 nextLocalID;
 
@@ -82,6 +97,8 @@ public:
 	Vector<WorldBuilderObjectState> objects;
 	Vector<uint32> groupIDs;
 	Vector<WorldBuilderExtensionTarget> extensionTargets;
+	Vector<WorldBuilderTravelPointState> travelPoints;
+	Vector<String> transientTravelPointNames;
 	Vector<WorldBuilderProjectState> undoStack;
 	Vector<WorldBuilderProjectState> redoStack;
 
@@ -118,6 +135,12 @@ private:
 	bool resolvePlayerProjectInteriorContext(WorldBuilderSession* session, CreatureObject* player, WorldBuilderObjectState& state) const;
 	ManagedReference<CellObject*> resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, const WorldBuilderObjectState& state, String& errorMessage) const;
 	bool validateStructureTemplate(const String& serverTemplate, String& errorMessage) const;
+	bool validateExteriorBuildingTemplate(const String& serverTemplate, String& errorMessage) const;
+	bool isTravelReadyTemplate(const String& serverTemplate) const;
+	int findTravelPointIndex(WorldBuilderSession* session, uint32 buildingLocalID) const;
+	bool registerTransientTravelPoints(WorldBuilderSession* session, CreatureObject* player, String& errorMessage);
+	void unregisterTransientTravelPoints(WorldBuilderSession* session, CreatureObject* player) const;
+	bool rebuildExteriorPreview(WorldBuilderSession* session, CreatureObject* player, uint32 buildingLocalID, String& errorMessage);
 	bool validateExtensionReferences(WorldBuilderSession* session, String& errorMessage) const;
 	WorldBuilderProjectState captureProjectState(WorldBuilderSession* session, CreatureObject* player) const;
 	void pushUndoState(WorldBuilderSession* session, CreatureObject* player);
@@ -157,6 +180,15 @@ public:
 
 	bool spawnTemplate(CreatureObject* player, const String& objectTemplate, float distance, String& message);
 	bool addStructure(CreatureObject* player, const String& structureTemplate, float distance, String& message);
+	bool addExteriorBuilding(CreatureObject* player, const String& structureTemplate, float distance, String& message);
+	bool selectedExteriorTravelReady(CreatureObject* player, uint32& buildingLocalID, String& templatePath, String& message);
+	bool getSelectedTravelPoint(CreatureObject* player, WorldBuilderTravelPointState& point, bool& exists, String& message);
+	bool setSelectedTravelPointName(CreatureObject* player, const String& name, String& message);
+	bool setSelectedTravelPointArrival(CreatureObject* player, String& message);
+	bool toggleSelectedTravelPointIncoming(CreatureObject* player, String& message);
+	bool toggleSelectedTravelPointInterplanetary(CreatureObject* player, String& message);
+	bool setSelectedTravelPointLandingRange(CreatureObject* player, float range, String& message);
+	bool removeSelectedTravelPoint(CreatureObject* player, String& message);
 	bool spawnLastTemplate(CreatureObject* player, float distance, String& message);
 	bool selectTarget(CreatureObject* player, String& message);
 	bool selectObject(CreatureObject* player, uint32 localID, String& message);

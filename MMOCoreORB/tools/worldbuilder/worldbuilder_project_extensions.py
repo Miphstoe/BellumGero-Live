@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import math
 import sys
 from pathlib import Path
 from typing import Optional
@@ -51,11 +52,32 @@ class ProjectExternalInterior:
     room_name: str
 
 
+@dataclasses.dataclass
+class ProjectTravelPoint:
+    building_local_id: int
+    point_name: str
+    x: float
+    z: float
+    y: float
+    interplanetary_travel_allowed: bool
+    incoming_travel_allowed: bool
+    landing_range: float
+
+
 def _ensure_extension_fields(project) -> None:
     if not hasattr(project, "extensions"):
         project.extensions = []
     if not hasattr(project, "external_interiors"):
         project.external_interiors = []
+    if not hasattr(project, "travel_points"):
+        project.travel_points = []
+
+
+def _decode_hex_name(value: str, path: Path, line_number: int) -> str:
+    try:
+        return bytes.fromhex(value).decode("utf-8")
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise ValueError(f"{path}:{line_number}: TRAVEL_POINT name is not valid UTF-8 hex") from exc
 
 
 def _header_version(path: Path, magic: str) -> int:
@@ -225,6 +247,19 @@ def _read_v3(wb, path: Path):
                         room_name="" if parts[15] == "-" else parts[15],
                     )
                 )
+            elif key == "TRAVEL_POINT":
+                if len(parts) != 9:
+                    raise wb.WorldBuilderError(
+                        f"{path}:{line_number}: TRAVEL_POINT requires 8 values after the record name; got {len(parts)-1}"
+                    )
+                if parts[5] not in ("0", "1") or parts[6] not in ("0", "1"):
+                    raise wb.WorldBuilderError(f"{path}:{line_number}: TRAVEL_POINT flags must be 0 or 1")
+                project.travel_points.append(ProjectTravelPoint(
+                    building_local_id=int(parts[1]), x=float(parts[2]), z=float(parts[3]), y=float(parts[4]),
+                    interplanetary_travel_allowed=parts[5] == "1",
+                    incoming_travel_allowed=parts[6] == "1", landing_range=float(parts[7]),
+                    point_name=_decode_hex_name(parts[8], path, line_number),
+                ))
             else:
                 raise wb.WorldBuilderError(f"{path}:{line_number}: unknown record {key!r}")
         except wb.WorldBuilderError:
@@ -347,6 +382,31 @@ def validate_project_v3(wb, project, source: Optional[Path] = None, base_validat
                 where + f"EXTERNAL_INTERIOR #{interior.local_id}: cell number must be > 0"
             )
 
+    travel_buildings: set[int] = set()
+    travel_names: set[str] = set()
+    structures = {int(value.local_id): value for value in project.structures}
+    for point in project.travel_points:
+        if point.building_local_id not in structures:
+            raise wb.WorldBuilderError(where + f"TRAVEL_POINT references missing STRUCTURE #{point.building_local_id}")
+        if point.building_local_id in travel_buildings:
+            raise wb.WorldBuilderError(where + f"more than one TRAVEL_POINT references STRUCTURE #{point.building_local_id}")
+        name = point.point_name.strip()
+        if not name:
+            raise wb.WorldBuilderError(where + "TRAVEL_POINT destination name is empty")
+        folded = name.casefold()
+        if folded in travel_names:
+            raise wb.WorldBuilderError(where + f"duplicate TRAVEL_POINT destination name {name!r}")
+        if not all(math.isfinite(value) for value in (point.x, point.z, point.y, point.landing_range)):
+            raise wb.WorldBuilderError(where + f"TRAVEL_POINT {name!r} contains a non-finite number")
+        if not 0.5 <= point.landing_range <= 64.0:
+            raise wb.WorldBuilderError(where + f"TRAVEL_POINT {name!r} landing range must be 0.5..64m")
+        building = structures[point.building_local_id]
+        distance = math.sqrt((point.x-building.x)**2 + (point.z-building.z)**2 + (point.y-building.y)**2)
+        if distance > 120.0:
+            raise wb.WorldBuilderError(where + f"TRAVEL_POINT {name!r} is {distance:.2f}m from its building (maximum 120m)")
+        travel_buildings.add(point.building_local_id)
+        travel_names.add(folded)
+
     missing_group = [gid for gid in project.group_ids if gid not in seen]
     if missing_group:
         raise wb.WorldBuilderError(where + f"group references missing object IDs: {missing_group}")
@@ -365,6 +425,7 @@ def install(wb) -> None:
     wb.WBP_EXTENSION_VERSION = WBP_EXTENSION_VERSION
     wb.ProjectExtension = ProjectExtension
     wb.ProjectExternalInterior = ProjectExternalInterior
+    wb.ProjectTravelPoint = ProjectTravelPoint
 
     def read_project(path: Path):
         path = Path(path)
@@ -383,7 +444,7 @@ def install(wb) -> None:
         if project.version == WBP_EXTENSION_VERSION:
             return validate_project_v3(wb, project, source, original_validate_project)
         original_validate_project(project, source)
-        if project.extensions or project.external_interiors:
+        if project.extensions or project.external_interiors or project.travel_points:
             raise wb.WorldBuilderError("WBP V1/V2 cannot contain cross-project extension records")
 
     def generate_lua(project) -> str:
@@ -409,12 +470,14 @@ def install(wb) -> None:
         or bool(self.structures or self.interiors)
         or bool(getattr(self, "extensions", []))
         or bool(getattr(self, "external_interiors", []))
+        or bool(getattr(self, "travel_points", []))
     )
     wb.Project.total_records = property(
         lambda self: len(self.objects)
         + len(self.structures)
         + len(self.interiors)
         + len(getattr(self, "external_interiors", []))
+        + len(getattr(self, "travel_points", []))
     )
 
     wb.read_project = read_project

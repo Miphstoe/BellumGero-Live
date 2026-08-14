@@ -47,6 +47,32 @@ public:
 		landingRange = range;
 	}
 
+	PlanetTravelPoint(const String& zoneName, const String& cityName, Vector3 arrVector, Vector3 departVector,
+		CreatureObject* shuttle, float range, bool interplanetary, bool incoming) {
+		pointZone = zoneName;
+		pointName = cityName;
+		arrivalVector = arrVector;
+		departureVector = departVector;
+		interplanetaryTravelAllowed = interplanetary;
+		incomingTravelAllowed = incoming;
+		shuttleObject = shuttle;
+		landingRange = range;
+	}
+
+	// World Builder/Lua-order constructor. The public data convention is x/z/y
+	// (z is height); Vector3 storage is x/y/z, exactly as readLuaObject() uses.
+	PlanetTravelPoint(const String& zoneName, const String& cityName, float x, float z, float y,
+		CreatureObject* shuttle, float range, bool interplanetary, bool incoming) {
+		pointZone = zoneName;
+		pointName = cityName;
+		arrivalVector.set(x, z, y);
+		departureVector = arrivalVector;
+		interplanetaryTravelAllowed = interplanetary;
+		incomingTravelAllowed = incoming;
+		shuttleObject = shuttle;
+		landingRange = range;
+	}
+
 	PlanetTravelPoint(const PlanetTravelPoint& ptp) : Object() {
 		pointZone = ptp.pointZone;
 		pointName = ptp.pointName;

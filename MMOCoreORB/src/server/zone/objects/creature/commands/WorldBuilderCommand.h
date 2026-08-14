@@ -69,7 +69,9 @@ public:
 		ACTION_ADD_STRUCTURE = 38,
 		ACTION_STRUCTURE_LIBRARY = 39,
 		ACTION_BIND_EXTENSION = 40,
-		ACTION_EXTENSION_STATUS = 41
+		ACTION_EXTENSION_STATUS = 41,
+		ACTION_ADD_EXTERIOR_BUILDING = 42,
+		ACTION_TRAVEL_POINT = 43
 	};
 
 	enum ProjectManageAction {
@@ -87,7 +89,8 @@ public:
 		INPUT_MOVE_STEP = 4,
 		INPUT_ROTATE_STEP = 5,
 		INPUT_STRUCTURE_PREVIEW = 6,
-		INPUT_ADD_STRUCTURE = 7
+		INPUT_ADD_STRUCTURE = 7,
+		INPUT_ADD_EXTERIOR_BUILDING = 8
 	};
 
 	static void sendMessage(CreatureObject* player, const String& title, const String& text) {
@@ -118,7 +121,9 @@ public:
 #include "WorldBuilderStructureInspector.h"
 #include "WorldBuilderStructurePreview.h"
 #include "WorldBuilderStructureLibrary.h"
+#include "WorldBuilderExteriorBuildingLibrary.h"
 #include "WorldBuilderPublishedRefresh.h"
+#include "WorldBuilderTravelPointEditor.h"
 
 class WorldBuilderObjectListSuiCallback : public SuiCallback {
 public:
@@ -412,6 +417,9 @@ public:
 			case WorldBuilderCommandUi::INPUT_ADD_STRUCTURE:
 				result = manager->addStructure(player, input, 15.0f, message);
 				break;
+			case WorldBuilderCommandUi::INPUT_ADD_EXTERIOR_BUILDING:
+				result = manager->addExteriorBuilding(player, input, 15.0f, message);
+				break;
 			default:
 				return;
 			}
@@ -500,6 +508,12 @@ public:
 				"object/building/tatooine/cave_tatooine_style_01.iff");
 			reopen = false;
 			break;
+		case WorldBuilderCommandUi::ACTION_ADD_EXTERIOR_BUILDING:
+			WorldBuilderExteriorBuildingLibrary::showRoot(player);
+			reopen = false;
+			break;
+		case WorldBuilderCommandUi::ACTION_TRAVEL_POINT:
+			WorldBuilderTravelPointEditor::show(player); reopen = false; break;
 		case WorldBuilderCommandUi::ACTION_STRUCTURE_PREVIEW:
 			WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_STRUCTURE_PREVIEW,
 				"World Builder Structure Preview",
@@ -869,6 +883,8 @@ inline void WorldBuilderCommandUi::showMenu(CreatureObject* player) {
 		box->addMenuItem("Object Library / Browse Templates...", ACTION_OBJECT_LIBRARY);
 		box->addMenuItem("Structure Library / Browse Buildings & Caves...", ACTION_STRUCTURE_LIBRARY);
 		box->addMenuItem("Add Structure to Project...", ACTION_ADD_STRUCTURE);
+		box->addMenuItem("Exterior Building Library / Cell-less Buildings...", ACTION_ADD_EXTERIOR_BUILDING);
+		box->addMenuItem("Travel Point / Selected Shuttleport...", ACTION_TRAVEL_POINT);
 		box->addMenuItem("Structure Inspector (Target / Current Interior)...", ACTION_STRUCTURE_INSPECTOR);
 		box->addMenuItem("Extend Published WB Structure (Target / Current Interior)", ACTION_BIND_EXTENSION);
 		box->addMenuItem("Extension Targets / Status...", ACTION_EXTENSION_STATUS);
@@ -972,6 +988,12 @@ public:
 			} else if (action == "structures" || action == "structurelibrary" || action == "buildings") {
 				WorldBuilderStructureLibrary::showRoot(player);
 				return SUCCESS;
+			} else if (action == "exterior" || action == "exteriorbuildings") {
+				WorldBuilderExteriorBuildingLibrary::showRoot(player);
+				return SUCCESS;
+			} else if (action == "travel") {
+				WorldBuilderTravelPointEditor::show(player);
+				return SUCCESS;
 			} else if (action == "structureinfo" || action == "structure" || action == "inspectstructure") {
 				WorldBuilderStructureInspector::show(player);
 				return SUCCESS;
@@ -1001,6 +1023,14 @@ public:
 				String structureTemplate; tokenizer.getStringToken(structureTemplate);
 				float distance = tokenizer.hasMoreTokens() ? tokenizer.getFloatToken() : 15.0f;
 				result = manager->addStructure(player, structureTemplate, distance, message);
+			} else if (action == "addexterior") {
+				if (!tokenizer.hasMoreTokens()) {
+					message = "Usage: /wb addexterior <server_template> [distance]";
+				} else {
+					String exteriorTemplate; tokenizer.getStringToken(exteriorTemplate);
+					float distance = tokenizer.hasMoreTokens() ? tokenizer.getFloatToken() : 15.0f;
+					result = manager->addExteriorBuilding(player, exteriorTemplate, distance, message);
+				}
 			} else if (action == "structurepreview" || action == "previewstructure") {
 				if (!tokenizer.hasMoreTokens()) {
 					WorldBuilderCommandUi::showInput(player, WorldBuilderCommandUi::INPUT_STRUCTURE_PREVIEW,

@@ -1,5 +1,18 @@
 # Bellum Gero World Builder - Dedicated TRE Publishing
 
+Travel-enabled WBP V3 projects add `worldbuilder_travel_points.lua` to every
+candidate. It is generated deterministically and merges into the stock planet
+travel tables. Duplicate names and World Builder destinations inside the unsafe
+128m shuttle-association radius fail candidate generation.
+
+Configure `server_travel_lua_target` beside `server_template_lua_target`.
+`deploy-set` stages, verifies, backs up, promotes, and rolls back the TRE,
+generated template Lua, and generated travel Lua together. Travel metadata and
+hashes are recorded in the manifest/deployed state. Travel-only changes alter
+the full fingerprint but not the structural fingerprint, so they do not require
+`/wb refreshpublished`; old state without a structural fingerprint falls back
+conservatively. A cold Core3 restart is required after travel deployment.
+
 World Builder production content is published into its own generated overlay archive:
 
 `bg_worldbuilder.tre`

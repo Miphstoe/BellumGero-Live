@@ -46,6 +46,7 @@ DEPLOYED_STATE_SCHEMA_VERSION = 1
 
 CANDIDATE_TRE_NAME_FALLBACK = "bg_worldbuilder.tre"
 CANDIDATE_LUA_NAME = "generated_templates.lua"
+CANDIDATE_TRAVEL_LUA_NAME = "worldbuilder_travel_points.lua"
 CANDIDATE_MANIFEST_NAME = "worldbuilder_publish.json"
 CANDIDATE_ID_MAP_NAME = "worldbuilder_ids.json"
 CANDIDATE_REGISTRY_NAME = "worldbuilder_oid_registry.json"
@@ -986,6 +987,10 @@ def validate_project_assets(
     for structure in result.bake_result.structures:
         root_template = structure.custom_shared_template
         custom_iff = finished.extract(root_template)
+        if structure.cell_count == 0:
+            if structure.custom_interior_layout or structure.interior_local_ids:
+                raise wb.WorldBuilderError(f"Candidate zero-cell STRUCTURE #{structure.local_id} unexpectedly contains interior data")
+            continue
         if wb.normalize_archive_path(wb.read_string_param(custom_iff, "interiorLayoutFileName")) != wb.normalize_archive_path(structure.custom_interior_layout):
             raise wb.WorldBuilderError(
                 f"Candidate project {result.approved.publish_id} STRUCTURE #{structure.local_id} shared IFF does not point at its custom ILF"
@@ -1057,6 +1062,7 @@ def _project_fingerprint(result: BatchProjectResult) -> str:
             wb.normalize_archive_path(path): _sha256_bytes(data)
             for path, data in sorted(result.asset_replacements.items())
         },
+        "travel_points": [dataclasses.asdict(value) for value in sorted(getattr(project, "travel_points", []), key=lambda x: (x.point_name.casefold(), x.building_local_id))],
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return _sha256_bytes(canonical)
@@ -1070,22 +1076,40 @@ def _project_manifest_entry(result: BatchProjectResult) -> dict:
         "source_wbp": str(result.approved.source_path),
         "wbp_sha256": result.approved.wbp_sha256,
         "publish_fingerprint": result.fingerprint,
+        "structural_fingerprint": _structural_project_fingerprint(result),
         "planet": project.planet,
         "wbp_version": project.version,
         "counts": {
             "objects": len(project.objects),
             "structures": len(project.structures),
             "interiors": len(project.interiors),
+            "travel_points": len(getattr(project, "travel_points", [])),
         },
         "world_snapshot_ids": {str(k): v for k, v in sorted(result.bake_result.id_map.items())},
         "oid_assignments": result.oid_assignments,
         "archive_paths": sorted(wb.normalize_archive_path(path) for path in result.asset_replacements),
         "structures": [dataclasses.asdict(value) for value in result.bake_result.structures],
+        "travel_points": [dataclasses.asdict(value) for value in sorted(getattr(project, "travel_points", []), key=lambda x: (x.point_name.casefold(), x.building_local_id))],
         "safe_refresh": {
             "dry_run_command": f"/wb refreshpublished {result.approved.publish_id}",
             "confirm_command": f"/wb refreshpublished {result.approved.publish_id} confirm",
         },
     }
+
+
+def _structural_project_fingerprint(result: BatchProjectResult) -> str:
+    project = result.approved.project
+    payload = {
+        "publish_id": result.approved.publish_id,
+        "planet": project.planet,
+        "objects": [dataclasses.asdict(value) for value in sorted(project.objects, key=lambda x: x.local_id)],
+        "structures_source": [dataclasses.asdict(value) for value in sorted(project.structures, key=lambda x: x.local_id)],
+        "interiors": [dataclasses.asdict(value) for value in sorted(project.interiors, key=lambda x: x.local_id)],
+        "oid_assignments": result.oid_assignments,
+        "published_structures": [dataclasses.asdict(value) for value in result.bake_result.structures],
+        "asset_sha256": {wb.normalize_archive_path(path): _sha256_bytes(data) for path, data in sorted(result.asset_replacements.items())},
+    }
+    return _sha256_bytes(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
 
 
 def _diff_projects(current: Sequence[dict], previous_state: dict) -> dict:
@@ -1112,7 +1136,9 @@ def _diff_projects(current: Sequence[dict], previous_state: dict) -> dict:
         # records. Pure WBP V1/static projects retain their legacy no-refresh
         # behavior even when included in the desired-state batch.
         previous_structures = int(previous.get("counts", {}).get("structures", len(previous.get("structures", []))))
-        if previous_structures > 0:
+        previous_structural = previous.get("structural_fingerprint")
+        structural_changed = previous_structural is None or previous_structural != current_entry.get("structural_fingerprint")
+        if previous_structures > 0 and structural_changed:
             old_planet = previous.get("planet") or current_entry.get("planet")
             refresh_required.append(
                 {
@@ -1190,6 +1216,44 @@ def _combined_server_lua(results: Sequence[BatchProjectResult]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _lua_quote(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r") + '"'
+
+
+def _combined_travel_lua(results: Sequence[BatchProjectResult]) -> Tuple[str, List[dict]]:
+    rows: List[dict] = []
+    names: Set[Tuple[str, str]] = set()
+    associations: List[Tuple[str, float, float, float, str]] = []
+    for result in results:
+        project = result.approved.project
+        structures = {s.local_id: s for s in project.structures}
+        for point in getattr(project, "travel_points", []):
+            structure = structures.get(point.building_local_id)
+            if structure is None:
+                raise wb.WorldBuilderError(f"{result.approved.publish_id}: travel point references missing Structure #{point.building_local_id}")
+            key = (project.planet, point.point_name.casefold())
+            if key in names:
+                raise wb.WorldBuilderError(f"Duplicate World Builder travel destination {point.point_name!r} on {project.planet}")
+            for planet, x, z, y, other in associations:
+                if planet == project.planet and ((point.x-x)**2 + (point.z-z)**2 + (point.y-y)**2) ** 0.5 < 128.0:
+                    raise wb.WorldBuilderError(f"Unsafe World Builder travel association: {point.point_name!r} is within 128m of {other!r}")
+            names.add(key)
+            associations.append((project.planet, point.x, point.z, point.y, point.point_name))
+            rows.append({"planet": project.planet, "name": point.point_name, "x": point.x, "z": point.z, "y": point.y,
+                         "interplanetaryTravelAllowed": int(point.interplanetary_travel_allowed),
+                         "incomingTravelAllowed": int(point.incoming_travel_allowed), "landingRange": point.landing_range,
+                         "publish_id": result.approved.publish_id, "structure_local_id": point.building_local_id})
+    rows.sort(key=lambda row: (row["planet"], row["name"].casefold(), row["publish_id"], row["structure_local_id"]))
+    lines = ["-- AUTO-GENERATED by Bellum Gero World Builder. Do not hand-edit.", "worldBuilderTravelPoints = {"]
+    for planet in sorted({row["planet"] for row in rows}):
+        lines.append(f"\t[{_lua_quote(planet)}] = {{")
+        for row in (value for value in rows if value["planet"] == planet):
+            lines.append("\t\t{ " + ", ".join((f"name = {_lua_quote(row['name'])}", f"x = {row['x']:.9g}", f"z = {row['z']:.9g}", f"y = {row['y']:.9g}", f"interplanetaryTravelAllowed = {row['interplanetaryTravelAllowed']}", f"incomingTravelAllowed = {row['incomingTravelAllowed']}", f"landingRange = {row['landingRange']:.9g}")) + " },")
+        lines.append("\t},")
+    lines += ["}", "", "for planetName, points in pairs(worldBuilderTravelPoints) do", "\tlocal planet = _G[planetName]", "\tif planet ~= nil then", "\t\tplanet.planetTravelPoints = planet.planetTravelPoints or {}", "\t\tfor _, point in ipairs(points) do table.insert(planet.planetTravelPoints, point) end", "\tend", "end", ""]
+    return "\n".join(lines), rows
+
+
 # ---------------------------------------------------------------------------
 # Batch bake
 # ---------------------------------------------------------------------------
@@ -1214,6 +1278,7 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
 
     candidate_tre = candidate_dir / output_name
     candidate_lua = candidate_dir / CANDIDATE_LUA_NAME
+    candidate_travel_lua = candidate_dir / CANDIDATE_TRAVEL_LUA_NAME
     candidate_manifest = candidate_dir / CANDIDATE_MANIFEST_NAME
     candidate_id_map = candidate_dir / CANDIDATE_ID_MAP_NAME
     candidate_registry = candidate_dir / CANDIDATE_REGISTRY_NAME
@@ -1370,6 +1435,8 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
 
     combined_lua = _combined_server_lua(results)
     _atomic_write_bytes(candidate_lua, combined_lua.encode("utf-8"))
+    combined_travel_lua, travel_rows = _combined_travel_lua(results)
+    _atomic_write_bytes(candidate_travel_lua, combined_travel_lua.encode("utf-8"))
 
     registry_payload = registry.to_payload()
     _atomic_write_json(candidate_registry, registry_payload)
@@ -1421,12 +1488,14 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         "artifacts": {
             "tre": candidate_tre.name,
             "server_template_lua": candidate_lua.name,
+            "server_travel_lua": candidate_travel_lua.name,
             "oid_registry": candidate_registry.name,
             "id_map": candidate_id_map.name,
         },
         "hashes": {
             "tre_sha256": _sha256_file(candidate_tre),
             "server_template_lua_sha256": _sha256_file(candidate_lua),
+            "server_travel_lua_sha256": _sha256_file(candidate_travel_lua),
             "oid_registry_sha256": _sha256_file(candidate_registry),
             "id_map_sha256": _sha256_file(candidate_id_map),
         },
@@ -1445,6 +1514,8 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
             "historical_total": len(registry.assignments),
         },
         "projects": project_entries,
+        "travel_points": travel_rows,
+        "travel_point_count": len(travel_rows),
         "changes_from_last_deploy": changes,
         "overlay_archive_paths": final_paths,
         "worldbuilder_archive_paths": final_wb_paths,
@@ -1471,13 +1542,14 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
 # ---------------------------------------------------------------------------
 
 
-def _destination_paths(config: dict, config_path: Path, output_name: str) -> Tuple[Path, Path, Path, Path, Path]:
+def _destination_paths(config: dict, config_path: Path, output_name: str) -> Tuple[Path, Path, Path, Path, Path, Path]:
     client_dir = _config_required_path(config, config_path, "client_tre_dir")
     server_dir = _config_required_path(config, config_path, "server_tre_dir")
     server_lua = _config_required_path(config, config_path, "server_template_lua_target")
+    server_travel_lua = _config_required_path(config, config_path, "server_travel_lua_target")
     registry = _config_required_path(config, config_path, "oid_registry")
     state = _config_required_path(config, config_path, "deployed_state")
-    return client_dir / output_name, server_dir / output_name, server_lua, registry, state
+    return client_dir / output_name, server_dir / output_name, server_lua, server_travel_lua, registry, state
 
 
 def _prepare_deployed_state(manifest: dict) -> dict:
@@ -1489,8 +1561,11 @@ def _prepare_deployed_state(manifest: dict) -> dict:
         "dependencies": manifest.get("dependencies", {"records": {}}),
         "tre_sha256": manifest["hashes"]["tre_sha256"],
         "server_template_lua_sha256": manifest["hashes"]["server_template_lua_sha256"],
+        "server_travel_lua_sha256": manifest["hashes"]["server_travel_lua_sha256"],
         "oid_registry_sha256": manifest["hashes"]["oid_registry_sha256"],
         "projects": manifest.get("projects", []),
+        "travel_points": manifest.get("travel_points", []),
+        "travel_point_count": manifest.get("travel_point_count", 0),
     }
 
 
@@ -1601,12 +1676,14 @@ def _verify_previous_deployment_not_drifted(
     client_tre: Path,
     server_tre: Path,
     server_lua: Path,
+    server_travel_lua: Path,
 ) -> None:
     if not state_path.exists():
         return
     state = load_deployed_state(state_path)
     expected_tre = state.get("tre_sha256")
     expected_lua = state.get("server_template_lua_sha256")
+    expected_travel_lua = state.get("server_travel_lua_sha256")
     if expected_tre:
         for label, path in (("client TRE", client_tre), ("server TRE", server_tre)):
             if not path.exists():
@@ -1623,6 +1700,9 @@ def _verify_previous_deployment_not_drifted(
                 "Active generated_templates.lua has drifted from worldbuilder_deployed_state.json. "
                 "Resolve the mismatch before deploying another batch."
             )
+    if expected_travel_lua:
+        if not server_travel_lua.exists() or _sha256_file(server_travel_lua) != expected_travel_lua:
+            raise wb.WorldBuilderError("Active worldbuilder_travel_points.lua has drifted from deployed state.")
 
 
 def _transactional_promote(items: Sequence[Tuple[bytes, Path]], stamp: str) -> List[Tuple[Path, Optional[Path]]]:
@@ -1708,10 +1788,12 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
     hashes = manifest.get("hashes", {})
     candidate_tre = manifest_path.parent / artifacts.get("tre", "")
     candidate_lua = manifest_path.parent / artifacts.get("server_template_lua", "")
+    candidate_travel_lua = manifest_path.parent / artifacts.get("server_travel_lua", "")
     candidate_registry = manifest_path.parent / artifacts.get("oid_registry", "")
     for label, path, expected in (
         ("candidate TRE", candidate_tre, hashes.get("tre_sha256")),
         ("candidate generated_templates.lua", candidate_lua, hashes.get("server_template_lua_sha256")),
+        ("candidate worldbuilder_travel_points.lua", candidate_travel_lua, hashes.get("server_travel_lua_sha256")),
         ("candidate OID registry", candidate_registry, hashes.get("oid_registry_sha256")),
     ):
         if not path.is_file():
@@ -1739,11 +1821,12 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
         raise wb.WorldBuilderError("\n".join(lines))
 
     output_name = candidate_tre.name
-    client_tre, server_tre, server_lua, registry_path, state_path = _destination_paths(config, config_path, output_name)
-    _verify_previous_deployment_not_drifted(state_path, client_tre, server_tre, server_lua)
+    client_tre, server_tre, server_lua, server_travel_lua, registry_path, state_path = _destination_paths(config, config_path, output_name)
+    _verify_previous_deployment_not_drifted(state_path, client_tre, server_tre, server_lua, server_travel_lua)
 
     tre_bytes = candidate_tre.read_bytes()
     lua_bytes = candidate_lua.read_bytes()
+    travel_lua_bytes = candidate_travel_lua.read_bytes()
     registry_bytes = candidate_registry.read_bytes()
     state_bytes = (json.dumps(_prepare_deployed_state(manifest), indent=2) + "\n").encode("utf-8")
 
@@ -1753,6 +1836,7 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
             (tre_bytes, client_tre),
             (tre_bytes, server_tre),
             (lua_bytes, server_lua),
+            (travel_lua_bytes, server_travel_lua),
             (registry_bytes, registry_path),
             (state_bytes, state_path),
         ],
@@ -1767,6 +1851,7 @@ def deploy_candidate(config_path: Path, manifest_path: Optional[Path], confirm_r
         "client_tre": str(client_tre),
         "server_tre": str(server_tre),
         "server_template_lua": str(server_lua),
+        "server_travel_lua": str(server_travel_lua),
         "oid_registry": str(registry_path),
         "deployed_state": str(state_path),
         "tre_sha256": expected_tre,

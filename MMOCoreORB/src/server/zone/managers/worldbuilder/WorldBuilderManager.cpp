@@ -20,6 +20,8 @@
 #include "server/zone/objects/scene/SceneObjectType.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/cell/CellObject.h"
+#include "server/zone/managers/planet/PlanetManager.h"
+#include "server/zone/managers/planet/PlanetTravelPoint.h"
 
 #include <cstdio>
 #include <cstring>
@@ -165,6 +167,35 @@ bool wbWriteLine(std::FILE* file, const String& line) {
 
 	const char newline = '\n';
 	return std::fwrite(&newline, 1, 1, file) == 1;
+}
+
+String wbHexEncode(const String& value) {
+	static const char* digits = "0123456789abcdef";
+	StringBuffer out;
+	for (int i = 0; i < value.length(); ++i) {
+		unsigned char c = static_cast<unsigned char>(value.charAt(i));
+		out << digits[(c >> 4) & 0xF] << digits[c & 0xF];
+	}
+	return out.toString();
+}
+
+bool wbHexDecode(const String& value, String& decoded) {
+	if (value.length() == 0 || (value.length() % 2) != 0) return false;
+	auto hexValue = [](char c) -> int {
+		if (c >= '0' && c <= '9') return c - '0';
+		if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+		if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+		return -1;
+	};
+	StringBuffer out;
+	for (int i = 0; i < value.length(); i += 2) {
+		int hi = hexValue(value.charAt(i));
+		int lo = hexValue(value.charAt(i + 1));
+		if (hi < 0 || lo < 0) return false;
+		out << static_cast<char>((hi << 4) | lo);
+	}
+	decoded = out.toString();
+	return true;
 }
 
 // Project-management operations validate a backup before allowing it to replace
@@ -427,6 +458,102 @@ bool WorldBuilderManager::validateStructureTemplate(const String& requestedTempl
 	return true;
 }
 
+bool WorldBuilderManager::validateExteriorBuildingTemplate(const String& requestedTemplate, String& errorMessage) const {
+	String serverTemplate = requestedTemplate.trim();
+	int slash = serverTemplate.lastIndexOf("/");
+	String filename = slash >= 0 ? serverTemplate.subString(slash + 1) : serverTemplate;
+	if (serverTemplate.isEmpty() || filename.beginsWith("shared_") || serverTemplate.beginsWith("object/building/worldbuilder/")) {
+		errorMessage = "Specify a stock registered SERVER building template (not shared_ or worldbuilder-generated).";
+		return false;
+	}
+	Reference<SharedObjectTemplate*> data = TemplateManager::instance()->getTemplate(serverTemplate.hashCode());
+	if (data == nullptr || !data->isSharedBuildingObjectTemplate()) {
+		errorMessage = "Template is not a registered SERVER building: " + serverTemplate;
+		return false;
+	}
+	SharedBuildingObjectTemplate* building = static_cast<SharedBuildingObjectTemplate*>(data.get());
+	if ((!building->getFullTemplateString().isEmpty() && building->getFullTemplateString() != serverTemplate) ||
+		(!building->getClientTemplateFileName().isEmpty() && building->getClientTemplateFileName() != deriveSnapshotTemplate(serverTemplate))) {
+		errorMessage = "Exterior building server/shared template identity mismatch.";
+		return false;
+	}
+	const PortalLayout* portal = building->getPortalLayout();
+	if (portal != nullptr && portal->getCellTotalNumber() > 0) {
+		errorMessage = "This building has interior cells; use /wb addstructure instead.";
+		return false;
+	}
+	return true;
+}
+
+bool WorldBuilderManager::isTravelReadyTemplate(const String& serverTemplate) const {
+	Reference<SharedObjectTemplate*> data = TemplateManager::instance()->getTemplate(serverTemplate.hashCode());
+	if (data == nullptr || !data->isSharedBuildingObjectTemplate())
+		return false;
+	bool terminal = false, collector = false, shuttle = false;
+	for (int i = 0; i < data->getChildObjectsSize(); ++i) {
+		const ChildObject* child = data->getChildObject(i);
+		if (child == nullptr) continue;
+		String path = child->getTemplateFile();
+		terminal = terminal || path == "object/tangible/terminal/terminal_travel.iff";
+		collector = collector || path == "object/tangible/travel/ticket_collector/ticket_collector.iff";
+		shuttle = shuttle || path == "object/creature/npc/theme_park/player_shuttle.iff" || path == "object/mobile/player_transport.iff";
+	}
+	return terminal && collector && shuttle;
+}
+
+int WorldBuilderManager::findTravelPointIndex(WorldBuilderSession* session, uint32 buildingLocalID) const {
+	if (session == nullptr) return -1;
+	for (int i = 0; i < session->travelPoints.size(); ++i)
+		if (session->travelPoints.get(i).buildingLocalID == buildingLocalID) return i;
+	return -1;
+}
+
+void WorldBuilderManager::unregisterTransientTravelPoints(WorldBuilderSession* session, CreatureObject* player) const {
+	if (session == nullptr || player == nullptr || player->getZone() == nullptr) return;
+	PlanetManager* manager = player->getZone()->getPlanetManager();
+	if (manager == nullptr) return;
+	for (int i = 0; i < session->transientTravelPointNames.size(); ++i) {
+		String name = session->transientTravelPointNames.get(i);
+		if (manager->isExistingPlanetTravelPoint(name)) manager->removePlayerCityTravelPoint(name);
+	}
+	session->transientTravelPointNames.removeAll();
+}
+
+bool WorldBuilderManager::registerTransientTravelPoints(WorldBuilderSession* session, CreatureObject* player, String& errorMessage) {
+	if (session == nullptr || player == nullptr || player->getZone() == nullptr) return false;
+	PlanetManager* manager = player->getZone()->getPlanetManager();
+	if (manager == nullptr) { errorMessage = "PlanetManager is unavailable."; return false; }
+	// Preflight the complete replacement before modifying PlanetManager.
+	for (int i = 0; i < session->travelPoints.size(); ++i) {
+		const WorldBuilderTravelPointState& point = session->travelPoints.get(i);
+		for (int j = i + 1; j < session->travelPoints.size(); ++j) {
+			const WorldBuilderTravelPointState& other = session->travelPoints.get(j);
+			float dx=point.x-other.x, dz=point.z-other.z, dy=point.y-other.y;
+			if (point.pointName.toLowerCase() == other.pointName.toLowerCase() || sqrt(dx*dx+dz*dz+dy*dy) < 128.f) {
+				errorMessage = "Project Travel Points have a duplicate name or unsafe separation under 128m."; return false;
+			}
+		}
+		if (manager->isExistingPlanetTravelPoint(point.pointName) && !session->transientTravelPointNames.contains(point.pointName)) {
+			errorMessage = "Travel destination already exists on this planet: " + point.pointName; return false;
+		}
+		Vector3 position;
+		position.set(point.x, point.z, point.y); // Match PlanetTravelPoint::readLuaObject(x,z,y).
+		PlanetTravelPoint* nearest = manager->getNearestPlanetTravelPoint(position, 128.f, false);
+		if (nearest != nullptr && !session->transientTravelPointNames.contains(nearest->getPointName())) {
+			errorMessage = "A stock/non-project travel point is within the unsafe 128m shuttle association radius: " + nearest->getPointName(); return false;
+		}
+	}
+	unregisterTransientTravelPoints(session, player);
+	for (int i = 0; i < session->travelPoints.size(); ++i) {
+		const WorldBuilderTravelPointState& point = session->travelPoints.get(i);
+		Reference<PlanetTravelPoint*> transient = new PlanetTravelPoint(session->planetName, point.pointName, point.x, point.z, point.y, nullptr,
+			point.landingRange, point.interplanetaryTravelAllowed, point.incomingTravelAllowed);
+		manager->addPlayerCityTravelPoint(transient);
+		session->transientTravelPointNames.add(point.pointName);
+	}
+	return true;
+}
+
 ManagedReference<CellObject*> WorldBuilderManager::resolveRuntimeCell(WorldBuilderSession* session, CreatureObject* player, const WorldBuilderObjectState& state, String& errorMessage) const {
 	if (session == nullptr || player == nullptr || player->getZoneServer() == nullptr) {
 		errorMessage = "World Builder could not resolve the project/zone server.";
@@ -654,6 +781,7 @@ WorldBuilderProjectState WorldBuilderManager::captureProjectState(WorldBuilderSe
 	result.selectedLocalID = session->selectedLocalID;
 	result.nextLocalID = session->nextLocalID;
 	result.groupIDs = session->groupIDs;
+	result.travelPoints = session->travelPoints;
 
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState state = session->objects.get(i);
@@ -690,8 +818,8 @@ ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(WorldBuilde
 
 	ZoneServer* zoneServer = player->getZoneServer();
 
-	if (state.objectKind == WB_OBJECT_STRUCTURE) {
-		if (!validateStructureTemplate(state.objectTemplate, errorMessage))
+	if (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_EXTERIOR_BUILDING) {
+		if (state.objectKind == WB_OBJECT_STRUCTURE ? !validateStructureTemplate(state.objectTemplate, errorMessage) : !validateExteriorBuildingTemplate(state.objectTemplate, errorMessage))
 			return nullptr;
 
 		ManagedReference<SceneObject*> object = zoneServer->createObject(state.objectTemplate.hashCode(), 0);
@@ -712,7 +840,8 @@ ManagedReference<SceneObject*> WorldBuilderManager::spawnStateObject(WorldBuilde
 		}
 
 		Locker objectLocker(building, player);
-		building->createCellObjects();
+		if (state.objectKind == WB_OBJECT_STRUCTURE)
+			building->createCellObjects();
 		building->initializePosition(state.x, state.z, state.y);
 		building->setDirection(state.qw, state.qx, state.qy, state.qz);
 
@@ -788,6 +917,9 @@ void WorldBuilderManager::destroyRuntimeObject(CreatureObject* player, WorldBuil
 	ManagedReference<SceneObject*> object = player->getZoneServer()->getObject(state.runtimeObjectID);
 	if (object != nullptr) {
 		Locker objectLocker(object, player);
+		// Outdoor template children are independent zone/database objects. Remove
+		// them explicitly before their transient World Builder controller root.
+		object->destroyChildObjects();
 		object->destroyObjectFromWorld(true);
 		object->destroyObjectFromDatabase(true);
 	}
@@ -802,13 +934,13 @@ void WorldBuilderManager::destroyAllRuntimeObjects(WorldBuilderSession* session,
 	// Remove interior/world preview children first, then structure roots/cells.
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState& state = session->objects.elementAt(i);
-		if (state.objectKind != WB_OBJECT_STRUCTURE)
+		if (state.objectKind != WB_OBJECT_STRUCTURE && state.objectKind != WB_OBJECT_EXTERIOR_BUILDING)
 			destroyRuntimeObject(player, state);
 	}
 
 	for (int i = 0; i < session->objects.size(); ++i) {
 		WorldBuilderObjectState& state = session->objects.elementAt(i);
-		if (state.objectKind == WB_OBJECT_STRUCTURE)
+		if (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_EXTERIOR_BUILDING)
 			destroyRuntimeObject(player, state);
 	}
 }
@@ -824,15 +956,22 @@ bool WorldBuilderManager::restoreProjectState(WorldBuilderSession* session, Crea
 	}
 
 	destroyAllRuntimeObjects(session, player);
+	unregisterTransientTravelPoints(session, player);
 	session->objects = state.objects;
 	session->groupIDs = state.groupIDs;
 	session->selectedLocalID = state.selectedLocalID;
 	session->nextLocalID = state.nextLocalID;
+	session->travelPoints = state.travelPoints;
+	String travelError;
+	if (!registerTransientTravelPoints(session, player, travelError)) {
+		message = "Restore travel preflight failed: " + travelError;
+		return false;
+	}
 
 	for (int pass = 0; pass < 2; ++pass) {
 		for (int i = 0; i < session->objects.size(); ++i) {
 			WorldBuilderObjectState& objectState = session->objects.elementAt(i);
-			bool structurePass = objectState.objectKind == WB_OBJECT_STRUCTURE;
+			bool structurePass = objectState.objectKind == WB_OBJECT_STRUCTURE || objectState.objectKind == WB_OBJECT_EXTERIOR_BUILDING;
 			if ((pass == 0) != structurePass)
 				continue;
 
@@ -886,13 +1025,14 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 	bool extensionProject = session->extensionTargets.size() > 0;
 	for (int i = 0; i < session->objects.size(); ++i) {
 		const WorldBuilderObjectState& state = session->objects.get(i);
-		if (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_INTERIOR)
+		if (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_EXTERIOR_BUILDING || state.objectKind == WB_OBJECT_INTERIOR)
 			structuralProject = true;
 		if (!state.structurePublishID.isEmpty())
 			extensionProject = true;
 	}
 
 	int projectVersion = extensionProject ? 3 : (structuralProject ? 2 : 1);
+	if (session->travelPoints.size() > 0) projectVersion = 3;
 	session->projectVersion = projectVersion;
 	writeOK = writeOK && wbWriteLine(file, "BELLUM_GERO_WORLD_BUILDER " + String::valueOf(projectVersion));
 	writeOK = writeOK && wbWriteLine(file, "PROJECT " + session->projectName);
@@ -915,7 +1055,7 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 		StringBuffer line;
 		String snapshotTemplate = state.snapshotTemplate.isEmpty() ? deriveSnapshotTemplate(state.objectTemplate) : state.snapshotTemplate;
 
-		if (structuralProject && state.objectKind == WB_OBJECT_STRUCTURE) {
+		if (structuralProject && (state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_EXTERIOR_BUILDING)) {
 			line << "STRUCTURE " << state.localID << " " << state.objectTemplate << " " << snapshotTemplate << " "
 				 << state.x << " " << state.z << " " << state.y << " "
 				 << state.qw << " " << state.qx << " " << state.qy << " " << state.qz << " "
@@ -939,6 +1079,15 @@ bool WorldBuilderManager::saveSession(WorldBuilderSession* session, CreatureObje
 				 << state.snapshotGameObjectType << " " << state.parentID;
 		}
 
+		writeOK = wbWriteLine(file, line.toString());
+	}
+
+	for (int i = 0; writeOK && i < session->travelPoints.size(); ++i) {
+		const WorldBuilderTravelPointState& point = session->travelPoints.get(i);
+		StringBuffer line;
+		line << "TRAVEL_POINT " << point.buildingLocalID << " " << point.x << " " << point.z << " " << point.y << " "
+			 << (point.interplanetaryTravelAllowed ? 1 : 0) << " " << (point.incomingTravelAllowed ? 1 : 0) << " "
+			 << point.landingRange << " " << wbHexEncode(point.pointName);
 		writeOK = wbWriteLine(file, line.toString());
 	}
 
@@ -1153,6 +1302,13 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 			state.snapshotGameObjectType = tokenizer.getFloatToken();
 			state.runtimeObjectID = 0;
 			state.parentID = 0;
+			Reference<SharedObjectTemplate*> loadedTemplate = TemplateManager::instance()->getTemplate(state.objectTemplate.hashCode());
+			if (loadedTemplate != nullptr && loadedTemplate->isSharedBuildingObjectTemplate()) {
+				SharedBuildingObjectTemplate* loadedBuilding = static_cast<SharedBuildingObjectTemplate*>(loadedTemplate.get());
+				const PortalLayout* loadedPortal = loadedBuilding->getPortalLayout();
+				if (loadedPortal == nullptr || loadedPortal->getCellTotalNumber() == 0)
+					state.objectKind = WB_OBJECT_EXTERIOR_BUILDING;
+			}
 			session->objects.add(state);
 		} else if (type == "INTERIOR") {
 			if (projectVersion < 2) {
@@ -1211,6 +1367,22 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 			state.runtimeObjectID = 0;
 			state.parentID = 0;
 			session->objects.add(state);
+		} else if (type == "TRAVEL_POINT") {
+			if (projectVersion < 3) { message = "TRAVEL_POINT requires project version 3."; parseOK = false; break; }
+			WorldBuilderTravelPointState point;
+			point.buildingLocalID = tokenizer.getIntToken();
+			point.x = tokenizer.getFloatToken(); point.z = tokenizer.getFloatToken(); point.y = tokenizer.getFloatToken();
+			int interplanetary = tokenizer.getIntToken(); int incoming = tokenizer.getIntToken();
+			point.landingRange = tokenizer.getFloatToken();
+			String encoded; tokenizer.getStringToken(encoded);
+			if ((interplanetary != 0 && interplanetary != 1) || (incoming != 0 && incoming != 1) ||
+				point.landingRange < 0.5f || point.landingRange > 64.f || !wbHexDecode(encoded, point.pointName) || point.pointName.trim().isEmpty() ||
+				findTravelPointIndex(session, point.buildingLocalID) >= 0) {
+				message = "Invalid or duplicate TRAVEL_POINT record."; parseOK = false; break;
+			}
+			point.interplanetaryTravelAllowed = interplanetary != 0;
+			point.incomingTravelAllowed = incoming != 0;
+			session->travelPoints.add(point);
 		} else if (type == "GROUP") {
 			while (tokenizer.hasMoreTokens())
 				session->groupIDs.add(tokenizer.getIntToken());
@@ -1234,6 +1406,19 @@ bool WorldBuilderManager::loadSessionFile(const String& safeProjectName, WorldBu
 
 	if (!validateExtensionReferences(session, message))
 		return false;
+	for (int i = 0; i < session->travelPoints.size(); ++i) {
+		const WorldBuilderTravelPointState& point = session->travelPoints.get(i);
+		int objectIndex = findObjectIndexByLocalID(session, point.buildingLocalID);
+		if (objectIndex < 0 || session->objects.get(objectIndex).objectKind != WB_OBJECT_EXTERIOR_BUILDING ||
+			!isTravelReadyTemplate(session->objects.get(objectIndex).objectTemplate)) {
+			message = "TRAVEL_POINT references a missing or non-Travel-Ready exterior building."; return false;
+		}
+		const WorldBuilderObjectState& root = session->objects.get(objectIndex);
+		float dx=point.x-root.x, dz=point.z-root.z, dy=point.y-root.y;
+		if (sqrt(dx*dx+dz*dz+dy*dy) > 120.f) { message = "TRAVEL_POINT is farther than 120m from its linked building."; return false; }
+		for (int j = i + 1; j < session->travelPoints.size(); ++j)
+			if (point.pointName.toLowerCase() == session->travelPoints.get(j).pointName.toLowerCase()) { message = "Duplicate TRAVEL_POINT destination name."; return false; }
+	}
 
 	// The filename selected by the admin is authoritative. This keeps a safely
 	// renamed project tied to its new filename even if an older PROJECT line is
@@ -1349,17 +1534,23 @@ bool WorldBuilderManager::loadProject(CreatureObject* player, const String& proj
 			return false;
 		}
 	}
+	String travelError;
+	if (!registerTransientTravelPoints(session, player, travelError)) {
+		message = "Project travel preflight failed: " + travelError;
+		return false;
+	}
 
 	for (int pass = 0; pass < 2; ++pass) {
 		for (int i = 0; i < session->objects.size(); ++i) {
 			WorldBuilderObjectState& state = session->objects.elementAt(i);
-			bool structurePass = state.objectKind == WB_OBJECT_STRUCTURE;
+			bool structurePass = state.objectKind == WB_OBJECT_STRUCTURE || state.objectKind == WB_OBJECT_EXTERIOR_BUILDING;
 			if ((pass == 0) != structurePass)
 				continue;
 
 			String error;
 			if (spawnStateObject(session, player, state, error) == nullptr) {
 				destroyAllRuntimeObjects(session, player);
+				unregisterTransientTravelPoints(session, player);
 				message = "Project load aborted at object #" + String::valueOf(state.localID) + ": " + error;
 				return false;
 			}
@@ -1674,6 +1865,7 @@ bool WorldBuilderManager::closeProject(CreatureObject* player, bool saveFirst, S
 	}
 
 	destroyAllRuntimeObjects(session, player);
+	unregisterTransientTravelPoints(session, player);
 	{
 		Locker locker(&sessionsLock);
 		sessions.drop(player->getObjectID());
@@ -2050,6 +2242,154 @@ bool WorldBuilderManager::addStructure(CreatureObject* player, const String& req
 	return true;
 }
 
+bool WorldBuilderManager::addExteriorBuilding(CreatureObject* player, const String& requestedTemplate, float distance, String& message) {
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+	if (session == nullptr) { message = "Open or create a World Builder project first."; return false; }
+	if (player == nullptr || player->getZone() == nullptr || player->getZone()->getZoneName() != session->planetName) {
+		message = "You are not on the project planet."; return false;
+	}
+	if (player->getParentID() != 0) { message = "Stand outdoors before adding an exterior building."; return false; }
+	String serverTemplate = requestedTemplate.trim();
+	String validationError;
+	if (!validateExteriorBuildingTemplate(serverTemplate, validationError)) { message = validationError; return false; }
+	if (distance <= 0.f) distance = 15.f;
+	if (distance > 100.f) distance = 100.f;
+	pushUndoState(session, player);
+	WorldBuilderObjectState state;
+	state.objectKind = WB_OBJECT_EXTERIOR_BUILDING;
+	state.localID = session->nextLocalID++;
+	state.objectTemplate = serverTemplate;
+	state.snapshotTemplate = deriveSnapshotTemplate(serverTemplate);
+	Vector3 position = player->getWorldPosition();
+	float heading = player->getDirectionAngle();
+	float radians = Math::deg2rad(heading);
+	state.x = position.getX() + distance * sin(radians);
+	state.y = position.getY() + distance * cos(radians);
+	state.z = position.getZ();
+	float facing = heading + 180.f;
+	while (facing > 180.f) facing -= 360.f;
+	while (facing < -180.f) facing += 360.f;
+
+	// Exterior preview applies its final yaw before the root enters the zone and
+	// before the SERVER template creates childObjects. Store that same upright,
+	// yaw-only transform before spawning so project placement and every rebuild
+	// create outdoor children against the final root transform. Rotating the root
+	// after createChildObjects() leaves those independent outdoor objects using
+	// the identity-root transform they inherited at creation time.
+	Quaternion initialDirection;
+	initialDirection.setHeadingDirection(Math::deg2rad(facing));
+	state.qw = initialDirection.getW();
+	state.qx = initialDirection.getX();
+	state.qy = initialDirection.getY();
+	state.qz = initialDirection.getZ();
+
+	String error;
+	ManagedReference<SceneObject*> object = spawnStateObject(session, player, state, error);
+	if (object == nullptr) {
+		session->undoStack.remove(session->undoStack.size() - 1);
+		--session->nextLocalID; message = error; return false;
+	}
+	session->objects.add(state);
+	session->selectedLocalID = state.localID;
+	session->lastTemplate = serverTemplate;
+	autosave(session, player);
+	message = "Added exterior building WB #" + String::valueOf(state.localID) + ". Template childObjects were preserved.";
+	return true;
+}
+
+bool WorldBuilderManager::selectedExteriorTravelReady(CreatureObject* player, uint32& buildingLocalID, String& templatePath, String& message) {
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+	if (session == nullptr) { message = "No World Builder project is open."; return false; }
+	int index = findObjectIndexByLocalID(session, session->selectedLocalID);
+	if (index < 0 || session->objects.get(index).objectKind != WB_OBJECT_EXTERIOR_BUILDING) {
+		message = "Select a World Builder exterior building first."; return false;
+	}
+	const WorldBuilderObjectState& state = session->objects.get(index);
+	if (!isTravelReadyTemplate(state.objectTemplate)) {
+		message = "Selected exterior building is not Travel Ready (required terminal, collector, and shuttle childObjects are absent)."; return false;
+	}
+	buildingLocalID = state.localID; templatePath = state.objectTemplate; return true;
+}
+
+bool WorldBuilderManager::getSelectedTravelPoint(CreatureObject* player, WorldBuilderTravelPointState& point, bool& exists, String& message) {
+	uint32 id; String path;
+	if (!selectedExteriorTravelReady(player, id, path, message)) return false;
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+	int index = findTravelPointIndex(session, id); exists = index >= 0;
+	if (exists) point = session->travelPoints.get(index);
+	else { point = WorldBuilderTravelPointState(); point.buildingLocalID = id; }
+	return true;
+}
+
+bool WorldBuilderManager::rebuildExteriorPreview(WorldBuilderSession* session, CreatureObject* player, uint32 buildingLocalID, String& errorMessage) {
+	int index = findObjectIndexByLocalID(session, buildingLocalID);
+	if (index < 0 || session->objects.get(index).objectKind != WB_OBJECT_EXTERIOR_BUILDING) return true;
+	WorldBuilderObjectState& state = session->objects.elementAt(index);
+	destroyRuntimeObject(player, state);
+	return spawnStateObject(session, player, state, errorMessage) != nullptr;
+}
+
+bool WorldBuilderManager::setSelectedTravelPointName(CreatureObject* player, const String& requestedName, String& message) {
+	uint32 id; String path;
+	if (!selectedExteriorTravelReady(player, id, path, message)) return false;
+	String name = requestedName.trim();
+	if (name.isEmpty()) { message = "Destination name cannot be empty."; return false; }
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+	for (int i = 0; i < session->travelPoints.size(); ++i)
+		if (session->travelPoints.get(i).buildingLocalID != id && session->travelPoints.get(i).pointName.toLowerCase() == name.toLowerCase()) { message = "That project destination name is already used."; return false; }
+	PlanetManager* planet = player->getZone()->getPlanetManager();
+	int index = findTravelPointIndex(session, id);
+	if (planet != nullptr && planet->isExistingPlanetTravelPoint(name) && (index < 0 || session->travelPoints.get(index).pointName != name)) { message = "That destination already exists on this planet."; return false; }
+	pushUndoState(session, player);
+	if (index < 0) {
+		WorldBuilderTravelPointState point; point.buildingLocalID = id; point.pointName = name;
+		int objectIndex = findObjectIndexByLocalID(session, id); const WorldBuilderObjectState& root = session->objects.get(objectIndex);
+		point.x = root.x; point.z = root.z; point.y = root.y; session->travelPoints.add(point);
+	} else session->travelPoints.elementAt(index).pointName = name;
+	String error;
+	if (!registerTransientTravelPoints(session, player, error) || !rebuildExteriorPreview(session, player, id, error)) { message = error; return false; }
+	autosave(session, player); message = "Travel destination is now '" + name + "'."; return true;
+}
+
+bool WorldBuilderManager::setSelectedTravelPointArrival(CreatureObject* player, String& message) {
+	if (player->getParentID() != 0) { message = "Stand outdoors to set a travel arrival point."; return false; }
+	uint32 id; String path; if (!selectedExteriorTravelReady(player, id, path, message)) return false;
+	Reference<WorldBuilderSession*> session = getSessionForPlayer(player); int tp = findTravelPointIndex(session, id);
+	if (tp < 0) { message = "Create/name the Travel Point first."; return false; }
+	int oi = findObjectIndexByLocalID(session, id); const WorldBuilderObjectState& root = session->objects.get(oi); Vector3 pos = player->getWorldPosition();
+	float dx=pos.getX()-root.x, dz=pos.getZ()-root.z, dy=pos.getY()-root.y; float distance = sqrt(dx*dx+dz*dz+dy*dy);
+	if (distance > 120.f) { message = "Arrival point is beyond the 120m safety limit."; return false; }
+	pushUndoState(session, player); WorldBuilderTravelPointState& point = session->travelPoints.elementAt(tp);
+	point.x=pos.getX(); point.z=pos.getZ(); point.y=pos.getY(); String error;
+	if (!registerTransientTravelPoints(session, player, error) || !rebuildExteriorPreview(session, player, id, error)) { message=error; return false; }
+	autosave(session, player); message = "Arrival point set " + String::valueOf(distance) + "m from the shuttleport."; return true;
+}
+
+bool WorldBuilderManager::toggleSelectedTravelPointIncoming(CreatureObject* player, String& message) {
+	WorldBuilderTravelPointState point; bool exists=false; if (!getSelectedTravelPoint(player, point, exists, message) || !exists) { if (!exists) message="Create the Travel Point first."; return false; }
+	Reference<WorldBuilderSession*> session=getSessionForPlayer(player); pushUndoState(session,player); int i=findTravelPointIndex(session,point.buildingLocalID);
+	session->travelPoints.elementAt(i).incomingTravelAllowed=!point.incomingTravelAllowed; String error;
+	if (!registerTransientTravelPoints(session,player,error) || !rebuildExteriorPreview(session,player,point.buildingLocalID,error)){message=error;return false;} autosave(session,player); message="Incoming travel toggled."; return true;
+}
+
+bool WorldBuilderManager::toggleSelectedTravelPointInterplanetary(CreatureObject* player, String& message) {
+	WorldBuilderTravelPointState point; bool exists=false; if (!getSelectedTravelPoint(player, point, exists, message) || !exists) { if (!exists) message="Create the Travel Point first."; return false; }
+	Reference<WorldBuilderSession*> session=getSessionForPlayer(player); pushUndoState(session,player); int i=findTravelPointIndex(session,point.buildingLocalID);
+	session->travelPoints.elementAt(i).interplanetaryTravelAllowed=!point.interplanetaryTravelAllowed; String error;
+	if (!registerTransientTravelPoints(session,player,error) || !rebuildExteriorPreview(session,player,point.buildingLocalID,error)){message=error;return false;} autosave(session,player); message="Interplanetary travel toggled."; return true;
+}
+
+bool WorldBuilderManager::setSelectedTravelPointLandingRange(CreatureObject* player, float range, String& message) {
+	WorldBuilderTravelPointState point; bool exists=false; if (!getSelectedTravelPoint(player,point,exists,message)||!exists){if(!exists)message="Create the Travel Point first.";return false;}
+	if(range<0.5f||range>64.f){message="Landing range must be 0.5..64m.";return false;} Reference<WorldBuilderSession*> session=getSessionForPlayer(player);pushUndoState(session,player);
+	session->travelPoints.elementAt(findTravelPointIndex(session,point.buildingLocalID)).landingRange=range;String error;if(!registerTransientTravelPoints(session,player,error)||!rebuildExteriorPreview(session,player,point.buildingLocalID,error)){message=error;return false;}autosave(session,player);message="Landing range updated.";return true;
+}
+
+bool WorldBuilderManager::removeSelectedTravelPoint(CreatureObject* player, String& message) {
+	WorldBuilderTravelPointState point;bool exists=false;if(!getSelectedTravelPoint(player,point,exists,message)||!exists){if(!exists)message="No Travel Point exists for the selection.";return false;}Reference<WorldBuilderSession*> session=getSessionForPlayer(player);pushUndoState(session,player);
+	session->travelPoints.remove(findTravelPointIndex(session,point.buildingLocalID));String error;if(!registerTransientTravelPoints(session,player,error)||!rebuildExteriorPreview(session,player,point.buildingLocalID,error)){message=error;return false;}autosave(session,player);message="Travel Point removed.";return true;
+}
+
 bool WorldBuilderManager::spawnLastTemplate(CreatureObject* player, float distance, String& message) {
 	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
 	if (session == nullptr || session->lastTemplate.isEmpty()) {
@@ -2138,17 +2478,30 @@ bool WorldBuilderManager::translateObject(CreatureObject* player, WorldBuilderOb
 	float z = object->getPositionZ() + dz;
 	float y = object->getPositionY() + dy;
 
-	Locker objectLocker(object, player);
-	object->incrementMovementCounter();
-	ManagedReference<SceneObject*> parent = object->getParent().get();
-	if (parent != nullptr)
-		object->teleport(x, z, y, parent->getObjectID());
-	else
-		object->teleport(x, z, y);
+	{
+		Locker objectLocker(object, player);
+		object->incrementMovementCounter();
+		ManagedReference<SceneObject*> parent = object->getParent().get();
+		if (parent != nullptr) object->teleport(x, z, y, parent->getObjectID());
+		else object->teleport(x, z, y);
+	}
 
 	state.x = x;
 	state.z = z;
 	state.y = y;
+	if (state.objectKind == WB_OBJECT_EXTERIOR_BUILDING) {
+		Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
+		int travel = findTravelPointIndex(session, state.localID);
+		if (travel >= 0) {
+			session->travelPoints.elementAt(travel).x += dx;
+			session->travelPoints.elementAt(travel).z += dz;
+			session->travelPoints.elementAt(travel).y += dy;
+			String travelError;
+			if (!registerTransientTravelPoints(session, player, travelError)) { message = travelError; return false; }
+		}
+		String rebuildError;
+		if (!rebuildExteriorPreview(session, player, state.localID, rebuildError)) { message = rebuildError; return false; }
+	}
 	return true;
 }
 
@@ -2237,24 +2590,16 @@ bool WorldBuilderManager::rotateObject(CreatureObject* player, WorldBuilderObjec
 	}
 
 	String normalizedAxis = axis.toLowerCase();
-	Locker objectLocker(object, player);
-	if (normalizedAxis == "yaw" || normalizedAxis == "y")
-		object->rotate(degrees);
-	else if (normalizedAxis == "pitch" || normalizedAxis == "p")
-		object->rotatePitch(degrees);
-	else if (normalizedAxis == "roll" || normalizedAxis == "r")
-		object->rotateRoll(degrees);
-	else {
-		message = "Rotation axis must be yaw, pitch, or roll.";
-		return false;
-	}
-
-	object->incrementMovementCounter();
-	ManagedReference<SceneObject*> parent = object->getParent().get();
-	if (parent != nullptr)
-		object->teleport(object->getPositionX(), object->getPositionZ(), object->getPositionY(), parent->getObjectID());
-	else
-		object->teleport(object->getPositionX(), object->getPositionZ(), object->getPositionY());
+	{
+		Locker objectLocker(object, player);
+		if (normalizedAxis == "yaw" || normalizedAxis == "y") object->rotate(degrees);
+		else if (normalizedAxis == "pitch" || normalizedAxis == "p") object->rotatePitch(degrees);
+		else if (normalizedAxis == "roll" || normalizedAxis == "r") object->rotateRoll(degrees);
+		else { message = "Rotation axis must be yaw, pitch, or roll."; return false; }
+		object->incrementMovementCounter();
+		ManagedReference<SceneObject*> parent = object->getParent().get();
+		if (parent != nullptr) object->teleport(object->getPositionX(), object->getPositionZ(), object->getPositionY(), parent->getObjectID());
+		else object->teleport(object->getPositionX(), object->getPositionZ(), object->getPositionY());
 
 	// Rotation does not change the object's parent/cell relationship or position.
 	// Refresh only the stored quaternion here. rotateObject() is a low-level helper
@@ -2266,6 +2611,11 @@ bool WorldBuilderManager::rotateObject(CreatureObject* player, WorldBuilderObjec
 		state.qx = updatedDirection->getX();
 		state.qy = updatedDirection->getY();
 		state.qz = updatedDirection->getZ();
+	}
+	}
+	if (state.objectKind == WB_OBJECT_EXTERIOR_BUILDING) {
+		Reference<WorldBuilderSession*> session = getSessionForPlayer(player); String error;
+		if (!rebuildExteriorPreview(session, player, state.localID, error)) { message = error; return false; }
 	}
 
 	return true;
@@ -2466,7 +2816,7 @@ bool WorldBuilderManager::deleteSelected(CreatureObject* player, String& message
 	}
 
 	uint32 deletedID = session->objects.get(index).localID;
-	bool deletingStructure = session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE;
+	bool deletingStructure = session->objects.get(index).objectKind == WB_OBJECT_STRUCTURE || session->objects.get(index).objectKind == WB_OBJECT_EXTERIOR_BUILDING;
 	if (deletingStructure) {
 		uint32 occupiedStructure = 0;
 		if (isPlayerInsideProjectStructure(session, player, &occupiedStructure) && occupiedStructure == deletedID) {
@@ -2477,6 +2827,9 @@ bool WorldBuilderManager::deleteSelected(CreatureObject* player, String& message
 
 	pushUndoState(session, player);
 	int descendants = 0;
+	int linkedTravel = findTravelPointIndex(session, deletedID);
+	if (linkedTravel >= 0)
+		session->travelPoints.remove(linkedTravel);
 
 	if (deletingStructure) {
 		// Interior preview objects are destroyed first; the structure/cells go last.
@@ -2511,6 +2864,9 @@ bool WorldBuilderManager::deleteSelected(CreatureObject* player, String& message
 	} else {
 		session->selectedLocalID = 0;
 	}
+	String travelError;
+	if (!registerTransientTravelPoints(session, player, travelError))
+		player->sendSystemMessage("[World Builder] Warning: " + travelError);
 
 	autosave(session, player);
 	StringBuffer result;
