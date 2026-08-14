@@ -48,6 +48,16 @@ else(BUILD_IDL)
 	add_library(idlobjects STATIC ${autogen_sources} ${autogen_headers})
 endif()
 
+# Clang 19.1 can crash in MCAssembler while emitting this generated IDL unit.
+# Use the system assembler for this source until the LLVM regression is fixed.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND
+	CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19 AND
+	CMAKE_CXX_COMPILER_VERSION VERSION_LESS 20)
+	set_source_files_properties(
+		"${CMAKE_SOURCE_DIR}/src/autogen/server/zone/objects/tangible/deed/navicomputer/NavicomputerDeed.cpp"
+		PROPERTIES COMPILE_FLAGS "-fno-integrated-as")
+endif()
+
 set_target_properties(idlobjects PROPERTIES LINKER_LANGUAGE CXX)
 
 file(GLOB_RECURSE zone3_sources "server/zone/*.cpp")

@@ -24,11 +24,49 @@ class FactoryObject extends InstallationObject {
 	protected string currentUserName;
 	protected int currentRunCount;
 
+	// Queue metadata is persisted independently from the contained schematic objects.
+	// The vectors are kept parallel and indexed by queue position.
+	@dereferenced
+	protected Vector<unsigned long> queueSchematicIDs;
+
+	@dereferenced
+	protected Vector<unsigned long> queueSequence;
+
+	@dereferenced
+	protected Vector<int> queueRequestedLimits;
+
+	@dereferenced
+	protected Vector<int> queueRemainingLimits;
+
+	@dereferenced
+	protected Vector<int> queueStatuses;
+
+	@dereferenced
+	protected Vector<string> queueBlockedReasons;
+
+	@dereferenced
+	protected Vector<unsigned long> queueEvaluationTimes;
+
+	protected transient boolean queueEvaluationInProgress;
+	protected boolean queueEnabled;
+
+	public static final int QUEUE_ACTIVE = 0;
+	public static final int QUEUE_WAITING = 1;
+	public static final int QUEUE_BLOCKED_RESOURCES = 2;
+	public static final int QUEUE_BLOCKED_COMPONENTS = 3;
+	public static final int QUEUE_BLOCKED_OUTPUT_FULL = 4;
+	public static final int QUEUE_BLOCKED_POWER = 5;
+	public static final int QUEUE_BLOCKED_MAINTENANCE = 6;
+	public static final int QUEUE_BLOCKED_INVALID = 7;
+	public static final int QUEUE_COMPLETED = 8;
+
 	protected transient FactoryHopperObserver hopperObserver;
 
 	public FactoryObject() {
 		Logger.setLoggingName("FactoryObject");
 		hopperObserver = null;
+		queueEvaluationInProgress = false;
+		queueEnabled = false;
 	}
 
 	@local
@@ -81,6 +119,9 @@ class FactoryObject extends InstallationObject {
 	public native void sendInsertManuSui(CreatureObject player);
 
 	@dirty
+	public native void sendManufacturingQueueSui(CreatureObject player);
+
+	@dirty
 	public native void sendIngredientsNeededSui(CreatureObject player);
 
 	@dirty
@@ -101,6 +142,34 @@ class FactoryObject extends InstallationObject {
 	 */
 	@preLocked
 	public native void handleInsertFactorySchem(CreatureObject player, ManufactureSchematic schematic);
+
+	@preLocked
+	public native boolean addQueuedSchematic(CreatureObject player, ManufactureSchematic schematic);
+
+	@preLocked
+	public native boolean removeQueuedSchematic(CreatureObject player, int queueIndex);
+
+	@preLocked
+	public native boolean moveQueuedSchematic(CreatureObject player, int queueIndex, int direction);
+
+	@preLocked
+	public native void retryQueuedSchematic(int queueIndex);
+
+	@preLocked
+	public native void retryAllQueuedSchematics();
+
+	@preLocked
+	public native void clearManufacturingQueue(CreatureObject player);
+
+	@preLocked
+	public native void evaluateManufacturingQueue();
+
+	public native void scheduleManufacturingQueueEvaluation();
+
+	@read
+	public boolean isManufacturingQueueEnabled() {
+		return queueEnabled;
+	}
 
 	/**
 	 * Handles inputting the schematic to the
@@ -134,6 +203,20 @@ class FactoryObject extends InstallationObject {
 	private native boolean populateSchematicBlueprint(ManufactureSchematic schematic);
 
 	private native void collectMatchesInInputHopper(BlueprintEntry entry, SceneObject inputHopper);
+
+	private native void restoreQueueMetadata();
+
+	private native ManufactureSchematic getActiveQueuedSchematic();
+
+	private native ManufactureSchematic syncActiveQueueEntryToFactory();
+
+	private native boolean activateQueueEntry(int queueIndex);
+
+	private native int findQueueEntry(unsigned long schematicID);
+
+	private native void markQueueEntryBlocked(int index, int status, final string reason);
+
+	private native boolean isQueuedOutputReady(ManufactureSchematic schematic);
 
 	@dirty
 	public native string getRedeedMessage();
