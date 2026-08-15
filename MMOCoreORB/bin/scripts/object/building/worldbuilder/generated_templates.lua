@@ -3,4 +3,153 @@
 -- Regenerate from the publish set; do not hand-edit generated registrations.
 -- Deploy this exact file together with the candidate TRE.
 
--- No structural World Builder projects are currently approved.
+-- ========================================================================
+-- BEGIN WORLD BUILDER PROJECT: droid_foundry_instances
+-- Source project name: droid_foundry_instances | Planet: dungeon1
+-- ========================================================================
+
+-- WB STRUCTURE #1
+object_building_worldbuilder_droid_foundry_instances_shared_structure_1 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_1.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_1, "object/building/worldbuilder/droid_foundry_instances/shared_structure_1.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_1 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_1.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_1, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_1, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_1, "object/building/worldbuilder/droid_foundry_instances/structure_1.iff")
+
+-- WB STRUCTURE #2
+object_building_worldbuilder_droid_foundry_instances_shared_structure_2 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_2.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_2, "object/building/worldbuilder/droid_foundry_instances/shared_structure_2.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_2 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_2.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_2, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_2, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_2, "object/building/worldbuilder/droid_foundry_instances/structure_2.iff")
+
+-- WB STRUCTURE #3
+object_building_worldbuilder_droid_foundry_instances_shared_structure_3 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_3.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_3, "object/building/worldbuilder/droid_foundry_instances/shared_structure_3.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_3 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_3.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_3, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_3, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_3, "object/building/worldbuilder/droid_foundry_instances/structure_3.iff")
+
+-- WB STRUCTURE #4
+object_building_worldbuilder_droid_foundry_instances_shared_structure_4 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_4.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_4, "object/building/worldbuilder/droid_foundry_instances/shared_structure_4.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_4 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_4.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_4, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_4, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_4, "object/building/worldbuilder/droid_foundry_instances/structure_4.iff")
+
+-- WB STRUCTURE #5
+object_building_worldbuilder_droid_foundry_instances_shared_structure_5 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_5.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_5, "object/building/worldbuilder/droid_foundry_instances/shared_structure_5.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_5 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_5.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_5, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_5, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_5, "object/building/worldbuilder/droid_foundry_instances/structure_5.iff")
+
+-- WB STRUCTURE #6
+object_building_worldbuilder_droid_foundry_instances_shared_structure_6 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_6.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_6, "object/building/worldbuilder/droid_foundry_instances/shared_structure_6.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_6 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_6.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_6, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_6, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_6, "object/building/worldbuilder/droid_foundry_instances/structure_6.iff")
+
+-- WB STRUCTURE #7
+object_building_worldbuilder_droid_foundry_instances_shared_structure_7 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_7.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_7, "object/building/worldbuilder/droid_foundry_instances/shared_structure_7.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_7 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_7.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_7, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_7, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_7, "object/building/worldbuilder/droid_foundry_instances/structure_7.iff")
+
+-- WB STRUCTURE #8
+object_building_worldbuilder_droid_foundry_instances_shared_structure_8 = object_building_tatooine_shared_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_8.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_droid_foundry_instances_shared_structure_8, "object/building/worldbuilder/droid_foundry_instances/shared_structure_8.iff")
+
+object_building_worldbuilder_droid_foundry_instances_structure_8 = object_building_tatooine_cave_tatooine_droid_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/droid_foundry_instances/shared_structure_8.iff",
+	gameObjectType = 512,
+	totalCellNumber = 20
+}
+for key, value in pairs(object_building_tatooine_cave_tatooine_droid_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_droid_foundry_instances_structure_8, key) == nil then
+		rawset(object_building_worldbuilder_droid_foundry_instances_structure_8, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_droid_foundry_instances_structure_8, "object/building/worldbuilder/droid_foundry_instances/structure_8.iff")
+
+-- END WORLD BUILDER PROJECT: droid_foundry_instances

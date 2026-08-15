@@ -546,14 +546,53 @@ Reference<SceneObject*> PlanetManagerImplementation::loadSnapshotObject(WorldSna
 	/*if (ConfigManager::instance()->isProgressMonitorActivated())
 		printf("\r\tLoading snapshot objects: [%d] / [?]\t", totalObjects);*/
 
-	//Object already exists, exit.
-	if (object != nullptr)
+	// Stock snapshot loading keeps its existing-object behavior. Published World
+	// Builder structures use a reserved stable-OID band and may already have
+	// been deserialized from clientobjects without a runtime Zone association.
+	const bool isWorldBuilderObject = objectID >= 0x60000000ULL && objectID <= 0x6FFFFFFFULL;
+	if (object != nullptr && !isWorldBuilderObject)
 		return nullptr;
 
 	Reference<SceneObject*> parentObject = zoneServer->getObject(node->getParentID());
+	Vector3 position = node->getPosition();
+
+	if (object != nullptr) {
+		Locker locker(object);
+
+		object->initializePosition(position.getX(), position.getZ(), position.getY());
+		object->setDirection(node->getDirection());
+
+		if (parentObject != nullptr && parentObject->isBuildingObject() && object->isCellObject()) {
+			CellObject* cell = cast<CellObject*>(object.get());
+			BuildingObject* building = cast<BuildingObject*>(parentObject.get());
+
+			Locker clocker(building, object);
+			building->addCell(cell, node->getCellID());
+		}
+
+		if (parentObject != nullptr) {
+			ManagedReference<SceneObject*> currentParent = object->getParent().get();
+			if (object->getZone() == nullptr || currentParent == nullptr || currentParent->getObjectID() != parentObject->getObjectID() ||
+				!parentObject->hasObjectInContainer(objectID))
+				parentObject->transferObject(object, -1);
+		} else if (node->getParentID() != 0) {
+			error("parent id " + String::valueOf(node->getParentID()));
+		} else if (object->getZone() == nullptr) {
+			zone->transferObject(object, -1, true);
+			info(true) << "Recovered World Builder snapshot object " << objectID << " into zone " << zone->getZoneName();
+		}
+
+		for (int i = 0; i < node->getNodeCount(); ++i) {
+			WorldSnapshotNode* childNode = node->getNode(i);
+
+			if (childNode != nullptr)
+				loadSnapshotObject(childNode, wsiff, totalObjects);
+		}
+
+		return nullptr;
+	}
 
 	String serverTemplate = templateName.replaceFirst("shared_", "");
-	Vector3 position = node->getPosition();
 
 	object = zoneServer->createClientObject(serverTemplate.hashCode(), objectID);
 

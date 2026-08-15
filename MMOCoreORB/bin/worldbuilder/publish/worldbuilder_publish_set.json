@@ -1,4 +1,10 @@
 {
   "version": 1,
-  "projects": []
+  "projects": [
+    {
+      "id": "droid_foundry_instances",
+      "file": "../projects/droid_foundry_instances.wbp",
+      "enabled": true
+    }
+  ]
 }
