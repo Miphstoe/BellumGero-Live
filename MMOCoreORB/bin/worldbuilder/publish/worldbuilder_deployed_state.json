@@ -1,14 +1,20 @@
 {
   "version": 1,
-  "deployed": "2026-08-14T16:32:48",
+  "deployed": "2026-08-14T19:05:54",
   "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
-  "base_tre_sha256": "745e66859c4e3dce055f2d1594d48dc72c37b74f8fb12f3eded35bfe3946c290",
+  "base_tre_sha256": "396b808b9a8142d2248d9e3419f76a707ceda25fc4f42aeda1273bad73bb6f6f",
   "dependencies": {
     "records": {
       "object/static/vehicle/shared_static_tie_fighter.iff": {
         "sha256": "a42db6f49b9bbeb9cf3d0c9ad802490959d0c9889cc56abf03a07c8cc7380485",
         "kinds": [
           "builtin_ship_scenery_base"
+        ]
+      },
+      "misc/object_template_crc_string_table.iff": {
+        "sha256": "805fe343b0420da32f6a83c353b6ba945ea2a0fb845850adedc1446ed8fa5920",
+        "kinds": [
+          "canonical_object_template_crc_table"
         ]
       },
       "appearance/arc170_model.apt": {
