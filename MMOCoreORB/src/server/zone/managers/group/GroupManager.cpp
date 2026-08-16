@@ -38,6 +38,31 @@ bool GroupManager::playerIsInvitingOwnPet(CreatureObject* inviter, CreatureObjec
 	return inviter != nullptr && target != nullptr && target->isPet() && target->getCreatureLinkID() != 0 && target->getCreatureLinkID() == inviter->getObjectID();
 }
 
+bool GroupManager::isGroupStaffExempt(GroupObject* group, CreatureObject* inviter) {
+	// Staff-led groups are exempt from the group size cap
+	if (inviter != nullptr) {
+		auto inviterGhost = inviter->getPlayerObject();
+
+		if (inviterGhost != nullptr && inviterGhost->isStaff()) {
+			return true;
+		}
+	}
+
+	if (group != nullptr) {
+		auto leader = group->getLeader();
+
+		if (leader != nullptr) {
+			auto leaderGhost = leader->getPlayerObject();
+
+			if (leaderGhost != nullptr && leaderGhost->isStaff()) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void GroupManager::inviteToGroup(CreatureObject* inviter, CreatureObject* target) {
 	// Pre: inviter locked
 	// Post: player invited to inviter's group and inviter locked
@@ -63,8 +88,8 @@ void GroupManager::inviteToGroup(CreatureObject* inviter, CreatureObject* target
 			return;
 		}
 
-		// can't invite if the group is full
-		if (group->getGroupSize() >= 50) {
+		// can't invite if the group is full, unless the group is staff-led
+		if (group->getGroupSize() >= 50 && !isGroupStaffExempt(group, inviter)) {
 			inviter->sendSystemMessage("@group:full");
 			return;
 		}
@@ -207,7 +232,7 @@ void GroupManager::joinGroup(CreatureObject* creature) {
 	// Cross lock the player that is joining the group
 	Locker clocker(creature, group);
 
-	if (group->getGroupSize() >= 50) {
+	if (group->getGroupSize() >= 50 && !isGroupStaffExempt(group, leader)) {
 		creature->updateGroupInviterID(0);
 
 		creature->sendSystemMessage("The group is full.");
