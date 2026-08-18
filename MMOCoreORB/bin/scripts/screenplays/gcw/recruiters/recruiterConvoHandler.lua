@@ -89,7 +89,10 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		createEvent(30000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
 
 	elseif (screenID == "accepted_go_covert") then
-		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+		-- Jedi Knight (force_title_jedi_rank_03) or higher are exempt from the
+		-- FRS council covert lockout so they can voluntarily leave Overt status
+		-- (e.g. to become eligible for Jedi PvE Seclusion).
+		if ((CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
 			return
 		end
@@ -99,7 +102,7 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		createEvent(300000, "recruiterScreenplay", "handleGoCovert", pPlayer, "")
 
 	elseif (screenID == "accepted_go_on_leave") then
-		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+		if ((CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
 			return
 		end
@@ -258,7 +261,8 @@ function RecruiterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, s
 		createEvent(1000, "recruiterScreenplay", "handleGoOvert", pPlayer, "")
 
 	elseif (screenID == "covert_complete") then
-		if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+		-- Jedi Knight or higher are exempt from the FRS council covert lockout.
+		if ((CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 			CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
 			return
 		end

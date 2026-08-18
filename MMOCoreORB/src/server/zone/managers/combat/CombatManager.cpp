@@ -33,6 +33,7 @@
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
 #include "server/zone/managers/safezone/SafeZoneManager.h"
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 #include "server/zone/objects/creature/buffs/BuffCRC.h"
 
 namespace {
@@ -1256,6 +1257,23 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 	// PvP Damage Reduction.
 	if (attacker->isPlayerCreature() && defender->isPlayerCreature() && !data.isForceAttack())
 		damage *= 0.25;
+
+	// Overt Jedi PvE damage incentive (see JediSeclusionManager): only applies
+	// to eligible Jedi specials (Force attacks or lightsaber melee) against a
+	// genuine PvE target. Computed fresh per hit from live state -- no-op for
+	// Secluded Jedi, non-Jedi attackers, players, or player pets/droids/vehicles.
+	if (attacker->isPlayerCreature() && (data.isForceAttack() || (weapon != nullptr && weapon->isJediWeapon()))) {
+		float overtPveModifier = JediSeclusionManager::getOvertJediPveDamageModifier(attacker);
+
+		if (overtPveModifier != 1.0f && JediSeclusionManager::isValidOvertJediPveDamageTarget(attacker, defender)) {
+			damage *= overtPveModifier;
+
+			if (ConfigManager::instance()->getBool("Core3.CombatManager.OvertJediPveBonusDebug", false)) {
+				attacker->info(true) << "[OvertJediPve] damage x" << overtPveModifier << " for " << attacker->getDisplayedName()
+					<< " vs " << defender->getDisplayedName() << " -- final damage " << damage;
+			}
+		}
+	}
 
 	if (damage < 1)
 		damage = 1;
@@ -3410,6 +3428,14 @@ void CombatManager::requestDuel(CreatureObject* player, CreatureObject* targetPl
 
 	PlayerObject* ghost = player->getPlayerObject();
 	PlayerObject* targetGhost = targetPlayer->getPlayerObject();
+
+	// Jedi PvE Seclusion: defense-in-depth backstop in case this is ever
+	// reached by a path other than DuelCommand (which already rejects the
+	// request earlier with a more specific message).
+	if (JediSeclusionManager::isSecluded(player) || JediSeclusionManager::isSecluded(targetPlayer)) {
+		player->sendSystemMessage("You have chosen the Path of Seclusion and cannot participate in duels.");
+		return;
+	}
 
 	if (ghost->requestedDuelTo(targetPlayer)) {
 		StringIdChatParameter stringId("duel", "already_challenged");

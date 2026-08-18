@@ -494,7 +494,13 @@ void FrsManagerImplementation::validatePlayerData(CreatureObject* player, bool v
 		else if (councilType == COUNCIL_DARK && player->getFaction() != Factions::FACTIONIMPERIAL)
 			player->setFaction(Factions::FACTIONIMPERIAL);
 
-		if (player->getFactionStatus() != FactionStatus::OVERT)
+		// Jedi Knight (force_title_jedi_rank_03) or higher are exempt from the
+		// FRS council's forced-Overt maintenance re-flag, mirroring the same
+		// exemption in the faction recruiter's covert-lockout gate -- this lets
+		// a Knight+ council member who deliberately went Covert stay that way
+		// instead of being silently reset to Overt by the next periodic
+		// RankMaintenanceTask pass.
+		if (player->getFactionStatus() != FactionStatus::OVERT && !player->hasSkill("force_title_jedi_rank_03"))
 			player->setFactionStatus(FactionStatus::OVERT);
 
 		if (realPlayerRank >= 4 && !player->hasSkill("force_title_jedi_rank_04"))

@@ -175,10 +175,22 @@ class MissionManager extends Observer implements Logger {
 	public native void failPlayerBountyMission(unsigned long bountyHunter, unsigned long targetID);
 	public native void invalidatePlayerBountyMissions(unsigned long targetId);
 
+	// MiphJediBHRestriction: called whenever a hunter is granted Padawan rank
+	// (force_title_jedi_rank_02) so an already-accepted player Jedi bounty
+	// mission cannot continue to be pursued/completed. No-op for NPC bounty
+	// missions or hunters with no active bounty mission.
+	public native void invalidateActivePlayerJediBountyForHunter(unsigned long hunterId);
+
 	@local
 	@dereferenced
 	private native Vector<PlayerBounty> getPotentialPlayerBountyTargets(CreatureObject player);
 	private native boolean isBountyValidForPlayer(CreatureObject player, PlayerBounty bounty);
+
+	// MiphJediBHRestriction: authoritative check for "this creature has reached
+	// Padawan Jedi rank or higher" -- the single source of truth reused by both
+	// bounty-terminal target filtering and mission-acceptance validation so the
+	// skill name isn't duplicated across call sites.
+	private native boolean isPadawanOrHigherJedi(CreatureObject creature);
 	private native void addBountyHunterToPlayerBounty(unsigned long targetId, unsigned long bountyHunterId);
 	private native void removeBountyHunterFromPlayerBounty(unsigned long targetId, unsigned long bountyHunterId);
 

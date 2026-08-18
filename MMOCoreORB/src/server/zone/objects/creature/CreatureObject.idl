@@ -1131,6 +1131,26 @@ class CreatureObject extends TangibleObject {
 	@dirty
 	public native boolean healFactionChecks(CreatureObject object, boolean isPlayer);
 
+	/**
+	 * Jedi PvE Seclusion. Authoritative logic lives in JediSeclusionManager;
+	 * these are thin delegating wrappers exposed to Lua (the Force Shrine)
+	 * and to isAttackableBy/duel validation.
+	 */
+	@dirty
+	public native boolean isJediSecluded();
+
+	@dirty
+	public native boolean isJediSeclusionEligible();
+
+	@dirty
+	public native unsigned long getJediSeclusionCooldownRemaining();
+
+	// shrine: the SceneObject the player is interacting with; must resolve to
+	// a legitimate, in-range Force Shrine or the request is rejected. Performs
+	// full authoritative re-validation and, on success, mutates and persists
+	// state. Returns a JediSeclusionManager::ToggleResult code.
+	public native int requestJediSeclusionToggle(SceneObject shrine);
+
 	@dirty
 	public native abstract boolean isInvulnerable();
 

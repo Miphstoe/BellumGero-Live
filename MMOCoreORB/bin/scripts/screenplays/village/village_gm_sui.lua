@@ -791,7 +791,7 @@ function VillageGmSui.manageVisibility(pPlayer, targetID)
 
 	sui.setPrompt(promptBuf)
 
-	--sui.add("Set Visibility Value", "setVisibility" .. targetID)
+	sui.add("Set Visibility Value", "setVisibility" .. targetID)
 
 	sui.sendTo(pPlayer)
 end
@@ -799,9 +799,114 @@ end
 function VillageGmSui:manageVisibilityCallback(pPlayer, pSui, eventIndex, args)
 	local cancelPressed = (eventIndex == 1)
 
-	if (cancelPressed) then
+	if (cancelPressed or args == nil or tonumber(args) < 0) then
 		return
 	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local menuOption = suiPageData:getStoredData(tostring(args))
+	local targetID, pTarget
+
+	if (string.find(menuOption, "%d")) then
+		targetID = string.match(menuOption, '%d+')
+		menuOption = string.gsub(menuOption, targetID, "")
+
+		pTarget = getSceneObject(targetID)
+	end
+
+	if (pTarget == nil or not SceneObject(pTarget):isPlayerCreature()) then
+		Logger:log("Unable to find player for VillageGmSui function manageVisibilityCallback - " .. menuOption .. " using oid " .. targetID, LT_ERROR)
+		return
+	end
+
+	if (menuOption == "setVisibility") then
+		includeFile("../managers/jedi/visibility_manager.lua")
+
+		local sui = SuiInputBox.new("VillageGmSui", "suiSetVisibilityCallback")
+
+		sui.setTargetNetworkId(SceneObject(pTarget):getObjectID())
+
+		local pGhost = CreatureObject(pTarget):getPlayerObject()
+		local currentVisibility = 0
+
+		if (pGhost ~= nil) then
+			currentVisibility = PlayerObject(pGhost):getVisibility()
+		end
+
+		local suiBody = "\r\\#FFFFFF Target Player: \r\\#pcontrast1 " .. CreatureObject(pTarget):getFirstName() .. "\r\\#FFFFFF \n"
+		suiBody = suiBody .. " Target Player ID: \r\\#pcontrast1 " .. targetID .. "\r\\#FFFFFF \n"
+		suiBody = suiBody .. " Current Visibility: \r\\#pcontrast1 " .. currentVisibility .. "\r\\#FFFFFF \n\n"
+		suiBody = suiBody .. " Enter the Visibility value you wish to set on the target (0 - " .. maxVisibility .. "):"
+
+		sui.setTitle("Set Player Visibility")
+		sui.setPrompt(suiBody)
+
+		sui.sendTo(pPlayer)
+	end
+end
+
+function VillageGmSui:suiSetVisibilityCallback(pPlayer, pSui, eventIndex, args)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local cancelPressed = (eventIndex == 1)
+
+	if (cancelPressed or args == "") then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local targetID = suiPageData:getTargetNetworkId()
+
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil or not SceneObject(pTarget):isPlayerCreature()) then
+		local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " attempted to use GMFSVillage:suiSetVisibilityCallback on an improper target."
+		Logger:log(msg, LT_ERROR)
+
+		CreatureObject(pPlayer):sendSystemMessage("Please select a proper target to set their Visibility.")
+		return
+	end
+
+	local pGhost = CreatureObject(pTarget):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
+	includeFile("../managers/jedi/visibility_manager.lua")
+
+	local visValue = tonumber(args)
+
+	if (visValue == nil or visValue < 0 or visValue > maxVisibility) then
+		local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " attempted to use GMFSVillage:suiSetVisibilityCallback and input an improper visibility value."
+		Logger:log(msg, LT_ERROR)
+
+		CreatureObject(pPlayer):sendSystemMessage("Please input a Visibility value ranging from 0 to " .. maxVisibility .. ".")
+		return
+	end
+
+	-- Set the visibility
+	PlayerObject(pGhost):setVisibility(visValue)
+
+	local msg = SceneObject(pPlayer):getCustomObjectName() .. " ID: " .. SceneObject(pPlayer):getObjectID() .. " used GMFSVillage:suiSetVisibilityCallback on " .. SceneObject(pTarget):getCustomObjectName() .. " ID: " .. targetID
+	msg = msg .. " setting their Visibility to " .. visValue
+	Logger:log(msg, LT_WARNING)
+
+	CreatureObject(pPlayer):sendSystemMessage(msg)
 end
 
 function VillageGmSui.padawanTrialsMenu(pPlayer, targetID)
