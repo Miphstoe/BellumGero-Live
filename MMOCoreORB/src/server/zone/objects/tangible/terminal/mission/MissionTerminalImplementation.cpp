@@ -22,6 +22,9 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/player/FactionStatus.h"
 #include "templates/faction/Factions.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sui/callbacks/MissionDistanceSuiCallback.h"
+#include "server/zone/objects/tangible/terminal/mission/MissionDistanceRange.h"
 
 void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
 	TerminalImplementation::fillObjectMenuResponse(menuResponse, player);
@@ -51,6 +54,7 @@ void MissionTerminalImplementation::fillObjectMenuResponse(ObjectMenuResponse* m
 
 	if (terminalType == "general" || terminalType == "imperial" || terminalType == "rebel") {
 		menuResponse->addRadialMenuItem(116, 3, "Accept Top 6 Missions");
+		menuResponse->addRadialMenuItem(117, 3, "Filter Missions by Distance");
 	}
 }
 
@@ -217,93 +221,136 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
 
 		return 0;
 	} else if (selectedID == 116) {
+		acceptTopPayingMissions(player);
+
+		return 0;
+	} else if (selectedID == 117) {
 		PlayerObject* ghost = player->getPlayerObject();
 		if (ghost == nullptr)
 			return 0;
 
 		String lastID = ghost->getScreenPlayData("missionTerminalSession", "lastTerminalID");
 		if (lastID != String::valueOf(_this.getReferenceUnsafeStaticCast()->getObjectID())) {
-			player->sendSystemMessage("You must open this terminal's mission list before accepting missions.");
+			player->sendSystemMessage("You must open this terminal's mission list before filtering missions by distance.");
 			return 0;
 		}
 
-		SceneObject* missionBag = player->getSlottedObject("mission_bag");
-		SceneObject* datapad = player->getSlottedObject("datapad");
-
-		if (missionBag == nullptr || datapad == nullptr)
+		if (!player->checkCooldownRecovery("mission_terminal.distance_select"))
 			return 0;
 
-		// Match missions to this terminal's faction so Imperial/Rebel terminals
-		// don't accidentally accept General missions left over from a prior browse
-		uint32 expectedFaction = Factions::FACTIONNEUTRAL;
-		if (terminalType == "imperial")
-			expectedFaction = Factions::FACTIONIMPERIAL;
-		else if (terminalType == "rebel")
-			expectedFaction = Factions::FACTIONREBEL;
+		player->addCooldown("mission_terminal.distance_select", 1000);
 
-		// Snapshot populated missions before iterating — transferObject modifies the bag
-		Vector<ManagedReference<MissionObject*>> candidates;
-		for (int i = 0; i < missionBag->getContainerObjectsSize(); ++i) {
-			SceneObject* obj = missionBag->getContainerObject(i);
-			if (obj != nullptr && obj->isMissionObject()) {
-				MissionObject* mission = cast<MissionObject*>(obj);
-				if (mission != nullptr && mission->getTypeCRC() != 0 && mission->getFaction() == expectedFaction)
-					candidates.add(mission);
-			}
-		}
+		debug() << "Player " << player->getObjectID() << " requested Filter Missions by Distance on terminal " << _this.getReferenceUnsafeStaticCast()->getObjectID();
 
-		if (candidates.isEmpty()) {
-			player->sendSystemMessage("No missions available from this terminal. Open the terminal to browse its mission list first.");
-			return 0;
-		}
+		ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::MISSION_TERMINAL_DISTANCE_SELECT);
+		box->setCallback(new MissionDistanceSuiCallback(getZoneServer()));
 
-		int beforeCount = 0;
-		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
-			if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
-				++beforeCount;
-		}
+		box->setPromptTitle("Mission Distance");
+		box->setPromptText("Select the distance range you would like the mission terminal to display.");
+		box->setOkButton(true, "@ok");
+		box->setCancelButton(true, "@cancel");
 
-		if (beforeCount >= 6) {
-			StringIdChatParameter stringId("mission/mission_generic", "too_many_missions");
-			player->sendSystemMessage(stringId);
-			return 0;
-		}
+		for (int i = 0; i < MISSION_DISTANCE_RANGE_COUNT; ++i)
+			box->addMenuItem(MISSION_DISTANCE_RANGES[i].label, i);
 
-		// Sort by reward descending so we accept the highest-paying missions first
-		std::vector<ManagedReference<MissionObject*>> sorted(candidates.size());
-		for (int i = 0; i < candidates.size(); ++i)
-			sorted[i] = candidates.get(i);
-		std::sort(sorted.begin(), sorted.end(), [](const ManagedReference<MissionObject*>& a, const ManagedReference<MissionObject*>& b) {
-			int rewardA = (a != nullptr) ? a->getRewardCredits() : 0;
-			int rewardB = (b != nullptr) ? b->getRewardCredits() : 0;
-			return rewardA > rewardB;
-		});
+		box->addMenuItem("Any Distance", MISSION_DISTANCE_RANGE_COUNT);
 
-		MissionManager* missionManager = getZoneServer()->getMissionManager();
-		MissionTerminal* terminal = _this.getReferenceUnsafeStaticCast();
-
-		for (auto& mission : sorted) {
-			if (mission == nullptr) continue;
-			Locker missionLock(mission, player);
-			missionManager->handleMissionAccept(terminal, mission, player);
-		}
-
-		int afterCount = 0;
-		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
-			if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
-				++afterCount;
-		}
-
-		int accepted = afterCount - beforeCount;
-		if (accepted > 0)
-			player->sendSystemMessage("Accepted " + String::valueOf(accepted) + " mission(s).");
-		else
-			player->sendSystemMessage("Could not accept any missions. You may already have 6 active missions.");
+		box->setUsingObject(_this.getReferenceUnsafeStaticCast());
+		ghost->addSuiBox(box);
+		player->sendMessage(box->generateMessage());
 
 		return 0;
 	}
 
 	return TangibleObjectImplementation::handleObjectMenuSelect(player, selectedID);
+}
+
+void MissionTerminalImplementation::acceptTopPayingMissions(CreatureObject* player) {
+	PlayerObject* ghost = player->getPlayerObject();
+	if (ghost == nullptr)
+		return;
+
+	String lastID = ghost->getScreenPlayData("missionTerminalSession", "lastTerminalID");
+	if (lastID != String::valueOf(_this.getReferenceUnsafeStaticCast()->getObjectID())) {
+		player->sendSystemMessage("You must open this terminal's mission list before accepting missions.");
+		return;
+	}
+
+	SceneObject* missionBag = player->getSlottedObject("mission_bag");
+	SceneObject* datapad = player->getSlottedObject("datapad");
+
+	if (missionBag == nullptr || datapad == nullptr)
+		return;
+
+	// Match missions to this terminal's faction so Imperial/Rebel terminals
+	// don't accidentally accept General missions left over from a prior browse
+	uint32 expectedFaction = Factions::FACTIONNEUTRAL;
+	if (terminalType == "imperial")
+		expectedFaction = Factions::FACTIONIMPERIAL;
+	else if (terminalType == "rebel")
+		expectedFaction = Factions::FACTIONREBEL;
+
+	// Snapshot populated missions before iterating — transferObject modifies the bag
+	Vector<ManagedReference<MissionObject*>> candidates;
+	for (int i = 0; i < missionBag->getContainerObjectsSize(); ++i) {
+		SceneObject* obj = missionBag->getContainerObject(i);
+		if (obj != nullptr && obj->isMissionObject()) {
+			MissionObject* mission = cast<MissionObject*>(obj);
+			if (mission != nullptr && mission->getTypeCRC() != 0 && mission->getFaction() == expectedFaction)
+				candidates.add(mission);
+		}
+	}
+
+	if (candidates.isEmpty()) {
+		player->sendSystemMessage("No missions available from this terminal. Open the terminal to browse its mission list first.");
+		return;
+	}
+
+	int beforeCount = 0;
+	for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+		if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
+			++beforeCount;
+	}
+
+	if (beforeCount >= 6) {
+		StringIdChatParameter stringId("mission/mission_generic", "too_many_missions");
+		player->sendSystemMessage(stringId);
+		return;
+	}
+
+	// Sort by reward descending so we accept the highest-paying missions first
+	std::vector<ManagedReference<MissionObject*>> sorted(candidates.size());
+	for (int i = 0; i < candidates.size(); ++i)
+		sorted[i] = candidates.get(i);
+	std::sort(sorted.begin(), sorted.end(), [](const ManagedReference<MissionObject*>& a, const ManagedReference<MissionObject*>& b) {
+		int rewardA = (a != nullptr) ? a->getRewardCredits() : 0;
+		int rewardB = (b != nullptr) ? b->getRewardCredits() : 0;
+		return rewardA > rewardB;
+	});
+
+	MissionManager* missionManager = getZoneServer()->getMissionManager();
+	MissionTerminal* terminal = _this.getReferenceUnsafeStaticCast();
+
+	for (auto& mission : sorted) {
+		if (mission == nullptr) continue;
+		Locker missionLock(mission, player);
+		missionManager->handleMissionAccept(terminal, mission, player);
+	}
+
+	int afterCount = 0;
+	for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+		if (datapad->getContainerObject(i) != nullptr && datapad->getContainerObject(i)->isMissionObject())
+			++afterCount;
+	}
+
+	int accepted = afterCount - beforeCount;
+
+	debug() << "Terminal " << _this.getReferenceUnsafeStaticCast()->getObjectID() << ": accepted " << accepted << " mission(s) for player " << player->getObjectID();
+
+	if (accepted > 0)
+		player->sendSystemMessage("Accepted " + String::valueOf(accepted) + " mission(s).");
+	else
+		player->sendSystemMessage("Could not accept any missions. You may already have 6 active missions.");
 }
 
 String MissionTerminalImplementation::getTerminalName() {

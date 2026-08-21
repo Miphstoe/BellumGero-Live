@@ -6,6 +6,7 @@
  */
 
 #include "server/zone/managers/mission/MissionManager.h"
+#include "server/zone/managers/mission/MissionDistanceFilter.h"
 #include "server/zone/objects/tangible/terminal/mission/MissionTerminal.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
@@ -639,7 +640,7 @@ void MissionManagerImplementation::populateMissionList(MissionTerminal* missionT
 	bool slicer = missionTerminal->isSlicer(player);
 
 	if (missionTerminal->isGeneralTerminal()) {
-		randomizeGeneralTerminalMissions(player, counter, slicer);
+		randomizeGeneralTerminalMissions(missionTerminal, player, counter, slicer);
 	} else if (missionTerminal->isArtisanTerminal()) {
 		randomizeArtisanTerminalMissions(player, counter, slicer);
 	} else if (missionTerminal->isEntertainerTerminal()) {
@@ -649,9 +650,9 @@ void MissionManagerImplementation::populateMissionList(MissionTerminal* missionT
 	} else if (missionTerminal->isBountyTerminal()) {
 		randomizeBountyTerminalMissions(player, counter);
 	} else if (missionTerminal->isImperialTerminal()) {
-		randomizeFactionTerminalMissions(player, counter, slicer, Factions::FACTIONIMPERIAL);
+		randomizeFactionTerminalMissions(missionTerminal, player, counter, slicer, Factions::FACTIONIMPERIAL);
 	} else if (missionTerminal->isRebelTerminal()) {
-		randomizeFactionTerminalMissions(player, counter, slicer, Factions::FACTIONREBEL);
+		randomizeFactionTerminalMissions(missionTerminal, player, counter, slicer, Factions::FACTIONREBEL);
 	}
 
 	// Remove the Slicer from the List. They have received their one time mission reward increase.
@@ -660,9 +661,16 @@ void MissionManagerImplementation::populateMissionList(MissionTerminal* missionT
 
 }
 
-void MissionManagerImplementation::randomizeGeneralTerminalMissions(CreatureObject* player, int counter, bool slicer) {
+void MissionManagerImplementation::randomizeGeneralTerminalMissions(MissionTerminal* missionTerminal, CreatureObject* player, int counter, bool slicer) {
 	SceneObject* missionBag = player->getSlottedObject("mission_bag");
 	int bagSize = missionBag->getContainerObjectsSize();
+
+	MissionDistanceFilterState filter = readMissionDistanceFilter(player);
+
+	if (filter.enabled)
+		debug() << "Terminal " << missionTerminal->getObjectID() << ": generating for player " << player->getObjectID() << " with distance filter " << filter.minDistance << "-" << filter.maxDistance << "m";
+
+	int hiddenCount = 0;
 
 	for (int i = 0; i < bagSize; ++i) {
 		Reference<MissionObject*> mission = missionBag->getContainerObject(i).castTo<MissionObject*>( );
@@ -673,10 +681,17 @@ void MissionManagerImplementation::randomizeGeneralTerminalMissions(CreatureObje
 		mission->setTypeCRC(0);
 
 		if (i < 20) {
-			randomizeGenericDestroyMission(player, mission, Factions::FACTIONNEUTRAL);
+			generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission]() {
+				randomizeGenericDestroyMission(player, mission, Factions::FACTIONNEUTRAL);
+			});
 		} else if (i < 40) {
-			randomizeGenericDeliverMission(player, mission, Factions::FACTIONNEUTRAL);
+			generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission]() {
+				randomizeGenericDeliverMission(player, mission, Factions::FACTIONNEUTRAL);
+			});
 		}
+
+		if (filter.enabled && mission->getTypeCRC() == 0)
+			++hiddenCount;
 
 		if (slicer) {
 			mission->setRewardCredits(mission->getRewardCredits() * 1.5);
@@ -687,6 +702,9 @@ void MissionManagerImplementation::randomizeGeneralTerminalMissions(CreatureObje
 
 		mission->setRefreshCounter(counter, true);
 	}
+
+	if (filter.enabled)
+		debug() << "Terminal " << missionTerminal->getObjectID() << ": " << hiddenCount << "/" << bagSize << " slot(s) hidden (no match within distance filter)";
 }
 
 void MissionManagerImplementation::randomizeArtisanTerminalMissions(CreatureObject* player, int counter, bool slicer) {
@@ -801,7 +819,7 @@ void MissionManagerImplementation::randomizeBountyTerminalMissions(CreatureObjec
 	}
 }
 
-void MissionManagerImplementation::randomizeFactionTerminalMissions(CreatureObject* player, int counter, bool slicer, const uint32 faction) {
+void MissionManagerImplementation::randomizeFactionTerminalMissions(MissionTerminal* missionTerminal, CreatureObject* player, int counter, bool slicer, const uint32 faction) {
 	SceneObject* missionBag = player->getSlottedObject("mission_bag");
 	int bagSize = missionBag->getContainerObjectsSize();
 
@@ -809,6 +827,13 @@ void MissionManagerImplementation::randomizeFactionTerminalMissions(CreatureObje
 	int numberOfReconMissions = 0;
 	int numberOfDancerMissions = 0;
 	int numberOfMusicianMissions = 0;
+
+	MissionDistanceFilterState filter = readMissionDistanceFilter(player);
+
+	if (filter.enabled)
+		debug() << "Terminal " << missionTerminal->getObjectID() << ": generating for player " << player->getObjectID() << " with distance filter " << filter.minDistance << "-" << filter.maxDistance << "m";
+
+	int hiddenCount = 0;
 
 	for (int i = 0; i < bagSize; ++i) {
 		Reference<MissionObject*> mission = missionBag->getContainerObject(i).castTo<MissionObject*>( );
@@ -819,24 +844,39 @@ void MissionManagerImplementation::randomizeFactionTerminalMissions(CreatureObje
 		mission->setTypeCRC(0);
 
 		if (i < 20) {
-			randomizeGenericDestroyMission(player, mission, faction);
+			generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+				randomizeGenericDestroyMission(player, mission, faction);
+			});
 		} else if (i < 40) {
-			randomizeGenericDeliverMission(player, mission, faction);
+			generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+				randomizeGenericDeliverMission(player, mission, faction);
+			});
 		} else {
 			if (enableFactionalCraftingMissions && numberOfCraftingMissions < 6) {
-				randomizeGenericCraftingMission(player, mission, faction);
+				generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+					randomizeGenericCraftingMission(player, mission, faction);
+				});
 				numberOfCraftingMissions++;
 			} else if (enableFactionalReconMissions && numberOfReconMissions < 6) {
-				randomizeGenericReconMission(player, mission, faction);
+				generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+					randomizeGenericReconMission(player, mission, faction);
+				});
 				numberOfReconMissions++;
 			} else if (enableFactionalEntertainerMissions && numberOfDancerMissions < 6) {
-				randomizeGenericEntertainerMission(player, mission, faction, MissionTypes::DANCER);
+				generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+					randomizeGenericEntertainerMission(player, mission, faction, MissionTypes::DANCER);
+				});
 				numberOfDancerMissions++;
 			} else if (enableFactionalEntertainerMissions && numberOfMusicianMissions < 6) {
-				randomizeGenericEntertainerMission(player, mission, faction, MissionTypes::MUSICIAN);
+				generateMissionRespectingDistanceFilter(missionTerminal, mission, filter, [this, player, mission, faction]() {
+					randomizeGenericEntertainerMission(player, mission, faction, MissionTypes::MUSICIAN);
+				});
 				numberOfMusicianMissions++;
 			}
 		}
+
+		if (filter.enabled && mission->getTypeCRC() == 0)
+			++hiddenCount;
 
 		if (slicer) {
 			mission->setRewardCredits(mission->getRewardCredits() * 1.5);
@@ -847,6 +887,9 @@ void MissionManagerImplementation::randomizeFactionTerminalMissions(CreatureObje
 
 		mission->setRefreshCounter(counter, true);
 	}
+
+	if (filter.enabled)
+		debug() << "Terminal " << missionTerminal->getObjectID() << ": " << hiddenCount << "/" << bagSize << " slot(s) hidden (no match within distance filter)";
 }
 
 void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject* player, MissionObject* mission, const uint32 faction) {
