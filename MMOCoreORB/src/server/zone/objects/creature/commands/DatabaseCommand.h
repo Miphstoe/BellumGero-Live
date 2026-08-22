@@ -8,6 +8,7 @@
 #include "engine/engine.h"
 
 #include "QueueCommand.h"
+#include "server/zone/managers/structure/StructureManager.h"
 
 class DatabaseCommand : public QueueCommand {
 public:
@@ -36,6 +37,14 @@ public:
 		tokenizer.getStringToken(arg0);
 
 		try {
+			if (arg0 == "zerostructures") {
+				String summary = StructureManager::instance()->validatePlayerStructureZoneIndex(true, true);
+				creature->sendSystemMessage("Player structure zone validation complete. Details were written to the server log.");
+				creature->sendSystemMessage(summary);
+
+				return SUCCESS;
+			}
+
 			if (!tokenizer.hasMoreTokens())
 				return INVALIDPARAMETERS;
 
@@ -50,7 +59,7 @@ public:
 
 		if (!(arg0 == "cityregions" || arg0 == "factionstructures" || arg0 == "playerstructures" || arg0 == "sceneobjects" || arg0 == "clientobjects" || arg0 == "resourcespawns" ||
 				arg0 == "characters" || arg0 == "deleted_characters") ){
-			creature->sendSystemMessage("Command format is database  < playerstructures | cityregions  | sceneobjects | clientobjects >  <objectid>");
+			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid> or database zerostructures");
 
 			return INVALIDPARAMETERS;
 		}

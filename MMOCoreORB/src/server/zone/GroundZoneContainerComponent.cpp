@@ -271,6 +271,7 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		return removeActiveArea(zone, dynamic_cast<ActiveArea*>(object));
 
 	ManagedReference<SceneObject*> parent = object->getParent().get();
+	bool preservePersistentStructureZone = false;
 
 	try {
 		Locker locker(object);
@@ -355,6 +356,7 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		ZoneServer* zoneServer = oldZone->getZoneServer();
 		const bool serverShuttingDown =
 				zoneServer != nullptr && zoneServer->isServerShuttingDown();
+		preservePersistentStructureZone = serverShuttingDown && object->isStructureObject() && object->getPersistenceLevel() > 0;
 
 		// During a full server shutdown, GroundZoneImplementation::clearZone()
 		// already destroys every object from its copied zone object map.
@@ -399,7 +401,8 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 
 	object->notifyRemoveFromZone();
 
-	object->setZone(nullptr);
+	if (!preservePersistentStructureZone)
+		object->setZone(nullptr);
 
 	return true;
 }
