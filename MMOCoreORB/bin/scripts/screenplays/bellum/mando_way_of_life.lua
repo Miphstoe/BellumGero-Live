@@ -356,7 +356,8 @@ MandoWayOfLife = ScreenPlay:new {
 	DEBUG_ADMIN_TRIAL_CAMP_QA = false,
 }
 
-registerScreenPlay("MandoWayOfLife", true)
+-- Temporarily disabled while Mandalorian Way crafting/schematic fixes are fully tested.
+registerScreenPlay("MandoWayOfLife", false)
 
 -- Console + log/lua.log (level 1 survives default Lua file log filter). Always uses printf so lines appear on the core3 terminal / core3.log.
 function MandoWayOfLife:logDiag(msg)
