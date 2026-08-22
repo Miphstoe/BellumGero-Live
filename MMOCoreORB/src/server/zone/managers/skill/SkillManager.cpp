@@ -676,7 +676,7 @@ void SkillManager::removeSkillRelatedMissions(CreatureObject* creature, Skill* s
 	}
 }
 
-bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot) {
+bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool forceSurrender) {
 	Skill* skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr) {
@@ -706,7 +706,7 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		return false;
 	}
 
-		if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+		if (!forceSurrender && skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
 			return false;
 		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
 			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {

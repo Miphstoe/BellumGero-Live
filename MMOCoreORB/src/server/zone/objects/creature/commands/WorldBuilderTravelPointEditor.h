@@ -106,14 +106,12 @@ inline void WorldBuilderTravelPointInputCallback::run(CreatureObject* player, Su
 }
 
 inline void WorldBuilderTravelPointListCallback::run(CreatureObject* player, SuiBox*, uint32 eventIndex, Vector<UnicodeString>* args) {
-	if (player == nullptr || eventIndex == 1 || args == nullptr || args->size() < 1) {
-		return;
-	}
 
 	int action = Integer::valueOf(args->get(0).toString());
 	String message;
 	bool ok = false;
 	WorldBuilderManager* manager = WorldBuilderManager::instance();
+
 
 	if (action == WorldBuilderTravelPointEditor::RENAME) {
 		WorldBuilderTravelPointEditor::input(player, action, "Create / Rename Travel Point", "Enter the destination name:");
