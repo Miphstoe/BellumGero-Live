@@ -1172,7 +1172,11 @@ function recruiterScreenplay:handleGoCovert(pPlayer)
 		return
 	end
 
-	if (CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) then
+	-- Jedi Knight (force_title_jedi_rank_03) or higher are exempt from the FRS
+	-- council covert lockout -- re-checked here since this deferred handler
+	-- runs several minutes after the player confirmed at the recruiter, and
+	-- must not rely on state as it was when the transition was requested.
+	if ((CreatureObject(pPlayer):hasSkill("force_rank_light_novice") or CreatureObject(pPlayer):hasSkill("force_rank_dark_novice")) and not CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_03")) then
 		CreatureObject(pPlayer):sendSystemMessage("@faction_recruiter:jedi_cant_go_covert")
 		return
 	end

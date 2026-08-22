@@ -38,6 +38,7 @@
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/safezone/SafeZoneManager.h"
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 
 #include "server/zone/managers/creature/SpawnGroup.h"
 #include "templates/faction/Factions.h"
@@ -352,6 +353,25 @@ void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionT
 		uint64 targetID = mission->getTargetObjectId();
 		if (targetID != 0) {
 			PlayerBounty* bounty = playerBountyList.get(targetID);
+
+			// MiphJediBHRestriction: authoritative acceptance-time gate, independent
+			// of terminal filtering. Re-checks the hunter's persistent Jedi
+			// progression and the target's actual Jedi skill directly, so a stale
+			// mission object, cached terminal data, or a modified client cannot get
+			// a Padawan+ hunter a player Jedi bounty target.
+			if (bounty != nullptr && isPadawanOrHigherJedi(player)) {
+				ManagedReference<CreatureObject*> targetCreature = server->getObject(targetID).castTo<CreatureObject*>();
+
+				if (targetCreature != nullptr && targetCreature->hasSkill("force_title_jedi_rank_02")) {
+					player->sendSystemMessage("Jedi who have reached Padawan rank or higher may not accept player Jedi bounty missions.");
+
+					info(true) << "Rejected player Jedi bounty mission acceptance: hunter=" << player->getObjectID()
+						<< " (" << player->getDisplayedName() << ") is Padawan rank or higher and attempted to accept a bounty on Jedi target "
+						<< targetID << " (" << targetCreature->getDisplayedName() << ").";
+
+					return;
+				}
+			}
 
 			if (bounty == nullptr || !isBountyValidForPlayer(player, bounty)) {
 				player->sendSystemMessage("Mission has expired.");
@@ -2557,6 +2577,14 @@ Vector<ManagedReference<PlayerBounty*>> MissionManagerImplementation::getPotenti
 	return potentialTargets;
 }
 
+bool MissionManagerImplementation::isPadawanOrHigherJedi(CreatureObject* creature) {
+	// force_title_jedi_rank_02 is the Padawan title skill box; it remains held
+	// (skill boxes are cumulative) through Knight and every FRS/Light-Dark rank
+	// above it, so a single hasSkill() check is authoritative for "Padawan or
+	// higher" regardless of equipped weapon, profession title, or client state.
+	return creature != nullptr && creature->hasSkill("force_title_jedi_rank_02");
+}
+
 bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player, PlayerBounty* bounty) {
 	if (!bounty->isOnline())
 		return false;
@@ -2606,6 +2634,21 @@ bool MissionManagerImplementation::isBountyValidForPlayer(CreatureObject* player
 		&& bounty->getNumberOfBountyPlacers() > 0;
 
 	bool isQualifyingJedi = creature->hasSkill("force_title_jedi_rank_02");
+
+	// MiphJediBHRestriction: a hunter who has reached Padawan rank or higher
+	// must never be offered or allowed to accept a player Jedi bounty target,
+	// regardless of whether the bounty is Jedi-visibility-driven or
+	// player-funded. This is intentionally unconditional (checked before the
+	// funding-source branches below) so it can't be bypassed by either path.
+	if (isQualifyingJedi && isPadawanOrHigherJedi(player))
+		return false;
+
+	// Jedi PvE Seclusion: a Jedi target who has withdrawn into Seclusion is
+	// never a valid bounty target, through either funding source. Checked
+	// unconditionally here (the single chokepoint for terminal generation and
+	// accept-time re-validation) so it can't be bypassed by either path.
+	if (isQualifyingJedi && JediSeclusionManager::isSecluded(creature))
+		return false;
 
 	if (hasActivePlayerPlacedReward) {
 		// Player-funded bounties bypass the Jedi visibility gate by design.
@@ -2722,6 +2765,15 @@ void MissionManagerImplementation::consumePlayerPlacedBounty(uint64 targetId, ui
 		if (hunterId != bountyHunter) {
 			failPlayerBountyMission(hunterId, targetId);
 		} else {
+			// The successful hunter's mission is complete, not failed, so it
+			// never goes through removeMissionFromPlayer()/removeMission() --
+			// remove them from the active-hunter list here too, or they'd stay
+			// "hunting" this target forever (permanently inflating
+			// numberOfActiveMissions() against MaxBountiesPerJedi, and
+			// permanently blocking the target from JediSeclusionManager's
+			// active-bounty-conflict check).
+			bounty->removeBountyHunter(hunterId);
+
 			ManagedReference<CreatureObject*> creo = server->getObject(hunterId).castTo<CreatureObject*>();
 
 			if (creo != nullptr) {
@@ -2852,6 +2904,42 @@ void MissionManagerImplementation::invalidatePlayerBountyMissions(uint64 targetI
 	}
 }
 
+// MiphJediBHRestriction: called from SkillManager immediately after a hunter is
+// granted force_title_jedi_rank_02 (Padawan), from within the same code path
+// that already registers the newly-Jedi player onto the bounty target list.
+// If that hunter is currently pursuing a player Jedi bounty (accepted before
+// they reached Padawan), fail it now via the same mechanism used elsewhere for
+// mid-mission invalidation (failPlayerBountyMission). NPC bounty missions and
+// hunters with no active bounty mission are left untouched.
+void MissionManagerImplementation::invalidateActivePlayerJediBountyForHunter(uint64 hunterId) {
+	ManagedReference<CreatureObject*> hunter = server->getObject(hunterId).castTo<CreatureObject*>();
+
+	if (hunter == nullptr)
+		return;
+
+	Reference<MissionObject*> mission = getBountyHunterMission(hunter);
+
+	if (mission == nullptr)
+		return;
+
+	uint64 targetId = mission->getTargetObjectId();
+
+	if (targetId == 0) // NPC bounty mission -- not affected.
+		return;
+
+	ManagedReference<CreatureObject*> target = server->getObject(targetId).castTo<CreatureObject*>();
+
+	if (target == nullptr || !target->hasSkill("force_title_jedi_rank_02"))
+		return;
+
+	info(true) << "Failing active player Jedi bounty mission for hunter " << hunterId
+		<< " (" << hunter->getDisplayedName() << ") after they reached Padawan rank; target="
+		<< targetId << " (" << target->getDisplayedName() << ").";
+
+	hunter->sendSystemMessage("Jedi who have reached Padawan rank or higher may not accept player Jedi bounty missions. Your bounty mission has been failed.");
+
+	failPlayerBountyMission(hunterId, targetId);
+}
 
 Vector<uint64> MissionManagerImplementation::getHuntersHuntingTarget(uint64 targetId) {
 	Vector<uint64> values;

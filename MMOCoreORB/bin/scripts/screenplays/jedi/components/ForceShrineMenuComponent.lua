@@ -19,6 +19,10 @@ function ForceShrineMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResp
 		menuResponse:addRadialMenuItem(121, 3, "@force_rank:recover_jedi_items") -- Recover Jedi Items
 	end
 
+	if (CreatureObject(pPlayer):isJediSeclusionEligible()) then
+		menuResponse:addRadialMenuItem(122, 3, "Toggle PvE Seclusion")
+	end
+
 end
 
 function ForceShrineMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selectedID)
@@ -34,6 +38,8 @@ function ForceShrineMenuComponent:handleObjectMenuSelect(pObject, pPlayer, selec
 		end
 	elseif (selectedID == 121 and CreatureObject(pPlayer):hasSkill("force_title_jedi_rank_02")) then
 		self:recoverRobe(pPlayer)
+	elseif (selectedID == 122) then
+		self:showSeclusionChoice(pObject, pPlayer)
 	end
 
 	return 0
@@ -126,4 +132,76 @@ function ForceShrineMenuComponent:recoverRobe(pPlayer)
 	end
 
 	CreatureObject(pPlayer):sendSystemMessage("@force_rank:items_recovered")
+end
+
+-- ============================================================
+-- Jedi PvE Seclusion. Only opens a confirmation SUI here -- state is never
+-- changed until the player confirms, and is fully re-validated server-side
+-- at that point (see JediSeclusionManager::requestToggle in C++).
+-- ============================================================
+function ForceShrineMenuComponent:showSeclusionChoice(pObject, pPlayer)
+	if (not CreatureObject(pPlayer):isJediSeclusionEligible()) then
+		CreatureObject(pPlayer):sendSystemMessage("This choice is available only after becoming a Padawan.")
+		return
+	end
+
+	-- Remember which shrine this request originated at so the confirm
+	-- callback (which only receives pPlayer/pSui/eventIndex/args) can pass
+	-- it back to the native shrine-proximity/template revalidation.
+	writeScreenPlayData(pPlayer, "JediSeclusion", "pendingShrineID", tostring(SceneObject(pObject):getObjectID()))
+
+	local sui = SuiMessageBox.new("ForceShrineMenuComponent", "seclusionConfirmCallback")
+	sui.setTargetNetworkId(SceneObject(pPlayer):getObjectID())
+
+	if (CreatureObject(pPlayer):isJediSecluded()) then
+		sui.setTitle("Return to the Galaxy")
+		sui.setPrompt(
+			"You have chosen to leave Seclusion and once again accept the risks associated with openly walking the path of the Jedi.\n\n" ..
+			"Returning to Open status may once again make you eligible for Jedi PvP and Bounty Hunter systems.\n\n" ..
+			"Leave PvE Seclusion?"
+		)
+		sui.setOkButtonText("Return to Open Status")
+	else
+		sui.setTitle("Path of Seclusion")
+		sui.setPrompt(
+			"You have chosen to withdraw from the conflicts of the galaxy.\n\n" ..
+			"While following the Path of Seclusion:\n" ..
+			"- You cannot participate in Jedi-versus-player bounty hunting.\n" ..
+			"- You cannot be selected as a Jedi bounty target.\n" ..
+			"- You cannot intentionally initiate hostile PvP against another player.\n" ..
+			"- Jedi PvP systems will treat you as a PvE Jedi.\n" ..
+			"- Your choice persists through logout and server restart.\n\n" ..
+			"Choosing Seclusion represents a commitment to withdraw from galactic conflict.\n\n" ..
+			"Enter PvE Seclusion?"
+		)
+		sui.setOkButtonText("Enter Seclusion")
+	end
+
+	sui.setCancelButtonText("Cancel")
+	sui.sendTo(pPlayer)
+end
+
+function ForceShrineMenuComponent:seclusionConfirmCallback(pPlayer, pSui, eventIndex, args)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local shrineID = tonumber(readScreenPlayData(pPlayer, "JediSeclusion", "pendingShrineID"))
+	deleteScreenPlayData(pPlayer, "JediSeclusion", "pendingShrineID")
+
+	if (eventIndex ~= 0) then
+		return -- Cancel or window closed
+	end
+
+	local pShrine = shrineID ~= nil and shrineID ~= 0 and getSceneObject(shrineID) or nil
+
+	if (pShrine == nil) then
+		CreatureObject(pPlayer):sendSystemMessage("You must be at a Force Shrine to do that.")
+		return
+	end
+
+	-- All eligibility/cooldown/combat/bounty/faction checks are re-run fresh
+	-- here server-side; the result and player-facing message are handled
+	-- entirely by JediSeclusionManager on the native side.
+	CreatureObject(pPlayer):requestJediSeclusionToggle(pShrine)
 end
