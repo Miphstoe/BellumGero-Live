@@ -94,7 +94,6 @@ void SchematicMap::loadDraftSchematicDatabase() {
 				continue;
 			}
 
-
 			if(!schematicCrcMap.contains(draftSchematic->getClientObjectCRC()))
 				schematicCrcMap.put(draftSchematic->getClientObjectCRC(), draftSchematic);
 
@@ -179,7 +178,7 @@ void SchematicMap::buildSchematicGroups() {
 
 		DraftSchematic* schematic = schematicCrcMap.get(entry.getKey());
 
-		if(schematic != nullptr) {
+		if(schematic != nullptr && schematic->isValidDraftSchematic()) {
 			Locker locker(schematic);
 
 			schematic->setGroupName(groupName);

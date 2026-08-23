@@ -256,6 +256,7 @@ void CraftingSessionImplementation::openBioEngineerCreatureSelection(int minimum
 		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
 
 		if (draftSchematic == nullptr ||
+			!draftSchematic->isValidDraftSchematic() ||
 			getBioEngineerMinimumLevel(draftSchematic) != minimumLevel)
 			continue;
 
@@ -320,10 +321,17 @@ void CraftingSessionImplementation::selectBioEngineerCreatureSchematic(int schem
 	}
 
 	ManagedReference<DraftSchematic*> selectedSchematic = currentSchematicList.get(schematicIndex);
+
+	if (selectedSchematic == nullptr || !selectedSchematic->isValidDraftSchematic()) {
+		crafter->sendSystemMessage("The selected schematic is no longer available.");
+		cancelSessionCommand();
+		return;
+	}
+
 	bool isGeneticDnaTemplate = isBioEngineerGeneticDnaTemplate(selectedSchematic.get());
 	bool isCreaturePetDeed = getBioEngineerMinimumLevel(selectedSchematic.get()) > 0;
 
-	if (selectedSchematic == nullptr || (!isGeneticDnaTemplate && !isCreaturePetDeed)) {
+	if (!isGeneticDnaTemplate && !isCreaturePetDeed) {
 		crafter->sendSystemMessage("The selected schematic is not valid for the Bio-Engineer Creature Crafting Tool.");
 		cancelSessionCommand();
 		return;
@@ -461,9 +469,21 @@ int CraftingSessionImplementation::startSession() {
 	else
 		ocm->insertLong(0);
 
-	ocm->insertInt(currentSchematicList.size());
+	int validSchematicCount = 0;
+
 	for (int i = 0; i < currentSchematicList.size(); ++i) {
 		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
+
+		if (draftSchematic != nullptr && draftSchematic->isValidDraftSchematic())
+			++validSchematicCount;
+	}
+
+	ocm->insertInt(validSchematicCount);
+	for (int i = 0; i < currentSchematicList.size(); ++i) {
+		DraftSchematic* draftSchematic = currentSchematicList.get(i).get();
+
+		if (draftSchematic == nullptr || !draftSchematic->isValidDraftSchematic())
+			continue;
 
 		ocm->insertInt(draftSchematic->getClientObjectCRC());
 		ocm->insertInt(draftSchematic->getClientObjectCRC());
@@ -683,7 +703,7 @@ void CraftingSessionImplementation::selectDraftSchematic(int index) {
 
 	DraftSchematic* draftschematic = currentSchematicList.get(index);
 
-	if (draftschematic == nullptr) {
+	if (draftschematic == nullptr || !draftschematic->isValidDraftSchematic()) {
 		crafter->sendSystemMessage("@ui_craft:err_no_draft_schematic");
 		closeCraftingWindow(0, false);
 		cancelSession();

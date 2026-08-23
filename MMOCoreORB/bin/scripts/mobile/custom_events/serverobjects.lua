@@ -22,3 +22,8 @@ includeFile("custom_events/tiny_cabbage_nuna.lua")
 includeFile("custom_events/brain_food_nuna.lua")
 includeFile("custom_events/christal_nuna.lua")
 includeFile("custom_events/brussel_sprout_nuna.lua")
+
+-- Black Sun Named Uniques (Krayt-tier strength)
+includeFile("custom_events/black_sun_shadowfang.lua")
+includeFile("custom_events/black_sun_viper.lua")
+includeFile("custom_events/black_sun_deathstalker.lua")

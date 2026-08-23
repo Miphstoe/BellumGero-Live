@@ -82,6 +82,10 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "getMoodString", &LuaCreatureObject::getMoodString},
 		{ "hasSkill", &LuaCreatureObject::hasSkill},
 		{ "removeSkill", &LuaCreatureObject::removeSkill},
+		{ "isJediSecluded", &LuaCreatureObject::isJediSecluded},
+		{ "isJediSeclusionEligible", &LuaCreatureObject::isJediSeclusionEligible},
+		{ "getJediSeclusionCooldownRemaining", &LuaCreatureObject::getJediSeclusionCooldownRemaining},
+		{ "requestJediSeclusionToggle", &LuaCreatureObject::requestJediSeclusionToggle},
 		{ "surrenderSkill", &LuaCreatureObject::surrenderSkill},
 		{ "getConversationSession", &LuaCreatureObject::getConversationSession},
 		{ "doAnimation", &LuaCreatureObject::doAnimation},
@@ -505,6 +509,42 @@ int LuaCreatureObject::hasSkill(lua_State* L) {
 	bool check = realObject->hasSkill(value);
 
 	lua_pushboolean(L, check);
+
+	return 1;
+}
+
+int LuaCreatureObject::isJediSecluded(lua_State* L) {
+	bool check = realObject->isJediSecluded();
+
+	lua_pushboolean(L, check);
+
+	return 1;
+}
+
+int LuaCreatureObject::isJediSeclusionEligible(lua_State* L) {
+	bool check = realObject->isJediSeclusionEligible();
+
+	lua_pushboolean(L, check);
+
+	return 1;
+}
+
+int LuaCreatureObject::getJediSeclusionCooldownRemaining(lua_State* L) {
+	uint64 remaining = realObject->getJediSeclusionCooldownRemaining();
+
+	lua_pushnumber(L, remaining);
+
+	return 1;
+}
+
+int LuaCreatureObject::requestJediSeclusionToggle(lua_State* L) {
+	SceneObject* shrine = (SceneObject*) lua_touserdata(L, -1);
+
+	Locker locker(realObject);
+
+	int result = realObject->requestJediSeclusionToggle(shrine);
+
+	lua_pushnumber(L, result);
 
 	return 1;
 }
