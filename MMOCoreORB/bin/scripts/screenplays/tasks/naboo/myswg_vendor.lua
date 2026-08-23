@@ -212,7 +212,7 @@ function myswg_vendor:start()
 
     --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven
     pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -512, 1, -3023, 35, 0 )--Rose red
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
+   -- local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
     if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
 
     pWeaponsmith2 = spawnMobile("tatooine", "myswg_vendor", 1, 5847,38,4432, 35, 0 ) --Mos Ender Krayt
