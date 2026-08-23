@@ -4700,6 +4700,144 @@ function MandoWayOfLife:adminGrantArmorFromTokens(pStaff, tokens)
 	end
 end
 
+MandoWayOfLife.adminWeaponRankTemplates = {
+	[0] = {
+		"object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.iff",
+	},
+	[1] = {
+		"object/weapon/ranged/pistol/pistol_mando_way_geo_blaster.iff",
+	},
+	[2] = {
+		"object/weapon/ranged/carbine/carbine_mando_way_slugthrower.iff",
+	},
+	[3] = {
+		"object/weapon/ranged/rifle/rifle_mando_way_lightning.iff",
+	},
+	[4] = {},
+	[5] = {},
+}
+
+MandoWayOfLife.adminMeleeWeaponTemplates = {
+	"object/weapon/melee/polearm/mando_beskar_pike.iff",
+	"object/weapon/melee/baton/mando_stun_baton.iff",
+	"object/weapon/melee/baton/mando_acid_baton.iff",
+	"object/weapon/melee/2h_sword/mando_power_hammer.iff",
+	"object/weapon/melee/special/mando_knuckler.iff",
+	"object/weapon/melee/knife/mando_lava_blade.iff",
+}
+
+function MandoWayOfLife:adminGrantWeaponFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local rankArg = (tokens[2] ~= nil) and tostring(tokens[2]):lower() or ""
+	local grantAll = (rankArg == "all")
+	local grantMelee = (rankArg == "melee")
+	local chapter = self.adminArmorRankAliases[rankArg]
+	if (not grantAll and not grantMelee and chapter == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin grantweapon <foundling|initiate|hunter|verdika|clanbound|tribesman|melee|all> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = pStaff
+	if (tokens[3] ~= nil and tokens[3] ~= "") then
+		pTarget = getPlayerByName(tokens[3])
+		if (pTarget == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantweapon: character must be online. No match for: " .. tostring(tokens[3])
+			)
+			return
+		end
+	end
+
+	local templates = {}
+	local function addChapterWeapons(ch)
+		local rewards = self.adminWeaponRankTemplates[ch]
+		if (rewards == nil) then return end
+		for _, template in ipairs(rewards) do
+			templates[#templates + 1] = template
+		end
+	end
+
+	if (grantAll or grantMelee) then
+		for _, template in ipairs(self.adminMeleeWeaponTemplates) do
+			templates[#templates + 1] = template
+		end
+	end
+
+	if (grantAll) then
+		for ch = 0, 5, 1 do
+			addChapterWeapons(ch)
+		end
+	elseif (not grantMelee) then
+		addChapterWeapons(chapter)
+	end
+
+	if (#templates < 1) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantweapon: %s has no ranked weapon reward.",
+			tostring(self.chapterTitles[chapter])
+		))
+		return
+	end
+
+	local pInventory = SceneObject(pTarget):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantweapon: target has no inventory.")
+		return
+	end
+
+	local inventory = SceneObject(pInventory)
+	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	if (freeSlots < #templates) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantweapon: %s needs %s free inventory slots; only %s available.",
+			CreatureObject(pTarget):getFirstName(),
+			tostring(#templates),
+			tostring(freeSlots)
+		))
+		return
+	end
+
+	local granted = 0
+	for _, template in ipairs(templates) do
+		local pItem = giveItem(pInventory, template, -1)
+		if (pItem == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantweapon stopped after " .. tostring(granted) .. " weapon(s); failed to grant " .. template
+			)
+			return
+		end
+		granted = granted + 1
+	end
+
+	local rankName = nil
+	if (grantAll) then
+		rankName = "all progression and melee weapons"
+	elseif (grantMelee) then
+		rankName = "the Mandalorian melee armory"
+	else
+		rankName = self.chapterTitles[chapter]
+	end
+	local targetName = CreatureObject(pTarget):getFirstName()
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Granted %s Mandalorian weapon(s) for %s to %s.",
+		tostring(granted),
+		tostring(rankName),
+		tostring(targetName)
+	))
+	if (pTarget ~= pStaff) then
+		CreatureObject(pTarget):sendSystemMessage(string.format(
+			"[Mandalorian Way] A GM granted you %s weapon reward(s) (%s weapon(s)).",
+			tostring(rankName),
+			tostring(granted)
+		))
+	end
+end
+
 function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	if (pStaff == nil) then return end
 	local sGhost = CreatureObject(pStaff):getPlayerObject()
@@ -4724,6 +4862,11 @@ function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 
 	if (#tokens >= 1 and tokens[1]:lower() == "grantarmor") then
 		self:adminGrantArmorFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "grantweapon") then
+		self:adminGrantWeaponFromTokens(pStaff, tokens)
 		return
 	end
 
