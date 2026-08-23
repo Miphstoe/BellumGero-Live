@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-08-23 — Quarantine invalid rewarded schematics instead of destroying them
+
+- **Summary:** Hardened `SchematicList::addRewardedSchematics` (runs on every schematic list rebuild, e.g. login and skill changes) against the crash class seen in the 2026-08-22 crafting segfault. A null persisted schematic reference no longer dereferences (previously an unguarded `schem->getDraftSchematicTemplate()` call); its dangling map entry is dropped with a log line. A schematic whose template fails to resolve is now quarantined — logged with objectID/CRCs and skipped — instead of the stock behavior of silently calling `destroyObjectFromDatabase`, which could permanently delete earned quest/loot schematics after a transient template load failure or rename.
+- **Files:** `src/server/zone/objects/player/variables/SchematicList.cpp`
+- **Notes:** C++ change; requires rebuild and server restart. Quarantined schematics reappear automatically once their template resolves again. Grep `core3.log` for "Quarantining rewarded draft schematic" to inventory affected players/CRCs.
+
 ### 2026-08-13 — Correct Mandalorian armor learning, exchange, and wear gates
 
 - **Summary:** Changed all ten Death Watch Mandalorian armor loot schematics from Master Armorsmith to Novice Armorsmith so any Armorsmith can learn and craft them. The recruiter now confirms and performs an armor-only one-for-one legacy exchange without requiring a complete set or jetpack, leaves the account claim available after partial failure, and requires one free inventory slot. Replaced the stock master-profession wear certifications on all ten crafted armor pieces with the character-earned Mandalorian Tribesman title skill; login restores that skill for verified Chapter 5/badge veterans without changing their selected title.
