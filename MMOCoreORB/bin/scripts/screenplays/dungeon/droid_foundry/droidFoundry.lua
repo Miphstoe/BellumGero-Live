@@ -885,11 +885,14 @@ function DroidFoundry:spawnNexusSecurityUnit(rootID, spawnIndex, pTarget)
 		return nil
 	end
 
-	-- Temporary framework-test mobile. This will be replaced by Foundry-specific
-	-- B1/Elite templates after instance isolation and cleanup are runtime-proven.
+	local mobileTemplate = "foundry_security_droid"
+	if (spawn.elite) then
+		mobileTemplate = "foundry_elite_b1_command_droid"
+	end
+
 	local pMobile = spawnMobile(
 		"dungeon1",
-		"bsv_battle_droid",
+		mobileTemplate,
 		0,
 		spawn.x,
 		spawn.z,
@@ -903,11 +906,7 @@ function DroidFoundry:spawnNexusSecurityUnit(rootID, spawnIndex, pTarget)
 		return nil
 	end
 
-	if (spawn.elite) then
-		CreatureObject(pMobile):setCustomObjectName("Elite Foundry Security Droid [TEST]")
-	else
-		CreatureObject(pMobile):setCustomObjectName("Foundry Security Droid [TEST]")
-
+	if (not spawn.elite) then
 		-- Security responders immediately engage the player who activated the Nexus.
 		-- The Elite is intentionally left without a forced target for this milestone.
 		if (pTarget ~= nil and SceneObject(pTarget):isPlayerCreature()) then

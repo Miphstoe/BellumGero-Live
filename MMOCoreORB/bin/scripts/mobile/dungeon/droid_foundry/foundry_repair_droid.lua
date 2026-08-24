@@ -1,0 +1,44 @@
+foundry_repair_droid = Creature:new {
+	objectName = "@mob/creature_names:le_repair_droid",
+	customName = "Foundry Repair Droid",
+	socialGroup = "droid_foundry",
+	faction = "",
+	mobType = MOB_DROID,
+
+	level = 145,
+	chanceHit = 0.40,
+	damageMin = 120,
+	damageMax = 180,
+	baseXp = 7000,
+	baseHAM = 24000,
+	baseHAMmax = 30000,
+	armor = 1,
+	resists = {20,20,20,20,20,20,20,-1,-1},
+
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+
+	templates = {"object/mobile/le_repair_droid.iff"},
+	lootGroups = {},
+
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	reactionStf = "",
+	primaryAttacks = {},
+	secondaryAttacks = {}
+}
+
+CreatureTemplates:addCreatureTemplate(foundry_repair_droid, "foundry_repair_droid")
