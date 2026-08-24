@@ -6569,7 +6569,19 @@ bool PlayerManagerImplementation::doBurstRun(CreatureObject* player, float hamMo
 		return false;
 	}
 
-	if (zone->getZoneName() == "dungeon1") {
+	bool isDroidFoundry = false;
+	auto rootParent = player->getRootParent();
+
+	if (rootParent != nullptr && rootParent->isBuildingObject()) {
+		auto objectTemplate = rootParent->getObjectTemplate();
+
+		if (objectTemplate != nullptr) {
+			isDroidFoundry = objectTemplate->getFullTemplateString().beginsWith(
+				"object/building/worldbuilder/droid_foundry_instances/structure_");
+		}
+	}
+
+	if (zone->getZoneName() == "dungeon1" && !isDroidFoundry) {
 		player->sendSystemMessage("@combat_effects:burst_run_space_dungeon"); // The artificial gravity makes burst running impossible here.
 		return false;
 	}

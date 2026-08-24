@@ -26,7 +26,19 @@ public:
 			return false;
 		}
 
-		if (zone->getZoneName() == "dungeon1") {
+		bool isDroidFoundry = false;
+		auto rootParent = creature->getRootParent();
+
+		if (rootParent != nullptr && rootParent->isBuildingObject()) {
+			auto objectTemplate = rootParent->getObjectTemplate();
+
+			if (objectTemplate != nullptr) {
+				isDroidFoundry = objectTemplate->getFullTemplateString().beginsWith(
+					"object/building/worldbuilder/droid_foundry_instances/structure_");
+			}
+		}
+
+		if (zone->getZoneName() == "dungeon1" && !isDroidFoundry) {
 			creature->sendSystemMessage("@combat_effects:burst_run_space_dungeon"); //The artificial gravity makes burst running impossible here.
 			return false;
 		}
