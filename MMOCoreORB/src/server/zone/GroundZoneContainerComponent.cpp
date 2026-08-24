@@ -13,6 +13,7 @@
 #include "templates/building/SharedBuildingObjectTemplate.h"
 #include "server/zone/objects/intangible/TheaterObject.h"
 #include "server/zone/ActiveAreaQuadTree.h"
+#include "server/zone/InvestigateContainmentCrash.h"
 
 bool GroundZoneContainerComponent::insertActiveArea(Zone* newZone, ActiveArea* activeArea) const {
 	if (newZone == nullptr)
@@ -356,7 +357,21 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		ZoneServer* zoneServer = oldZone->getZoneServer();
 		const bool serverShuttingDown =
 				zoneServer != nullptr && zoneServer->isServerShuttingDown();
-		preservePersistentStructureZone = serverShuttingDown && object->isStructureObject() && object->getPersistenceLevel() > 0;
+		preservePersistentStructureZone = serverShuttingDown
+				&& (object->isStructureObject() || object->isCellObject())
+				&& object->getPersistenceLevel() > 0;
+
+#ifdef INVESTIGATE_CONTAINMENT_CRASH_LOGGING
+		if (object->isStructureObject() || object->isCellObject()) {
+			object->info(true) << "INVESTIGATE-ZONE-TEARDOWN: oid=" << object->getObjectID()
+				<< " class=" << (object->isCellObject() ? "CellObject" : "StructureObject")
+				<< " persistenceLevel=" << object->getPersistenceLevel()
+				<< " serverShuttingDown=" << serverShuttingDown
+				<< " preserveZone=" << preservePersistentStructureZone
+				<< " zoneBefore=" << (oldZone != nullptr ? oldZone->getZoneName() : "null")
+				<< " pos=" << object->getPositionX() << "," << object->getPositionZ() << "," << object->getPositionY();
+		}
+#endif
 
 		// During a full server shutdown, GroundZoneImplementation::clearZone()
 		// already destroys every object from its copied zone object map.

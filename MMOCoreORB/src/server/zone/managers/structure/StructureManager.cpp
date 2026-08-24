@@ -514,6 +514,168 @@ String StructureManager::validatePlayerStructureZoneIndex(bool logDetails, bool 
 	return summary.toString();
 }
 
+String StructureManager::validateCellObjectZoneReferences(bool logDetails) {
+	// Mirrors validatePlayerStructureZoneIndex above, but scans "sceneobjects"
+	// (where CellObjects are persisted) instead of "playerstructures", since
+	// GroundZoneContainerComponent::removeObject's shutdown-teardown zone
+	// guard only covers isStructureObject() (BuildingObject), not
+	// isCellObject() (CellObject) - see investigate-building-containment-crash.
+	struct ValidationStats {
+		int totalRecords = 0;
+		int totalCells = 0;
+		int validZones = 0;
+		int missingZones = 0;
+		int emptyZones = 0;
+		int zeroHashZones = 0;
+		int invalidZones = 0;
+		int unreadableRecords = 0;
+	};
+
+	constexpr int maxDetailLogs = 100;
+	int detailLogs = 0;
+
+	auto logDetail = [this, logDetails, &detailLogs](const String& message) {
+		if (!logDetails)
+			return;
+
+		if (detailLogs < maxDetailLogs) {
+			warning(message);
+		} else if (detailLogs == maxDetailLogs) {
+			warning("PLAYERSTRUCTURE-ZONE-VALIDATION: additional malformed cell object records suppressed");
+		}
+
+		++detailLogs;
+	};
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto sceneObjectsDatabase = dbManager->loadObjectDatabase("sceneobjects", true);
+
+	if (sceneObjectsDatabase == nullptr) {
+		return "Cell Object Zone Validation: sceneobjects database unavailable";
+	}
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	ObjectDatabaseIterator iterator(sceneObjectsDatabase, config);
+	ObjectInputStream objectData(2000);
+	uint64 objectID = 0;
+	ValidationStats stats;
+
+	while (iterator.getNextKeyAndValue(objectID, &objectData)) {
+		++stats.totalRecords;
+
+		String className;
+		String zoneReference;
+		int cellNumber = 0;
+
+		try {
+			// CellObject.cellNumber is a field declared directly on CellObject,
+			// so its presence identifies this record as a CellObject without
+			// relying on _className string matching.
+			if (!Serializable::getVariable<int>(STRING_HASHCODE("CellObject.cellNumber"), &cellNumber, &objectData)) {
+				objectData.reset();
+				continue;
+			}
+
+			++stats.totalCells;
+
+			Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData);
+
+			if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData)) {
+				++stats.missingZones;
+
+				StringBuffer detail;
+				detail << "PLAYERSTRUCTURE-ZONE-MISSING: OID=" << objectID
+					<< " class=" << (className.isEmpty() ? String("CellObject") : className)
+					<< " cellNumber=" << cellNumber
+					<< " has no persisted SceneObject.zone";
+				logDetail(detail.toString());
+
+				objectData.reset();
+				continue;
+			}
+		} catch (const Exception& e) {
+			++stats.unreadableRecords;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-UNREADABLE: OID=" << objectID << " error=" << e.getMessage();
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		} catch (...) {
+			++stats.unreadableRecords;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-UNREADABLE: OID=" << objectID << " error=<unknown>";
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		if (zoneReference.isEmpty()) {
+			++stats.emptyZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-MISSING: OID=" << objectID
+				<< " class=" << (className.isEmpty() ? String("CellObject") : className)
+				<< " cellNumber=" << cellNumber
+				<< " has an empty persisted SceneObject.zone";
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		uint64 expectedHash = zoneReference.hashCode();
+
+		if (expectedHash == 0) {
+			++stats.zeroHashZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-ZERO-HASH: OID=" << objectID
+				<< " zone=" << zoneReference
+				<< " class=" << (className.isEmpty() ? String("CellObject") : className)
+				<< " cellNumber=" << cellNumber;
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		++stats.validZones;
+
+		if (server != nullptr && server->getZone(zoneReference) == nullptr) {
+			++stats.invalidZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-INVALID: OID=" << objectID
+				<< " zone=" << zoneReference
+				<< " class=" << (className.isEmpty() ? String("CellObject") : className)
+				<< " cellNumber=" << cellNumber;
+			logDetail(detail.toString());
+		}
+
+		objectData.reset();
+	}
+
+	StringBuffer summary;
+	summary << "Cell Object Zone Validation:" << endl
+		<< "  Total sceneobjects records scanned: " << stats.totalRecords << endl
+		<< "  Total CellObject records: " << stats.totalCells << endl
+		<< "  Valid zones: " << stats.validZones << endl
+		<< "  Missing/empty zones: " << (stats.missingZones + stats.emptyZones) << endl
+		<< "  Zone hashes equal to zero: " << stats.zeroHashZones << endl
+		<< "  Invalid zones: " << stats.invalidZones << endl
+		<< "  Unreadable records: " << stats.unreadableRecords;
+
+	info(true) << endl << summary.toString();
+
+	return summary.toString();
+}
+
 void StructureManager::loadPlayerStructures(const String& zoneName) {
 	info("Loading player structures for zone: " + zoneName);
 

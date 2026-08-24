@@ -3,6 +3,7 @@
 		See file COPYING for copying conditions. */
 
 #include "server/zone/objects/scene/SceneObject.h"
+#include "server/zone/InvestigateContainmentCrash.h"
 
 #include "server/zone/packets/scene/SceneObjectCreateMessage.h"
 #include "server/zone/packets/scene/SceneObjectDestroyMessage.h"
@@ -469,6 +470,14 @@ void SceneObjectImplementation::notifyLoadFromDatabase() {
 		auto task = new InsertZoneTask(asSceneObject(), zone);
 		task->execute();
 	}
+#ifdef INVESTIGATE_CONTAINMENT_CRASH_LOGGING
+	else if (isStructureObject() || isCellObject()) {
+		error() << "INVESTIGATE-ORPHANED-LOAD: oid=" << getObjectID()
+			<< " class=" << (isCellObject() ? "CellObject" : "StructureObject")
+			<< " persistenceLevel=" << getPersistenceLevel()
+			<< " parent=" << (parent.get() != nullptr ? parent.get()->getObjectID() : 0);
+	}
+#endif
 }
 
 void SceneObjectImplementation::setObjectMenuComponent(const String& name) {

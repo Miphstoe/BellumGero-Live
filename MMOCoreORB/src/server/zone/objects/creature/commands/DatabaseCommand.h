@@ -45,6 +45,14 @@ public:
 				return SUCCESS;
 			}
 
+			if (arg0 == "zerocells") {
+				String summary = StructureManager::instance()->validateCellObjectZoneReferences(true);
+				creature->sendSystemMessage("Cell object zone validation complete. Details were written to the server log.");
+				creature->sendSystemMessage(summary);
+
+				return SUCCESS;
+			}
+
 			if (!tokenizer.hasMoreTokens())
 				return INVALIDPARAMETERS;
 
@@ -59,7 +67,7 @@ public:
 
 		if (!(arg0 == "cityregions" || arg0 == "factionstructures" || arg0 == "playerstructures" || arg0 == "sceneobjects" || arg0 == "clientobjects" || arg0 == "resourcespawns" ||
 				arg0 == "characters" || arg0 == "deleted_characters") ){
-			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid> or database zerostructures");
+			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid> or database zerostructures or database zerocells");
 
 			return INVALIDPARAMETERS;
 		}

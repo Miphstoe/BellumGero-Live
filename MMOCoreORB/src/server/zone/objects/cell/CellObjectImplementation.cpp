@@ -16,6 +16,7 @@
 #include "server/zone/objects/ship/PobShipObject.h"
 // Needed so we can cast the building root and apply/remove structure skillMods
 #include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/InvestigateContainmentCrash.h"
 
 void CellObjectImplementation::initializeTransientMembers() {
 	SceneObjectImplementation::initializeTransientMembers();
@@ -228,6 +229,19 @@ bool CellObjectImplementation::transferObject(SceneObject* object, int containme
 	}
 	// === END: apply structure skillMods on building entry ===
 
+#ifdef INVESTIGATE_CONTAINMENT_CRASH_LOGGING
+	if (object->isPlayerCreature()) {
+		SceneObject* root = getRootParent();
+
+		info(true) << "INVESTIGATE-CELL-ENTER: player=" << object->getObjectID()
+			<< " cell=" << getObjectID()
+			<< " building=" << (root != nullptr ? root->getObjectID() : 0)
+			<< " zone=" << (getZone() != nullptr ? getZone()->getZoneName() : "null")
+			<< " pos=" << object->getPositionX() << "," << object->getPositionZ() << "," << object->getPositionY()
+			<< " oldParent=" << (oldParent != nullptr ? oldParent->getObjectID() : 0);
+	}
+#endif
+
 	if (oldParent == nullptr) {
 		ManagedReference<SceneObject*> strongParent = parent.get().castTo<SceneObject*>();
 
@@ -296,6 +310,18 @@ bool CellObjectImplementation::removeObject(SceneObject* object, SceneObject* de
 		}
 	}
 	// === END: remove structure skillMods on building exit ===
+
+#ifdef INVESTIGATE_CONTAINMENT_CRASH_LOGGING
+	if (object->isPlayerCreature()) {
+		SceneObject* root = getRootParent();
+
+		info(true) << "INVESTIGATE-CELL-EXIT: player=" << object->getObjectID()
+			<< " cell=" << getObjectID()
+			<< " building=" << (root != nullptr ? root->getObjectID() : 0)
+			<< " zone=" << (getZone() != nullptr ? getZone()->getZoneName() : "null")
+			<< " destination=" << (destination != nullptr ? destination->getObjectID() : 0);
+	}
+#endif
 
 	return ret;
 }
