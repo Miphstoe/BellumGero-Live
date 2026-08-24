@@ -1,7 +1,8 @@
 DroidFoundry = ScreenPlay:new {
-	terminalTemplate = "object/tangible/terminal/terminal_geo_bunker.iff",
+	terminalTemplate = "object/tangible/terminal/terminal_nym_cave.iff",
 	terminalX = 4784,
 	terminalY = 982,
+	terminalHeading = 50,
 	exitX = 4784,
 	exitY = 982,
 	timeoutSeconds = 30 * 60,
@@ -10,6 +11,25 @@ DroidFoundry = ScreenPlay:new {
 	entryY = 16.232117,
 	participantRange = 50,
 	admissionTimeoutSeconds = 5,
+
+	nexusCellIndex = 5,
+	nexusTerminalTemplate = "object/tangible/terminal/terminal_droid_foundry_nexus.iff",
+	nexusTerminal = {
+		x = -12.9000,
+		z = -51.7828,
+		y = -176.924,
+		heading = 0,
+	},
+	nexusSecuritySpawns = {
+		{ label = "Security Spawn A", x = -11.8647, z = -48.7901, y = -148.075, heading = 180, elite = false },
+		{ label = "Security Spawn B", x = 24.4354, z = -52.7565, y = -187.509, heading = -90, elite = false },
+		{ label = "Security Spawn C", x = -12.2385, z = -49.4365, y = -216.899, heading = 0, elite = false },
+		{ label = "Security Spawn D", x = -55.7501, z = -57.3740, y = -221.262, heading = 45, elite = false },
+		{ label = "Elite Spawn", x = -69.9526, z = -55.8785, y = -178.642, heading = 90, elite = true },
+	},
+	NEXUS_READY = 1,
+	NEXUS_ACTIVE = 2,
+	NEXUS_COMPLETE = 3,
 
 	instances = {
 		{
@@ -110,7 +130,7 @@ function DroidFoundry:start()
 	end
 
 	local terminalZ = getWorldFloor(self.terminalX, self.terminalY, "lok")
-	local pTerminal = spawnSceneObject("lok", self.terminalTemplate, self.terminalX, terminalZ, self.terminalY, 0, math.rad(0))
+	local pTerminal = spawnSceneObject("lok", self.terminalTemplate, self.terminalX, terminalZ, self.terminalY, 0, math.rad(self.terminalHeading or 0))
 
 	if (pTerminal == nil) then
 		printLuaError("DroidFoundry:start unable to spawn the expedition terminal")
@@ -180,6 +200,12 @@ function DroidFoundry:beginExpedition(pPlayer)
 			writeData("droidFoundryOwner:" .. instance.rootID, playerID)
 			writeData("droidFoundryStarted:" .. instance.rootID, started)
 			writeData("droidFoundryGroup:" .. instance.rootID, CreatureObject(pPlayer):isGrouped() and CreatureObject(pPlayer):getGroupID() or 0)
+
+			if (not self:prepareNexusEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry control systems failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
 
 			for j = 1, #eligiblePlayers, 1 do
 				self:addEligiblePlayer(instance.rootID, eligiblePlayers[j])
@@ -573,6 +599,7 @@ end
 
 function DroidFoundry:releaseInstance(rootID)
 	rootID = tonumber(rootID) or 0
+	self:cleanupEncounter(rootID)
 	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
 	local eligibilitySize = tonumber(readData("droidFoundryEligibilitySize:" .. rootID)) or 0
 	local ownerID = tonumber(readData("droidFoundryOwner:" .. rootID)) or 0
@@ -706,6 +733,350 @@ function DroidFoundry:onPlayerLoggedOut(pPlayer)
 	if (physicalRootID ~= 0) then
 		writeScreenPlayData(pPlayer, "DroidFoundry", "loggedOutInside", 1)
 	end
+end
+
+
+function DroidFoundry:getInstanceCellID(rootID, cellIndex)
+	local instance = self:getInstance(rootID)
+	cellIndex = tonumber(cellIndex) or 0
+
+	if (instance == nil or cellIndex < 1 or cellIndex > #instance.cellIDs) then
+		return 0
+	end
+
+	return tonumber(instance.cellIDs[cellIndex]) or 0
+end
+
+function DroidFoundry:destroyEncounterObjectByID(objectID)
+	objectID = tonumber(objectID) or 0
+	if (objectID == 0) then
+		return
+	end
+
+	local pObject = getSceneObject(objectID)
+	if (pObject ~= nil) then
+		pcall(function()
+			SceneObject(pObject):destroyObjectFromWorld()
+		end)
+		pcall(function()
+			SceneObject(pObject):destroyObjectFromDatabase()
+		end)
+	end
+end
+
+function DroidFoundry:trackEncounterObject(rootID, pObject)
+	if (pObject == nil) then
+		return 0
+	end
+
+	local objectID = SceneObject(pObject):getObjectID()
+	local countKey = "droidFoundryEncounterObjectCount:" .. rootID
+	local count = (tonumber(readData(countKey)) or 0) + 1
+
+	writeData(countKey, count)
+	writeData("droidFoundryEncounterObject:" .. rootID .. ":" .. count, objectID)
+	writeData("droidFoundryEncounterRoot:" .. objectID, rootID)
+
+	return objectID
+end
+
+function DroidFoundry:cleanupEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return
+	end
+
+	writeData("droidFoundryEncounterCleaning:" .. rootID, 1)
+
+	local count = tonumber(readData("droidFoundryEncounterObjectCount:" .. rootID)) or 0
+	for i = 1, count, 1 do
+		local objectKey = "droidFoundryEncounterObject:" .. rootID .. ":" .. i
+		local objectID = tonumber(readData(objectKey)) or 0
+
+		if (objectID ~= 0) then
+			deleteData("droidFoundryEncounterRoot:" .. objectID)
+			self:destroyEncounterObjectByID(objectID)
+		end
+
+		deleteData(objectKey)
+	end
+
+	deleteData("droidFoundryEncounterObjectCount:" .. rootID)
+	deleteData("droidFoundryNexusTerminal:" .. rootID)
+	deleteData("droidFoundryNexusState:" .. rootID)
+	deleteData("droidFoundryNexusWaveStage:" .. rootID)
+	deleteData("droidFoundryNexusAlive:" .. rootID)
+	deleteData("droidFoundryNexusActivator:" .. rootID)
+	deleteData("droidFoundryProductionDisabled:" .. rootID)
+	deleteData("droidFoundrySentinelDisabled:" .. rootID)
+	deleteData("droidFoundryMaintenanceDisabled:" .. rootID)
+	deleteData("droidFoundryRunProtocol:" .. rootID)
+	deleteData("droidFoundryEncounterCleaning:" .. rootID)
+end
+
+function DroidFoundry:prepareNexusEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	local cellID = self:getInstanceCellID(rootID, self.nexusCellIndex)
+
+	if (rootID == 0 or cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareNexusEncounter unable to resolve Nexus cell for instance " .. rootID)
+		return false
+	end
+
+	self:cleanupEncounter(rootID)
+
+	local serialKey = "droidFoundryEncounterSerial:" .. rootID
+	local serial = (tonumber(readData(serialKey)) or 0) + 1
+	writeData(serialKey, serial)
+
+	writeData("droidFoundryNexusState:" .. rootID, self.NEXUS_READY)
+	writeData("droidFoundryNexusWaveStage:" .. rootID, 0)
+	writeData("droidFoundryNexusAlive:" .. rootID, 0)
+	writeData("droidFoundryProductionDisabled:" .. rootID, 0)
+	writeData("droidFoundrySentinelDisabled:" .. rootID, 0)
+	writeData("droidFoundryMaintenanceDisabled:" .. rootID, 0)
+	writeData("droidFoundryRunProtocol:" .. rootID, 0)
+
+	local point = self.nexusTerminal
+	local pTerminal = spawnSceneObject(
+		"dungeon1",
+		self.nexusTerminalTemplate,
+		point.x,
+		point.z,
+		point.y,
+		cellID,
+		math.rad(point.heading or 0)
+	)
+
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareNexusEncounter failed to spawn Nexus terminal for instance " .. rootID)
+		self:cleanupEncounter(rootID)
+		return false
+	end
+
+	SceneObject(pTerminal):setCustomObjectName("Foundry Control Nexus")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryNexusTerminalMenuComponent")
+
+	local terminalID = self:trackEncounterObject(rootID, pTerminal)
+	writeData("droidFoundryNexusTerminal:" .. rootID, terminalID)
+
+	return true
+end
+
+function DroidFoundry:sendInstanceMessage(rootID, message)
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID)) then
+			local pPlayer = getSceneObject(playerID)
+			if (pPlayer ~= nil and SceneObject(pPlayer):isPlayerCreature()) then
+				CreatureObject(pPlayer):sendSystemMessage(message)
+			end
+		end
+	end
+end
+
+function DroidFoundry:spawnNexusSecurityUnit(rootID, spawnIndex, pTarget)
+	local spawn = self.nexusSecuritySpawns[spawnIndex]
+	local cellID = self:getInstanceCellID(rootID, self.nexusCellIndex)
+
+	if (spawn == nil or cellID == 0) then
+		return nil
+	end
+
+	-- Temporary framework-test mobile. This will be replaced by Foundry-specific
+	-- B1/Elite templates after instance isolation and cleanup are runtime-proven.
+	local pMobile = spawnMobile(
+		"dungeon1",
+		"bsv_battle_droid",
+		0,
+		spawn.x,
+		spawn.z,
+		spawn.y,
+		spawn.heading or 0,
+		cellID
+	)
+
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnNexusSecurityUnit failed at " .. tostring(spawn.label) .. " for instance " .. rootID)
+		return nil
+	end
+
+	if (spawn.elite) then
+		CreatureObject(pMobile):setCustomObjectName("Elite Foundry Security Droid [TEST]")
+	else
+		CreatureObject(pMobile):setCustomObjectName("Foundry Security Droid [TEST]")
+
+		-- Security responders immediately engage the player who activated the Nexus.
+		-- The Elite is intentionally left without a forced target for this milestone.
+		if (pTarget ~= nil and SceneObject(pTarget):isPlayerCreature()) then
+			AiAgent(pMobile):setAITemplate()
+			AiAgent(pMobile):addDefender(pTarget)
+		end
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+	writeData("droidFoundryNexusAlive:" .. rootID, (tonumber(readData("droidFoundryNexusAlive:" .. rootID)) or 0) + 1)
+	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyNexusSecurityDestroyed", pMobile)
+
+	return pMobile
+end
+
+function DroidFoundry:startNexusEncounter(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This control nexus is not assigned to your expedition.")
+		return false
+	end
+
+	local state = tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0
+
+	if (state == self.NEXUS_ACTIVE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry security response is already active.")
+		return false
+	elseif (state == self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus is already online.")
+		return false
+	elseif (state ~= self.NEXUS_READY) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus is not responding.")
+		return false
+	end
+
+	writeData("droidFoundryNexusState:" .. rootID, self.NEXUS_ACTIVE)
+	writeData("droidFoundryNexusWaveStage:" .. rootID, 1)
+	writeData("droidFoundryNexusAlive:" .. rootID, 0)
+	writeData("droidFoundryNexusActivator:" .. rootID, playerID)
+	SceneObject(pTerminal):setCustomObjectName("Foundry Control Nexus - SECURITY ALERT")
+
+	self:sendInstanceMessage(rootID, "Unauthorized activation detected. Foundry security units are responding.")
+
+	self:spawnNexusSecurityUnit(rootID, 1, pPlayer)
+	self:spawnNexusSecurityUnit(rootID, 2, pPlayer)
+	self:spawnNexusSecurityUnit(rootID, 3, pPlayer)
+
+	local pRoot = getSceneObject(rootID)
+	local serial = tonumber(readData("droidFoundryEncounterSerial:" .. rootID)) or 0
+
+	if (pRoot ~= nil) then
+		createEvent(6000, "DroidFoundry", "spawnNexusSecondWave", pRoot, tostring(serial))
+	end
+
+	return true
+end
+
+function DroidFoundry:spawnNexusSecondWave(pRoot, expectedSerial)
+	if (pRoot == nil) then
+		return 0
+	end
+
+	local rootID = SceneObject(pRoot):getObjectID()
+	local serial = tonumber(readData("droidFoundryEncounterSerial:" .. rootID)) or 0
+
+	if (serial ~= tonumber(expectedSerial) or
+		tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		tonumber(readData("droidFoundryNexusState:" .. rootID)) ~= self.NEXUS_ACTIVE) then
+		return 0
+	end
+
+	writeData("droidFoundryNexusWaveStage:" .. rootID, 2)
+	self:sendInstanceMessage(rootID, "Additional Foundry security units have entered the Nexus chamber.")
+
+	local activatorID = tonumber(readData("droidFoundryNexusActivator:" .. rootID)) or 0
+	local pActivator = activatorID ~= 0 and getSceneObject(activatorID) or nil
+
+	self:spawnNexusSecurityUnit(rootID, 4, pActivator)
+	self:spawnNexusSecurityUnit(rootID, 5, pActivator)
+	self:checkNexusEncounterComplete(rootID)
+
+	return 0
+end
+
+function DroidFoundry:notifyNexusSecurityDestroyed(pMobile, pPlayer)
+	if (pMobile == nil) then
+		return 1
+	end
+
+	local objectID = SceneObject(pMobile):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. objectID)) or 0
+	deleteData("droidFoundryEncounterRoot:" .. objectID)
+
+	if (rootID == 0 or tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1) then
+		return 1
+	end
+
+	if (tonumber(readData("droidFoundryNexusState:" .. rootID)) ~= self.NEXUS_ACTIVE) then
+		return 1
+	end
+
+	local alive = math.max(0, (tonumber(readData("droidFoundryNexusAlive:" .. rootID)) or 0) - 1)
+	writeData("droidFoundryNexusAlive:" .. rootID, alive)
+
+	self:checkNexusEncounterComplete(rootID)
+	return 1
+end
+
+function DroidFoundry:checkNexusEncounterComplete(rootID)
+	if (tonumber(readData("droidFoundryNexusState:" .. rootID)) ~= self.NEXUS_ACTIVE) then
+		return false
+	end
+
+	local waveStage = tonumber(readData("droidFoundryNexusWaveStage:" .. rootID)) or 0
+	local alive = tonumber(readData("droidFoundryNexusAlive:" .. rootID)) or 0
+
+	if (waveStage < 2 or alive > 0) then
+		return false
+	end
+
+	writeData("droidFoundryNexusState:" .. rootID, self.NEXUS_COMPLETE)
+
+	local terminalID = tonumber(readData("droidFoundryNexusTerminal:" .. rootID)) or 0
+	local pTerminal = terminalID ~= 0 and getSceneObject(terminalID) or nil
+	if (pTerminal ~= nil) then
+		SceneObject(pTerminal):setCustomObjectName("Foundry Control Nexus - ONLINE")
+	end
+
+	self:sendInstanceMessage(rootID, "Foundry Nexus security response neutralized. The control network is now online.")
+	return true
+end
+
+DroidFoundryNexusTerminalMenuComponent = {}
+
+function DroidFoundryNexusTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil) then
+		return
+	end
+
+	local response = LuaObjectMenuResponse(pMenuResponse)
+	response:addRadialMenuItem(20, 3, "Activate Foundry Control Nexus")
+end
+
+function DroidFoundryNexusTerminalMenuComponent:handleObjectMenuSelect(pSceneObject, pPlayer, selectedID)
+	if (pSceneObject == nil or pPlayer == nil or tonumber(selectedID) ~= 20) then
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):isIncapacitated() or CreatureObject(pPlayer):isDead()) then
+		return 0
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pSceneObject, 8)) then
+		return 0
+	end
+
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+
+	DroidFoundry:startNexusEncounter(pSceneObject, pPlayer, rootID)
+	return 0
 end
 
 DroidFoundryTerminalMenuComponent = {}
