@@ -27,6 +27,255 @@ DroidFoundry = ScreenPlay:new {
 		{ label = "Security Spawn D", x = -55.7501, z = -57.3740, y = -221.262, heading = 45, elite = false },
 		{ label = "Elite Spawn", x = -69.9526, z = -55.8785, y = -178.642, heading = 90, elite = true },
 	},
+
+	-- Opening Breach encounter. Coordinates are logical-cell local values so the
+	-- same layout is reused across all eight physical Foundry instances.
+	breachSpawns = {
+		-- Cell 2 / r2: first contact
+		{ cellIndex = 2, template = "foundry_battle_droid", label = "Breach Cell 2 A", x = 1.1, z = -10.9, y = -16.2, heading = -49 },
+		{ cellIndex = 2, template = "foundry_battle_droid", label = "Breach Cell 2 B", x = 2.8, z = -11.1, y = -15.8, heading = -49 },
+		{ cellIndex = 2, template = "foundry_battle_droid", label = "Breach Cell 2 C", x = 0.9, z = -11.2, y = -18.2, heading = -49 },
+
+		-- Cell 3 / r3: security begins reinforcing the B1 line
+		{ cellIndex = 3, template = "foundry_battle_droid", label = "Breach Cell 3 A", x = -26.8, z = -37.6, y = -60.9, heading = 3 },
+		{ cellIndex = 3, template = "foundry_battle_droid", label = "Breach Cell 3 B", x = -25.3, z = -37.7, y = -64.7, heading = 4 },
+		{ cellIndex = 3, template = "foundry_security_droid", label = "Breach Cell 3 C", x = -28.5, z = -38.5, y = -65.3, heading = 8 },
+
+		-- Cell 4 / r4: stronger final resistance before the Nexus chamber
+		{ cellIndex = 4, template = "foundry_battle_droid", label = "Breach Cell 4 A", x = -23.3, z = -53.3, y = -116.5, heading = -56 },
+		{ cellIndex = 4, template = "foundry_security_droid", label = "Breach Cell 4 B", x = -18.2, z = -53.6, y = -118.5, heading = -56 },
+		{ cellIndex = 4, template = "foundry_security_droid", label = "Breach Cell 4 C", x = -18.6, z = -53.6, y = -121.6, heading = -56 },
+	},
+
+	-- Production approach / Factory Online objective.
+	-- Each combat room uses one anchor and a reusable triangle formation.
+	productionApproachAnchors = {
+		{
+			cellIndex = 6,
+			label = "Production Cell 6",
+			x = 53.5, z = -61.3, y = -190.6, heading = -79,
+			spacing = 1.6, depth = 1.4,
+			templates = {
+				"foundry_battle_droid",
+				"foundry_battle_droid",
+				"foundry_battle_droid",
+			},
+		},
+		{
+			cellIndex = 7,
+			label = "Production Cell 7",
+			x = 40.9, z = -76.9, y = -243.1, heading = -4,
+			spacing = 1.6, depth = 1.4,
+			templates = {
+				"foundry_battle_droid",
+				"foundry_battle_droid",
+				"foundry_security_droid",
+			},
+		},
+		{
+			cellIndex = 8,
+			label = "Production Cell 8",
+			x = 98.8, z = -89.2, y = -284.1, heading = -28,
+			spacing = 1.8, depth = 1.6,
+			templates = {
+				"foundry_security_droid",
+				"foundry_super_battle_droid",
+				"foundry_super_battle_droid",
+			},
+		},
+		{
+			cellIndex = 15,
+			label = "Production Network",
+			x = 110.8, z = -90.9, y = -332.1, heading = -31,
+			spacing = 2.2, depth = 1.8,
+			objectiveDefenders = true,
+			templates = {
+				"foundry_super_battle_droid",
+				"foundry_super_battle_droid",
+				"foundry_elite_b2_enforcer",
+			},
+		},
+	},
+
+	-- Sentinel approach / Droideka defense objective.
+	-- Uses the same reusable triangle formation helper as the Production wing.
+	sentinelApproachAnchors = {
+		{
+			cellIndex = 9,
+			label = "Sentinel Cell 9",
+			x = -6.6, z = -54.9, y = -243.0, heading = -43,
+			spacing = 1.6, depth = 1.4,
+			templates = {
+				"foundry_security_droid",
+				"foundry_security_droid",
+				"foundry_battle_droid",
+			},
+		},
+		{
+			cellIndex = 10,
+			label = "Sentinel Cell 10",
+			x = 10.5, z = -61.9, y = -271.8, heading = 21,
+			spacing = 1.8, depth = 1.5,
+			templates = {
+				"foundry_security_droid",
+				"foundry_security_droid",
+				"foundry_droideka_sentinel",
+			},
+		},
+		{
+			cellIndex = 11,
+			label = "Sentinel Cell 11",
+			x = -21.5, z = -74.7, y = -306.7, heading = 1,
+			spacing = 2.0, depth = 1.6,
+			templates = {
+				"foundry_security_droid",
+				"foundry_droideka_sentinel",
+				"foundry_droideka_sentinel",
+			},
+		},
+		{
+			cellIndex = 16,
+			label = "Sentinel Core",
+			x = -10.9, z = -78.5, y = -359.3, heading = -13,
+			spacing = 2.2, depth = 1.8,
+			objectiveDefenders = true,
+			templates = {
+				"foundry_droideka_sentinel",
+				"foundry_droideka_sentinel",
+				"foundry_elite_droideka_guardian",
+			},
+		},
+	},
+
+	sentinelTerminalCellIndex = 16,
+	sentinelTerminal = {
+		x = -9.3,
+		z = -78.6,
+		y = -371.1,
+		heading = -1,
+	},
+
+	-- Maintenance approach / repair-support objective.
+	-- Uses the same reusable triangle formation helper as Production and Sentinel.
+	maintenanceApproachAnchors = {
+		{
+			cellIndex = 12,
+			label = "Maintenance Cell 12",
+			x = -67.3086, z = -68.3687, y = -253.497, heading = 29,
+			spacing = 1.6, depth = 1.4,
+			templates = {
+				"foundry_repair_droid",
+				"foundry_repair_droid",
+				"foundry_repair_droid",
+			},
+		},
+		{
+			cellIndex = 13,
+			label = "Maintenance Cell 13",
+			x = -107.252, z = -78.6663, y = -272.805, heading = 37,
+			spacing = 1.7, depth = 1.5,
+			templates = {
+				"foundry_repair_droid",
+				"foundry_repair_droid",
+				"foundry_security_droid",
+			},
+		},
+		{
+			cellIndex = 14,
+			label = "Maintenance Cell 14",
+			x = -79.9851, z = -85.8939, y = -307.491, heading = 0,
+			spacing = 1.9, depth = 1.6,
+			templates = {
+				"foundry_repair_droid",
+				"foundry_repair_droid",
+				"foundry_super_battle_droid",
+			},
+		},
+		{
+			cellIndex = 17,
+			label = "Maintenance Network",
+			x = -95.0434, z = -84.5311, y = -336.21, heading = 45,
+			spacing = 2.1, depth = 1.8,
+			objectiveDefenders = true,
+			templates = {
+				"foundry_repair_droid",
+				"foundry_repair_droid",
+				"foundry_elite_b2_enforcer",
+			},
+		},
+	},
+
+	maintenanceTerminalCellIndex = 17,
+	maintenanceTerminal = {
+		x = -114.526,
+		z = -83.0152,
+		y = -324.152,
+		heading = 113,
+	},
+
+	-- Final approach and Overseer chamber.
+	-- World Builder authoritative mapping:
+	-- Cell 18 = r21, Cell 19 = r22, Cell 20 = roomaab.
+	finalApproachAnchors = {
+		{
+			cellIndex = 18,
+			label = "Final Approach r21",
+			x = 83.9, z = -100.5, y = -365.2, heading = 11,
+			spacing = 1.9, depth = 1.6,
+			templates = {
+				"foundry_security_droid",
+				"foundry_super_battle_droid",
+				"foundry_super_battle_droid",
+			},
+		},
+		{
+			cellIndex = 19,
+			label = "Final Approach r22",
+			x = 57.3, z = -113.4, y = -357.0, heading = 136,
+			spacing = 2.1, depth = 1.7,
+			templates = {
+				"foundry_super_battle_droid",
+				"foundry_droideka_sentinel",
+				"foundry_elite_b2_enforcer",
+			},
+		},
+	},
+
+	overseerCellIndex = 20,
+	overseerAnchor = {
+		x = -3.1,
+		z = -120.6,
+		y = -369.7,
+		heading = 62,
+	},
+
+	-- Each supplied reinforcement area becomes a small three-point formation.
+	overseerReinforcementAnchors = {
+		{
+			x = 15.1, z = -118.3, y = -384.2, heading = -43,
+			spacing = 2.0, depth = 1.7,
+		},
+		{
+			x = 2.2, z = -118.6, y = -347.9, heading = -176,
+			spacing = 2.0, depth = 1.7,
+		},
+	},
+
+	archiveTerminal = {
+		x = -27.0,
+		z = -118.8,
+		y = -370.2,
+		heading = 82,
+	},
+
+	productionTerminalCellIndex = 15,
+	productionTerminal = {
+		x = 126.9,
+		z = -92.6,
+		y = -328.2,
+		heading = -87,
+	},
+
 	NEXUS_READY = 1,
 	NEXUS_ACTIVE = 2,
 	NEXUS_COMPLETE = 3,
@@ -203,6 +452,36 @@ function DroidFoundry:beginExpedition(pPlayer)
 
 			if (not self:prepareNexusEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry control systems failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
+
+			if (not self:prepareBreachEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry breach defenses failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
+
+			if (not self:prepareProductionEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry production systems failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
+
+			if (not self:prepareSentinelEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry sentinel systems failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
+
+			if (not self:prepareMaintenanceEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry maintenance systems failed to initialize. Please try another expedition.")
+				self:releaseInstance(instance.rootID)
+				return
+			end
+
+			if (not self:prepareFinalEncounter(instance.rootID)) then
+				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry final sector failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
@@ -808,8 +1087,23 @@ function DroidFoundry:cleanupEncounter(rootID)
 	deleteData("droidFoundryNexusAlive:" .. rootID)
 	deleteData("droidFoundryNexusActivator:" .. rootID)
 	deleteData("droidFoundryProductionDisabled:" .. rootID)
+	deleteData("droidFoundryProductionAlive:" .. rootID)
+	deleteData("droidFoundryProductionTerminal:" .. rootID)
 	deleteData("droidFoundrySentinelDisabled:" .. rootID)
+	deleteData("droidFoundrySentinelAlive:" .. rootID)
+	deleteData("droidFoundrySentinelTerminal:" .. rootID)
 	deleteData("droidFoundryMaintenanceDisabled:" .. rootID)
+	deleteData("droidFoundryMaintenanceAlive:" .. rootID)
+	deleteData("droidFoundryMaintenanceTerminal:" .. rootID)
+	deleteData("droidFoundryOverseerState:" .. rootID)
+	deleteData("droidFoundryOverseerBoss:" .. rootID)
+	deleteData("droidFoundryOverseerTarget:" .. rootID)
+	deleteData("droidFoundryOverseerRepairDroid:" .. rootID)
+	deleteData("droidFoundryOverseerPhase75:" .. rootID)
+	deleteData("droidFoundryOverseerPhase50:" .. rootID)
+	deleteData("droidFoundryOverseerPhase25:" .. rootID)
+	deleteData("droidFoundryOverseerLastRepair:" .. rootID)
+	deleteData("droidFoundryArchiveTerminal:" .. rootID)
 	deleteData("droidFoundryRunProtocol:" .. rootID)
 	deleteData("droidFoundryEncounterCleaning:" .. rootID)
 end
@@ -861,6 +1155,959 @@ function DroidFoundry:prepareNexusEncounter(rootID)
 	writeData("droidFoundryNexusTerminal:" .. rootID, terminalID)
 
 	return true
+end
+
+function DroidFoundry:spawnBreachUnit(rootID, spawn)
+	if (spawn == nil) then
+		return nil
+	end
+
+	local cellID = self:getInstanceCellID(rootID, spawn.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:spawnBreachUnit unable to resolve cell " .. tostring(spawn.cellIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	local pMobile = spawnMobile(
+		"dungeon1",
+		spawn.template,
+		0,
+		spawn.x,
+		spawn.z,
+		spawn.y,
+		spawn.heading or 0,
+		cellID
+	)
+
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnBreachUnit failed at " .. tostring(spawn.label) .. " for instance " .. rootID)
+		return nil
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+	return pMobile
+end
+
+function DroidFoundry:prepareBreachEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return false
+	end
+
+	for i = 1, #self.breachSpawns, 1 do
+		if (self:spawnBreachUnit(rootID, self.breachSpawns[i]) == nil) then
+			printLuaError("DroidFoundry:prepareBreachEncounter failed for instance " .. rootID)
+			return false
+		end
+	end
+
+	return true
+end
+
+function DroidFoundry:getTriangleFormation(anchor)
+	local heading = math.rad(anchor.heading or 0)
+	local spacing = tonumber(anchor.spacing) or 1.6
+	local depth = tonumber(anchor.depth) or 1.4
+
+	-- SWG interior movement uses X/Y as the horizontal plane and Z as height.
+	-- Point 1 is the supplied anchor; points 2/3 sit behind it in a shallow triangle.
+	local forwardX = math.sin(heading)
+	local forwardY = math.cos(heading)
+	local rightX = math.cos(heading)
+	local rightY = -math.sin(heading)
+
+	local backX = anchor.x - (forwardX * depth)
+	local backY = anchor.y - (forwardY * depth)
+
+	return {
+		{ x = anchor.x, z = anchor.z, y = anchor.y, heading = anchor.heading or 0 },
+		{ x = backX + (rightX * spacing), z = anchor.z, y = backY + (rightY * spacing), heading = anchor.heading or 0 },
+		{ x = backX - (rightX * spacing), z = anchor.z, y = backY - (rightY * spacing), heading = anchor.heading or 0 },
+	}
+end
+
+function DroidFoundry:spawnProductionUnit(rootID, anchor, templateName, pointIndex)
+	local cellID = self:getInstanceCellID(rootID, anchor.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:spawnProductionUnit unable to resolve cell " .. tostring(anchor.cellIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+
+	if (point == nil) then
+		return nil
+	end
+
+	local pMobile = spawnMobile(
+		"dungeon1",
+		templateName,
+		0,
+		point.x,
+		point.z,
+		point.y,
+		point.heading or 0,
+		cellID
+	)
+
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnProductionUnit failed at " .. tostring(anchor.label) .. " point " .. tostring(pointIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+
+	if (anchor.objectiveDefenders) then
+		writeData("droidFoundryProductionAlive:" .. rootID, (tonumber(readData("droidFoundryProductionAlive:" .. rootID)) or 0) + 1)
+		createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyProductionDefenderDestroyed", pMobile)
+	end
+
+	return pMobile
+end
+
+function DroidFoundry:prepareProductionEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return false
+	end
+
+	writeData("droidFoundryProductionAlive:" .. rootID, 0)
+
+	for i = 1, #self.productionApproachAnchors, 1 do
+		local anchor = self.productionApproachAnchors[i]
+
+		for j = 1, #anchor.templates, 1 do
+			if (self:spawnProductionUnit(rootID, anchor, anchor.templates[j], j) == nil) then
+				printLuaError("DroidFoundry:prepareProductionEncounter failed for instance " .. rootID)
+				return false
+			end
+		end
+	end
+
+	local cellID = self:getInstanceCellID(rootID, self.productionTerminalCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareProductionEncounter unable to resolve Production terminal cell for instance " .. rootID)
+		return false
+	end
+
+	local point = self.productionTerminal
+	local pTerminal = spawnSceneObject(
+		"dungeon1",
+		self.nexusTerminalTemplate,
+		point.x,
+		point.z,
+		point.y,
+		cellID,
+		math.rad(point.heading or 0)
+	)
+
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareProductionEncounter failed to spawn Production Network terminal for instance " .. rootID)
+		return false
+	end
+
+	SceneObject(pTerminal):setCustomObjectName("Foundry Production Network - ONLINE")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryProductionTerminalMenuComponent")
+	writeData("droidFoundryProductionTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
+
+	return true
+end
+
+function DroidFoundry:notifyProductionDefenderDestroyed(pMobile)
+	if (pMobile == nil) then
+		return 1
+	end
+
+	local mobileID = SceneObject(pMobile):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. mobileID)) or 0
+
+	if (rootID == 0 or tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1) then
+		return 1
+	end
+
+	local aliveKey = "droidFoundryProductionAlive:" .. rootID
+	local alive = math.max(0, (tonumber(readData(aliveKey)) or 0) - 1)
+	writeData(aliveKey, alive)
+
+	if (alive == 0) then
+		self:sendInstanceMessage(rootID, "Production Network defenders neutralized. The factory control interface is accessible.")
+	end
+
+	return 1
+end
+
+function DroidFoundry:disableProductionNetwork(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Production Network is not assigned to your expedition.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be brought online before this network can be accessed.")
+		return false
+	end
+
+	if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("The Production Network is already offline.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryProductionAlive:" .. rootID)) or 0) > 0) then
+		CreatureObject(pPlayer):sendSystemMessage("Production Network access is locked while factory defenders remain active.")
+		return false
+	end
+
+	writeData("droidFoundryProductionDisabled:" .. rootID, 1)
+	SceneObject(pTerminal):setCustomObjectName("Foundry Production Network - OFFLINE")
+	self:sendInstanceMessage(rootID, "Production Network disabled. B1 reinforcement protocol has been disrupted.")
+
+	return true
+end
+
+function DroidFoundry:spawnSentinelUnit(rootID, anchor, templateName, pointIndex)
+	local cellID = self:getInstanceCellID(rootID, anchor.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:spawnSentinelUnit unable to resolve cell " .. tostring(anchor.cellIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+	if (point == nil) then
+		return nil
+	end
+
+	local pMobile = spawnMobile("dungeon1", templateName, 0, point.x, point.z, point.y, point.heading or 0, cellID)
+
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnSentinelUnit failed at " .. tostring(anchor.label) .. " point " .. tostring(pointIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+
+	if (anchor.objectiveDefenders) then
+		writeData("droidFoundrySentinelAlive:" .. rootID, (tonumber(readData("droidFoundrySentinelAlive:" .. rootID)) or 0) + 1)
+		createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifySentinelDefenderDestroyed", pMobile)
+	end
+
+	return pMobile
+end
+
+function DroidFoundry:prepareSentinelEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return false
+	end
+
+	writeData("droidFoundrySentinelAlive:" .. rootID, 0)
+
+	for i = 1, #self.sentinelApproachAnchors, 1 do
+		local anchor = self.sentinelApproachAnchors[i]
+		for j = 1, #anchor.templates, 1 do
+			if (self:spawnSentinelUnit(rootID, anchor, anchor.templates[j], j) == nil) then
+				printLuaError("DroidFoundry:prepareSentinelEncounter failed for instance " .. rootID)
+				return false
+			end
+		end
+	end
+
+	local cellID = self:getInstanceCellID(rootID, self.sentinelTerminalCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareSentinelEncounter unable to resolve Sentinel terminal cell for instance " .. rootID)
+		return false
+	end
+
+	local point = self.sentinelTerminal
+	local pTerminal = spawnSceneObject(
+		"dungeon1",
+		self.nexusTerminalTemplate,
+		point.x,
+		point.z,
+		point.y,
+		cellID,
+		math.rad(point.heading or 0)
+	)
+
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareSentinelEncounter failed to spawn Sentinel Network terminal for instance " .. rootID)
+		return false
+	end
+
+	SceneObject(pTerminal):setCustomObjectName("Foundry Sentinel Network - ONLINE")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundrySentinelTerminalMenuComponent")
+	writeData("droidFoundrySentinelTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
+
+	return true
+end
+
+function DroidFoundry:notifySentinelDefenderDestroyed(pMobile)
+	if (pMobile == nil) then
+		return 1
+	end
+
+	local mobileID = SceneObject(pMobile):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. mobileID)) or 0
+
+	if (rootID == 0 or tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1) then
+		return 1
+	end
+
+	local aliveKey = "droidFoundrySentinelAlive:" .. rootID
+	local alive = math.max(0, (tonumber(readData(aliveKey)) or 0) - 1)
+	writeData(aliveKey, alive)
+
+	if (alive == 0) then
+		self:sendInstanceMessage(rootID, "Sentinel Core defenders neutralized. The defensive control interface is accessible.")
+	end
+
+	return 1
+end
+
+function DroidFoundry:disableSentinelNetwork(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Sentinel Network is not assigned to your expedition.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be brought online before this network can be accessed.")
+		return false
+	end
+
+	if (tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("The Sentinel Network is already offline.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundrySentinelAlive:" .. rootID)) or 0) > 0) then
+		CreatureObject(pPlayer):sendSystemMessage("Sentinel Network access is locked while defensive units remain active.")
+		return false
+	end
+
+	writeData("droidFoundrySentinelDisabled:" .. rootID, 1)
+	SceneObject(pTerminal):setCustomObjectName("Foundry Sentinel Network - OFFLINE")
+	self:sendInstanceMessage(rootID, "Sentinel Network disabled. Droideka reinforcement protocol has been disrupted.")
+
+	return true
+end
+
+function DroidFoundry:spawnMaintenanceUnit(rootID, anchor, templateName, pointIndex)
+	local cellID = self:getInstanceCellID(rootID, anchor.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:spawnMaintenanceUnit unable to resolve cell " .. tostring(anchor.cellIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+	if (point == nil) then
+		return nil
+	end
+
+	local pMobile = spawnMobile(
+		"dungeon1",
+		templateName,
+		0,
+		point.x,
+		point.z,
+		point.y,
+		point.heading or 0,
+		cellID
+	)
+
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnMaintenanceUnit failed at " .. tostring(anchor.label) .. " point " .. tostring(pointIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+
+	if (anchor.objectiveDefenders) then
+		writeData("droidFoundryMaintenanceAlive:" .. rootID, (tonumber(readData("droidFoundryMaintenanceAlive:" .. rootID)) or 0) + 1)
+		createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyMaintenanceDefenderDestroyed", pMobile)
+	end
+
+	return pMobile
+end
+
+function DroidFoundry:prepareMaintenanceEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return false
+	end
+
+	writeData("droidFoundryMaintenanceAlive:" .. rootID, 0)
+
+	for i = 1, #self.maintenanceApproachAnchors, 1 do
+		local anchor = self.maintenanceApproachAnchors[i]
+
+		for j = 1, #anchor.templates, 1 do
+			if (self:spawnMaintenanceUnit(rootID, anchor, anchor.templates[j], j) == nil) then
+				printLuaError("DroidFoundry:prepareMaintenanceEncounter failed for instance " .. rootID)
+				return false
+			end
+		end
+	end
+
+	local cellID = self:getInstanceCellID(rootID, self.maintenanceTerminalCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareMaintenanceEncounter unable to resolve Maintenance terminal cell for instance " .. rootID)
+		return false
+	end
+
+	local point = self.maintenanceTerminal
+	local pTerminal = spawnSceneObject(
+		"dungeon1",
+		self.nexusTerminalTemplate,
+		point.x,
+		point.z,
+		point.y,
+		cellID,
+		math.rad(point.heading or 0)
+	)
+
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareMaintenanceEncounter failed to spawn Maintenance Network terminal for instance " .. rootID)
+		return false
+	end
+
+	SceneObject(pTerminal):setCustomObjectName("Foundry Maintenance Network - ONLINE")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryMaintenanceTerminalMenuComponent")
+	writeData("droidFoundryMaintenanceTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
+
+	return true
+end
+
+function DroidFoundry:notifyMaintenanceDefenderDestroyed(pMobile)
+	if (pMobile == nil) then
+		return 1
+	end
+
+	local mobileID = SceneObject(pMobile):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. mobileID)) or 0
+
+	if (rootID == 0 or tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1) then
+		return 1
+	end
+
+	local aliveKey = "droidFoundryMaintenanceAlive:" .. rootID
+	local alive = math.max(0, (tonumber(readData(aliveKey)) or 0) - 1)
+	writeData(aliveKey, alive)
+
+	if (alive == 0) then
+		self:sendInstanceMessage(rootID, "Maintenance Network defenders neutralized. The repair control interface is accessible.")
+	end
+
+	return 1
+end
+
+function DroidFoundry:disableMaintenanceNetwork(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Maintenance Network is not assigned to your expedition.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be brought online before this network can be accessed.")
+		return false
+	end
+
+	if (tonumber(readData("droidFoundryMaintenanceDisabled:" .. rootID)) == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("The Maintenance Network is already offline.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryMaintenanceAlive:" .. rootID)) or 0) > 0) then
+		CreatureObject(pPlayer):sendSystemMessage("Maintenance Network access is locked while repair-security units remain active.")
+		return false
+	end
+
+	writeData("droidFoundryMaintenanceDisabled:" .. rootID, 1)
+	SceneObject(pTerminal):setCustomObjectName("Foundry Maintenance Network - OFFLINE")
+	self:sendInstanceMessage(rootID, "Maintenance Network disabled. Overseer repair-support protocol has been disrupted.")
+
+	return true
+end
+
+function DroidFoundry:spawnFinalApproachUnit(rootID, anchor, templateName, pointIndex)
+	local cellID = self:getInstanceCellID(rootID, anchor.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:spawnFinalApproachUnit unable to resolve cell " .. tostring(anchor.cellIndex) .. " for instance " .. rootID)
+		return nil
+	end
+
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+	if (point == nil) then
+		return nil
+	end
+
+	local pMobile = spawnMobile("dungeon1", templateName, 0, point.x, point.z, point.y, point.heading or 0, cellID)
+	if (pMobile == nil) then
+		printLuaError("DroidFoundry:spawnFinalApproachUnit failed at " .. tostring(anchor.label) .. " for instance " .. rootID)
+		return nil
+	end
+
+	self:trackEncounterObject(rootID, pMobile)
+	return pMobile
+end
+
+function DroidFoundry:spawnOverseerSupport(rootID, templateName, anchorIndex, pointIndex)
+	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		return nil
+	end
+
+	local anchor = self.overseerReinforcementAnchors[anchorIndex]
+	if (anchor == nil) then
+		return nil
+	end
+
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+	if (point == nil) then
+		return nil
+	end
+
+	local pMobile = spawnMobile(
+		"dungeon1",
+		templateName,
+		0,
+		point.x,
+		point.z,
+		point.y,
+		point.heading or 0,
+		cellID
+	)
+
+	if (pMobile ~= nil) then
+		self:trackEncounterObject(rootID, pMobile)
+
+		local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
+		local pTarget = getSceneObject(targetID)
+
+		if (pTarget ~= nil) then
+			local ai = AiAgent(pMobile)
+			if (ai ~= nil) then
+				ai:setAITemplate()
+				ai:addDefender(pTarget)
+			end
+		end
+	end
+
+	return pMobile
+end
+
+function DroidFoundry:prepareFinalEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return false
+	end
+
+	for i = 1, #self.finalApproachAnchors, 1 do
+		local anchor = self.finalApproachAnchors[i]
+		for j = 1, #anchor.templates, 1 do
+			if (self:spawnFinalApproachUnit(rootID, anchor, anchor.templates[j], j) == nil) then
+				printLuaError("DroidFoundry:prepareFinalEncounter failed while spawning final approach for instance " .. rootID)
+				return false
+			end
+		end
+	end
+
+	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareFinalEncounter unable to resolve Overseer chamber for instance " .. rootID)
+		return false
+	end
+
+	local point = self.archiveTerminal
+	local pTerminal = spawnSceneObject(
+		"dungeon1",
+		self.nexusTerminalTemplate,
+		point.x,
+		point.z,
+		point.y,
+		cellID,
+		math.rad(point.heading or 0)
+	)
+
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareFinalEncounter failed to spawn Archive interface for instance " .. rootID)
+		return false
+	end
+
+	SceneObject(pTerminal):setCustomObjectName("Foundry Archive Interface - LOCKED")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryArchiveTerminalMenuComponent")
+	writeData("droidFoundryArchiveTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
+	writeData("droidFoundryOverseerState:" .. rootID, 0)
+
+	return true
+end
+
+function DroidFoundry:getOverseerNetworkStatus(rootID)
+	local productionDisabled = tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) == 1
+	local sentinelDisabled = tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) == 1
+	local maintenanceDisabled = tonumber(readData("droidFoundryMaintenanceDisabled:" .. rootID)) == 1
+
+	local productionLine = productionDisabled
+		and "Production Network: OFFLINE - B1 reinforcement protocol disrupted."
+		or "Production Network: ONLINE - B1 reinforcements available."
+
+	local sentinelLine = sentinelDisabled
+		and "Sentinel Network: OFFLINE - Droideka reinforcement protocol disrupted."
+		or "Sentinel Network: ONLINE - Droideka reinforcements available."
+
+	local maintenanceLine = maintenanceDisabled
+		and "Maintenance Network: OFFLINE - Overseer repair-support protocol disrupted."
+		or "Maintenance Network: ONLINE - Repair support available."
+
+	local onlineCount = 0
+	if (not productionDisabled) then onlineCount = onlineCount + 1 end
+	if (not sentinelDisabled) then onlineCount = onlineCount + 1 end
+	if (not maintenanceDisabled) then onlineCount = onlineCount + 1 end
+
+	return productionLine, sentinelLine, maintenanceLine, onlineCount
+end
+
+function DroidFoundry:showOverseerStatusSui(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Foundry Archive interface is not assigned to your expedition.")
+		return
+	end
+
+	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be online before the Overseer can be engaged.")
+		return
+	end
+
+	local productionLine, sentinelLine, maintenanceLine, onlineCount = self:getOverseerNetworkStatus(rootID)
+
+	local warning = ""
+	if (onlineCount == 3) then
+		warning = "\n\nWARNING: All auxiliary Foundry systems remain operational. The Overseer will engage with full reinforcement and repair support."
+	elseif (onlineCount > 0) then
+		warning = "\n\nOne or more auxiliary Foundry systems remain operational. Disabling them elsewhere in the Foundry will weaken the Overseer encounter."
+	else
+		warning = "\n\nAll auxiliary Foundry systems have been disabled. The Overseer's support protocols are fully disrupted."
+	end
+
+	local prompt =
+		"Current Foundry systems:\n\n" ..
+		productionLine .. "\n" ..
+		sentinelLine .. "\n" ..
+		maintenanceLine ..
+		warning ..
+		"\n\nEngage the Foundry Overseer?"
+
+	local sui = SuiMessageBox.new("DroidFoundry", "overseerStatusSuiCallback")
+	sui.setTitle("FOUNDRY OVERSEER PROTOCOL")
+	sui.setPrompt(prompt)
+	sui.setOkButtonText("Engage Overseer")
+	sui.setCancelButtonText("Not Yet")
+	sui.setTargetNetworkId(SceneObject(pTerminal):getObjectID())
+	sui.setForceCloseDistance(8)
+	sui.setProperty("", "Size", "520,330")
+	sui.sendTo(pPlayer)
+end
+
+function DroidFoundry:overseerStatusSuiCallback(pPlayer, pSui, eventIndex)
+	if (pPlayer == nil or eventIndex ~= 0) then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local terminalID = suiPageData:getTargetNetworkId()
+	local pTerminal = getSceneObject(terminalID)
+
+	if (pTerminal == nil) then
+		return
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pTerminal, 8)) then
+		return
+	end
+
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+	if (rootID == 0) then
+		return
+	end
+
+	self:startOverseerEncounter(pPlayer, rootID)
+end
+
+function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+	if (pPlayer == nil or rootID == 0) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (not self:isParticipant(rootID, playerID) or self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Foundry Archive interface is not assigned to your expedition.")
+		return false
+	end
+
+	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be online before the Overseer can be engaged.")
+		return false
+	end
+
+	local stateKey = "droidFoundryOverseerState:" .. rootID
+	if ((tonumber(readData(stateKey)) or 0) ~= 0) then
+		return false
+	end
+
+	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		return false
+	end
+
+	writeData(stateKey, 1)
+
+	local boss = self.overseerAnchor
+	local pBoss = spawnMobile(
+		"dungeon1",
+		"foundry_overseer_ig_series",
+		0,
+		boss.x,
+		boss.z,
+		boss.y,
+		boss.heading or 0,
+		cellID
+	)
+
+	if (pBoss == nil) then
+		writeData(stateKey, 0)
+		printLuaError("DroidFoundry:startOverseerEncounter failed to spawn Overseer for instance " .. rootID)
+		return false
+	end
+
+	self:trackEncounterObject(rootID, pBoss)
+	writeData("droidFoundryOverseerBoss:" .. rootID, SceneObject(pBoss):getObjectID())
+	writeData("droidFoundryOverseerTarget:" .. rootID, playerID)
+	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyOverseerDestroyed", pBoss)
+
+	-- Optional-wing completion directly controls the opening support package.
+	-- Production online: two B1 reinforcements from area A.
+	if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) ~= 1) then
+		self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 1)
+		self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 2)
+	end
+
+	-- Sentinel online: one Droideka reinforcement from area B.
+	if (tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) ~= 1) then
+		self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 1)
+	end
+
+	-- Maintenance online: one Repair Droid from the third point in area A.
+	-- Actual healing behavior remains a later boss-mechanics pass.
+	if (tonumber(readData("droidFoundryMaintenanceDisabled:" .. rootID)) ~= 1) then
+		local pRepair = self:spawnOverseerSupport(rootID, "foundry_repair_droid", 1, 3)
+		if (pRepair ~= nil) then
+			writeData("droidFoundryOverseerRepairDroid:" .. rootID, SceneObject(pRepair):getObjectID())
+		end
+	end
+
+	self:sendInstanceMessage(rootID, "Foundry Overseer combat protocol engaged.")
+
+	writeData("droidFoundryOverseerPhase75:" .. rootID, 0)
+	writeData("droidFoundryOverseerPhase50:" .. rootID, 0)
+	writeData("droidFoundryOverseerPhase25:" .. rootID, 0)
+	writeData("droidFoundryOverseerLastRepair:" .. rootID, os.time())
+
+	local ai = AiAgent(pBoss)
+	if (ai ~= nil) then
+		ai:setAITemplate()
+		ai:addDefender(pPlayer)
+	end
+
+	createEvent(2000, "DroidFoundry", "overseerMechanicsLoop", pBoss, tostring(rootID))
+	return true
+end
+
+function DroidFoundry:healOverseerFromMaintenance(rootID, pBoss)
+	if (pBoss == nil) then
+		return false
+	end
+
+	if (tonumber(readData("droidFoundryMaintenanceDisabled:" .. rootID)) == 1) then
+		return false
+	end
+
+	local repairID = tonumber(readData("droidFoundryOverseerRepairDroid:" .. rootID)) or 0
+	if (repairID == 0) then
+		return false
+	end
+
+	local pRepair = getSceneObject(repairID)
+	if (pRepair == nil or CreatureObject(pRepair):isDead() or CreatureObject(pRepair):isIncapacitated()) then
+		return false
+	end
+
+	local boss = CreatureObject(pBoss)
+	if (boss:isDead() or boss:isIncapacitated()) then
+		return false
+	end
+
+	-- Repair 4% of each primary HAM pool every successful pulse.
+	-- Primary pools are Health (0), Action (3), and Mind (6).
+	local repaired = false
+	local pools = { 0, 3, 6 }
+
+	for i = 1, #pools, 1 do
+		local pool = pools[i]
+		local current = tonumber(boss:getHAM(pool)) or 0
+		local maximum = tonumber(boss:getMaxHAM(pool)) or 0
+
+		if (maximum > 0 and current > 0 and current < maximum) then
+			local amount = math.max(1, math.floor(maximum * 0.04))
+			boss:setHAM(pool, math.min(maximum, current + amount))
+			repaired = true
+		end
+	end
+
+	return repaired
+end
+
+function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
+	local rootID = tonumber(rootIDString) or 0
+	if (pBoss == nil or rootID == 0) then
+		return 0
+	end
+
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		(tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return 0
+	end
+
+	local bossID = SceneObject(pBoss):getObjectID()
+	if (bossID == 0 or bossID ~= (tonumber(readData("droidFoundryOverseerBoss:" .. rootID)) or 0)) then
+		return 0
+	end
+
+	local boss = CreatureObject(pBoss)
+	if (boss:isDead() or boss:isIncapacitated()) then
+		return 0
+	end
+
+	local currentHealth = tonumber(boss:getHAM(0)) or 0
+	local maxHealth = tonumber(boss:getMaxHAM(0)) or 0
+
+	if (maxHealth <= 0) then
+		createEvent(2000, "DroidFoundry", "overseerMechanicsLoop", pBoss, tostring(rootID))
+		return 0
+	end
+
+	local healthPercent = (currentHealth / maxHealth) * 100
+
+	if (healthPercent <= 75 and tonumber(readData("droidFoundryOverseerPhase75:" .. rootID)) ~= 1) then
+		writeData("droidFoundryOverseerPhase75:" .. rootID, 1)
+
+		if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) ~= 1) then
+			self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 2)
+			self:sendInstanceMessage(rootID, "Production Network dispatches an emergency B1 reinforcement.")
+		else
+			self:sendInstanceMessage(rootID, "Overseer requests Production reinforcements, but the Production Network is offline.")
+		end
+	end
+
+	if (healthPercent <= 50 and tonumber(readData("droidFoundryOverseerPhase50:" .. rootID)) ~= 1) then
+		writeData("droidFoundryOverseerPhase50:" .. rootID, 1)
+
+		if (tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) ~= 1) then
+			self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 2)
+			self:sendInstanceMessage(rootID, "Sentinel Network deploys an emergency Droideka defender.")
+		else
+			self:sendInstanceMessage(rootID, "Overseer requests Sentinel support, but the Sentinel Network is offline.")
+		end
+	end
+
+	if (healthPercent <= 25 and tonumber(readData("droidFoundryOverseerPhase25:" .. rootID)) ~= 1) then
+		writeData("droidFoundryOverseerPhase25:" .. rootID, 1)
+		self:spawnOverseerSupport(rootID, "foundry_elite_b2_enforcer", 2, 3)
+		self:sendInstanceMessage(rootID, "Overseer failsafe combat unit deployed.")
+	end
+
+	local now = os.time()
+	local lastRepair = tonumber(readData("droidFoundryOverseerLastRepair:" .. rootID)) or 0
+
+	if (now - lastRepair >= 8) then
+		writeData("droidFoundryOverseerLastRepair:" .. rootID, now)
+
+		if (self:healOverseerFromMaintenance(rootID, pBoss)) then
+			self:sendInstanceMessage(rootID, "Maintenance Repair Droid restores Overseer integrity.")
+		end
+	end
+
+	createEvent(2000, "DroidFoundry", "overseerMechanicsLoop", pBoss, tostring(rootID))
+	return 0
+end
+
+function DroidFoundry:notifyOverseerDestroyed(pBoss)
+	if (pBoss == nil) then
+		return 1
+	end
+
+	local bossID = SceneObject(pBoss):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. bossID)) or 0
+
+	if (rootID == 0 or tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1) then
+		return 1
+	end
+
+	writeData("droidFoundryOverseerState:" .. rootID, 2)
+	self:sendInstanceMessage(rootID, "Foundry Overseer neutralized. Archive access has been unlocked.")
+
+	local terminalID = tonumber(readData("droidFoundryArchiveTerminal:" .. rootID)) or 0
+	local pTerminal = getSceneObject(terminalID)
+	if (pTerminal ~= nil) then
+		SceneObject(pTerminal):setCustomObjectName("Foundry Archive Interface - UNLOCKED")
+	end
+
+	return 1
 end
 
 function DroidFoundry:sendInstanceMessage(rootID, message)
@@ -1045,6 +2292,148 @@ function DroidFoundry:checkNexusEncounterComplete(rootID)
 
 	self:sendInstanceMessage(rootID, "Foundry Nexus security response neutralized. The control network is now online.")
 	return true
+end
+
+DroidFoundryArchiveTerminalMenuComponent = {}
+
+function DroidFoundryArchiveTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil) then
+		return
+	end
+
+	local response = LuaObjectMenuResponse(pMenuResponse)
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+	local state = tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0
+
+	if (state == 0) then
+		response:addRadialMenuItem(20, 3, "Engage Foundry Overseer")
+	elseif (state == 1) then
+		response:addRadialMenuItem(20, 3, "Overseer Protocol Active")
+	else
+		response:addRadialMenuItem(20, 3, "Access Foundry Archive")
+	end
+end
+
+function DroidFoundryArchiveTerminalMenuComponent:handleObjectMenuSelect(pSceneObject, pPlayer, selectedID)
+	if (pSceneObject == nil or pPlayer == nil or tonumber(selectedID) ~= 20) then
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):isIncapacitated() or CreatureObject(pPlayer):isDead()) then
+		return 0
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pSceneObject, 8)) then
+		return 0
+	end
+
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+	local state = tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0
+
+	if (state == 0) then
+		DroidFoundry:showOverseerStatusSui(pSceneObject, pPlayer, rootID)
+	elseif (state == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Overseer encounter is already active.")
+	else
+		CreatureObject(pPlayer):sendSystemMessage("Foundry Archive rewards are not yet implemented.")
+	end
+
+	return 0
+end
+
+DroidFoundryMaintenanceTerminalMenuComponent = {}
+
+function DroidFoundryMaintenanceTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil) then
+		return
+	end
+
+	local response = LuaObjectMenuResponse(pMenuResponse)
+	response:addRadialMenuItem(20, 3, "Disable Maintenance Network")
+end
+
+function DroidFoundryMaintenanceTerminalMenuComponent:handleObjectMenuSelect(pSceneObject, pPlayer, selectedID)
+	if (pSceneObject == nil or pPlayer == nil or tonumber(selectedID) ~= 20) then
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):isIncapacitated() or CreatureObject(pPlayer):isDead()) then
+		return 0
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pSceneObject, 8)) then
+		return 0
+	end
+
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+
+	DroidFoundry:disableMaintenanceNetwork(pSceneObject, pPlayer, rootID)
+	return 0
+end
+
+DroidFoundrySentinelTerminalMenuComponent = {}
+
+function DroidFoundrySentinelTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil) then
+		return
+	end
+
+	local response = LuaObjectMenuResponse(pMenuResponse)
+	response:addRadialMenuItem(20, 3, "Disable Sentinel Network")
+end
+
+function DroidFoundrySentinelTerminalMenuComponent:handleObjectMenuSelect(pSceneObject, pPlayer, selectedID)
+	if (pSceneObject == nil or pPlayer == nil or tonumber(selectedID) ~= 20) then
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):isIncapacitated() or CreatureObject(pPlayer):isDead()) then
+		return 0
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pSceneObject, 8)) then
+		return 0
+	end
+
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+
+	DroidFoundry:disableSentinelNetwork(pSceneObject, pPlayer, rootID)
+	return 0
+end
+
+DroidFoundryProductionTerminalMenuComponent = {}
+
+function DroidFoundryProductionTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
+	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil) then
+		return
+	end
+
+	local response = LuaObjectMenuResponse(pMenuResponse)
+	response:addRadialMenuItem(20, 3, "Disable Production Network")
+end
+
+function DroidFoundryProductionTerminalMenuComponent:handleObjectMenuSelect(pSceneObject, pPlayer, selectedID)
+	if (pSceneObject == nil or pPlayer == nil or tonumber(selectedID) ~= 20) then
+		return 0
+	end
+
+	if (CreatureObject(pPlayer):isIncapacitated() or CreatureObject(pPlayer):isDead()) then
+		return 0
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pSceneObject, 8)) then
+		return 0
+	end
+
+	local terminalID = SceneObject(pSceneObject):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+
+	DroidFoundry:disableProductionNetwork(pSceneObject, pPlayer, rootID)
+	return 0
 end
 
 DroidFoundryNexusTerminalMenuComponent = {}
