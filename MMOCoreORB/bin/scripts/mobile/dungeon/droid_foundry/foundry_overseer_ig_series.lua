@@ -37,7 +37,17 @@ foundry_overseer_ig_series = Creature:new {
 	conversationTemplate = "",
 	reactionStf = "",
 	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
-	defaultAttack = "attack"
+	defaultAttack = "attack",
+
+	-- Curated ranged boss attacks. Core3 filters these against the equipped
+	-- default weapon and selects compatible attacks through the normal AI.
+	primaryAttacks = {
+		{"suppressionfire2", ""},
+		{"fullautoarea2", ""},
+		{"strafeshot2", ""},
+		{"flurryshot2", ""},
+	},
+	secondaryAttacks = {}
 }
 
 CreatureTemplates:addCreatureTemplate(foundry_overseer_ig_series, "foundry_overseer_ig_series")

@@ -723,6 +723,8 @@ function DroidFoundry:addParticipant(rootID, pPlayer)
 	writeData("droidFoundryParticipant:" .. rootID .. ":" .. playerID, 1)
 	writeData("droidFoundryParticipantCount:" .. rootID, (tonumber(readData("droidFoundryParticipantCount:" .. rootID)) or 0) + 1)
 	writeData("droidFoundryInstance:" .. playerID, rootID)
+
+	createObserver(PLAYERKILLED, "DroidFoundry", "onParticipantKilled", pPlayer)
 end
 
 function DroidFoundry:removeParticipant(rootID, playerID)
@@ -769,6 +771,22 @@ function DroidFoundry:transportPlayer(pPlayer, rootID)
 	SceneObject(pPlayer):switchZone("dungeon1", self.entryX, self.entryZ, self.entryY, destinationCellID)
 end
 
+function DroidFoundry:clearInternalTransfer(pPlayer, rootIDString)
+	if (pPlayer == nil) then
+		return 0
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local rootID = tonumber(rootIDString) or 0
+	local key = "droidFoundryInternalTransfer:" .. playerID
+
+	if ((tonumber(readData(key)) or 0) == rootID) then
+		deleteData(key)
+	end
+
+	return 0
+end
+
 function DroidFoundry:onEnterInstance(pBuilding, pPlayer)
 	local buildingID = pBuilding ~= nil and SceneObject(pBuilding):getObjectID() or 0
 
@@ -778,6 +796,14 @@ function DroidFoundry:onEnterInstance(pBuilding, pPlayer)
 
 	local rootID = buildingID
 	local playerID = SceneObject(pPlayer):getObjectID()
+	local internalTransferKey = "droidFoundryInternalTransfer:" .. playerID
+	local internalTransferRoot = tonumber(readData(internalTransferKey)) or 0
+
+	if (internalTransferRoot == rootID and self:isParticipant(rootID, playerID)) then
+		deleteData(internalTransferKey)
+		return 0
+	end
+
 	local ownerID = tonumber(readData("droidFoundryOwner:" .. rootID)) or 0
 	local mappedRootID = tonumber(readData("droidFoundryInstance:" .. playerID)) or 0
 	local validAdmission = mappedRootID == rootID and self:isAdmitted(rootID, playerID) and self:isEligible(rootID, playerID) and (playerID == ownerID or self:isStillInExpeditionGroup(pPlayer, rootID))
@@ -802,8 +828,15 @@ function DroidFoundry:onExitInstance(pBuilding, pPlayer)
 	end
 
 	local rootID = SceneObject(pBuilding):getObjectID()
-	if (self:isParticipant(rootID, SceneObject(pPlayer):getObjectID())) then
-		self:removeParticipant(rootID, SceneObject(pPlayer):getObjectID())
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local internalTransferRoot = tonumber(readData("droidFoundryInternalTransfer:" .. playerID)) or 0
+
+	if (internalTransferRoot == rootID and self:isParticipant(rootID, playerID)) then
+		return 0
+	end
+
+	if (self:isParticipant(rootID, playerID)) then
+		self:removeParticipant(rootID, playerID)
 		createEvent(250, "DroidFoundry", "returnPlayer", pPlayer, "")
 	end
 
@@ -1103,6 +1136,15 @@ function DroidFoundry:cleanupEncounter(rootID)
 	deleteData("droidFoundryOverseerPhase50:" .. rootID)
 	deleteData("droidFoundryOverseerPhase25:" .. rootID)
 	deleteData("droidFoundryOverseerLastRepair:" .. rootID)
+	deleteData("droidFoundryOverseerNextOverload:" .. rootID)
+
+	local overseerTrackedCount = tonumber(readData("droidFoundryOverseerTrackedCount:" .. rootID)) or 0
+	for i = 1, overseerTrackedCount, 1 do
+		deleteData("droidFoundryOverseerTracked:" .. rootID .. ":" .. i)
+	end
+	deleteData("droidFoundryOverseerTrackedCount:" .. rootID)
+	self:clearOverseerDownFlags(rootID)
+
 	deleteData("droidFoundryArchiveTerminal:" .. rootID)
 	deleteData("droidFoundryRunProtocol:" .. rootID)
 	deleteData("droidFoundryEncounterCleaning:" .. rootID)
@@ -1681,6 +1723,210 @@ function DroidFoundry:spawnFinalApproachUnit(rootID, anchor, templateName, point
 	return pMobile
 end
 
+function DroidFoundry:trackOverseerObject(rootID, pObject)
+	if (rootID == 0 or pObject == nil) then
+		return
+	end
+
+	local objectID = SceneObject(pObject):getObjectID()
+	if (objectID == 0) then
+		return
+	end
+
+	local count = tonumber(readData("droidFoundryOverseerTrackedCount:" .. rootID)) or 0
+	count = count + 1
+
+	writeData("droidFoundryOverseerTrackedCount:" .. rootID, count)
+	writeData("droidFoundryOverseerTracked:" .. rootID .. ":" .. count, objectID)
+end
+
+function DroidFoundry:clearOverseerDownFlags(rootID)
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+		if (playerID ~= 0) then
+			deleteData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID)
+		end
+	end
+end
+
+function DroidFoundry:refreshOverseerParticipantReturns(rootID)
+	if ((tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return
+	end
+
+	local bossCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (bossCellID == 0) then
+		return
+	end
+
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID) and
+			tonumber(readData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID)) == 1) then
+
+			local pMember = getSceneObject(playerID)
+			if (pMember ~= nil and not CreatureObject(pMember):isDead() and
+				not CreatureObject(pMember):isIncapacitated() and
+				SceneObject(pMember):getParentID() == bossCellID) then
+
+				deleteData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID)
+				CreatureObject(pMember):sendSystemMessage("You have rejoined the Overseer encounter.")
+			end
+		end
+	end
+end
+
+function DroidFoundry:resetOverseerAfterWipe(rootID)
+	if (rootID == 0 or (tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return
+	end
+
+	writeData("droidFoundryOverseerState:" .. rootID, 0)
+	writeData("droidFoundryEncounterCleaning:" .. rootID, 1)
+
+	local trackedCount = tonumber(readData("droidFoundryOverseerTrackedCount:" .. rootID)) or 0
+	for i = 1, trackedCount, 1 do
+		local objectID = tonumber(readData("droidFoundryOverseerTracked:" .. rootID .. ":" .. i)) or 0
+		if (objectID ~= 0) then
+			self:destroyEncounterObjectByID(objectID)
+		end
+		deleteData("droidFoundryOverseerTracked:" .. rootID .. ":" .. i)
+	end
+
+	deleteData("droidFoundryOverseerTrackedCount:" .. rootID)
+	writeData("droidFoundryEncounterCleaning:" .. rootID, 0)
+
+	deleteData("droidFoundryOverseerBoss:" .. rootID)
+	deleteData("droidFoundryOverseerTarget:" .. rootID)
+	deleteData("droidFoundryOverseerRepairDroid:" .. rootID)
+	deleteData("droidFoundryOverseerPhase75:" .. rootID)
+	deleteData("droidFoundryOverseerPhase50:" .. rootID)
+	deleteData("droidFoundryOverseerPhase25:" .. rootID)
+	deleteData("droidFoundryOverseerLastRepair:" .. rootID)
+	deleteData("droidFoundryOverseerNextOverload:" .. rootID)
+
+	self:clearOverseerDownFlags(rootID)
+
+	local terminalID = tonumber(readData("droidFoundryArchiveTerminal:" .. rootID)) or 0
+	local pTerminal = getSceneObject(terminalID)
+	if (pTerminal ~= nil) then
+		SceneObject(pTerminal):setCustomObjectName("Foundry Archive Interface - LOCKED")
+	end
+
+	self:sendInstanceMessage(rootID, "All active expedition members have fallen. Overseer combat protocol has reset.")
+end
+
+function DroidFoundry:checkOverseerWipe(pPlayer, rootIDString)
+	local rootID = tonumber(rootIDString) or 0
+	if (rootID == 0 or (tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return 0
+	end
+
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+	local hasParticipant = false
+
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID)) then
+			hasParticipant = true
+
+			if (tonumber(readData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID)) ~= 1) then
+				local pMember = getSceneObject(playerID)
+
+				if (pMember ~= nil and not CreatureObject(pMember):isDead() and
+					not CreatureObject(pMember):isIncapacitated()) then
+					return 0
+				end
+
+				if (pMember ~= nil) then
+					writeData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID, 1)
+				else
+					return 0
+				end
+			end
+		end
+	end
+
+	if (hasParticipant) then
+		self:resetOverseerAfterWipe(rootID)
+	end
+
+	return 0
+end
+
+function DroidFoundry:recoverParticipantAfterDeath(pPlayer, rootIDString)
+	local rootID = tonumber(rootIDString) or 0
+	if (pPlayer == nil or rootID == 0) then
+		return 0
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (playerID == 0 or not self:isParticipant(rootID, playerID) or
+		(tonumber(readData("droidFoundryActive:" .. rootID)) or 0) ~= 1) then
+		return 0
+	end
+
+	local player = CreatureObject(pPlayer)
+
+	for pool = 0, 8, 1 do
+		local maximum = tonumber(player:getMaxHAM(pool)) or 0
+		if (maximum > 0) then
+			player:setHAM(pool, maximum)
+		end
+	end
+
+	player:setPosture(UPRIGHT)
+
+	local instance = self:getInstance(rootID)
+	local destinationCellID = instance ~= nil and instance.cellIDs[1] or 0
+
+	if (destinationCellID == 0 or getSceneObject(destinationCellID) == nil) then
+		printLuaError("DroidFoundry:recoverParticipantAfterDeath invalid Cell 1 destination for instance " .. rootID)
+		return 0
+	end
+
+	-- Internal Foundry recovery: switch back to the exact normal Cell 1 insertion
+	-- point without allowing the building exit observer to remove the participant.
+	writeData("droidFoundryInternalTransfer:" .. playerID, rootID)
+	SceneObject(pPlayer):switchZone("dungeon1", self.entryX, self.entryZ, self.entryY, destinationCellID)
+	createEvent(2000, "DroidFoundry", "clearInternalTransfer", pPlayer, tostring(rootID))
+
+	player:sendSystemMessage("You recover at the Droid Foundry entrance. Your expedition remains active.")
+
+	createObserver(PLAYERKILLED, "DroidFoundry", "onParticipantKilled", pPlayer)
+
+	return 0
+end
+
+function DroidFoundry:onParticipantKilled(pPlayer, pKiller, nothing)
+	if (pPlayer == nil) then
+		return 1
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local rootID = tonumber(readData("droidFoundryInstance:" .. playerID)) or 0
+
+	if (rootID == 0 or not self:isParticipant(rootID, playerID) or
+		(tonumber(readData("droidFoundryActive:" .. rootID)) or 0) ~= 1) then
+		return 1
+	end
+
+	if ((tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) == 1) then
+		writeData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID, 1)
+		createEvent(250, "DroidFoundry", "checkOverseerWipe", pPlayer, tostring(rootID))
+	end
+
+	createEvent(750, "DroidFoundry", "recoverParticipantAfterDeath", pPlayer, tostring(rootID))
+
+	return 1
+end
+
 function DroidFoundry:spawnOverseerSupport(rootID, templateName, anchorIndex, pointIndex)
 	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
 	if (cellID == 0 or getSceneObject(cellID) == nil) then
@@ -1711,6 +1957,7 @@ function DroidFoundry:spawnOverseerSupport(rootID, templateName, anchorIndex, po
 
 	if (pMobile ~= nil) then
 		self:trackEncounterObject(rootID, pMobile)
+		self:trackOverseerObject(rootID, pMobile)
 
 		local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
 		local pTarget = getSceneObject(targetID)
@@ -1906,6 +2153,7 @@ function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	end
 
 	writeData(stateKey, 1)
+	self:clearOverseerDownFlags(rootID)
 
 	local boss = self.overseerAnchor
 	local pBoss = spawnMobile(
@@ -1926,6 +2174,7 @@ function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	end
 
 	self:trackEncounterObject(rootID, pBoss)
+	self:trackOverseerObject(rootID, pBoss)
 	writeData("droidFoundryOverseerBoss:" .. rootID, SceneObject(pBoss):getObjectID())
 	writeData("droidFoundryOverseerTarget:" .. rootID, playerID)
 	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyOverseerDestroyed", pBoss)
@@ -1957,6 +2206,7 @@ function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	writeData("droidFoundryOverseerPhase50:" .. rootID, 0)
 	writeData("droidFoundryOverseerPhase25:" .. rootID, 0)
 	writeData("droidFoundryOverseerLastRepair:" .. rootID, os.time())
+	writeData("droidFoundryOverseerNextOverload:" .. rootID, 0)
 
 	local ai = AiAgent(pBoss)
 	if (ai ~= nil) then
@@ -2012,6 +2262,111 @@ function DroidFoundry:healOverseerFromMaintenance(rootID, pBoss)
 	return repaired
 end
 
+function DroidFoundry:beginOverseerOverload(pBoss, rootID)
+	if (pBoss == nil or rootID == 0) then
+		return false
+	end
+
+	local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
+	local pTarget = getSceneObject(targetID)
+
+	if (pTarget == nil) then
+		return false
+	end
+
+	local target = CreatureObject(pTarget)
+	if (target:isDead() or target:isIncapacitated()) then
+		return false
+	end
+
+	local expectedCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (expectedCellID == 0 or SceneObject(pTarget):getParentID() ~= expectedCellID) then
+		return false
+	end
+
+	local startX = SceneObject(pTarget):getPositionX()
+	local startY = SceneObject(pTarget):getPositionY()
+
+	self:sendInstanceMessage(rootID, "OVERSEER: Electrical overload locked. MOVE!")
+	target:sendSystemMessage("Electrical overload locked on your position. Move at least 6 meters!")
+
+	local eventData = string.format("%d|%d|%.3f|%.3f", rootID, targetID, startX, startY)
+
+	-- Give players enough time to finish normal SWG combat animations and move
+	-- clear of the locked position before the overload resolves.
+	createEvent(6000, "DroidFoundry", "resolveOverseerOverload", pBoss, eventData)
+
+	return true
+end
+
+function DroidFoundry:resolveOverseerOverload(pBoss, eventData)
+	if (pBoss == nil or eventData == nil or eventData == "") then
+		return 0
+	end
+
+	local rootString, targetString, xString, yString =
+		string.match(eventData, "^(%-?%d+)|(%-?%d+)|([%-%.%d]+)|([%-%.%d]+)$")
+
+	local rootID = tonumber(rootString) or 0
+	local targetID = tonumber(targetString) or 0
+	local startX = tonumber(xString)
+	local startY = tonumber(yString)
+
+	if (rootID == 0 or targetID == 0 or startX == nil or startY == nil) then
+		return 0
+	end
+
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		(tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return 0
+	end
+
+	local bossID = SceneObject(pBoss):getObjectID()
+	if (bossID == 0 or bossID ~= (tonumber(readData("droidFoundryOverseerBoss:" .. rootID)) or 0)) then
+		return 0
+	end
+
+	local pTarget = getSceneObject(targetID)
+	if (pTarget == nil) then
+		return 0
+	end
+
+	local target = CreatureObject(pTarget)
+	if (target:isDead() or target:isIncapacitated()) then
+		return 0
+	end
+
+	local expectedCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (expectedCellID == 0 or SceneObject(pTarget):getParentID() ~= expectedCellID) then
+		return 0
+	end
+
+	local currentX = SceneObject(pTarget):getPositionX()
+	local currentY = SceneObject(pTarget):getPositionY()
+	local deltaX = currentX - startX
+	local deltaY = currentY - startY
+	local distance = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
+
+	if (distance >= 6.0) then
+		target:sendSystemMessage("You escape the electrical overload.")
+		return 0
+	end
+
+	local maxHealth = tonumber(target:getMaxHAM(0)) or 0
+	if (maxHealth <= 0) then
+		return 0
+	end
+
+	local damage = math.floor(maxHealth * 0.15)
+	damage = math.max(750, math.min(2500, damage))
+
+	target:inflictDamage(pBoss, 0, damage, 0)
+	target:sendSystemMessage("Electrical overload hits you for " .. damage .. " damage!")
+	self:sendInstanceMessage(rootID, "Electrical overload detonates at the locked position.")
+
+	return 0
+end
+
 function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 	local rootID = tonumber(rootIDString) or 0
 	if (pBoss == nil or rootID == 0) then
@@ -2042,6 +2397,29 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 	end
 
 	local healthPercent = (currentHealth / maxHealth) * 100
+	local now = os.time()
+
+	self:refreshOverseerParticipantReturns(rootID)
+
+	-- Electrical Overload begins once the Overseer reaches 70% health.
+	-- Move 6+ meters during the 6-second warning to avoid the blast.
+	if (healthPercent <= 70) then
+		local nextOverload = tonumber(readData("droidFoundryOverseerNextOverload:" .. rootID)) or 0
+
+		if (nextOverload == 0 or now >= nextOverload) then
+			local overloadDelay = 20
+
+			if (healthPercent <= 25) then
+				overloadDelay = 9
+			elseif (healthPercent <= 50) then
+				overloadDelay = 14
+			end
+
+			if (self:beginOverseerOverload(pBoss, rootID)) then
+				writeData("droidFoundryOverseerNextOverload:" .. rootID, now + overloadDelay)
+			end
+		end
+	end
 
 	if (healthPercent <= 75 and tonumber(readData("droidFoundryOverseerPhase75:" .. rootID)) ~= 1) then
 		writeData("droidFoundryOverseerPhase75:" .. rootID, 1)
@@ -2069,9 +2447,9 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 		writeData("droidFoundryOverseerPhase25:" .. rootID, 1)
 		self:spawnOverseerSupport(rootID, "foundry_elite_b2_enforcer", 2, 3)
 		self:sendInstanceMessage(rootID, "Overseer failsafe combat unit deployed.")
+		self:sendInstanceMessage(rootID, "OVERSEER: FINAL COMBAT PROTOCOL ENGAGED.")
 	end
 
-	local now = os.time()
 	local lastRepair = tonumber(readData("droidFoundryOverseerLastRepair:" .. rootID)) or 0
 
 	if (now - lastRepair >= 8) then
