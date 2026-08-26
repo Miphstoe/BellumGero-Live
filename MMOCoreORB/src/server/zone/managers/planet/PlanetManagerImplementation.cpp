@@ -22,6 +22,7 @@
 #include "server/zone/managers/stringid/StringIdManager.h"
 
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/packets/player/PlanetTravelPointListResponse.h"
 #include "server/zone/objects/area/BadgeActiveArea.h"
@@ -252,6 +253,52 @@ void PlanetManagerImplementation::loadPlanetObjects(LuaObject* luaObject) {
 		lua_rawgeti(L, -1, i);
 
 		LuaObject planetObject(L);
+
+		String mobileTemplate = planetObject.getStringField("mobileTemplate");
+		bool testCenterOnly = planetObject.getIntField("testCenterOnly") != 0;
+
+		// Optional TC-only static mobile support. Existing planetObjects that
+		// use templateFile continue through the original object-loading path.
+		if (!mobileTemplate.isEmpty()) {
+			if (testCenterOnly && !ConfigManager::instance()->getCharacterBuilderEnabled()) {
+				planetObject.pop();
+				continue;
+			}
+
+			float x = planetObject.getFloatField("x");
+			float y = planetObject.getFloatField("y");
+			float z = planetObject.getFloatField("z");
+			float headingDegrees = planetObject.getFloatField("heading");
+			float headingRadians = headingDegrees * 0.01745329251994329577f;
+			uint64 parentID = planetObject.getLongField("parent");
+
+			CreatureObject* creature = zone->getCreatureManager()->spawnCreature(
+				mobileTemplate.hashCode(),
+				0,
+				x,
+				z,
+				y,
+				parentID,
+				false,
+				headingRadians
+			);
+
+			if (creature != nullptr) {
+				Locker creatureLocker(creature);
+
+				// Rebuild the AI tree after the selected mobile profile has
+				// loaded so STATIONARY + NOAIAGGRO is applied to dummies.
+				if (creature->isAiAgent()) {
+					AiAgent* agent = creature->asAiAgent();
+
+					if (agent != nullptr)
+						agent->setAITemplate();
+				}
+			}
+
+			planetObject.pop();
+			continue;
+		}
 
 		String templateFile = planetObject.getStringField("templateFile");
 
