@@ -54,8 +54,10 @@ public:
 		if (quality < 0.0f)
 			return 0.0f;
 
-		if (quality > 1.0f)
-			return 1.0f;
+		// Foundry chassis can deliberately exceed the normal 100% crafted
+		// ceiling. 60 power_level maps to at most 110% effective chassis quality.
+		if (quality > 1.10f)
+			return 1.10f;
 
 		return quality;
 	}
@@ -86,6 +88,24 @@ public:
 			return CombatDroidProfile(true, 2000, 8000,
 				2.40f, 1.60f, 0.28f, 0.52f,
 				50.0f, 140.0f, 90.0f, 180.0f, 330);
+
+		case DroidObject::BATTLE_DROID:
+			// Foundry B1: offensive/skirmisher bias.
+			return CombatDroidProfile(true, 1750, 7000,
+				1.85f, 1.10f, 0.32f, 0.68f,
+				145.0f, 360.0f, 180.0f, 450.0f, 550);
+
+		case DroidObject::SUPER_BATTLE_DROID:
+			// Foundry B2: durability bias.
+			return CombatDroidProfile(true, 2125, 8500,
+				2.10f, 1.35f, 0.28f, 0.60f,
+				150.0f, 340.0f, 190.0f, 430.0f, 550);
+
+		case DroidObject::DROIDECA:
+			// Foundry Droideka: defensive platform with strong ranged pressure.
+			return CombatDroidProfile(true, 1900, 7600,
+				1.75f, 1.05f, 0.32f, 0.66f,
+				155.0f, 350.0f, 195.0f, 445.0f, 550);
 
 		default:
 			return CombatDroidProfile();
@@ -150,8 +170,10 @@ public:
 
 		float percentage = rating / (float)profile.maximumUsefulCombatRating;
 
-		if (percentage > 1.0f)
-			percentage = 1.0f;
+		// Foundry Combat Modules roll to 125 versus the normal crafted ceiling of 110.
+		const float maximumFoundryPercentage = 125.0f / 110.0f;
+		if (percentage > maximumFoundryPercentage)
+			percentage = maximumFoundryPercentage;
 
 		return percentage;
 	}
@@ -192,20 +214,27 @@ public:
 		return 2;
 	}
 
-	static float determineArmorResistance(int armorModuleLevel) {
-		if (armorModuleLevel > 6)
-			armorModuleLevel = 6;
+	static float determineArmorResistance(int armorModuleLevel, int droidType = -1) {
+		if (armorModuleLevel > 8)
+			armorModuleLevel = 8;
 
+		float resistance = 0.0f;
 		if (armorModuleLevel == 1 || armorModuleLevel == 4)
-			return 15.0f;
+			resistance = 15.0f;
+		else if (armorModuleLevel == 2 || armorModuleLevel == 5)
+			resistance = 25.0f;
+		else if (armorModuleLevel == 3 || armorModuleLevel == 6)
+			resistance = 40.0f;
+		else if (armorModuleLevel == 7)
+			resistance = 50.0f;
+		else if (armorModuleLevel == 8)
+			resistance = 60.0f;
 
-		if (armorModuleLevel == 2 || armorModuleLevel == 5)
-			return 25.0f;
+		// Droideka is the premium defensive specialist.
+		if (droidType == DroidObject::DROIDECA && resistance > 0.0f)
+			resistance += 5.0f;
 
-		if (armorModuleLevel == 3 || armorModuleLevel == 6)
-			return 40.0f;
-
-		return 0.0f;
+		return resistance;
 	}
 
 	static int determineLevel(float quality, int droidType, int combatRating, int armorModuleLevel) {
@@ -234,7 +263,7 @@ public:
 		float attackSpeed = determineSpeed(droidType, ham);
 		float hitChance = determineHit(droidType, ham);
 		int armorRating = determineArmorRating(armorModuleLevel);
-		float resistance = determineArmorResistance(armorModuleLevel);
+		float resistance = determineArmorResistance(armorModuleLevel, droidType);
 		float dps = ((minimumDamage + maximumDamage) / 2.0f) / attackSpeed;
 		int regeneration = Math::max(1, ham / 10);
 

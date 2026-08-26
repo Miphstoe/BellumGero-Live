@@ -107,6 +107,7 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 
 	int size = serverScriptCRCList.getTableSize();
 	int count = 0;
+	int refreshed = 0;
 
 	lua_State* L = serverScriptCRCList.getLuaState();
 
@@ -143,11 +144,27 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 				schematicCrcMap.put(schematic->getClientObjectCRC(), schematic);
 
 			count++;
+		} else {
+			SharedObjectTemplate* templateData = TemplateManager::instance()->getTemplate(servercrc);
+
+			if (templateData != nullptr && schematic->getClientObjectCRC() != templateData->getClientObjectCRC()) {
+				uint32 currentClientCRC = templateData->getClientObjectCRC();
+
+				schematic->setClientObjectCRC(currentClientCRC);
+
+				if (!schematicCrcMap.contains(currentClientCRC))
+					schematicCrcMap.put(currentClientCRC, schematic);
+
+				refreshed++;
+			}
 
 		}
 	}
 
 	info("Loaded " + String::valueOf(count) + " schematics from " + file, true);
+
+	if (refreshed > 0)
+		info("Refreshed " + String::valueOf(refreshed) + " persisted schematic client CRCs from current templates", true);
 
 	serverScriptCRCList.pop();
 }

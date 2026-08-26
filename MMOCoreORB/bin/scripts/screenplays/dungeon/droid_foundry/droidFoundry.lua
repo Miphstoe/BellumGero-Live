@@ -12,6 +12,12 @@ DroidFoundry = ScreenPlay:new {
 	participantRange = 50,
 	admissionTimeoutSeconds = 5,
 
+	-- Personal Archive reward tuning. Every eligible participant receives one
+	-- guaranteed component. The independent schematic jackpot is 0.75% total.
+	archiveComponentLootGroup = "droid_foundry_components",
+	archiveSchematicLootGroup = "droid_foundry_schematics",
+	archiveSchematicChancePerMillion = 7500,
+
 	nexusCellIndex = 5,
 	nexusTerminalTemplate = "object/tangible/terminal/terminal_droid_foundry_nexus.iff",
 	nexusTerminal = {
@@ -2464,6 +2470,68 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 	return 0
 end
 
+function DroidFoundry:prepareArchiveRewards(rootID)
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID)) then
+			writeData("droidFoundryArchiveEligible:" .. rootID .. ":" .. playerID, 1)
+			deleteData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID)
+		end
+	end
+end
+
+function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then return false end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (tonumber(readData("droidFoundryOverseerState:" .. rootID)) ~= 2 or
+		not self:isParticipant(rootID, playerID) or self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		CreatureObject(pPlayer):sendSystemMessage("This Foundry Archive is not available to your expedition.")
+		return false
+	end
+	if (tonumber(readData("droidFoundryArchiveEligible:" .. rootID .. ":" .. playerID)) ~= 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You were not present when this Archive reward was unlocked.")
+		return false
+	end
+	if (tonumber(readData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID)) == 1) then
+		CreatureObject(pPlayer):sendSystemMessage("You have already claimed your reward from this Foundry Archive.")
+		return false
+	end
+
+	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage("You need inventory space before accessing the Foundry Archive.")
+		return false
+	end
+
+	local componentOID = createLoot(pInventory, self.archiveComponentLootGroup, 175, true)
+	if (componentOID == nil or tonumber(componentOID) == 0) then
+		CreatureObject(pPlayer):sendSystemMessage("The Foundry Archive failed to materialize your component. Try again.")
+		return false
+	end
+	writeData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID, 1)
+
+	local componentName = "a Foundry component"
+	local pComponent = getSceneObject(tonumber(componentOID))
+	if (pComponent ~= nil) then componentName = SceneObject(pComponent):getDisplayedName() or componentName end
+	CreatureObject(pPlayer):sendSystemMessage("\\#00FF00Foundry Archive reward: " .. componentName .. ".\\#FFFFFF")
+
+	if (math.random(1, 1000000) <= self.archiveSchematicChancePerMillion and
+		not SceneObject(pInventory):isContainerFullRecursive()) then
+		local schematicOID = createLoot(pInventory, self.archiveSchematicLootGroup, 175, true)
+		if (schematicOID ~= nil and tonumber(schematicOID) ~= 0) then
+			local schematicName = "a rare combat droid schematic"
+			local pSchematic = getSceneObject(tonumber(schematicOID))
+			if (pSchematic ~= nil) then schematicName = SceneObject(pSchematic):getDisplayedName() or schematicName end
+			CreatureObject(pPlayer):sendSystemMessage("\\#FFD700JACKPOT! The Foundry Archive also contains " .. schematicName .. "!\\#FFFFFF")
+			self:sendInstanceMessage(rootID, SceneObject(pPlayer):getDisplayedName() .. " recovered a rare combat droid schematic from the Foundry Archive!")
+		end
+	end
+	return true
+end
+
 function DroidFoundry:notifyOverseerDestroyed(pBoss)
 	if (pBoss == nil) then
 		return 1
@@ -2477,6 +2545,7 @@ function DroidFoundry:notifyOverseerDestroyed(pBoss)
 	end
 
 	writeData("droidFoundryOverseerState:" .. rootID, 2)
+	self:prepareArchiveRewards(rootID)
 	self:sendInstanceMessage(rootID, "Foundry Overseer neutralized. Archive access has been unlocked.")
 
 	local terminalID = tonumber(readData("droidFoundryArchiveTerminal:" .. rootID)) or 0
@@ -2715,7 +2784,7 @@ function DroidFoundryArchiveTerminalMenuComponent:handleObjectMenuSelect(pSceneO
 	elseif (state == 1) then
 		CreatureObject(pPlayer):sendSystemMessage("The Foundry Overseer encounter is already active.")
 	else
-		CreatureObject(pPlayer):sendSystemMessage("Foundry Archive rewards are not yet implemented.")
+		DroidFoundry:claimArchiveReward(pSceneObject, pPlayer, rootID)
 	end
 
 	return 0

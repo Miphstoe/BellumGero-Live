@@ -38,6 +38,7 @@ static const std::vector<String> SKIPPED_LOOT_GROUPS = {
 	"looted_container",
     "color_crystals",
     "power_crystals",
+    "droid_foundry_components",
     // … add more exact group names here …
 };
 // ————————————————————————————————————————————————

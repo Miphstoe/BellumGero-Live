@@ -210,3 +210,7 @@ includeFile("tangible/loot/loot_schematic/cabinet_technical_schematic.lua")
 includeFile("tangible/loot/loot_schematic/chest_plain_schematic.lua")
 includeFile("tangible/loot/loot_schematic/chest_technical_schematic.lua")
 
+
+includeFile("tangible/loot/loot_schematic/battle_droid_foundry_schematic.lua")
+includeFile("tangible/loot/loot_schematic/super_battle_droid_foundry_schematic.lua")
+includeFile("tangible/loot/loot_schematic/droideka_foundry_schematic.lua")

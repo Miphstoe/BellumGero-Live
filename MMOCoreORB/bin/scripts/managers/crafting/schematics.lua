@@ -1919,5 +1919,13 @@ schematics = {
 	{path="object/draft_schematic/weapon/mando_acid_baton.iff"},
 	{path="object/draft_schematic/weapon/mando_power_hammer.iff"},
 	{path="object/draft_schematic/weapon/mando_knuckler.iff"},
-	{path="object/draft_schematic/weapon/mando_lava_blade.iff"}
+	{path="object/draft_schematic/weapon/mando_lava_blade.iff"},
+
+	-- Bellum Gero Droid Foundry rewarded schematics
+	{path="object/draft_schematic/droid/droid_battle_droid_foundry.iff"},
+	{path="object/draft_schematic/droid/droid_super_battle_droid_foundry.iff"},
+	{path="object/draft_schematic/droid/droid_droideka_foundry.iff"},
+	{path="object/draft_schematic/droid/component/chassis_droid_battle_droid_foundry.iff"},
+	{path="object/draft_schematic/droid/component/chassis_droid_super_battle_droid_foundry.iff"},
+	{path="object/draft_schematic/droid/component/chassis_droid_droideka_foundry.iff"},
 };

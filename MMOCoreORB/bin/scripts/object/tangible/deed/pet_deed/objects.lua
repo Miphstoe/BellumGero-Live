@@ -5887,3 +5887,19 @@ object_tangible_deed_pet_deed_shared_doctor_buff_droid = SharedTangibleObjectTem
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_doctor_buff_droid, "object/tangible/deed/pet_deed/shared_doctor_buff_droid.iff")
+
+-- Bellum Gero Droid Foundry
+object_tangible_deed_pet_deed_shared_deed_battle_droid_foundry = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/pet_deed/shared_deed_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_deed_battle_droid_foundry, "object/tangible/deed/pet_deed/shared_deed_battle_droid_foundry.iff")
+
+object_tangible_deed_pet_deed_shared_deed_super_battle_droid_foundry = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/pet_deed/shared_deed_super_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_deed_super_battle_droid_foundry, "object/tangible/deed/pet_deed/shared_deed_super_battle_droid_foundry.iff")
+
+object_tangible_deed_pet_deed_shared_deed_droideka_foundry = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/pet_deed/shared_deed_droideka_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_deed_pet_deed_shared_deed_droideka_foundry, "object/tangible/deed/pet_deed/shared_deed_droideka_foundry.iff")

@@ -14,6 +14,18 @@
 #include "templates/tangible/LootSchematicTemplate.h"
 #include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 
+namespace {
+String getFoundryCompanionChassisSchematic(const String& targetDraftSchematic) {
+	if (targetDraftSchematic == "object/draft_schematic/droid/droid_battle_droid_foundry.iff")
+		return "object/draft_schematic/droid/component/chassis_droid_battle_droid_foundry.iff";
+	if (targetDraftSchematic == "object/draft_schematic/droid/droid_super_battle_droid_foundry.iff")
+		return "object/draft_schematic/droid/component/chassis_droid_super_battle_droid_foundry.iff";
+	if (targetDraftSchematic == "object/draft_schematic/droid/droid_droideka_foundry.iff")
+		return "object/draft_schematic/droid/component/chassis_droid_droideka_foundry.iff";
+	return "";
+}
+}
+
 void LootSchematicMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
 
 	if (!sceneObject->isTangibleObject())
@@ -79,7 +91,22 @@ int LootSchematicMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 			return 0;
 		}
 
+		String companionPath = getFoundryCompanionChassisSchematic(schematicData->getTargetDraftSchematic());
+		ManagedReference<DraftSchematic*> companionSchematic = nullptr;
+		if (!companionPath.isEmpty()) {
+			companionSchematic = SchematicMap::instance()->get(companionPath.hashCode());
+			if (companionSchematic == nullptr) {
+				player->sendSystemMessage("Error learning Foundry chassis schematic, try again later");
+				error("Unable to create companion Foundry chassis schematic: " + companionPath);
+				return 0;
+			}
+		}
+
 		if(ghost->addRewardedSchematic(schematic, SchematicList::LOOT, schematicData->getTargetUseCount(), true)) {
+			if (companionSchematic != nullptr &&
+					ghost->addRewardedSchematic(companionSchematic, SchematicList::LOOT, 1, true)) {
+				player->sendSystemMessage("You also acquire one use of the matching Foundry droid chassis schematic.");
+			}
 
 			TangibleObject* tano = cast<TangibleObject*>(sceneObject);
 			if(tano != nullptr)

@@ -88,7 +88,13 @@ class DroidObject extends AiAgent {
 	public static final int DZ70 = 0xDE;
 	public static final int TREADWELL = 0xDF;
 	public static final int PROBE_DROID = 0xE1;
+	// Server-side mechanics profile IDs for Foundry-crafted droids. These are
+	// deliberately separate from the stock mobile species stored by the client
+	// templates; 0xE2 is already the global walker species ID.
+	public static final int BATTLE_DROID = 0xE5;
+	public static final int SUPER_BATTLE_DROID = 0xE6;
 
+	protected int mechanicsProfile;
 	protected int maximumHam;
 	protected int minDamage;
 	protected int maxDamage;
@@ -100,6 +106,7 @@ class DroidObject extends AiAgent {
 		Logger.setGlobalLogging(true);
 		power = MAX_POWER;
 		paintCount = 0;
+		mechanicsProfile = 0;
 		maximumHam = 55;
 		minDamage = 1;
 		maxDamage = 1;
@@ -107,6 +114,16 @@ class DroidObject extends AiAgent {
 		armor = 0;
 		resist = 0;
 		hitChance = 0.2;
+	}
+
+	@read
+	public int getMechanicsProfile() {
+		return mechanicsProfile;
+	}
+
+	@dirty
+	public void setMechanicsProfile(int profile) {
+		mechanicsProfile = profile;
 	}
 
 	/**

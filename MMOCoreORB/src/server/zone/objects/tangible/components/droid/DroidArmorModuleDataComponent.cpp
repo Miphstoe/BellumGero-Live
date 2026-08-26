@@ -5,14 +5,16 @@
 #include "DroidArmorModuleDataComponent.h"
 #include "server/zone/objects/tangible/component/droid/DroidComponent.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"
+#include "server/zone/managers/crafting/labratories/DroidMechanics.h"
 
 namespace {
 	int clampArmorModuleRating(float rating) {
 		if (rating < 0)
 			return 0;
 
-		if (rating > 6)
-			return 6;
+		if (rating > 8)
+			return 8;
+
 
 		return (int)rating;
 	}
@@ -53,32 +55,12 @@ void DroidArmorModuleDataComponent::initialize(DroidObject* droid) {
 	// Change droid resist and armor stat
 
 	int level = clampArmorModuleRating(armorModule);
-	unsigned int armor = 0;
-	float resist = 0;
+	unsigned int armor = DroidMechanics::determineArmorRating(level);
+	int droidType = droid->getMechanicsProfile();
+	if (droidType == 0)
+		droidType = droid->getSpecies();
 
-	// Set armor type
-	if (level == 0) {
-		armor = 0; // NO ARMOR
-	}
-	else if (level <= 3) {
-		armor = 1; // LIGHT ARMOR
-	}
-	else if (level <= 6) {
-		armor = 2; // MEDIUM ARMOR
-	}
-
-	// Set damage resistance
-	if (level == 1 || level == 4) {
-		resist = 15;
-	}
-	else if (level == 2 || level == 5) {
-		resist = 25;
-	}
-	else if (level == 3 || level == 6) {
-		resist = 40;
-	} else {
-		resist = 0;
-	}
+	float resist = DroidMechanics::determineArmorResistance(level, droidType);
 
 	droid->setArmor(armor);
 	droid->setResists(resist);
@@ -108,8 +90,14 @@ void DroidArmorModuleDataComponent::addToStack(BaseDroidModuleComponent* other) 
 	if (otherModule == nullptr)
 		return;
 
-	// Armor Module effectiveness has no gameplay benefit above rating 6.
-	armorModule = clampArmorModuleRating(armorModule + otherModule->armorModule);
+	// Normal armor modules retain their existing additive-to-6 behavior.
+	// A genuine Foundry 7/8 roll is preserved as the highest installed tier,
+	// so stacking ordinary rating-6 modules can never manufacture tier 7/8.
+	int incomingRating = clampArmorModuleRating(otherModule->armorModule);
+	if (armorModule > 6 || incomingRating > 6)
+		armorModule = Math::max(armorModule, incomingRating);
+	else
+		armorModule = Math::min(6, armorModule + incomingRating);
 
 	// Save capped stat in parent sceno
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
