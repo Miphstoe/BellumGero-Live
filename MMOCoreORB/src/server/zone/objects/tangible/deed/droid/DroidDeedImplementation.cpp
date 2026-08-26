@@ -336,7 +336,14 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 			if (component == nullptr || !component->hasKey("power_level"))
 				continue;
 
-			if (!component->getObjectTemplate()->getFullTemplateString().contains("droid_chassis"))
+			String chassisTemplate = component->getObjectTemplate()->getFullTemplateString();
+
+			// All droid chassis live under tangible/component/droid and end in
+			// "_chassis.iff". The older check for the contiguous text
+			// "droid_chassis" excluded Foundry names such as
+			// battle_droid_foundry_chassis.iff.
+			if (!chassisTemplate.contains("object/tangible/component/droid/") ||
+					!chassisTemplate.contains("_chassis.iff"))
 				continue;
 
 			chassisPowerLevel = component->getAttributeValue("power_level");
@@ -498,7 +505,10 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		bool combatDroid =
 			modules.containsKey("combat_module") ||
 			species == DroidObject::PROBOT ||
-			species == DroidObject::DZ70;
+			species == DroidObject::DZ70 ||
+			species == DroidObject::BATTLE_DROID ||
+			species == DroidObject::SUPER_BATTLE_DROID ||
+			species == DroidObject::DROIDECA;
 
 		// A droid carrying both Combat and Detonation Modules is still a combat
 		// droid for certification, active-slot and call-restriction purposes.

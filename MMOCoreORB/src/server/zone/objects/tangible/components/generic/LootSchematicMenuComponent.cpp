@@ -104,8 +104,8 @@ int LootSchematicMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 
 		if(ghost->addRewardedSchematic(schematic, SchematicList::LOOT, schematicData->getTargetUseCount(), true)) {
 			if (companionSchematic != nullptr &&
-					ghost->addRewardedSchematic(companionSchematic, SchematicList::LOOT, 1, true)) {
-				player->sendSystemMessage("You also acquire one use of the matching Foundry droid chassis schematic.");
+					ghost->addRewardedSchematic(companionSchematic, SchematicList::LOOT, 0, true)) {
+				player->sendSystemMessage("You permanently learn the matching Foundry droid chassis schematic.");
 			}
 
 			TangibleObject* tano = cast<TangibleObject*>(sceneObject);
