@@ -151,6 +151,11 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 						" serverCRC=" + String::valueOf(schematic->getServerObjectCRC()) +
 						" clientCRC=" + String::valueOf(schematic->getClientObjectCRC()) +
 						" target=" + path);
+
+				// We persisted this object moments ago and nothing references it yet;
+				// destroy it or every boot leaks another orphan into the draftschematics db.
+				Locker locker(schematic);
+				schematic->destroyObjectFromDatabase(true);
 				continue;
 			}
 
