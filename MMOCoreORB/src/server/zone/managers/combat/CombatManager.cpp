@@ -33,6 +33,7 @@
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/installation/TurretObject.h"
 #include "server/zone/managers/safezone/SafeZoneManager.h"
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 #include "server/zone/objects/creature/buffs/BuffCRC.h"
 
 namespace {
@@ -55,6 +56,19 @@ namespace {
 
 
 #define COMBAT_SPAM_RANGE 85 // Range at which players will see Combat Log Info
+
+int CombatManager::applyForceRun2OutgoingDamageReduction(TangibleObject* attacker, int resolvedDamage) {
+	if (attacker == nullptr || resolvedDamage <= 0 || !attacker->isCreatureObject())
+		return resolvedDamage;
+
+	CreatureObject* attackingCreature = attacker->asCreatureObject();
+
+	if (attackingCreature == nullptr || !attackingCreature->hasBuff(BuffCRC::JEDI_FORCE_RUN_2))
+		return resolvedDamage;
+
+	// Integer division matches Core3's normal final HAM-damage truncation.
+	return resolvedDamage / 10;
+}
 
 /*
 * Notes:
@@ -1244,6 +1258,23 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 	if (attacker->isPlayerCreature() && defender->isPlayerCreature() && !data.isForceAttack())
 		damage *= 0.25;
 
+	// Overt Jedi PvE damage incentive (see JediSeclusionManager): only applies
+	// to eligible Jedi specials (Force attacks or lightsaber melee) against a
+	// genuine PvE target. Computed fresh per hit from live state -- no-op for
+	// Secluded Jedi, non-Jedi attackers, players, or player pets/droids/vehicles.
+	if (attacker->isPlayerCreature() && (data.isForceAttack() || (weapon != nullptr && weapon->isJediWeapon()))) {
+		float overtPveModifier = JediSeclusionManager::getOvertJediPveDamageModifier(attacker);
+
+		if (overtPveModifier != 1.0f && JediSeclusionManager::isValidOvertJediPveDamageTarget(attacker, defender)) {
+			damage *= overtPveModifier;
+
+			if (ConfigManager::instance()->getBool("Core3.CombatManager.OvertJediPveBonusDebug", false)) {
+				attacker->info(true) << "[OvertJediPve] damage x" << overtPveModifier << " for " << attacker->getDisplayedName()
+					<< " vs " << defender->getDisplayedName() << " -- final damage " << damage;
+			}
+		}
+	}
+
 	if (damage < 1)
 		damage = 1;
 
@@ -1570,6 +1601,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		healthDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		healthDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)healthDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Health Damaged: " << healthDamage << "\n";
@@ -1605,6 +1637,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		actionDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		actionDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)actionDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Action Damaged: " << actionDamage << "\n";
@@ -1639,6 +1672,7 @@ int CombatManager::applyDamage(TangibleObject* attacker, WeaponObject* weapon, C
 
 		mindDamage -= foodMitigation;
 		totalFoodMit += foodMitigation;
+		mindDamage = applyForceRun2OutgoingDamageReduction(attacker, (int)mindDamage);
 
 #ifdef DEBUG_SPILL_DAMAGE
 		spillOverDebug << " Non-Spill Mind Damaged: " << mindDamage << "\n";
@@ -1767,6 +1801,8 @@ int CombatManager::applyDamage(CreatureObject* attacker, WeaponObject* weapon, T
 		}
 	}
 
+	damage = applyForceRun2OutgoingDamageReduction(attacker, damage);
+
 	int initialConditionDamage = defender->getConditionDamage();
 
 	defender->inflictDamage(attacker, 0, damage, true, xpType, true, true);
@@ -1832,8 +1868,14 @@ void CombatManager::applyDots(CreatureObject* attacker, CreatureObject* defender
 
 		if (effect.isDotDamageofHit()) {
 			// determine if we should use unmitigated damage
-			if (dotType != CreatureState::BLEEDING)
+			if (dotType != CreatureState::BLEEDING) {
 				damageToApply = unmitDamage;
+			} else if (attacker->hasBuff(BuffCRC::JEDI_FORCE_RUN_2)) {
+				// Bleed strength is derived from the already reduced direct hit. Restore
+				// its pre-FR2 basis because each tick applies the active FR2 penalty.
+				int64 restoredDamage = (int64)damageToApply * 10;
+				damageToApply = restoredDamage > 0x7FFFFFFF ? 0x7FFFFFFF : (int)restoredDamage;
+			}
 		}
 
 		int potency = effect.getDotPotency();
@@ -2942,6 +2984,8 @@ float CombatManager::doObjectDetonation(TangibleObject* attackerTanO, CreatureOb
 			}
 		}
 
+		damage = applyForceRun2OutgoingDamageReduction(attackerTanO, (int)damage);
+
 		// Handle spill over damage for all pools
 		if (defender->isCreatureObject() && !defender->isVehicleObject()) {
 			// Calculate Spill over
@@ -3384,6 +3428,14 @@ void CombatManager::requestDuel(CreatureObject* player, CreatureObject* targetPl
 
 	PlayerObject* ghost = player->getPlayerObject();
 	PlayerObject* targetGhost = targetPlayer->getPlayerObject();
+
+	// Jedi PvE Seclusion: defense-in-depth backstop in case this is ever
+	// reached by a path other than DuelCommand (which already rejects the
+	// request earlier with a more specific message).
+	if (JediSeclusionManager::isSecluded(player) || JediSeclusionManager::isSecluded(targetPlayer)) {
+		player->sendSystemMessage("You have chosen the Path of Seclusion and cannot participate in duels.");
+		return;
+	}
 
 	if (ghost->requestedDuelTo(targetPlayer)) {
 		StringIdChatParameter stringId("duel", "already_challenged");

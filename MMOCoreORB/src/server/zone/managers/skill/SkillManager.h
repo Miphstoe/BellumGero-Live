@@ -82,7 +82,7 @@ public:
 	bool awardSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired, bool regrant);
 	void awardDraftSchematics(Skill* skill, PlayerObject* ghost, bool notifyClient = true);
 
-	bool surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot);
+	bool surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool forceSurrender = false);
 	bool surrenderSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool regrant);
 	void surrenderAllSkills(CreatureObject* creature, bool notifyClient = true, bool removeForceProgression = true, bool removePilot = false);
 

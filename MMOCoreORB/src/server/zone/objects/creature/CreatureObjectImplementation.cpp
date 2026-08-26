@@ -96,6 +96,7 @@
 #include "server/zone/managers/director/ScreenPlayObserver.h"
 #include "server/zone/objects/player/events/SpawnHelperDroidTask.h"
 #include "server/zone/objects/player/events/ForceFocusTask.h" //force focus
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 
 float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376f;
 
@@ -1070,6 +1071,9 @@ void CreatureObjectImplementation::setHAM(int type, int value,
 }
 
 int CreatureObjectImplementation::inflictDamage(TangibleObject* attacker, int damageType, float damage, bool destroy, const String& xp, bool notifyClient, bool isCombatAction) {
+	if (xp == "dotDMG")
+		damage = CombatManager::applyForceRun2OutgoingDamageReduction(attacker, (int)damage);
+
 	if (attacker->isCreatureObject()) {
 		CreatureObject* creature = attacker->asCreatureObject();
 
@@ -3695,6 +3699,13 @@ bool CreatureObjectImplementation::isAttackableBy(CreatureObject* creature, bool
 
 		// PvP Attackable checks - both this creo and attacker are players
 		if (creature->isPlayerCreature()) {
+			// Jedi PvE Seclusion: absolute veto between two players, takes
+			// precedence over PvP mode, duel flags, bounty TEF, and faction
+			// checks below (all of which can otherwise force this to true).
+			if (JediSeclusionManager::blocksHostileInteraction(asCreatureObject(), creature)) {
+				return false;
+			}
+
 			// PvP Mode Config active, all players are attackable to one another
 			if (ConfigManager::instance()->getPvpMode()) {
 				return true;
@@ -3870,6 +3881,22 @@ bool CreatureObjectImplementation::healFactionChecks(CreatureObject* healerCreo,
 
 bool CreatureObjectImplementation::isInvulnerable()  {
 	return isPlayerCreature() && (getPvpStatusBitmask() & ObjectFlag::PLAYER) == 0;
+}
+
+bool CreatureObjectImplementation::isJediSecluded() {
+	return JediSeclusionManager::isSecluded(asCreatureObject());
+}
+
+bool CreatureObjectImplementation::isJediSeclusionEligible() {
+	return JediSeclusionManager::isJediSeclusionEligible(asCreatureObject());
+}
+
+uint64 CreatureObjectImplementation::getJediSeclusionCooldownRemaining() {
+	return JediSeclusionManager::getCooldownRemaining(asCreatureObject());
+}
+
+int CreatureObjectImplementation::requestJediSeclusionToggle(SceneObject* shrine) {
+	return JediSeclusionManager::requestToggle(asCreatureObject(), shrine);
 }
 
 bool CreatureObjectImplementation::hasBountyMissionFor(CreatureObject* target) {

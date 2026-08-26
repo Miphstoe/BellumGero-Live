@@ -23,9 +23,10 @@ void FactoryObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject
 	InstallationObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
 	menuResponse->addRadialMenuItem(29, 3, "@manf_station:options"); //Options
+	menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::MANAGE_MANUFACTURING_QUEUE, 3, "Manage Manufacturing Queue");
 
 	if (factory->getContainerObjectsSize() > 0) {
-		if(!factory->isActive()) {
+		if(!factory->isManufacturingQueueEnabled()) {
 			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU2, 3, "@manf_station:activate"); //Start manufacturing objects.
 			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU1, 3, "@manf_station:ingredients"); //List ingredients needed for station
 		} else {
@@ -50,6 +51,9 @@ int FactoryObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		return 1;
 
 	switch (selectedID) {
+	case RadialOptions::MANAGE_MANUFACTURING_QUEUE:
+		factory->sendInsertManuSui(player);
+		break;
 	case RadialOptions::SERVER_MANF_HOPPER_INPUT: /// Send ingredient Hopper
 		factory->sendIngredientHopper(player);
 		break;

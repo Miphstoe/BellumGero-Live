@@ -113,17 +113,63 @@ void GroundZoneImplementation::clearZone() {
 	HashTable<uint64, ManagedReference<SceneObject*> > tbl;
 	tbl.copyFrom(*objectMap->getMap());
 
+	const String priorityTemplate =
+			"object/building/general/rori_hyperdrive_research_facility.iff";
+
+	ManagedReference<SceneObject*> priorityObject = nullptr;
+	uint64 priorityObjectID = 0;
+
+	// Rori's Hyperdrive Research Facility can hold relationships with a large
+	// portion of the planet's loaded objects. Remove it before the normal
+	// unordered zone-clear pass to avoid the former shutdown stall.
+	if (zoneName == "rori") {
+		auto priorityIterator = tbl.iterator();
+
+		while (priorityIterator.hasNext()) {
+			ManagedReference<SceneObject*> candidate =
+					priorityIterator.getNextValue();
+
+			if (candidate == nullptr)
+				continue;
+
+			SharedObjectTemplate* candidateTemplate =
+					candidate->getObjectTemplate();
+
+			if (candidateTemplate == nullptr)
+				continue;
+
+			if (candidateTemplate->getFullTemplateString() ==
+					priorityTemplate) {
+				priorityObject = candidate;
+				priorityObjectID = candidate->getObjectID();
+				break;
+			}
+		}
+	}
+
 	zonelocker.release();
+
+	if (priorityObject != nullptr) {
+		Locker priorityLocker(priorityObject);
+		priorityObject->destroyObjectFromWorld(false);
+	}
 
 	auto iterator = tbl.iterator();
 
 	while (iterator.hasNext()) {
 		ManagedReference<SceneObject*> sceno = iterator.getNextValue();
 
-		if (sceno != nullptr) {
-			Locker locker(sceno);
-			sceno->destroyObjectFromWorld(false);
-		}
+		if (sceno == nullptr)
+			continue;
+
+		// The copied table still contains the priority object after it has been
+		// removed from the world, so do not destroy it a second time.
+		if (priorityObjectID != 0 &&
+				sceno->getObjectID() == priorityObjectID)
+			continue;
+
+		Locker locker(sceno);
+		sceno->destroyObjectFromWorld(false);
 	}
 
 	Locker zonelocker2(_this.getReferenceUnsafeStaticCast());

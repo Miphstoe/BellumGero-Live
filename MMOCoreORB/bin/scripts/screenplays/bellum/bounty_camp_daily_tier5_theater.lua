@@ -67,6 +67,7 @@ end
 
 function BellumBountyDailyTier5Theater:onSpynetMarkDown(pOwner)
 	if (pOwner ~= nil and MandoWayOfLife ~= nil) then
+		MandoWayOfLife:markDailyBountyTierComplete(pOwner, 5)
 		CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] All 5 daily missions complete! Return tomorrow for more. This is the Way.")
 		if (MandoDailyHoloStory ~= nil) then
 			pcall(function() MandoDailyHoloStory:onCampCompleted(pOwner, 5) end)

@@ -36,7 +36,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		local oldCount = MandoWayOfLife:countOldMandalorianSchematics(pPlayer)
 		if (oldCount > 0) then
 			cloned:addOption(
-				"Exchange old Mandalorian armor schematics for learnable versions (once per account).",
+				"Exchange individual old Mandalorian armor schematics one-for-one (once per account).",
 				"mando_schematic_exchange"
 			)
 			added = true
@@ -49,6 +49,18 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 			"mando_daily_bounty_fob"
 		)
 		added = true
+
+		-- Daily hunt recovery: offered only while a tier is active, so the
+		-- option always repairs a waypoint instead of advancing the chain.
+		local dailyCount = MandoWayOfLife:getDailyBountyCount(pPlayer)
+		local dailyReady = MandoWayOfLife:getDailyBountyReadyTier(pPlayer)
+		if (dailyCount > 0 and dailyReady ~= dailyCount) then
+			cloned:addOption(
+				"Re-sync my daily hunt waypoint.",
+				"mando_daily_waypoint_reset"
+			)
+			added = true
+		end
 	end
 
 	if (MandoWayOfLife:readInt(pPlayer, "chapter5Complete") == 1 and not MandoWayOfLife:hasCharacterBicepBracerRetroClaimed(pPlayer)) then
@@ -99,7 +111,59 @@ function MandoTrialmasterConvoHandler:getArcAcceptScreen(pPlayer, convoTemplate)
 	return pBase
 end
 
+-- Protected entry point. DirectorManager gives the Lua handler no error
+-- isolation: any runtime error here makes getNextConversationScreen() return
+-- nullptr in C++, the session is cancelled, and the player sees a blank
+-- conversation window with only "Stop Conversing". Wrap the real logic in
+-- pcall, log the failure, and fall back to the template intro screen so the
+-- Recruiter can never go blank again.
 function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
+	if (pPlayer == nil) then return nil end
+	local ok, result = pcall(self.getInitialScreenUnsafe, self, pPlayer, pNpc, pConvTemplate)
+
+	if (ok and result ~= nil) then
+		return result
+	end
+
+	local errorMessage
+	if (not ok) then
+		errorMessage = "getInitialScreen ERROR (blank-convo guard tripped): " .. tostring(result)
+	else
+		errorMessage = "getInitialScreen returned a nil screen (blank-convo guard tripped)."
+	end
+
+	local logOk = false
+	if (MandoWayOfLife ~= nil and MandoWayOfLife.logDiagPlayer ~= nil) then
+		logOk = pcall(MandoWayOfLife.logDiagPlayer, MandoWayOfLife, pPlayer, errorMessage)
+	end
+	if (not logOk) then
+		printLuaError("[MandoTrialmasterConvoHandler] " .. errorMessage)
+	end
+
+	local fallbackOk, fallbackResult = pcall(function()
+		local convoTemplate = LuaConversationTemplate(pConvTemplate)
+		local pFallback = convoTemplate:getScreen("intro")
+		if (pFallback == nil) then return nil end
+		local pCloned = LuaConversationScreen(pFallback):cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(
+			"My comm array is throwing static, hunter. Give me a moment and speak to me again. If this keeps up, tell the clan staff."
+		)
+		cloned:removeAllOptions()
+		cloned:addOption("Nothing.", "bye")
+		return pCloned
+	end)
+	if (fallbackOk) then
+		if (fallbackResult == nil) then
+			printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen fallback intro screen missing.")
+		end
+		return fallbackResult
+	end
+	printLuaError("[MandoTrialmasterConvoHandler] getInitialScreen fallback ERROR: " .. tostring(fallbackResult))
+	return nil
+end
+
+function MandoTrialmasterConvoHandler:getInitialScreenUnsafe(pPlayer, pNpc, pConvTemplate)
 	if (pPlayer == nil) then return nil end
 
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
@@ -159,7 +223,7 @@ function MandoTrialmasterConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTempl
 
 	-- Arc started but not complete: player is mid-arc
 	if (MandoWayOfLife:readInt(pPlayer, "chapter0Started") == 1) then
-		MandoWayOfLife:ensureFoundlingInformant(pPlayer)
+		MandoWayOfLife:ensureFoundlingInformant(pPlayer, false)
 		return self:withRecruiterRetroOptions(pPlayer, pNpc, convoTemplate:getScreen("arc_in_progress"))
 	end
 
@@ -212,7 +276,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_title_retro_grant ok=%s.", tostring(ok)))
 		return pCloned
 
-	elseif (screenID == "mando_schematic_exchange") then
+	elseif (screenID == "mando_schematic_exchange_grant") then
 		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
 			local luaScreen = LuaConversationScreen(pConvScreen)
 			local pCloned = luaScreen:cloneScreen()
@@ -227,7 +291,7 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		local cloned = LuaConversationScreen(pCloned)
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
-		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_schematic_exchange ok=%s.", tostring(ok)))
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_schematic_exchange_grant ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "mando_daily_bounty_fob") then
@@ -246,6 +310,24 @@ function MandoTrialmasterConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, 
 		cloned:setCustomDialogText(msg)
 		cloned:setStopConversation(true)
 		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_daily_bounty_fob ok=%s.", tostring(ok)))
+		return pCloned
+
+	elseif (screenID == "mando_daily_waypoint_reset") then
+		if (not MandoWayOfLife:isMandoRecruiterNpc(pNpc)) then
+			local luaScreen = LuaConversationScreen(pConvScreen)
+			local pCloned = luaScreen:cloneScreen()
+			local cloned = LuaConversationScreen(pCloned)
+			cloned:setCustomDialogText("That re-sync is handled by the Mandalorian Recruiter in the Mos Eisley cantina.")
+			cloned:setStopConversation(true)
+			return pCloned
+		end
+		local ok, msg = MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
+		local luaScreen = LuaConversationScreen(pConvScreen)
+		local pCloned = luaScreen:cloneScreen()
+		local cloned = LuaConversationScreen(pCloned)
+		cloned:setCustomDialogText(msg)
+		cloned:setStopConversation(true)
+		MandoWayOfLife:logDiagPlayer(pPlayer, string.format("Recruiter convo: mando_daily_waypoint_reset ok=%s.", tostring(ok)))
 		return pCloned
 
 	elseif (screenID == "mando_bicep_bracer_retro") then

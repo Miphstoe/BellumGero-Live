@@ -277,7 +277,7 @@ mandoTrialmasterConvoTemplate:addScreen(mando_title_retro_grant)
 mando_schematic_exchange = ConvoScreen:new {
 	id = "mando_schematic_exchange",
 	leftDialog = "",
-	customDialogText = "For veterans who obtained Mandalorian armor schematics before the recent fix: I can exchange all your old Death Watch Mandalorian armor schematics for new learnable versions. You need Master Armorsmith skill to learn them. This is a one-time exchange per login account. Another character on your account cannot claim this again.",
+	customDialogText = "I will replace each old Death Watch Mandalorian armor schematic directly in your inventory with one fresh matching copy. One individual schematic is enough; no complete set or jetpack is required. Keep at least one inventory slot free. Any Armorsmith can learn the replacement. This exchange can be claimed once per login account.",
 	stopConversation = "false",
 	options = {
 		{"Exchange my old schematics.", "mando_schematic_exchange_grant"},
@@ -304,6 +304,16 @@ mando_daily_bounty_fob = ConvoScreen:new {
 	options = {}
 }
 mandoTrialmasterConvoTemplate:addScreen(mando_daily_bounty_fob)
+
+-- Recruiter-only (handler): re-sync / rebuild the active daily bounty waypoint
+mando_daily_waypoint_reset = ConvoScreen:new {
+	id = "mando_daily_waypoint_reset",
+	leftDialog = "",
+	customDialogText = "Processing.",
+	stopConversation = "true",
+	options = {}
+}
+mandoTrialmasterConvoTemplate:addScreen(mando_daily_waypoint_reset)
 
 -- Recruiter-only (handler): One-time per login account grant of missing bicep and bracer pieces
 mando_bicep_bracer_retro = ConvoScreen:new {

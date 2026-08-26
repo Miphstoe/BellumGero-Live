@@ -271,6 +271,7 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		return removeActiveArea(zone, dynamic_cast<ActiveArea*>(object));
 
 	ManagedReference<SceneObject*> parent = object->getParent().get();
+	bool preservePersistentStructureZone = false;
 
 	try {
 		Locker locker(object);
@@ -294,7 +295,7 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		if (closeObjects != nullptr) {
 			SortedVector<ManagedReference<TreeEntry*> > closeSceneObjects;
 
-			GroundZoneComponent::removeAllObjectsFromCOV(closeObjects, closeSceneObjects, sceneObject, object);
+			GroundZoneComponent::removeAllObjectsFromCOV(closeObjects, closeSceneObjects, object, object);
 		} else {
 #ifdef COV_DEBUG
 			object->info("Null closeobjects vector in GroundZoneContainerComponent::removeObject", true);
@@ -352,19 +353,30 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 			}
 		}
 
-		SortedVector<ManagedReference<SceneObject*> >* childObjects = object->getChildObjects();
+		ZoneServer* zoneServer = oldZone->getZoneServer();
+		const bool serverShuttingDown =
+				zoneServer != nullptr && zoneServer->isServerShuttingDown();
+		preservePersistentStructureZone = serverShuttingDown && object->isStructureObject() && object->getPersistenceLevel() > 0;
 
-		//Remove all outdoor child objects from zone
-		for (int i = 0; i < childObjects->size(); ++i) {
-			ManagedReference<SceneObject*> outdoorChild = childObjects->get(i);
+		// During a full server shutdown, GroundZoneImplementation::clearZone()
+		// already destroys every object from its copied zone object map.
+		// Avoid recursively destroying this object's outdoor children here,
+		// since they will be processed individually by the zone-clear pass.
+		if (!serverShuttingDown) {
+			SortedVector<ManagedReference<SceneObject*> >* childObjects = object->getChildObjects();
 
-			if (outdoorChild == nullptr)
-				continue;
+			//Remove all outdoor child objects from zone
+			for (int i = 0; i < childObjects->size(); ++i) {
+				ManagedReference<SceneObject*> outdoorChild = childObjects->get(i);
 
-			if (outdoorChild->isInQuadTree()) {
-				Locker locker(outdoorChild);
+				if (outdoorChild == nullptr)
+					continue;
 
-				outdoorChild->destroyObjectFromWorld(true);
+				if (outdoorChild->isInQuadTree()) {
+					Locker locker(outdoorChild);
+
+					outdoorChild->destroyObjectFromWorld(true);
+				}
 			}
 		}
 
@@ -389,7 +401,8 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 
 	object->notifyRemoveFromZone();
 
-	object->setZone(nullptr);
+	if (!preservePersistentStructureZone)
+		object->setZone(nullptr);
 
 	return true;
 }

@@ -356,6 +356,7 @@ MandoWayOfLife = ScreenPlay:new {
 	DEBUG_ADMIN_TRIAL_CAMP_QA = false,
 }
 
+-- Re-enabled: crafting/schematic crash fixes landed (validity guards + quarantine); verifying learn/craft paths on dev.
 registerScreenPlay("MandoWayOfLife", true)
 
 -- Console + log/lua.log (level 1 survives default Lua file log filter). Always uses printf so lines appear on the core3 terminal / core3.log.
@@ -831,7 +832,7 @@ end
 
 -- If Foundling arc is active but the player's informant link is missing (restart, death, stale OID),
 -- link or spawn the planet singleton and re-grant the appropriate waypoint.
-function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
+function MandoWayOfLife:ensureFoundlingInformant(pPlayer, refreshWaypoint)
 	if (pPlayer == nil) then return end
 	if (self:readInt(pPlayer, "chapter0Started") ~= 1) then return end
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
@@ -839,11 +840,19 @@ function MandoWayOfLife:ensureFoundlingInformant(pPlayer)
 	local idx = self:readInt(pPlayer, "foundling.planetIndex")
 	if (idx < 1 or idx > #self.planetData) then return end
 
-	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
-	if (oid ~= 0 and getSceneObject(oid) ~= nil) then return end
-
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
 	local done = self:readInt(pPlayer, "foundling.planetDone")
+	local oid = tonumber(self:readStr(pPlayer, "foundling.informantId")) or 0
+	if (oid ~= 0 and getSceneObject(oid) ~= nil) then
+		if (refreshWaypoint) then
+			if (counting == 1 and done == 1) then
+				self:grantReturnToInformantWaypoint(pPlayer)
+			elseif (counting ~= 1) then
+				self:grantInformantWaypoint(pPlayer, self.planetData[idx])
+			end
+		end
+		return
+	end
 
 	-- No live NPC - re-spawn one for this player.
 	-- Do not grant a "find informant" waypoint while mid-quota (player should be doing missions).
@@ -971,7 +980,7 @@ function MandoWayOfLife:resyncFoundlingContactAndWaypoints(pPlayer)
 	if (self:readInt(pPlayer, "foundling.arcComplete") == 1) then return end
 	self:logDiagPlayer(pPlayer, "resyncFoundlingContactAndWaypoints: despawn + ensureFoundlingInformant.")
 	self:despawnInformant(pPlayer)
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 	CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Recruiter] Contact and waypoint refreshed for your current Foundling world.")
 end
 
@@ -1731,6 +1740,8 @@ end
 function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 	if (pPlayer == nil) then return end
 
+	self:ensureMandalorianArmorWearEligibility(pPlayer)
+
 	local arcDone = self:readInt(pPlayer, "foundling.arcComplete") == 1
 	local ch0 = self:readInt(pPlayer, "chapter0Started") == 1
 
@@ -1772,7 +1783,7 @@ function MandoWayOfLife:onPlayerLoggedIn(pPlayer)
 
 	-- Re-spawn informant if missing; handles zone restarts, NPC death, stale OIDs.
 	-- Grants the correct waypoint type based on counting/done state.
-	self:ensureFoundlingInformant(pPlayer)
+	self:ensureFoundlingInformant(pPlayer, true)
 
 	-- Resume quota-completion poll if mid-count
 	local counting = self:readInt(pPlayer, "foundling.planetCountingEnabled")
@@ -2888,6 +2899,13 @@ function MandoWayOfLife:grantChapterRankTitle(pPlayer, chapterIndex)
 	end
 end
 
+function MandoWayOfLife:ensureMandalorianArmorWearEligibility(pPlayer)
+	if (pPlayer == nil or self:getHighestEarnedChapter(pPlayer) < 5) then return end
+	if (not CreatureObject(pPlayer):hasSkill("mando_title_mandalorian")) then
+		awardSkill(pPlayer, "mando_title_mandalorian")
+	end
+end
+
 -- Grant quest-gated certification skills (removed from profession skills in bg_custom1.tre)
 function MandoWayOfLife:grantQuestCertSkills(pPlayer, chapterIndex)
 	if (pPlayer == nil) then return end
@@ -3476,7 +3494,6 @@ MandoWayOfLife.schematicExchangeMap = {
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_l_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_bicep_r_schematic.iff",
 	["object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_leggings_schematic.iff",
-	["object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff"] = "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff",
 }
 
 -- Returns the number of old Mandalorian armor schematics in the player's top-level inventory.
@@ -3551,6 +3568,9 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	if (pInventory == nil) then
 		return false, "I cannot reach your inventory."
 	end
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		return false, "Make at least one free inventory slot, then try the one-for-one exchange again."
+	end
 
 	local exchanged = 0
 	for _, pOldSchematic in ipairs(oldSchematics) do
@@ -3575,8 +3595,18 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 		end
 	end
 
-	if (exchanged < 1) then
-		return false, "Something blocked the exchange. Contact staff."
+	if (exchanged ~= #oldSchematics) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryExchangeMandalorianSchematics PARTIAL accountId=%s exchanged=%s expected=%s; account claim not set.",
+			tostring(self:getPlayerAccountId(pPlayer)),
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		))
+		return false, string.format(
+			"Only %s of %s armor schematic(s) were replaced. Your account was not marked as claimed; make inventory room and try again.",
+			tostring(exchanged),
+			tostring(#oldSchematics)
+		)
 	end
 
 	writeData(accountKey, 1)
@@ -3590,12 +3620,12 @@ function MandoWayOfLife:tryExchangeMandalorianSchematics(pPlayer)
 	))
 
 	CreatureObject(pPlayer):sendSystemMessage(string.format(
-		"[Mandalorian Way] Schematic exchange complete: %s Mandalorian armor schematic(s) replaced with learnable versions. Give them to a Master Armorsmith.",
+		"[Mandalorian Way] One-for-one exchange complete: %s old armor schematic(s) replaced with fresh matching armor schematic(s). Give them to any Armorsmith.",
 		tostring(exchanged)
 	))
 
 	return true, string.format(
-		"Done. I exchanged %s old Mandalorian armor schematic(s) for new learnable versions. Give them to a Master Armorsmith — one exchange per login account. This is the Way.",
+		"Done. I replaced %s old armor schematic(s) one-for-one with fresh matching copies. No complete set or jetpack was required. Any Armorsmith can learn them. This is the Way.",
 		tostring(exchanged)
 	)
 end
@@ -3934,6 +3964,47 @@ function MandoWayOfLife:showDailyBountyStatus(pPlayer)
 	CreatureObject(pPlayer):sendSystemMessage(statusMsg)
 end
 
+function MandoWayOfLife:cleanupDailyBountyTheater(pPlayer, theater)
+	if (pPlayer == nil or theater == nil or theater.taskName == nil) then return end
+
+	if (theater.despawnTheaterObjects ~= nil) then
+		theater:despawnTheaterObjects(pPlayer)
+	end
+	if (theater.onTheaterDespawn ~= nil) then
+		theater:onTheaterDespawn(pPlayer)
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local objectKeys = { "activeAreaId", "spawnEnterAreaId", "spawnExitAreaId", "theaterID" }
+	for i = 1, #objectKeys, 1 do
+		local dataKey = playerID .. theater.taskName .. objectKeys[i]
+		local pObject = getSceneObject(readData(dataKey))
+		if (pObject ~= nil) then
+			SceneObject(pObject):destroyObjectFromWorld()
+		end
+		deleteData(dataKey)
+	end
+
+	if (theater.theater ~= nil) then
+		for i = 1, #theater.theater, 1 do
+			local dataKey = playerID .. theater.taskName .. "theaterObject" .. i
+			local pObject = getSceneObject(readData(dataKey))
+			if (pObject ~= nil) then
+				SceneObject(pObject):destroyObjectFromWorld()
+			end
+			deleteData(dataKey)
+		end
+	end
+
+	deleteData(playerID .. theater.taskName .. ":campFinished")
+	deleteData(playerID .. theater.taskName .. ":pendingKills")
+	if (theater.setTaskFinished ~= nil) then
+		theater:setTaskFinished(pPlayer)
+	end
+	dropObserver(LOGGEDIN, theater.taskName, "onLoggedIn", pPlayer)
+	dropObserver(LOGGEDOUT, theater.taskName, "onLoggedOut", pPlayer)
+end
+
 -- Returns ok, playerMessage
 function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	if (pPlayer == nil) then return false, "No player." end
@@ -3972,10 +4043,31 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		return false, "Mission system error. Contact staff."
 	end
 
-	-- Start the theater
-	theater:start(pPlayer)
+	-- Start the theater. Task:start() returns false when this tier's persisted
+	-- ":taskStarted:" flag is still set from a previous day — daily theaters are
+	-- never explicitly finished on normal completion, so the flag survives in
+	-- server data. Self-heal the stale task without touching unrelated quest
+	-- waypoints, then retry once.
+	local started = theater:start(pPlayer)
+	if (not started and theater.hasTaskStarted ~= nil and theater:hasTaskStarted(pPlayer)) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission: stale task state for %s - finishing and retrying.",
+			theaterName
+		))
+		self:cleanupDailyBountyTheater(pPlayer, theater)
+		started = theater:start(pPlayer)
+	end
 
-	-- Increment mission count
+	if (not started) then
+		self:cleanupDailyBountyTheater(pPlayer, theater)
+		self:logDiagPlayer(pPlayer, string.format(
+			"tryAcceptDailyBountyMission FAILED: theater %s did not start (no spawn point or task error). Daily count NOT consumed.",
+			theaterName
+		))
+		return false, "The guild cannot fix a trace on a camp from this position. Move to open terrain and try again."
+	end
+
+	-- Increment mission count only after the camp actually exists
 	self:incrementDailyBountyCount(pPlayer)
 	self:clearDailyBountyReadyTier(pPlayer)
 
@@ -3994,6 +4086,84 @@ function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 		"Bounty mission accepted (Tier %s/5). Check your datapad for the waypoint. This is the Way.",
 		tostring(tier)
 	)
+end
+
+-- Returns ok, playerMessage. Re-pins the datapad waypoint for the active daily
+-- tier, rebuilding the camp when its theater no longer exists (server restart,
+-- failed spawn, stale ":taskStarted:" flag). Never consumes an extra daily count.
+-- Callable from the Recruiter conversation and the tracking fob radial.
+function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+
+	if (not self:isMandoTribesman(pPlayer)) then
+		return false, "Only Mandalorian Tribesmen run daily contracts."
+	end
+
+	local count = self:getDailyBountyCount(pPlayer)
+	if (count == 0) then
+		return false, "You have not begun today's hunt. Use your tracking fob to begin."
+	end
+
+	local ready = self:getDailyBountyReadyTier(pPlayer)
+	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS and ready >= self.DAILY_BOUNTY_MAX_MISSIONS) then
+		return false, "All five contracts are closed for today. Return tomorrow. This is the Way."
+	end
+
+	-- Camp complete but the next tier never auto-started (lost holo or event):
+	-- kick the chain forward instead of re-pinning a finished camp.
+	if (ready == count and count < self.DAILY_BOUNTY_MAX_MISSIONS) then
+		self:logDiagPlayer(pPlayer, string.format(
+			"resyncDailyBountyWaypoint: tier %s ready - restarting the auto-chain.", tostring(count)))
+		return self:tryAcceptDailyBountyMission(pPlayer, "holo")
+	end
+
+	-- Active tier equals the accepted count.
+	local tier = count
+	local theaterName = "BellumBountyDailyTier" .. tier .. "Theater"
+	local theater = _G[theaterName]
+	if (theater == nil) then
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: theater " .. theaterName .. " not found.")
+		return false, "Mission system error. Contact staff."
+	end
+
+	local pTheater = theater:getTheaterObject(pPlayer)
+	if (pTheater ~= nil) then
+		-- Theater alive: re-pin the quest-task waypoint at its anchor.
+		local pGhost = CreatureObject(pPlayer):getPlayerObject()
+		if (pGhost == nil) then
+			return false, "I cannot reach your datapad."
+		end
+		local wpId = PlayerObject(pGhost):addWaypoint(
+			SceneObject(pTheater):getZoneName(),
+			theater.waypointDescription or "Daily Bounty Camp",
+			"",
+			SceneObject(pTheater):getWorldPositionX(),
+			0,
+			SceneObject(pTheater):getWorldPositionY(),
+			WAYPOINT_YELLOW, true, true, WAYPOINTQUESTTASK)
+		if (wpId == nil) then
+			self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint: addWaypoint returned nil for " .. theaterName .. ".")
+			return false, "Your datapad rejected the waypoint. Relog and ask me again."
+		end
+		self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint OK: waypoint re-pinned for " .. theaterName .. ".")
+		return true, string.format(
+			"Waypoint re-synced to your active Tier %s bounty camp. This is the Way.", tostring(tier))
+	end
+
+	-- Theater lost (restart wiped the anchor, spawn failed after the count was
+	-- consumed, etc.): rebuild the same tier without touching the daily count.
+	self:logDiagPlayer(pPlayer, string.format(
+		"resyncDailyBountyWaypoint: theater object missing for %s - rebuilding camp.", theaterName))
+	self:cleanupDailyBountyTheater(pPlayer, theater)
+	if (theater:start(pPlayer)) then
+		return true, string.format(
+			"Your Tier %s camp went dark, so the guild traced a new one. Check your datapad. This is the Way.",
+			tostring(tier))
+	end
+
+	self:cleanupDailyBountyTheater(pPlayer, theater)
+	self:logDiagPlayer(pPlayer, "resyncDailyBountyWaypoint FAILED: rebuild of " .. theaterName .. " did not start.")
+	return false, "The guild cannot fix a trace from this position. Move to open terrain and ask me again."
 end
 
 -- Returns ok, playerMessage
@@ -4423,6 +4593,346 @@ function MandoWayOfLife:adminTrialCampQaFromTokens(pStaff, tokens)
 	self:adminTrialCampQaApply(pStaff, sub, pTarget)
 end
 
+MandoWayOfLife.adminArmorRankAliases = {
+	["foundling"] = 0,
+	["initiate"] = 1,
+	["hunter"] = 2,
+	["verdika"] = 3,
+	["clanbound"] = 4,
+	["tribesman"] = 5,
+	["mandalorian"] = 5,
+}
+
+function MandoWayOfLife:adminGrantArmorFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local rankArg = (tokens[2] ~= nil) and tostring(tokens[2]):lower() or ""
+	local grantAll = (rankArg == "all")
+	local chapter = self.adminArmorRankAliases[rankArg]
+	if (not grantAll and chapter == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin grantarmor <foundling|initiate|hunter|verdika|clanbound|tribesman|all> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = pStaff
+	if (tokens[3] ~= nil and tokens[3] ~= "") then
+		pTarget = getPlayerByName(tokens[3])
+		if (pTarget == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantarmor: character must be online. No match for: " .. tostring(tokens[3])
+			)
+			return
+		end
+	end
+
+	local templates = {}
+	local function addChapterReward(ch)
+		local reward = self.chapterRewards[ch]
+		if (type(reward) == "table") then
+			for _, template in ipairs(reward) do
+				templates[#templates + 1] = template
+			end
+		elseif (reward ~= nil) then
+			templates[#templates + 1] = reward
+		end
+	end
+
+	if (grantAll) then
+		for ch = 0, 5, 1 do
+			addChapterReward(ch)
+		end
+	else
+		addChapterReward(chapter)
+	end
+
+	if (#templates < 1) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantarmor: no armor templates found for that rank.")
+		return
+	end
+
+	local pInventory = SceneObject(pTarget):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantarmor: target has no inventory.")
+		return
+	end
+
+	local inventory = SceneObject(pInventory)
+	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	if (freeSlots < #templates) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantarmor: %s needs %s free inventory slots; only %s available.",
+			CreatureObject(pTarget):getFirstName(),
+			tostring(#templates),
+			tostring(freeSlots)
+		))
+		return
+	end
+
+	local granted = 0
+	for _, template in ipairs(templates) do
+		local pItem = self:giveSocketedArmor(pInventory, template)
+		if (pItem == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantarmor stopped after " .. tostring(granted) .. " piece(s); failed to grant " .. template
+			)
+			return
+		end
+		granted = granted + 1
+	end
+
+	local rankName = grantAll and "all ranks" or self.chapterTitles[chapter]
+	local targetName = CreatureObject(pTarget):getFirstName()
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Granted %s Mandalorian armor piece(s) for %s to %s with %s sockets each.",
+		tostring(granted),
+		tostring(rankName),
+		tostring(targetName),
+		tostring(self.ARMOR_SOCKET_COUNT)
+	))
+	if (pTarget ~= pStaff) then
+		CreatureObject(pTarget):sendSystemMessage(string.format(
+			"[Mandalorian Way] A GM granted you %s armor (%s piece(s), %s sockets each).",
+			tostring(rankName),
+			tostring(granted),
+			tostring(self.ARMOR_SOCKET_COUNT)
+		))
+	end
+end
+
+MandoWayOfLife.adminWeaponRankTemplates = {
+	[0] = {
+		"object/weapon/ranged/pistol/pistol_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/rifle/rifle_foundling_cdef_beskar.iff",
+		"object/weapon/ranged/carbine/carbine_foundling_cdef_beskar.iff",
+	},
+	[1] = {
+		"object/weapon/ranged/pistol/pistol_mando_way_geo_blaster.iff",
+	},
+	[2] = {
+		"object/weapon/ranged/carbine/carbine_mando_way_slugthrower.iff",
+	},
+	[3] = {
+		"object/weapon/ranged/rifle/rifle_mando_way_lightning.iff",
+	},
+	[4] = {},
+	[5] = {},
+}
+
+MandoWayOfLife.adminMeleeWeaponTemplates = {
+	"object/weapon/melee/polearm/mando_beskar_pike.iff",
+	"object/weapon/melee/baton/mando_stun_baton.iff",
+	"object/weapon/melee/baton/mando_acid_baton.iff",
+	"object/weapon/melee/2h_sword/mando_power_hammer.iff",
+	"object/weapon/melee/special/mando_knuckler.iff",
+	"object/weapon/melee/knife/mando_lava_blade.iff",
+}
+
+function MandoWayOfLife:adminGrantWeaponFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local rankArg = (tokens[2] ~= nil) and tostring(tokens[2]):lower() or ""
+	local grantAll = (rankArg == "all")
+	local grantMelee = (rankArg == "melee")
+	local chapter = self.adminArmorRankAliases[rankArg]
+	if (not grantAll and not grantMelee and chapter == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin grantweapon <foundling|initiate|hunter|verdika|clanbound|tribesman|melee|all> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = pStaff
+	if (tokens[3] ~= nil and tokens[3] ~= "") then
+		pTarget = getPlayerByName(tokens[3])
+		if (pTarget == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantweapon: character must be online. No match for: " .. tostring(tokens[3])
+			)
+			return
+		end
+	end
+
+	local templates = {}
+	local function addChapterWeapons(ch)
+		local rewards = self.adminWeaponRankTemplates[ch]
+		if (rewards == nil) then return end
+		for _, template in ipairs(rewards) do
+			templates[#templates + 1] = template
+		end
+	end
+
+	if (grantAll or grantMelee) then
+		for _, template in ipairs(self.adminMeleeWeaponTemplates) do
+			templates[#templates + 1] = template
+		end
+	end
+
+	if (grantAll) then
+		for ch = 0, 5, 1 do
+			addChapterWeapons(ch)
+		end
+	elseif (not grantMelee) then
+		addChapterWeapons(chapter)
+	end
+
+	if (#templates < 1) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantweapon: %s has no ranked weapon reward.",
+			tostring(self.chapterTitles[chapter])
+		))
+		return
+	end
+
+	local pInventory = SceneObject(pTarget):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantweapon: target has no inventory.")
+		return
+	end
+
+	local inventory = SceneObject(pInventory)
+	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	if (freeSlots < #templates) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantweapon: %s needs %s free inventory slots; only %s available.",
+			CreatureObject(pTarget):getFirstName(),
+			tostring(#templates),
+			tostring(freeSlots)
+		))
+		return
+	end
+
+	local granted = 0
+	for _, template in ipairs(templates) do
+		local pItem = giveItem(pInventory, template, -1)
+		if (pItem == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantweapon stopped after " .. tostring(granted) .. " weapon(s); failed to grant " .. template
+			)
+			return
+		end
+		granted = granted + 1
+	end
+
+	local rankName = nil
+	if (grantAll) then
+		rankName = "all progression and melee weapons"
+	elseif (grantMelee) then
+		rankName = "the Mandalorian melee armory"
+	else
+		rankName = self.chapterTitles[chapter]
+	end
+	local targetName = CreatureObject(pTarget):getFirstName()
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Granted %s Mandalorian weapon(s) for %s to %s.",
+		tostring(granted),
+		tostring(rankName),
+		tostring(targetName)
+	))
+	if (pTarget ~= pStaff) then
+		CreatureObject(pTarget):sendSystemMessage(string.format(
+			"[Mandalorian Way] A GM granted you %s weapon reward(s) (%s weapon(s)).",
+			tostring(rankName),
+			tostring(granted)
+		))
+	end
+end
+
+-- Admin QA: resolve an optional online player name token to a target, defaulting to the staff member.
+function MandoWayOfLife:adminResolveTargetFromToken(pStaff, nameToken, subName)
+	if (nameToken == nil or nameToken == "") then
+		return pStaff
+	end
+	local pNamed = getPlayerByName(nameToken)
+	if (pNamed == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] " .. subName .. ": character must be online. No match for: " .. tostring(nameToken)
+		)
+		return nil
+	end
+	return pNamed
+end
+
+-- Admin QA: mark the Foundling arc complete (chapter 0), granting the helmet, title, and badge
+-- through the same completeFoundlingArc path real progression uses.
+function MandoWayOfLife:adminArcDoneFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local pTarget = self:adminResolveTargetFromToken(pStaff, tokens[2], "arcdone")
+	if (pTarget == nil) then return end
+
+	local targetName = CreatureObject(pTarget):getFirstName()
+
+	self:writeInt(pTarget, "chapter0Started", 1)
+
+	if (self:isArcComplete(pTarget)) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] arcdone: %s already has the Foundling arc complete (chapter %s).",
+			targetName, tostring(self:getChapter(pTarget))
+		))
+		return
+	end
+
+	self:completeFoundlingArc(pTarget)
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Foundling arc completed for %s (chapter 0, helmet/title/badge granted).", targetName
+	))
+end
+
+-- Admin QA: jump a character to a target chapter. Advancing runs each intermediate chapter through
+-- applyChapterAdvanceAfterTrial so rewards, titles, cert skills, and badges stay consistent with real
+-- trial progression. Setting a chapter at or below the current one only rewrites the number (no rewards).
+function MandoWayOfLife:adminSetChapterFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local chapterArg = tonumber(tokens[2])
+	if (chapterArg == nil or chapterArg < 0 or chapterArg > 5 or math.floor(chapterArg) ~= chapterArg) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin setchapter <0-5> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = self:adminResolveTargetFromToken(pStaff, tokens[3], "setchapter")
+	if (pTarget == nil) then return end
+
+	local targetName = CreatureObject(pTarget):getFirstName()
+
+	-- Every chapter rank presumes a completed Foundling arc; establish it first like real progression.
+	self:writeInt(pTarget, "chapter0Started", 1)
+	if (not self:isArcComplete(pTarget)) then
+		self:completeFoundlingArc(pTarget)
+	end
+
+	if (chapterArg == 0) then
+		self:setChapter(pTarget, 0)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] %s set to chapter 0 (Foundling arc complete).", targetName
+		))
+		return
+	end
+
+	local current = self:getChapter(pTarget)
+	if (chapterArg <= current) then
+		self:setChapter(pTarget, chapterArg)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] %s chapter rewound %s -> %s (number only; no rewards granted).",
+			targetName, tostring(current), tostring(chapterArg)
+		))
+		return
+	end
+
+	for ch = current + 1, chapterArg, 1 do
+		self:applyChapterAdvanceAfterTrial(pTarget, ch)
+	end
+
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Advanced %s from chapter %s to %s with per-chapter rewards, titles, and badges.",
+		targetName, tostring(current), tostring(chapterArg)
+	))
+end
+
 function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	if (pStaff == nil) then return end
 	local sGhost = CreatureObject(pStaff):getPlayerObject()
@@ -4442,6 +4952,26 @@ function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	-- trialqa subcommand fast-path: gated by DEBUG_ADMIN_TRIAL_CAMP_QA inside the helper.
 	if (#tokens >= 1 and tokens[1]:lower() == "trialqa") then
 		self:adminTrialCampQaFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "grantarmor") then
+		self:adminGrantArmorFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "grantweapon") then
+		self:adminGrantWeaponFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "setchapter") then
+		self:adminSetChapterFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "arcdone") then
+		self:adminArcDoneFromTokens(pStaff, tokens)
 		return
 	end
 

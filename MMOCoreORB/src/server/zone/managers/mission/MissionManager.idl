@@ -101,12 +101,12 @@ class MissionManager extends Observer implements Logger {
 
 	private native void populateMissionList(MissionTerminal missionTerminal, CreatureObject player, int counter);
 
-	private native void randomizeGeneralTerminalMissions(CreatureObject player, int counter, boolean slicer);
+	private native void randomizeGeneralTerminalMissions(MissionTerminal missionTerminal, CreatureObject player, int counter, boolean slicer);
 	private native void randomizeArtisanTerminalMissions(CreatureObject player, int counter, boolean slicer);
 	private native void randomizeEntertainerTerminalMissions(CreatureObject player, int counter, boolean slicer);
 	private native void randomizeScoutTerminalMissions(CreatureObject player, int counter, boolean slicer);
 	private native void randomizeBountyTerminalMissions(CreatureObject player, int counter);
-	private native void randomizeFactionTerminalMissions(CreatureObject player, int counter, boolean slicer, final unsigned int faction);
+	private native void randomizeFactionTerminalMissions(MissionTerminal missionTerminal, CreatureObject player, int counter, boolean slicer, final unsigned int faction);
 
 	private native void randomizeGenericBountyMission(CreatureObject player, MissionObject mission, final unsigned int faction, Vector<PlayerBounty> potentialTargets);
 	private native void randomizeGenericCraftingMission(CreatureObject player, MissionObject mission, final unsigned int faction);
@@ -175,10 +175,22 @@ class MissionManager extends Observer implements Logger {
 	public native void failPlayerBountyMission(unsigned long bountyHunter, unsigned long targetID);
 	public native void invalidatePlayerBountyMissions(unsigned long targetId);
 
+	// MiphJediBHRestriction: called whenever a hunter is granted Padawan rank
+	// (force_title_jedi_rank_02) so an already-accepted player Jedi bounty
+	// mission cannot continue to be pursued/completed. No-op for NPC bounty
+	// missions or hunters with no active bounty mission.
+	public native void invalidateActivePlayerJediBountyForHunter(unsigned long hunterId);
+
 	@local
 	@dereferenced
 	private native Vector<PlayerBounty> getPotentialPlayerBountyTargets(CreatureObject player);
 	private native boolean isBountyValidForPlayer(CreatureObject player, PlayerBounty bounty);
+
+	// MiphJediBHRestriction: authoritative check for "this creature has reached
+	// Padawan Jedi rank or higher" -- the single source of truth reused by both
+	// bounty-terminal target filtering and mission-acceptance validation so the
+	// skill name isn't duplicated across call sites.
+	private native boolean isPadawanOrHigherJedi(CreatureObject creature);
 	private native void addBountyHunterToPlayerBounty(unsigned long targetId, unsigned long bountyHunterId);
 	private native void removeBountyHunterFromPlayerBounty(unsigned long targetId, unsigned long bountyHunterId);
 

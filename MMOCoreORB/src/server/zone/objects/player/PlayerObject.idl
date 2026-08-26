@@ -208,6 +208,13 @@ class PlayerObject extends IntangibleObject {
 	protected Vector3 lastLogoutWorldPosition;
 
 	protected string trainerZoneName;
+	protected unsigned long jediTrainerRerollNextTime;
+
+	// Jedi PvE Seclusion. JediConflictState: 0 = OPEN, 1 = SECLUDED.
+	// Absent on any object serialized before this field existed, which safely
+	// defaults to 0/OPEN via the constructor below -- no migration required.
+	protected int jediSeclusionState;
+	protected unsigned long jediSeclusionCooldownEndTime;
 
 	@dereferenced
 	protected transient Reference<PlayerDisconnectEvent> disconnectEvent;
@@ -376,6 +383,9 @@ class PlayerObject extends IntangibleObject {
 		pvpRating = 1200;
 
 		trainerZoneName = "";
+		jediTrainerRerollNextTime = 0;
+		jediSeclusionState = 0;
+		jediSeclusionCooldownEndTime = 0;
 
 		duelList.setNoDuplicateInsertPlan();
 		persistentMessages.setNoDuplicateInsertPlan();
@@ -976,6 +986,34 @@ class PlayerObject extends IntangibleObject {
 	@read
 	public string getTrainerZoneName() {
 		return trainerZoneName;
+	}
+
+	public void setJediTrainerRerollNextTime(unsigned long nextTime) {
+		jediTrainerRerollNextTime = nextTime;
+	}
+
+	@read
+	public unsigned long getJediTrainerRerollNextTime() {
+		return jediTrainerRerollNextTime;
+	}
+
+	// Jedi PvE Seclusion persistent state. Only JediSeclusionManager and the
+	// CreatureObject native wrappers it backs should touch these -- all
+	// eligibility/cooldown/combat-conflict logic is centralized there.
+	public void setJediSeclusionState(int state) {
+		jediSeclusionState = state;
+	}
+
+	public int getJediSeclusionState() {
+		return jediSeclusionState;
+	}
+
+	public void setJediSeclusionCooldownEndTime(unsigned long endTime) {
+		jediSeclusionCooldownEndTime = endTime;
+	}
+
+	public unsigned long getJediSeclusionCooldownEndTime() {
+		return jediSeclusionCooldownEndTime;
 	}
 
 	@local

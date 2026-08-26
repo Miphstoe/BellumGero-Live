@@ -14,6 +14,34 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-08-25 — Fix Mandalorian armor/jetpack draft schematics (root cause of schematic crashes)
+
+- **Summary:** The ten `clothing_armor_mandalorian_*` draft schematic server templates (plus `vehicle/civilian/jetpack`) were stubs missing `templateType = DRAFTSCHEMATIC` and all crafting data, so the template factory built the shared base class, the `DraftSchematicObjectTemplate` cast failed, and every created schematic was invalid — the null `schematicTemplate` behind the 2026-08-22 crafting segfaults and the "Error learning schematic, try again later" failures. Rebuilt all ten armor schematics from their working Death Watch bounty hunter counterparts (targets switched to `armor/mandalorian/*`, boots piece maps to `armor_mandalorian_shoes.iff`) and gave the jetpack a full recipe (ferrous metal + the four DWB jetpack components → `jetpack_deed.iff`). Also fixed `SchematicMap::loadDraftSchematicFile` leaking a persistent orphan object into the `draftschematics` database on every boot for each registered-but-invalid schematic (still hit by the nine stock space chassis stubs) — the freshly created invalid object is now destroyed. Verified via BellumGero-TRE-Force scan that all client shared iffs exist in stock `patch_08.tre`/`patch_11_00.tre` — no TRE work needed, contrary to the older doc's theory.
+- **Files:** `bin/scripts/object/draft_schematic/clothing/clothing_armor_mandalorian_{belt,bicep_l,bicep_r,boots,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings}.lua`, `bin/scripts/object/draft_schematic/vehicle/civilian/jetpack.lua`, `src/server/zone/managers/crafting/schematicmap/SchematicMap.cpp`
+- **Notes:** C++ + object-template lua; requires rebuild and full core3 restart. Crafting stats/ingredients mirror the DW bounty hunter set (armor) and X-34 baseline (jetpack) — rebalance freely. Space chassis draft schematics remain stubs by design; making them "valid" without data would expose empty schematics to shipwrights.
+
+### 2026-08-23 — Quarantine invalid rewarded schematics instead of destroying them
+
+- **Summary:** Hardened `SchematicList::addRewardedSchematics` (runs on every schematic list rebuild, e.g. login and skill changes) against the crash class seen in the 2026-08-22 crafting segfault. A null persisted schematic reference no longer dereferences (previously an unguarded `schem->getDraftSchematicTemplate()` call); its dangling map entry is dropped with a log line. A schematic whose template fails to resolve is now quarantined — logged with objectID/CRCs and skipped — instead of the stock behavior of silently calling `destroyObjectFromDatabase`, which could permanently delete earned quest/loot schematics after a transient template load failure or rename.
+- **Files:** `src/server/zone/objects/player/variables/SchematicList.cpp`
+- **Notes:** C++ change; requires rebuild and server restart. Quarantined schematics reappear automatically once their template resolves again. Grep `core3.log` for "Quarantining rewarded draft schematic" to inventory affected players/CRCs.
+
+### 2026-08-13 — Correct Mandalorian armor learning, exchange, and wear gates
+
+- **Summary:** Changed all ten Death Watch Mandalorian armor loot schematics from Master Armorsmith to Novice Armorsmith so any Armorsmith can learn and craft them. The recruiter now confirms and performs an armor-only one-for-one legacy exchange without requiring a complete set or jetpack, leaves the account claim available after partial failure, and requires one free inventory slot. Replaced the stock master-profession wear certifications on all ten crafted armor pieces with the character-earned Mandalorian Tribesman title skill; login restores that skill for verified Chapter 5/badge veterans without changing their selected title.
+- **Files:** `bin/scripts/object/tangible/loot/loot_schematic/death_watch_mandalorian_{belt,bicep_l,bicep_r,boots,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings}_schematic.lua`, `bin/scripts/object/tangible/wearables/armor/mandalorian/armor_mandalorian_{belt,bicep_l,bicep_r,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings,shoes}.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`
+- **Notes:** The reviewed loot, draft schematic, and crafted-object paths are complete. Each legacy armor schematic maps to one fresh copy of the same IFF; jetpack is excluded from the recruiter exchange. Crafted wearables already receive four sockets through `WearableObjectImplementation::generateSockets`, and Death Watch terminal rewards also explicitly call `setMaxSockets(4)`. Requires a zone/server restart for object-template Lua.
+### 2026-08-13 — Preserve manually removed Foundling waypoints
+
+- **Summary:** Limited waypoint replacement for an already-loaded informant to login recovery and explicit contact resets. Ordinary Trialmaster conversations no longer recreate a player-deleted waypoint when the existing contact is healthy.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`
+- **Notes:** Lua-only; zone restart or screenplay reload required.
+
+### 2026-08-11 — Restore Foundling informant waypoint on login
+
+- **Summary:** Fixed Foundling login recovery so an already-loaded shared informant restores the correct datapad waypoint. The waypoint remains intentionally absent while an unfinished planet quota is active, and the return waypoint is restored once that quota is complete.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
+- **Notes:** Lua-only; zone restart or screenplay reload required.
 ### 2026-08-13 — Beskar melee weapons: heavy armor piercing and best-in-class damage
 
 - **Summary:** Set all six Mandalorian beskar melee weapons to `HEAVY` armor piercing and rebalanced them to exactly 75 points over the strongest craftable weapon in their class, applied to both the template min/max damage and both ends of the experimental damage range so crafted results match the intended cap. Added the missing `healthAttackCost` field, which defaulted to 0 and let looted copies swing for no health.
@@ -907,3 +935,45 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Restored each scene object's template-configured attribute-list component during transient initialization, preventing persisted or deserialized objects from emitting `nullptr attribute list component` when their attributes are requested.
 - **Files:** `src/server/zone/objects/scene/SceneObjectImplementation.cpp`, `bellumgero_change_log.md`
 - **Notes:** Requires rebuilding and restarting Core3.
+
+### 2026-08-10 — Fix Recruiter blank conversation and daily FOB waypoint loss
+
+- **Summary:** Guarded the Mandalorian Recruiter initial-screen selection with a logged fallback so runtime Lua errors cannot blank the conversation. Daily bounty startup now self-heals stale task state without consuming the daily count on failure, and active hunts can re-sync their waypoint through the Recruiter or FOB radial.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_daily_bounty_fob_menu.lua`, `bin/scripts/mobile/conversations/bellum/mando_trialmaster_conv.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Harden daily FOB recovery follow-up
+
+- **Summary:** Aligned FOB re-sync gating with the Recruiter, made blank-conversation error logging safe when the Mandalorian screenplay global is unavailable, preserved the re-sync option clone independently, restored the holographic story beat when recovering a dead chain, and cleaned partial theater resources after failed starts.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bin/scripts/screenplays/bellum/mando_daily_bounty_fob_menu.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Make Recruiter and theater recovery non-destructive
+
+- **Summary:** Restricted the Recruiter error fallback to a valid exit option so it cannot route into a missing conversation screen. Failed daily theater starts now remove only their partially created anchor and active areas, preserving unrelated quest waypoints.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Complete waypoint-safe daily hunt recovery
+
+- **Summary:** Reused task-scoped theater cleanup for stale starts and rebuild failures without bulk-removing quest waypoints. Recruiter re-sync is now active-tier only, fallback logging uses the DirectorManager-registered error function, and nil-player calls retain their prior behavior.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Clear stale camp state and isolate Recruiter fallback
+
+- **Summary:** Daily theater cleanup now removes stale completion and pending-kill bookkeeping before rebuilding a camp. Recruiter recovery logging and fallback-screen construction are independently protected so secondary Lua errors cannot escape the blank-conversation guard.
+- **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bin/scripts/screenplays/bellum/convos/mando_trialmaster_conv_handler.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Persist daily tier completion outside holo delivery
+
+- **Summary:** Each daily bounty theater now records its ready tier directly when the decisive target dies, before optional holographic story delivery. Restart recovery can no longer rebuild and reward an already-cleared tier solely because the holo subsystem was unavailable.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_daily_tier1_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier2_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier3_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier4_theater.lua`, `bin/scripts/screenplays/bellum/bounty_camp_daily_tier5_theater.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.
+
+### 2026-08-10 — Remove surviving daily camp mob observers
+
+- **Summary:** Bounty camp observer setup now records player/task-owned mobile IDs. Theater recovery drops each old kill observer, removes per-mob ownership/role keys, destroys surviving camp mobs, and clears boss/completion bookkeeping even when the anchor or decor is already gone.
+- **Files:** `bin/scripts/screenplays/bellum/bounty_camp_theater_helpers.lua`, `bin/scripts/screenplays/bellum/mando_way_of_life.lua`, `bellumgero_change_log.md`
+- **Notes:** Lua-only server change; a server restart is required for the scripts to take effect.

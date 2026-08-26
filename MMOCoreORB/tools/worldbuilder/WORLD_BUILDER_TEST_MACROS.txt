@@ -1,0 +1,26 @@
+Bellum Gero World Builder suggested SWG toolbar macros
+======================================================
+
+Movement:
+/wb f
+/wb b
+/wb l
+/wb r
+/wb u
+/wb d
+
+Fine rotations:
+/wb yaw 1
+/wb yaw -1
+/wb pitch 1
+/wb pitch -1
+/wb roll 1
+/wb roll -1
+
+Coarse/fine step changes:
+/wb step 1
+/wb step 0.1
+/wb step 0.01
+/wb rotstep 15
+/wb rotstep 5
+/wb rotstep 1

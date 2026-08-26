@@ -42,7 +42,30 @@
 
 
 object_draft_schematic_vehicle_civilian_jetpack = object_draft_schematic_vehicle_civilian_shared_jetpack:new {
-    factoryCrateType = "object/factory/factory_crate_installation.iff"
+	templateType = DRAFTSCHEMATIC,
+	customObjectName = "Mandalorian Jetpack",
+	craftingToolTab = 16, -- (See DraftSchematicObjectTemplate.h)
+	complexity = 25,
+	size = 1,
+	factoryCrateSize = 1000,
+	factoryCrateType = "object/factory/factory_crate_installation.iff",
+
+	xpType = "crafting_general",
+	xp = 1800,
+	assemblySkill = "general_assembly",
+	experimentingSkill = "general_experimentation",
+	customizationSkill = "clothing_customization",
+	customizationOptions = {},
+	customizationStringNames = {},
+	customizationDefaults = {},
+	ingredientTemplateNames = {"craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n"},
+	ingredientTitleNames = {"structural_frame", "jetpack_base_unit", "jetpack_stabilizer", "fuel_dispersion_unit", "fuel_injector_tank"},
+	ingredientSlotType = {0, 1, 1, 1, 1},
+	resourceTypes = {"metal_ferrous", "object/tangible/loot/dungeon/death_watch_bunker/jetpack_base.iff", "object/tangible/loot/dungeon/death_watch_bunker/jetpack_stabilizer.iff", "object/tangible/loot/dungeon/death_watch_bunker/fuel_dispersion_unit.iff", "object/tangible/loot/dungeon/death_watch_bunker/fuel_injector_tank.iff"},
+	resourceQuantities = {500, 1, 1, 1, 1},
+	contribution = {100, 100, 100, 100, 100},
+	targetTemplate = "object/tangible/deed/vehicle_deed/jetpack_deed.iff",
+	additionalTemplates = {}
 }
 
 ObjectTemplates:addTemplate(object_draft_schematic_vehicle_civilian_jetpack, "object/draft_schematic/vehicle/civilian/jetpack.iff")

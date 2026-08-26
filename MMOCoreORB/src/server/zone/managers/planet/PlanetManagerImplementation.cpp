@@ -133,6 +133,9 @@ void PlanetManagerImplementation::loadLuaConfig() {
 	lua->init();
 
 	lua->runFile("scripts/managers/planet/planet_manager.lua");
+	// Managed World Builder destinations extend (and never replace) the stock
+	// planet tables before this planet's travel-point list is materialized.
+	lua->runFile("scripts/managers/planet/worldbuilder_travel_points.lua");
 
 	//Get's the configuration settings object for this planet.
 	LuaObject luaObject = lua->getGlobalObject(planetName);

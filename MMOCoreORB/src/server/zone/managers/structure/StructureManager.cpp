@@ -66,6 +66,25 @@
 #include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
 
 namespace StorageManagerNamespace {
+constexpr int MAX_ZONE_INDEX_DETAIL_LOGS = 50;
+
+uint64 getPrimaryOIDFromKey(const DBT* key) {
+	if (key == nullptr || key->data == nullptr || key->size != sizeof(uint64))
+		return 0;
+
+	return *reinterpret_cast<const uint64*>(key->data);
+}
+
+void logZoneIndexWarning(const String& message, AtomicInteger& counter) {
+	int count = counter.increment();
+
+	if (count <= MAX_ZONE_INDEX_DETAIL_LOGS) {
+		Logger::console.warning(message);
+	} else if (count == MAX_ZONE_INDEX_DETAIL_LOGS + 1) {
+		Logger::console.warning("PLAYERSTRUCTURE-ZONE-MISSING: additional malformed player structure index records suppressed");
+	}
+}
+
 int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 	memset(result, 0, sizeof(DBT));
 
@@ -76,6 +95,28 @@ int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 	String zoneReference;
 
 	if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData)) {
+		static AtomicInteger missingZoneLogCount;
+		uint64 objectID = getPrimaryOIDFromKey(key);
+		StringBuffer message;
+
+		message << "PLAYERSTRUCTURE-ZONE-MISSING: OID ";
+		message << (objectID != 0 ? String::valueOf(objectID) : String("<unknown>"));
+		message << " has no persisted SceneObject.zone; excluding from secondary planet index";
+
+		logZoneIndexWarning(message.toString(), missingZoneLogCount);
+
+		return DB_DONOTINDEX;
+	} else if (zoneReference.isEmpty()) {
+		static AtomicInteger emptyZoneLogCount;
+		uint64 objectID = getPrimaryOIDFromKey(key);
+		StringBuffer message;
+
+		message << "PLAYERSTRUCTURE-ZONE-MISSING: OID ";
+		message << (objectID != 0 ? String::valueOf(objectID) : String("<unknown>"));
+		message << " has an empty persisted SceneObject.zone; excluding from secondary planet index";
+
+		logZoneIndexWarning(message.toString(), emptyZoneLogCount);
+
 		return DB_DONOTINDEX;
 	} else {
 		auto data = (uint64*)malloc(sizeof(uint64)); // same size as an oid
@@ -276,10 +317,213 @@ IndexDatabase* StructureManager::createSubIndex() {
 	return initialized;
 }
 
+String StructureManager::validatePlayerStructureZoneIndex(bool logDetails, bool validateSecondaryIndex) {
+	struct ValidationStats {
+		int totalRecords = 0;
+		int validZones = 0;
+		int missingZones = 0;
+		int emptyZones = 0;
+		int zeroHashZones = 0;
+		int invalidZones = 0;
+		int indexMismatches = 0;
+		int unreadableRecords = 0;
+	};
+
+	constexpr int maxDetailLogs = 100;
+	int detailLogs = 0;
+
+	auto logDetail = [this, logDetails, &detailLogs](const String& message) {
+		if (!logDetails)
+			return;
+
+		if (detailLogs < maxDetailLogs) {
+			warning(message);
+		} else if (detailLogs == maxDetailLogs) {
+			warning("PLAYERSTRUCTURE-ZONE-VALIDATION: additional malformed player structure records suppressed");
+		}
+
+		++detailLogs;
+	};
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	IndexDatabase* playerStructuresDatabaseIndex = nullptr;
+
+	if (validateSecondaryIndex)
+		playerStructuresDatabaseIndex = createSubIndex();
+
+	if (structureDatabase == nullptr) {
+		return "PlayerStructure Zone Validation: playerstructures database unavailable";
+	}
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	ObjectDatabaseIterator iterator(structureDatabase, config);
+	ObjectInputStream objectData(2000);
+	uint64 objectID = 0;
+	ValidationStats stats;
+
+	while (iterator.getNextKeyAndValue(objectID, &objectData)) {
+		++stats.totalRecords;
+
+		String className;
+		String zoneReference;
+		uint32 serverObjectCRC = 0;
+		uint64 ownerObjectID = 0;
+
+		try {
+			Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData);
+			Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+			Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerObjectID, &objectData);
+
+			if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData)) {
+				++stats.missingZones;
+
+				StringBuffer detail;
+				detail << "PLAYERSTRUCTURE-ZONE-MISSING: OID=" << objectID
+					<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+					<< " serverObjectCRC=" << serverObjectCRC
+					<< " ownerObjectID=" << ownerObjectID
+					<< " has no persisted SceneObject.zone";
+				logDetail(detail.toString());
+
+				objectData.reset();
+				continue;
+			}
+		} catch (const Exception& e) {
+			++stats.unreadableRecords;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-UNREADABLE: OID=" << objectID << " error=" << e.getMessage();
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		} catch (...) {
+			++stats.unreadableRecords;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-UNREADABLE: OID=" << objectID << " error=<unknown>";
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		if (zoneReference.isEmpty()) {
+			++stats.emptyZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-MISSING: OID=" << objectID
+				<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+				<< " serverObjectCRC=" << serverObjectCRC
+				<< " ownerObjectID=" << ownerObjectID
+				<< " has an empty persisted SceneObject.zone";
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		uint64 expectedHash = zoneReference.hashCode();
+
+		if (expectedHash == 0) {
+			++stats.zeroHashZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-ZERO-HASH: OID=" << objectID
+				<< " zone=" << zoneReference
+				<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+				<< " serverObjectCRC=" << serverObjectCRC
+				<< " ownerObjectID=" << ownerObjectID;
+			logDetail(detail.toString());
+
+			objectData.reset();
+			continue;
+		}
+
+		++stats.validZones;
+
+		if (server != nullptr && server->getZone(zoneReference) == nullptr) {
+			++stats.invalidZones;
+
+			StringBuffer detail;
+			detail << "PLAYERSTRUCTURE-ZONE-INVALID: OID=" << objectID
+				<< " zone=" << zoneReference
+				<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+				<< " serverObjectCRC=" << serverObjectCRC
+				<< " ownerObjectID=" << ownerObjectID;
+			logDetail(detail.toString());
+		}
+
+		if (validateSecondaryIndex && playerStructuresDatabaseIndex != nullptr) {
+			IndexDatabaseIterator indexIterator(playerStructuresDatabaseIndex, config);
+			uint64 indexedObjectID = 0;
+			bool foundExpectedIndexEntry = false;
+
+			if (indexIterator.setKeyAndGetValue(expectedHash, indexedObjectID, nullptr)) {
+				if (indexedObjectID == objectID) {
+					foundExpectedIndexEntry = true;
+				} else {
+					while (indexIterator.getNextKeyAndValue(expectedHash, indexedObjectID, nullptr)) {
+						if (indexedObjectID == objectID) {
+							foundExpectedIndexEntry = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (!foundExpectedIndexEntry) {
+				++stats.indexMismatches;
+
+				StringBuffer detail;
+				detail << "PLAYERSTRUCTURE-INDEX-MISMATCH: OID=" << objectID
+					<< " zone=" << zoneReference
+					<< " expectedHash=" << expectedHash
+					<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+					<< " serverObjectCRC=" << serverObjectCRC
+					<< " ownerObjectID=" << ownerObjectID;
+
+				Reference<SharedObjectTemplate*> objectTemplate = templateManager->getTemplate(serverObjectCRC);
+				if (objectTemplate != nullptr)
+					detail << " template=" << objectTemplate->getFullTemplateString();
+
+				logDetail(detail.toString());
+			}
+		}
+
+		objectData.reset();
+	}
+
+	StringBuffer summary;
+	summary << "PlayerStructure Zone Validation:" << endl
+		<< "  Total records: " << stats.totalRecords << endl
+		<< "  Valid zones: " << stats.validZones << endl
+		<< "  Missing/empty zones: " << (stats.missingZones + stats.emptyZones) << endl
+		<< "  Missing zone variables: " << stats.missingZones << endl
+		<< "  Empty zones: " << stats.emptyZones << endl
+		<< "  Zone hashes equal to zero: " << stats.zeroHashZones << endl
+		<< "  Invalid zones: " << stats.invalidZones << endl
+		<< "  Secondary index mismatches: " << stats.indexMismatches << endl
+		<< "  Unreadable records: " << stats.unreadableRecords;
+
+	info(true) << endl << summary.toString();
+
+	return summary.toString();
+}
+
 void StructureManager::loadPlayerStructures(const String& zoneName) {
 	info("Loading player structures for zone: " + zoneName);
 
 	auto playerStructuresDatabaseIndex = createSubIndex();
+
+	static AtomicBoolean validatedPlayerStructureZoneIndex;
+
+	if (validatedPlayerStructureZoneIndex.compareAndSet(false, true)) {
+		validatePlayerStructureZoneIndex(true, true);
+	}
 
 	berkeley::CursorConfig config;
 	config.setReadUncommitted(true);
@@ -914,7 +1158,29 @@ Reference<SceneObject*> StructureManager::getInRangeParkingGarage(SceneObject* o
 	return nullptr;
 }
 
-int StructureManager::redeedStructure(CreatureObject* creature) {
+bool StructureManager::canRedeedStructure(CreatureObject* creature, StructureObject* structureObject) {
+    if (creature == nullptr || structureObject == nullptr || !structureObject->isRedeedable())
+        return false;
+
+    ManagedReference<StructureDeed*> deed =
+        server->getObject(structureObject->getDeedObjectID()).castTo<StructureDeed*>();
+    if (deed == nullptr)
+        return false;
+
+    ManagedReference<SceneObject*> inventory = creature->getSlottedObject("inventory");
+    if (inventory == nullptr)
+        return false;
+
+    HarvesterObject* harvester = structureObject->isHarvesterObject() ?
+        cast<HarvesterObject*>(structureObject) : nullptr;
+    int requiredInventorySlots =
+        (harvester != nullptr && harvester->isSelfPowered()) ? 2 : 1;
+
+    return inventory->getCountableObjectsRecursive() <=
+        (inventory->getContainerVolumeLimit() - requiredInventorySlots);
+}
+
+int StructureManager::redeedStructure(CreatureObject* creature, bool requireRedeed) {
     ManagedReference<DestroyStructureSession*> session =
         creature->getActiveSession(SessionFacadeType::DESTROYSTRUCTURE)
             .castTo<DestroyStructureSession*>();
@@ -926,6 +1192,9 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
         return 0;
 
     Locker _locker(structureObject);
+
+    if (requireRedeed && !canRedeedStructure(creature, structureObject))
+        return 1;
 
     uint64 deedObjectID = structureObject->getDeedObjectID();
     info(true) << "Attempting to redeed structure. Deed Object ID: " << deedObjectID;
@@ -969,9 +1238,7 @@ int StructureManager::redeedStructure(CreatureObject* creature) {
             isSelfPoweredHarvester = harvester->isSelfPowered();
 
         // capacity check
-        if (inventory == nullptr ||
-            inventory->getCountableObjectsRecursive() >
-                (inventory->getContainerVolumeLimit() - (isSelfPoweredHarvester ? 2 : 1))) {
+        if (!canRedeedStructure(creature, structureObject)) {
 
             if (isSelfPoweredHarvester) {
                 creature->sendSystemMessage("@player_structure:inventory_full_selfpowered");

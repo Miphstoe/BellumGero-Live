@@ -15,6 +15,8 @@ class DestroyStructureSession extends Facade {
 	protected StructureObject structureObject;
 	
 	protected unsigned int destroyCode;
+
+	protected transient boolean redeedRequired;
 	
 	public DestroyStructureSession(CreatureObject creature, StructureObject structure) {
 		Logger.setLoggingName("DestroyStructureSession");
@@ -25,6 +27,7 @@ class DestroyStructureSession extends Facade {
 		structureObject = structure;
 		
 		destroyCode = 0;
+		redeedRequired = false;
 	}
 	
 	public boolean isDestroyCode(unsigned int code) {

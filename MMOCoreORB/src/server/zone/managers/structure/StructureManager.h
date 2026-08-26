@@ -55,6 +55,7 @@ public:
 	IndexDatabase* createSubIndex();
 
 	void loadPlayerStructures(const String& zoneName);
+	String validatePlayerStructureZoneIndex(bool logDetails = true, bool validateSecondaryIndex = true);
 
 	// Account-wide structure lots are centralized here so placement, transfers,
 	// and reporting all use the same pool calculation.
@@ -80,6 +81,12 @@ public:
 	 */
 	int destroyStructure(StructureObject* structureObject, bool playEffect = false, bool refundLots = true);
 
+	/**
+	 * Returns whether the existing structure redeed pipeline can currently return
+	 * this structure's deed to the creature.
+	 */
+	bool canRedeedStructure(CreatureObject* creature, StructureObject* structureObject);
+
 	StructureObject* placeCamp(CreatureObject* player, CustomizationVariables* customVars, const String& campTemplatePath, float x, float y, int angle, int persistenceLevel);
 
 	/**
@@ -88,9 +95,9 @@ public:
 	 * pre: player locked, building locked
 	 * post: player locked, building locked
 	 * @param creature The creatureObject who is redeeding the structure.
-	 * @param destroy Should the structure be destroyed after the deed is retrieved?
+	 * @param requireRedeed If true, abort rather than destroy when the deed cannot be returned.
 	 */
-	int redeedStructure(CreatureObject* creature);
+	int redeedStructure(CreatureObject* creature, bool requireRedeed = false);
 
 	int declareResidence(CreatureObject* player, StructureObject* structureObject, bool isCityHall = false);
 

@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/managers/combat/CombatManager.h"
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 
 class DuelCommand : public QueueCommand {
 public:
@@ -32,6 +33,18 @@ public:
 
 		if (targetObject == nullptr || !targetObject->isPlayerCreature() || targetObject == creature)
 			return INVALIDTARGET;
+
+		auto targetCreo = targetObject->asCreatureObject();
+
+		if (JediSeclusionManager::isSecluded(creature)) {
+			creature->sendSystemMessage("You have chosen the Path of Seclusion and cannot participate in duels.");
+			return GENERALERROR;
+		}
+
+		if (targetCreo != nullptr && JediSeclusionManager::isSecluded(targetCreo)) {
+			creature->sendSystemMessage("That Jedi has withdrawn into Seclusion and cannot be challenged to a duel.");
+			return GENERALERROR;
+		}
 
 		// Check for no duel area
 		SortedVector<ManagedReference<ActiveArea*> >* areas = creature->getActiveAreas();

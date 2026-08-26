@@ -72,27 +72,27 @@ AcklayPrivateInstance = ScreenPlay:new {
 	roomConfigs = {
 		[1] = {
 			label = "Acklay Wild Room NE Corner A",
-			room = { planet = "yavin4", x = 7100.0, z = 75.0, y = -6940.0, cell = 0, heading = 180 },
+			room = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6435.0, cell = 0, heading = 180 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = 7100.0, z = 75.0, y = -6940.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6435.0, cell = 0, radius = 96 }
 		},
 		[2] = {
 			label = "Acklay Wild Room NE Corner B",
-			room = { planet = "yavin4", x = 7100.0, z = 75.0, y = -7260.0, cell = 0, heading = 135 },
+			room = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6546.0, cell = 0, heading = 135 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = 7100.0, z = 75.0, y = -7260.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6546.0, cell = 0, radius = 96 }
 		},
 		[3] = {
 			label = "Acklay Wild Room NW Corner A",
-			room = { planet = "yavin4", x = -7100.0, z = 75.0, y = -6940.0, cell = 0, heading = 90 },
+			room = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6655.0, cell = 0, heading = 90 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = -7100.0, z = 75.0, y = -6940.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6655.0, cell = 0, radius = 96 }
 		},
 		[4] = {
 			label = "Acklay Wild Room NW Corner B",
-			room = { planet = "yavin4", x = -7100.0, z = 75.0, y = -7260.0, cell = 0, heading = 45 },
+			room = { planet = "yavin4", x = -6800.0, z = 75.0, y = -6639.0, cell = 0, heading = 45 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = -7100.0, z = 75.0, y = -7260.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = -6800.0, z = 75.0, y = -6639.0, cell = 0, radius = 96 }
 		},
 		[5] = {
 			label = "Acklay Wild Room SW Corner A",
@@ -108,15 +108,15 @@ AcklayPrivateInstance = ScreenPlay:new {
 		},
 		[7] = {
 			label = "Acklay Wild Room SE Corner A",
-			room = { planet = "yavin4", x = 7100.0, z = 75.0, y = 6940.0, cell = 0, heading = -90 },
+			room = { planet = "yavin4", x = 6739.0, z = 75.0, y = 6823.0, cell = 0, heading = -90 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = 7100.0, z = 75.0, y = 6940.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = 6739.0, z = 75.0, y = 6823.0, cell = 0, radius = 96 }
 		},
 		[8] = {
 			label = "Acklay Wild Room SE Corner B",
-			room = { planet = "yavin4", x = 7100.0, z = 75.0, y = 7260.0, cell = 0, heading = -135 },
+			room = { planet = "yavin4", x = 6739.0, z = 75.0, y = 7143.0, cell = 0, heading = -135 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = 7100.0, z = 75.0, y = 7260.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = 6739.0, z = 75.0, y = 7143.0, cell = 0, radius = 96 }
 		}
 	},
 

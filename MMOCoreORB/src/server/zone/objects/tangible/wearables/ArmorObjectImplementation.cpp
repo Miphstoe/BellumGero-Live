@@ -417,6 +417,15 @@ void ArmorObjectImplementation::updateCraftingValues(CraftingValues* values, boo
 	 */
 	//craftingValues->toString();
 
+	// Mandalorian armor must always finish crafting with the maximum SEA socket count.
+	// This server-side guarantee does not depend on the draft IFF exposing a sockets
+	// experimental attribute, which keeps custom and legacy Mandalorian drafts aligned.
+	const auto objectTemplate = getObjectTemplate();
+	if (firstUpdate && objectTemplate != nullptr &&
+			objectTemplate->getFullTemplateString().contains("object/tangible/wearables/armor/mandalorian/")) {
+		setMaxSockets(MAXSOCKETS);
+	}
+
 	if (firstUpdate) {
 		kinetic = 0;
 		energy = 0;

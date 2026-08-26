@@ -39,11 +39,22 @@ void SchematicList::addRewardedSchematics(SceneObject* player) {
 			for (int i = rewardedSchematics.size() - 1; i >= 0; --i) {
 				DraftSchematic* schem = rewardedSchematics.elementAt(i).getKey();
 
-				if (schem->getDraftSchematicTemplate() != nullptr) {
+				if (schem == nullptr) {
+					Logger::console.error("Dropping dangling rewarded draft schematic entry (object no longer in database) for player object: " + String::valueOf(ghost->getObjectID()));
+					rewardedSchematics.remove(i);
+					continue;
+				}
+
+				if (schem->isValidDraftSchematic()) {
 					schematics.add(schem);
 				} else {
-					rewardedSchematics.drop(schem);
-					schem->destroyObjectFromDatabase(true);
+					// Quarantine instead of destroy: the template may only be unresolved this
+					// boot (rename, lua load failure). Destroying here would permanently delete
+					// an earned reward; guards elsewhere keep the entry inert until it resolves.
+					Logger::console.error("Quarantining rewarded draft schematic with unresolved template: objectID=" + String::valueOf(schem->getObjectID()) +
+							" serverCRC=" + String::valueOf(schem->getServerObjectCRC()) +
+							" clientCRC=" + String::valueOf(schem->getClientObjectCRC()) +
+							" playerObject=" + String::valueOf(ghost->getObjectID()));
 				}
 			}
 
@@ -93,6 +104,9 @@ bool SchematicList::decreaseSchematicUseCount(DraftSchematic* schematic) {
 }
 
 bool SchematicList::add(DraftSchematic* schematic, DeltaMessage* message, int updates) {
+	if (schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	bool val = vector.add(schematic);
 
 	if (val && message != nullptr) {
@@ -110,10 +124,13 @@ bool SchematicList::add(DraftSchematic* schematic, DeltaMessage* message, int up
 }
 
 bool SchematicList::contains(DraftSchematic* schematic) const {
+	if(schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	for(int i = 0; i < size(); ++i) {
 		DraftSchematic* existingSchematic = get(i);
 
-		if(existingSchematic == nullptr)
+		if(existingSchematic == nullptr || !existingSchematic->isValidDraftSchematic())
 			continue;
 
 		if((existingSchematic->getClientObjectCRC() == schematic->getClientObjectCRC()) &&
@@ -126,10 +143,13 @@ bool SchematicList::contains(DraftSchematic* schematic) const {
 }
 
 bool SchematicList::contains(const Vector<ManagedReference<DraftSchematic*>>& filteredschematics, DraftSchematic* schematic) const {
+	if(schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	for(int i = 0; i < filteredschematics.size(); ++i) {
 		DraftSchematic* existingSchematic = filteredschematics.get(i);
 
-		if(existingSchematic == nullptr)
+		if(existingSchematic == nullptr || !existingSchematic->isValidDraftSchematic())
 			continue;
 
 		if((existingSchematic->getClientObjectCRC() == schematic->getClientObjectCRC()) &&
@@ -158,6 +178,9 @@ Vector<ManagedReference<DraftSchematic* > > SchematicList::filterSchematicList(
 	for (int i = 0; i < size(); ++i) {
 		const ManagedReference<DraftSchematic*>& schematic = get(i);
 
+		if (schematic == nullptr || !schematic->isValidDraftSchematic())
+			continue;
+
 		for(int j = 0; j < enabledTabs->size(); ++j) {
 			if(enabledTabs->get(j) == schematic->getToolTab() &&
 					schematic->getComplexity() <= complexityLevel) {
@@ -172,11 +195,23 @@ Vector<ManagedReference<DraftSchematic* > > SchematicList::filterSchematicList(
 }
 
 void SchematicList::insertToMessage(BaseMessage* msg) const {
-	msg->insertInt(size());
+	int validSchematicCount = 0;
+
+	for (int i = 0; i < size(); ++i) {
+		DraftSchematic* schematic = get(i);
+
+		if (schematic != nullptr && schematic->isValidDraftSchematic())
+			++validSchematicCount;
+	}
+
+	msg->insertInt(validSchematicCount);
 	msg->insertInt(updateCounter);
 
 	for (int i = 0; i < size(); ++i) {
-		const DraftSchematic* schematic = get(i);
+		DraftSchematic* schematic = get(i);
+
+		if (schematic == nullptr || !schematic->isValidDraftSchematic())
+			continue;
 
 		msg->insertInt(schematic->getClientObjectCRC());
 		msg->insertInt(schematic->getClientObjectCRC());  /// Must be client CRC
