@@ -408,21 +408,23 @@ function TatooineMosEisleyScreenPlay:spawnMobiles()
 		AiAgent(pNpc):setConvoTemplate("junkDealerArmsConvoTemplate")
 	end
 
-	-- Mandalorian Way is temporarily disabled while crafting/schematic fixes are fully tested.
-	-- Recruiter spawn preserved here for re-enable, but intentionally not active.
-	-- local pMandoRecruiter = spawnMobile(self.planet, "mando_trialmaster", 0, 9.2, -0.894992, 4.64, 200, 1082877)
-	-- if pMandoRecruiter ~= nil then
-	-- 	CreatureObject(pMandoRecruiter):setPvpStatusBitmask(0)
-	-- 	CreatureObject(pMandoRecruiter):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
-	-- 	CreatureObject(pMandoRecruiter):setMoodString("conversation")
-	-- 	SceneObject(pMandoRecruiter):setCustomObjectName("Mandalorian Recruiter")
-	-- 	AiAgent(pMandoRecruiter):setConvoTemplate("mandoTrialmasterConvoTemplate")
-	-- 	AiAgent(pMandoRecruiter):addObjectFlag(AI_STATIC)
-	-- 	writeData("mando_way:recruiter_id", SceneObject(pMandoRecruiter):getObjectID())
-	-- 	printf("[TATOOINE-MOS-EISLEY] mando_trialmaster spawned in cantina main (cell 1082877).\n")
-	-- else
-	-- 	printf("[TATOOINE-MOS-EISLEY] ERROR: mando_trialmaster spawnMobile returned nil (check template / cell / position).\n")
-	-- end
+	-- Mandalorian recruiter (cantina main hall, cell 1082877): must not use the generic loop above — it calls
+	-- clearOptionBit(AIENABLED) for PvP-neutral mobs; mando_trialmaster needs AIENABLED + CONVERSABLE to behave.
+	local pMandoRecruiter = spawnMobile(self.planet, "mando_trialmaster", 0, 9.2, -0.894992, 4.64, 200, 1082877)
+	if pMandoRecruiter ~= nil then
+		CreatureObject(pMandoRecruiter):setPvpStatusBitmask(0)
+		-- AIENABLED = OptionBitmask::AIENABLED (src/templates/params/OptionBitmask.h). setOptionsBitmask replaces
+		-- the entire mask — include AIENABLED + CONVERSABLE (Lua CONVERSABLE) for radial Converse + AI agent hooks.
+		CreatureObject(pMandoRecruiter):setOptionsBitmask(AIENABLED + INVULNERABLE + CONVERSABLE)
+		CreatureObject(pMandoRecruiter):setMoodString("conversation")
+		SceneObject(pMandoRecruiter):setCustomObjectName("Mandalorian Recruiter")
+		AiAgent(pMandoRecruiter):setConvoTemplate("mandoTrialmasterConvoTemplate")
+		AiAgent(pMandoRecruiter):addObjectFlag(AI_STATIC)
+		writeData("mando_way:recruiter_id", SceneObject(pMandoRecruiter):getObjectID())
+		printf("[TATOOINE-MOS-EISLEY] mando_trialmaster spawned in cantina main (cell 1082877).\n")
+	else
+		printf("[TATOOINE-MOS-EISLEY] ERROR: mando_trialmaster spawnMobile returned nil (check template / cell / position).\n")
+	end
 
 	-- Foundling informant: not spawned here — MandoWayOfLife spawns a per-player NPC at planetData[1] when the arc advances.
 	-- Clear any legacy shared-hub key so the convo handler does not treat a stale OID as the Tatooine hub.

@@ -356,8 +356,8 @@ MandoWayOfLife = ScreenPlay:new {
 	DEBUG_ADMIN_TRIAL_CAMP_QA = false,
 }
 
--- Temporarily disabled while Mandalorian Way crafting/schematic fixes are fully tested.
-registerScreenPlay("MandoWayOfLife", false)
+-- Re-enabled: crafting/schematic crash fixes landed (validity guards + quarantine); verifying learn/craft paths on dev.
+registerScreenPlay("MandoWayOfLife", true)
 
 -- Console + log/lua.log (level 1 survives default Lua file log filter). Always uses printf so lines appear on the core3 terminal / core3.log.
 function MandoWayOfLife:logDiag(msg)
@@ -4839,6 +4839,100 @@ function MandoWayOfLife:adminGrantWeaponFromTokens(pStaff, tokens)
 	end
 end
 
+-- Admin QA: resolve an optional online player name token to a target, defaulting to the staff member.
+function MandoWayOfLife:adminResolveTargetFromToken(pStaff, nameToken, subName)
+	if (nameToken == nil or nameToken == "") then
+		return pStaff
+	end
+	local pNamed = getPlayerByName(nameToken)
+	if (pNamed == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] " .. subName .. ": character must be online. No match for: " .. tostring(nameToken)
+		)
+		return nil
+	end
+	return pNamed
+end
+
+-- Admin QA: mark the Foundling arc complete (chapter 0), granting the helmet, title, and badge
+-- through the same completeFoundlingArc path real progression uses.
+function MandoWayOfLife:adminArcDoneFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local pTarget = self:adminResolveTargetFromToken(pStaff, tokens[2], "arcdone")
+	if (pTarget == nil) then return end
+
+	local targetName = CreatureObject(pTarget):getFirstName()
+
+	self:writeInt(pTarget, "chapter0Started", 1)
+
+	if (self:isArcComplete(pTarget)) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] arcdone: %s already has the Foundling arc complete (chapter %s).",
+			targetName, tostring(self:getChapter(pTarget))
+		))
+		return
+	end
+
+	self:completeFoundlingArc(pTarget)
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Foundling arc completed for %s (chapter 0, helmet/title/badge granted).", targetName
+	))
+end
+
+-- Admin QA: jump a character to a target chapter. Advancing runs each intermediate chapter through
+-- applyChapterAdvanceAfterTrial so rewards, titles, cert skills, and badges stay consistent with real
+-- trial progression. Setting a chapter at or below the current one only rewrites the number (no rewards).
+function MandoWayOfLife:adminSetChapterFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local chapterArg = tonumber(tokens[2])
+	if (chapterArg == nil or chapterArg < 0 or chapterArg > 5 or math.floor(chapterArg) ~= chapterArg) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin setchapter <0-5> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = self:adminResolveTargetFromToken(pStaff, tokens[3], "setchapter")
+	if (pTarget == nil) then return end
+
+	local targetName = CreatureObject(pTarget):getFirstName()
+
+	-- Every chapter rank presumes a completed Foundling arc; establish it first like real progression.
+	self:writeInt(pTarget, "chapter0Started", 1)
+	if (not self:isArcComplete(pTarget)) then
+		self:completeFoundlingArc(pTarget)
+	end
+
+	if (chapterArg == 0) then
+		self:setChapter(pTarget, 0)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] %s set to chapter 0 (Foundling arc complete).", targetName
+		))
+		return
+	end
+
+	local current = self:getChapter(pTarget)
+	if (chapterArg <= current) then
+		self:setChapter(pTarget, chapterArg)
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] %s chapter rewound %s -> %s (number only; no rewards granted).",
+			targetName, tostring(current), tostring(chapterArg)
+		))
+		return
+	end
+
+	for ch = current + 1, chapterArg, 1 do
+		self:applyChapterAdvanceAfterTrial(pTarget, ch)
+	end
+
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Advanced %s from chapter %s to %s with per-chapter rewards, titles, and badges.",
+		targetName, tostring(current), tostring(chapterArg)
+	))
+end
+
 function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	if (pStaff == nil) then return end
 	local sGhost = CreatureObject(pStaff):getPlayerObject()
@@ -4868,6 +4962,16 @@ function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 
 	if (#tokens >= 1 and tokens[1]:lower() == "grantweapon") then
 		self:adminGrantWeaponFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "setchapter") then
+		self:adminSetChapterFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "arcdone") then
+		self:adminArcDoneFromTokens(pStaff, tokens)
 		return
 	end
 
