@@ -31,7 +31,7 @@ battle_droid_crafted_foundry = Creature:new {
 	},
 	lootGroups = {},
 	defaultAttack = "attack",
-	defaultWeapon = "object/weapon/ranged/carbine/carbine_e5.iff",
+	primaryWeapon = "droid_foundry_b1_ranged",
 	conversationTemplate = "",
 }
 

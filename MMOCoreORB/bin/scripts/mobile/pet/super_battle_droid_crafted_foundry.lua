@@ -31,7 +31,7 @@ super_battle_droid_crafted_foundry = Creature:new {
 	},
 	lootGroups = {},
 	defaultAttack = "attack",
-	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
+	primaryWeapon = "droid_foundry_b2_ranged",
 	conversationTemplate = "",
 }
 
