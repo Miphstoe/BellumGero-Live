@@ -690,8 +690,36 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 
 				String name = CustomizationIdManager::instance()->getCustomizationVariable(id);
 
-				if (name != "/private/index_color_0" && name.contains("color")) {
-					droid->setCustomizationVariable(name, val, true);
+				// Preserve the normal color customizations and stock paint-pattern
+				// selector from the crafted deed. Battle Droid and Super Battle Droid
+				// appearances use /private/index_texture_1 alongside Color 1/2.
+				if (name != "/private/index_color_0" &&
+						(name.contains("color") || name == "/private/index_texture_1")) {
+					int16 customizationValue = val;
+
+					// The hidden texture selector used for the B2 crafting preview is not
+					// reliably retained by the finished deed's customization payload.
+					// Re-apply the same stock paint mask when generating the premium
+					// Foundry B2 so its crafted Frame/Trim colors and later Droid
+					// Customization Kit Trim changes remain visible.
+					if (name == "/private/index_texture_1") {
+						SharedObjectTemplate* generatedTemplate = droid->getObjectTemplate();
+
+						if (generatedTemplate != nullptr) {
+							String generatedTemplatePath = generatedTemplate->getFullTemplateString();
+
+							if (generatedTemplatePath ==
+									"object/mobile/super_battle_droid_crafted_foundry.iff") {
+								customizationValue = 2;
+							} else if (generatedTemplatePath ==
+									"object/mobile/battle_droid_crafted_foundry.iff") {
+								// Match the Foundry B1 command paint pattern used during crafting.
+								customizationValue = 6;
+							}
+						}
+					}
+
+					droid->setCustomizationVariable(name, customizationValue, true);
 				}
 			}
 

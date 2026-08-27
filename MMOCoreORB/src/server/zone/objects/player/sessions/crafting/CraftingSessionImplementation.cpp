@@ -1244,7 +1244,32 @@ void CraftingSessionImplementation::initialAssembly(int clientCounter) {
 		const Reference<RangedIntCustomizationVariable*> var = cast<RangedIntCustomizationVariable*>(colorVariables.get(i).get());
 
 		if (var != nullptr) {
-			prototype->setCustomizationVariable(varKey, var->getDefaultValue());
+			int customizationValue = var->getDefaultValue();
+
+			// Premium Foundry B2 chassis/deeds need a non-default stock paint
+			// pattern so /private/index_color_2 has a visible trim region.
+			// Keep the texture selector hidden from the normal crafting UI; it is
+			// initialized behind the scenes while Color 1/2 remain the player-facing
+			// Frame/Trim controls.
+			if (varKey == "/private/index_texture_1") {
+				SharedObjectTemplate* prototypeTemplate = prototype->getObjectTemplate();
+
+				if (prototypeTemplate != nullptr) {
+					String prototypePath = prototypeTemplate->getFullTemplateString();
+
+					if (prototypePath == "object/tangible/component/droid/super_battle_droid_foundry_chassis.iff" ||
+							prototypePath == "object/tangible/deed/pet_deed/deed_super_battle_droid_foundry.iff") {
+						customizationValue = 2;
+					} else if (prototypePath == "object/tangible/component/droid/battle_droid_foundry_chassis.iff" ||
+							prototypePath == "object/tangible/deed/pet_deed/deed_battle_droid_foundry.iff") {
+						// Stock Battle Droid pattern 6 provides the command-droid-style
+						// secondary paint mask used by the Foundry B1 Frame/Trim workflow.
+						customizationValue = 6;
+					}
+				}
+			}
+
+			prototype->setCustomizationVariable(varKey, customizationValue);
 
 			variables.put(varKey, var.get());
 		}
