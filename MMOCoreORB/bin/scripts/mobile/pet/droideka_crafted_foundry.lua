@@ -31,7 +31,7 @@ droideka_crafted_foundry = Creature:new {
 	},
 	lootGroups = {},
 	defaultAttack = "attack",
-	primaryWeapon = "droid_foundry_droideka_ranged",
+	defaultWeapon = "object/weapon/ranged/droid/droid_droideka_ranged.iff",
 	conversationTemplate = "",
 }
 

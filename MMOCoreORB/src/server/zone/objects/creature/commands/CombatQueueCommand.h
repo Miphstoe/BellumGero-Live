@@ -428,6 +428,36 @@ public:
 		StringBuffer buffer;
 
 		if (attacker->isDroidObject()) {
+			// Bellum Gero: Foundry-crafted B1, B2, and Droideka pets are true
+			// DroidObject instances so their crafted modules/power/mechanics persist.
+			// Core3 normally forces every DroidObject through droid_attack*, even
+			// when its active weapon is ranged. Use the presentation path that the
+			// corresponding client appearance supports, while leaving all ordinary
+			// DroidObjects on the stock droid_attack* behavior.
+			auto attackerTemplate = attacker->getObjectTemplate();
+
+			if (weapon->isRangedWeapon() && attackerTemplate != nullptr) {
+				String attackerTemplatePath = attackerTemplate->getFullTemplateString();
+
+				if (attackerTemplatePath == "object/mobile/battle_droid_crafted_foundry.iff") {
+					// The B1 carries a conventional handheld blaster. Its appearance
+					// does not present creature_attack_ranged*, so mirror Core3's
+					// standard humanoid ranged default animation generation.
+					buffer << rangedAttacks[System::random(2)];
+					buffer << intensity;
+
+					if (hitLocation == CombatManager::HIT_HEAD)
+						buffer << "_face";
+
+					return buffer.toString();
+				}
+
+				if (attackerTemplatePath == "object/mobile/super_battle_droid_crafted_foundry.iff" ||
+						attackerTemplatePath == "object/mobile/droideka_crafted_foundry.iff") {
+					return "creature_attack_ranged" + intensity;
+				}
+			}
+
 			return "droid_attack" + intensity;
 		} else if (!attacker->isCreature()) {
 			if (weapon->isRangedWeapon()) {
