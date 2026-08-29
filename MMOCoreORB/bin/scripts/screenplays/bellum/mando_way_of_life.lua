@@ -2726,6 +2726,13 @@ function MandoWayOfLife:applyChapterAdvanceAfterTrial(pPlayer, chNew)
 	self:logDiagPlayer(pPlayer, string.format("applyChapterAdvanceAfterTrial: chapter set to %s.", tostring(chNew)))
 
 	self:grantReward(pPlayer, chNew)
+	if (chNew == 4) then
+		self:grantQuestDecoration(
+			pPlayer,
+			"object/tangible/painting/painting_mando_clan.iff",
+			"Clanbound painting"
+		)
+	end
 	self:grantMandoWayArmoryChapterGift(pPlayer, chNew)
 
 	if (chNew >= 1) then
@@ -2859,6 +2866,11 @@ function MandoWayOfLife:grantMandalorian(pPlayer)
 	self:grantChapterRankTitle(pPlayer, 5)
 	self:tryAwardChapterBadge(pPlayer, 5)
 	self:grantReward(pPlayer, 5)
+	self:grantQuestDecoration(
+		pPlayer,
+		"object/tangible/furniture/all/frn_mando_clan_banner.iff",
+		"Mandalorian Tribesman clan banner"
+	)
 
 	self:logDiagPlayer(pPlayer, "grantMandalorian: Mandalorian Tribesman rank granted (chapter 5).")
 	CreatureObject(pPlayer):sendSystemMessage(
@@ -3077,6 +3089,31 @@ function MandoWayOfLife:giveSocketedArmor(pInventory, template)
 		TangibleObject(pItem):setMaxSockets(self.ARMOR_SOCKET_COUNT)
 	end
 	return pItem
+end
+
+-- Guaranteed progression trophies. Clanbound earns the clan painting; completing
+-- Jabba's themepark and becoming a Tribesman earns the clan banner.
+function MandoWayOfLife:grantQuestDecoration(pPlayer, template, rewardName)
+	if (pPlayer == nil) then return false end
+	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"[Mandalorian Way] Your " .. rewardName .. " could not be delivered. Clear an inventory slot and contact staff."
+		)
+		return false
+	end
+
+	local pItem = giveItem(pInventory, template, -1)
+	if (pItem == nil) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"[Mandalorian Way] Your " .. rewardName .. " could not be delivered. Contact staff."
+		)
+		return false
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage("[Mandalorian Way] You received: " .. rewardName .. ".")
+	self:logDiagPlayer(pPlayer, "grantQuestDecoration OK: " .. rewardName .. " template=" .. template)
+	return true
 end
 
 function MandoWayOfLife:grantReward(pPlayer, chapter)
