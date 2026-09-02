@@ -3,20 +3,67 @@ DroidFoundry = ScreenPlay:new {
 	terminalX = 4784,
 	terminalY = 982,
 	terminalHeading = 50,
-	exitX = 4784,
-	exitY = 982,
-	timeoutSeconds = 30 * 60,
+	exitX = 4788.85,
+	exitY = 984.699,
+	timeoutSeconds = 60 * 60,
 	entryX = 0.840546,
 	entryZ = -4.010900,
 	entryY = 16.232117,
 	participantRange = 50,
 	admissionTimeoutSeconds = 5,
 
+	-- DROID_FOUNDRY_SCALING_V1
+	-- Difficulty is locked from nearby human expedition members at launch.
+	-- Late joins remain allowed but do not rescale an already-created instance.
+	SCALE_SOLO = 1,
+	SCALE_SMALL = 2,
+	SCALE_GROUP = 3,
+	nexusSecondWaveDelayMs = 10 * 1000,
+	overseerOverloadWarningMs = 6 * 1000,
+	overseerOverloadEffect = "clienteffect/trap_electric_01.cef",
+
+	-- Applied to every Overseer HAM pool immediately after spawn.
+	overseerHamMultipliers = {
+		[1] = 1.0,
+		[2] = 2.5,
+		[3] = 5.0,
+	},
+
 	-- Personal Archive reward tuning. Every eligible participant receives one
 	-- guaranteed component. The independent schematic jackpot is 0.75% total.
 	archiveComponentLootGroup = "droid_foundry_components",
 	archiveSchematicLootGroup = "droid_foundry_schematics",
 	archiveSchematicChancePerMillion = 7500,
+
+	-- DROID_FOUNDRY_ARCHIVE_COOLDOWN_V1
+	-- The premium Archive roll is intentionally invisible to players. Every
+	-- eligible claim still produces a component; only its internal loot level
+	-- and access to the Archive schematic jackpot change during this cooldown.
+	archivePremiumCooldownSeconds = 4 * 60 * 60,
+	archivePremiumLootLevel = 350,
+	archiveFallbackLootLevel = 175,
+	archivePremiumScreenPlay = "DroidFoundry",
+	archivePremiumTimestampKey = "archivePremiumClaimedAt",
+
+	-- DROID_FOUNDRY_OVERSEER_PERSONAL_LOOT_V1
+	-- World-boss-style participation reward: one personal level-250 roll for
+	-- each active expedition participant who actually damages the Overseer.
+	overseerPersonalLootGroup = "droid_foundry_kill_loot_generic",
+	overseerPersonalLootLevel = 250,
+
+	-- DROID_FOUNDRY_PROTOTYPE_EXIT_RETURN_V1
+	prototypeSpawnChancePerMillion = 400000,
+
+	-- DROID_FOUNDRY_PROTOTYPE_VISUAL_V1
+	-- Reuse the already-proven Overseer electrical effect as a subtle,
+	-- recurring visual tell for the rare Prototype encounter.
+	prototypeVisualEffect = "clienteffect/trap_electric_01.cef",
+	prototypeVisualPulseMs = 4 * 1000,
+	prototypeTemplates = {
+		"foundry_prototype_b1_command_droid",
+		"foundry_prototype_b2_enforcer",
+		"foundry_prototype_droideka_guardian",
+	},
 
 	nexusCellIndex = 5,
 	nexusTerminalTemplate = "object/tangible/terminal/terminal_droid_foundry_nexus.iff",
@@ -32,6 +79,59 @@ DroidFoundry = ScreenPlay:new {
 		{ label = "Security Spawn C", x = -12.2385, z = -49.4365, y = -216.899, heading = 0, elite = false },
 		{ label = "Security Spawn D", x = -55.7501, z = -57.3740, y = -221.262, heading = 45, elite = false },
 		{ label = "Elite Spawn", x = -69.9526, z = -55.8785, y = -178.642, heading = 90, elite = true },
+
+		-- Scaling-only positions. These remain normal Security Droids so group
+		-- scaling does not multiply elite corpse-loot opportunities.
+		{ label = "Scaling Spawn A", x = -9.8647, z = -48.7901, y = -148.075, heading = 180, elite = false },
+		{ label = "Scaling Spawn B", x = 22.4354, z = -52.7565, y = -187.509, heading = -90, elite = false },
+		{ label = "Scaling Spawn C", x = -14.2385, z = -49.4365, y = -216.899, heading = 0, elite = false },
+		{ label = "Scaling Spawn D", x = -53.7501, z = -57.3740, y = -221.262, heading = 45, elite = false },
+	},
+
+	-- Index 1 is added for 2-3 players; indexes 1 and 2 are added for 4+.
+	-- No extra elites are introduced by normal-room scaling.
+	scaledPackExtras = {
+		["Production Cell 6"] = { "foundry_battle_droid", "foundry_battle_droid" },
+		["Production Cell 7"] = { "foundry_battle_droid", "foundry_security_droid" },
+		["Production Cell 8"] = { "foundry_super_battle_droid", "foundry_security_droid" },
+		["Production Network"] = { "foundry_super_battle_droid", "foundry_super_battle_droid" },
+		["Sentinel Cell 9"] = { "foundry_security_droid", "foundry_battle_droid" },
+		["Sentinel Cell 10"] = { "foundry_droideka_sentinel", "foundry_security_droid" },
+		["Sentinel Cell 11"] = { "foundry_droideka_sentinel", "foundry_security_droid" },
+		["Sentinel Core"] = { "foundry_droideka_sentinel", "foundry_droideka_sentinel" },
+		["Maintenance Cell 12"] = { "foundry_security_droid", "foundry_repair_droid" },
+		["Maintenance Cell 13"] = { "foundry_security_droid", "foundry_repair_droid" },
+		["Maintenance Cell 14"] = { "foundry_super_battle_droid", "foundry_repair_droid" },
+		["Maintenance Network"] = { "foundry_super_battle_droid", "foundry_security_droid" },
+		["Final Approach r21"] = { "foundry_super_battle_droid", "foundry_security_droid" },
+		["Final Approach r22"] = { "foundry_super_battle_droid", "foundry_droideka_sentinel" },
+	},
+
+	-- The opening Breach keeps its nine authored Solo positions exactly as-is.
+	-- Points 4/5 are calculated from each room's existing front spawn only for
+	-- scaled runs.
+	breachScalingAnchors = {
+		{
+			cellIndex = 2,
+			label = "Breach Cell 2",
+			x = 1.1, z = -10.9, y = -16.2, heading = -49,
+			spacing = 1.6, depth = 1.4, scaleDepth = 5.0,
+			scaleTemplates = { "foundry_battle_droid", "foundry_battle_droid" },
+		},
+		{
+			cellIndex = 3,
+			label = "Breach Cell 3",
+			x = -26.8, z = -37.6, y = -60.9, heading = 3,
+			spacing = 1.6, depth = 1.4, scaleDepth = 5.5,
+			scaleTemplates = { "foundry_battle_droid", "foundry_security_droid" },
+		},
+		{
+			cellIndex = 4,
+			label = "Breach Cell 4",
+			x = -23.3, z = -53.3, y = -116.5, heading = -56,
+			spacing = 1.6, depth = 1.4, scaleDepth = 5.0,
+			scaleTemplates = { "foundry_security_droid", "foundry_battle_droid" },
+		},
 	},
 
 	-- Opening Breach encounter. Coordinates are logical-cell local values so the
@@ -408,19 +508,151 @@ function DroidFoundry:getInstance(rootID)
 	return nil
 end
 
-function DroidFoundry:beginExpedition(pPlayer)
-	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
-		return
+function DroidFoundry:getScaleTierForPartySize(partySize)
+	partySize = math.max(1, tonumber(partySize) or 1)
+	if (partySize >= 4) then
+		return self.SCALE_GROUP
+	elseif (partySize >= 2) then
+		return self.SCALE_SMALL
 	end
+	return self.SCALE_SOLO
+end
 
+function DroidFoundry:getScaleTier(rootID)
+	local tier = tonumber(readData("droidFoundryScaleTier:" .. rootID)) or self.SCALE_SOLO
+	if (tier < self.SCALE_SOLO or tier > self.SCALE_GROUP) then
+		return self.SCALE_SOLO
+	end
+	return tier
+end
+
+function DroidFoundry:getScaleTierName(tier)
+	tier = tonumber(tier) or self.SCALE_SOLO
+	if (tier == self.SCALE_GROUP) then
+		return "Group (4+)"
+	elseif (tier == self.SCALE_SMALL) then
+		return "Duo/Small Group (2-3)"
+	end
+	return "Solo"
+end
+
+function DroidFoundry:getScaleExtraCount(rootID)
+	local tier = self:getScaleTier(rootID)
+	if (tier == self.SCALE_GROUP) then
+		return 2
+	elseif (tier == self.SCALE_SMALL) then
+		return 1
+	end
+	return 0
+end
+
+function DroidFoundry:getLaunchScalePartySize(pLeader, eligiblePlayers)
+	if (pLeader == nil) then
+		return 1
+	end
+	local count = 1
+	for i = 1, #eligiblePlayers, 1 do
+		local pMember = eligiblePlayers[i]
+		if (pMember ~= nil and pMember ~= pLeader and
+			SceneObject(pMember):isPlayerCreature() and
+			not SceneObject(pMember):isAiAgent() and
+			CreatureObject(pLeader):isInRangeWithObject(pMember, self.participantRange)) then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function DroidFoundry:getScaledPackExtras(anchorLabel, rootID)
+	local extraCount = self:getScaleExtraCount(rootID)
+	local configured = self.scaledPackExtras[anchorLabel]
+	local extras = {}
+	if (extraCount == 0 or configured == nil) then
+		return extras
+	end
+	for i = 1, math.min(extraCount, #configured), 1 do
+		table.insert(extras, configured[i])
+	end
+	return extras
+end
+
+function DroidFoundry:getRandomActiveParticipant(rootID, cellID, pFallback)
+	rootID = tonumber(rootID) or 0
+	cellID = tonumber(cellID) or 0
+	local candidates = {}
+	local seen = {}
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+		if (playerID ~= 0 and not seen[playerID] and self:isParticipant(rootID, playerID)) then
+			seen[playerID] = true
+			local pMember = getSceneObject(playerID)
+			if (pMember ~= nil and SceneObject(pMember):isPlayerCreature() and
+				not CreatureObject(pMember):isDead() and
+				not CreatureObject(pMember):isIncapacitated() and
+				(cellID == 0 or SceneObject(pMember):getParentID() == cellID)) then
+				table.insert(candidates, pMember)
+			end
+		end
+	end
+	if (#candidates > 0) then
+		return candidates[math.random(1, #candidates)]
+	end
+	if (pFallback ~= nil and SceneObject(pFallback):isPlayerCreature() and
+		not CreatureObject(pFallback):isDead() and
+		not CreatureObject(pFallback):isIncapacitated() and
+		(cellID == 0 or SceneObject(pFallback):getParentID() == cellID)) then
+		return pFallback
+	end
+	return nil
+end
+
+function DroidFoundry:scaleOverseerHAM(rootID, pBoss)
+	if (pBoss == nil) then return end
+	local tier = self:getScaleTier(rootID)
+	local multiplier = tonumber(self.overseerHamMultipliers[tier]) or 1.0
+	if (multiplier <= 1.0) then return end
+	local boss = CreatureObject(pBoss)
+	for pool = 0, 8, 1 do
+		local base = tonumber(boss:getBaseHAM(pool)) or 0
+		local maximum = tonumber(boss:getMaxHAM(pool)) or 0
+		if (base > 0) then
+			boss:setBaseHAM(pool, math.max(1, math.floor(base * multiplier)))
+		end
+		if (maximum > 0) then
+			local scaledMax = math.max(1, math.floor(maximum * multiplier))
+			boss:setMaxHAM(pool, scaledMax)
+			boss:setHAM(pool, scaledMax)
+		end
+	end
+end
+
+function DroidFoundry:playOverseerOverloadEffect(rootID, x, z, y, cellID)
+	rootID = tonumber(rootID) or 0
+	cellID = tonumber(cellID) or 0
+	if (rootID == 0 or cellID == 0) then return end
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+	local seen = {}
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+		if (playerID ~= 0 and not seen[playerID] and self:isParticipant(rootID, playerID)) then
+			seen[playerID] = true
+			local pMember = getSceneObject(playerID)
+			if (pMember ~= nil and SceneObject(pMember):isPlayerCreature() and SceneObject(pMember):getParentID() == cellID) then
+				playClientEffectLoc(pMember, self.overseerOverloadEffect, "dungeon1", x, z, y, cellID)
+			end
+		end
+	end
+end
+
+function DroidFoundry:beginExpedition(pPlayer)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then return end
 	if (not isZoneEnabled("dungeon1")) then
 		CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry expedition area is currently unavailable.")
 		return
 	end
-
 	local playerID = SceneObject(pPlayer):getObjectID()
 	local assignedRootID = tonumber(readData("droidFoundryInstance:" .. playerID)) or 0
-
 	if (assignedRootID ~= 0) then
 		if (self:getInstance(assignedRootID) ~= nil and tonumber(readData("droidFoundryActive:" .. assignedRootID)) == 1) then
 			if (self:isParticipant(assignedRootID, playerID) or self:isAdmitted(assignedRootID, playerID)) then
@@ -428,14 +660,9 @@ function DroidFoundry:beginExpedition(pPlayer)
 				return
 			end
 		end
-
 		deleteData("droidFoundryInstance:" .. playerID)
 	end
-
-	if (self:tryLateJoin(pPlayer)) then
-		return
-	end
-
+	if (self:tryLateJoin(pPlayer)) then return end
 	if (CreatureObject(pPlayer):isGrouped()) then
 		local pLeader = CreatureObject(pPlayer):getGroupMember(0)
 		if (pLeader == nil or SceneObject(pLeader):getObjectID() ~= playerID) then
@@ -443,9 +670,9 @@ function DroidFoundry:beginExpedition(pPlayer)
 			return
 		end
 	end
-
 	local eligiblePlayers = self:getEligiblePlayers(pPlayer)
-
+	local scalePartySize = self:getLaunchScalePartySize(pPlayer, eligiblePlayers)
+	local scaleTier = self:getScaleTierForPartySize(scalePartySize)
 	for i = 1, #self.instances, 1 do
 		local instance = self.instances[i]
 		local pBuilding = getSceneObject(instance.rootID)
@@ -455,63 +682,56 @@ function DroidFoundry:beginExpedition(pPlayer)
 			writeData("droidFoundryOwner:" .. instance.rootID, playerID)
 			writeData("droidFoundryStarted:" .. instance.rootID, started)
 			writeData("droidFoundryGroup:" .. instance.rootID, CreatureObject(pPlayer):isGrouped() and CreatureObject(pPlayer):getGroupID() or 0)
-
+			writeData("droidFoundryScaleTier:" .. instance.rootID, scaleTier)
+			writeData("droidFoundryScalePartySize:" .. instance.rootID, scalePartySize)
+			CreatureObject(pPlayer):sendSystemMessage("Droid Foundry difficulty locked: " .. self:getScaleTierName(scaleTier) .. " (" .. scalePartySize .. " nearby expedition player" .. (scalePartySize == 1 and "" or "s") .. ").")
 			if (not self:prepareNexusEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry control systems failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
-
 			if (not self:prepareBreachEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry breach defenses failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
-
 			if (not self:prepareProductionEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry production systems failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
-
 			if (not self:prepareSentinelEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry sentinel systems failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
-
 			if (not self:prepareMaintenanceEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry maintenance systems failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
-
 			if (not self:prepareFinalEncounter(instance.rootID)) then
 				CreatureObject(pPlayer):sendSystemMessage("The Droid Foundry final sector failed to initialize. Please try another expedition.")
 				self:releaseInstance(instance.rootID)
 				return
 			end
 
-			for j = 1, #eligiblePlayers, 1 do
-				self:addEligiblePlayer(instance.rootID, eligiblePlayers[j])
-			end
-
+			-- Optional repeat-run variety. Failure to spawn a Prototype never
+			-- blocks the expedition itself.
+			self:preparePrototypeEncounter(instance.rootID)
+			for j = 1, #eligiblePlayers, 1 do self:addEligiblePlayer(instance.rootID, eligiblePlayers[j]) end
 			self:admitPlayer(instance.rootID, pPlayer)
-
 			createEvent(self.timeoutSeconds * 1000, "DroidFoundry", "handleTimeout", pBuilding, tostring(started))
 			self:scheduleTransport(pPlayer, instance.rootID)
-
 			for j = 1, #eligiblePlayers, 1 do
 				local pMember = eligiblePlayers[j]
 				if (pMember ~= pPlayer and CreatureObject(pPlayer):isInRangeWithObject(pMember, self.participantRange)) then
 					self:sendAuthorizationSui(pMember, pPlayer, instance.rootID)
 				end
 			end
-
 			return
 		end
 	end
-
 	CreatureObject(pPlayer):sendSystemMessage("No Droid Foundry expedition instance is currently available. Please try again later.")
 end
 
@@ -956,6 +1176,8 @@ function DroidFoundry:releaseInstance(rootID)
 	deleteData("droidFoundryEligibilitySize:" .. rootID)
 	deleteData("droidFoundryParticipantCount:" .. rootID)
 	deleteData("droidFoundryGroup:" .. rootID)
+	deleteData("droidFoundryScaleTier:" .. rootID)
+	deleteData("droidFoundryScalePartySize:" .. rootID)
 	deleteData("droidFoundryActive:" .. rootID)
 	deleteData("droidFoundryOwner:" .. rootID)
 	deleteData("droidFoundryStarted:" .. rootID)
@@ -1143,12 +1365,16 @@ function DroidFoundry:cleanupEncounter(rootID)
 	deleteData("droidFoundryOverseerPhase25:" .. rootID)
 	deleteData("droidFoundryOverseerLastRepair:" .. rootID)
 	deleteData("droidFoundryOverseerNextOverload:" .. rootID)
+	deleteData("droidFoundryPrototypeObject:" .. rootID)
+	deleteData("droidFoundryPrototypeArea:" .. rootID)
+	deleteData("droidFoundryPrototypeType:" .. rootID)
 
 	local overseerTrackedCount = tonumber(readData("droidFoundryOverseerTrackedCount:" .. rootID)) or 0
 	for i = 1, overseerTrackedCount, 1 do
 		deleteData("droidFoundryOverseerTracked:" .. rootID .. ":" .. i)
 	end
 	deleteData("droidFoundryOverseerTrackedCount:" .. rootID)
+	self:clearOverseerPersonalLootState(rootID)
 	self:clearOverseerDownFlags(rootID)
 
 	deleteData("droidFoundryArchiveTerminal:" .. rootID)
@@ -1238,17 +1464,33 @@ end
 
 function DroidFoundry:prepareBreachEncounter(rootID)
 	rootID = tonumber(rootID) or 0
-	if (rootID == 0) then
-		return false
-	end
-
+	if (rootID == 0) then return false end
 	for i = 1, #self.breachSpawns, 1 do
 		if (self:spawnBreachUnit(rootID, self.breachSpawns[i]) == nil) then
 			printLuaError("DroidFoundry:prepareBreachEncounter failed for instance " .. rootID)
 			return false
 		end
 	end
-
+	local extraCount = self:getScaleExtraCount(rootID)
+	if (extraCount > 0) then
+		for i = 1, #self.breachScalingAnchors, 1 do
+			local anchor = self.breachScalingAnchors[i]
+			local points = self:getTriangleFormation(anchor)
+			for j = 1, extraCount, 1 do
+				local point = points[3 + j]
+				local templateName = anchor.scaleTemplates[j]
+				if (point == nil or templateName == nil or self:spawnBreachUnit(rootID, {
+					cellIndex = anchor.cellIndex,
+					template = templateName,
+					label = anchor.label .. " Scaling " .. j,
+					x = point.x, z = point.z, y = point.y, heading = point.heading,
+				}) == nil) then
+					printLuaError("DroidFoundry:prepareBreachEncounter failed scaled spawn for " .. tostring(anchor.label) .. " instance " .. rootID)
+					return false
+				end
+			end
+		end
+	end
 	return true
 end
 
@@ -1256,21 +1498,22 @@ function DroidFoundry:getTriangleFormation(anchor)
 	local heading = math.rad(anchor.heading or 0)
 	local spacing = tonumber(anchor.spacing) or 1.6
 	local depth = tonumber(anchor.depth) or 1.4
-
-	-- SWG interior movement uses X/Y as the horizontal plane and Z as height.
-	-- Point 1 is the supplied anchor; points 2/3 sit behind it in a shallow triangle.
 	local forwardX = math.sin(heading)
 	local forwardY = math.cos(heading)
 	local rightX = math.cos(heading)
 	local rightY = -math.sin(heading)
-
 	local backX = anchor.x - (forwardX * depth)
 	local backY = anchor.y - (forwardY * depth)
-
+	local scaleDepth = tonumber(anchor.scaleDepth) or (depth * 2.75)
+	local scaleSpacing = tonumber(anchor.scaleSpacing) or (spacing * 0.75)
+	local scaleBackX = anchor.x - (forwardX * scaleDepth)
+	local scaleBackY = anchor.y - (forwardY * scaleDepth)
 	return {
 		{ x = anchor.x, z = anchor.z, y = anchor.y, heading = anchor.heading or 0 },
 		{ x = backX + (rightX * spacing), z = anchor.z, y = backY + (rightY * spacing), heading = anchor.heading or 0 },
 		{ x = backX - (rightX * spacing), z = anchor.z, y = backY - (rightY * spacing), heading = anchor.heading or 0 },
+		{ x = scaleBackX + (rightX * scaleSpacing), z = anchor.z, y = scaleBackY + (rightY * scaleSpacing), heading = anchor.heading or 0 },
+		{ x = scaleBackX - (rightX * scaleSpacing), z = anchor.z, y = scaleBackY - (rightY * scaleSpacing), heading = anchor.heading or 0 },
 	}
 end
 
@@ -1316,49 +1559,38 @@ end
 
 function DroidFoundry:prepareProductionEncounter(rootID)
 	rootID = tonumber(rootID) or 0
-	if (rootID == 0) then
-		return false
-	end
-
+	if (rootID == 0) then return false end
 	writeData("droidFoundryProductionAlive:" .. rootID, 0)
-
 	for i = 1, #self.productionApproachAnchors, 1 do
 		local anchor = self.productionApproachAnchors[i]
-
 		for j = 1, #anchor.templates, 1 do
 			if (self:spawnProductionUnit(rootID, anchor, anchor.templates[j], j) == nil) then
 				printLuaError("DroidFoundry:prepareProductionEncounter failed for instance " .. rootID)
 				return false
 			end
 		end
+		local extras = self:getScaledPackExtras(anchor.label, rootID)
+		for j = 1, #extras, 1 do
+			if (self:spawnProductionUnit(rootID, anchor, extras[j], 3 + j) == nil) then
+				printLuaError("DroidFoundry:prepareProductionEncounter failed scaled spawn for " .. tostring(anchor.label) .. " instance " .. rootID)
+				return false
+			end
+		end
 	end
-
 	local cellID = self:getInstanceCellID(rootID, self.productionTerminalCellIndex)
 	if (cellID == 0 or getSceneObject(cellID) == nil) then
 		printLuaError("DroidFoundry:prepareProductionEncounter unable to resolve Production terminal cell for instance " .. rootID)
 		return false
 	end
-
 	local point = self.productionTerminal
-	local pTerminal = spawnSceneObject(
-		"dungeon1",
-		self.nexusTerminalTemplate,
-		point.x,
-		point.z,
-		point.y,
-		cellID,
-		math.rad(point.heading or 0)
-	)
-
+	local pTerminal = spawnSceneObject("dungeon1", self.nexusTerminalTemplate, point.x, point.z, point.y, cellID, math.rad(point.heading or 0))
 	if (pTerminal == nil) then
-		printLuaError("DroidFoundry:prepareProductionEncounter failed to spawn Production Network terminal for instance " .. rootID)
+		printLuaError("DroidFoundry:prepareProductionEncounter failed to spawn terminal for instance " .. rootID)
 		return false
 	end
-
 	SceneObject(pTerminal):setCustomObjectName("Foundry Production Network - ONLINE")
 	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryProductionTerminalMenuComponent")
 	writeData("droidFoundryProductionTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
-
 	return true
 end
 
@@ -1454,12 +1686,8 @@ end
 
 function DroidFoundry:prepareSentinelEncounter(rootID)
 	rootID = tonumber(rootID) or 0
-	if (rootID == 0) then
-		return false
-	end
-
+	if (rootID == 0) then return false end
 	writeData("droidFoundrySentinelAlive:" .. rootID, 0)
-
 	for i = 1, #self.sentinelApproachAnchors, 1 do
 		local anchor = self.sentinelApproachAnchors[i]
 		for j = 1, #anchor.templates, 1 do
@@ -1468,34 +1696,28 @@ function DroidFoundry:prepareSentinelEncounter(rootID)
 				return false
 			end
 		end
+		local extras = self:getScaledPackExtras(anchor.label, rootID)
+		for j = 1, #extras, 1 do
+			if (self:spawnSentinelUnit(rootID, anchor, extras[j], 3 + j) == nil) then
+				printLuaError("DroidFoundry:prepareSentinelEncounter failed scaled spawn for " .. tostring(anchor.label) .. " instance " .. rootID)
+				return false
+			end
+		end
 	end
-
 	local cellID = self:getInstanceCellID(rootID, self.sentinelTerminalCellIndex)
 	if (cellID == 0 or getSceneObject(cellID) == nil) then
 		printLuaError("DroidFoundry:prepareSentinelEncounter unable to resolve Sentinel terminal cell for instance " .. rootID)
 		return false
 	end
-
 	local point = self.sentinelTerminal
-	local pTerminal = spawnSceneObject(
-		"dungeon1",
-		self.nexusTerminalTemplate,
-		point.x,
-		point.z,
-		point.y,
-		cellID,
-		math.rad(point.heading or 0)
-	)
-
+	local pTerminal = spawnSceneObject("dungeon1", self.nexusTerminalTemplate, point.x, point.z, point.y, cellID, math.rad(point.heading or 0))
 	if (pTerminal == nil) then
-		printLuaError("DroidFoundry:prepareSentinelEncounter failed to spawn Sentinel Network terminal for instance " .. rootID)
+		printLuaError("DroidFoundry:prepareSentinelEncounter failed to spawn terminal for instance " .. rootID)
 		return false
 	end
-
 	SceneObject(pTerminal):setCustomObjectName("Foundry Sentinel Network - ONLINE")
 	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundrySentinelTerminalMenuComponent")
 	writeData("droidFoundrySentinelTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
-
 	return true
 end
 
@@ -1600,49 +1822,38 @@ end
 
 function DroidFoundry:prepareMaintenanceEncounter(rootID)
 	rootID = tonumber(rootID) or 0
-	if (rootID == 0) then
-		return false
-	end
-
+	if (rootID == 0) then return false end
 	writeData("droidFoundryMaintenanceAlive:" .. rootID, 0)
-
 	for i = 1, #self.maintenanceApproachAnchors, 1 do
 		local anchor = self.maintenanceApproachAnchors[i]
-
 		for j = 1, #anchor.templates, 1 do
 			if (self:spawnMaintenanceUnit(rootID, anchor, anchor.templates[j], j) == nil) then
 				printLuaError("DroidFoundry:prepareMaintenanceEncounter failed for instance " .. rootID)
 				return false
 			end
 		end
+		local extras = self:getScaledPackExtras(anchor.label, rootID)
+		for j = 1, #extras, 1 do
+			if (self:spawnMaintenanceUnit(rootID, anchor, extras[j], 3 + j) == nil) then
+				printLuaError("DroidFoundry:prepareMaintenanceEncounter failed scaled spawn for " .. tostring(anchor.label) .. " instance " .. rootID)
+				return false
+			end
+		end
 	end
-
 	local cellID = self:getInstanceCellID(rootID, self.maintenanceTerminalCellIndex)
 	if (cellID == 0 or getSceneObject(cellID) == nil) then
 		printLuaError("DroidFoundry:prepareMaintenanceEncounter unable to resolve Maintenance terminal cell for instance " .. rootID)
 		return false
 	end
-
 	local point = self.maintenanceTerminal
-	local pTerminal = spawnSceneObject(
-		"dungeon1",
-		self.nexusTerminalTemplate,
-		point.x,
-		point.z,
-		point.y,
-		cellID,
-		math.rad(point.heading or 0)
-	)
-
+	local pTerminal = spawnSceneObject("dungeon1", self.nexusTerminalTemplate, point.x, point.z, point.y, cellID, math.rad(point.heading or 0))
 	if (pTerminal == nil) then
-		printLuaError("DroidFoundry:prepareMaintenanceEncounter failed to spawn Maintenance Network terminal for instance " .. rootID)
+		printLuaError("DroidFoundry:prepareMaintenanceEncounter failed to spawn terminal for instance " .. rootID)
 		return false
 	end
-
 	SceneObject(pTerminal):setCustomObjectName("Foundry Maintenance Network - ONLINE")
 	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryMaintenanceTerminalMenuComponent")
 	writeData("droidFoundryMaintenanceTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
-
 	return true
 end
 
@@ -1746,6 +1957,226 @@ function DroidFoundry:trackOverseerObject(rootID, pObject)
 	writeData("droidFoundryOverseerTracked:" .. rootID .. ":" .. count, objectID)
 end
 
+function DroidFoundry:resolveOverseerDamagePlayer(pAttacker)
+	if (pAttacker == nil) then
+		return nil
+	end
+
+	local isPlayer = false
+	pcall(function()
+		isPlayer = SceneObject(pAttacker):isPlayerCreature()
+	end)
+
+	if (isPlayer) then
+		return pAttacker
+	end
+
+	-- Mirror the existing WorldBossLootManager ownership handling so combat
+	-- pets/droids credit their owner rather than the AI object.
+	local pOwner = nil
+	pcall(function()
+		pOwner = CreatureObject(pAttacker):getLinkedCreature()
+	end)
+
+	if (pOwner ~= nil) then
+		local ownerIsPlayer = false
+		pcall(function()
+			ownerIsPlayer = SceneObject(pOwner):isPlayerCreature()
+		end)
+		if (ownerIsPlayer) then
+			return pOwner
+		end
+	end
+
+	pOwner = nil
+	pcall(function()
+		pOwner = CreatureObject(pAttacker):getOwner()
+	end)
+
+	if (pOwner ~= nil) then
+		local ownerIsPlayer = false
+		pcall(function()
+			ownerIsPlayer = SceneObject(pOwner):isPlayerCreature()
+		end)
+		if (ownerIsPlayer) then
+			return pOwner
+		end
+	end
+
+	return nil
+end
+
+function DroidFoundry:clearOverseerPersonalLootState(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return
+	end
+
+	local count = tonumber(readData("droidFoundryOverseerDamagerCount:" .. rootID)) or 0
+	for i = 1, count, 1 do
+		local listKey = "droidFoundryOverseerDamager:" .. rootID .. ":" .. i
+		local playerID = tonumber(readData(listKey)) or 0
+
+		if (playerID ~= 0) then
+			deleteData("droidFoundryOverseerDamaged:" .. rootID .. ":" .. playerID)
+			deleteData("droidFoundryOverseerRewardPending:" .. rootID .. ":" .. playerID)
+			deleteData("droidFoundryOverseerRewardGranted:" .. rootID .. ":" .. playerID)
+		end
+
+		deleteData(listKey)
+	end
+
+	deleteData("droidFoundryOverseerDamagerCount:" .. rootID)
+end
+
+function DroidFoundry:notifyOverseerDamaged(pBoss, pAttacker, damage)
+	if (pBoss == nil or pAttacker == nil) then
+		return 0
+	end
+
+	local bossID = SceneObject(pBoss):getObjectID()
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. bossID)) or 0
+
+	if (rootID == 0 or
+		tonumber(readData("droidFoundryEncounterCleaning:" .. rootID)) == 1 or
+		(tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then
+		return 0
+	end
+
+	local pPlayer = self:resolveOverseerDamagePlayer(pAttacker)
+	if (pPlayer == nil) then
+		return 0
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if (playerID == 0 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		return 0
+	end
+
+	local damagedKey = "droidFoundryOverseerDamaged:" .. rootID .. ":" .. playerID
+	if (tonumber(readData(damagedKey)) == 1) then
+		return 0
+	end
+
+	writeData(damagedKey, 1)
+
+	local count = (tonumber(readData("droidFoundryOverseerDamagerCount:" .. rootID)) or 0) + 1
+	writeData("droidFoundryOverseerDamagerCount:" .. rootID, count)
+	writeData("droidFoundryOverseerDamager:" .. rootID .. ":" .. count, playerID)
+
+	return 0
+end
+
+function DroidFoundry:isOverseerPersonalLootEligible(rootID, playerID)
+	rootID = tonumber(rootID) or 0
+	playerID = tonumber(playerID) or 0
+
+	if (rootID == 0 or playerID == 0 or
+		tonumber(readData("droidFoundryOverseerDamaged:" .. rootID .. ":" .. playerID)) ~= 1 or
+		not self:isParticipant(rootID, playerID)) then
+		return false
+	end
+
+	local pPlayer = getSceneObject(playerID)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+		return false
+	end
+
+	local bossCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (bossCellID ~= 0 and SceneObject(pPlayer):getParentID() == bossCellID) then
+		return true
+	end
+
+	-- A participant may have just died and been moved to the Foundry entrance
+	-- by the encounter recovery system. Preserve eligibility for that real
+	-- participant instead of letting the 750 ms recovery teleport cost loot.
+	return tonumber(readData("droidFoundryOverseerDown:" .. rootID .. ":" .. playerID)) == 1
+end
+
+function DroidFoundry:grantOverseerPersonalLoot(rootID, pPlayer)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0 or pPlayer == nil) then
+		return false
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local pendingKey = "droidFoundryOverseerRewardPending:" .. rootID .. ":" .. playerID
+	local grantedKey = "droidFoundryOverseerRewardGranted:" .. rootID .. ":" .. playerID
+
+	if (tonumber(readData(grantedKey)) == 1) then
+		deleteData(pendingKey)
+		return true
+	end
+
+	if (tonumber(readData(pendingKey)) ~= 1) then
+		return true
+	end
+
+	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
+	if (pInventory == nil or SceneObject(pInventory):isContainerFullRecursive()) then
+		return false
+	end
+
+	local rewardOID = createLoot(
+		pInventory,
+		self.overseerPersonalLootGroup,
+		self.overseerPersonalLootLevel,
+		true
+	)
+
+	if (rewardOID == nil or tonumber(rewardOID) == 0) then
+		return false
+	end
+
+	writeData(grantedKey, 1)
+	deleteData(pendingKey)
+
+	local rewardName = "an Overseer reward"
+	local pReward = getSceneObject(tonumber(rewardOID))
+	if (pReward ~= nil) then
+		rewardName = SceneObject(pReward):getDisplayedName() or rewardName
+	end
+
+	CreatureObject(pPlayer):sendSystemMessage(
+		"\\#00FF00Foundry Overseer personal reward: " .. rewardName .. ".\\#FFFFFF"
+	)
+
+	return true
+end
+
+function DroidFoundry:distributeOverseerPersonalLoot(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return
+	end
+
+	local count = tonumber(readData("droidFoundryOverseerDamagerCount:" .. rootID)) or 0
+	for i = 1, count, 1 do
+		local playerID = tonumber(readData("droidFoundryOverseerDamager:" .. rootID .. ":" .. i)) or 0
+
+		if (playerID ~= 0 and self:isOverseerPersonalLootEligible(rootID, playerID)) then
+			local pPlayer = getSceneObject(playerID)
+			if (pPlayer ~= nil) then
+				local pendingKey = "droidFoundryOverseerRewardPending:" .. rootID .. ":" .. playerID
+				local grantedKey = "droidFoundryOverseerRewardGranted:" .. rootID .. ":" .. playerID
+
+				if (tonumber(readData(grantedKey)) ~= 1) then
+					writeData(pendingKey, 1)
+
+					if (not self:grantOverseerPersonalLoot(rootID, pPlayer)) then
+						CreatureObject(pPlayer):sendSystemMessage(
+							"Your personal Overseer reward is waiting at the Foundry Archive."
+						)
+					end
+				end
+			end
+		end
+	end
+end
+
 function DroidFoundry:clearOverseerDownFlags(rootID)
 	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
 
@@ -1816,6 +2247,7 @@ function DroidFoundry:resetOverseerAfterWipe(rootID)
 	deleteData("droidFoundryOverseerLastRepair:" .. rootID)
 	deleteData("droidFoundryOverseerNextOverload:" .. rootID)
 
+	self:clearOverseerPersonalLootState(rootID)
 	self:clearOverseerDownFlags(rootID)
 
 	local terminalID = tonumber(readData("droidFoundryArchiveTerminal:" .. rootID)) or 0
@@ -1935,22 +2367,205 @@ end
 
 function DroidFoundry:spawnOverseerSupport(rootID, templateName, anchorIndex, pointIndex)
 	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
-	if (cellID == 0 or getSceneObject(cellID) == nil) then
-		return nil
-	end
-
+	if (cellID == 0 or getSceneObject(cellID) == nil) then return nil end
 	local anchor = self.overseerReinforcementAnchors[anchorIndex]
+	if (anchor == nil) then return nil end
+	local points = self:getTriangleFormation(anchor)
+	local point = points[pointIndex]
+	if (point == nil) then return nil end
+	local pMobile = spawnMobile("dungeon1", templateName, 0, point.x, point.z, point.y, point.heading or 0, cellID)
+	if (pMobile ~= nil) then
+		self:trackEncounterObject(rootID, pMobile)
+		self:trackOverseerObject(rootID, pMobile)
+		local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
+		local pFallback = targetID ~= 0 and getSceneObject(targetID) or nil
+		local pTarget = self:getRandomActiveParticipant(rootID, cellID, pFallback)
+		if (pTarget ~= nil) then
+			local ai = AiAgent(pMobile)
+			if (ai ~= nil) then
+				ai:setAITemplate()
+				ai:addDefender(pTarget)
+			end
+		end
+	end
+	return pMobile
+end
+
+function DroidFoundry:prepareFinalEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then return false end
+	for i = 1, #self.finalApproachAnchors, 1 do
+		local anchor = self.finalApproachAnchors[i]
+		for j = 1, #anchor.templates, 1 do
+			if (self:spawnFinalApproachUnit(rootID, anchor, anchor.templates[j], j) == nil) then
+				printLuaError("DroidFoundry:prepareFinalEncounter failed while spawning final approach for instance " .. rootID)
+				return false
+			end
+		end
+		local extras = self:getScaledPackExtras(anchor.label, rootID)
+		for j = 1, #extras, 1 do
+			if (self:spawnFinalApproachUnit(rootID, anchor, extras[j], 3 + j) == nil) then
+				printLuaError("DroidFoundry:prepareFinalEncounter failed scaled spawn for " .. tostring(anchor.label) .. " instance " .. rootID)
+				return false
+			end
+		end
+	end
+	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError("DroidFoundry:prepareFinalEncounter unable to resolve Overseer chamber for instance " .. rootID)
+		return false
+	end
+	local point = self.archiveTerminal
+	local pTerminal = spawnSceneObject("dungeon1", self.nexusTerminalTemplate, point.x, point.z, point.y, cellID, math.rad(point.heading or 0))
+	if (pTerminal == nil) then
+		printLuaError("DroidFoundry:prepareFinalEncounter failed to spawn Archive interface for instance " .. rootID)
+		return false
+	end
+	SceneObject(pTerminal):setCustomObjectName("Foundry Archive Interface - LOCKED")
+	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryArchiveTerminalMenuComponent")
+	writeData("droidFoundryArchiveTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
+	writeData("droidFoundryOverseerState:" .. rootID, 0)
+	return true
+end
+
+function DroidFoundry:getPrototypeSpawnPoint(anchor)
 	if (anchor == nil) then
 		return nil
 	end
 
-	local points = self:getTriangleFormation(anchor)
-	local point = points[pointIndex]
-	if (point == nil) then
-		return nil
+	local heading = math.rad(anchor.heading or 0)
+	local forwardX = math.sin(heading)
+	local forwardY = math.cos(heading)
+
+	-- Place the Prototype behind the normal formation center rather than on
+	-- points used by normal/scaled packs. This keeps the random Elite visually
+	-- part of the room while minimizing overlap with the 1-5 formation slots.
+	local baseDepth = tonumber(anchor.depth) or 1.4
+	local prototypeDepth = math.max(3.4, (baseDepth * 2.4) + 0.5)
+
+	return {
+		x = anchor.x - (forwardX * prototypeDepth),
+		z = anchor.z,
+		y = anchor.y - (forwardY * prototypeDepth),
+		heading = anchor.heading or 0,
+	}
+end
+
+function DroidFoundry:pulsePrototypeVisual(pPrototype, rootIDString)
+	local rootID = tonumber(rootIDString) or 0
+	if (pPrototype == nil or rootID == 0) then
+		return 0
 	end
 
-	local pMobile = spawnMobile(
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1) then
+		return 0
+	end
+
+	local prototypeID = SceneObject(pPrototype):getObjectID()
+	if (prototypeID == 0 or
+		prototypeID ~= (tonumber(readData("droidFoundryPrototypeObject:" .. rootID)) or 0)) then
+		return 0
+	end
+
+	local prototype = CreatureObject(pPrototype)
+	if (prototype:isDead() or prototype:isIncapacitated()) then
+		return 0
+	end
+
+	local cellID = SceneObject(pPrototype):getParentID()
+	if (cellID == 0) then
+		return 0
+	end
+
+	local x = SceneObject(pPrototype):getPositionX()
+	local z = SceneObject(pPrototype):getPositionZ()
+	local y = SceneObject(pPrototype):getPositionY()
+
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID)) then
+			local pMember = getSceneObject(playerID)
+
+			if (pMember ~= nil and
+				SceneObject(pMember):isPlayerCreature() and
+				SceneObject(pMember):getParentID() == cellID) then
+
+				playClientEffectLoc(
+					pMember,
+					self.prototypeVisualEffect,
+					"dungeon1",
+					x,
+					z,
+					y,
+					cellID
+				)
+			end
+		end
+	end
+
+	createEvent(
+		self.prototypeVisualPulseMs,
+		"DroidFoundry",
+		"pulsePrototypeVisual",
+		pPrototype,
+		tostring(rootID)
+	)
+
+	return 0
+end
+
+function DroidFoundry:preparePrototypeEncounter(rootID)
+	rootID = tonumber(rootID) or 0
+	if (rootID == 0) then
+		return
+	end
+
+	deleteData("droidFoundryPrototypeObject:" .. rootID)
+	deleteData("droidFoundryPrototypeArea:" .. rootID)
+	deleteData("droidFoundryPrototypeType:" .. rootID)
+
+	if (math.random(1, 1000000) > self.prototypeSpawnChancePerMillion) then
+		return
+	end
+
+	local areas = {
+		self.productionApproachAnchors,
+		self.sentinelApproachAnchors,
+		self.maintenanceApproachAnchors,
+		self.finalApproachAnchors,
+	}
+
+	local areaIndex = math.random(1, #areas)
+	local anchors = areas[areaIndex]
+	if (anchors == nil or #anchors == 0) then
+		printLuaError(
+			"DroidFoundry:preparePrototypeEncounter selected an empty area for instance " ..
+			tostring(rootID)
+		)
+		return
+	end
+
+	local anchor = anchors[math.random(1, #anchors)]
+	local point = self:getPrototypeSpawnPoint(anchor)
+	if (point == nil) then
+		return
+	end
+
+	local cellID = self:getInstanceCellID(rootID, anchor.cellIndex)
+	if (cellID == 0 or getSceneObject(cellID) == nil) then
+		printLuaError(
+			"DroidFoundry:preparePrototypeEncounter could not resolve selected cell for instance " ..
+			tostring(rootID)
+		)
+		return
+	end
+
+	local typeIndex = math.random(1, #self.prototypeTemplates)
+	local templateName = self.prototypeTemplates[typeIndex]
+
+	local pPrototype = spawnMobile(
 		"dungeon1",
 		templateName,
 		0,
@@ -1961,69 +2576,22 @@ function DroidFoundry:spawnOverseerSupport(rootID, templateName, anchorIndex, po
 		cellID
 	)
 
-	if (pMobile ~= nil) then
-		self:trackEncounterObject(rootID, pMobile)
-		self:trackOverseerObject(rootID, pMobile)
-
-		local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
-		local pTarget = getSceneObject(targetID)
-
-		if (pTarget ~= nil) then
-			local ai = AiAgent(pMobile)
-			if (ai ~= nil) then
-				ai:setAITemplate()
-				ai:addDefender(pTarget)
-			end
-		end
+	if (pPrototype == nil) then
+		printLuaError(
+			"DroidFoundry:preparePrototypeEncounter failed to spawn " ..
+			tostring(templateName) .. " for instance " .. tostring(rootID)
+		)
+		return
 	end
 
-	return pMobile
-end
+	local objectID = self:trackEncounterObject(rootID, pPrototype)
+	writeData("droidFoundryPrototypeObject:" .. rootID, objectID)
+	writeData("droidFoundryPrototypeArea:" .. rootID, areaIndex)
+	writeData("droidFoundryPrototypeType:" .. rootID, typeIndex)
 
-function DroidFoundry:prepareFinalEncounter(rootID)
-	rootID = tonumber(rootID) or 0
-	if (rootID == 0) then
-		return false
-	end
-
-	for i = 1, #self.finalApproachAnchors, 1 do
-		local anchor = self.finalApproachAnchors[i]
-		for j = 1, #anchor.templates, 1 do
-			if (self:spawnFinalApproachUnit(rootID, anchor, anchor.templates[j], j) == nil) then
-				printLuaError("DroidFoundry:prepareFinalEncounter failed while spawning final approach for instance " .. rootID)
-				return false
-			end
-		end
-	end
-
-	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
-	if (cellID == 0 or getSceneObject(cellID) == nil) then
-		printLuaError("DroidFoundry:prepareFinalEncounter unable to resolve Overseer chamber for instance " .. rootID)
-		return false
-	end
-
-	local point = self.archiveTerminal
-	local pTerminal = spawnSceneObject(
-		"dungeon1",
-		self.nexusTerminalTemplate,
-		point.x,
-		point.z,
-		point.y,
-		cellID,
-		math.rad(point.heading or 0)
-	)
-
-	if (pTerminal == nil) then
-		printLuaError("DroidFoundry:prepareFinalEncounter failed to spawn Archive interface for instance " .. rootID)
-		return false
-	end
-
-	SceneObject(pTerminal):setCustomObjectName("Foundry Archive Interface - LOCKED")
-	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryArchiveTerminalMenuComponent")
-	writeData("droidFoundryArchiveTerminal:" .. rootID, self:trackEncounterObject(rootID, pTerminal))
-	writeData("droidFoundryOverseerState:" .. rootID, 0)
-
-	return true
+	-- Pulse immediately, then continue every four seconds while the Prototype
+	-- remains alive and attached to this expedition.
+	self:pulsePrototypeVisual(pPrototype, tostring(rootID))
 end
 
 function DroidFoundry:getOverseerNetworkStatus(rootID)
@@ -2133,93 +2701,64 @@ end
 
 function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	rootID = tonumber(rootID) or 0
-	if (pPlayer == nil or rootID == 0) then
-		return false
-	end
-
+	if (pPlayer == nil or rootID == 0) then return false end
 	local playerID = SceneObject(pPlayer):getObjectID()
 	if (not self:isParticipant(rootID, playerID) or self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
 		CreatureObject(pPlayer):sendSystemMessage("This Foundry Archive interface is not assigned to your expedition.")
 		return false
 	end
-
 	if ((tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0) ~= self.NEXUS_COMPLETE) then
 		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus must be online before the Overseer can be engaged.")
 		return false
 	end
-
 	local stateKey = "droidFoundryOverseerState:" .. rootID
-	if ((tonumber(readData(stateKey)) or 0) ~= 0) then
-		return false
-	end
-
+	if ((tonumber(readData(stateKey)) or 0) ~= 0) then return false end
 	local cellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
-	if (cellID == 0 or getSceneObject(cellID) == nil) then
-		return false
-	end
-
+	if (cellID == 0 or getSceneObject(cellID) == nil) then return false end
 	writeData(stateKey, 1)
+	self:clearOverseerPersonalLootState(rootID)
 	self:clearOverseerDownFlags(rootID)
-
 	local boss = self.overseerAnchor
-	local pBoss = spawnMobile(
-		"dungeon1",
-		"foundry_overseer_ig_series",
-		0,
-		boss.x,
-		boss.z,
-		boss.y,
-		boss.heading or 0,
-		cellID
-	)
-
+	local pBoss = spawnMobile("dungeon1", "foundry_overseer_ig_series", 0, boss.x, boss.z, boss.y, boss.heading or 0, cellID)
 	if (pBoss == nil) then
 		writeData(stateKey, 0)
 		printLuaError("DroidFoundry:startOverseerEncounter failed to spawn Overseer for instance " .. rootID)
 		return false
 	end
-
+	self:scaleOverseerHAM(rootID, pBoss)
 	self:trackEncounterObject(rootID, pBoss)
 	self:trackOverseerObject(rootID, pBoss)
 	writeData("droidFoundryOverseerBoss:" .. rootID, SceneObject(pBoss):getObjectID())
 	writeData("droidFoundryOverseerTarget:" .. rootID, playerID)
+	createObserver(DAMAGERECEIVED, "DroidFoundry", "notifyOverseerDamaged", pBoss)
 	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyOverseerDestroyed", pBoss)
-
-	-- Optional-wing completion directly controls the opening support package.
-	-- Production online: two B1 reinforcements from area A.
+	local tier = self:getScaleTier(rootID)
 	if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) ~= 1) then
 		self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 1)
 		self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 2)
+		if (tier >= self.SCALE_SMALL) then self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 4) end
+		if (tier >= self.SCALE_GROUP) then self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 5) end
 	end
-
-	-- Sentinel online: one Droideka reinforcement from area B.
 	if (tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) ~= 1) then
 		self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 1)
+		if (tier >= self.SCALE_SMALL) then self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 4) end
+		if (tier >= self.SCALE_GROUP) then self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 5) end
 	end
-
-	-- Maintenance online: one Repair Droid from the third point in area A.
-	-- Actual healing behavior remains a later boss-mechanics pass.
 	if (tonumber(readData("droidFoundryMaintenanceDisabled:" .. rootID)) ~= 1) then
 		local pRepair = self:spawnOverseerSupport(rootID, "foundry_repair_droid", 1, 3)
-		if (pRepair ~= nil) then
-			writeData("droidFoundryOverseerRepairDroid:" .. rootID, SceneObject(pRepair):getObjectID())
-		end
+		if (pRepair ~= nil) then writeData("droidFoundryOverseerRepairDroid:" .. rootID, SceneObject(pRepair):getObjectID()) end
 	end
-
 	self:sendInstanceMessage(rootID, "Foundry Overseer combat protocol engaged.")
-
 	writeData("droidFoundryOverseerPhase75:" .. rootID, 0)
 	writeData("droidFoundryOverseerPhase50:" .. rootID, 0)
 	writeData("droidFoundryOverseerPhase25:" .. rootID, 0)
 	writeData("droidFoundryOverseerLastRepair:" .. rootID, os.time())
 	writeData("droidFoundryOverseerNextOverload:" .. rootID, 0)
-
 	local ai = AiAgent(pBoss)
 	if (ai ~= nil) then
 		ai:setAITemplate()
 		ai:addDefender(pPlayer)
 	end
-
 	createEvent(2000, "DroidFoundry", "overseerMechanicsLoop", pBoss, tostring(rootID))
 	return true
 end
@@ -2268,57 +2807,168 @@ function DroidFoundry:healOverseerFromMaintenance(rootID, pBoss)
 	return repaired
 end
 
+-- DROID_FOUNDRY_QUALITY_DUAL_OVERLOAD_V1
+function DroidFoundry:getOverseerOverloadTargets(rootID, cellID)
+	rootID = tonumber(rootID) or 0
+	cellID = tonumber(cellID) or 0
+
+	local candidates = {}
+	local rosterSize = tonumber(readData("droidFoundryRosterSize:" .. rootID)) or 0
+
+	for i = 1, rosterSize, 1 do
+		local playerID = tonumber(readData("droidFoundryRoster:" .. rootID .. ":" .. i)) or 0
+
+		if (playerID ~= 0 and self:isParticipant(rootID, playerID)) then
+			local pMember = getSceneObject(playerID)
+
+			if (pMember ~= nil and SceneObject(pMember):isPlayerCreature() and
+				not CreatureObject(pMember):isDead() and
+				not CreatureObject(pMember):isIncapacitated() and
+				SceneObject(pMember):getParentID() == cellID) then
+				table.insert(candidates, pMember)
+			end
+		end
+	end
+
+	if (#candidates == 0) then
+		return {}
+	end
+
+	local targets = {}
+	local preferredID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
+	local preferredIndex = 0
+
+	if (preferredID ~= 0) then
+		for i = 1, #candidates, 1 do
+			if (SceneObject(candidates[i]):getObjectID() == preferredID) then
+				preferredIndex = i
+				break
+			end
+		end
+	end
+
+	if (preferredIndex == 0) then
+		preferredIndex = math.random(1, #candidates)
+	end
+
+	table.insert(targets, candidates[preferredIndex])
+	table.remove(candidates, preferredIndex)
+
+	-- Full 4+ scaling gets a second simultaneous Overload on a distinct player
+	-- whenever at least two valid participants remain in the chamber.
+	if (self:getScaleTier(rootID) == self.SCALE_GROUP and #candidates > 0) then
+		local secondIndex = math.random(1, #candidates)
+		table.insert(targets, candidates[secondIndex])
+	end
+
+	return targets
+end
+
+function DroidFoundry:scheduleOverseerOverloadTarget(pBoss, rootID, pTarget, expectedCellID)
+	if (pBoss == nil or pTarget == nil or rootID == 0 or expectedCellID == 0) then
+		return false
+	end
+
+	local target = CreatureObject(pTarget)
+	if (target:isDead() or target:isIncapacitated() or
+		SceneObject(pTarget):getParentID() ~= expectedCellID) then
+		return false
+	end
+
+	local targetID = SceneObject(pTarget):getObjectID()
+	local startX = SceneObject(pTarget):getPositionX()
+	local startZ = SceneObject(pTarget):getPositionZ()
+	local startY = SceneObject(pTarget):getPositionY()
+
+	target:sendSystemMessage("Electrical Overload locked on your position. Move at least 6 meters!")
+	self:playOverseerOverloadEffect(rootID, startX, startZ, startY, expectedCellID)
+
+	local pulseData = string.format("%d|%.3f|%.3f|%.3f|%d", rootID, startX, startZ, startY, expectedCellID)
+	createEvent(2000, "DroidFoundry", "pulseOverseerOverload", pBoss, pulseData)
+	createEvent(4000, "DroidFoundry", "pulseOverseerOverload", pBoss, pulseData)
+
+	local eventData = string.format(
+		"%d|%d|%.3f|%.3f|%.3f|%d",
+		rootID,
+		targetID,
+		startX,
+		startZ,
+		startY,
+		expectedCellID
+	)
+	createEvent(self.overseerOverloadWarningMs, "DroidFoundry", "resolveOverseerOverload", pBoss, eventData)
+
+	return true
+end
+
 function DroidFoundry:beginOverseerOverload(pBoss, rootID)
 	if (pBoss == nil or rootID == 0) then
 		return false
 	end
 
-	local targetID = tonumber(readData("droidFoundryOverseerTarget:" .. rootID)) or 0
-	local pTarget = getSceneObject(targetID)
-
-	if (pTarget == nil) then
-		return false
-	end
-
-	local target = CreatureObject(pTarget)
-	if (target:isDead() or target:isIncapacitated()) then
-		return false
-	end
-
 	local expectedCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
-	if (expectedCellID == 0 or SceneObject(pTarget):getParentID() ~= expectedCellID) then
+	if (expectedCellID == 0) then
 		return false
 	end
 
-	local startX = SceneObject(pTarget):getPositionX()
-	local startY = SceneObject(pTarget):getPositionY()
+	local targets = self:getOverseerOverloadTargets(rootID, expectedCellID)
+	if (#targets == 0) then
+		return false
+	end
 
-	self:sendInstanceMessage(rootID, "OVERSEER: Electrical overload locked. MOVE!")
-	target:sendSystemMessage("Electrical overload locked on your position. Move at least 6 meters!")
+	local overloadCount = #targets
+	if (overloadCount >= 2) then
+		self:sendInstanceMessage(rootID, "OVERSEER: Dual Electrical Overloads locked. MOVE!")
+	else
+		self:sendInstanceMessage(rootID, "OVERSEER: Electrical Overload locked. MOVE!")
+	end
 
-	local eventData = string.format("%d|%d|%.3f|%.3f", rootID, targetID, startX, startY)
+	local scheduled = 0
+	for i = 1, overloadCount, 1 do
+		if (self:scheduleOverseerOverloadTarget(pBoss, rootID, targets[i], expectedCellID)) then
+			scheduled = scheduled + 1
+		end
+	end
 
-	-- Give players enough time to finish normal SWG combat animations and move
-	-- clear of the locked position before the overload resolves.
-	createEvent(6000, "DroidFoundry", "resolveOverseerOverload", pBoss, eventData)
+	if (scheduled == 0) then
+		return false
+	end
+
+	local announceData = string.format("%d|%d", rootID, scheduled)
+	createEvent(
+		self.overseerOverloadWarningMs,
+		"DroidFoundry",
+		"announceOverseerOverloadDetonation",
+		pBoss,
+		announceData
+	)
 
 	return true
 end
 
-function DroidFoundry:resolveOverseerOverload(pBoss, eventData)
+function DroidFoundry:pulseOverseerOverload(pBoss, eventData)
+	if (pBoss == nil or eventData == nil or eventData == "") then return 0 end
+	local rootString, xString, zString, yString, cellString = string.match(eventData, "^(%-?%d+)|([%-%.%d]+)|([%-%.%d]+)|([%-%.%d]+)|(%-?%d+)$")
+	local rootID = tonumber(rootString) or 0
+	local x, z, y, cellID = tonumber(xString), tonumber(zString), tonumber(yString), tonumber(cellString) or 0
+	if (rootID == 0 or x == nil or z == nil or y == nil or cellID == 0) then return 0 end
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or (tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then return 0 end
+	local bossID = SceneObject(pBoss):getObjectID()
+	if (bossID == 0 or bossID ~= (tonumber(readData("droidFoundryOverseerBoss:" .. rootID)) or 0)) then return 0 end
+	self:playOverseerOverloadEffect(rootID, x, z, y, cellID)
+	return 0
+end
+
+function DroidFoundry:announceOverseerOverloadDetonation(pBoss, eventData)
 	if (pBoss == nil or eventData == nil or eventData == "") then
 		return 0
 	end
 
-	local rootString, targetString, xString, yString =
-		string.match(eventData, "^(%-?%d+)|(%-?%d+)|([%-%.%d]+)|([%-%.%d]+)$")
-
+	local rootString, countString = string.match(eventData, "^(%-?%d+)|(%d+)$")
 	local rootID = tonumber(rootString) or 0
-	local targetID = tonumber(targetString) or 0
-	local startX = tonumber(xString)
-	local startY = tonumber(yString)
+	local overloadCount = tonumber(countString) or 0
 
-	if (rootID == 0 or targetID == 0 or startX == nil or startY == nil) then
+	if (rootID == 0 or overloadCount == 0) then
 		return 0
 	end
 
@@ -2332,43 +2982,50 @@ function DroidFoundry:resolveOverseerOverload(pBoss, eventData)
 		return 0
 	end
 
+	if (overloadCount >= 2) then
+		self:sendInstanceMessage(rootID, "Electrical Overloads detonate.")
+	else
+		self:sendInstanceMessage(rootID, "Electrical Overload detonates.")
+	end
+
+	return 0
+end
+
+function DroidFoundry:resolveOverseerOverload(pBoss, eventData)
+	if (pBoss == nil or eventData == nil or eventData == "") then return 0 end
+	local rootString, targetString, xString, zString, yString, cellString = string.match(eventData, "^(%-?%d+)|(%-?%d+)|([%-%.%d]+)|([%-%.%d]+)|([%-%.%d]+)|(%-?%d+)$")
+	local rootID = tonumber(rootString) or 0
+	local targetID = tonumber(targetString) or 0
+	local startX, startZ, startY = tonumber(xString), tonumber(zString), tonumber(yString)
+	local expectedCellID = tonumber(cellString) or 0
+	if (rootID == 0 or targetID == 0 or startX == nil or startZ == nil or startY == nil or expectedCellID == 0) then return 0 end
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or (tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1) then return 0 end
+	local bossID = SceneObject(pBoss):getObjectID()
+	if (bossID == 0 or bossID ~= (tonumber(readData("droidFoundryOverseerBoss:" .. rootID)) or 0)) then return 0 end
+
+	-- Always show the final detonation at the original locked position.
+	self:playOverseerOverloadEffect(rootID, startX, startZ, startY, expectedCellID)
+
 	local pTarget = getSceneObject(targetID)
-	if (pTarget == nil) then
-		return 0
-	end
-
+	if (pTarget == nil) then return 0 end
 	local target = CreatureObject(pTarget)
-	if (target:isDead() or target:isIncapacitated()) then
-		return 0
-	end
+	if (target:isDead() or target:isIncapacitated() or SceneObject(pTarget):getParentID() ~= expectedCellID) then return 0 end
 
-	local expectedCellID = self:getInstanceCellID(rootID, self.overseerCellIndex)
-	if (expectedCellID == 0 or SceneObject(pTarget):getParentID() ~= expectedCellID) then
-		return 0
-	end
-
-	local currentX = SceneObject(pTarget):getPositionX()
-	local currentY = SceneObject(pTarget):getPositionY()
-	local deltaX = currentX - startX
-	local deltaY = currentY - startY
+	local deltaX = SceneObject(pTarget):getPositionX() - startX
+	local deltaY = SceneObject(pTarget):getPositionY() - startY
 	local distance = math.sqrt((deltaX * deltaX) + (deltaY * deltaY))
 
 	if (distance >= 6.0) then
-		target:sendSystemMessage("You escape the electrical overload.")
+		target:sendSystemMessage("You escape the Electrical Overload.")
 		return 0
 	end
 
 	local maxHealth = tonumber(target:getMaxHAM(0)) or 0
-	if (maxHealth <= 0) then
-		return 0
-	end
+	if (maxHealth <= 0) then return 0 end
 
-	local damage = math.floor(maxHealth * 0.15)
-	damage = math.max(750, math.min(2500, damage))
-
+	local damage = math.max(750, math.min(2500, math.floor(maxHealth * 0.15)))
 	target:inflictDamage(pBoss, 0, damage, 0)
-	target:sendSystemMessage("Electrical overload hits you for " .. damage .. " damage!")
-	self:sendInstanceMessage(rootID, "Electrical overload detonates at the locked position.")
+	target:sendSystemMessage("Electrical Overload hits you for " .. damage .. " damage!")
 
 	return 0
 end
@@ -2427,12 +3084,15 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 		end
 	end
 
+	local tier = self:getScaleTier(rootID)
+
 	if (healthPercent <= 75 and tonumber(readData("droidFoundryOverseerPhase75:" .. rootID)) ~= 1) then
 		writeData("droidFoundryOverseerPhase75:" .. rootID, 1)
-
 		if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) ~= 1) then
 			self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 2)
-			self:sendInstanceMessage(rootID, "Production Network dispatches an emergency B1 reinforcement.")
+			if (tier >= self.SCALE_SMALL) then self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 4) end
+			if (tier >= self.SCALE_GROUP) then self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 5) end
+			self:sendInstanceMessage(rootID, "Production Network dispatches emergency B1 reinforcements.")
 		else
 			self:sendInstanceMessage(rootID, "Overseer requests Production reinforcements, but the Production Network is offline.")
 		end
@@ -2440,10 +3100,11 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 
 	if (healthPercent <= 50 and tonumber(readData("droidFoundryOverseerPhase50:" .. rootID)) ~= 1) then
 		writeData("droidFoundryOverseerPhase50:" .. rootID, 1)
-
 		if (tonumber(readData("droidFoundrySentinelDisabled:" .. rootID)) ~= 1) then
 			self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 2)
-			self:sendInstanceMessage(rootID, "Sentinel Network deploys an emergency Droideka defender.")
+			if (tier >= self.SCALE_SMALL) then self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 4) end
+			if (tier >= self.SCALE_GROUP) then self:spawnOverseerSupport(rootID, "foundry_droideka_sentinel", 2, 5) end
+			self:sendInstanceMessage(rootID, "Sentinel Network deploys emergency Droideka defenders.")
 		else
 			self:sendInstanceMessage(rootID, "Overseer requests Sentinel support, but the Sentinel Network is offline.")
 		end
@@ -2452,7 +3113,9 @@ function DroidFoundry:overseerMechanicsLoop(pBoss, rootIDString)
 	if (healthPercent <= 25 and tonumber(readData("droidFoundryOverseerPhase25:" .. rootID)) ~= 1) then
 		writeData("droidFoundryOverseerPhase25:" .. rootID, 1)
 		self:spawnOverseerSupport(rootID, "foundry_elite_b2_enforcer", 2, 3)
-		self:sendInstanceMessage(rootID, "Overseer failsafe combat unit deployed.")
+		if (tier >= self.SCALE_SMALL) then self:spawnOverseerSupport(rootID, "foundry_super_battle_droid", 2, 4) end
+		if (tier >= self.SCALE_GROUP) then self:spawnOverseerSupport(rootID, "foundry_super_battle_droid", 2, 5) end
+		self:sendInstanceMessage(rootID, "Overseer failsafe combat units deployed.")
 		self:sendInstanceMessage(rootID, "OVERSEER: FINAL COMBAT PROTOCOL ENGAGED.")
 	end
 
@@ -2481,6 +3144,66 @@ function DroidFoundry:prepareArchiveRewards(rootID)
 	end
 end
 
+function DroidFoundry:showArchiveExitSui(pTerminal, pPlayer, rootID)
+	rootID = tonumber(rootID) or 0
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
+		return
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	if ((tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 2 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID or
+		tonumber(readData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID)) ~= 1) then
+		return
+	end
+
+	local sui = SuiMessageBox.new("DroidFoundry", "archiveExitSuiCallback")
+	sui.setTargetNetworkId(SceneObject(pTerminal):getObjectID())
+	sui.setTitle("FOUNDRY ARCHIVE")
+	sui.setPrompt("Archive reward secured.\n\nExit the Droid Foundry?")
+	sui.setOkButtonText("Exit Droid Foundry")
+	sui.setCancelButtonText("Remain")
+	sui.setForceCloseDistance(8)
+	sui.setProperty("", "Size", "430,210")
+	sui.sendTo(pPlayer)
+end
+
+function DroidFoundry:archiveExitSuiCallback(pPlayer, pSui, eventIndex)
+	if (pPlayer == nil or eventIndex ~= 0) then
+		return
+	end
+
+	local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+	if (pPageData == nil) then
+		return
+	end
+
+	local suiPageData = LuaSuiPageData(pPageData)
+	local terminalID = suiPageData:getTargetNetworkId()
+	local pTerminal = getSceneObject(terminalID)
+	if (pTerminal == nil) then
+		return
+	end
+
+	if (not CreatureObject(pPlayer):isInRangeWithObject(pTerminal, 8)) then
+		return
+	end
+
+	local rootID = tonumber(readData("droidFoundryEncounterRoot:" .. terminalID)) or 0
+	local playerID = SceneObject(pPlayer):getObjectID()
+
+	if (rootID == 0 or
+		(tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 2 or
+		not self:isParticipant(rootID, playerID) or
+		self:getPlayerInstanceRoot(pPlayer) ~= rootID or
+		tonumber(readData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID)) ~= 1) then
+		return
+	end
+
+	self:returnPlayer(pPlayer)
+end
+
 function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
 	rootID = tonumber(rootID) or 0
 	if (pTerminal == nil or pPlayer == nil or rootID == 0) then return false end
@@ -2496,8 +3219,8 @@ function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
 		return false
 	end
 	if (tonumber(readData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID)) == 1) then
-		CreatureObject(pPlayer):sendSystemMessage("You have already claimed your reward from this Foundry Archive.")
-		return false
+		self:showArchiveExitSui(pTerminal, pPlayer, rootID)
+		return true
 	end
 
 	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
@@ -2506,11 +3229,52 @@ function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
 		return false
 	end
 
-	local componentOID = createLoot(pInventory, self.archiveComponentLootGroup, 175, true)
+	local pendingOverseerReward =
+		tonumber(readData("droidFoundryOverseerRewardPending:" .. rootID .. ":" .. playerID)) == 1
+
+	if (pendingOverseerReward and not self:grantOverseerPersonalLoot(rootID, pPlayer)) then
+		CreatureObject(pPlayer):sendSystemMessage(
+			"The Foundry Overseer reward could not be materialized. Try again."
+		)
+		return false
+	end
+
+	-- The personal reward may have consumed the final free inventory slot.
+	if (SceneObject(pInventory):isContainerFullRecursive()) then
+		CreatureObject(pPlayer):sendSystemMessage("You need inventory space before accessing the Foundry Archive.")
+		return false
+	end
+
+	local now = os.time()
+	local lastPremiumClaim = tonumber(
+		readScreenPlayData(pPlayer, self.archivePremiumScreenPlay, self.archivePremiumTimestampKey)
+	) or 0
+
+	local premiumArchiveReady =
+		lastPremiumClaim <= 0 or
+		(now - lastPremiumClaim) >= self.archivePremiumCooldownSeconds
+
+	local archiveLootLevel = premiumArchiveReady and
+		self.archivePremiumLootLevel or
+		self.archiveFallbackLootLevel
+
+	local componentOID = createLoot(pInventory, self.archiveComponentLootGroup, archiveLootLevel, true)
 	if (componentOID == nil or tonumber(componentOID) == 0) then
 		CreatureObject(pPlayer):sendSystemMessage("The Foundry Archive failed to materialize your component. Try again.")
 		return false
 	end
+
+	-- The premium timestamp starts only after the guaranteed component was
+	-- successfully created. Fallback claims never extend the premium cooldown.
+	if (premiumArchiveReady) then
+		writeScreenPlayData(
+			pPlayer,
+			self.archivePremiumScreenPlay,
+			self.archivePremiumTimestampKey,
+			now
+		)
+	end
+
 	writeData("droidFoundryArchiveClaimed:" .. rootID .. ":" .. playerID, 1)
 
 	local componentName = "a Foundry component"
@@ -2518,7 +3282,8 @@ function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
 	if (pComponent ~= nil) then componentName = SceneObject(pComponent):getDisplayedName() or componentName end
 	CreatureObject(pPlayer):sendSystemMessage("\\#00FF00Foundry Archive reward: " .. componentName .. ".\\#FFFFFF")
 
-	if (math.random(1, 1000000) <= self.archiveSchematicChancePerMillion and
+	if (premiumArchiveReady and
+		math.random(1, 1000000) <= self.archiveSchematicChancePerMillion and
 		not SceneObject(pInventory):isContainerFullRecursive()) then
 		local schematicOID = createLoot(pInventory, self.archiveSchematicLootGroup, 175, true)
 		if (schematicOID ~= nil and tonumber(schematicOID) ~= 0) then
@@ -2529,6 +3294,8 @@ function DroidFoundry:claimArchiveReward(pTerminal, pPlayer, rootID)
 			self:sendInstanceMessage(rootID, SceneObject(pPlayer):getDisplayedName() .. " recovered a rare combat droid schematic from the Foundry Archive!")
 		end
 	end
+
+	self:showArchiveExitSui(pTerminal, pPlayer, rootID)
 	return true
 end
 
@@ -2544,9 +3311,11 @@ function DroidFoundry:notifyOverseerDestroyed(pBoss)
 		return 1
 	end
 
+	self:distributeOverseerPersonalLoot(rootID)
+
 	writeData("droidFoundryOverseerState:" .. rootID, 2)
 	self:prepareArchiveRewards(rootID)
-	self:sendInstanceMessage(rootID, "Foundry Overseer neutralized. Archive access has been unlocked.")
+	self:sendInstanceMessage(rootID, "Foundry Overseer destroyed. The Foundry Archive is now accessible.")
 
 	local terminalID = tonumber(readData("droidFoundryArchiveTerminal:" .. rootID)) or 0
 	local pTerminal = getSceneObject(terminalID)
@@ -2574,65 +3343,36 @@ end
 function DroidFoundry:spawnNexusSecurityUnit(rootID, spawnIndex, pTarget)
 	local spawn = self.nexusSecuritySpawns[spawnIndex]
 	local cellID = self:getInstanceCellID(rootID, self.nexusCellIndex)
-
-	if (spawn == nil or cellID == 0) then
-		return nil
-	end
-
-	local mobileTemplate = "foundry_security_droid"
-	if (spawn.elite) then
-		mobileTemplate = "foundry_elite_b1_command_droid"
-	end
-
-	local pMobile = spawnMobile(
-		"dungeon1",
-		mobileTemplate,
-		0,
-		spawn.x,
-		spawn.z,
-		spawn.y,
-		spawn.heading or 0,
-		cellID
-	)
-
+	if (spawn == nil or cellID == 0) then return nil end
+	local mobileTemplate = spawn.elite and "foundry_elite_b1_command_droid" or "foundry_security_droid"
+	local pMobile = spawnMobile("dungeon1", mobileTemplate, 0, spawn.x, spawn.z, spawn.y, spawn.heading or 0, cellID)
 	if (pMobile == nil) then
 		printLuaError("DroidFoundry:spawnNexusSecurityUnit failed at " .. tostring(spawn.label) .. " for instance " .. rootID)
 		return nil
 	end
-
-	if (not spawn.elite) then
-		-- Security responders immediately engage the player who activated the Nexus.
-		-- The Elite is intentionally left without a forced target for this milestone.
-		if (pTarget ~= nil and SceneObject(pTarget):isPlayerCreature()) then
-			AiAgent(pMobile):setAITemplate()
-			AiAgent(pMobile):addDefender(pTarget)
+	local pEngageTarget = self:getRandomActiveParticipant(rootID, cellID, pTarget)
+	if (pEngageTarget ~= nil) then
+		local ai = AiAgent(pMobile)
+		if (ai ~= nil) then
+			ai:setAITemplate()
+			ai:addDefender(pEngageTarget)
 		end
 	end
-
 	self:trackEncounterObject(rootID, pMobile)
 	writeData("droidFoundryNexusAlive:" .. rootID, (tonumber(readData("droidFoundryNexusAlive:" .. rootID)) or 0) + 1)
 	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyNexusSecurityDestroyed", pMobile)
-
 	return pMobile
 end
 
 function DroidFoundry:startNexusEncounter(pTerminal, pPlayer, rootID)
 	rootID = tonumber(rootID) or 0
-
-	if (pTerminal == nil or pPlayer == nil or rootID == 0) then
-		return false
-	end
-
+	if (pTerminal == nil or pPlayer == nil or rootID == 0) then return false end
 	local playerID = SceneObject(pPlayer):getObjectID()
-	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
-		not self:isParticipant(rootID, playerID) or
-		self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
+	if (tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or not self:isParticipant(rootID, playerID) or self:getPlayerInstanceRoot(pPlayer) ~= rootID) then
 		CreatureObject(pPlayer):sendSystemMessage("This control nexus is not assigned to your expedition.")
 		return false
 	end
-
 	local state = tonumber(readData("droidFoundryNexusState:" .. rootID)) or 0
-
 	if (state == self.NEXUS_ACTIVE) then
 		CreatureObject(pPlayer):sendSystemMessage("The Foundry security response is already active.")
 		return false
@@ -2643,53 +3383,39 @@ function DroidFoundry:startNexusEncounter(pTerminal, pPlayer, rootID)
 		CreatureObject(pPlayer):sendSystemMessage("The Foundry Control Nexus is not responding.")
 		return false
 	end
-
 	writeData("droidFoundryNexusState:" .. rootID, self.NEXUS_ACTIVE)
 	writeData("droidFoundryNexusWaveStage:" .. rootID, 1)
 	writeData("droidFoundryNexusAlive:" .. rootID, 0)
 	writeData("droidFoundryNexusActivator:" .. rootID, playerID)
 	SceneObject(pTerminal):setCustomObjectName("Foundry Control Nexus - SECURITY ALERT")
-
 	self:sendInstanceMessage(rootID, "Unauthorized activation detected. Foundry security units are responding.")
-
+	local tier = self:getScaleTier(rootID)
 	self:spawnNexusSecurityUnit(rootID, 1, pPlayer)
 	self:spawnNexusSecurityUnit(rootID, 2, pPlayer)
 	self:spawnNexusSecurityUnit(rootID, 3, pPlayer)
-
+	if (tier >= self.SCALE_SMALL) then self:spawnNexusSecurityUnit(rootID, 6, pPlayer) end
+	if (tier >= self.SCALE_GROUP) then self:spawnNexusSecurityUnit(rootID, 8, pPlayer) end
 	local pRoot = getSceneObject(rootID)
 	local serial = tonumber(readData("droidFoundryEncounterSerial:" .. rootID)) or 0
-
-	if (pRoot ~= nil) then
-		createEvent(6000, "DroidFoundry", "spawnNexusSecondWave", pRoot, tostring(serial))
-	end
-
+	if (pRoot ~= nil) then createEvent(self.nexusSecondWaveDelayMs, "DroidFoundry", "spawnNexusSecondWave", pRoot, tostring(serial)) end
 	return true
 end
 
 function DroidFoundry:spawnNexusSecondWave(pRoot, expectedSerial)
-	if (pRoot == nil) then
-		return 0
-	end
-
+	if (pRoot == nil) then return 0 end
 	local rootID = SceneObject(pRoot):getObjectID()
 	local serial = tonumber(readData("droidFoundryEncounterSerial:" .. rootID)) or 0
-
-	if (serial ~= tonumber(expectedSerial) or
-		tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
-		tonumber(readData("droidFoundryNexusState:" .. rootID)) ~= self.NEXUS_ACTIVE) then
-		return 0
-	end
-
+	if (serial ~= tonumber(expectedSerial) or tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or tonumber(readData("droidFoundryNexusState:" .. rootID)) ~= self.NEXUS_ACTIVE) then return 0 end
 	writeData("droidFoundryNexusWaveStage:" .. rootID, 2)
 	self:sendInstanceMessage(rootID, "Additional Foundry security units have entered the Nexus chamber.")
-
 	local activatorID = tonumber(readData("droidFoundryNexusActivator:" .. rootID)) or 0
 	local pActivator = activatorID ~= 0 and getSceneObject(activatorID) or nil
-
+	local tier = self:getScaleTier(rootID)
 	self:spawnNexusSecurityUnit(rootID, 4, pActivator)
 	self:spawnNexusSecurityUnit(rootID, 5, pActivator)
+	if (tier >= self.SCALE_SMALL) then self:spawnNexusSecurityUnit(rootID, 7, pActivator) end
+	if (tier >= self.SCALE_GROUP) then self:spawnNexusSecurityUnit(rootID, 9, pActivator) end
 	self:checkNexusEncounterComplete(rootID)
-
 	return 0
 end
 

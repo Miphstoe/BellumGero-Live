@@ -4,7 +4,7 @@ foundry_r4_chassis = {
 	customObjectName = "Foundry R4 Droid Chassis",
 	directObjectTemplate = "object/tangible/component/droid/r4_droid_chassis.iff",
 	craftingValues = {
-		{"power_level", 45, 60, 0},
+		{"power_level", 45, 60, 0, false, 2},
 	},
 	customizationStringNames = {},
 	customizationValues = {}

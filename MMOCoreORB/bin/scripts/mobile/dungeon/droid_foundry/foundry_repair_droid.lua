@@ -31,7 +31,20 @@ foundry_repair_droid = Creature:new {
 	diet = HERBIVORE,
 
 	templates = {"object/mobile/le_repair_droid.iff"},
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {{group = "droid_foundry_kill_loot_generic", chance = 10000000}},
+			lootChance = 3000000,
+		},
+		{
+			groups = {{group = "droid_foundry_kill_loot_generic", chance = 10000000}},
+			lootChance = 2000000,
+		},
+		{
+			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
+			lootChance = 5000, -- 0.05% jackpot
+		},
+	},
 
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",

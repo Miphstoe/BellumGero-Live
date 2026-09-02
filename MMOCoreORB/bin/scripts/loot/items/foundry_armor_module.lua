@@ -4,7 +4,7 @@ foundry_armor_module = {
 	customObjectName = "Foundry Armor Module",
 	directObjectTemplate = "object/tangible/component/droid/armor_module_6.iff",
 	craftingValues = {
-		{"armor_module", 6, 8, 0},
+		{"armor_module", 6, 8, 0, false, 2},
 	},
 	customizationStringNames = {},
 	customizationValues = {}

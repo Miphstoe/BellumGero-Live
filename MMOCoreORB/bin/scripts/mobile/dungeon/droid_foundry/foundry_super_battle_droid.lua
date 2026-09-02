@@ -34,7 +34,20 @@ foundry_super_battle_droid = Creature:new {
 		"object/mobile/super_battle_droid.iff"
 	},
 
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {{group = "droid_foundry_kill_loot_b2", chance = 10000000}},
+			lootChance = 3000000,
+		},
+		{
+			groups = {{group = "droid_foundry_kill_loot_b2", chance = 10000000}},
+			lootChance = 2000000,
+		},
+		{
+			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
+			lootChance = 5000, -- 0.05% jackpot
+		},
+	},
 
 	primaryWeapon = "battle_droid_weapons",
 	secondaryWeapon = "unarmed",

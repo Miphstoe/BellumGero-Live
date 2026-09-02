@@ -1,11 +1,11 @@
-foundry_elite_droideka_guardian = Creature:new {
+foundry_prototype_droideka_guardian = Creature:new {
 	objectName = "@mob/creature_names:droideka",
-	customName = "Elite Droideka Guardian",
+	customName = "Prototype Droideka Guardian",
 	socialGroup = "droid_foundry",
 	faction = "",
 	mobType = MOB_DROID,
 
-	level = 165,
+	level = 250,
 	chanceHit = 0.8,
 	damageMin = 390,
 	damageMax = 475,
@@ -29,24 +29,36 @@ foundry_elite_droideka_guardian = Creature:new {
 	creatureBitmask = PACK + KILLER,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
-	scale = 1.2,
-
+	scale = 1.50,
 	templates = {
 		"object/mobile/droideka.iff"
 	},
 
+-- DROID_FOUNDRY_PROTOTYPE_ELITE_V1
 	lootGroups = {
 		{
-			groups = {{group = "droid_foundry_kill_loot_droideka", chance = 10000000}},
-			lootChance = 4000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_droideka", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_kill_loot_droideka", chance = 10000000}},
-			lootChance = 3000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
-			lootChance = 25000, -- 0.25% jackpot
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 2500000,
+		},
+		{
+			groups = {
+				{group = "droid_foundry_schematics", chance = 10000000},
+			},
+			lootChance = 35000,
 		},
 	},
 
@@ -57,4 +69,4 @@ foundry_elite_droideka_guardian = Creature:new {
 	defaultAttack = "attack"
 }
 
-CreatureTemplates:addCreatureTemplate(foundry_elite_droideka_guardian, "foundry_elite_droideka_guardian")
+CreatureTemplates:addCreatureTemplate(foundry_prototype_droideka_guardian, "foundry_prototype_droideka_guardian")

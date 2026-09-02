@@ -34,7 +34,20 @@ foundry_droideka_sentinel = Creature:new {
 		"object/mobile/droideka.iff"
 	},
 
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {{group = "droid_foundry_kill_loot_droideka", chance = 10000000}},
+			lootChance = 3500000,
+		},
+		{
+			groups = {{group = "droid_foundry_kill_loot_droideka", chance = 10000000}},
+			lootChance = 2000000,
+		},
+		{
+			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
+			lootChance = 5000, -- 0.05% jackpot
+		},
+	},
 
 	conversationTemplate = "",
 	reactionStf = "",

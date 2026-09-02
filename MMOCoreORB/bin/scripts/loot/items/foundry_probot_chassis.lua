@@ -4,7 +4,7 @@ foundry_probot_chassis = {
 	customObjectName = "Foundry Probot Chassis",
 	directObjectTemplate = "object/tangible/component/droid/probot_droid_chassis.iff",
 	craftingValues = {
-		{"power_level", 45, 60, 0},
+		{"power_level", 45, 60, 0, false, 2},
 	},
 	customizationStringNames = {},
 	customizationValues = {}

@@ -39,9 +39,36 @@ static const std::vector<String> SKIPPED_LOOT_GROUPS = {
     "color_crystals",
     "power_crystals",
     "droid_foundry_components",
+    "droid_foundry_kill_components_generic",
+    "droid_foundry_kill_components_b1",
+    "droid_foundry_kill_components_b2",
+    "droid_foundry_kill_components_droideka",
+    "droid_foundry_kill_furniture",
     // … add more exact group names here …
 };
 // ————————————————————————————————————————————————
+
+// Foundry modules/chassis use custom level-distributed attributes whose Lua
+// ranges are hard gameplay caps. They must always roll dynamically, but must
+// not inherit the normal Exceptional/Legendary value multipliers.
+static bool isDroidFoundryVariableQualityTemplate(const LootItemTemplate* itemTemplate) {
+	if (itemTemplate == nullptr) {
+		return false;
+	}
+
+	const String& name = itemTemplate->getTemplateName();
+
+	return name == "foundry_combat_module" ||
+		name == "foundry_armor_module" ||
+		name == "foundry_probot_chassis" ||
+		name == "foundry_r2_chassis" ||
+		name == "foundry_r3_chassis" ||
+		name == "foundry_r4_chassis" ||
+		name == "foundry_le_repair_chassis" ||
+		name == "foundry_battle_droid_chassis" ||
+		name == "foundry_super_battle_droid_chassis" ||
+		name == "foundry_droideka_chassis";
+}
 
 // #define DEBUG_LOOT_MAN
 
@@ -476,7 +503,11 @@ static void maybeRenameForceColorCrystal(
 void LootManagerImplementation::setRandomLootValues(TransactionLog& trx, TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
 	auto debugAttributes = ConfigManager::instance()->getLootDebugAttributes();
 
-	float modifier = getRandomModifier(itemTemplate, level, excMod);
+	// Foundry variable-quality parts always use a 1.0 value modifier.
+	// Their quality still scales with loot level, while the Lua min/max remain hard caps.
+	float modifier = isDroidFoundryVariableQualityTemplate(itemTemplate)
+		? 1.f
+		: getRandomModifier(itemTemplate, level, excMod);
 
 	auto lootValues = LootValues(itemTemplate, level, modifier);
 	prototype->updateCraftingValues(&lootValues, true);

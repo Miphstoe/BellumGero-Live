@@ -1,11 +1,11 @@
-foundry_elite_b1_command_droid = Creature:new {
+foundry_prototype_b1_command_droid = Creature:new {
 	objectName = "@mob/creature_names:rebel_battle_droid",
-	customName = "Elite B1 Command Droid",
+	customName = "Prototype B1 Command Droid",
 	socialGroup = "droid_foundry",
 	faction = "",
 	mobType = MOB_DROID,
 
-	level = 148,
+	level = 250,
 	chanceHit = 0.7,
 	damageMin = 300,
 	damageMax = 370,
@@ -29,24 +29,36 @@ foundry_elite_b1_command_droid = Creature:new {
 	creatureBitmask = PACK + KILLER,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
-	scale = 1.25,
-
+	scale = 1.60,
 	templates = {
 		"object/mobile/battle_droid.iff"
 	},
 
+-- DROID_FOUNDRY_PROTOTYPE_ELITE_V1
 	lootGroups = {
 		{
-			groups = {{group = "droid_foundry_kill_loot_b1", chance = 10000000}},
-			lootChance = 4000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_battle_droid", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_kill_loot_b1", chance = 10000000}},
-			lootChance = 3000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
-			lootChance = 25000, -- 0.25% jackpot
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 2500000,
+		},
+		{
+			groups = {
+				{group = "droid_foundry_schematics", chance = 10000000},
+			},
+			lootChance = 35000,
 		},
 	},
 
@@ -61,4 +73,4 @@ foundry_elite_b1_command_droid = Creature:new {
 	secondaryAttacks = {}
 }
 
-CreatureTemplates:addCreatureTemplate(foundry_elite_b1_command_droid, "foundry_elite_b1_command_droid")
+CreatureTemplates:addCreatureTemplate(foundry_prototype_b1_command_droid, "foundry_prototype_b1_command_droid")

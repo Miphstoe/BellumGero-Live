@@ -1,11 +1,11 @@
-foundry_elite_b2_enforcer = Creature:new {
+foundry_prototype_b2_enforcer = Creature:new {
 	objectName = "@mob/creature_names:rebel_super_battle_droid",
-	customName = "Elite B2 Enforcer",
+	customName = "Prototype B2 Enforcer",
 	socialGroup = "droid_foundry",
 	faction = "",
 	mobType = MOB_DROID,
 
-	level = 158,
+	level = 250,
 	chanceHit = 0.7,
 	damageMin = 340,
 	damageMax = 410,
@@ -29,24 +29,36 @@ foundry_elite_b2_enforcer = Creature:new {
 	creatureBitmask = PACK + KILLER,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
-	scale = 1.35,
-
+	scale = 1.60,
 	templates = {
 		"object/mobile/super_battle_droid.iff"
 	},
 
+-- DROID_FOUNDRY_PROTOTYPE_ELITE_V1
 	lootGroups = {
 		{
-			groups = {{group = "droid_foundry_kill_loot_b2", chance = 10000000}},
-			lootChance = 4000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_super_battle_droid", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_kill_loot_b2", chance = 10000000}},
-			lootChance = 3000000,
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 10000000,
 		},
 		{
-			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
-			lootChance = 25000, -- 0.25% jackpot
+			groups = {
+				{group = "droid_foundry_kill_loot_generic", chance = 10000000},
+			},
+			lootChance = 2500000,
+		},
+		{
+			groups = {
+				{group = "droid_foundry_schematics", chance = 10000000},
+			},
+			lootChance = 35000,
 		},
 	},
 
@@ -61,4 +73,4 @@ foundry_elite_b2_enforcer = Creature:new {
 	secondaryAttacks = {}
 }
 
-CreatureTemplates:addCreatureTemplate(foundry_elite_b2_enforcer, "foundry_elite_b2_enforcer")
+CreatureTemplates:addCreatureTemplate(foundry_prototype_b2_enforcer, "foundry_prototype_b2_enforcer")

@@ -5,7 +5,7 @@ foundry_overseer_ig_series = Creature:new {
 	faction = "",
 	mobType = MOB_ANDROID,
 
-	level = 175,
+	level = 250,
 	chanceHit = 0.95,
 	damageMin = 475,
 	damageMax = 600,
@@ -32,7 +32,20 @@ foundry_overseer_ig_series = Creature:new {
 	scale = 1.75,
 
 	templates = {"object/mobile/ig_assassin_droid.iff"},
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {{group = "droid_foundry_kill_loot_generic", chance = 10000000}},
+			lootChance = 10000000,
+		},
+		{
+			groups = {{group = "droid_foundry_kill_loot_generic", chance = 10000000}},
+			lootChance = 5000000,
+		},
+		{
+			groups = {{group = "droid_foundry_schematics", chance = 10000000}},
+			lootChance = 50000, -- 0.50% jackpot
+		},
+	},
 
 	conversationTemplate = "",
 	reactionStf = "",

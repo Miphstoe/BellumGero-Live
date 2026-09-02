@@ -4,7 +4,7 @@ foundry_droideka_chassis = {
 	customObjectName = "Foundry Droideka Chassis",
 	directObjectTemplate = "object/tangible/component/droid/droideka_foundry_chassis.iff",
 	craftingValues = {
-		{"power_level", 45, 60, 0},
+		{"power_level", 45, 60, 0, false, 2},
 	},
 	customizationStringNames = {},
 	customizationValues = {}
