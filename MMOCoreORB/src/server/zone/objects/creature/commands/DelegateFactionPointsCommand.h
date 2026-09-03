@@ -10,6 +10,7 @@
 #include "server/zone/objects/player/sui/transferbox/SuiTransferBox.h"
 #include "server/zone/objects/player/sui/callbacks/DelegateSuiCallback.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/player/FactionStatus.h"
 #include "QueueCommand.h"
 
 class DelegateFactionPointsCommand : public QueueCommand {
@@ -22,7 +23,8 @@ public:
 	static int doDelegate(CreatureObject* creature, CreatureObject* targetPlayer, uint32 tipAmount) {
 		Locker clocker(targetPlayer, creature);
 
-		uint32 currentFaction = creature->getFaction();
+		if (!canDelegateFactionPoints(creature, true))
+			return GENERALERROR;
 
 		String faction;
 
@@ -66,6 +68,20 @@ public:
 		delegator->decreaseFactionStanding(faction, charge);
 
 		return SUCCESS;
+	}
+
+	static bool canDelegateFactionPoints(CreatureObject* creature, bool sendMessage) {
+		if (creature == nullptr)
+			return false;
+
+		if (creature->getFaction() == 0 || creature->getFactionStatus() < FactionStatus::COVERT) {
+			if (sendMessage)
+				creature->sendSystemMessage("@base_player:must_be_declared"); // You must be declared to a faction before you may use that command.
+
+			return false;
+		}
+
+		return true;
 	}
 
 	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
@@ -120,11 +136,7 @@ public:
 			return INVALIDTARGET;
 		}
 
-		uint32 currentFaction = creature->getFaction();
-		int delStatus = creature->getFactionStatus();
-
-		if (currentFaction == 0 || delStatus != 2) {
-			creature->sendSystemMessage("@base_player:must_be_declared"); // You must be declared to a faction before you may use that command.
+		if (!canDelegateFactionPoints(creature, true)) {
 			return GENERALERROR;
 		}
 

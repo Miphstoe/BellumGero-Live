@@ -93,6 +93,9 @@ bool SchematicList::decreaseSchematicUseCount(DraftSchematic* schematic) {
 }
 
 bool SchematicList::add(DraftSchematic* schematic, DeltaMessage* message, int updates) {
+	if (schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	bool val = vector.add(schematic);
 
 	if (val && message != nullptr) {
@@ -110,10 +113,13 @@ bool SchematicList::add(DraftSchematic* schematic, DeltaMessage* message, int up
 }
 
 bool SchematicList::contains(DraftSchematic* schematic) const {
+	if(schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	for(int i = 0; i < size(); ++i) {
 		DraftSchematic* existingSchematic = get(i);
 
-		if(existingSchematic == nullptr)
+		if(existingSchematic == nullptr || !existingSchematic->isValidDraftSchematic())
 			continue;
 
 		if((existingSchematic->getClientObjectCRC() == schematic->getClientObjectCRC()) &&
@@ -126,10 +132,13 @@ bool SchematicList::contains(DraftSchematic* schematic) const {
 }
 
 bool SchematicList::contains(const Vector<ManagedReference<DraftSchematic*>>& filteredschematics, DraftSchematic* schematic) const {
+	if(schematic == nullptr || !schematic->isValidDraftSchematic())
+		return false;
+
 	for(int i = 0; i < filteredschematics.size(); ++i) {
 		DraftSchematic* existingSchematic = filteredschematics.get(i);
 
-		if(existingSchematic == nullptr)
+		if(existingSchematic == nullptr || !existingSchematic->isValidDraftSchematic())
 			continue;
 
 		if((existingSchematic->getClientObjectCRC() == schematic->getClientObjectCRC()) &&
@@ -158,6 +167,9 @@ Vector<ManagedReference<DraftSchematic* > > SchematicList::filterSchematicList(
 	for (int i = 0; i < size(); ++i) {
 		const ManagedReference<DraftSchematic*>& schematic = get(i);
 
+		if (schematic == nullptr || !schematic->isValidDraftSchematic())
+			continue;
+
 		for(int j = 0; j < enabledTabs->size(); ++j) {
 			if(enabledTabs->get(j) == schematic->getToolTab() &&
 					schematic->getComplexity() <= complexityLevel) {
@@ -172,11 +184,23 @@ Vector<ManagedReference<DraftSchematic* > > SchematicList::filterSchematicList(
 }
 
 void SchematicList::insertToMessage(BaseMessage* msg) const {
-	msg->insertInt(size());
+	int validSchematicCount = 0;
+
+	for (int i = 0; i < size(); ++i) {
+		DraftSchematic* schematic = get(i);
+
+		if (schematic != nullptr && schematic->isValidDraftSchematic())
+			++validSchematicCount;
+	}
+
+	msg->insertInt(validSchematicCount);
 	msg->insertInt(updateCounter);
 
 	for (int i = 0; i < size(); ++i) {
-		const DraftSchematic* schematic = get(i);
+		DraftSchematic* schematic = get(i);
+
+		if (schematic == nullptr || !schematic->isValidDraftSchematic())
+			continue;
 
 		msg->insertInt(schematic->getClientObjectCRC());
 		msg->insertInt(schematic->getClientObjectCRC());  /// Must be client CRC

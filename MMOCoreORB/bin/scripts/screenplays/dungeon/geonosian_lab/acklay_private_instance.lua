@@ -78,21 +78,21 @@ AcklayPrivateInstance = ScreenPlay:new {
 		},
 		[2] = {
 			label = "Acklay Wild Room NE Corner B",
-			room = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6755.0, cell = 0, heading = 135 },
+			room = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6546.0, cell = 0, heading = 135 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6755.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = 7044.0, z = 75.0, y = -6546.0, cell = 0, radius = 96 }
 		},
 		[3] = {
 			label = "Acklay Wild Room NW Corner A",
-			room = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6576.0, cell = 0, heading = 90 },
+			room = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6655.0, cell = 0, heading = 90 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6576.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6655.0, cell = 0, radius = 96 }
 		},
 		[4] = {
 			label = "Acklay Wild Room NW Corner B",
-			room = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6896.0, cell = 0, heading = 45 },
+			room = { planet = "yavin4", x = -6800.0, z = 75.0, y = -6639.0, cell = 0, heading = 45 },
 			exit = { planet = "yavin4", x = -6514.0, z = 85.0, y = -425.0, cell = 0 },
-			accessArea = { planet = "yavin4", x = -6966.0, z = 75.0, y = -6896.0, cell = 0, radius = 96 }
+			accessArea = { planet = "yavin4", x = -6800.0, z = 75.0, y = -6639.0, cell = 0, radius = 96 }
 		},
 		[5] = {
 			label = "Acklay Wild Room SW Corner A",
@@ -126,6 +126,14 @@ AcklayPrivateInstance = ScreenPlay:new {
 registerScreenPlay("AcklayPrivateInstance", true)
 
 AcklayReturnTerminalMenuComponent = {}
+
+function AcklayPrivateInstance:log(message)
+	if (message == nil or message == "") then
+		return
+	end
+
+	printLuaError("ACKLAY-INSTANCE: " .. tostring(message))
+end
 
 function AcklayReturnTerminalMenuComponent:fillObjectMenuResponse(pSceneObject, pMenuResponse, pPlayer)
 	if (pSceneObject == nil or pMenuResponse == nil or pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
@@ -534,6 +542,18 @@ function AcklayPrivateInstance:getRoomEventData(eventData)
 	return roomId, serial
 end
 
+function AcklayPrivateInstance:getRoomEventString(roomId, room)
+	local serial = 0
+
+	if (room ~= nil) then
+		serial = tonumber(room.serial) or 0
+	elseif (roomId ~= nil and self.rooms ~= nil and self.rooms[roomId] ~= nil) then
+		serial = tonumber(self.rooms[roomId].serial) or 0
+	end
+
+	return tostring(roomId) .. ":" .. tostring(serial)
+end
+
 function AcklayPrivateInstance:formatCooldown(secondsRemaining)
 	local total = math.max(0, tonumber(secondsRemaining) or 0)
 	local hours = math.floor(total / 3600)
@@ -661,6 +681,7 @@ function AcklayPrivateInstance:assignRoomToPlayer(pPlayer, roomId)
 	room.completeAt = 0
 	room.failureReason = ""
 	self:saveRoomState(roomId)
+	self:log("Player " .. tostring(room.ownerId) .. " entering instance " .. tostring(roomId) .. " serial=" .. tostring(room.serial))
 
 	self:setPlayerDataNumber(pPlayer, "activeRoom", roomId)
 	self:setPlayerDataNumber(pPlayer, "instanceStart", room.startTime)
@@ -790,19 +811,33 @@ function AcklayPrivateInstance:startRoomTimer(roomId)
 		return
 	end
 
-	createEvent(self.roomDurationMs, self.screenplayName, "onRoomExpired", nil, roomId)
-	createEvent(self.roomValidationMs, self.screenplayName, "validateActiveRoom", nil, roomId)
+	local eventData = self:getRoomEventString(roomId, room)
+	local expiration = (room.startTime or os.time()) + math.floor((tonumber(self.roomDurationMs) or 0) / 1000)
+
+	self:log("Timer started instance=" .. tostring(roomId) .. " player=" .. tostring(room.ownerId) .. " serial=" .. tostring(room.serial) .. " start=" .. tostring(room.startTime) .. " expiration=" .. tostring(expiration))
+	createEvent(self.roomDurationMs, self.screenplayName, "onRoomExpired", nil, eventData)
+	createEvent(self.roomValidationMs, self.screenplayName, "validateActiveRoom", nil, eventData)
 end
 
 function AcklayPrivateInstance:onRoomExpired(pObject, eventData)
 	local roomId, serial = self:getRoomEventData(eventData)
 	local room = self:loadRoomState(roomId)
+	local currentSerial = room ~= nil and room.serial or 0
+
+	self:log("Timeout task fired player=" .. tostring(room ~= nil and room.ownerId or 0) .. " timerInstance=" .. tostring(roomId) .. " timerSerial=" .. tostring(serial or "legacy") .. " currentSerial=" .. tostring(currentSerial))
 
 	if (room == nil or room.status ~= "active") then
 		return 0
 	end
 
 	if (serial ~= nil and serial ~= room.serial) then
+		self:log("Ignoring stale timeout timerInstance=" .. tostring(roomId) .. " timerSerial=" .. tostring(serial) .. " currentSerial=" .. tostring(room.serial))
+		return 0
+	end
+
+	local durationSeconds = math.floor((tonumber(self.roomDurationMs) or 0) / 1000)
+	if ((room.startTime or 0) <= 0 or os.time() < ((room.startTime or 0) + durationSeconds)) then
+		self:log("Ignoring stale timeout timerInstance=" .. tostring(roomId) .. " currentStart=" .. tostring(room.startTime) .. " now=" .. tostring(os.time()))
 		return 0
 	end
 
@@ -854,7 +889,7 @@ function AcklayPrivateInstance:validateActiveRoom(pObject, eventData)
 		return 0
 	end
 
-	createEvent(self.roomValidationMs, self.screenplayName, "validateActiveRoom", nil, roomId)
+	createEvent(self.roomValidationMs, self.screenplayName, "validateActiveRoom", nil, self:getRoomEventString(roomId, room))
 
 	return 0
 end
@@ -925,14 +960,16 @@ function AcklayPrivateInstance:completeRoom(roomId)
 	room.completeAt = os.time() + math.max(1, math.floor(self.lootWindowMs / 1000))
 	room.failureReason = ""
 	self:saveRoomState(roomId)
+	self:log("Acklay defeated instance=" .. tostring(roomId) .. " player=" .. tostring(room.ownerId) .. " serial=" .. tostring(room.serial))
 
 	local pOwner = getSceneObject(room.ownerId)
 	if (pOwner ~= nil and SceneObject(pOwner):isPlayerCreature()) then
 		CreatureObject(pOwner):sendSystemMessage("The Acklay has been defeated. You have 120 seconds to loot before you are returned to the entrance.")
 	end
 
-	createEvent(self.lootWindowMs, self.screenplayName, "finalizeCompletedRoom", nil, roomId)
-	createEvent(5000, self.screenplayName, "pollCompletedRoom", nil, roomId)
+	local eventData = self:getRoomEventString(roomId, room)
+	createEvent(self.lootWindowMs, self.screenplayName, "finalizeCompletedRoom", nil, eventData)
+	createEvent(5000, self.screenplayName, "pollCompletedRoom", nil, eventData)
 
 	return true
 end
@@ -955,7 +992,7 @@ function AcklayPrivateInstance:pollCompletedRoom(pObject, eventData)
 		return 0
 	end
 
-	createEvent(5000, self.screenplayName, "pollCompletedRoom", nil, roomId)
+	createEvent(5000, self.screenplayName, "pollCompletedRoom", nil, self:getRoomEventString(roomId, room))
 
 	return 0
 end
@@ -969,6 +1006,10 @@ function AcklayPrivateInstance:finalizeCompletedRoom(pObject, eventData)
 	end
 
 	if (serial ~= nil and serial ~= room.serial) then
+		return 0
+	end
+
+	if (serial == nil and (room.completeAt or 0) > os.time()) then
 		return 0
 	end
 
@@ -1056,6 +1097,8 @@ function AcklayPrivateInstance:cleanupRoom(roomId)
 		return false
 	end
 
+	self:log("Cleaning timer/state instance=" .. tostring(roomId) .. " player=" .. tostring(room.ownerId) .. " serial=" .. tostring(room.serial))
+
 	if (room.acklayId ~= 0) then
 		deleteData(room.acklayId .. ":AcklayPrivateInstance:roomId")
 		self:destroySceneObjectById(room.acklayId)
@@ -1084,6 +1127,7 @@ function AcklayPrivateInstance:cleanupRoom(roomId)
 	room.complete = false
 	room.completeAt = 0
 	room.failureReason = ""
+	room.serial = room.serial + 1
 	self:saveRoomState(roomId)
 
 	return true
@@ -1211,7 +1255,7 @@ function AcklayPrivateInstance:notifyExitedRoomArea(pArea, pPlayer)
 		return 0
 	end
 
-	createEvent(self.leaveCheckMs, self.screenplayName, "checkOwnerStillInsideRoom", pPlayer, roomId)
+	createEvent(self.leaveCheckMs, self.screenplayName, "checkOwnerStillInsideRoom", pPlayer, self:getRoomEventString(roomId, room))
 
 	return 0
 end
@@ -1225,6 +1269,10 @@ function AcklayPrivateInstance:checkOwnerStillInsideRoom(pPlayer, eventData)
 	local room = self:loadRoomState(roomId)
 
 	if (room == nil or room.status ~= "active") then
+		return 0
+	end
+
+	if (serial == nil) then
 		return 0
 	end
 
@@ -1303,7 +1351,9 @@ function AcklayPrivateInstance:handleReturnTerminalUse(pTerminal, pPlayer)
 		return "You are being returned to the entrance."
 	end
 
-	createEvent(250, self.screenplayName, "finishReturnTerminalUse", pPlayer, tostring(roomId))
+	local room = self:loadRoomState(roomId)
+	self:log("Player " .. tostring(SceneObject(pPlayer):getObjectID()) .. " exited normally instance=" .. tostring(roomId))
+	createEvent(250, self.screenplayName, "finishReturnTerminalUse", pPlayer, self:getRoomEventString(roomId, room))
 	return "You are being returned to the entrance."
 end
 
@@ -1312,7 +1362,15 @@ function AcklayPrivateInstance:finishReturnTerminalUse(pPlayer, eventData)
 		return 0
 	end
 
-	local roomId = tonumber(eventData) or 0
+	local roomId, serial = self:getRoomEventData(eventData)
+
+	if (roomId ~= 0) then
+		local room = self:loadRoomState(roomId)
+
+		if (room == nil or serial == nil or serial ~= room.serial) then
+			return 0
+		end
+	end
 
 	SceneObject(pPlayer):switchZone(self.publicExit.planet, self.publicExit.x, self.publicExit.z, self.publicExit.y, self.publicExit.cell or 0)
 

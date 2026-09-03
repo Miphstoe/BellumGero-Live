@@ -55,6 +55,7 @@ public:
 	IndexDatabase* createSubIndex();
 
 	void loadPlayerStructures(const String& zoneName);
+	String validatePlayerStructureZoneIndex(bool logDetails = true, bool validateSecondaryIndex = true);
 
 	// Account-wide structure lots are centralized here so placement, transfers,
 	// and reporting all use the same pool calculation.

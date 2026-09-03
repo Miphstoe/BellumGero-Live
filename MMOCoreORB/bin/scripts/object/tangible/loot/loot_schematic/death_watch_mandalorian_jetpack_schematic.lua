@@ -48,7 +48,7 @@ object_tangible_loot_loot_schematic_death_watch_mandalorian_jetpack_schematic = 
 	attributeListComponent = "LootSchematicAttributeListComponent",
 	requiredSkill = "crafting_armorsmith_master",
 	targetDraftSchematic = "object/draft_schematic/vehicle/civilian/jetpack.iff",
-	targetUseCount = 3,
+	targetUseCount = 1,
 }
 
 ObjectTemplates:addTemplate(object_tangible_loot_loot_schematic_death_watch_mandalorian_jetpack_schematic, "object/tangible/loot/loot_schematic/death_watch_mandalorian_jetpack_schematic.iff")

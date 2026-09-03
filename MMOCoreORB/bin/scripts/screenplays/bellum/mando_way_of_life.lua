@@ -356,7 +356,8 @@ MandoWayOfLife = ScreenPlay:new {
 	DEBUG_ADMIN_TRIAL_CAMP_QA = false,
 }
 
-registerScreenPlay("MandoWayOfLife", true)
+-- Temporarily disabled while Mandalorian Way crafting/schematic fixes are fully tested.
+registerScreenPlay("MandoWayOfLife", false)
 
 -- Console + log/lua.log (level 1 survives default Lua file log filter). Always uses printf so lines appear on the core3 terminal / core3.log.
 function MandoWayOfLife:logDiag(msg)
@@ -4592,6 +4593,114 @@ function MandoWayOfLife:adminTrialCampQaFromTokens(pStaff, tokens)
 	self:adminTrialCampQaApply(pStaff, sub, pTarget)
 end
 
+MandoWayOfLife.adminArmorRankAliases = {
+	["foundling"] = 0,
+	["initiate"] = 1,
+	["hunter"] = 2,
+	["verdika"] = 3,
+	["clanbound"] = 4,
+	["tribesman"] = 5,
+	["mandalorian"] = 5,
+}
+
+function MandoWayOfLife:adminGrantArmorFromTokens(pStaff, tokens)
+	if (pStaff == nil) then return end
+
+	local rankArg = (tokens[2] ~= nil) and tostring(tokens[2]):lower() or ""
+	local grantAll = (rankArg == "all")
+	local chapter = self.adminArmorRankAliases[rankArg]
+	if (not grantAll and chapter == nil) then
+		CreatureObject(pStaff):sendSystemMessage(
+			"[MandoAdmin] Usage: /mandoFoundlingAdmin grantarmor <foundling|initiate|hunter|verdika|clanbound|tribesman|all> [playerName]"
+		)
+		return
+	end
+
+	local pTarget = pStaff
+	if (tokens[3] ~= nil and tokens[3] ~= "") then
+		pTarget = getPlayerByName(tokens[3])
+		if (pTarget == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantarmor: character must be online. No match for: " .. tostring(tokens[3])
+			)
+			return
+		end
+	end
+
+	local templates = {}
+	local function addChapterReward(ch)
+		local reward = self.chapterRewards[ch]
+		if (type(reward) == "table") then
+			for _, template in ipairs(reward) do
+				templates[#templates + 1] = template
+			end
+		elseif (reward ~= nil) then
+			templates[#templates + 1] = reward
+		end
+	end
+
+	if (grantAll) then
+		for ch = 0, 5, 1 do
+			addChapterReward(ch)
+		end
+	else
+		addChapterReward(chapter)
+	end
+
+	if (#templates < 1) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantarmor: no armor templates found for that rank.")
+		return
+	end
+
+	local pInventory = SceneObject(pTarget):getSlottedObject("inventory")
+	if (pInventory == nil) then
+		CreatureObject(pStaff):sendSystemMessage("[MandoAdmin] grantarmor: target has no inventory.")
+		return
+	end
+
+	local inventory = SceneObject(pInventory)
+	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	if (freeSlots < #templates) then
+		CreatureObject(pStaff):sendSystemMessage(string.format(
+			"[MandoAdmin] grantarmor: %s needs %s free inventory slots; only %s available.",
+			CreatureObject(pTarget):getFirstName(),
+			tostring(#templates),
+			tostring(freeSlots)
+		))
+		return
+	end
+
+	local granted = 0
+	for _, template in ipairs(templates) do
+		local pItem = self:giveSocketedArmor(pInventory, template)
+		if (pItem == nil) then
+			CreatureObject(pStaff):sendSystemMessage(
+				"[MandoAdmin] grantarmor stopped after " .. tostring(granted) .. " piece(s); failed to grant " .. template
+			)
+			return
+		end
+		granted = granted + 1
+	end
+
+	local rankName = grantAll and "all ranks" or self.chapterTitles[chapter]
+	local targetName = CreatureObject(pTarget):getFirstName()
+	CreatureObject(pStaff):sendSystemMessage(string.format(
+		"[MandoAdmin] Granted %s Mandalorian armor piece(s) for %s to %s with %s sockets each.",
+		tostring(granted),
+		tostring(rankName),
+		tostring(targetName),
+		tostring(self.ARMOR_SOCKET_COUNT)
+	))
+	if (pTarget ~= pStaff) then
+		CreatureObject(pTarget):sendSystemMessage(string.format(
+			"[Mandalorian Way] A GM granted you %s armor (%s piece(s), %s sockets each).",
+			tostring(rankName),
+			tostring(granted),
+			tostring(self.ARMOR_SOCKET_COUNT)
+		))
+	end
+end
+
 function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	if (pStaff == nil) then return end
 	local sGhost = CreatureObject(pStaff):getPlayerObject()
@@ -4611,6 +4720,11 @@ function MandoWayOfLife:adminFoundlingCommand(pStaff, argLine)
 	-- trialqa subcommand fast-path: gated by DEBUG_ADMIN_TRIAL_CAMP_QA inside the helper.
 	if (#tokens >= 1 and tokens[1]:lower() == "trialqa") then
 		self:adminTrialCampQaFromTokens(pStaff, tokens)
+		return
+	end
+
+	if (#tokens >= 1 and tokens[1]:lower() == "grantarmor") then
+		self:adminGrantArmorFromTokens(pStaff, tokens)
 		return
 	end
 

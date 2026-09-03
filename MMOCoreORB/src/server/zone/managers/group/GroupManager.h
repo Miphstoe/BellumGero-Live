@@ -70,6 +70,7 @@ public:
 
 private:
 	bool playerIsInvitingOwnPet(CreatureObject* inviter, CreatureObject* target);
+	bool isGroupStaffExempt(GroupObject* group, CreatureObject* inviter);
 
 public:
 	GroupManager();

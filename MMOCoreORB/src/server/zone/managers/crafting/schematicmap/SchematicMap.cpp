@@ -83,6 +83,12 @@ void SchematicMap::loadDraftSchematicDatabase() {
 		ManagedReference<DraftSchematic* > draftSchematic = zoneServer->getObject(objectID).castTo<DraftSchematic*>();
 
 		if(draftSchematic != nullptr) {
+			if (!draftSchematic->isValidDraftSchematic()) {
+				error() << "Skipping invalid database draft schematic object: " << objectID
+					<< " serverCRC: 0x" << hex << draftSchematic->getServerObjectCRC()
+					<< " clientCRC: 0x" << draftSchematic->getClientObjectCRC();
+				continue;
+			}
 
 			if(!schematicCrcMap.contains(draftSchematic->getClientObjectCRC()))
 				schematicCrcMap.put(draftSchematic->getClientObjectCRC(), draftSchematic);
@@ -127,7 +133,7 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 			try {
 				schematic = dynamic_cast<DraftSchematic*> (objectManager->createObject(servercrc, 1, "draftschematics"));
 
-				if(schematic == nullptr) {
+				if(schematic == nullptr || !schematic->isValidDraftSchematic()) {
 					error("Could not create schematic with crc: " + String::valueOf(servercrc));
 					continue;
 				}
@@ -177,7 +183,7 @@ void SchematicMap::buildSchematicGroups() {
 
 		DraftSchematic* schematic = schematicCrcMap.get(entry.getKey());
 
-		if(schematic != nullptr) {
+		if(schematic != nullptr && schematic->isValidDraftSchematic()) {
 			Locker locker(schematic);
 
 			schematic->setGroupName(groupName);

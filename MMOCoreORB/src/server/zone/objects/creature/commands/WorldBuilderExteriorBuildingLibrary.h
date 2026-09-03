@@ -54,7 +54,9 @@ private:
 	static bool isTravelReady(const SharedObjectTemplate* data) {
 		bool terminal=false, collector=false, shuttle=false;
 		for (int i=0; data != nullptr && i<data->getChildObjectsSize(); ++i) {
-			const ChildObject* child=data->getChildObject(i); if(child==nullptr) continue; String path=child->getTemplateFile();
+			const ChildObject* child=data->getChildObject(i);
+			if(child==nullptr) continue;
+			String path=child->getTemplateFile();
 			terminal=terminal||path=="object/tangible/terminal/terminal_travel.iff";
 			collector=collector||path=="object/tangible/travel/ticket_collector/ticket_collector.iff";
 			shuttle=shuttle||path=="object/creature/npc/theme_park/player_shuttle.iff"||path=="object/mobile/player_transport.iff";

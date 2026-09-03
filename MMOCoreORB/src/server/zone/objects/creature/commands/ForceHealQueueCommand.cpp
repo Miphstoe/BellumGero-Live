@@ -9,6 +9,7 @@
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/player/FactionStatus.h"
+#include "server/zone/managers/jedi/JediSeclusionManager.h"
 
 ForceHealQueueCommand::ForceHealQueueCommand(const String& name, ZoneProcessServer* server) : JediQueueCommand(name, server) {
 	speed = 3;
@@ -58,6 +59,23 @@ int ForceHealQueueCommand::runCommand(CreatureObject* creature, CreatureObject* 
 	// Temporary items (e.g. the Ancient Crystal of the Sith) can grant a percentage bonus to
 	// force heal amounts via the "force_heal_bonus" skill mod (a Buff, not a permanent skill).
 	float forceHealBonusMultiplier = 1.f + (creature->getSkillMod("force_heal_bonus") / 100.f);
+
+	// Overt Jedi PvE healing incentive (see JediSeclusionManager): only applies
+	// when neither the healer nor the heal target is currently PvP-flagged, so
+	// self-healing mid-fight with a Bounty Hunter gets no bonus. Computed fresh
+	// per cast from live state -- no-op for Secluded Jedi or non-Jedi.
+	if (JediSeclusionManager::isValidOvertJediPveHealingContext(creature, targetCreature)) {
+		float overtPveHealModifier = JediSeclusionManager::getOvertJediPveHealingModifier(creature);
+
+		if (overtPveHealModifier != 1.0f) {
+			forceHealBonusMultiplier *= overtPveHealModifier;
+
+			if (ConfigManager::instance()->getBool("Core3.CombatManager.OvertJediPveBonusDebug", false)) {
+				creature->info(true) << "[OvertJediPve] heal x" << overtPveHealModifier << " for " << creature->getDisplayedName()
+					<< " -> " << targetCreature->getDisplayedName();
+			}
+		}
+	}
 
 	int frsHealAmount = healAmount > 0 ? (int)(getFrsModifiedBuffValue(creature, healAmount) * forceHealBonusMultiplier + 0.5f) : 0;
 	int frsHealWoundAmount = healWoundAmount > 0 ? (int)(getFrsModifiedBuffValue(creature, healWoundAmount) * forceHealBonusMultiplier + 0.5f) : 0;

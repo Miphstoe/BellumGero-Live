@@ -620,8 +620,14 @@ bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature,
 		MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
 
 		if (skill->getSkillName() == "force_title_jedi_rank_02") {
-			if (missionManager != nullptr)
+			if (missionManager != nullptr) {
 				missionManager->addPlayerToBountyList(creature->getObjectID(), ghost->calculateBhReward());
+
+				// MiphJediBHRestriction: the hunter just reached Padawan rank -- if
+				// they're currently pursuing a player Jedi bounty mission accepted
+				// before reaching Padawan, fail it now rather than let them continue.
+				missionManager->invalidateActivePlayerJediBountyForHunter(creature->getObjectID());
+			}
 		} else if (skill->getSkillName().contains("force_discipline")) {
 			if (missionManager != nullptr)
 				missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
@@ -670,7 +676,7 @@ void SkillManager::removeSkillRelatedMissions(CreatureObject* creature, Skill* s
 	}
 }
 
-bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot) {
+bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool forceSurrender) {
 	Skill* skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr) {
@@ -700,7 +706,7 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		return false;
 	}
 
-		if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+		if (!forceSurrender && skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
 			return false;
 		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
 			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
@@ -1167,8 +1173,14 @@ bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject
 			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
 
 			if (skill->getSkillName() == "force_title_jedi_rank_02") {
-				if (missionManager != nullptr)
+				if (missionManager != nullptr) {
 					missionManager->addPlayerToBountyList(creature->getObjectID(), ghost->calculateBhReward());
+
+					// MiphJediBHRestriction: the hunter just reached Padawan rank -- if
+					// they're currently pursuing a player Jedi bounty mission accepted
+					// before reaching Padawan, fail it now rather than let them continue.
+					missionManager->invalidateActivePlayerJediBountyForHunter(creature->getObjectID());
+				}
 			} else if (skill->getSkillName().contains("force_discipline")) {
 				if (missionManager != nullptr)
 					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());

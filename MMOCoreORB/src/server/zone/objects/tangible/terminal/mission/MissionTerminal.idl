@@ -69,6 +69,18 @@ class MissionTerminal extends Terminal {
 
 	public native int handleObjectMenuSelect(CreatureObject player, byte selectedID);
 
+	/**
+	 * Sorts the player's currently listed mission candidates by reward (highest first)
+	 * and accepts up to 6 of them into the player's datapad. Operates on whatever is
+	 * currently in the player's mission_bag, so if a distance filter (see
+	 * MissionDistanceFilter.h) is active for this player, it is respected for free -
+	 * mission generation already only places matching missions into the bag.
+	 * @pre { this object is locked, player is locked }
+	 * @post { this object is locked, player is locked }
+	 */
+	@local
+	public native void acceptTopPayingMissions(CreatureObject player);
+
 	@dirty
 	public native string getTerminalName();
 
