@@ -32,11 +32,12 @@ DroidFoundry = ScreenPlay:new {
 	nexusSecondWaveDelayMs = 10 * 1000,
 	overseerOverloadWarningMs = 6 * 1000,
 	overseerOverloadEffect = "clienteffect/trap_electric_01.cef",
+	overseerKnockdownGuardIntervalMs = 100,
 
 	-- Applied to every Overseer HAM pool immediately after spawn.
 	overseerHamMultipliers = {
-		[1] = 1.0,
-		[2] = 2.5,
+		[1] = 1.5,
+		[2] = 3.0,
 		[3] = 5.0,
 	},
 
@@ -300,8 +301,8 @@ DroidFoundry = ScreenPlay:new {
 		{
 			cellIndex = 14,
 			label = "Maintenance Cell 14",
-			x = -79.9851, z = -85.8939, y = -307.491, heading = 0,
-			spacing = 1.9, depth = 1.6,
+			x = -80.0, z = -84.7, y = -309.5, heading = 0,
+			spacing = 1.5, depth = 1.2, scaleDepth = 2.4, scaleSpacing = 1.0,
 			templates = {
 				"foundry_repair_droid",
 				"foundry_repair_droid",
@@ -2809,6 +2810,7 @@ function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	writeData("droidFoundryOverseerTarget:" .. rootID, playerID)
 	createObserver(DAMAGERECEIVED, "DroidFoundry", "notifyOverseerDamaged", pBoss)
 	createObserver(OBJECTDESTRUCTION, "DroidFoundry", "notifyOverseerDestroyed", pBoss)
+	createEvent(self.overseerKnockdownGuardIntervalMs, "DroidFoundry", "maintainOverseerKnockdownImmunity", pBoss, tostring(rootID))
 	local tier = self:getScaleTier(rootID)
 	if (tonumber(readData("droidFoundryProductionDisabled:" .. rootID)) ~= 1) then
 		self:spawnOverseerSupport(rootID, "foundry_battle_droid", 1, 1)
@@ -2838,6 +2840,26 @@ function DroidFoundry:startOverseerEncounter(pPlayer, rootID)
 	end
 	createEvent(2000, "DroidFoundry", "overseerMechanicsLoop", pBoss, tostring(rootID))
 	return true
+end
+
+function DroidFoundry:maintainOverseerKnockdownImmunity(pBoss, rootIDString)
+	local rootID = tonumber(rootIDString) or 0
+
+	if (pBoss == nil or rootID == 0 or tonumber(readData("droidFoundryActive:" .. rootID)) ~= 1 or
+		(tonumber(readData("droidFoundryOverseerState:" .. rootID)) or 0) ~= 1 or
+		SceneObject(pBoss):getObjectID() ~= (tonumber(readData("droidFoundryOverseerBoss:" .. rootID)) or 0) or
+		CreatureObject(pBoss):isDead()) then
+		return 0
+	end
+
+	-- Force knockdown effects do not consult knockdown_defense, so keep this
+	-- immunity local to the active Overseer rather than changing global combat.
+	if (CreatureObject(pBoss):getPosture() == KNOCKEDDOWN) then
+		CreatureObject(pBoss):setPosture(UPRIGHT)
+	end
+
+	createEvent(self.overseerKnockdownGuardIntervalMs, "DroidFoundry", "maintainOverseerKnockdownImmunity", pBoss, tostring(rootID))
+	return 0
 end
 
 function DroidFoundry:healOverseerFromMaintenance(rootID, pBoss)
@@ -3100,7 +3122,7 @@ function DroidFoundry:resolveOverseerOverload(pBoss, eventData)
 	local maxHealth = tonumber(target:getMaxHAM(0)) or 0
 	if (maxHealth <= 0) then return 0 end
 
-	local damage = math.max(750, math.min(2500, math.floor(maxHealth * 0.15)))
+	local damage = math.max(1200, math.min(4000, math.floor(maxHealth * 0.22)))
 	target:inflictDamage(pBoss, 0, damage, 0)
 	target:sendSystemMessage("Electrical Overload hits you for " .. damage .. " damage!")
 

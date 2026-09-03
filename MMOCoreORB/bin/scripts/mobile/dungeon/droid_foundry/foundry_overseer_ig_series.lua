@@ -7,8 +7,8 @@ foundry_overseer_ig_series = Creature:new {
 
 	level = 250,
 	chanceHit = 0.95,
-	damageMin = 475,
-	damageMax = 600,
+	damageMin = 675,
+	damageMax = 825,
 	baseXp = 18000,
 	baseHAM = 90000,
 	baseHAMmax = 110000,
@@ -26,7 +26,7 @@ foundry_overseer_ig_series = Creature:new {
 	ferocity = 0,
 
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
-	creatureBitmask = PACK + KILLER,
+	creatureBitmask = PACK + KILLER + NOINTIMIDATE,
 	optionsBitmask = AIENABLED,
 	diet = NONE,
 	scale = 1.75,
