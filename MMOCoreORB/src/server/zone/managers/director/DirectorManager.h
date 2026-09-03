@@ -105,6 +105,11 @@ namespace server {
 		Vector<Reference<ScreenPlayTask*> > getObjectEvents(SceneObject* obj) const;
 		String getStringSharedMemory(const String& key) const;
 
+		// Read-only access for server diagnostics that need existing screenplay event state.
+		static Reference<PersistentEvent*> getPersistentEvent(const String& eventName) {
+			return getServerEvent(eventName);
+		}
+
 		virtual Lua* getLuaInstance();
 		int runScreenPlays();
 

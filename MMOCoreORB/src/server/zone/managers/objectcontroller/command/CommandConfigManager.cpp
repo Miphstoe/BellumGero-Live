@@ -409,6 +409,7 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("mandoFoundlingAdmin").toLowerCase());
 	createCommand(String("mandoStatus").toLowerCase());
 	createCommand(String("accountcredits").toLowerCase());
+	createCommand(String("mobilestatus").toLowerCase());
 
 	// Entertainer Paid Buff Service
 	createCommand(String("epbspay").toLowerCase());
