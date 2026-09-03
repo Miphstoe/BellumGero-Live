@@ -5,6 +5,17 @@ DroidFoundry = ScreenPlay:new {
 	terminalHeading = 50,
 	exitX = 4788.85,
 	exitY = 984.699,
+	overworldCaveRootID = 7475354,
+	overworldEntranceCellID = 7475355,
+	overworldCaveX = 4758.927734,
+	overworldCaveZ = 26.039738,
+	overworldCaveY = 961.497559,
+	overworldBarrierAreaRadius = 40,
+	-- Matches the authoritative lok_droid_foundry region center in lok_regions.lua.
+	overworldMouthX = 4775,
+	overworldMouthY = 968,
+	overworldBackstopRadius = 8,
+	overworldSealedMessage = "The Droid Foundry entrance is sealed. Use the Droid Foundry access terminal.",
 	timeoutSeconds = 60 * 60,
 	entryX = 0.840546,
 	entryZ = -4.010900,
@@ -469,6 +480,8 @@ function DroidFoundry:start()
 		return
 	end
 
+	self:spawnOverworldEntranceAreas()
+
 	for i = 1, #self.instances, 1 do
 		local instance = self.instances[i]
 		local pBuilding = getSceneObject(instance.rootID)
@@ -494,6 +507,70 @@ function DroidFoundry:start()
 
 	SceneObject(pTerminal):setCustomObjectName("Droid Foundry Expedition Terminal")
 	SceneObject(pTerminal):setObjectMenuComponent("DroidFoundryTerminalMenuComponent")
+end
+
+function DroidFoundry:spawnOverworldEntranceAreas()
+	local caveX = self.overworldCaveX
+	local caveZ = self.overworldCaveZ
+	local caveY = self.overworldCaveY
+
+	local pBarrierArea = spawnActiveArea("lok", "object/active_area.iff", caveX, caveZ, caveY, self.overworldBarrierAreaRadius, 0)
+
+	if (pBarrierArea ~= nil) then
+		createObserver(ENTEREDAREA, "DroidFoundry", "notifyEnteredOverworldBarrierArea", pBarrierArea)
+	else
+		printLuaError("DroidFoundry:spawnOverworldEntranceAreas failed to spawn barrier area")
+	end
+
+	local mouthZ = getWorldFloor(self.overworldMouthX, self.overworldMouthY, "lok")
+	local pBackstopArea = spawnActiveArea("lok", "object/active_area.iff", self.overworldMouthX, mouthZ,
+		self.overworldMouthY, self.overworldBackstopRadius, 0)
+
+	if (pBackstopArea ~= nil) then
+		createObserver(ENTEREDAREA, "DroidFoundry", "notifyEnteredOverworldBackstopArea", pBackstopArea)
+	else
+		printLuaError("DroidFoundry:spawnOverworldEntranceAreas failed to spawn backstop area")
+	end
+end
+
+function DroidFoundry:isPrivilegedPlayer(pPlayer)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
+		return false
+	end
+
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+	return pGhost ~= nil and PlayerObject(pGhost):isPrivileged()
+end
+
+function DroidFoundry:sendOverworldEntranceBarrier(pPlayer)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() or self:isPrivilegedPlayer(pPlayer)) then
+		return
+	end
+
+	local pEntranceCell = getSceneObject(self.overworldEntranceCellID)
+
+	if (pEntranceCell ~= nil) then
+		updateCellPermission(pEntranceCell, false, pPlayer)
+	else
+		printLuaError("DroidFoundry:sendOverworldEntranceBarrier unable to resolve entrance cell " .. self.overworldEntranceCellID)
+	end
+end
+
+function DroidFoundry:notifyEnteredOverworldBarrierArea(pArea, pPlayer)
+	self:sendOverworldEntranceBarrier(pPlayer)
+	return 0
+end
+
+function DroidFoundry:notifyEnteredOverworldBackstopArea(pArea, pPlayer)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() or self:isPrivilegedPlayer(pPlayer)) then
+		return 0
+	end
+
+	local exitZ = getWorldFloor(self.exitX, self.exitY, "lok")
+	SceneObject(pPlayer):teleport(self.exitX, exitZ, self.exitY, 0)
+	self:sendOverworldEntranceBarrier(pPlayer)
+	CreatureObject(pPlayer):sendSystemMessage(self.overworldSealedMessage)
+	return 0
 end
 
 function DroidFoundry:getInstance(rootID)

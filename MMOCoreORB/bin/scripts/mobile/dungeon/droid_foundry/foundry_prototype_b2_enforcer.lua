@@ -38,7 +38,7 @@ foundry_prototype_b2_enforcer = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "droid_foundry_kill_loot_super_battle_droid", chance = 10000000},
+				{group = "droid_foundry_kill_loot_b2", chance = 10000000},
 			},
 			lootChance = 10000000,
 		},

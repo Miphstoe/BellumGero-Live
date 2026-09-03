@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "deployed": "2026-08-14T23:33:58",
+  "deployed": "2026-09-02T15:23:16",
   "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
-  "base_tre_sha256": "396b808b9a8142d2248d9e3419f76a707ceda25fc4f42aeda1273bad73bb6f6f",
+  "base_tre_sha256": "3cffc632b22b02728c56deae1937c97ad43a6ecaececa7121756e689f119ff6e",
   "dependencies": {
     "records": {
       "appearance/bg_lok_droid_cave.pob": {
@@ -29,6 +29,12 @@
           "snapshot"
         ]
       },
+      "snapshot/lok.ws": {
+        "sha256": "7f0d46396bdedbf4affca9f021aab2dafdd0cd3328919b0ee944c5eb1a956d65",
+        "kinds": [
+          "snapshot"
+        ]
+      },
       "object/static/vehicle/shared_static_tie_fighter.iff": {
         "sha256": "a42db6f49b9bbeb9cf3d0c9ad802490959d0c9889cc56abf03a07c8cc7380485",
         "kinds": [
@@ -36,7 +42,7 @@
         ]
       },
       "misc/object_template_crc_string_table.iff": {
-        "sha256": "805fe343b0420da32f6a83c353b6ba945ea2a0fb845850adedc1446ed8fa5920",
+        "sha256": "2437ae09ff9a2f7ac3a6f43be0120633c2b154791a45e25247706370fd2606c6",
         "kinds": [
           "canonical_object_template_crc_table"
         ]
@@ -181,11 +187,58 @@
       }
     }
   },
-  "tre_sha256": "9f37e0d9fcbbc0bf7b6bc6e2c62a25ff67d72a51b0f78d5ff3bf0cdb39a530d2",
+  "tre_sha256": "a99219b107c148468e9950200583993ce955a55941722a2d62c01ed5d928f3cb",
   "server_template_lua_sha256": "812936e2fd4226dece07457ef98f20c14464900d230176cdfe01da7eb62cb53d",
   "server_travel_lua_sha256": "935fde5e272e49f44304c885c1f05bd3b372de8573e91bd5f07e087c90ef2545",
-  "oid_registry_sha256": "b8f39a7fa9af19a0a861a0ffc09490aac8ce3448e0f04b68098973ce48251239",
+  "oid_registry_sha256": "a79083ac5ba2e67d9eded20135fa250afb857cce2be7cc298482e115b95fb006",
   "projects": [
+    {
+      "id": "droid_cave_exterior",
+      "project_name": "droid_cave_exterior",
+      "source_wbp": "/home/misemerfg/localswgserver/BellumGero-Live/MMOCoreORB/bin/worldbuilder/projects/droid_cave_exterior.wbp",
+      "wbp_sha256": "294aa2ba5e8e48466e29bf9d43d45eb28a2a0f5c4ed45c9c6322f8032e208728",
+      "publish_fingerprint": "c370aca1d2f5b5ac3e0cac8ec3d497ee396d6c3e0010c666d13fd16928178096",
+      "structural_fingerprint": "9b45671acdac71251a9eef1dc67ca73aba38624f970efffaf64fb6f60524f5e3",
+      "planet": "lok",
+      "wbp_version": 1,
+      "counts": {
+        "objects": 10,
+        "structures": 0,
+        "interiors": 0,
+        "travel_points": 0
+      },
+      "world_snapshot_ids": {
+        "1": 1879048023,
+        "2": 1879048022,
+        "3": 1879048021,
+        "4": 1879048020,
+        "5": 1879048019,
+        "6": 1879048018,
+        "7": 1879048017,
+        "8": 1879048016,
+        "9": 1879048015,
+        "10": 1879048014
+      },
+      "oid_assignments": {
+        "droid_cave_exterior/object/1": 1879048023,
+        "droid_cave_exterior/object/10": 1879048014,
+        "droid_cave_exterior/object/2": 1879048022,
+        "droid_cave_exterior/object/3": 1879048021,
+        "droid_cave_exterior/object/4": 1879048020,
+        "droid_cave_exterior/object/5": 1879048019,
+        "droid_cave_exterior/object/6": 1879048018,
+        "droid_cave_exterior/object/7": 1879048017,
+        "droid_cave_exterior/object/8": 1879048016,
+        "droid_cave_exterior/object/9": 1879048015
+      },
+      "archive_paths": [],
+      "structures": [],
+      "travel_points": [],
+      "safe_refresh": {
+        "dry_run_command": "/wb refreshpublished droid_cave_exterior",
+        "confirm_command": "/wb refreshpublished droid_cave_exterior confirm"
+      }
+    },
     {
       "id": "droid_foundry_instances",
       "project_name": "droid_foundry_instances",

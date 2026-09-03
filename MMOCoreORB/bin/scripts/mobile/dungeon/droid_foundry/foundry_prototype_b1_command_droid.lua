@@ -38,7 +38,7 @@ foundry_prototype_b1_command_droid = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "droid_foundry_kill_loot_battle_droid", chance = 10000000},
+				{group = "droid_foundry_kill_loot_b1", chance = 10000000},
 			},
 			lootChance = 10000000,
 		},

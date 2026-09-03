@@ -274,6 +274,73 @@ class ProjectParsingTests(unittest.TestCase):
 
 
 class CompositionTests(unittest.TestCase):
+    def test_registered_static_without_snapshot_uses_curated_streaming_type(self):
+        missing = "object/static/structure/general/shared_allum_mine_pipes_s02.iff"
+        ordinary = "object/static/test/shared_existing.iff"
+        inferred = {ordinary: (128.0, 9)}
+        project = wb.Project(objects=[wb.ProjectObject(
+            local_id=1,
+            object_template=missing.replace("shared_", ""),
+            snapshot_template=missing,
+            x=0.0, z=0.0, y=0.0,
+            qw=1.0, qx=0.0, qy=0.0, qz=0.0,
+        )])
+
+        def read(path):
+            if path == missing:
+                return iff_chunk(b"FORM", b"STAT")
+            raise AssertionError(path)
+
+        batch._apply_curated_static_snapshot_types(
+            SimpleNamespace(read=read),
+            inferred,
+            [SimpleNamespace(project=project)],
+            {missing},
+        )
+
+        self.assertEqual(inferred[missing], (200.0, 0))
+        self.assertEqual(inferred[ordinary], (128.0, 9))
+
+    def test_registered_static_without_inference_or_curated_type_fails(self):
+        missing = "object/static/structure/general/shared_unclassified_scenery.iff"
+        project = wb.Project(objects=[wb.ProjectObject(
+            local_id=42,
+            object_template=missing.replace("shared_", ""),
+            snapshot_template=missing,
+            x=0.0, z=0.0, y=0.0,
+            qw=1.0, qx=0.0, qy=0.0, qz=0.0,
+        )])
+
+        with self.assertRaisesRegex(
+            wb.WorldBuilderError,
+            r"WB #42: registered static template .* has no existing snapshot occurrence and no curated snapshot streaming value",
+        ):
+            batch._apply_curated_static_snapshot_types(
+                SimpleNamespace(read=lambda path: iff_chunk(b"FORM", b"STAT")),
+                {},
+                [SimpleNamespace(project=project)],
+                {missing},
+            )
+
+    def test_ship_scenery_snapshot_types_derive_from_generated_iff_base(self):
+        base_type = (256.0, 1)
+        ordinary_type = (512.0, 7)
+        inferred = {
+            batch.SHIP_SCENERY_BASE_IFF: base_type,
+            "object/static/test/shared_decor.iff": ordinary_type,
+        }
+
+        batch._derive_ship_scenery_snapshot_types(inferred)
+
+        self.assertEqual(
+            inferred["object/static/worldbuilder/ship/separatist/shared_droid_fighter.iff"],
+            base_type,
+        )
+        self.assertTrue(
+            all(inferred[path] == base_type for _ship, path, _appearance in batch.SHIP_SCENERY_CATALOG)
+        )
+        self.assertEqual(inferred["object/static/test/shared_decor.iff"], ordinary_type)
+
     def test_ship_scenery_crc_validation_uses_canonical_shared_paths(self):
         required = {path for _ship, path, _appearance in batch.SHIP_SCENERY_CATALOG}
         raw = object_template_crc_table(required)

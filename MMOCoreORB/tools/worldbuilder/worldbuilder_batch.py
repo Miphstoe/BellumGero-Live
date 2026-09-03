@@ -59,6 +59,10 @@ WB_ARCHIVE_PREFIXES = (
 
 SHIP_SCENERY_BASE_IFF = "object/static/vehicle/shared_static_tie_fighter.iff"
 CANONICAL_OBJECT_TEMPLATE_CRC_TABLE = "misc/object_template_crc_string_table.iff"
+CURATED_STATIC_SNAPSHOT_TYPES: Dict[str, Tuple[float, int]] = {
+    "object/static/structure/general/shared_allum_mine_pipes_s01.iff": (200.0, 0),
+    "object/static/structure/general/shared_allum_mine_pipes_s02.iff": (200.0, 0),
+}
 SHIP_SCENERY_CATALOG = (
     ("ARC-170", "object/static/worldbuilder/ship/republic/shared_arc170.iff", "appearance/arc170_model.apt"),
     ("A-Wing", "object/static/worldbuilder/ship/rebel/shared_awing.iff", "appearance/a_wing_model.apt"),
@@ -763,6 +767,44 @@ def _infer_snapshot_types_from_effective_stack(
                     inferred.setdefault(template, (node.game_object_type, node.unknown2))
 
     return inferred
+
+
+def _derive_ship_scenery_snapshot_types(
+    inferred: Dict[str, Tuple[float, int]],
+) -> None:
+    """Give generated static ship wrappers their canonical base snapshot type."""
+    base_type = inferred.get(SHIP_SCENERY_BASE_IFF)
+    if base_type is None:
+        return
+    for _ship, wrapper_path, _appearance in SHIP_SCENERY_CATALOG:
+        inferred[wrapper_path] = base_type
+
+
+def _apply_curated_static_snapshot_types(
+    resolver: EffectiveTreResolver,
+    inferred: Dict[str, Tuple[float, int]],
+    approved: Sequence[ApprovedProject],
+    registered_templates: Set[str],
+) -> None:
+    """Apply deliberate snapshot metadata to unresolved registered STATs."""
+    for entry in approved:
+        for obj in entry.project.objects:
+            path = wb.normalize_archive_path(obj.snapshot_template)
+            if path in inferred or obj.snapshot_game_object_type >= 0.0:
+                continue
+            if not path.startswith("object/static/") or path not in registered_templates:
+                continue
+            raw = resolver.read(path)
+            if len(raw) < 12 or raw[:4] != b"FORM" or raw[8:12] != b"STAT":
+                continue
+            curated = CURATED_STATIC_SNAPSHOT_TYPES.get(path)
+            if curated is None:
+                raise wb.WorldBuilderError(
+                    f"WB #{obj.local_id}: registered static template {path} has no existing "
+                    "snapshot occurrence and no curated snapshot streaming value. Add deliberate "
+                    "CURATED_STATIC_SNAPSHOT_TYPES metadata or set an explicit WBP snapshot value."
+                )
+            inferred[path] = curated
 
 
 def _canonical_publish_id(value: str) -> str:
@@ -1476,10 +1518,16 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         output_name,
         source_archive=source_archive,
     )
+    canonical_crc_table = validate_ship_scenery_crc_requirements(resolver)
+    registered_templates = parse_object_template_crc_strings(canonical_crc_table)
     inferred_types = (
         _infer_snapshot_types_from_effective_stack(resolver)
         if approved
         else {}
+    )
+    _derive_ship_scenery_snapshot_types(inferred_types)
+    _apply_curated_static_snapshot_types(
+        resolver, inferred_types, approved, registered_templates
     )
 
     projects_by_planet: Dict[str, List[ApprovedProject]] = {}
@@ -1487,7 +1535,6 @@ def build_candidate(config_path: Path, default_game_type: Optional[float] = None
         projects_by_planet.setdefault(entry.project.planet, []).append(entry)
 
     builtin_ship_assets = generate_builtin_ship_scenery_assets(resolver)
-    canonical_crc_table = validate_ship_scenery_crc_requirements(resolver)
     overlay_files: Dict[str, bytes] = dict(builtin_ship_assets)
     original_snapshots: Dict[str, bytes] = {}
     results: List[BatchProjectResult] = []
