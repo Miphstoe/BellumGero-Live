@@ -31,50 +31,58 @@ krayt_dragon_grand = Creature:new {
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
 
 	lootGroups = {
-	{
+
+    {
         groups = {
-			{group = "krayt_tissue_epic", chance = 250000},          -- 2.50% of group, 2.50% total
-			{group = "krayt_tissue_rare", chance = 2750000},         -- 15.00% of group, 15.00% total
-			--{group = "krayt_dragon_common", chance = 2000000},       -- 50.00% of group, 50.00% total
-			{group = "krayt_pearls", chance = 3000000},              -- 15.00% of group, 15.00% total
-			{group = "armor_attachments", chance = 2000000},         -- 10.00% of group, 10.00% total
-			{group = "clothing_attachments", chance = 2000000},      -- 10.00% of group, 10.00% total
-		},
-		lootChance = 10000000, -- 100.00% total chance
-	},
-	{
-       groups = {
-			{group = "krayt_tissue_epic", chance = 250000},          -- 2.50% of group, 1.25% total
-			{group = "krayt_tissue_rare", chance = 3750000},         -- 25.00% of group, 17.50% total
-			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
-			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
-			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
-			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
-		},
-		lootChance = 5000000, -- 50.00% total chance
-	},
-	{
+            {group = "krayt_tissue_epic", chance = 500000},          -- 5.00% of group, 5.00% total
+            {group = "krayt_tissue_rare", chance = 2679487},         -- 26.79% of group
+            --{group = "krayt_dragon_common", chance = 2000000},
+            {group = "krayt_pearls", chance = 2923077},              -- 29.23% of group
+            {group = "armor_attachments", chance = 1948718},         -- 19.49% of group
+            {group = "clothing_attachments", chance = 1948718},      -- 19.49% of group
+        },
+
+        lootChance = 10000000, -- 100.00% chance this loot roll occurs
+    },
+
+    {
         groups = {
-			{group = "krayt_tissue_epic", chance = 250000},          -- 2.50% of group, 0.75% total
-			{group = "krayt_tissue_rare", chance = 3750000},         -- 25.00% of group, 17.50% total
-			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
-			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
-			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
-			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
-		},
-		lootChance = 3000000, -- 30.00% total chance
-	},
-	{
-       groups = {
-			{group = "krayt_tissue_epic", chance = 250000},          -- 2.50% of group, 0.25% total
-			{group = "krayt_tissue_rare", chance = 3750000},         -- 25.00% of group, 17.50% total
-			--{group = "krayt_dragon_common", chance = 3500000},       -- 35.00% of group, 24.50% total
-			{group = "krayt_pearls", chance = 3000000},              -- 20.00% of group, 14.00% total
-			{group = "armor_attachments", chance = 1500000},         -- 10.00% of group, 7.00% total
-			{group = "clothing_attachments", chance = 1500000},      -- 10.00% of group, 7.00% total
-		},
-		lootChance = 1000000, -- 10.00% total chance
-	},
+            {group = "krayt_tissue_epic", chance = 500000},          -- 5.00% of group, 2.50% total
+            {group = "krayt_tissue_rare", chance = 3653846},         -- 36.54% of group
+            --{group = "krayt_dragon_common", chance = 3500000},
+            {group = "krayt_pearls", chance = 2923077},              -- 29.23% of group
+            {group = "armor_attachments", chance = 1461539},         -- 14.62% of group
+            {group = "clothing_attachments", chance = 1461538},      -- 14.62% of group
+        },
+
+        lootChance = 5000000, -- 50.00% chance this loot roll occurs
+    },
+
+    {
+        groups = {
+            {group = "krayt_tissue_epic", chance = 500000},          -- 5.00% of group, 1.50% total
+            {group = "krayt_tissue_rare", chance = 3653846},         -- 36.54% of group
+            --{group = "krayt_dragon_common", chance = 3500000},
+            {group = "krayt_pearls", chance = 2923077},              -- 29.23% of group
+            {group = "armor_attachments", chance = 1461539},         -- 14.62% of group
+            {group = "clothing_attachments", chance = 1461538},      -- 14.62% of group
+        },
+
+        lootChance = 3000000, -- 30.00% chance this loot roll occurs
+    },
+
+    {
+        groups = {
+            {group = "krayt_tissue_epic", chance = 500000},          -- 5.00% of group, 0.50% total
+            {group = "krayt_tissue_rare", chance = 3653846},         -- 36.54% of group
+            --{group = "krayt_dragon_common", chance = 3500000},
+            {group = "krayt_pearls", chance = 2923077},              -- 29.23% of group
+            {group = "armor_attachments", chance = 1461539},         -- 14.62% of group
+            {group = "clothing_attachments", chance = 1461538},      -- 14.62% of group
+        },
+
+        lootChance = 1000000, -- 10.00% chance this loot roll occurs
+    },
 	{
         groups = {
 			{group = "krayt_pearls", chance = 10000000},             -- 100.00% of group, 10.00% total
