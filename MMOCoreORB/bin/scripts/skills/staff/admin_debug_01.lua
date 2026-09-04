@@ -24,7 +24,8 @@ admin_debug_01 = {
 		"aiIgnore",
 		"dumpTargetInformation",
 		"dumpZoneInformation",
-		"getObjVars"
+		"getObjVars",
+		"mobilestatus"
 	},
 	skillModifiers = {},
 	schematicsGranted = {},

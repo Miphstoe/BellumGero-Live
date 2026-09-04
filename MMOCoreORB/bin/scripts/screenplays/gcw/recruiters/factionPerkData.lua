@@ -8,6 +8,7 @@ factionRewardType = {
 	installation = 7,
 	hireling = 8,
 	schematic = 9,
+	vehicleDeed = 10,
 }
 
 rebelRewardData = {
@@ -176,15 +177,16 @@ rebelRewardData = {
 	},
 
 	vehicleDeedsList = {
-    	"barc_speeder_deed",
+		"barc_speeder_deed",
 	},
 
 	vehicleDeeds = {
-    	barc_speeder_deed = {
-        	display = "BARC Speeder Deed",
-        	item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
-        	cost    = 2500
-    	},
+		barc_speeder_deed = {
+			type    = factionRewardType.vehicleDeed,
+			display = "BARC Speeder Deed",
+			item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
+			cost    = 2500
+		},
 	},
 }	
 
@@ -377,15 +379,16 @@ imperialRewardData = {
 	},
 
 	vehicleDeedsList = {
-    	"barc_speeder_deed",
+		"barc_speeder_deed",
 	},
 
 	vehicleDeeds = {
-    	barc_speeder_deed = {
-        	display = "BARC Speeder Deed",
-        	item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
-        	cost    = 2500
-    	},
+		barc_speeder_deed = {
+			type    = factionRewardType.vehicleDeed,
+			display = "BARC Speeder Deed",
+			item    = "object/tangible/deed/vehicle_deed/barc_speeder_deed.iff",
+			cost    = 2500
+		},
 	},
 }	
 		
