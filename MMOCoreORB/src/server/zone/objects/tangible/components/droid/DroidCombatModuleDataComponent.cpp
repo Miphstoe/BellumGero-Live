@@ -73,8 +73,8 @@ void DroidCombatModuleDataComponent::addToStack(BaseDroidModuleComponent* other)
 		return;
 
 	rating = rating + otherModule->rating;
-	if (rating > 600) {
-		rating = 600;
+	if (rating > 750) {
+		rating = 750;
 	}
 
 	DroidComponent* droidComponent = cast<DroidComponent*>(getParent());
@@ -97,10 +97,14 @@ void DroidCombatModuleDataComponent::copy(BaseDroidModuleComponent* other) {
 void DroidCombatModuleDataComponent::initialize(DroidObject* droid) {
 	// calculate and set the weapon values
 	int maxHam = droid->getBaseHAM(0);
-	int minDmg = DroidMechanics::determineMinDamage(droid->getSpecies(), rating);
-	int maxDmg = DroidMechanics::determineMaxDamage(droid->getSpecies(), rating);
-	float toHit = DroidMechanics::determineHit(droid->getSpecies(), maxHam);
-	float speed = DroidMechanics::determineSpeed(droid->getSpecies(), maxHam);
+	int droidType = droid->getMechanicsProfile();
+	if (droidType == 0)
+		droidType = droid->getSpecies();
+
+	int minDmg = DroidMechanics::determineMinDamage(droidType, rating);
+	int maxDmg = DroidMechanics::determineMaxDamage(droidType, rating);
+	float toHit = DroidMechanics::determineHit(droidType, maxHam);
+	float speed = DroidMechanics::determineSpeed(droidType, maxHam);
 
 	// Unsupported/custom chassis do not have a dedicated combat profile. Never
 	// apply zero attack speed or zero accuracy to a droid that accepts a Combat

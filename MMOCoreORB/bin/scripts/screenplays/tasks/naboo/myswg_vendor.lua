@@ -97,7 +97,10 @@ function myswg_vendor:start()
     if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
 
     pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 6643.02,330.00,-5920.87, 35, 0 )--belav
-    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end  
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+    
+    local pEventOutpostVendor = spawnMobile("corellia", "myswg_vendor", 1, -561, 26.0, -817, 35, 0 ) -- Corellia Event Outpost
+    if pEventOutpostVendor ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pEventOutpostVendor, "") end
 
     -- Spawn and initialize Naboo vendors
     local pWeaponsmith3 = spawnMobile("naboo", "myswg_vendor", 1, -4872, 6.0, 4151, 35, 0 )--theed

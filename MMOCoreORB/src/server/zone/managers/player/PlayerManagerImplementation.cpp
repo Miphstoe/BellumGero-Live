@@ -1304,6 +1304,21 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	StringIdChatParameter stringId;
 
+	// Droid Foundry instances use an in-instance recovery flow instead of normal
+	// cloning. Keep normal death bookkeeping, combat/DoT cleanup, and kill
+	// observers, but preserve timed buffs and suppress the clone UI.
+	bool isDroidFoundryDeath = false;
+	ManagedReference<SceneObject*> deathRootParent = player->getRootParent();
+
+	if (deathRootParent != nullptr && deathRootParent->isBuildingObject()) {
+		auto objectTemplate = deathRootParent->getObjectTemplate();
+
+		if (objectTemplate != nullptr) {
+			isDroidFoundryDeath = objectTemplate->getFullTemplateString().beginsWith(
+				"object/building/worldbuilder/droid_foundry_instances/structure_");
+		}
+	}
+
 	if (!attacker->isPlayerCreature() || !CombatManager::instance()->areInDuel(attacker->asCreatureObject(), player)) {
 		TransactionLog trx(attacker, player, TrxCode::PLAYERDIED);
 		trx.addState("isCombatAction", isCombatAction);
@@ -1384,14 +1399,17 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	player->setPosture(CreaturePosture::DEAD, !isCombatAction, !isCombatAction);
 
-	sendActivateCloneRequest(player, typeofdeath);
+	if (!isDroidFoundryDeath)
+		sendActivateCloneRequest(player, typeofdeath);
 
 	stringId.setStringId("base_player", "prose_victim_dead");
 	stringId.setTT(attacker->getDisplayedName());
 	player->sendSystemMessage(stringId);
 
 	player->updateTimeOfDeath();
-	player->clearBuffs(true, false);
+
+	if (!isDroidFoundryDeath)
+		player->clearBuffs(true, false);
 
 	PlayerObject* ghost = player->getPlayerObject();
 
@@ -6569,7 +6587,19 @@ bool PlayerManagerImplementation::doBurstRun(CreatureObject* player, float hamMo
 		return false;
 	}
 
-	if (zone->getZoneName() == "dungeon1") {
+	bool isDroidFoundry = false;
+	auto rootParent = player->getRootParent();
+
+	if (rootParent != nullptr && rootParent->isBuildingObject()) {
+		auto objectTemplate = rootParent->getObjectTemplate();
+
+		if (objectTemplate != nullptr) {
+			isDroidFoundry = objectTemplate->getFullTemplateString().beginsWith(
+				"object/building/worldbuilder/droid_foundry_instances/structure_");
+		}
+	}
+
+	if (zone->getZoneName() == "dungeon1" && !isDroidFoundry) {
 		player->sendSystemMessage("@combat_effects:burst_run_space_dungeon"); // The artificial gravity makes burst running impossible here.
 		return false;
 	}

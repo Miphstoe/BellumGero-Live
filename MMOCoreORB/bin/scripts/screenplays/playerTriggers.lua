@@ -31,6 +31,9 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     if AcklayPrivateInstance and AcklayPrivateInstance.handlePlayerLogin then
         AcklayPrivateInstance:handlePlayerLogin(pPlayer)
     end
+    if DroidFoundry and DroidFoundry.handlePlayerLogin then
+        DroidFoundry:handlePlayerLogin(pPlayer)
+    end
 end
 
 function PlayerTriggers:playerLoggedOut(pPlayer)
@@ -46,6 +49,9 @@ function PlayerTriggers:playerLoggedOut(pPlayer)
     end
     if AcklayPrivateInstance and AcklayPrivateInstance.onPlayerLoggedOut then
         AcklayPrivateInstance:onPlayerLoggedOut(pPlayer)
+    end
+    if DroidFoundry and DroidFoundry.onPlayerLoggedOut then
+        DroidFoundry:onPlayerLoggedOut(pPlayer)
     end
     if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedOut then
         PlayerBountySystem:onPlayerLoggedOut(pPlayer)

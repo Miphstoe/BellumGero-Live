@@ -1,5 +1,35 @@
 # Bellum Gero World Builder — V1 Guide
 
+## Ship Scenery Library
+
+`/wb ships` (also `/wb shipscenery`) opens a deliberately curated library of
+STATIC ground scenery ships. The generated entries wrap existing client ship
+appearance assets in ordinary `SharedStaticObjectTemplate` IFFs; the library
+never creates `object/ship/player/*` ShipObjects or adds JTL behavior,
+components, certifications, cells, movement, or flight systems. Placement uses
+the normal World Builder static-object path, so save/load, transforms, groups,
+duplicate, undo/redo, and publishing behave exactly like other scenery.
+
+The generated client templates are built-in assets in `bg_worldbuilder.tre` and
+remain present even when the approved WBP publish set is empty. Changing this
+built-in catalog requires rebuilding and deploying the World Builder TRE and
+then restarting Core3 so the maintained static server registrations can resolve
+the new client templates.
+
+The required TRE priority is `bg_worldbuilder.tre`, `bg_custom1.tre`,
+`bg_mtg_assets.tre`, then `default_patch.tre` and the stock stack. The World
+Builder archive owns only its generated wrappers and published assets;
+`bg_mtg_assets.tre` owns the referenced MTG appearances and their mesh, shader,
+and texture dependencies; and `bg_custom1.tre` owns Bellum Gero's one canonical
+`misc/object_template_crc_string_table.iff`. World Builder neither duplicates
+those display dependencies nor packages a CRC table.
+
+The catalog currently exposes 23 complete MTG ship display appearances through
+stable World Builder static wrappers. Initial placement samples terrain height
+at the ship's actual forward X/Y location, then applies the entry's model-specific
+ground offset (zero by default). This terrain-aware behavior is limited to Ship
+Scenery; ordinary World Builder static placement retains its existing behavior.
+
 ## Exterior buildings and travel destinations
 
 The Structure Library remains limited to POB buildings and caves with usable

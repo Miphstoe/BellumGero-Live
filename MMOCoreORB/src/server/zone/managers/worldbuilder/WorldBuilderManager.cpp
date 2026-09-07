@@ -2062,6 +2062,20 @@ String WorldBuilderManager::getExtensionStatus(CreatureObject* player) {
 }
 
 bool WorldBuilderManager::spawnTemplate(CreatureObject* player, const String& objectTemplate, float distance, String& message) {
+	return spawnTemplateInternal(player, objectTemplate, distance, false, 0.f, message);
+}
+
+bool WorldBuilderManager::spawnShipScenery(CreatureObject* player, const String& objectTemplate, float distance,
+	float groundOffset, String& message) {
+	if (player == nullptr || player->getParentID() != 0) {
+		message = "Stand outdoors before placing terrain-aware Ship Scenery.";
+		return false;
+	}
+	return spawnTemplateInternal(player, objectTemplate, distance, true, groundOffset, message);
+}
+
+bool WorldBuilderManager::spawnTemplateInternal(CreatureObject* player, const String& objectTemplate, float distance,
+	bool terrainAware, float groundOffset, String& message) {
 	Reference<WorldBuilderSession*> session = getSessionForPlayer(player);
 	if (session == nullptr) {
 		message = "Open or create a World Builder project first.";
@@ -2095,7 +2109,7 @@ bool WorldBuilderManager::spawnTemplate(CreatureObject* player, const String& ob
 	float radians = Math::deg2rad(heading);
 	state.x = player->getPositionX() + (distance * sin(radians));
 	state.y = player->getPositionY() + (distance * cos(radians));
-	state.z = player->getPositionZ();
+	state.z = terrainAware ? player->getZone()->getHeight(state.x, state.y) + groundOffset : player->getPositionZ();
 
 	ManagedReference<SceneObject*> playerParent = player->getParent().get();
 	if (playerParent == nullptr && player->getParentID() != 0)
@@ -3277,7 +3291,7 @@ String WorldBuilderManager::getHelp(CreatureObject* player) const {
 	help << "Use the desired-state 'wb bake' workflow for V2/V3 structural projects. Extension content is composed into the parent structure's one final generated ILF. Stable structural OIDs remain owned by the parent.\n";
 	help << "If an extension changes an already-deployed parent ILF, the candidate will require /wb refreshpublished <PARENT> before deployment.\n\n";
 	help << "OBJECT EDITING\n";
-	help << "/wb library | /wb spawn <template> [distance] | /wb last [distance]\n";
+	help << "/wb library | /wb ships (/wb shipscenery) | /wb spawn <template> [distance] | /wb last [distance]\n";
 	help << "/wb objects | /wb select <id> | /wb target | /wb next | /wb prev\n";
 	help << "/wb move <forward|back|left|right|up|down|x+|x-|y+|y-> [meters]\n";
 	help << "/wb yaw|pitch|roll [degrees] | /wb snap | /wb front [distance]\n";

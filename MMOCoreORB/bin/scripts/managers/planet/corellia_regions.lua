@@ -114,6 +114,7 @@ corellia_regions = {
 	{"kor_vella_nobuild_1", -3512, 3184, {CIRCLE, 1500}, CAMPINGAREA + NOBUILDZONEAREA},
 	{"daoba_guerfel_nobuild_1", 3272, 5456, {CIRCLE, 1200}, CAMPINGAREA + NOBUILDZONEAREA},
 	{"corellia_vreni_island_outdoor_theater", -5442, -6283, {RECTANGLE, -5398, -6221}, NOBUILDZONEAREA},
+	{"corellia_event_outpost_nospawn", -561, -817, {CIRCLE, 256}, NOSPAWNAREA + NOBUILDZONEAREA},
 
 	-- Spawn Areas
 	{"@corellia_region_names:bela_vistal_easy_newbie", 6788, -5654, {RING, 480, 800}, SPAWNAREA + NOWORLDSPAWNAREA, {"bela_vistal_easy_newbie"}, 32},

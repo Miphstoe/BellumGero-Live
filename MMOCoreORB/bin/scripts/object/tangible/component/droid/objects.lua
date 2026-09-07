@@ -5114,3 +5114,19 @@ object_tangible_component_droid_shared_trap_module_base = SharedTangibleObjectTe
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_component_droid_shared_trap_module_base, "object/tangible/component/droid/shared_trap_module_base.iff")
+
+-- Bellum Gero Droid Foundry
+object_tangible_component_droid_shared_battle_droid_foundry_chassis = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/droid/shared_battle_droid_foundry_chassis.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_component_droid_shared_battle_droid_foundry_chassis, "object/tangible/component/droid/shared_battle_droid_foundry_chassis.iff")
+
+object_tangible_component_droid_shared_super_battle_droid_foundry_chassis = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/droid/shared_super_battle_droid_foundry_chassis.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_component_droid_shared_super_battle_droid_foundry_chassis, "object/tangible/component/droid/shared_super_battle_droid_foundry_chassis.iff")
+
+object_tangible_component_droid_shared_droideka_foundry_chassis = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/droid/shared_droideka_foundry_chassis.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_component_droid_shared_droideka_foundry_chassis, "object/tangible/component/droid/shared_droideka_foundry_chassis.iff")
