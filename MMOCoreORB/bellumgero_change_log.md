@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-09-07 — Assemble Mandalorian production fixes on current Main
+
+- **Summary:** Restore the quest and NPC spawns; bring in daily loot progression, guaranteed chapter trophies, repaired armor/jetpack recipes, invalid-schematic diagnostics and quarantine, Mandalorian GM tools, and the existing Beskar melee/rare-loot corrections. Preserve Main's null-player and draft-slot guards when integrating diagnostics. Ensure invalid newly created schematics reach the orphan cleanup path.
+- **Jetpack:** Requires `crafting_droidengineer_master`; uses Droid Engineer crafting tab, XP, assembly, and experimentation. Ingredients and one-use limit are unchanged.
+- **Validation:** All 11 Mandalorian loot groups total 10,000,000. Diff whitespace checks pass. No planet-manager, krayt, or unrelated Test Center changes included. Core3 build, in-game crafting/quest tests, and melee balance validation are still required before production deployment.
+
 ### 2026-08-25 — Fix Mandalorian armor/jetpack draft schematics (root cause of schematic crashes)
 
 - **Summary:** The ten `clothing_armor_mandalorian_*` draft schematic server templates (plus `vehicle/civilian/jetpack`) were stubs missing `templateType = DRAFTSCHEMATIC` and all crafting data, so the template factory built the shared base class, the `DraftSchematicObjectTemplate` cast failed, and every created schematic was invalid — the null `schematicTemplate` behind the 2026-08-22 crafting segfaults and the "Error learning schematic, try again later" failures. Rebuilt all ten armor schematics from their working Death Watch bounty hunter counterparts (targets switched to `armor/mandalorian/*`, boots piece maps to `armor_mandalorian_shoes.iff`) and gave the jetpack a full recipe (ferrous metal + the four DWB jetpack components → `jetpack_deed.iff`). Also fixed `SchematicMap::loadDraftSchematicFile` leaking a persistent orphan object into the `draftschematics` database on every boot for each registered-but-invalid schematic (still hit by the nine stock space chassis stubs) — the freshly created invalid object is now destroyed. Verified via BellumGero-TRE-Force scan that all client shared iffs exist in stock `patch_08.tre`/`patch_11_00.tre` — no TRE work needed, contrary to the older doc's theory.

@@ -137,7 +137,7 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 			try {
 				schematic = dynamic_cast<DraftSchematic*> (objectManager->createObject(servercrc, 1, "draftschematics"));
 
-				if(schematic == nullptr || !schematic->isValidDraftSchematic()) {
+				if(schematic == nullptr) {
 					error("Could not create schematic with crc: " + String::valueOf(servercrc));
 					continue;
 				}

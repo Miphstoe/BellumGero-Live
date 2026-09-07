@@ -44,16 +44,16 @@
 object_draft_schematic_vehicle_civilian_jetpack = object_draft_schematic_vehicle_civilian_shared_jetpack:new {
 	templateType = DRAFTSCHEMATIC,
 	customObjectName = "Mandalorian Jetpack",
-	craftingToolTab = 16, -- (See DraftSchematicObjectTemplate.h)
+	craftingToolTab = 32, -- Droid Engineer (See DraftSchematicObjectTemplate.h)
 	complexity = 25,
 	size = 1,
 	factoryCrateSize = 1000,
 	factoryCrateType = "object/factory/factory_crate_installation.iff",
 
-	xpType = "crafting_general",
+	xpType = "crafting_droid_general",
 	xp = 1800,
-	assemblySkill = "general_assembly",
-	experimentingSkill = "general_experimentation",
+	assemblySkill = "droid_assembly",
+	experimentingSkill = "droid_experimentation",
 	customizationSkill = "clothing_customization",
 	customizationOptions = {},
 	customizationStringNames = {},
