@@ -25,7 +25,8 @@ admin_server_admin_02 = {
 		"resendLoginMessageToAll",
 		"setLoginMessage",
 		"setLoginTitle",
-		"setPlanetLimit"
+		"setPlanetLimit",
+		"worldreset"
 	},
 	skillModifiers = {},
 	schematicsGranted = {},

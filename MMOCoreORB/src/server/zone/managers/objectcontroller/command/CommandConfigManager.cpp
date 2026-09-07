@@ -409,6 +409,7 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("mandoFoundlingAdmin").toLowerCase());
 	createCommand(String("mandoStatus").toLowerCase());
 	createCommand(String("accountcredits").toLowerCase());
+	createCommand(String("mobilestatus").toLowerCase());
 
 	// Entertainer Paid Buff Service
 	createCommand(String("epbspay").toLowerCase());
@@ -417,6 +418,11 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 
 	// Jedi Master Healer force resurrection
 	createCommand(String("forcerevive").toLowerCase());
+
+	// Bellum Gero protected administrative housing / player-city reset.
+	// Client command_table.iff already carries the /worldreset row; this makes
+	// sure the server-side CommandList has it even without a shared-iff row.
+	createCommand(String("worldreset").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {

@@ -197,6 +197,14 @@ int CityRegionImplementation::getTimeToUpdate() {
 }
 
 void CityRegionImplementation::notifyEnter(SceneObject* object) {
+    // A city that has been (or is being) disbanded -- e.g. by CityManager::destroyCity
+    // during /worldreset -- has had setZone(nullptr) called on it, but an enter event
+    // enqueued for one of its regions just before that can still fire afterwards.
+    // Bail out instead of dereferencing a null zone (this method reads zone-> below).
+    if (zone == nullptr || object == nullptr) {
+        return;
+    }
+
     if (object->getCityRegion().get() != _this.getReferenceUnsafeStaticCast() && object->isPlayerCreature()) {
         currentPlayers.increment();
     }
@@ -341,6 +349,17 @@ void CityRegionImplementation::notifyEnter(SceneObject* object) {
 
 void CityRegionImplementation::notifyExit(SceneObject* object) {
 	//pre: no 2 different city regions should ever overlap, only 2 Regions of the same city region
+
+	// A city that is being (or has been) disbanded -- e.g. by CityManager::destroyCity
+	// during /worldreset -- has its structures/terminals/decorations removed from the
+	// world and then setZone(nullptr) called. Exit events enqueued for its regions
+	// just before that can still fire afterwards; several helpers below read zone->.
+	// Mirror the notifyEnter() guard and bail instead of dereferencing a torn-down
+	// city / null object.
+	if (object == nullptr || zone == nullptr) {
+		return;
+	}
+
 	if (object->isTangibleObject()) {
 		TangibleObject* tano = cast<TangibleObject*>(object);
 
