@@ -84,9 +84,13 @@ void SchematicMap::loadDraftSchematicDatabase() {
 
 		if(draftSchematic != nullptr) {
 			if (!draftSchematic->isValidDraftSchematic()) {
-				error() << "Skipping invalid database draft schematic object: " << objectID
-					<< " serverCRC: 0x" << hex << draftSchematic->getServerObjectCRC()
-					<< " clientCRC: 0x" << draftSchematic->getClientObjectCRC();
+				const auto objectTemplate = draftSchematic->getObjectTemplate();
+				const String templatePath = objectTemplate != nullptr ? objectTemplate->getFullTemplateString() : "<unresolved>";
+
+				error("Ignoring invalid persistent draft schematic: objectID=" + String::valueOf(draftSchematic->getObjectID()) +
+						" serverCRC=" + String::valueOf(draftSchematic->getServerObjectCRC()) +
+						" clientCRC=" + String::valueOf(draftSchematic->getClientObjectCRC()) +
+						" template=" + templatePath);
 				continue;
 			}
 
@@ -133,7 +137,7 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 			try {
 				schematic = dynamic_cast<DraftSchematic*> (objectManager->createObject(servercrc, 1, "draftschematics"));
 
-				if(schematic == nullptr || !schematic->isValidDraftSchematic()) {
+				if(schematic == nullptr) {
 					error("Could not create schematic with crc: " + String::valueOf(servercrc));
 					continue;
 				}
@@ -143,6 +147,19 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 				error("Could not create schematic with template: " + path);
 				continue;
 			}
+			if (!schematic->isValidDraftSchematic()) {
+				error("Created draft schematic has an invalid template: objectID=" + String::valueOf(schematic->getObjectID()) +
+						" serverCRC=" + String::valueOf(schematic->getServerObjectCRC()) +
+						" clientCRC=" + String::valueOf(schematic->getClientObjectCRC()) +
+						" target=" + path);
+
+				// We persisted this object moments ago and nothing references it yet;
+				// destroy it or every boot leaks another orphan into the draftschematics db.
+				Locker locker(schematic);
+				schematic->destroyObjectFromDatabase(true);
+				continue;
+			}
+
 			if(!schematicCrcMap.contains(schematic->getServerObjectCRC()))
 				schematicCrcMap.put(schematic->getServerObjectCRC(), schematic);
 

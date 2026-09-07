@@ -42,7 +42,17 @@ void DraftSchematicImplementation::sendDraftSlotsTo(CreatureObject* player) {
 		return;
 
 	if (schematicTemplate == nullptr) {
-		error("Cannot send draft slots without template data for draft schematic: " + String::valueOf(getServerObjectCRC()));
+		const auto objectTemplate = getObjectTemplate();
+		const String templatePath = objectTemplate != nullptr ? objectTemplate->getFullTemplateString() : "<unresolved>";
+
+		error("Refusing to send invalid draft schematic slots: objectID=" + String::valueOf(getObjectID()) +
+				" serverCRC=" + String::valueOf(getServerObjectCRC()) +
+				" clientCRC=" + String::valueOf(getClientObjectCRC()) +
+				" template=" + templatePath);
+
+		if (player != nullptr)
+			player->sendSystemMessage("This crafting schematic is invalid and could not be learned. Please contact staff.");
+
 		return;
 	}
 
@@ -107,8 +117,19 @@ void DraftSchematicImplementation::insertIngredients(ObjectControllerMessage* ms
 }
 
 void DraftSchematicImplementation::sendResourceWeightsTo(CreatureObject* player) {
-	if (player == nullptr || schematicTemplate == nullptr)
+	if (player == nullptr)
 		return;
+
+	if (schematicTemplate == nullptr) {
+		const auto objectTemplate = getObjectTemplate();
+		const String templatePath = objectTemplate != nullptr ? objectTemplate->getFullTemplateString() : "<unresolved>";
+
+		error("Refusing to send invalid draft schematic resource weights: objectID=" + String::valueOf(getObjectID()) +
+				" serverCRC=" + String::valueOf(getServerObjectCRC()) +
+				" clientCRC=" + String::valueOf(getClientObjectCRC()) +
+				" template=" + templatePath);
+		return;
+	}
 
 	const Vector<Reference<ResourceWeight* > >* resourceWeights = schematicTemplate->getResourceWeights();
 

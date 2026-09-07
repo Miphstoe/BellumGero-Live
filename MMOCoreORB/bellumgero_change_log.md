@@ -14,6 +14,25 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-09-07 — Assemble Mandalorian production fixes on current Main
+
+- **Summary:** Restore the quest and NPC spawns; bring in daily loot progression, guaranteed chapter trophies, repaired armor/jetpack recipes, invalid-schematic diagnostics and quarantine, Mandalorian GM tools, and the existing Beskar melee/rare-loot corrections. Preserve Main's null-player and draft-slot guards when integrating diagnostics. Ensure invalid newly created schematics reach the orphan cleanup path.
+- **Jetpack:** Requires `crafting_droidengineer_master`; uses Droid Engineer crafting tab, XP, assembly, and experimentation. Ingredients and one-use limit are unchanged.
+- **Weapons:** All six Beskar melee weapons use MEDIUM armor piercing. Damage, experimental ranges, and attack costs match Main; the HEAVY/damage/health-cost balance update is excluded.
+- **Validation:** All 11 Mandalorian loot groups total 10,000,000. Diff whitespace checks pass. No planet-manager, krayt, or unrelated Test Center changes included. Core3 build and in-game crafting, quest, and combat smoke tests are still required before production deployment.
+
+### 2026-08-25 — Fix Mandalorian armor/jetpack draft schematics (root cause of schematic crashes)
+
+- **Summary:** The ten `clothing_armor_mandalorian_*` draft schematic server templates (plus `vehicle/civilian/jetpack`) were stubs missing `templateType = DRAFTSCHEMATIC` and all crafting data, so the template factory built the shared base class, the `DraftSchematicObjectTemplate` cast failed, and every created schematic was invalid — the null `schematicTemplate` behind the 2026-08-22 crafting segfaults and the "Error learning schematic, try again later" failures. Rebuilt all ten armor schematics from their working Death Watch bounty hunter counterparts (targets switched to `armor/mandalorian/*`, boots piece maps to `armor_mandalorian_shoes.iff`) and gave the jetpack a full recipe (ferrous metal + the four DWB jetpack components → `jetpack_deed.iff`). Also fixed `SchematicMap::loadDraftSchematicFile` leaking a persistent orphan object into the `draftschematics` database on every boot for each registered-but-invalid schematic (still hit by the nine stock space chassis stubs) — the freshly created invalid object is now destroyed. Verified via BellumGero-TRE-Force scan that all client shared iffs exist in stock `patch_08.tre`/`patch_11_00.tre` — no TRE work needed, contrary to the older doc's theory.
+- **Files:** `bin/scripts/object/draft_schematic/clothing/clothing_armor_mandalorian_{belt,bicep_l,bicep_r,boots,bracer_l,bracer_r,chest_plate,gloves,helmet,leggings}.lua`, `bin/scripts/object/draft_schematic/vehicle/civilian/jetpack.lua`, `src/server/zone/managers/crafting/schematicmap/SchematicMap.cpp`
+- **Notes:** C++ + object-template lua; requires rebuild and full core3 restart. Crafting stats/ingredients mirror the DW bounty hunter set (armor) and X-34 baseline (jetpack) — rebalance freely. Space chassis draft schematics remain stubs by design; making them "valid" without data would expose empty schematics to shipwrights.
+
+### 2026-08-23 — Quarantine invalid rewarded schematics instead of destroying them
+
+- **Summary:** Hardened `SchematicList::addRewardedSchematics` (runs on every schematic list rebuild, e.g. login and skill changes) against the crash class seen in the 2026-08-22 crafting segfault. A null persisted schematic reference no longer dereferences (previously an unguarded `schem->getDraftSchematicTemplate()` call); its dangling map entry is dropped with a log line. A schematic whose template fails to resolve is now quarantined — logged with objectID/CRCs and skipped — instead of the stock behavior of silently calling `destroyObjectFromDatabase`, which could permanently delete earned quest/loot schematics after a transient template load failure or rename.
+- **Files:** `src/server/zone/objects/player/variables/SchematicList.cpp`
+- **Notes:** C++ change; requires rebuild and server restart. Quarantined schematics reappear automatically once their template resolves again. Grep `core3.log` for "Quarantining rewarded draft schematic" to inventory affected players/CRCs.
+
 ### 2026-08-13 — Correct Mandalorian armor learning, exchange, and wear gates
 
 - **Summary:** Changed all ten Death Watch Mandalorian armor loot schematics from Master Armorsmith to Novice Armorsmith so any Armorsmith can learn and craft them. The recruiter now confirms and performs an armor-only one-for-one legacy exchange without requiring a complete set or jetpack, leaves the account claim available after partial failure, and requires one free inventory slot. Replaced the stock master-profession wear certifications on all ten crafted armor pieces with the character-earned Mandalorian Tribesman title skill; login restores that skill for verified Chapter 5/badge veterans without changing their selected title.
@@ -30,6 +49,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Fixed Foundling login recovery so an already-loaded shared informant restores the correct datapad waypoint. The waypoint remains intentionally absent while an unfinished planet quota is active, and the return waypoint is restored once that quota is complete.
 - **Files:** `bin/scripts/screenplays/bellum/mando_way_of_life.lua`
 - **Notes:** Lua-only; zone restart or screenplay reload required.
+
+### 2026-08-13 — Fix Mandalorian melee crafting slot labels
+
+- **Summary:** Replaced ten invented ingredient slot names that have no key in the client `craft_weapon_ingredients_n.stf`, which left those slots blank in the crafting tool. Each was swapped for an existing retail key with matching meaning, verified against the deployed TRE.
+- **Files:** `bin/scripts/object/draft_schematic/weapon/mando_melee_schematics.lua`
+- **Notes:** `blade_head`→`cutting_edge`, `baton_shaft`/`hammer_shaft`→`weapon_shaft`, `shock_collar`→`conductive_strike_face`, `acid_vent`→`chemical_dispersion_controller`, `reagent_cell`→`chemical_preparation_unit`, `hammer_head`→`impact_face`, `knuckle_frame`→`grip_unit`, `impact_plate`→`strike_face`, `heat_sink`→`thermal_control_unit`. Resource types, quantities and slot types are unchanged, so no schematic behaviour changes.
+
+### 2026-08-13 — Correct mando contract rare bonus loot weights
+
+- **Summary:** Removed a duplicated `peko_albatross_feather` and `jetpack_stabilizer` pair introduced alongside the Mando weapon schematics and reduced the remaining pair to make room for the 3% schematic pool. Group weight totalled 14,700,000 instead of 10,000,000, so every advertised drop rate in the group was wrong.
+- **Files:** `bin/scripts/loot/groups/bellum/mando_contract_rare_bonus.lua`
+- **Notes:** Verified total is now exactly 10,000,000 across 26 entries with no duplicate item templates.
 
 ### 2026-07-23 — Block /teach of Mandalorian quest skills and titles
 

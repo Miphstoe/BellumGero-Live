@@ -1249,6 +1249,26 @@ bool PlayerObjectImplementation::addSchematics(Vector<ManagedReference<DraftSche
 }
 
 bool PlayerObjectImplementation::addRewardedSchematic(DraftSchematic* schematic, short type, int quantity, bool notifyClient) {
+	if (schematic == nullptr || !schematic->isValidDraftSchematic()) {
+		if (schematic == nullptr) {
+			error("Refusing to reward a null draft schematic");
+		} else {
+			const auto objectTemplate = schematic->getObjectTemplate();
+			const String templatePath = objectTemplate != nullptr ? objectTemplate->getFullTemplateString() : "<unresolved>";
+
+			error("Refusing to reward invalid draft schematic: objectID=" + String::valueOf(schematic->getObjectID()) +
+					" serverCRC=" + String::valueOf(schematic->getServerObjectCRC()) +
+					" clientCRC=" + String::valueOf(schematic->getClientObjectCRC()) +
+					" template=" + templatePath);
+		}
+
+		CreatureObject* parent = cast<CreatureObject*>(asPlayerObject()->getParent().get().get());
+		if (parent != nullptr)
+			parent->sendSystemMessage("This crafting schematic is invalid and could not be learned. Please contact staff.");
+
+		return false;
+	}
+
 	Vector<ManagedReference<DraftSchematic*> > schematics;
 
 	schematics.add(schematic);
