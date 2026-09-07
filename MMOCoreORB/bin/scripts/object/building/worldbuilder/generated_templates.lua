@@ -4,6 +4,67 @@
 -- Deploy this exact file together with the candidate TRE.
 
 -- ========================================================================
+-- BEGIN WORLD BUILDER PROJECT: corellia_event_outpost
+-- Source project name: corellia_event_outpost | Planet: corellia
+-- ========================================================================
+
+-- WB STRUCTURE #1
+object_building_worldbuilder_corellia_event_outpost_shared_structure_1 = object_building_corellia_shared_shuttleport_corellia:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_1.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_corellia_event_outpost_shared_structure_1, "object/building/worldbuilder/corellia_event_outpost/shared_structure_1.iff")
+
+object_building_worldbuilder_corellia_event_outpost_structure_1 = object_building_corellia_shuttleport_corellia:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_1.iff",
+	gameObjectType = 512,
+	totalCellNumber = 0
+}
+for key, value in pairs(object_building_corellia_shuttleport_corellia) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_corellia_event_outpost_structure_1, key) == nil then
+		rawset(object_building_worldbuilder_corellia_event_outpost_structure_1, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_corellia_event_outpost_structure_1, "object/building/worldbuilder/corellia_event_outpost/structure_1.iff")
+
+-- WB STRUCTURE #8
+object_building_worldbuilder_corellia_event_outpost_shared_structure_8 = object_building_general_shared_bunker_imperial_detainment_center_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_8.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_corellia_event_outpost_shared_structure_8, "object/building/worldbuilder/corellia_event_outpost/shared_structure_8.iff")
+
+object_building_worldbuilder_corellia_event_outpost_structure_8 = object_building_general_bunker_imperial_detainment_center_01:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_8.iff",
+	gameObjectType = 512,
+	totalCellNumber = 17
+}
+for key, value in pairs(object_building_general_bunker_imperial_detainment_center_01) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_corellia_event_outpost_structure_8, key) == nil then
+		rawset(object_building_worldbuilder_corellia_event_outpost_structure_8, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_corellia_event_outpost_structure_8, "object/building/worldbuilder/corellia_event_outpost/structure_8.iff")
+
+-- WB STRUCTURE #9
+object_building_worldbuilder_corellia_event_outpost_shared_structure_9 = object_building_general_shared_bunker_talus_chunker_bunker:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_9.iff"
+}
+ObjectTemplates:addClientTemplate(object_building_worldbuilder_corellia_event_outpost_shared_structure_9, "object/building/worldbuilder/corellia_event_outpost/shared_structure_9.iff")
+
+object_building_worldbuilder_corellia_event_outpost_structure_9 = object_building_general_bunker_talus_chunker_bunker:new {
+	clientTemplateFileName = "object/building/worldbuilder/corellia_event_outpost/shared_structure_9.iff",
+	gameObjectType = 512,
+	totalCellNumber = 10
+}
+for key, value in pairs(object_building_general_bunker_talus_chunker_bunker) do
+	if key ~= "__index" and rawget(object_building_worldbuilder_corellia_event_outpost_structure_9, key) == nil then
+		rawset(object_building_worldbuilder_corellia_event_outpost_structure_9, key, value)
+	end
+end
+ObjectTemplates:addTemplate(object_building_worldbuilder_corellia_event_outpost_structure_9, "object/building/worldbuilder/corellia_event_outpost/structure_9.iff")
+
+-- END WORLD BUILDER PROJECT: corellia_event_outpost
+
+-- ========================================================================
 -- BEGIN WORLD BUILDER PROJECT: droid_foundry_instances
 -- Source project name: droid_foundry_instances | Planet: dungeon1
 -- ========================================================================

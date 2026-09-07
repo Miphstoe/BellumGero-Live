@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "deployed": "2026-09-02T15:23:16",
+  "deployed": "2026-09-06T21:31:19",
   "mode": "desired-state-multi-project-worldbuilder-overlay-v2",
-  "base_tre_sha256": "3cffc632b22b02728c56deae1937c97ad43a6ecaececa7121756e689f119ff6e",
+  "base_tre_sha256": "c3291576dd22bc3bb4c7ea72319ea415141c8daacc4c239b5c53ae3a9005ccc1",
   "dependencies": {
     "records": {
       "appearance/bg_lok_droid_cave.pob": {
@@ -11,16 +11,64 @@
           "portal_layout"
         ]
       },
+      "appearance/poi_all_impl_bunker_imperial_prison_s01.pob": {
+        "sha256": "9ff137403b0e881478565cf4243e08ce0087180485a555b2b65e2042a1fe3a9b",
+        "kinds": [
+          "portal_layout"
+        ]
+      },
+      "appearance/poi_all_impl_bunker_small_outpost_s02.pob": {
+        "sha256": "4500f57ecb3bd4d34ecceb4f57f3d9d68d07c8296dc2cdd9ce788dfa5807e485",
+        "kinds": [
+          "portal_layout"
+        ]
+      },
+      "interiorlayout/bunker_imperial_detainment_center.ilf": {
+        "sha256": "eb692bc09198fce0a38a8c836da3354d1fe14f8b03ed5640b2f547b9b3d556a0",
+        "kinds": [
+          "interior_layout"
+        ]
+      },
       "interiorlayout/cave01.ilf": {
         "sha256": "cb6cf69e3a5b578885eb7227d80468a1475350b6ac01996b7f455f3864a364b2",
         "kinds": [
           "interior_layout"
         ]
       },
+      "interiorlayout/chunker_bunker_interior.ilf": {
+        "sha256": "f1750a0ae475d82e86715759eb4f9b8daae35a028cad6007bf1a250b1863a7dc",
+        "kinds": [
+          "interior_layout"
+        ]
+      },
+      "object/building/corellia/shared_shuttleport_corellia.iff": {
+        "sha256": "7853025d2f26eae58060db42452f3458aa125f0b4fe294d8b52d8cfd6e2edd73",
+        "kinds": [
+          "shared_building_iff"
+        ]
+      },
+      "object/building/general/shared_bunker_imperial_detainment_center_01.iff": {
+        "sha256": "878acca5f38d9775911826d2020befe6d5b9b5f92c703135112492866a5c2936",
+        "kinds": [
+          "shared_building_iff"
+        ]
+      },
+      "object/building/general/shared_bunker_talus_chunker_bunker.iff": {
+        "sha256": "52a0b44d9db660f9d4d5b2d70b0aedf34b6218aabb7ccc851a1270f818cfc84f",
+        "kinds": [
+          "shared_building_iff"
+        ]
+      },
       "object/building/tatooine/shared_cave_tatooine_droid_01.iff": {
         "sha256": "11828bd737ca5306feff85bcf1a9955762e1b583b03b8f56e73ce6c718edc4f1",
         "kinds": [
           "shared_building_iff"
+        ]
+      },
+      "snapshot/corellia.ws": {
+        "sha256": "9e692985cf2d23dd4e79ced7b95b61ccfdc54568f4be7eadb5ee62129a5aed02",
+        "kinds": [
+          "snapshot"
         ]
       },
       "snapshot/dungeon1.ws": {
@@ -187,22 +235,197 @@
       }
     }
   },
-  "tre_sha256": "a99219b107c148468e9950200583993ce955a55941722a2d62c01ed5d928f3cb",
-  "server_template_lua_sha256": "812936e2fd4226dece07457ef98f20c14464900d230176cdfe01da7eb62cb53d",
-  "server_travel_lua_sha256": "935fde5e272e49f44304c885c1f05bd3b372de8573e91bd5f07e087c90ef2545",
-  "oid_registry_sha256": "a79083ac5ba2e67d9eded20135fa250afb857cce2be7cc298482e115b95fb006",
+  "tre_sha256": "4174cb383f0000b8231c7a3117ca1a70d62b67b893661b7c2030266c27dea629",
+  "server_template_lua_sha256": "b69f4e8b957931f88972ceea015114ad6667a63fb9f02a421f58d087e95ea08f",
+  "server_travel_lua_sha256": "8c23ccd16859cb3e6ea368e34c3dc171b1c1f40ba20f18b785cf2d704d6fb2ac",
+  "oid_registry_sha256": "324ac4f70501b52b1224a5d936cce4158f505596a0893a1b647d31a2945ed172",
   "projects": [
+    {
+      "id": "corellia_event_outpost",
+      "project_name": "corellia_event_outpost",
+      "source_wbp": "/home/misemerfg/localswgserver/BellumGero-Live/MMOCoreORB/bin/worldbuilder/projects/corellia_event_outpost.wbp",
+      "wbp_sha256": "89b1567a366df913ab3c625661b4821f8f2c7eea4a7bac04f34cacaf3d85a48f",
+      "publish_fingerprint": "3ae0eb4cb6fe7a1208228867894e578a24b4d3b23b740637eaaf3dd5fbf74b44",
+      "structural_fingerprint": "be730432c2eb198e8894d878ba686e0f881e501b2b197bbb985587e3892c55de",
+      "planet": "corellia",
+      "wbp_version": 3,
+      "counts": {
+        "objects": 8,
+        "structures": 3,
+        "interiors": 0,
+        "travel_points": 1,
+        "extensions": 0,
+        "external_interiors": 0
+      },
+      "world_snapshot_ids": {
+        "1": 1879048005,
+        "2": 1879048013,
+        "3": 1879048012,
+        "4": 1879048011,
+        "5": 1879048010,
+        "6": 1879048009,
+        "7": 1879048008,
+        "8": 1879048004,
+        "9": 1879047986,
+        "10": 1879048007,
+        "11": 1879048006
+      },
+      "oid_assignments": {
+        "corellia_event_outpost/object/10": 1879048007,
+        "corellia_event_outpost/object/11": 1879048006,
+        "corellia_event_outpost/object/2": 1879048013,
+        "corellia_event_outpost/object/3": 1879048012,
+        "corellia_event_outpost/object/4": 1879048011,
+        "corellia_event_outpost/object/5": 1879048010,
+        "corellia_event_outpost/object/6": 1879048009,
+        "corellia_event_outpost/object/7": 1879048008,
+        "corellia_event_outpost/structure/1": 1879048005,
+        "corellia_event_outpost/structure/8": 1879048004,
+        "corellia_event_outpost/structure/8/cell/1": 1879048003,
+        "corellia_event_outpost/structure/8/cell/10": 1879047994,
+        "corellia_event_outpost/structure/8/cell/11": 1879047993,
+        "corellia_event_outpost/structure/8/cell/12": 1879047992,
+        "corellia_event_outpost/structure/8/cell/13": 1879047991,
+        "corellia_event_outpost/structure/8/cell/14": 1879047990,
+        "corellia_event_outpost/structure/8/cell/15": 1879047989,
+        "corellia_event_outpost/structure/8/cell/16": 1879047988,
+        "corellia_event_outpost/structure/8/cell/17": 1879047987,
+        "corellia_event_outpost/structure/8/cell/2": 1879048002,
+        "corellia_event_outpost/structure/8/cell/3": 1879048001,
+        "corellia_event_outpost/structure/8/cell/4": 1879048000,
+        "corellia_event_outpost/structure/8/cell/5": 1879047999,
+        "corellia_event_outpost/structure/8/cell/6": 1879047998,
+        "corellia_event_outpost/structure/8/cell/7": 1879047997,
+        "corellia_event_outpost/structure/8/cell/8": 1879047996,
+        "corellia_event_outpost/structure/8/cell/9": 1879047995,
+        "corellia_event_outpost/structure/9": 1879047986,
+        "corellia_event_outpost/structure/9/cell/1": 1879047985,
+        "corellia_event_outpost/structure/9/cell/10": 1879047976,
+        "corellia_event_outpost/structure/9/cell/2": 1879047984,
+        "corellia_event_outpost/structure/9/cell/3": 1879047983,
+        "corellia_event_outpost/structure/9/cell/4": 1879047982,
+        "corellia_event_outpost/structure/9/cell/5": 1879047981,
+        "corellia_event_outpost/structure/9/cell/6": 1879047980,
+        "corellia_event_outpost/structure/9/cell/7": 1879047979,
+        "corellia_event_outpost/structure/9/cell/8": 1879047978,
+        "corellia_event_outpost/structure/9/cell/9": 1879047977
+      },
+      "archive_paths": [
+        "interiorlayout/worldbuilder/corellia_event_outpost/structure_8.ilf",
+        "interiorlayout/worldbuilder/corellia_event_outpost/structure_9.ilf",
+        "object/building/worldbuilder/corellia_event_outpost/shared_structure_1.iff",
+        "object/building/worldbuilder/corellia_event_outpost/shared_structure_8.iff",
+        "object/building/worldbuilder/corellia_event_outpost/shared_structure_9.iff"
+      ],
+      "structures": [
+        {
+          "local_id": 1,
+          "root_object_id": 1879048005,
+          "cell_object_ids": [],
+          "game_object_type": 512,
+          "source_server_template": "object/building/corellia/shuttleport_corellia.iff",
+          "source_shared_template": "object/building/corellia/shared_shuttleport_corellia.iff",
+          "source_portal_layout": "",
+          "source_interior_layout": "<empty>",
+          "custom_server_template": "object/building/worldbuilder/corellia_event_outpost/structure_1.iff",
+          "custom_shared_template": "object/building/worldbuilder/corellia_event_outpost/shared_structure_1.iff",
+          "custom_interior_layout": "",
+          "portal_crc": 0,
+          "cell_count": 0,
+          "interior_local_ids": []
+        },
+        {
+          "local_id": 8,
+          "root_object_id": 1879048004,
+          "cell_object_ids": [
+            1879048003,
+            1879048002,
+            1879048001,
+            1879048000,
+            1879047999,
+            1879047998,
+            1879047997,
+            1879047996,
+            1879047995,
+            1879047994,
+            1879047993,
+            1879047992,
+            1879047991,
+            1879047990,
+            1879047989,
+            1879047988,
+            1879047987
+          ],
+          "game_object_type": 512,
+          "source_server_template": "object/building/general/bunker_imperial_detainment_center_01.iff",
+          "source_shared_template": "object/building/general/shared_bunker_imperial_detainment_center_01.iff",
+          "source_portal_layout": "appearance/poi_all_impl_bunker_imperial_prison_s01.pob",
+          "source_interior_layout": "interiorlayout/bunker_imperial_detainment_center.ilf",
+          "custom_server_template": "object/building/worldbuilder/corellia_event_outpost/structure_8.iff",
+          "custom_shared_template": "object/building/worldbuilder/corellia_event_outpost/shared_structure_8.iff",
+          "custom_interior_layout": "interiorlayout/worldbuilder/corellia_event_outpost/structure_8.ilf",
+          "portal_crc": 1975171258,
+          "cell_count": 17,
+          "interior_local_ids": []
+        },
+        {
+          "local_id": 9,
+          "root_object_id": 1879047986,
+          "cell_object_ids": [
+            1879047985,
+            1879047984,
+            1879047983,
+            1879047982,
+            1879047981,
+            1879047980,
+            1879047979,
+            1879047978,
+            1879047977,
+            1879047976
+          ],
+          "game_object_type": 512,
+          "source_server_template": "object/building/general/bunker_talus_chunker_bunker.iff",
+          "source_shared_template": "object/building/general/shared_bunker_talus_chunker_bunker.iff",
+          "source_portal_layout": "appearance/poi_all_impl_bunker_small_outpost_s02.pob",
+          "source_interior_layout": "interiorlayout/chunker_bunker_interior.ilf",
+          "custom_server_template": "object/building/worldbuilder/corellia_event_outpost/structure_9.iff",
+          "custom_shared_template": "object/building/worldbuilder/corellia_event_outpost/shared_structure_9.iff",
+          "custom_interior_layout": "interiorlayout/worldbuilder/corellia_event_outpost/structure_9.ilf",
+          "portal_crc": 2452535212,
+          "cell_count": 10,
+          "interior_local_ids": []
+        }
+      ],
+      "travel_points": [
+        {
+          "building_local_id": 1,
+          "point_name": "Corellia Event Outpost",
+          "x": -556.746,
+          "z": 25.9966,
+          "y": -825.418,
+          "interplanetary_travel_allowed": true,
+          "incoming_travel_allowed": true,
+          "landing_range": 3.0
+        }
+      ],
+      "safe_refresh": {
+        "dry_run_command": "/wb refreshpublished corellia_event_outpost",
+        "confirm_command": "/wb refreshpublished corellia_event_outpost confirm"
+      },
+      "extensions": [],
+      "external_interiors": []
+    },
     {
       "id": "droid_cave_exterior",
       "project_name": "droid_cave_exterior",
       "source_wbp": "/home/misemerfg/localswgserver/BellumGero-Live/MMOCoreORB/bin/worldbuilder/projects/droid_cave_exterior.wbp",
-      "wbp_sha256": "294aa2ba5e8e48466e29bf9d43d45eb28a2a0f5c4ed45c9c6322f8032e208728",
-      "publish_fingerprint": "c370aca1d2f5b5ac3e0cac8ec3d497ee396d6c3e0010c666d13fd16928178096",
-      "structural_fingerprint": "9b45671acdac71251a9eef1dc67ca73aba38624f970efffaf64fb6f60524f5e3",
+      "wbp_sha256": "5c18e7edf3e8fe63141f7d7ec79e3a25c0d923d1dca30c5b7935944881ff0953",
+      "publish_fingerprint": "b685e190ec8e8374d76e1dd1bdd8ab834850e829f1ec6d91311e6ceeda179dc8",
+      "structural_fingerprint": "ee87d710fdb0602ca217f2a567e745d4fbdf7f5a766caa1f2359b61182fadf58",
       "planet": "lok",
       "wbp_version": 1,
       "counts": {
-        "objects": 10,
+        "objects": 11,
         "structures": 0,
         "interiors": 0,
         "travel_points": 0
@@ -217,11 +440,13 @@
         "7": 1879048017,
         "8": 1879048016,
         "9": 1879048015,
-        "10": 1879048014
+        "10": 1879048014,
+        "14": 1879047975
       },
       "oid_assignments": {
         "droid_cave_exterior/object/1": 1879048023,
         "droid_cave_exterior/object/10": 1879048014,
+        "droid_cave_exterior/object/14": 1879047975,
         "droid_cave_exterior/object/2": 1879048022,
         "droid_cave_exterior/object/3": 1879048021,
         "droid_cave_exterior/object/4": 1879048020,
@@ -757,6 +982,19 @@
       }
     }
   ],
-  "travel_points": [],
-  "travel_point_count": 0
+  "travel_points": [
+    {
+      "planet": "corellia",
+      "name": "Corellia Event Outpost",
+      "x": -556.746,
+      "z": 25.9966,
+      "y": -825.418,
+      "interplanetaryTravelAllowed": 1,
+      "incomingTravelAllowed": 1,
+      "landingRange": 3.0,
+      "publish_id": "corellia_event_outpost",
+      "structure_local_id": 1
+    }
+  ],
+  "travel_point_count": 1
 }
