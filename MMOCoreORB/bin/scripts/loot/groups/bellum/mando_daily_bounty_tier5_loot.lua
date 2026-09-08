@@ -41,10 +41,11 @@ mando_daily_bounty_tier5_loot = {
 		{itemTemplate = "dwb_viewscreen_s2",                   weight = 75000},
 		{itemTemplate = "mando_armor_blueprint_painting",      weight = 100000},
 		{itemTemplate = "mando_hunter_portrait",               weight = 100000},
+		-- Low repeat chances for the guaranteed main-quest trophies (1% each).
 		{itemTemplate = "mando_clan_banner",                   weight = 100000},
 		{itemTemplate = "death_watch_lamp",                    weight = 150000},
-		{itemTemplate = "mando_clan_painting",                 weight = 75000},
-		{itemTemplate = "mando_holo_emblem",                   weight = 50000},
+		{itemTemplate = "mando_clan_painting",                 weight = 100000},
+		{itemTemplate = "mando_holo_emblem",                   weight = 25000},
 		{itemTemplate = "mando_helmet_trophy",                 weight = 50000},
 		{itemTemplate = "mando_helmet_holo",                   weight = 25000},
 		-- Furniture and decoration schematics (12% of pool)
