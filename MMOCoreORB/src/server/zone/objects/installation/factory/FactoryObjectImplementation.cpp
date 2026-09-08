@@ -132,6 +132,7 @@ void FactoryObjectImplementation::createChildObjects() {
 
 	ingredientHopper->registerObserver(ObserverEventType::OPENCONTAINER, hopperObserver);
 	ingredientHopper->registerObserver(ObserverEventType::CLOSECONTAINER, hopperObserver);
+	ingredientHopper->registerObserver(ObserverEventType::CONTAINERCONTENTSCHANGED, hopperObserver);
 
 	ilocker.release();
 
@@ -151,6 +152,7 @@ void FactoryObjectImplementation::createChildObjects() {
 
 	outputHopper->registerObserver(ObserverEventType::OPENCONTAINER, hopperObserver);
 	outputHopper->registerObserver(ObserverEventType::CLOSECONTAINER, hopperObserver);
+	outputHopper->registerObserver(ObserverEventType::CONTAINERCONTENTSCHANGED, hopperObserver);
 }
 
 void FactoryObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
@@ -353,10 +355,15 @@ bool FactoryObjectImplementation::activateQueueEntry(int queueIndex) {
 void FactoryObjectImplementation::markQueueEntryBlocked(int index, int status, const String& reason) {
 	if (index < 0 || index >= queueStatuses.size())
 		return;
+	bool stateChanged = queueStatuses.get(index) != status || queueBlockedReasons.get(index) != reason;
 	queueStatuses.set(index, status);
 	queueBlockedReasons.set(index, reason);
 	queueEvaluationTimes.set(index, (unsigned long long)Time().getTime());
-	warning() << "Factory queue entry blocked. FactoryID: " << getObjectID() << " SchematicID: " << queueSchematicIDs.get(index) << " Position: " << index + 1 << " Reason: " << reason;
+	// Only log when the entry actually transitions into a new blocked state.
+	// Periodic queue re-evaluations re-mark already-blocked entries with the same
+	// reason, and repeating the warning every retry would spam the server log.
+	if (stateChanged)
+		warning() << "Factory queue entry blocked. FactoryID: " << getObjectID() << " SchematicID: " << queueSchematicIDs.get(index) << " Position: " << index + 1 << " Reason: " << reason;
 }
 
 bool FactoryObjectImplementation::isQueuedOutputReady(ManufactureSchematic* schematic) {

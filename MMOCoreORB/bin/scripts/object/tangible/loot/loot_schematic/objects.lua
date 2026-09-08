@@ -6509,4 +6509,20 @@ object_tangible_loot_loot_schematic_shared_mando_lava_blade_schematic = SharedTa
 }
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_mando_lava_blade_schematic, "object/tangible/loot/loot_schematic/shared_mando_lava_blade_schematic.iff")
 
+-- Bellum Gero Droid Foundry
+object_tangible_loot_loot_schematic_shared_battle_droid_foundry_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_battle_droid_foundry_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_battle_droid_foundry_schematic, "object/tangible/loot/loot_schematic/shared_battle_droid_foundry_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_super_battle_droid_foundry_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_super_battle_droid_foundry_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_super_battle_droid_foundry_schematic, "object/tangible/loot/loot_schematic/shared_super_battle_droid_foundry_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_droideka_foundry_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_droideka_foundry_schematic.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_droideka_foundry_schematic, "object/tangible/loot/loot_schematic/shared_droideka_foundry_schematic.iff")
+
 --------------------------------------------------------------------

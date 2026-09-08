@@ -861,3 +861,6 @@ RunSlashCommandsFile("lightningBarrage.lua")
 -- Bellum Gero World Builder
 RunSlashCommandsFile("worldbuilder.lua")
 RunSlashCommandsFile("wb.lua")
+
+-- Bellum Gero protected housing / player-city administrative reset (Admin Level 15 + secret)
+RunSlashCommandsFile("worldReset.lua")

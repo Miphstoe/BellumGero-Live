@@ -97,7 +97,10 @@ function myswg_vendor:start()
     if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
 
     pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 6643.02,330.00,-5920.87, 35, 0 )--belav
-    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end  
+    if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
+    
+    local pEventOutpostVendor = spawnMobile("corellia", "myswg_vendor", 1, -561, 26.0, -817, 35, 0 ) -- Corellia Event Outpost
+    if pEventOutpostVendor ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pEventOutpostVendor, "") end
 
     -- Spawn and initialize Naboo vendors
     local pWeaponsmith3 = spawnMobile("naboo", "myswg_vendor", 1, -4872, 6.0, 4151, 35, 0 )--theed
@@ -212,7 +215,7 @@ function myswg_vendor:start()
 
     --local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, 3884,23,1916, 35, 0 )--Star Haven
     pWeaponsmith4 = spawnMobile("dantooine", "junk_dealer", 1, -512, 1, -3023, 35, 0 )--Rose red
-    local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
+   -- local pWeaponsmith2 = spawnMobile("corellia", "myswg_vendor", 1, -2060,23,-4540, 35, 0 ) -- Valhalla
     if pWeaponsmith2 ~= nil then local randomDelay = math.random(0, self.BARK_INTERVAL / 1000) * 1000; createEvent(randomDelay, "myswg_vendor", "performBark", pWeaponsmith2, "") end
 
     pWeaponsmith2 = spawnMobile("tatooine", "myswg_vendor", 1, 5847,38,4432, 35, 0 ) --Mos Ender Krayt

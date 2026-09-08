@@ -67,6 +67,7 @@ class DiscordManager extends ManagedService implements Logger {
 	// Core Discord functionality
 	public native void initialize();
 	public native void start();
+	public native void restart();
 	public native void stop();
 	public native void shutdown();
 	

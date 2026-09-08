@@ -180,6 +180,7 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 		return;
 
 	int armorModuleRating = 0;
+	int foundryArmorModuleRating = 0;
 	int dataStorageCapacity = 0;
 	int itemStorageRawRating = 0;
 	int medicalModuleRawRating = 0;
@@ -215,10 +216,15 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 
 			String moduleName = module->getModuleName();
 
-			if (moduleName == "armor_module") {
-				if (sub->hasKey("armor_module"))
-					armorModuleRating +=
-						(int)sub->getAttributeValue("armor_module");
+						if (moduleName == "armor_module") {
+				if (sub->hasKey("armor_module")) {
+					int rating = (int)sub->getAttributeValue("armor_module");
+					if (rating > 6)
+						foundryArmorModuleRating = Math::max(foundryArmorModuleRating, rating);
+					else
+						armorModuleRating += rating;
+				}
+
 			} else if (moduleName == "datapad_storage_module") {
 				DroidDataStorageModuleDataComponent* dataStorage =
 					cast<DroidDataStorageModuleDataComponent*>(module);
@@ -293,12 +299,13 @@ void DroidComponentImplementation::fillAttributeList(AttributeListMessage* alm, 
 		}
 	}
 
-	if (armorModuleRating > 0) {
-		if (armorModuleRating > 6)
-			armorModuleRating = 6;
+	if (foundryArmorModuleRating > 6)
+		armorModuleRating = Math::min(foundryArmorModuleRating, 8);
+	else if (armorModuleRating > 6)
+		armorModuleRating = 6;
 
+	if (armorModuleRating > 0)
 		alm->insertAttribute("armor_module", armorModuleRating);
-	}
 
 	if (dataStorageCapacity > 0) {
 		if (dataStorageCapacity > 150)

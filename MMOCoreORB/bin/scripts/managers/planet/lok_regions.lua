@@ -56,6 +56,7 @@ lok_regions = {
 	{"@lok_region_names:volcano", 2960, -4688, {CIRCLE, 531}, NOSPAWNAREA + NOBUILDZONEAREA},
 	{"lok_sdungeon_canyon_corsairs", -3829, -3885, {CIRCLE, 167}, NOSPAWNAREA + NOBUILDZONEAREA + NAVAREA},
 	{"lok_bloodrazor_pirate_ship", 3623, 2172, {CIRCLE, 167}, NOSPAWNAREA + NOBUILDZONEAREA + NAVAREA},
+	{"lok_droid_foundry", 4775, 968, {CIRCLE, 125}, NOSPAWNAREA},
 	{"lok_evil_droid_engineer_cave", 3321, -4910, {CIRCLE, 241}, NOSPAWNAREA + NOBUILDZONEAREA + NAVAREA},
 	{"@lok_region_names:kedarin_highlands", 1884, -2364, {CIRCLE, 1500}, NAMEDREGION},
 	{"@lok_region_names:mount_chaolt", 2944, -4640, {CIRCLE, 544}, NAMEDREGION},

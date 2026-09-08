@@ -1,4 +1,20 @@
 {
   "version": 1,
-  "projects": []
+  "projects": [
+    {
+      "id": "corellia_event_outpost",
+      "file": "../projects/corellia_event_outpost.wbp",
+      "enabled": true
+    },
+    {
+      "id": "droid_cave_exterior",
+      "file": "../projects/droid_cave_exterior.wbp",
+      "enabled": true
+    },
+    {
+      "id": "droid_foundry_instances",
+      "file": "../projects/droid_foundry_instances.wbp",
+      "enabled": true
+    }
+  ]
 }

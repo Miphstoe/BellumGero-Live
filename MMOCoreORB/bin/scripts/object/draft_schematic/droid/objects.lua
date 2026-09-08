@@ -2539,3 +2539,19 @@ object_draft_schematic_droid_shared_navicomputer_6 = SharedDraftSchematicObjectT
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_droid_shared_navicomputer_6, "object/draft_schematic/droid/shared_navicomputer_6.iff")
+
+-- Bellum Gero Droid Foundry
+object_draft_schematic_droid_shared_droid_battle_droid_foundry = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/droid/shared_droid_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_droid_shared_droid_battle_droid_foundry, "object/draft_schematic/droid/shared_droid_battle_droid_foundry.iff")
+
+object_draft_schematic_droid_shared_droid_super_battle_droid_foundry = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/droid/shared_droid_super_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_droid_shared_droid_super_battle_droid_foundry, "object/draft_schematic/droid/shared_droid_super_battle_droid_foundry.iff")
+
+object_draft_schematic_droid_shared_droid_droideka_foundry = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/droid/shared_droid_droideka_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_droid_shared_droid_droideka_foundry, "object/draft_schematic/droid/shared_droid_droideka_foundry.iff")

@@ -336,7 +336,14 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 			if (component == nullptr || !component->hasKey("power_level"))
 				continue;
 
-			if (!component->getObjectTemplate()->getFullTemplateString().contains("droid_chassis"))
+			String chassisTemplate = component->getObjectTemplate()->getFullTemplateString();
+
+			// All droid chassis live under tangible/component/droid and end in
+			// "_chassis.iff". The older check for the contiguous text
+			// "droid_chassis" excluded Foundry names such as
+			// battle_droid_foundry_chassis.iff.
+			if (!chassisTemplate.contains("object/tangible/component/droid/") ||
+					!chassisTemplate.contains("_chassis.iff"))
 				continue;
 
 			chassisPowerLevel = component->getAttributeValue("power_level");
@@ -353,6 +360,8 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 
 	overallQuality = finalPowerLevel / 100.0f;
 
+	float qualityCap = 1.0f;
+
 	if (chassisPowerLevel >= 0.0f) {
 		float chassisRatio = chassisPowerLevel / 50.0f;
 
@@ -362,22 +371,32 @@ void DroidDeedImplementation::updateCraftingValues(CraftingValues* values, bool 
 		if (chassisRatio > 1.0f)
 			chassisRatio = 1.0f;
 
-		// Chassis 0 = -5 quality points, 25 = neutral, 50 = +5.
+		// Preserve normal chassis behavior through 50. Foundry chassis can roll
+		// 51-60 and contribute/cap up to ten additional quality points.
 		overallQuality += (chassisRatio - 0.5f) * 0.10f;
+
+		if (chassisPowerLevel > 50.0f) {
+			float overcapQuality = (chassisPowerLevel - 50.0f) / 100.0f;
+			if (overcapQuality > 0.10f)
+				overcapQuality = 0.10f;
+
+			overallQuality += overcapQuality;
+			qualityCap += overcapQuality;
+		}
 	}
 
 	if (overallQuality < 0.0f)
 		overallQuality = 0.0f;
 
-	if (overallQuality > 1.0f)
-		overallQuality = 1.0f;
+	if (overallQuality > qualityCap)
+		overallQuality = qualityCap;
 
 	combatRating = values->getCurrentValue("cmbt_module");
 	if (combatRating < 0)
 		combatRating = 0;
 
-	if (combatRating > 600)
-		combatRating = 600;
+	if (combatRating > 750)
+		combatRating = 750;
 
 	// @TODO Add crafting values, this should adjust toHit and Speed based on droid ham, also
 	// we need to stack modules if they are stackable.
@@ -486,7 +505,10 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		bool combatDroid =
 			modules.containsKey("combat_module") ||
 			species == DroidObject::PROBOT ||
-			species == DroidObject::DZ70;
+			species == DroidObject::DZ70 ||
+			species == DroidObject::BATTLE_DROID ||
+			species == DroidObject::SUPER_BATTLE_DROID ||
+			species == DroidObject::DROIDECA;
 
 		// A droid carrying both Combat and Detonation Modules is still a combat
 		// droid for certification, active-slot and call-restriction purposes.
@@ -597,6 +619,7 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 		}
 
 		droid->loadTemplateData(creatureTemplate);
+		droid->setMechanicsProfile(species);
 		droid->setCustomObjectName(StringIdManager::instance()->getStringId(*droid->getObjectName()), true);
 		droid->createChildObjects();
 		droid->setControlDevice(controlDevice);
@@ -667,8 +690,36 @@ int DroidDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte
 
 				String name = CustomizationIdManager::instance()->getCustomizationVariable(id);
 
-				if (name != "/private/index_color_0" && name.contains("color")) {
-					droid->setCustomizationVariable(name, val, true);
+				// Preserve the normal color customizations and stock paint-pattern
+				// selector from the crafted deed. Battle Droid and Super Battle Droid
+				// appearances use /private/index_texture_1 alongside Color 1/2.
+				if (name != "/private/index_color_0" &&
+						(name.contains("color") || name == "/private/index_texture_1")) {
+					int16 customizationValue = val;
+
+					// The hidden texture selector used for the B2 crafting preview is not
+					// reliably retained by the finished deed's customization payload.
+					// Re-apply the same stock paint mask when generating the premium
+					// Foundry B2 so its crafted Frame/Trim colors and later Droid
+					// Customization Kit Trim changes remain visible.
+					if (name == "/private/index_texture_1") {
+						SharedObjectTemplate* generatedTemplate = droid->getObjectTemplate();
+
+						if (generatedTemplate != nullptr) {
+							String generatedTemplatePath = generatedTemplate->getFullTemplateString();
+
+							if (generatedTemplatePath ==
+									"object/mobile/super_battle_droid_crafted_foundry.iff") {
+								customizationValue = 2;
+							} else if (generatedTemplatePath ==
+									"object/mobile/battle_droid_crafted_foundry.iff") {
+								// Match the Foundry B1 command paint pattern used during crafting.
+								customizationValue = 6;
+							}
+						}
+					}
+
+					droid->setCustomizationVariable(name, customizationValue, true);
 				}
 			}
 

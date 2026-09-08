@@ -6,8 +6,8 @@ krayt_dragon_tissue_epic = {
 	customObjectName = "",
 	directObjectTemplate = "object/tangible/component/weapon/blaster_power_handler_enhancement_krayt.iff",
 	craftingValues = {
-		{"mindamage",90,100,0},
-		{"maxdamage",115,125,0},
+		{"mindamage",50,75,0},
+		{"maxdamage",85,100,0},
 		{"attackspeed",-0.3,-1.4,2},
 		{"useCount",3,13,0},
 	},

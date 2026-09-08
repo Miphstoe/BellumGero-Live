@@ -7690,3 +7690,19 @@ object_intangible_pet_shared_zucca_boar_hue = SharedIntangibleObjectTemplate:new
 }
 
 ObjectTemplates:addClientTemplate(object_intangible_pet_shared_zucca_boar_hue, "object/intangible/pet/shared_zucca_boar_hue.iff")
+
+-- Bellum Gero Droid Foundry
+object_intangible_pet_shared_battle_droid_foundry = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/pet/shared_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_intangible_pet_shared_battle_droid_foundry, "object/intangible/pet/shared_battle_droid_foundry.iff")
+
+object_intangible_pet_shared_super_battle_droid_foundry = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/pet/shared_super_battle_droid_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_intangible_pet_shared_super_battle_droid_foundry, "object/intangible/pet/shared_super_battle_droid_foundry.iff")
+
+object_intangible_pet_shared_droideka_foundry = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/pet/shared_droideka_foundry.iff"
+}
+ObjectTemplates:addClientTemplate(object_intangible_pet_shared_droideka_foundry, "object/intangible/pet/shared_droideka_foundry.iff")
