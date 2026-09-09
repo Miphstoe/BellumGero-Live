@@ -249,6 +249,15 @@ Core3 = {
 	ProgressMonitors = "true",
 	UnloadContainers = 1, -- Whether to unload container contents from RAM after the container hasn't been accessed for a time
 
+	------Structure Integrity Test Config------
+	-- BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD1
+	-- NEVER enable this on Live. It permits an Admin Level 15 character to queue
+	-- one player-city Cantina/Hospital for intentional SceneObject.zone corruption
+	-- on the next Core3 startup.
+	StructureIntegrity = {
+		EnableTestCorruption = true,
+	},
+
 	------Server Config------
 	CharacterBuilderEnabled = "true",
 	AutoReg = 0,

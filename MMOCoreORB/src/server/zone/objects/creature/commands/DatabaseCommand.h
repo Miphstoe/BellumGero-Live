@@ -9,6 +9,8 @@
 
 #include "QueueCommand.h"
 #include "server/zone/managers/structure/StructureManager.h"
+#include "server/zone/objects/player/PlayerObject.h"
+#include "conf/ConfigManager.h"
 
 class DatabaseCommand : public QueueCommand {
 public:
@@ -45,6 +47,112 @@ public:
 				return SUCCESS;
 			}
 
+			// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD1
+			if (arg0 == "structureinfo") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage("structureinfo requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage("Usage: /database structureinfo <structureOID>");
+					return INVALIDPARAMETERS;
+				}
+
+				objectID = tokenizer.getLongToken();
+				creature->sendSystemMessage(StructureManager::instance()->getPlayerStructureIntegrityInfo(objectID));
+				return SUCCESS;
+			}
+
+			// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD2
+			// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD31_WORLDREMOVE
+			if (arg0 == "structureworldremove") {
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage(
+						"SYNTAX: /database structureworldremove <OID>");
+					return INVALIDPARAMETERS;
+				}
+
+				uint64 objectID = tokenizer.getLongToken();
+
+				if (objectID == 0) {
+					creature->sendSystemMessage(
+						"Invalid OID for structureworldremove.");
+					return INVALIDPARAMETERS;
+				}
+
+				String result;
+				bool removed = StructureManager::instance()->
+					removePlayerStructureFromWorldForIntegrityTest(objectID, result);
+
+				creature->sendSystemMessage(result);
+				return removed ? SUCCESS : GENERALERROR;
+			}
+
+			if (arg0 == "structurerepair") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage("structurerepair requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage("Usage: /database structurerepair <structureOID>");
+					return INVALIDPARAMETERS;
+				}
+
+				objectID = tokenizer.getLongToken();
+
+				String result;
+				// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+				bool queued = StructureManager::instance()->
+					queuePlayerStructureZoneRepairFromWaypoint(objectID, result);
+
+				creature->sendSystemMessage(result);
+				return queued ? SUCCESS : GENERALERROR;
+			}
+
+			if (arg0 == "structurecorrupt") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage("structurecorrupt requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				if (!ConfigManager::instance()->getBool("Core3.StructureIntegrity.EnableTestCorruption", false)) {
+					creature->sendSystemMessage("Test corruption is disabled. This command is Test Center only.");
+					return GENERALERROR;
+				}
+
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage("Usage: /database structurecorrupt <structureOID> zone");
+					return INVALIDPARAMETERS;
+				}
+
+				objectID = tokenizer.getLongToken();
+
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage("Usage: /database structurecorrupt <structureOID> zone");
+					return INVALIDPARAMETERS;
+				}
+
+				String corruptionType;
+				tokenizer.getStringToken(corruptionType);
+				if (corruptionType != "zone") {
+					creature->sendSystemMessage("Build 1 only supports: /database structurecorrupt <structureOID> zone");
+					return INVALIDPARAMETERS;
+				}
+
+				String result;
+				bool queued = StructureManager::instance()->queuePlayerStructureZoneCorruptionForTest(objectID, result);
+				creature->sendSystemMessage(result);
+				return queued ? SUCCESS : GENERALERROR;
+			}
+
 			if (!tokenizer.hasMoreTokens())
 				return INVALIDPARAMETERS;
 
@@ -59,7 +167,7 @@ public:
 
 		if (!(arg0 == "cityregions" || arg0 == "factionstructures" || arg0 == "playerstructures" || arg0 == "sceneobjects" || arg0 == "clientobjects" || arg0 == "resourcespawns" ||
 				arg0 == "characters" || arg0 == "deleted_characters") ){
-			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid> or database zerostructures");
+			creature->sendSystemMessage("Command format: database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid>, database zerostructures, database structureinfo <OID>, database structurerepair <OID>, or database structurecorrupt <OID> zone");
 
 			return INVALIDPARAMETERS;
 		}

@@ -57,6 +57,22 @@ public:
 	void loadPlayerStructures(const String& zoneName);
 	String validatePlayerStructureZoneIndex(bool logDetails = true, bool validateSecondaryIndex = true);
 
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD1
+	String getPlayerStructureIntegrityInfo(uint64 objectID);
+	bool queuePlayerStructureZoneCorruptionForTest(uint64 objectID, String& result);
+	bool applyPendingPlayerStructureZoneCorruptionForTest();
+
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD2
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+	// Queue-only live command; actual DB mutation occurs during startup.
+	bool queuePlayerStructureZoneRepairFromWaypoint(uint64 objectID, String& result);
+	bool applyPendingPlayerStructureZoneRepairFromWaypoint();
+
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD31_WORLDREMOVE
+	// Test-only: remove a disposable persisted structure from the live world
+	// without deleting its database record, exercising the Build 3 crash window.
+	bool removePlayerStructureFromWorldForIntegrityTest(uint64 objectID, String& result);
+
 	// Account-wide structure lots are centralized here so placement, transfers,
 	// and reporting all use the same pool calculation.
 	int getAccountLotCap() const;
@@ -80,6 +96,14 @@ public:
 	 * @param structure The structure that is being destroyed.
 	 */
 	int destroyStructure(StructureObject* structureObject, bool playEffect = false, bool refundLots = true);
+
+	// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+	// Process-local, one-shot authorization registry for intentional runtime
+	// removal of persistent BuildingObjects. Nothing here is serialized.
+	void authorizePersistentStructureWorldRemoval(StructureObject* structureObject);
+	bool isPersistentStructureWorldRemovalAuthorized(StructureObject* structureObject) const;
+	bool consumePersistentStructureWorldRemovalAuthorization(StructureObject* structureObject);
+	void clearPersistentStructureWorldRemovalAuthorization(StructureObject* structureObject);
 
 	/**
 	 * Returns whether the existing structure redeed pipeline can currently return

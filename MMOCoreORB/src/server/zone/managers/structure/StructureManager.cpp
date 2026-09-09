@@ -26,6 +26,7 @@
 #include "terrain/manager/TerrainManager.h"
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
@@ -65,6 +66,15 @@
 #include "server/zone/objects/player/sui/SuiWindowType.h"
 #include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
 
+#include <mutex>
+#include <unordered_set>
+
+#include "system/io/ObjectInputStream.h"
+#include "system/io/ObjectOutputStream.h"
+
+#include <cstdio>
+#include <sys/stat.h>
+
 namespace StorageManagerNamespace {
 constexpr int MAX_ZONE_INDEX_DETAIL_LOGS = 50;
 
@@ -84,6 +94,141 @@ void logZoneIndexWarning(const String& message, AtomicInteger& counter) {
 		Logger::console.warning("PLAYERSTRUCTURE-ZONE-MISSING: additional malformed player structure index records suppressed");
 	}
 }
+
+// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD1
+constexpr const char* STRUCTURE_INTEGRITY_TEST_DIR = "structure_integrity";
+constexpr const char* STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION =
+	"structure_integrity/pending_zone_corruption.txt";
+constexpr const char* STRUCTURE_INTEGRITY_LAST_APPLIED_ZONE_CORRUPTION =
+	"structure_integrity/last_applied_zone_corruption.txt";
+// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+constexpr const char* STRUCTURE_INTEGRITY_PENDING_ZONE_REPAIR =
+	"structure_integrity/pending_zone_repair.txt";
+
+int getSerializedVariableDataOffset(const uint32& variableHashCode, ObjectInputStream* stream) {
+	if (stream == nullptr)
+		return -1;
+
+	stream->reset();
+	uint16 variableCount = stream->readShort();
+
+	for (int i = 0; i < variableCount; ++i) {
+		uint32 nameHashCode = stream->readInt();
+		uint32 variableSize = stream->readInt();
+		int dataOffset = stream->getOffset();
+
+		if (nameHashCode == variableHashCode) {
+			stream->reset();
+			return dataOffset;
+		}
+
+		stream->shiftOffset(variableSize);
+	}
+
+	stream->reset();
+	return -1;
+}
+
+ObjectOutputStream* replaceSerializedVariableData(const uint32& variableHashCode,
+		ObjectInputStream* objectData, Stream* replacementData) {
+	if (objectData == nullptr || replacementData == nullptr)
+		return nullptr;
+
+	int offset = getSerializedVariableDataOffset(variableHashCode, objectData);
+	if (offset == -1)
+		return nullptr;
+
+	ObjectOutputStream* newData = new ObjectOutputStream(objectData->size());
+	objectData->copy(newData);
+
+	objectData->reset();
+	newData->reset();
+	objectData->shiftOffset(offset - 4);
+	uint32 oldDataSize = objectData->readInt();
+	newData->shiftOffset(offset);
+
+	if (oldDataSize > 0)
+		newData->removeRange(offset, offset + oldDataSize);
+
+	newData->writeInt(offset - 4, replacementData->size());
+	newData->insertStream(replacementData, replacementData->size(), offset);
+	objectData->reset();
+	newData->reset();
+
+	return newData;
+}
+
+String resolveGroundZoneNameFromCRC(ZoneServer* server, uint32 zoneCRC) {
+	if (server == nullptr || zoneCRC == 0)
+		return "";
+
+	for (int i = 0; i < server->getZoneCount(); ++i) {
+		Zone* zone = server->getZone(i);
+		if (zone != nullptr && zone->getZoneCRC() == zoneCRC)
+			return zone->getZoneName();
+	}
+
+	return "";
+}
+
+bool isSupportedStructureIntegrityTestTemplate(const String& templatePath) {
+	return templatePath.contains("object/building/player/city/") &&
+		(templatePath.contains("/cantina_") || templatePath.contains("/hospital_"));
+}
+
+// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD2
+ObjectOutputStream* addSerializedVariableData(const String& variableName,
+		ObjectInputStream* objectData, Stream* variableData) {
+	if (objectData == nullptr || variableData == nullptr)
+		return nullptr;
+
+	objectData->reset();
+
+	uint16 oldVariableCount = objectData->readShort();
+	ObjectOutputStream* newData = new ObjectOutputStream(objectData->size() + variableData->size() + 16);
+
+	objectData->reset();
+	objectData->copy(newData, 0);
+
+	newData->writeShort(0, oldVariableCount + 1);
+	newData->setOffset(newData->size());
+
+	uint32 variableHashCode = variableName.hashCode();
+	TypeInfo<uint32>::toBinaryStream(&variableHashCode, newData);
+	newData->writeInt(variableData->size());
+	newData->writeStream(variableData);
+	newData->reset();
+	objectData->reset();
+
+	return newData;
+}
+
+bool isPlayerStructureIndexedForZone(IndexDatabase* indexDatabase,
+		const String& zoneName, uint64 objectID) {
+	if (indexDatabase == nullptr || zoneName.isEmpty() || objectID == 0)
+		return false;
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	uint64 zoneHash = zoneName.hashCode();
+	uint64 indexedObjectID = 0;
+	IndexDatabaseIterator iterator(indexDatabase, config);
+
+	if (!iterator.setKeyAndGetValue(zoneHash, indexedObjectID, nullptr))
+		return false;
+
+	if (indexedObjectID == objectID)
+		return true;
+
+	while (iterator.getNextKeyAndValue(zoneHash, indexedObjectID, nullptr)) {
+		if (indexedObjectID == objectID)
+			return true;
+	}
+
+	return false;
+}
+
 
 int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 	memset(result, 0, sizeof(DBT));
@@ -135,12 +280,57 @@ int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 
 } // namespace StorageManagerNamespace
 
+namespace StructureWorldRemovalGuardNamespace {
+std::mutex authorizationMutex;
+std::unordered_set<uint64> authorizedObjectIDs;
+} // namespace StructureWorldRemovalGuardNamespace
+
 StructureManager::StructureManager() : Logger("StructureManager") {
 	server = nullptr;
 	templateManager = TemplateManager::instance();
 
 	setGlobalLogging(true);
 	setLogging(false);
+}
+
+// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+void StructureManager::authorizePersistentStructureWorldRemoval(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.insert(structureObject->getObjectID());
+}
+
+bool StructureManager::isPersistentStructureWorldRemovalAuthorized(StructureObject* structureObject) const {
+	if (structureObject == nullptr)
+		return false;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	return StructureWorldRemovalGuardNamespace::authorizedObjectIDs.find(structureObject->getObjectID()) !=
+		StructureWorldRemovalGuardNamespace::authorizedObjectIDs.end();
+}
+
+bool StructureManager::consumePersistentStructureWorldRemovalAuthorization(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return false;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	auto it = StructureWorldRemovalGuardNamespace::authorizedObjectIDs.find(structureObject->getObjectID());
+
+	if (it == StructureWorldRemovalGuardNamespace::authorizedObjectIDs.end())
+		return false;
+
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.erase(it);
+	return true;
+}
+
+void StructureManager::clearPersistentStructureWorldRemovalAuthorization(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.erase(structureObject->getObjectID());
 }
 
 int StructureManager::getAccountLotCap() const {
@@ -514,10 +704,776 @@ String StructureManager::validatePlayerStructureZoneIndex(bool logDetails, bool 
 	return summary.toString();
 }
 
+String StructureManager::getPlayerStructureIntegrityInfo(uint64 objectID) {
+	StringBuffer report;
+	report << "Player Structure Integrity Report" << endl;
+	report << "  OID: " << objectID << endl;
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	if (structureDatabase == nullptr) {
+		report << "  ERROR: playerstructures database unavailable";
+		return report.toString();
+	}
+
+	ObjectInputStream objectData(2000);
+	if (structureDatabase->getData(objectID, &objectData)) {
+		report << "  ERROR: OID not found in playerstructures";
+		return report.toString();
+	}
+
+	String className;
+	String zoneReference;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0;
+	uint64 waypointID = 0;
+	bool hasZoneVariable = false;
+
+	try {
+		Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData);
+		Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.waypointID"), &waypointID, &objectData);
+		hasZoneVariable = Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData);
+	} catch (const Exception& e) {
+		report << "  ERROR: failed to deserialize record: " << e.getMessage();
+		return report.toString();
+	} catch (...) {
+		report << "  ERROR: failed to deserialize record: <unknown>";
+		return report.toString();
+	}
+
+	Reference<SharedObjectTemplate*> objectTemplate = templateManager->getTemplate(serverObjectCRC);
+	String templatePath = objectTemplate != nullptr ? objectTemplate->getFullTemplateString() : String("<unresolved>");
+
+	report << "  Class: " << (className.isEmpty() ? String("<unknown>") : className) << endl;
+	report << "  Template: " << templatePath << endl;
+	report << "  Server object CRC: " << serverObjectCRC << endl;
+	report << "  Owner OID: " << ownerObjectID << endl;
+	report << "  Waypoint OID: " << waypointID << endl;
+	report << "  SceneObject.zone variable: " << (hasZoneVariable ? "present" : "MISSING") << endl;
+	report << "  Persisted zone: "
+		<< (!hasZoneVariable ? String("<missing>") : (zoneReference.isEmpty() ? String("<empty>") : zoneReference))
+		<< endl;
+
+	if (hasZoneVariable && !zoneReference.isEmpty()) {
+		report << "  Persisted zone resolves on server: "
+			<< ((server != nullptr && server->getZone(zoneReference) != nullptr) ? "yes" : "NO") << endl;
+	}
+
+	StringBuffer indexedZones;
+	bool indexedAnywhere = false;
+
+	if (server != nullptr) {
+		IndexDatabase* index = createSubIndex();
+		if (index != nullptr) {
+			berkeley::CursorConfig config;
+			config.setReadUncommitted(true);
+
+			for (int i = 0; i < server->getZoneCount(); ++i) {
+				Zone* zone = server->getZone(i);
+				if (zone == nullptr)
+					continue;
+
+				uint64 zoneHash = zone->getZoneName().hashCode();
+				uint64 indexedObjectID = 0;
+				bool foundOID = false;
+				IndexDatabaseIterator indexIterator(index, config);
+
+				if (indexIterator.setKeyAndGetValue(zoneHash, indexedObjectID, nullptr)) {
+					if (indexedObjectID == objectID) {
+						foundOID = true;
+					} else {
+						while (indexIterator.getNextKeyAndValue(zoneHash, indexedObjectID, nullptr)) {
+							if (indexedObjectID == objectID) {
+								foundOID = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if (foundOID) {
+					if (indexedAnywhere)
+						indexedZones << ", ";
+					indexedZones << zone->getZoneName();
+					indexedAnywhere = true;
+				}
+			}
+		}
+	}
+
+	report << "  Secondary index zone(s): "
+		<< (indexedAnywhere ? indexedZones.toString() : String("<none>")) << endl;
+
+	ManagedReference<WaypointObject*> waypoint = nullptr;
+	String waypointZone;
+	if (server != nullptr && waypointID != 0)
+		waypoint = server->getObject(waypointID).castTo<WaypointObject*>();
+
+	if (waypoint != nullptr) {
+		waypointZone = StorageManagerNamespace::resolveGroundZoneNameFromCRC(server, waypoint->getPlanetCRC());
+		report << "  Waypoint found: yes" << endl;
+		report << "  Waypoint planet CRC: " << waypoint->getPlanetCRC() << endl;
+		report << "  Waypoint planet: " << (waypointZone.isEmpty() ? String("<unresolved>") : waypointZone) << endl;
+		report << "  Waypoint position: X=" << waypoint->getPositionX()
+			<< " Y=" << waypoint->getPositionY() << " Z=" << waypoint->getPositionZ() << endl;
+	} else {
+		report << "  Waypoint found: no" << endl;
+	}
+
+	if (!hasZoneVariable || zoneReference.isEmpty()) {
+		if (waypoint != nullptr && !waypointZone.isEmpty())
+			report << "  Recovery evidence: HIGH - waypoint independently identifies " << waypointZone << endl;
+		else
+			report << "  Recovery evidence: INSUFFICIENT - no resolvable structure waypoint" << endl;
+	} else if (waypoint != nullptr && !waypointZone.isEmpty()) {
+		report << "  Zone/waypoint agreement: " << (waypointZone == zoneReference ? "yes" : "NO - INVESTIGATE") << endl;
+	}
+
+	report << "  Test-corruption eligible template: "
+		<< (StorageManagerNamespace::isSupportedStructureIntegrityTestTemplate(templatePath) ? "yes" : "no");
+	return report.toString();
+}
+
+bool StructureManager::queuePlayerStructureZoneRepairFromWaypoint(uint64 objectID, String& result) {
+	if (server == nullptr) { result = "ZoneServer is unavailable."; return false; }
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	if (structureDatabase == nullptr) { result = "playerstructures database unavailable."; return false; }
+
+	ObjectInputStream objectData(2000);
+	if (structureDatabase->getData(objectID, &objectData)) { result = "OID was not found in playerstructures."; return false; }
+
+	String zoneReference;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0;
+	uint64 waypointID = 0;
+	bool hasZoneVariable = false;
+	try {
+		Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.waypointID"), &waypointID, &objectData);
+		hasZoneVariable = Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData);
+	} catch (...) { result = "Failed to deserialize target structure."; return false; }
+
+	if (hasZoneVariable && !zoneReference.isEmpty()) {
+		result = "Safety refusal: SceneObject.zone is already non-empty. No repair was queued.";
+		return false;
+	}
+
+	Reference<SharedStructureObjectTemplate*> structureTemplate =
+		dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(serverObjectCRC));
+	if (structureTemplate == nullptr || ownerObjectID == 0 || waypointID == 0) {
+		result = "Safety refusal: target is missing valid structure/owner/waypoint persistence data.";
+		return false;
+	}
+
+	ManagedReference<WaypointObject*> waypoint = server->getObject(waypointID).castTo<WaypointObject*>();
+	if (waypoint == nullptr) { result = "Safety refusal: persisted structure waypoint could not be loaded."; return false; }
+
+	String recoveredZone = StorageManagerNamespace::resolveGroundZoneNameFromCRC(server, waypoint->getPlanetCRC());
+	Zone* recoveredZoneObject = recoveredZone.isEmpty() ? nullptr : server->getZone(recoveredZone);
+	if (recoveredZoneObject == nullptr || recoveredZoneObject->isSpaceZone()) {
+		result = "Safety refusal: waypoint does not resolve to a valid ground zone.";
+		return false;
+	}
+
+	std::FILE* existing = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_REPAIR, "r");
+	if (existing != nullptr) { std::fclose(existing); result = "A pending structure repair already exists."; return false; }
+	existing = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION, "r");
+	if (existing != nullptr) { std::fclose(existing); result = "A pending test corruption exists; finish/cancel it first."; return false; }
+
+	::mkdir(StorageManagerNamespace::STRUCTURE_INTEGRITY_TEST_DIR, 0755);
+	std::FILE* marker = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_REPAIR, "w");
+	if (marker == nullptr) { result = "Could not create pending_zone_repair.txt"; return false; }
+	std::fprintf(marker, "%llu\n", (unsigned long long)objectID);
+	std::fprintf(marker, "zone=%s\n", recoveredZone.toCharArray());
+	std::fprintf(marker, "waypoint=%llu\n", (unsigned long long)waypointID);
+	std::fclose(marker);
+
+	StringBuffer queued;
+	queued << "STRUCTURE REPAIR QUEUED" << endl
+		<< "OID: " << objectID << endl
+		<< "Recovered zone: " << recoveredZone << endl
+		<< "Waypoint OID: " << waypointID << endl
+		<< "No playerstructure DB record was changed live." << endl
+		<< "Restart Core3 to apply the repair during startup.";
+	result = queued.toString();
+	warning("STRUCTURE-INTEGRITY-REPAIR-QUEUED: OID=" + String::valueOf(objectID) + " recoveredZone=" + recoveredZone);
+	return true;
+}
+
+bool StructureManager::applyPendingPlayerStructureZoneRepairFromWaypoint() {
+	std::FILE* marker = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_REPAIR, "r");
+	if (marker == nullptr) return false;
+
+	unsigned long long rawOID = 0, rawWaypoint = 0;
+	char zoneBuffer[128] = {0};
+	int parsed = std::fscanf(marker, "%llu\nzone=%127s\nwaypoint=%llu", &rawOID, zoneBuffer, &rawWaypoint);
+	std::fclose(marker);
+	if (parsed != 3 || rawOID == 0 || rawWaypoint == 0 || zoneBuffer[0] == '\0') {
+		warning("STRUCTURE-INTEGRITY-REPAIR: invalid pending marker; no DB changes made.");
+		return false;
+	}
+
+	uint64 objectID = (uint64)rawOID;
+	uint64 expectedWaypointID = (uint64)rawWaypoint;
+	String recoveredZone = zoneBuffer;
+	Zone* z = server == nullptr ? nullptr : server->getZone(recoveredZone);
+	if (z == nullptr || z->isSpaceZone()) { warning("STRUCTURE-INTEGRITY-REPAIR: invalid recovered ground zone; marker retained."); return false; }
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	if (structureDatabase == nullptr) { warning("STRUCTURE-INTEGRITY-REPAIR: playerstructures DB unavailable; marker retained."); return false; }
+
+	ObjectInputStream objectData(2000);
+	if (structureDatabase->getData(objectID, &objectData)) { warning("STRUCTURE-INTEGRITY-REPAIR: OID missing; marker retained."); return false; }
+
+	String currentZone;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0, waypointID = 0;
+	bool hasZoneVariable = false;
+	try {
+		Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.waypointID"), &waypointID, &objectData);
+		hasZoneVariable = Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &currentZone, &objectData);
+	} catch (...) { warning("STRUCTURE-INTEGRITY-REPAIR: deserialize failed; marker retained."); return false; }
+
+	Reference<SharedStructureObjectTemplate*> structureTemplate =
+		dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(serverObjectCRC));
+	if (structureTemplate == nullptr || ownerObjectID == 0 || waypointID != expectedWaypointID) {
+		warning("STRUCTURE-INTEGRITY-REPAIR: persisted evidence no longer matches; marker retained.");
+		return false;
+	}
+
+	if (hasZoneVariable && !currentZone.isEmpty()) {
+		if (currentZone == recoveredZone) {
+			std::remove(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_REPAIR);
+			warning("STRUCTURE-INTEGRITY-REPAIR-VERIFIED: OID=" + String::valueOf(objectID) + " zone=" + recoveredZone + "; marker consumed.");
+			return true;
+		}
+		warning("STRUCTURE-INTEGRITY-REPAIR: conflicting non-empty zone found; marker retained.");
+		return false;
+	}
+
+	String zoneValue = recoveredZone;
+	ObjectOutputStream zoneData;
+	TypeInfo<String>::toBinaryStream(&zoneValue, &zoneData);
+	ObjectOutputStream* modifiedRecord = hasZoneVariable ?
+		StorageManagerNamespace::replaceSerializedVariableData(STRING_HASHCODE("SceneObject.zone"), &objectData, &zoneData) :
+		StorageManagerNamespace::addSerializedVariableData("SceneObject.zone", &objectData, &zoneData);
+	if (modifiedRecord == nullptr) { warning("STRUCTURE-INTEGRITY-REPAIR: could not build repaired record; marker retained."); return false; }
+
+	modifiedRecord->reset();
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+	// Startup context only: no explicit commit, no association reload, no immediate readback.
+	structureDatabase->putData(objectID, modifiedRecord, nullptr);
+	warning("STRUCTURE-INTEGRITY-REPAIR-STAGED: OID=" + String::valueOf(objectID) + " recoveredZone=" + recoveredZone + "; marker retained for next-start verification.");
+	return true;
+}
+
+
+// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD31_WORLDREMOVE
+bool StructureManager::removePlayerStructureFromWorldForIntegrityTest(uint64 objectID, String& result) {
+	if (!ConfigManager::instance()->getBool(
+			"Core3.StructureIntegrity.EnableTestCorruption", false)) {
+		result = "TEST CENTER ONLY: StructureIntegrity.EnableTestCorruption is disabled.";
+		return false;
+	}
+
+	if (server == nullptr) {
+		result = "ZoneServer is unavailable.";
+		return false;
+	}
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr) {
+		result = "playerstructures database unavailable.";
+		return false;
+	}
+
+	ObjectInputStream objectData(2000);
+
+	if (structureDatabase->getData(objectID, &objectData)) {
+		result = "Safety refusal: OID is not present in playerstructures.";
+		return false;
+	}
+
+	String persistedZone;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0;
+	uint64 waypointID = 0;
+	bool hasZoneVariable = false;
+
+	try {
+		Serializable::getVariable<uint32>(
+			STRING_HASHCODE("SceneObject.serverObjectCRC"),
+			&serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(
+			STRING_HASHCODE("StructureObject.ownerObjectID"),
+			&ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(
+			STRING_HASHCODE("StructureObject.waypointID"),
+			&waypointID, &objectData);
+		hasZoneVariable = Serializable::getVariable<String>(
+			STRING_HASHCODE("SceneObject.zone"),
+			&persistedZone, &objectData);
+	} catch (const Exception& e) {
+		result = "Failed to deserialize target structure: " + e.getMessage();
+		return false;
+	} catch (...) {
+		result = "Failed to deserialize target structure: <unknown>";
+		return false;
+	}
+
+	if (!hasZoneVariable || persistedZone.isEmpty()) {
+		result = "Safety refusal: target does not have a healthy persisted SceneObject.zone.";
+		return false;
+	}
+
+	if (ownerObjectID == 0 || waypointID == 0) {
+		result = "Safety refusal: target is missing persisted owner or waypoint evidence.";
+		return false;
+	}
+
+	Reference<SharedStructureObjectTemplate*> structureTemplate =
+		dynamic_cast<SharedStructureObjectTemplate*>(
+			templateManager->getTemplate(serverObjectCRC));
+
+	if (structureTemplate == nullptr) {
+		result = "Safety refusal: target CRC does not resolve to a structure template.";
+		return false;
+	}
+
+	const String expectedTemplate =
+		"object/building/player/player_house_corellia_small_style_01.iff";
+
+	if (structureTemplate->getFullTemplateString() != expectedTemplate) {
+		StringBuffer refusal;
+		refusal << "Safety refusal: structureworldremove is restricted to "
+			<< expectedTemplate << ". Target template is "
+			<< structureTemplate->getFullTemplateString() << ".";
+		result = refusal.toString();
+		return false;
+	}
+
+	Zone* persistedZoneObject = server->getZone(persistedZone);
+
+	if (persistedZoneObject == nullptr || persistedZoneObject->isSpaceZone()) {
+		result = "Safety refusal: persisted zone is not a valid enabled ground zone.";
+		return false;
+	}
+
+	ManagedReference<SceneObject*> liveObject = server->getObject(objectID);
+
+	if (liveObject == nullptr || !liveObject->isStructureObject()) {
+		result = "Safety refusal: target is not a live StructureObject.";
+		return false;
+	}
+
+	ManagedReference<StructureObject*> structure =
+		liveObject.castTo<StructureObject*>();
+
+	if (structure == nullptr) {
+		result = "Safety refusal: live target could not be cast to StructureObject.";
+		return false;
+	}
+
+	Locker locker(structure);
+
+	if (structure->getPersistenceLevel() <= 0) {
+		result = "Safety refusal: live structure is not persistent.";
+		return false;
+	}
+
+	if (structure->getParent().get() != nullptr) {
+		result = "Safety refusal: structure unexpectedly has a parent.";
+		return false;
+	}
+
+	if (structure->getServerObjectCRC() != serverObjectCRC) {
+		result = "Safety refusal: live and persisted structure CRC values do not match.";
+		return false;
+	}
+
+	if (structure->getOwnerObjectID() != ownerObjectID) {
+		result = "Safety refusal: live and persisted owner OIDs do not match.";
+		return false;
+	}
+
+	if (structure->getWaypointID() != waypointID) {
+		result = "Safety refusal: live and persisted waypoint OIDs do not match.";
+		return false;
+	}
+
+	Zone* liveZone = structure->getZone();
+
+	if (liveZone == nullptr || liveZone->isSpaceZone()) {
+		result = "Safety refusal: live structure does not currently have a ground zone.";
+		return false;
+	}
+
+	if (liveZone->getZoneName() != persistedZone) {
+		StringBuffer refusal;
+		refusal << "Safety refusal: live zone (" << liveZone->getZoneName()
+			<< ") does not match persisted zone (" << persistedZone << ").";
+		result = refusal.toString();
+		return false;
+	}
+
+	String liveZoneBefore = liveZone->getZoneName();
+
+	// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32
+	// The helper now verifies the prevention invariant rather than intentionally
+	// removing the structure. It must NOT grant the authorization token.
+	ManagedReference<BuildingObject*> building = structure.castTo<BuildingObject*>();
+
+	if (building == nullptr) {
+		result = "Safety refusal: test target is not a BuildingObject.";
+		return false;
+	}
+
+	int interiorObjectsBefore = 0;
+	bool playerInside = false;
+
+	for (uint32 i = 1; i <= building->getTotalCellNumber(); ++i) {
+		ManagedReference<CellObject*> cell = building->getCell(i);
+
+		if (cell == nullptr)
+			continue;
+
+		interiorObjectsBefore += cell->getContainerObjectsSize();
+
+		for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
+			ManagedReference<SceneObject*> child = cell->getContainerObject(j);
+
+			if (child != nullptr && child->isPlayerCreature()) {
+				playerInside = true;
+				break;
+			}
+		}
+
+		if (playerInside)
+			break;
+	}
+
+	if (playerInside) {
+		result = "Safety refusal: a player is inside the test building.";
+		return false;
+	}
+
+	const bool inQuadTreeBefore = structure->isInQuadTree();
+
+	// Unauthorized on purpose. Build 3.2 must return before any destructive
+	// StructureObject/BuildingObject teardown occurs.
+	structure->destroyObjectFromWorld(true);
+
+	Zone* zoneAfter = structure->getZone();
+	String liveZoneAfter =
+		zoneAfter != nullptr ? zoneAfter->getZoneName() : String("<null>");
+	const bool inQuadTreeAfter = structure->isInQuadTree();
+
+	int interiorObjectsAfter = 0;
+
+	for (uint32 i = 1; i <= building->getTotalCellNumber(); ++i) {
+		ManagedReference<CellObject*> cell = building->getCell(i);
+
+		if (cell != nullptr)
+			interiorObjectsAfter += cell->getContainerObjectsSize();
+	}
+
+	const bool zonePreserved =
+		zoneAfter != nullptr && liveZoneAfter == liveZoneBefore;
+	const bool quadTreePreserved =
+		inQuadTreeBefore == inQuadTreeAfter && inQuadTreeAfter;
+	const bool interiorsPreserved =
+		interiorObjectsBefore == interiorObjectsAfter;
+
+	StringBuffer report;
+
+	if (!zonePreserved || !quadTreePreserved || !interiorsPreserved) {
+		report << "TEST FAILURE: UNAUTHORIZED WORLD REMOVAL WAS NOT FULLY BLOCKED" << endl
+			<< "OID: " << objectID << endl
+			<< "Template: " << expectedTemplate << endl
+			<< "Live zone before: " << liveZoneBefore << endl
+			<< "Live zone after: " << liveZoneAfter << endl
+			<< "In quadtree before: " << (inQuadTreeBefore ? "yes" : "no") << endl
+			<< "In quadtree after: " << (inQuadTreeAfter ? "yes" : "no") << endl
+			<< "Interior objects before: " << interiorObjectsBefore << endl
+			<< "Interior objects after: " << interiorObjectsAfter << endl
+			<< "Do NOT continue the crash-window test.";
+
+		result = report.toString();
+
+		error("STRUCTURE-INTEGRITY-TEST-WORLDREMOVE: Build 3.2 guard failure for OID=" +
+			String::valueOf(objectID));
+		return false;
+	}
+
+	report << "TEST WORLD REMOVAL BLOCKED AS EXPECTED" << endl
+		<< "OID: " << objectID << endl
+		<< "Template: " << expectedTemplate << endl
+		<< "Persisted zone: " << persistedZone << endl
+		<< "Live zone before: " << liveZoneBefore << endl
+		<< "Live zone after: " << liveZoneAfter << endl
+		<< "In quadtree before/after: yes / yes" << endl
+		<< "Interior objects before: " << interiorObjectsBefore << endl
+		<< "Interior objects after: " << interiorObjectsAfter << endl
+		<< "Database record was NOT modified by this helper." << endl
+		<< "The structure should still be visible and its contents unchanged.";
+
+	result = report.toString();
+
+	warning("STRUCTURE-INTEGRITY-TEST-WORLDREMOVE-BLOCKED: OID=" +
+		String::valueOf(objectID) +
+		" zone=" + liveZoneAfter +
+		" interiorObjects=" + String::valueOf(interiorObjectsAfter));
+
+	return true;
+}
+
+bool StructureManager::queuePlayerStructureZoneCorruptionForTest(uint64 objectID, String& result) {
+	if (!ConfigManager::instance()->getBool("Core3.StructureIntegrity.EnableTestCorruption", false)) {
+		result = "Test corruption is disabled. Core3.StructureIntegrity.EnableTestCorruption must be true on Test Center.";
+		return false;
+	}
+	if (server == nullptr) {
+		result = "ZoneServer is unavailable.";
+		return false;
+	}
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	if (structureDatabase == nullptr) {
+		result = "playerstructures database unavailable.";
+		return false;
+	}
+
+	ObjectInputStream objectData(2000);
+	if (structureDatabase->getData(objectID, &objectData)) {
+		result = "OID was not found in playerstructures.";
+		return false;
+	}
+
+	String className;
+	String zoneReference;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0;
+	uint64 waypointID = 0;
+
+	try {
+		Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData);
+		Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.ownerObjectID"), &ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(STRING_HASHCODE("StructureObject.waypointID"), &waypointID, &objectData);
+		if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData) || zoneReference.isEmpty()) {
+			result = "Target already has a missing/empty SceneObject.zone; refusing to queue another corruption.";
+			return false;
+		}
+	} catch (const Exception& e) {
+		result = "Failed to deserialize target structure: " + e.getMessage();
+		return false;
+	} catch (...) {
+		result = "Failed to deserialize target structure: <unknown>";
+		return false;
+	}
+
+	Reference<SharedObjectTemplate*> objectTemplate = templateManager->getTemplate(serverObjectCRC);
+	if (objectTemplate == nullptr) {
+		result = "Target template CRC cannot be resolved.";
+		return false;
+	}
+	String templatePath = objectTemplate->getFullTemplateString();
+
+	if (!StorageManagerNamespace::isSupportedStructureIntegrityTestTemplate(templatePath)) {
+		result = "Safety refusal: Build 1 only permits player-city Cantina/Hospital templates.";
+		return false;
+	}
+	if (ownerObjectID == 0) {
+		result = "Safety refusal: target structure has no owner OID.";
+		return false;
+	}
+	if (waypointID == 0) {
+		result = "Safety refusal: target structure has no persisted waypoint OID.";
+		return false;
+	}
+
+	ManagedReference<WaypointObject*> waypoint = server->getObject(waypointID).castTo<WaypointObject*>();
+	if (waypoint == nullptr) {
+		result = "Safety refusal: target structure waypoint could not be loaded.";
+		return false;
+	}
+	String waypointZone = StorageManagerNamespace::resolveGroundZoneNameFromCRC(server, waypoint->getPlanetCRC());
+	if (waypointZone.isEmpty()) {
+		result = "Safety refusal: target waypoint planet CRC does not resolve to an enabled ground zone.";
+		return false;
+	}
+	if (waypointZone != zoneReference) {
+		StringBuffer refusal;
+		refusal << "Safety refusal: structure zone (" << zoneReference << ") and waypoint planet (" << waypointZone << ") disagree.";
+		result = refusal.toString();
+		return false;
+	}
+
+	std::FILE* existing = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION, "r");
+	if (existing != nullptr) {
+		std::fclose(existing);
+		result = "A pending structure zone corruption marker already exists. Apply/cancel that test before queuing another.";
+		return false;
+	}
+
+	::mkdir(StorageManagerNamespace::STRUCTURE_INTEGRITY_TEST_DIR, 0755);
+	std::FILE* marker = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION, "w");
+	if (marker == nullptr) {
+		result = "Could not create structure_integrity/pending_zone_corruption.txt";
+		return false;
+	}
+
+	std::fprintf(marker, "%llu\n", (unsigned long long)objectID);
+	std::fprintf(marker, "zone=%s\n", zoneReference.toCharArray());
+	std::fprintf(marker, "template=%s\n", templatePath.toCharArray());
+	std::fprintf(marker, "owner=%llu\n", (unsigned long long)ownerObjectID);
+	std::fprintf(marker, "waypoint=%llu\n", (unsigned long long)waypointID);
+	std::fclose(marker);
+
+	StringBuffer queued;
+	queued << "TEST CENTER ONLY: queued SceneObject.zone corruption for OID " << objectID
+		<< " (" << templatePath << ") on " << zoneReference
+		<< ". No live object was changed. Restart Core3 to apply the one-time corruption.";
+	result = queued.toString();
+	warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION-QUEUED: " + result);
+	return true;
+}
+
+bool StructureManager::applyPendingPlayerStructureZoneCorruptionForTest() {
+	std::FILE* marker = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION, "r");
+	if (marker == nullptr)
+		return false;
+
+	if (!ConfigManager::instance()->getBool("Core3.StructureIntegrity.EnableTestCorruption", false)) {
+		std::fclose(marker);
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: pending marker exists but test corruption is disabled; marker left untouched.");
+		return false;
+	}
+
+	unsigned long long rawOID = 0;
+	if (std::fscanf(marker, "%llu", &rawOID) != 1 || rawOID == 0) {
+		std::fclose(marker);
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: invalid pending marker; no database changes made.");
+		return false;
+	}
+	std::fclose(marker);
+
+	uint64 objectID = (uint64)rawOID;
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+	if (structureDatabase == nullptr) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: playerstructures database unavailable; marker left pending.");
+		return false;
+	}
+
+	ObjectInputStream objectData(2000);
+	if (structureDatabase->getData(objectID, &objectData)) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: queued OID not found in playerstructures; marker left pending.");
+		return false;
+	}
+
+	String className;
+	String zoneReference;
+	uint32 serverObjectCRC = 0;
+	try {
+		Serializable::getVariable<String>(STRING_HASHCODE("_className"), &className, &objectData);
+		Serializable::getVariable<uint32>(STRING_HASHCODE("SceneObject.serverObjectCRC"), &serverObjectCRC, &objectData);
+		if (!Serializable::getVariable<String>(STRING_HASHCODE("SceneObject.zone"), &zoneReference, &objectData)) {
+			warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: queued record has no SceneObject.zone variable; marker left pending.");
+			return false;
+		}
+	} catch (const Exception& e) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: failed to deserialize queued record: " + e.getMessage());
+		return false;
+	} catch (...) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: failed to deserialize queued record: <unknown>");
+		return false;
+	}
+
+	Reference<SharedObjectTemplate*> objectTemplate = templateManager->getTemplate(serverObjectCRC);
+	if (objectTemplate == nullptr) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: queued template CRC is unresolved; marker left pending.");
+		return false;
+	}
+	String templatePath = objectTemplate->getFullTemplateString();
+	if (!StorageManagerNamespace::isSupportedStructureIntegrityTestTemplate(templatePath)) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: queued record is no longer an allowed player-city Cantina/Hospital; marker left pending.");
+		return false;
+	}
+
+	if (zoneReference.isEmpty()) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: queued structure already has an empty SceneObject.zone; consuming marker as already applied.");
+		std::remove(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION);
+		return true;
+	}
+
+	String emptyZone = "";
+	ObjectOutputStream emptyZoneData;
+	TypeInfo<String>::toBinaryStream(&emptyZone, &emptyZoneData);
+	ObjectOutputStream* modifiedRecord = StorageManagerNamespace::replaceSerializedVariableData(
+		STRING_HASHCODE("SceneObject.zone"), &objectData, &emptyZoneData);
+	if (modifiedRecord == nullptr) {
+		warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION: could not replace SceneObject.zone; marker left pending.");
+		return false;
+	}
+
+	modifiedRecord->reset();
+
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+	// Startup context only: stage the write and let normal startup own commit.
+	structureDatabase->putData(objectID, modifiedRecord, nullptr);
+	std::remove(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION);
+	warning("STRUCTURE-INTEGRITY-TEST-CORRUPTION-STAGED: OID=" + String::valueOf(objectID) + "; marker consumed.");
+
+
+	::mkdir(StorageManagerNamespace::STRUCTURE_INTEGRITY_TEST_DIR, 0755);
+	std::FILE* applied = std::fopen(StorageManagerNamespace::STRUCTURE_INTEGRITY_LAST_APPLIED_ZONE_CORRUPTION, "w");
+	if (applied != nullptr) {
+		std::fprintf(applied, "oid=%llu\n", (unsigned long long)objectID);
+		std::fprintf(applied, "previousZone=%s\n", zoneReference.toCharArray());
+		std::fprintf(applied, "template=%s\n", templatePath.toCharArray());
+		std::fclose(applied);
+	}
+	std::remove(StorageManagerNamespace::STRUCTURE_INTEGRITY_PENDING_ZONE_CORRUPTION);
+
+	StringBuffer appliedMessage;
+	appliedMessage << "STRUCTURE-INTEGRITY-TEST-CORRUPTION-APPLIED: OID=" << objectID
+		<< " template=" << templatePath << " previousZone=" << zoneReference
+		<< " SceneObject.zone is now intentionally empty for Test Center reproduction.";
+	warning(appliedMessage.toString());
+	return true;
+}
+
+
 void StructureManager::loadPlayerStructures(const String& zoneName) {
 	info("Loading player structures for zone: " + zoneName);
 
 	auto playerStructuresDatabaseIndex = createSubIndex();
+
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD1
+	// Associate the secondary index first, then apply the queued primary-record
+	// write so Berkeley automatically removes the old planet-index entry.
+	static AtomicBoolean appliedPendingStructureIntegrityTestCorruption;
+
+	if (appliedPendingStructureIntegrityTestCorruption.compareAndSet(false, true)) {
+		applyPendingPlayerStructureZoneCorruptionForTest();
+	}
+
+	// BELLUM_GERO_STRUCTURE_INTEGRITY_BUILD21
+	static AtomicBoolean appliedPendingStructureIntegrityRepair;
+	if (appliedPendingStructureIntegrityRepair.compareAndSet(false, true)) {
+		applyPendingPlayerStructureZoneRepairFromWaypoint();
+	}
 
 	static AtomicBoolean validatedPlayerStructureZoneIndex;
 

@@ -13,6 +13,7 @@
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/packets/object/PlayClientEffectObjectMessage.h"
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
 
@@ -120,6 +121,14 @@ if (owner != nullptr) {
 }
 }
 
+// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+StructureManager* structureManager = StructureManager::instance();
+if (structureManager == nullptr) {
+	structureObject->error("STRUCTURE-WORLD-REMOVE-BLOCKED: StructureManager unavailable during intentional destruction.");
+	return;
+}
+
+structureManager->authorizePersistentStructureWorldRemoval(structureObject);
 structureObject->destroyObjectFromWorld(true);
 structureObject->notifyObservers(ObserverEventType::OBJECTDESTRUCTION, structureObject, 0);
 structureObject->destroyObjectFromDatabase(true);
