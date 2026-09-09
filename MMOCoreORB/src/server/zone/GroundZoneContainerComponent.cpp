@@ -9,9 +9,7 @@
 
 #include "server/zone/GroundZone.h"
 #include "server/zone/objects/building/BuildingObject.h"
-#include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/managers/planet/PlanetManager.h"
-#include "server/zone/managers/structure/StructureManager.h"
 #include "templates/building/SharedBuildingObjectTemplate.h"
 #include "server/zone/objects/intangible/TheaterObject.h"
 #include "server/zone/ActiveAreaQuadTree.h"
@@ -272,42 +270,8 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 	if (object->isActiveArea())
 		return removeActiveArea(zone, dynamic_cast<ActiveArea*>(object));
 
-	// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
-	// Defense-in-depth for direct generic zone/container removal.
-	if (object->isBuildingObject() && object->getPersistenceLevel() > 0) {
-		ZoneServer* guardZoneServer = zone != nullptr ? zone->getZoneServer() : nullptr;
-		const bool guardServerShuttingDown =
-			guardZoneServer != nullptr && guardZoneServer->isServerShuttingDown();
-
-		if (!guardServerShuttingDown) {
-			StructureObject* structure = cast<StructureObject*>(object);
-			StructureManager* structureManager = StructureManager::instance();
-
-			if (structure == nullptr || structureManager == nullptr) {
-				object->error("STRUCTURE-WORLD-REMOVE-BLOCKED: persistent BuildingObject removal guard could not resolve required state.");
-				return false;
-			}
-
-			Locker structureGuardLocker(structure);
-
-			if (!structureManager->consumePersistentStructureWorldRemovalAuthorization(structure)) {
-				String zoneName = zone != nullptr ? zone->getZoneName() : String("<null>");
-				object->error("STRUCTURE-WORLD-REMOVE-BLOCKED: direct generic removal refused before zone mutation. OID=" +
-					String::valueOf(object->getObjectID()) + " zone=" + zoneName);
-				return false;
-			}
-		}
-	}
-
 	ManagedReference<SceneObject*> parent = object->getParent().get();
-
-	// BELLUM_GERO_STRUCTURE_ZONE_PROTECTION_BUILD3
-	// Persistent structures must retain their last valid planet until their
-	// database record is explicitly destroyed. A world-removal operation can
-	// otherwise persist SceneObject.zone as empty if Core3 stops before the
-	// matching destroyObjectFromDatabase() completes.
-	const bool preservePersistentStructureZone =
-		object->isStructureObject() && object->getPersistenceLevel() > 0;
+	bool preservePersistentStructureZone = false;
 
 	try {
 		Locker locker(object);
@@ -392,6 +356,7 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 		ZoneServer* zoneServer = oldZone->getZoneServer();
 		const bool serverShuttingDown =
 				zoneServer != nullptr && zoneServer->isServerShuttingDown();
+		preservePersistentStructureZone = serverShuttingDown && object->isStructureObject() && object->getPersistenceLevel() > 0;
 
 		// During a full server shutdown, GroundZoneImplementation::clearZone()
 		// already destroys every object from its copied zone object map.
@@ -436,10 +401,6 @@ bool GroundZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneO
 
 	object->notifyRemoveFromZone();
 
-	// BELLUM_GERO_STRUCTURE_ZONE_PROTECTION_BUILD3
-	// Non-persistent objects retain the original behavior. Persistent
-	// structures deliberately keep their zone reference until explicit DB
-	// deletion, closing the remove-from-world -> crash -> missing-zone window.
 	if (!preservePersistentStructureZone)
 		object->setZone(nullptr);
 

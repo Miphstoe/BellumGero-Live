@@ -246,20 +246,6 @@ bool ContainerComponent::transferObject(SceneObject* sceneObject, SceneObject* o
 		return false;
 	}
 
-	// BELLUM_GERO_STRUCTURE_ZONE_PROTECTION_BUILD3
-	// A persistent structure is a root world object, never a normal
-	// inventory/cell/generic-container object. Fail before removing it from its
-	// current zone so the generic path below can never persist zone=null.
-	if (object != nullptr && object->isStructureObject() &&
-			object->getPersistenceLevel() > 0) {
-		object->error() << "Blocked generic container transfer of persistent structure OID "
-			<< object->getObjectID() << " into container OID "
-			<< (sceneObject != nullptr ? sceneObject->getObjectID() : 0)
-			<< "; preserving structure zone integrity.";
-
-		return false;
-	}
-
 #ifdef DEBUG_CONTAINER_TRANSFER
 	if (object->isPlayerCreature()) {
 		object->info(true) << "---------- " << object->getDisplayedName() << " --- STARTING container Transfer into new Parent - ID: " << sceneObject->getObjectID() << " ---------- ";
