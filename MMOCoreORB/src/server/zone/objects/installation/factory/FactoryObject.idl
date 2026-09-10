@@ -48,6 +48,10 @@ class FactoryObject extends InstallationObject {
 	protected Vector<unsigned long> queueEvaluationTimes;
 
 	protected transient boolean queueEvaluationInProgress;
+	// Purely a log-noise guard: true once the "queue idle / blocked" summary has been
+	// emitted for the current blocked state, so the 60s retry task does not re-log it
+	// every tick. Transient - the blocked state itself lives in queueStatuses.
+	protected transient boolean queueIdleNoticeLogged;
 	protected boolean queueEnabled;
 
 	public static final int QUEUE_ACTIVE = 0;
@@ -66,6 +70,7 @@ class FactoryObject extends InstallationObject {
 		Logger.setLoggingName("FactoryObject");
 		hopperObserver = null;
 		queueEvaluationInProgress = false;
+		queueIdleNoticeLogged = false;
 		queueEnabled = false;
 	}
 

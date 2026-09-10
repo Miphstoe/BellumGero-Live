@@ -359,11 +359,23 @@ void FactoryObjectImplementation::markQueueEntryBlocked(int index, int status, c
 	queueStatuses.set(index, status);
 	queueBlockedReasons.set(index, reason);
 	queueEvaluationTimes.set(index, (unsigned long long)Time().getTime());
+
 	// Only log when the entry actually transitions into a new blocked state.
-	// Periodic queue re-evaluations re-mark already-blocked entries with the same
-	// reason, and repeating the warning every retry would spam the server log.
-	if (stateChanged)
+	// Periodic queue re-evaluations (the 60s retry task) re-mark already-blocked
+	// entries with the same reason; repeating the message every retry spams the log.
+	if (!stateChanged)
+		return;
+
+	// A fresh block transition is worth one idle summary again.
+	queueIdleNoticeLogged = false;
+
+	// Insufficient maintenance / power / resources / components and a full output
+	// hopper are expected, player-recoverable conditions - report the transition
+	// once at info level. Only genuine faults stay at WARNING.
+	if (status == QUEUE_BLOCKED_INVALID)
 		warning() << "Factory queue entry blocked. FactoryID: " << getObjectID() << " SchematicID: " << queueSchematicIDs.get(index) << " Position: " << index + 1 << " Reason: " << reason;
+	else
+		info() << "Factory queue entry waiting. FactoryID: " << getObjectID() << " SchematicID: " << queueSchematicIDs.get(index) << " Position: " << index + 1 << " Reason: " << reason;
 }
 
 bool FactoryObjectImplementation::isQueuedOutputReady(ManufactureSchematic* schematic) {
@@ -391,6 +403,57 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 		return;
 	}
 
+	// Factory-wide production gates (maintenance / power).
+	//
+	// These conditions are otherwise only discovered inside createNewObject(),
+	// i.e. *after* the factory has already been activated and started. That path
+	// stops the factory, re-marks the entry blocked (a fresh transition every
+	// time, because activateQueueEntry() had just reset it to ACTIVE) and calls
+	// back into this method, which promptly re-activates and re-starts - a
+	// start -> shutdown -> re-evaluate -> restart loop that logged the same
+	// "maintenance is insufficient" warning roughly once per second.
+	//
+	// Checking the gates here - before activation - leaves the queued entry
+	// parked in a stable blocked state. markQueueEntryBlocked() logs it exactly
+	// once per transition, the 60s retry task then re-checks silently, and once
+	// the player tops up maintenance/power the next evaluation simply proceeds
+	// and production resumes with the same queued schematic. No queue entry is
+	// started, deleted, advanced or reordered while blocked.
+	if (queueSchematicIDs.size() > 0) {
+		int gateStatus = 0;
+		String gateReason;
+
+		if (getMaintenanceRate() != 0 && getSurplusMaintenance() <= 0) {
+			gateStatus = QUEUE_BLOCKED_MAINTENANCE;
+			gateReason = "Factory maintenance is insufficient.";
+		} else if (getBasePowerRate() != 0 && getSurplusPower() <= 0) {
+			gateStatus = QUEUE_BLOCKED_POWER;
+			gateReason = "Factory power is insufficient.";
+		}
+
+		if (gateStatus != 0) {
+			for (int i = 0; i < queueSchematicIDs.size(); ++i) {
+				if (queueStatuses.get(i) == QUEUE_COMPLETED)
+					continue;
+				markQueueEntryBlocked(i, gateStatus, gateReason);
+				break;
+			}
+
+			if (!queueIdleNoticeLogged) {
+				queueIdleNoticeLogged = true;
+				info() << "Factory queue idle. FactoryID: " << getObjectID() << " Reason: " << gateReason;
+			}
+
+			if (getPendingTask("factoryQueueRetry") == nullptr) {
+				Reference<FactoryQueueRetryTask*> retryTask = new FactoryQueueRetryTask(_this.getReferenceUnsafeStaticCast());
+				addPendingTask("factoryQueueRetry", retryTask, 60000);
+			}
+
+			queueEvaluationInProgress = false;
+			return;
+		}
+	}
+
 	bool activated = false;
 	for (int i = 0; i < queueSchematicIDs.size(); ++i) {
 		if (queueStatuses.get(i) == QUEUE_COMPLETED)
@@ -416,12 +479,14 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 		String displayedName = "";
 		schematic->canManufactureItem(type, displayedName);
 		if (displayedName != "") {
-			info() << "Factory queue readiness failed. FactoryID: " << getObjectID() << " SchematicID: " << schematic->getObjectID() << " Position: " << i + 1 << " Validation: " << (type == "resource" ? "MISSING_RESOURCES" : "MISSING_COMPONENTS") << " Detail: " << displayedName;
+			if (!queueIdleNoticeLogged)
+				info() << "Factory queue readiness failed. FactoryID: " << getObjectID() << " SchematicID: " << schematic->getObjectID() << " Position: " << i + 1 << " Validation: " << (type == "resource" ? "MISSING_RESOURCES" : "MISSING_COMPONENTS") << " Detail: " << displayedName;
 			markQueueEntryBlocked(i, type == "resource" ? QUEUE_BLOCKED_RESOURCES : QUEUE_BLOCKED_COMPONENTS, displayedName);
 			continue;
 		}
 		if (!isQueuedOutputReady(schematic)) {
-			info() << "Factory queue readiness failed. FactoryID: " << getObjectID() << " SchematicID: " << schematic->getObjectID() << " Position: " << i + 1 << " Validation: OUTPUT_FULL";
+			if (!queueIdleNoticeLogged)
+				info() << "Factory queue readiness failed. FactoryID: " << getObjectID() << " SchematicID: " << schematic->getObjectID() << " Position: " << i + 1 << " Validation: OUTPUT_FULL";
 			markQueueEntryBlocked(i, QUEUE_BLOCKED_OUTPUT_FULL, "Output hopper is full.");
 			continue;
 		}
@@ -438,8 +503,13 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 		}
 		break;
 	}
-	if (!activated)
+	if (activated) {
+		// Production (re)started - allow a fresh idle summary next time it stalls.
+		queueIdleNoticeLogged = false;
+	} else if (!queueIdleNoticeLogged) {
+		queueIdleNoticeLogged = true;
 		info() << "Factory queue exhausted or blocked. FactoryID: " << getObjectID();
+	}
 	if (!activated && queueSchematicIDs.size() > 0 && getPendingTask("factoryQueueRetry") == nullptr) {
 		Reference<FactoryQueueRetryTask*> retryTask = new FactoryQueueRetryTask(_this.getReferenceUnsafeStaticCast());
 		addPendingTask("factoryQueueRetry", retryTask, 60000);
