@@ -54,3 +54,5 @@ includeFile("tangible/wearables/armor/ithorian_sentinel/ith_armor_s03_chest_plat
 includeFile("tangible/wearables/armor/ithorian_sentinel/ith_armor_s03_gloves.lua")
 includeFile("tangible/wearables/armor/ithorian_sentinel/ith_armor_s03_helmet.lua")
 includeFile("tangible/wearables/armor/ithorian_sentinel/ith_armor_s03_leggings.lua")
+
+includeFile("tangible/wearables/armor/ithorian_sentinel/armor_ithorian_sentinel_suit_package.lua")

@@ -571,3 +571,12 @@ object_tangible_wearables_armor_chitin_shared_armor_chitin_s01_leggings = Shared
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_chitin_shared_armor_chitin_s01_leggings, "object/tangible/wearables/armor/chitin/shared_armor_chitin_s01_leggings.iff")
+
+object_tangible_wearables_armor_chitin_shared_armor_chitin_suit_package =
+	SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/chitin/shared_armor_chitin_suit_package_item.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_tangible_wearables_armor_chitin_shared_armor_chitin_suit_package,
+	"object/tangible/wearables/armor/chitin/shared_armor_chitin_suit_package_item.iff")

@@ -54,3 +54,5 @@ includeFile("tangible/wearables/armor/composite/armor_composite_chest_plate.lua"
 includeFile("tangible/wearables/armor/composite/armor_composite_gloves.lua")
 includeFile("tangible/wearables/armor/composite/armor_composite_helmet.lua")
 includeFile("tangible/wearables/armor/composite/armor_composite_leggings.lua")
+
+includeFile("tangible/wearables/armor/composite/armor_composite_suit_package.lua")

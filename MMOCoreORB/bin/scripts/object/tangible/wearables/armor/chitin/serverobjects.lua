@@ -54,3 +54,5 @@ includeFile("tangible/wearables/armor/chitin/armor_chitin_s01_chest_plate.lua")
 includeFile("tangible/wearables/armor/chitin/armor_chitin_s01_gloves.lua")
 includeFile("tangible/wearables/armor/chitin/armor_chitin_s01_helmet.lua")
 includeFile("tangible/wearables/armor/chitin/armor_chitin_s01_leggings.lua")
+
+includeFile("tangible/wearables/armor/chitin/armor_chitin_suit_package.lua")

@@ -49,3 +49,5 @@ includeFile("tangible/wearables/armor/kashyyykian_hunting/armor_kashyyykian_hunt
 includeFile("tangible/wearables/armor/kashyyykian_hunting/armor_kashyyykian_hunting_bracer_r.lua")
 includeFile("tangible/wearables/armor/kashyyykian_hunting/armor_kashyyykian_hunting_chest_plate.lua")
 includeFile("tangible/wearables/armor/kashyyykian_hunting/armor_kashyyykian_hunting_leggings.lua")
+
+includeFile("tangible/wearables/armor/kashyyykian_hunting/armor_kashyyykian_hunting_suit_package.lua")

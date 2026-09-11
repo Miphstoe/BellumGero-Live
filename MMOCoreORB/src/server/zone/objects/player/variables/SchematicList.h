@@ -54,6 +54,7 @@ public:
 	void addRewardedSchematics(SceneObject* player);
 	void removeRewardedSchematic(DraftSchematic* schematic);
 	bool decreaseSchematicUseCount(DraftSchematic* schematic);
+	int getRewardedSchematicUseCount(DraftSchematic* schematic) const;
 
 	bool contains(DraftSchematic* schematic) const;
 	bool contains(const Vector<ManagedReference<DraftSchematic*>>& filteredschematics, DraftSchematic* schematic) const;
