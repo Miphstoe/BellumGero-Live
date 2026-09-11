@@ -51,7 +51,7 @@ constexpr uint64 DISCORD_GATEWAY_RESUME_GRACE_MS = 90000;
 struct DiscordRuntimeState {
     std::mutex lifecycleMutex;
     std::mutex mutex;
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
     std::thread botThread;
     bool shutdownRequested = false;
     bool reconnectTaskScheduled = false;
@@ -172,14 +172,14 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
         generation = discordRuntime.generation;
     }
 
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
 
     try {
         if (manager->isDebugMode()) {
             manager->info("Creating Discord cluster with DPP", true);
         }
 
-        bot = std::make_unique<dpp::cluster>(
+        bot = std::make_shared<dpp::cluster>(
             manager->getBotToken().toCharArray(),
             dpp::i_default_intents | dpp::i_message_content
         );
@@ -257,7 +257,7 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
         manager->info("Discord Gateway resumed.", true);
     });
 
-    bot->on_socket_close([managerRef, generation](const dpp::socket_close_t&) {
+    bot->on_socket_close([managerRef, generation](const dpp::socket_close_t& event) {
         if (managerRef == nullptr || shouldIgnoreDiscordCallback(generation)) {
             return;
         }
@@ -289,7 +289,11 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
         // blips, zombied connections). DPP reconnects and RESUMEs the shard on its own,
         // so don't tear down the cluster here. runDiscordHealthCheck escalates to a full
         // rebuild only if the gateway is still down after DISCORD_GATEWAY_RESUME_GRACE_MS.
-        manager->info("Discord Gateway disconnected; waiting for automatic resume.", true);
+        manager->info(
+            "Discord Gateway disconnected; waiting for automatic resume. Shard: " +
+            String::valueOf(event.shard) + " FD: " + String::valueOf(event.fd),
+            true
+        );
     });
 
     bot->on_message_create([managerRef, generation](const dpp::message_create_t& event) {
@@ -394,7 +398,7 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
 }
 
 void stopDiscordRuntime(DiscordManagerImplementation* manager, bool shuttingDownCore) {
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
     std::thread botThread;
 
     {
@@ -949,16 +953,47 @@ void DiscordManagerImplementation::sendToDiscord(const String& channel, const St
     
 #ifdef WITH_DISCORD_INTEGRATION
     try {
-        std::lock_guard<std::mutex> lock(discordRuntime.mutex);
-        if (discordRuntime.bot && discordRuntime.gatewayConnected) {
-            // Create stable string copies to avoid dangling pointer issues
+        ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();
+        std::shared_ptr<dpp::cluster> bot;
+
+        {
+            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
+
+            if (discordRuntime.bot && discordRuntime.gatewayConnected) {
+                bot = discordRuntime.bot;
+            }
+        }
+
+        if (bot) {
             std::string channelStr = discordChannelId.toCharArray();
             std::string messageStr = formattedMessage.toCharArray();
 
-            // Send the message asynchronously
-            discordRuntime.bot->message_create(
-                dpp::message(std::stoull(channelStr), messageStr)
+            bot->message_create(
+                dpp::message(std::stoull(channelStr), messageStr),
+                [managerRef](const dpp::confirmation_callback_t& callback) {
+                    if (managerRef == nullptr) {
+                        return;
+                    }
+
+                    DiscordManagerImplementation* manager = getDiscordImplementation(managerRef);
+
+                    if (manager == nullptr) {
+                        return;
+                    }
+
+                    if (callback.is_error()) {
+                        dpp::error_info error = callback.get_error();
+                        manager->error(
+                            "Discord message_create failed: code=" +
+                            String::valueOf(error.code) + " message=" + String(error.message)
+                        );
+                    } else if (manager->isDebugMode()) {
+                        manager->info("Discord message_create completed successfully.", true);
+                    }
+                }
             );
+        } else if (isDebugMode()) {
+            info("Discord message skipped because cluster is no longer connected", true);
         }
     } catch (const std::exception& e) {
         error("Failed to send Discord message: " + String(e.what()));
