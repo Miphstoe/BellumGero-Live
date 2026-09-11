@@ -14,6 +14,13 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-09-07 — Assemble Mandalorian production fixes on current Main
+
+- **Summary:** Restore the quest and NPC spawns; bring in daily loot progression, guaranteed chapter trophies, repaired armor/jetpack recipes, invalid-schematic diagnostics and quarantine, Mandalorian GM tools, and the existing Beskar melee/rare-loot corrections. Preserve Main's null-player and draft-slot guards when integrating diagnostics. Ensure invalid newly created schematics reach the orphan cleanup path.
+- **Jetpack:** Requires `crafting_droidengineer_master`; uses Droid Engineer crafting tab, XP, assembly, and experimentation. Ingredients and one-use limit are unchanged.
+- **Weapons:** All six Beskar melee weapons use MEDIUM armor piercing. Damage, experimental ranges, and attack costs match Main; the HEAVY/damage/health-cost balance update is excluded.
+- **Validation:** All 11 Mandalorian loot groups total 10,000,000. Diff whitespace checks pass. No planet-manager, krayt, or unrelated Test Center changes included. Core3 build and in-game crafting, quest, and combat smoke tests are still required before production deployment.
+
 ### 2026-08-25 — Fix Mandalorian armor/jetpack draft schematics (root cause of schematic crashes)
 
 - **Summary:** The ten `clothing_armor_mandalorian_*` draft schematic server templates (plus `vehicle/civilian/jetpack`) were stubs missing `templateType = DRAFTSCHEMATIC` and all crafting data, so the template factory built the shared base class, the `DraftSchematicObjectTemplate` cast failed, and every created schematic was invalid — the null `schematicTemplate` behind the 2026-08-22 crafting segfaults and the "Error learning schematic, try again later" failures. Rebuilt all ten armor schematics from their working Death Watch bounty hunter counterparts (targets switched to `armor/mandalorian/*`, boots piece maps to `armor_mandalorian_shoes.iff`) and gave the jetpack a full recipe (ferrous metal + the four DWB jetpack components → `jetpack_deed.iff`). Also fixed `SchematicMap::loadDraftSchematicFile` leaking a persistent orphan object into the `draftschematics` database on every boot for each registered-but-invalid schematic (still hit by the nine stock space chassis stubs) — the freshly created invalid object is now destroyed. Verified via BellumGero-TRE-Force scan that all client shared iffs exist in stock `patch_08.tre`/`patch_11_00.tre` — no TRE work needed, contrary to the older doc's theory.
@@ -47,6 +54,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 - **Summary:** Set all six Mandalorian beskar melee weapons to `HEAVY` armor piercing and rebalanced them to exactly 75 points over the strongest craftable weapon in their class, applied to both the template min/max damage and both ends of the experimental damage range so crafted results match the intended cap. Added the missing `healthAttackCost` field, which defaulted to 0 and let looted copies swing for no health.
 - **Files:** `bin/scripts/object/weapon/melee/mando_melee_weapons.lua`
 - **Notes:** Baselines: Beskar Pike vs `lance_obsidian`, Power Hammer vs `2h_sword_obsidian` (both 193/598 crafted best), Stun and Acid Batons vs `baton_gaderiffi` (166/257), Knuckler vs `punchknuckler` (91/208), Lava Blade vs `knife_survival` (121/257). Requires a Core3 restart to reload the templates. Existing crafted or looted copies keep their stored stats. Needs Test Center validation for PvP balance before going live.
+
+### 2026-08-13 — Fix Mandalorian melee crafting slot labels
+
+- **Summary:** Replaced ten invented ingredient slot names that have no key in the client `craft_weapon_ingredients_n.stf`, which left those slots blank in the crafting tool. Each was swapped for an existing retail key with matching meaning, verified against the deployed TRE.
+- **Files:** `bin/scripts/object/draft_schematic/weapon/mando_melee_schematics.lua`
+- **Notes:** `blade_head`→`cutting_edge`, `baton_shaft`/`hammer_shaft`→`weapon_shaft`, `shock_collar`→`conductive_strike_face`, `acid_vent`→`chemical_dispersion_controller`, `reagent_cell`→`chemical_preparation_unit`, `hammer_head`→`impact_face`, `knuckle_frame`→`grip_unit`, `impact_plate`→`strike_face`, `heat_sink`→`thermal_control_unit`. Resource types, quantities and slot types are unchanged, so no schematic behaviour changes.
+
+### 2026-08-13 — Correct mando contract rare bonus loot weights
+
+- **Summary:** Removed a duplicated `peko_albatross_feather` and `jetpack_stabilizer` pair introduced alongside the Mando weapon schematics and reduced the remaining pair to make room for the 3% schematic pool. Group weight totalled 14,700,000 instead of 10,000,000, so every advertised drop rate in the group was wrong.
+- **Files:** `bin/scripts/loot/groups/bellum/mando_contract_rare_bonus.lua`
+- **Notes:** Verified total is now exactly 10,000,000 across 26 entries with no duplicate item templates.
 
 ### 2026-08-13 — Fix Mandalorian melee crafting slot labels
 

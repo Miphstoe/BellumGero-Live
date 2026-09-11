@@ -46,7 +46,7 @@ object_tangible_loot_loot_schematic_death_watch_mandalorian_jetpack_schematic = 
 	customName = "Mandalorian Jetpack Schematic",
 	objectMenuComponent = "LootSchematicMenuComponent",
 	attributeListComponent = "LootSchematicAttributeListComponent",
-	requiredSkill = "crafting_armorsmith_master",
+	requiredSkill = "crafting_droidengineer_master",
 	targetDraftSchematic = "object/draft_schematic/vehicle/civilian/jetpack.iff",
 	targetUseCount = 1,
 }
