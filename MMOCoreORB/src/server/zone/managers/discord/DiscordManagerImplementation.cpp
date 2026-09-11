@@ -268,32 +268,17 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             return;
         }
 
-        {
-            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
-
-            if (discordRuntime.generation != generation || discordRuntime.shutdownRequested) {
-                return;
-            }
-
-            discordRuntime.gatewayConnected = false;
-            discordRuntime.lastDisconnectMs = getDiscordNowMs();
-
-            // Only move to Reconnecting from a healthy state; leave Starting/Reconnecting
-            // as-is so an in-flight reconnect isn't disturbed.
-            if (discordRuntime.state == DiscordLifecycleState::Connected) {
-                discordRuntime.state = DiscordLifecycleState::Reconnecting;
-            }
+        // DPP uses the same socket-close event for short-lived REST/HTTPS sockets and
+        // gateway sockets. A successful message_create closes its HTTPS socket right
+        // after the send, so do not mark the gateway disconnected here. Gateway health is
+        // tracked by ready/resumed callbacks plus heartbeat checks.
+        if (manager->isDebugMode()) {
+            manager->info(
+                "Discord socket closed. Shard: " +
+                String::valueOf(event.shard) + " FD: " + String::valueOf(event.fd),
+                true
+            );
         }
-
-        // A socket close is expected periodically (Discord opcode 7, transient network
-        // blips, zombied connections). DPP reconnects and RESUMEs the shard on its own,
-        // so don't tear down the cluster here. runDiscordHealthCheck escalates to a full
-        // rebuild only if the gateway is still down after DISCORD_GATEWAY_RESUME_GRACE_MS.
-        manager->info(
-            "Discord Gateway disconnected; waiting for automatic resume. Shard: " +
-            String::valueOf(event.shard) + " FD: " + String::valueOf(event.fd),
-            true
-        );
     });
 
     bot->on_message_create([managerRef, generation](const dpp::message_create_t& event) {
@@ -1075,16 +1060,33 @@ void DiscordManagerImplementation::handleGameMessage(const String& channel, cons
 
 void DiscordManagerImplementation::handleDiscordMessage(const String& channelId, const String& message, const String& author, const String& userId) {
     if (!isEnabled() || !isConnected()) {
+        if (isDebugMode()) {
+            info(
+                "Discord message ignored because manager is not connected. Channel: " +
+                channelId + " Author: " + author,
+                true
+            );
+        }
         return;
     }
     
     // Only process messages from the relay channel
     if (channelId != getRelayChannelId()) {
+        if (isDebugMode()) {
+            info(
+                "Discord message ignored from non-relay channel: " + channelId +
+                " expected: " + getRelayChannelId(),
+                true
+            );
+        }
         return;
     }
     
     // Ignore empty messages
     if (message.isEmpty()) {
+        if (isDebugMode()) {
+            info("Discord message ignored because content is empty. Author: " + author, true);
+        }
         return;
     }
     
