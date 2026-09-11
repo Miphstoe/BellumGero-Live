@@ -29,6 +29,11 @@
 // NEW: Architect retrofit service
 #include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
 
+// BG: Bellum Gero display mannequin - "Create Mannequin" deed dispenser
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sui/SuiWindowType.h"
+#include "server/zone/objects/player/sui/callbacks/mannequin/CreateMannequinSuiCallback.h"
+
 static const int RADIAL_ROOT_MANAGEMENT = 118;
 static const int RADIAL_ROOT_PERMISSIONS = 117;
 
@@ -42,6 +47,9 @@ static const int RADIAL_SET_FACTION_ALIGNMENT = 241;
 
 // New action ID for Architect Retrofit Service
 static const int RADIAL_ARCHITECT_RETROFIT = 242;
+
+// BG: New action ID for Create Mannequin (deed dispenser)
+static const int RADIAL_CREATE_MANNEQUIN = 243;
 
 void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* creature) const {
 	if (sceneObject == nullptr || menuResponse == nullptr || creature == nullptr)
@@ -168,6 +176,9 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, 202, 3, "@player_structure:move_first_item");        // Find Lost Items
 			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_VIEW_HOUSE_STORAGE, 3, "View House Storage");  // View House Storage
 
+			// BG: Create Mannequin - dispenses a mannequin deed to any structure admin
+			menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_CREATE_MANNEQUIN, 3, "Create Mannequin");
+
 			// Architect Retrofit Service — Master Architect only, one time per structure
 			if (creature->hasSkill("crafting_architect_master")) {
 				BuildingObject* bldCheck = cast<BuildingObject*>(structureObject.get());
@@ -176,12 +187,13 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 				}
 			}
 
-			// Pack Up House option - owner only, no vendors
+			// Pack Up House option - owner only, no vendors, no mannequins (BG)
 			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
 			if (building != nullptr && ghost != nullptr) {
 				if (ghost->isOwnedStructure(structureObject)) {
-					// Only show option if no vendors inside
-					if (!HousePackupManager::instance()->hasVendorsInside(building)) {
+					// Only show option if no vendors AND no mannequins inside
+					if (!HousePackupManager::instance()->hasVendorsInside(building)
+						&& !HousePackupManager::instance()->hasMannequinsInside(building)) {
 						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up Structure");
 					}
 				}
@@ -408,6 +420,22 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 				}
 				break;
 
+			case RADIAL_CREATE_MANNEQUIN: { // BG: Create Mannequin - dispense a deed
+				if (!structureObject->isBuildingObject())
+					break;
+
+				ManagedReference<SuiListBox*> box = new SuiListBox(creature, SuiWindowType::MANNEQUIN_CREATE);
+				box->setCallback(new CreateMannequinSuiCallback(creature->getZoneServer()));
+				box->setCancelButton(true, "@cancel");
+				box->setPromptTitle("Create Mannequin");
+				box->setPromptText("Select the mannequin type. A deed will be placed in your inventory; use it inside the structure to deploy the mannequin.");
+				MannequinSpecies::fillListBox(box.get());
+
+				ghost->addSuiBox(box);
+				creature->sendMessage(box->generateMessage());
+				break;
+			}
+
 			// NEW: Pack Up House (non-civic only)
 			case RADIAL_PACK_UP_HOUSE: {
 				if (structureObject->isBuildingObject() && !structureObject->isCivicStructure()) {
@@ -422,6 +450,13 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 						// Check 2: Vendor detection
 						if (HousePackupManager::instance()->hasVendorsInside(building)) {
 							creature->sendSystemMessage("Cannot pack up structure with vendors inside. Please dismiss all vendors first.");
+							break;
+						}
+
+						// Check 2b (BG): Mannequin detection - radial is hidden when mannequins
+						// exist; this guards stale menus / races. packUpHouse() re-checks too.
+						if (HousePackupManager::instance()->hasMannequinsInside(building)) {
+							creature->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
 							break;
 						}
 
