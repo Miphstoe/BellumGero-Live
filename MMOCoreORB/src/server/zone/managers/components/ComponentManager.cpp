@@ -63,6 +63,7 @@
 #include "server/zone/objects/tangible/components/SarlaccTrashCanMenuComponent.h"
 #include "server/zone/objects/tangible/components/AncientCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/LockedBriefcaseMenuComponent.h"
+#include "server/zone/objects/tangible/components/ArmorSuitPackageMenuComponent.h"
 #include "server/zone/objects/tangible/components/WaypointDatapadMenuComponent.h"
 #include "server/zone/objects/tangible/components/ForceCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/RobeObjectMenuComponent.h"
@@ -227,6 +228,7 @@ ComponentManager::ComponentManager() {
 	components.put("HolocronDestinyMenuComponent", new HolocronDestinyMenuComponent());
 	components.put("SarlaccTrashCanMenuComponent", new SarlaccTrashCanMenuComponent());
 	components.put("LockedBriefcaseMenuComponent", new LockedBriefcaseMenuComponent());
+	components.put("ArmorSuitPackageMenuComponent", new ArmorSuitPackageMenuComponent());
 	components.put("WaypointDatapadMenuComponent", new WaypointDatapadMenuComponent());
 
 	components.put("AttributeListComponent", new AttributeListComponent());

@@ -512,3 +512,7 @@ object_tangible_wearables_armor_marine_shared_armor_marine_leggings = SharedTang
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_marine_shared_armor_marine_leggings, "object/tangible/wearables/armor/marine/shared_armor_marine_leggings.iff")
+
+object_tangible_wearables_armor_marine_shared_armor_marine_suit_package =
+	SharedTangibleObjectTemplate:new { clientTemplateFileName = "object/tangible/wearables/armor/marine/shared_armor_marine_suit_package_item.iff" }
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_marine_shared_armor_marine_suit_package, "object/tangible/wearables/armor/marine/shared_armor_marine_suit_package_item.iff")

@@ -83,6 +83,16 @@ void SchematicList::removeRewardedSchematic(DraftSchematic* schematic) {
 		rewardedSchematics.drop(schematic);
 }
 
+int SchematicList::getRewardedSchematicUseCount(DraftSchematic* schematic) const {
+	if (schematic == nullptr)
+		return 0;
+	for (int i = 0; i < rewardedSchematics.size(); ++i) {
+		if (rewardedSchematics.elementAt(i).getKey() == schematic)
+			return rewardedSchematics.get(i);
+	}
+	return 0;
+}
+
 bool SchematicList::decreaseSchematicUseCount(DraftSchematic* schematic) {
 	if(rewardedSchematics.contains(schematic)) {
 
