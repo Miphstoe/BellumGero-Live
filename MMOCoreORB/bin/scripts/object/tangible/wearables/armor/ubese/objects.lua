@@ -748,3 +748,12 @@ object_tangible_wearables_armor_ubese_shared_armor_ubese_shirt = SharedTangibleO
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_ubese_shared_armor_ubese_shirt, "object/tangible/wearables/armor/ubese/shared_armor_ubese_shirt.iff")
+
+object_tangible_wearables_armor_ubese_shared_armor_ubese_suit_package =
+	SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/ubese/shared_armor_ubese_suit_package_item.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_tangible_wearables_armor_ubese_shared_armor_ubese_suit_package,
+	"object/tangible/wearables/armor/ubese/shared_armor_ubese_suit_package_item.iff")

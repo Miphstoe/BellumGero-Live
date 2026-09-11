@@ -6,6 +6,7 @@
  */
 
 #include "server/zone/objects/tangible/wearables/ArmorObject.h"
+#include "server/zone/objects/scene/variables/CustomizationVariables.h"
 #include "templates/tangible/ArmorObjectTemplate.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "templates/tangible/SharedWeaponObjectTemplate.h"
@@ -401,6 +402,17 @@ int ArmorObjectImplementation::handleObjectMenuSelect(CreatureObject* player, by
 void ArmorObjectImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
 	WearableObjectImplementation::updateCraftingValues(values, firstUpdate);
 
+	// A full-suit package is an ArmorObject internally so normal crafting,
+	// experimentation, factory manufacture and armor slicing can be reused.
+	// Never expose temporary package sockets; SEAs belong on generated pieces.
+	const auto suitTemplate = getObjectTemplate();
+	if (suitTemplate != nullptr) {
+		const String& suitTemplatePath = suitTemplate->getFullTemplateString();
+
+		if (suitTemplatePath.endsWith("_suit_package.iff"))
+			setMaxSockets(0);
+	}
+
 	/*
 	 * Incoming Values:					Ranges:
 	 * sockets							All depend on type of armor
@@ -629,4 +641,56 @@ int ArmorObjectImplementation::applyBellumBeskarTune(float kineticDelta, float e
 	}
 
 	return applied;
+}
+
+void ArmorObjectImplementation::initializeBellumSuitPieceFrom(ArmorObject* source,
+		int healthEncumbranceValue, int actionEncumbranceValue, int mindEncumbranceValue) {
+	if (source == nullptr)
+		return;
+
+	kinetic = source->getBellumRawKinetic();
+	energy = source->getBellumRawEnergy();
+	electricity = source->getBellumRawElectricity();
+	stun = source->getBellumRawStun();
+	blast = source->getBellumRawBlast();
+	heat = source->getBellumRawHeat();
+	cold = source->getBellumRawCold();
+	acid = source->getBellumRawAcid();
+	lightSaber = source->getBellumRawLightSaber();
+
+	baseProtection = source->getBellumRawBaseProtection();
+	specialProtection = source->getBellumRawSpecialProtection();
+	specialResists = source->getBellumRawSpecialResists();
+
+	setRating(source->getRating());
+	setHealthEncumbrance(healthEncumbranceValue);
+	setActionEncumbrance(actionEncumbranceValue);
+	setMindEncumbrance(mindEncumbranceValue);
+
+	setMaxCondition(source->getMaxCondition());
+	setConditionDamage(0, false);
+
+	// Bellum Gero's normal crafted wearables currently generate four sockets.
+	setMaxSockets(MAXSOCKETS);
+
+	// Copy the finalized package slice exactly. Calling slice setters here
+	// would transform the value a second time.
+	effectivenessSlice = source->getBellumRawEffectivenessSlice();
+	encumbranceSlice = source->getBellumRawEncumbranceSlice();
+	setSliced(source->isSliced());
+
+	String crafterName = source->getCraftersName();
+	setCraftersName(crafterName);
+
+	setCraftersID(source->getCraftersID());
+	setSerialNumber(source->getSerialNumber());
+
+	CustomizationVariables* customVars = source->getCustomizationVariables();
+	if (customVars != nullptr) {
+		for (int i = 0; i < customVars->size(); ++i) {
+			uint8 id = customVars->elementAt(i).getKey();
+			int16 value = customVars->elementAt(i).getValue();
+			setCustomizationVariable(id, value, false);
+		}
+	}
 }

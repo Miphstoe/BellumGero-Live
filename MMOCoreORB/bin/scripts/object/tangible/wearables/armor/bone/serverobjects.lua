@@ -55,3 +55,5 @@ includeFile("tangible/wearables/armor/bone/armor_bone_s01_gloves.lua")
 includeFile("tangible/wearables/armor/bone/armor_bone_s01_helmet.lua")
 includeFile("tangible/wearables/armor/bone/armor_bone_s01_leggings.lua")
 includeFile("tangible/wearables/armor/bone/armor_smc_s01_bicep_l.lua")
+
+includeFile("tangible/wearables/armor/bone/armor_bone_suit_package.lua")

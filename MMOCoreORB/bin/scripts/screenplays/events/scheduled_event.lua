@@ -544,8 +544,14 @@ function ScheduledEvent:start()
 
   if self.CATCH_UP_IF_MISSED then
     local lastStart = self:lastScheduledStartAtOrBefore(tnow)
-    if lastStart and (tnow - lastStart) < self.DURATION_SECONDS then
-      local remain = self.DURATION_SECONDS - (tnow - lastStart)
+    -- DURATION_SECONDS is not defined in the config; without it we cannot know whether a
+    -- missed start is still within its event window, so skip catch-up rather than crash start().
+    local duration = tonumber(self.DURATION_SECONDS)
+    if lastStart and duration == nil then
+      print("[SCHEDULED] [START] CATCH_UP_IF_MISSED set but DURATION_SECONDS undefined; skipping catch-up.")
+    end
+    if lastStart and duration ~= nil and (tnow - lastStart) < duration then
+      local remain = duration - (tnow - lastStart)
       print("[SCHEDULED] Missed start at " .. os.date("%Y-%m-%d %H:%M:%S", lastStart) .. "; starting now with " .. remain .. " sec remaining.")
       self:beginEvent()
       return

@@ -26,6 +26,7 @@
 #include "terrain/manager/TerrainManager.h"
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
@@ -64,6 +65,15 @@
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/SuiWindowType.h"
 #include "server/zone/objects/player/sui/callbacks/ArchitectRetrofitSuiCallback.h"
+
+#include "system/io/ObjectInputStream.h"
+#include "system/io/ObjectOutputStream.h"
+
+#include <cstdio>
+#include <sys/stat.h>
+
+#include <mutex>
+#include <unordered_set>
 
 namespace StorageManagerNamespace {
 constexpr int MAX_ZONE_INDEX_DETAIL_LOGS = 50;
@@ -133,7 +143,498 @@ int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 	return 0;
 }
 
+
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+constexpr const char* STRUCTURE_RECOVERY_ROOT_DIR =
+	"structure_integrity";
+constexpr const char* STRUCTURE_RECOVERY_PENDING_HIGH_PLAN =
+	"structure_integrity/pending_high_confidence_recovery_v1.txt";
+constexpr const char* STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP =
+	"structure_integrity/pending_high_confidence_recovery_v1.txt.tmp";
+
+int getSerializedVariableDataOffsetForStructureRecovery(
+		const uint32& variableHashCode, ObjectInputStream* stream) {
+	if (stream == nullptr)
+		return -1;
+
+	stream->reset();
+	uint16 variableCount = stream->readShort();
+
+	for (int i = 0; i < variableCount; ++i) {
+		uint32 nameHashCode = stream->readInt();
+		uint32 variableSize = stream->readInt();
+		int dataOffset = stream->getOffset();
+
+		if (nameHashCode == variableHashCode) {
+			stream->reset();
+			return dataOffset;
+		}
+
+		stream->shiftOffset(variableSize);
+	}
+
+	stream->reset();
+	return -1;
+}
+
+ObjectOutputStream* replaceSerializedVariableDataForStructureRecovery(
+		const uint32& variableHashCode,
+		ObjectInputStream* objectData,
+		Stream* replacementData) {
+	if (objectData == nullptr || replacementData == nullptr)
+		return nullptr;
+
+	int offset =
+		getSerializedVariableDataOffsetForStructureRecovery(
+			variableHashCode, objectData);
+
+	if (offset == -1)
+		return nullptr;
+
+	ObjectOutputStream* newData =
+		new ObjectOutputStream(objectData->size());
+
+	objectData->copy(newData);
+
+	objectData->reset();
+	newData->reset();
+
+	objectData->shiftOffset(offset - 4);
+	uint32 oldDataSize = objectData->readInt();
+
+	newData->shiftOffset(offset);
+
+	if (oldDataSize > 0)
+		newData->removeRange(offset, offset + oldDataSize);
+
+	newData->writeInt(offset - 4, replacementData->size());
+	newData->insertStream(replacementData, replacementData->size(), offset);
+
+	objectData->reset();
+	newData->reset();
+
+	return newData;
+}
+
+ObjectOutputStream* addSerializedVariableDataForStructureRecovery(
+		const String& variableName,
+		ObjectInputStream* objectData,
+		Stream* variableData) {
+	if (objectData == nullptr || variableData == nullptr)
+		return nullptr;
+
+	objectData->reset();
+
+	uint16 oldVariableCount = objectData->readShort();
+
+	ObjectOutputStream* newData =
+		new ObjectOutputStream(
+			objectData->size() + variableData->size() + 16);
+
+	objectData->reset();
+	objectData->copy(newData, 0);
+
+	newData->writeShort(0, oldVariableCount + 1);
+	newData->setOffset(newData->size());
+
+	uint32 variableHashCode = variableName.hashCode();
+	TypeInfo<uint32>::toBinaryStream(&variableHashCode, newData);
+	newData->writeInt(variableData->size());
+	newData->writeStream(variableData);
+
+	newData->reset();
+	objectData->reset();
+
+	return newData;
+}
+
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_FOOTPRINT_GUARD_BUILD2_PRECISE_RECT
+// Recovery safety gate for historical structure recovery.
+//
+// Automatic recovery is allowed only when the damaged structure's original
+// footprint is clear of every other persistent player structure on the same
+// planet.
+//
+// Unlike BUILD1, this uses each structure's persisted SceneObject.direction
+// quaternion and the existing StructureManager::getStructureFootprint() math.
+// SceneObject::getDirectionAngle() itself returns direction.getDegrees(), so
+// this reproduces the same angle convention used by normal structure placement.
+//
+// This helper is read-only. It never changes playerstructures.db.
+enum RecoveryFootprintStatus {
+	RECOVERY_FOOTPRINT_CLEAR = 0,
+	RECOVERY_FOOTPRINT_OCCUPIED = 1,
+	RECOVERY_FOOTPRINT_INDETERMINATE = 2
+};
+
+struct RecoveryFootprintCheckResult {
+	int status = RECOVERY_FOOTPRINT_INDETERMINATE;
+	String reason = "FOOTPRINT_CHECK_NOT_RUN";
+	uint64 conflictingObjectID = 0;
+	String conflictingTemplate = "";
+	float conflictingX = 0.0f;
+	float conflictingY = 0.0f;
+};
+
+String resolveGroundZoneFromRecoveryWaypoint(
+		ZoneServer* server,
+		WaypointObject* waypoint) {
+	if (server == nullptr || waypoint == nullptr)
+		return "";
+
+	const uint32 planetCRC = waypoint->getPlanetCRC();
+
+	for (int i = 0; i < server->getZoneCount(); ++i) {
+		Zone* candidateZone = server->getZone(i);
+
+		if (candidateZone != nullptr &&
+				!candidateZone->isSpaceZone() &&
+				candidateZone->getZoneCRC() == planetCRC) {
+			return candidateZone->getZoneName();
+		}
+	}
+
+	return "";
+}
+
+int recoveryDirectionToPlacementAngle(const Quaternion& direction) {
+	// Match normal Core3 placement semantics exactly. SceneObject's
+	// getDirectionAngle() returns a float, while getStructureFootprint()
+	// accepts an int, so the normal call path truncates toward zero.
+	int angle = (int)direction.getDegrees();
+
+	angle %= 360;
+
+	if (angle < 0)
+		angle += 360;
+
+	return angle;
+}
+
+bool buildRecoveryFootprintRectangle(
+		StructureManager* structureManager,
+		SharedStructureObjectTemplate* structureTemplate,
+		const Quaternion& direction,
+		float centerX,
+		float centerY,
+		float& x0,
+		float& y0,
+		float& x1,
+		float& y1) {
+	if (structureManager == nullptr || structureTemplate == nullptr)
+		return false;
+
+	float l0 = 0.0f;
+	float w0 = 0.0f;
+	float l1 = 0.0f;
+	float w1 = 0.0f;
+
+	const int angle = recoveryDirectionToPlacementAngle(direction);
+
+	if (structureManager->getStructureFootprint(
+			structureTemplate, angle, l0, w0, l1, w1) != 0) {
+		return false;
+	}
+
+	x0 = centerX + w0;
+	y0 = centerY + l0;
+	x1 = centerX + w1;
+	y1 = centerY + l1;
+
+	if (x0 > x1) {
+		float temp = x0;
+		x0 = x1;
+		x1 = temp;
+	}
+
+	if (y0 > y1) {
+		float temp = y0;
+		y0 = y1;
+		y1 = temp;
+	}
+
+	return x1 > x0 && y1 > y0;
+}
+
+bool recoveryFootprintRectanglesOverlap(
+		float ax0,
+		float ay0,
+		float ax1,
+		float ay1,
+		float bx0,
+		float by0,
+		float bx1,
+		float by1) {
+	// Match normal placement's edge tolerance: merely touching edges should
+	// not count as an occupied footprint. Require a small positive overlap.
+	const float overlapEpsilon = 0.1f;
+
+	const float overlapX =
+		Math::min(ax1, bx1) - Math::max(ax0, bx0);
+	const float overlapY =
+		Math::min(ay1, by1) - Math::max(ay0, by0);
+
+	return overlapX > overlapEpsilon && overlapY > overlapEpsilon;
+}
+
+RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
+		StructureManager* structureManager,
+		ZoneServer* server,
+		TemplateManager* templateManager,
+		ObjectDatabase* structureDatabase,
+		uint64 targetObjectID,
+		SharedStructureObjectTemplate* targetTemplate,
+		const String& expectedZone,
+		WaypointObject* targetWaypoint) {
+	RecoveryFootprintCheckResult result;
+
+	if (structureManager == nullptr ||
+			server == nullptr ||
+			templateManager == nullptr ||
+			structureDatabase == nullptr ||
+			targetObjectID == 0 ||
+			targetTemplate == nullptr ||
+			expectedZone.isEmpty() ||
+			targetWaypoint == nullptr) {
+		result.reason = "RECOVERY_LOCATION_EVIDENCE_INCOMPLETE";
+		return result;
+	}
+
+	const String targetWaypointZone =
+		resolveGroundZoneFromRecoveryWaypoint(server, targetWaypoint);
+
+	if (targetWaypointZone.isEmpty() || targetWaypointZone != expectedZone) {
+		result.reason = "TARGET_WAYPOINT_ZONE_MISMATCH";
+		return result;
+	}
+
+	ObjectInputStream targetData(2000);
+
+	if (structureDatabase->getData(targetObjectID, &targetData)) {
+		result.reason = "TARGET_PERSISTENT_RECORD_UNAVAILABLE";
+		return result;
+	}
+
+	Quaternion targetDirection;
+
+	try {
+		if (!Serializable::getVariable<Quaternion>(
+				STRING_HASHCODE("SceneObject.direction"),
+				&targetDirection,
+				&targetData)) {
+			result.reason = "TARGET_DIRECTION_UNAVAILABLE";
+			return result;
+		}
+	} catch (...) {
+		result.reason = "TARGET_DIRECTION_UNREADABLE";
+		return result;
+	}
+
+	const float targetX = targetWaypoint->getPositionX();
+	const float targetY = targetWaypoint->getPositionY();
+
+	float targetX0 = 0.0f;
+	float targetY0 = 0.0f;
+	float targetX1 = 0.0f;
+	float targetY1 = 0.0f;
+
+	if (!buildRecoveryFootprintRectangle(
+			structureManager,
+			targetTemplate,
+			targetDirection,
+			targetX,
+			targetY,
+			targetX0,
+			targetY0,
+			targetX1,
+			targetY1)) {
+		result.reason = "TARGET_FOOTPRINT_UNAVAILABLE";
+		return result;
+	}
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	ObjectDatabaseIterator iterator(structureDatabase, config);
+	ObjectInputStream otherData(2000);
+	uint64 otherObjectID = 0;
+
+	while (iterator.getNextKeyAndValue(otherObjectID, &otherData)) {
+		if (otherObjectID == targetObjectID) {
+			otherData.reset();
+			continue;
+		}
+
+		String otherPersistedZone;
+		uint32 otherCRC = 0;
+		uint64 otherWaypointID = 0;
+		Quaternion otherDirection;
+		bool hasOtherZone = false;
+		bool hasOtherDirection = false;
+
+		try {
+			Serializable::getVariable<uint32>(
+				STRING_HASHCODE("SceneObject.serverObjectCRC"),
+				&otherCRC, &otherData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.waypointID"),
+				&otherWaypointID, &otherData);
+			hasOtherZone = Serializable::getVariable<String>(
+				STRING_HASHCODE("SceneObject.zone"),
+				&otherPersistedZone, &otherData);
+			hasOtherDirection = Serializable::getVariable<Quaternion>(
+				STRING_HASHCODE("SceneObject.direction"),
+				&otherDirection, &otherData);
+		} catch (...) {
+			result.reason = "OTHER_PERSISTENT_STRUCTURE_UNREADABLE";
+			result.conflictingObjectID = otherObjectID;
+			otherData.reset();
+			return result;
+		}
+
+		ManagedReference<WaypointObject*> otherWaypoint = nullptr;
+		String otherResolvedZone;
+
+		if (hasOtherZone && !otherPersistedZone.isEmpty()) {
+			Zone* persistedZoneObject = server->getZone(otherPersistedZone);
+
+			if (persistedZoneObject != nullptr &&
+					!persistedZoneObject->isSpaceZone()) {
+				otherResolvedZone = otherPersistedZone;
+			}
+		}
+
+		if (otherResolvedZone.isEmpty() && otherWaypointID != 0) {
+			otherWaypoint =
+				server->getObject(otherWaypointID).castTo<WaypointObject*>();
+
+			if (otherWaypoint != nullptr) {
+				otherResolvedZone =
+					resolveGroundZoneFromRecoveryWaypoint(
+						server, otherWaypoint);
+			}
+		}
+
+		if (otherResolvedZone.isEmpty()) {
+			result.reason = "OTHER_PERSISTENT_STRUCTURE_ZONE_UNRESOLVED";
+			result.conflictingObjectID = otherObjectID;
+			otherData.reset();
+			return result;
+		}
+
+		if (otherResolvedZone != expectedZone) {
+			otherData.reset();
+			continue;
+		}
+
+		if (otherWaypoint == nullptr && otherWaypointID != 0) {
+			otherWaypoint =
+				server->getObject(otherWaypointID).castTo<WaypointObject*>();
+		}
+
+		if (otherWaypoint == nullptr) {
+			result.reason = "SAME_PLANET_STRUCTURE_WAYPOINT_UNAVAILABLE";
+			result.conflictingObjectID = otherObjectID;
+			otherData.reset();
+			return result;
+		}
+
+		Reference<SharedStructureObjectTemplate*> otherTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(
+				templateManager->getTemplate(otherCRC));
+
+		// BELLUM_GERO_STRUCTURE_RECOVERY_FOOTPRINT_GUARD_BUILD21_SKIP_NONCOLLIDING_STALE
+		//
+		// Match normal Core3 placement collision semantics. Nearby objects that
+		// cannot resolve to SharedStructureObjectTemplate / StructureFootprint
+		// are ignored by the normal structure placement collision loop.
+		//
+		// A stale/unloadable playerstructures record must therefore not poison an
+		// otherwise safe recovery candidate simply because it cannot participate
+		// in normal structure-footprint collision checks.
+		if (otherTemplate == nullptr ||
+				otherTemplate->getStructureFootprint() == nullptr) {
+			otherData.reset();
+			continue;
+		}
+
+		// Once the record is confirmed to be a real footprint-bearing structure,
+		// fail closed if its persisted orientation cannot be reconstructed.
+		if (!hasOtherDirection) {
+			result.reason = "SAME_PLANET_STRUCTURE_DIRECTION_UNAVAILABLE";
+			result.conflictingObjectID = otherObjectID;
+			result.conflictingTemplate =
+				otherTemplate->getFullTemplateString();
+			result.conflictingX = otherWaypoint->getPositionX();
+			result.conflictingY = otherWaypoint->getPositionY();
+			otherData.reset();
+			return result;
+		}
+
+		const float otherX = otherWaypoint->getPositionX();
+		const float otherY = otherWaypoint->getPositionY();
+
+		float otherX0 = 0.0f;
+		float otherY0 = 0.0f;
+		float otherX1 = 0.0f;
+		float otherY1 = 0.0f;
+
+		if (!buildRecoveryFootprintRectangle(
+				structureManager,
+				otherTemplate,
+				otherDirection,
+				otherX,
+				otherY,
+				otherX0,
+				otherY0,
+				otherX1,
+				otherY1)) {
+			result.reason = "SAME_PLANET_STRUCTURE_FOOTPRINT_UNAVAILABLE";
+			result.conflictingObjectID = otherObjectID;
+			result.conflictingTemplate =
+				otherTemplate->getFullTemplateString();
+			result.conflictingX = otherX;
+			result.conflictingY = otherY;
+			otherData.reset();
+			return result;
+		}
+
+		if (recoveryFootprintRectanglesOverlap(
+				targetX0,
+				targetY0,
+				targetX1,
+				targetY1,
+				otherX0,
+				otherY0,
+				otherX1,
+				otherY1)) {
+			result.status = RECOVERY_FOOTPRINT_OCCUPIED;
+			result.reason = "RECOVERY_FOOTPRINT_OCCUPIED";
+			result.conflictingObjectID = otherObjectID;
+			result.conflictingTemplate =
+				otherTemplate->getFullTemplateString();
+			result.conflictingX = otherX;
+			result.conflictingY = otherY;
+			otherData.reset();
+			return result;
+		}
+
+		otherData.reset();
+	}
+
+	result.status = RECOVERY_FOOTPRINT_CLEAR;
+	result.reason = "RECOVERY_FOOTPRINT_CLEAR";
+	return result;
+}
+
 } // namespace StorageManagerNamespace
+
+namespace StructureWorldRemovalGuardNamespace {
+std::mutex authorizationMutex;
+std::unordered_set<uint64> authorizedObjectIDs;
+} // namespace StructureWorldRemovalGuardNamespace
 
 StructureManager::StructureManager() : Logger("StructureManager") {
 	server = nullptr;
@@ -141,6 +642,47 @@ StructureManager::StructureManager() : Logger("StructureManager") {
 
 	setGlobalLogging(true);
 	setLogging(false);
+}
+
+// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+// Process-local authorization only. No generated/serialized object layout changes.
+void StructureManager::authorizePersistentStructureWorldRemoval(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.insert(structureObject->getObjectID());
+}
+
+bool StructureManager::isPersistentStructureWorldRemovalAuthorized(StructureObject* structureObject) const {
+	if (structureObject == nullptr)
+		return false;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	return StructureWorldRemovalGuardNamespace::authorizedObjectIDs.find(structureObject->getObjectID()) !=
+		StructureWorldRemovalGuardNamespace::authorizedObjectIDs.end();
+}
+
+bool StructureManager::consumePersistentStructureWorldRemovalAuthorization(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return false;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	auto it = StructureWorldRemovalGuardNamespace::authorizedObjectIDs.find(structureObject->getObjectID());
+
+	if (it == StructureWorldRemovalGuardNamespace::authorizedObjectIDs.end())
+		return false;
+
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.erase(it);
+	return true;
+}
+
+void StructureManager::clearPersistentStructureWorldRemovalAuthorization(StructureObject* structureObject) {
+	if (structureObject == nullptr)
+		return;
+
+	std::lock_guard<std::mutex> guard(StructureWorldRemovalGuardNamespace::authorizationMutex);
+	StructureWorldRemovalGuardNamespace::authorizedObjectIDs.erase(structureObject->getObjectID());
 }
 
 int StructureManager::getAccountLotCap() const {
@@ -514,6 +1056,7 @@ String StructureManager::validatePlayerStructureZoneIndex(bool logDetails, bool 
 	return summary.toString();
 }
 
+
 void StructureManager::loadPlayerStructures(const String& zoneName) {
 	info("Loading player structures for zone: " + zoneName);
 
@@ -813,7 +1356,7 @@ int StructureManager::getStructureFootprint(SharedStructureObjectTemplate* objec
             return 1;
         }
     }
-    
+
     Locker _lock(deed, creature);
     if (!deed->isASubChildOf(creature)) {
         creature->sendSystemMessage("@player_structure:no_possession");
@@ -826,7 +1369,7 @@ if (ghost != nullptr) {
         creature->sendSystemMessage("@player_structure:" + abilityRequired);
         return 1;
     }
-    
+
     const int lots = serverTemplate->getLotSize();
     const int accountLotsUsed = getAccountLotsUsed(creature);
     const int accountLotCap = getAccountLotCap(creature);
@@ -837,7 +1380,7 @@ if (ghost != nullptr) {
         creature->sendSystemMessage(param);
         return 1;
     }
-}    
+}
     // For packed deeds, skip the lot check entirely since the deed already consumes the lots
     ManagedReference<PlaceStructureSession*> session = new PlaceStructureSession(creature, deed);
     creature->addActiveSession(SessionFacadeType::PLACESTRUCTURE, session);
@@ -848,28 +1391,28 @@ if (ghost != nullptr) {
 
 StructureObject* StructureManager::placeStructure(CreatureObject* creature, const String& structureTemplatePath, float x, float y, int angle, int persistenceLevel) {
     ManagedReference<Zone*> zone = creature->getZone();
-    
+
     if (zone == nullptr)
         return nullptr;
-    
+
     TerrainManager* terrainManager = zone->getPlanetManager()->getTerrainManager();
     SharedStructureObjectTemplate* serverTemplate = dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(structureTemplatePath.hashCode()));
     if (serverTemplate == nullptr) {
         info("server template is null");
         return nullptr;
     }
-    
+
     float z = zone->getHeight(x, y);
     float floraRadius = serverTemplate->getClearFloraRadius();
     bool snapToTerrain = serverTemplate->getSnapToTerrain();
     Reference<const StructureFootprint*> structureFootprint = serverTemplate->getStructureFootprint();
-    
+
     float w0 = -5; // Along the x axis.
     float l0 = -5; // Along the y axis.
     float l1 = 5;
     float w1 = 5;
     float zIncreaseWhenNoAvailableFootprint = 0.f;
-    
+
     if (structureFootprint != nullptr) {
         getStructureFootprint(serverTemplate, angle, l0, w0, l1, w1);
     } else {
@@ -877,19 +1420,19 @@ StructureObject* StructureManager::placeStructure(CreatureObject* creature, cons
             warning("Structure with template '" + structureTemplatePath + "' has no structure footprint.");
         zIncreaseWhenNoAvailableFootprint = 5.f;
     }
-    
+
     if (floraRadius > 0 && !snapToTerrain)
         z = terrainManager->getHighestHeight(x + w0, y + l0, x + w1, y + l1, 1) + zIncreaseWhenNoAvailableFootprint;
-    
+
     String strDatabase = "playerstructures";
     bool bIsFactionBuilding = (serverTemplate->getGameObjectType() == SceneObjectType::FACTIONBUILDING);
-    
+
     if (bIsFactionBuilding || serverTemplate->getGameObjectType() == SceneObjectType::DESTRUCTIBLE) {
         strDatabase = "playerstructures";
     }
-    
+
     ManagedReference<SceneObject*> obj = ObjectManager::instance()->createObject(structureTemplatePath.hashCode(), persistenceLevel, strDatabase);
-    
+
     if (obj == nullptr || !obj->isStructureObject()) {
         if (obj != nullptr) {
             Locker locker(obj);
@@ -898,7 +1441,7 @@ StructureObject* StructureManager::placeStructure(CreatureObject* creature, cons
         error("Failed to create structure with template: " + structureTemplatePath);
         return nullptr;
     }
-    
+
   StructureObject* structureObject = cast<StructureObject*>(obj.get());
 Locker sLocker(structureObject);
 
@@ -2535,4 +3078,1020 @@ void StructureManager::promptArchitectRetrofit(CreatureObject* creature, Structu
 
 	ghost->addSuiBox(box);
 	creature->sendMessage(box->generateMessage());
+}
+
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_AUDIT_BUILD1
+// READ ONLY: scans playerstructures.db and reports recovery candidates.
+// This function does not write, repair, remove, or re-index any object.
+String StructureManager::auditPlayerStructuresForRecovery(bool logDetails) {
+	struct AuditStats {
+		int totalRecords = 0;
+		int healthyZones = 0;
+		int missingZones = 0;
+		int emptyZones = 0;
+		int invalidZones = 0;
+		int unreadableRecords = 0;
+		int highConfidenceRecovery = 0;
+		int manualReview = 0;
+		int waypointUnavailable = 0;
+		int waypointResolved = 0;
+		int footprintConflicts = 0;
+		int footprintIndeterminate = 0;
+	};
+
+	constexpr int maxSummaryOIDs = 25;
+
+	StringBuffer highConfidenceOIDs;
+	StringBuffer manualReviewOIDs;
+	int highConfidenceOIDCount = 0;
+	int manualReviewOIDCount = 0;
+
+	auto appendSummaryOID = [maxSummaryOIDs](StringBuffer& buffer, int& count, uint64 objectID) {
+		if (count < maxSummaryOIDs) {
+			if (count > 0)
+				buffer << ", ";
+			buffer << objectID;
+		}
+		++count;
+	};
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase = dbManager->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr)
+		return "Structure Recovery Audit: playerstructures database unavailable";
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	ObjectDatabaseIterator iterator(structureDatabase, config);
+	ObjectInputStream objectData(2000);
+	uint64 objectID = 0;
+	AuditStats stats;
+
+	while (iterator.getNextKeyAndValue(objectID, &objectData)) {
+		++stats.totalRecords;
+
+		String className;
+		String zoneReference;
+		uint32 serverObjectCRC = 0;
+		uint64 ownerObjectID = 0;
+		uint64 waypointID = 0;
+		bool hasZoneVariable = false;
+
+		try {
+			Serializable::getVariable<String>(
+				STRING_HASHCODE("_className"), &className, &objectData);
+			Serializable::getVariable<uint32>(
+				STRING_HASHCODE("SceneObject.serverObjectCRC"),
+				&serverObjectCRC, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.ownerObjectID"),
+				&ownerObjectID, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.waypointID"),
+				&waypointID, &objectData);
+			hasZoneVariable = Serializable::getVariable<String>(
+				STRING_HASHCODE("SceneObject.zone"),
+				&zoneReference, &objectData);
+		} catch (const Exception& e) {
+			++stats.unreadableRecords;
+			++stats.manualReview;
+			appendSummaryOID(manualReviewOIDs, manualReviewOIDCount, objectID);
+
+			if (logDetails) {
+				warning() << "STRUCTURE-RECOVERY-AUDIT: OID=" << objectID
+					<< " issue=UNREADABLE_RECORD recovery=MANUAL"
+					<< " error=\"" << e.getMessage() << "\"";
+			}
+
+			objectData.reset();
+			continue;
+		} catch (...) {
+			++stats.unreadableRecords;
+			++stats.manualReview;
+			appendSummaryOID(manualReviewOIDs, manualReviewOIDCount, objectID);
+
+			if (logDetails) {
+				warning() << "STRUCTURE-RECOVERY-AUDIT: OID=" << objectID
+					<< " issue=UNREADABLE_RECORD recovery=MANUAL";
+			}
+
+			objectData.reset();
+			continue;
+		}
+
+		Zone* persistedZone = nullptr;
+		bool zoneHealthy = false;
+		String issue;
+
+		if (!hasZoneVariable) {
+			++stats.missingZones;
+			issue = "MISSING_ZONE";
+		} else if (zoneReference.isEmpty()) {
+			++stats.emptyZones;
+			issue = "EMPTY_ZONE";
+		} else {
+			persistedZone = server != nullptr ? server->getZone(zoneReference) : nullptr;
+
+			if (persistedZone == nullptr || persistedZone->isSpaceZone()) {
+				++stats.invalidZones;
+				issue = "INVALID_ZONE";
+			} else {
+				zoneHealthy = true;
+				++stats.healthyZones;
+			}
+		}
+
+		if (zoneHealthy) {
+			objectData.reset();
+			continue;
+		}
+
+		Reference<SharedStructureObjectTemplate*> structureTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(
+				templateManager->getTemplate(serverObjectCRC));
+
+		String templatePath = structureTemplate != nullptr ?
+			structureTemplate->getFullTemplateString() : String("<unresolved>");
+
+		ManagedReference<WaypointObject*> waypoint = nullptr;
+		String waypointZone;
+		float waypointX = 0.0f;
+		float waypointY = 0.0f;
+		float waypointZ = 0.0f;
+
+		if (server != nullptr && waypointID != 0)
+			waypoint = server->getObject(waypointID).castTo<WaypointObject*>();
+
+		if (waypoint != nullptr) {
+			const uint32 planetCRC = waypoint->getPlanetCRC();
+
+			for (int i = 0; i < server->getZoneCount(); ++i) {
+				Zone* candidateZone = server->getZone(i);
+
+				if (candidateZone != nullptr &&
+					!candidateZone->isSpaceZone() &&
+					candidateZone->getZoneCRC() == planetCRC) {
+					waypointZone = candidateZone->getZoneName();
+					break;
+				}
+			}
+
+			waypointX = waypoint->getPositionX();
+			waypointY = waypoint->getPositionY();
+			waypointZ = waypoint->getPositionZ();
+
+			if (!waypointZone.isEmpty())
+				++stats.waypointResolved;
+			else
+				++stats.waypointUnavailable;
+		} else {
+			++stats.waypointUnavailable;
+		}
+
+		const bool missingOrEmptyZone =
+			!hasZoneVariable || zoneReference.isEmpty();
+
+		const bool identityHighConfidence =
+			missingOrEmptyZone &&
+			structureTemplate != nullptr &&
+			ownerObjectID != 0 &&
+			waypointID != 0 &&
+			waypoint != nullptr &&
+			!waypointZone.isEmpty();
+
+		StorageManagerNamespace::RecoveryFootprintCheckResult footprintCheck;
+		bool recoveryLocationClear = false;
+
+		if (identityHighConfidence) {
+			footprintCheck =
+				StorageManagerNamespace::checkRecoveryFootprintAvailability(
+					this,
+					server,
+					templateManager,
+					structureDatabase,
+					objectID,
+					structureTemplate,
+					waypointZone,
+					waypoint);
+
+			recoveryLocationClear =
+				footprintCheck.status ==
+				StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR;
+
+			if (footprintCheck.status ==
+					StorageManagerNamespace::RECOVERY_FOOTPRINT_OCCUPIED) {
+				++stats.footprintConflicts;
+			} else if (!recoveryLocationClear) {
+				++stats.footprintIndeterminate;
+			}
+		}
+
+		const bool highConfidence =
+			identityHighConfidence && recoveryLocationClear;
+
+		if (highConfidence) {
+			++stats.highConfidenceRecovery;
+			appendSummaryOID(highConfidenceOIDs, highConfidenceOIDCount, objectID);
+		} else {
+			++stats.manualReview;
+			appendSummaryOID(manualReviewOIDs, manualReviewOIDCount, objectID);
+		}
+
+		if (logDetails) {
+			String persistedZoneText;
+
+			if (!hasZoneVariable)
+				persistedZoneText = "<missing>";
+			else if (zoneReference.isEmpty())
+				persistedZoneText = "<empty>";
+			else
+				persistedZoneText = zoneReference;
+
+			String waypointZoneText =
+				waypointZone.isEmpty() ? String("<unresolved>") : waypointZone;
+
+			auto detail = warning();
+			detail << "STRUCTURE-RECOVERY-AUDIT:"
+				<< " OID=" << objectID
+				<< " issue=" << issue
+				<< " recovery=" << (highConfidence ? "HIGH" : "MANUAL")
+				<< " class=" << (className.isEmpty() ? String("<unknown>") : className)
+				<< " template=" << templatePath
+				<< " ownerOID=" << ownerObjectID
+				<< " waypointOID=" << waypointID
+				<< " persistedZone=" << persistedZoneText
+				<< " waypointZone=" << waypointZoneText;
+
+			if (waypoint != nullptr) {
+				detail << " waypointPos=("
+					<< waypointX << "," << waypointY << "," << waypointZ << ")";
+			}
+
+			if (identityHighConfidence && !recoveryLocationClear) {
+				detail << " recoveryBlock=" << footprintCheck.reason;
+
+				if (footprintCheck.conflictingObjectID != 0)
+					detail << " conflictingOID="
+						<< footprintCheck.conflictingObjectID;
+
+				if (!footprintCheck.conflictingTemplate.isEmpty())
+					detail << " conflictingTemplate="
+						<< footprintCheck.conflictingTemplate;
+
+				if (footprintCheck.conflictingObjectID != 0) {
+					detail << " conflictingPos=("
+						<< footprintCheck.conflictingX << ","
+						<< footprintCheck.conflictingY << ")";
+				}
+			}
+		}
+
+		objectData.reset();
+	}
+
+	StringBuffer summary;
+	summary << "Structure Recovery Audit (READ ONLY)" << endl
+		<< "  Total playerstructure records: " << stats.totalRecords << endl
+		<< "  Healthy root zones: " << stats.healthyZones << endl
+		<< "  Missing SceneObject.zone: " << stats.missingZones << endl
+		<< "  Empty SceneObject.zone: " << stats.emptyZones << endl
+		<< "  Invalid/non-ground zone: " << stats.invalidZones << endl
+		<< "  Unreadable records: " << stats.unreadableRecords << endl
+		<< "  Waypoints resolved for damaged roots: " << stats.waypointResolved << endl
+		<< "  Waypoints unavailable/unresolved: " << stats.waypointUnavailable << endl
+		<< "  Recovery footprint conflicts: " << stats.footprintConflicts << endl
+		<< "  Recovery footprint indeterminate: " << stats.footprintIndeterminate << endl
+		<< "  HIGH-confidence recovery candidates: " << stats.highConfidenceRecovery << endl
+		<< "  Manual review required: " << stats.manualReview << endl;
+
+	if (highConfidenceOIDCount > 0) {
+		summary << "  HIGH candidate OIDs: " << highConfidenceOIDs.toString();
+
+		if (highConfidenceOIDCount > maxSummaryOIDs)
+			summary << " ... (" << (highConfidenceOIDCount - maxSummaryOIDs)
+				<< " additional; see server log)";
+
+		summary << endl;
+	}
+
+	if (manualReviewOIDCount > 0) {
+		summary << "  Manual-review OIDs: " << manualReviewOIDs.toString();
+
+		if (manualReviewOIDCount > maxSummaryOIDs)
+			summary << " ... (" << (manualReviewOIDCount - maxSummaryOIDs)
+				<< " additional; see server log)";
+
+		summary << endl;
+	}
+
+	summary << "  No database records were modified." << endl
+		<< "  Full damaged-structure details were written to the server log.";
+
+	info(true) << endl << summary.toString();
+
+	return summary.toString();
+}
+
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+// Scans the full primary playerstructures database and queues ONLY the same
+// HIGH-confidence missing/empty-zone candidates used by structureaudit.
+// No playerstructures.db record is changed by this command.
+bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result) {
+	if (server == nullptr) {
+		result = "ZoneServer is unavailable.";
+		return false;
+	}
+
+	std::FILE* existing =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN,
+			"r");
+
+	if (existing != nullptr) {
+		std::fclose(existing);
+		result =
+			"A HIGH-confidence structure recovery plan is already pending. "
+			"Restart/verify that plan before queueing another.";
+		return false;
+	}
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase =
+		dbManager->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr) {
+		result = "playerstructures database unavailable.";
+		return false;
+	}
+
+	::mkdir(
+		StorageManagerNamespace::STRUCTURE_RECOVERY_ROOT_DIR,
+		0755);
+
+	std::FILE* plan =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP,
+			"w");
+
+	if (plan == nullptr) {
+		result =
+			"Could not create temporary HIGH-confidence recovery plan.";
+		return false;
+	}
+
+	std::fprintf(plan, "BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V1\n");
+
+	berkeley::CursorConfig config;
+	config.setReadUncommitted(true);
+
+	ObjectDatabaseIterator iterator(structureDatabase, config);
+	ObjectInputStream objectData(2000);
+	uint64 objectID = 0;
+
+	int totalRecords = 0;
+	int highCandidates = 0;
+	int damagedManual = 0;
+
+	constexpr int maxSummaryOIDs = 25;
+	int summaryOIDCount = 0;
+	StringBuffer summaryOIDs;
+
+	while (iterator.getNextKeyAndValue(objectID, &objectData)) {
+		++totalRecords;
+
+		String zoneReference;
+		uint32 serverObjectCRC = 0;
+		uint64 ownerObjectID = 0;
+		uint64 waypointID = 0;
+		bool hasZoneVariable = false;
+
+		try {
+			Serializable::getVariable<uint32>(
+				STRING_HASHCODE("SceneObject.serverObjectCRC"),
+				&serverObjectCRC, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.ownerObjectID"),
+				&ownerObjectID, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.waypointID"),
+				&waypointID, &objectData);
+			hasZoneVariable = Serializable::getVariable<String>(
+				STRING_HASHCODE("SceneObject.zone"),
+				&zoneReference, &objectData);
+		} catch (...) {
+			++damagedManual;
+			objectData.reset();
+			continue;
+		}
+
+		if (hasZoneVariable && !zoneReference.isEmpty()) {
+			objectData.reset();
+			continue;
+		}
+
+		Reference<SharedStructureObjectTemplate*> structureTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(
+				templateManager->getTemplate(serverObjectCRC));
+
+		ManagedReference<WaypointObject*> waypoint = nullptr;
+		String waypointZone;
+
+		if (server != nullptr && waypointID != 0)
+			waypoint =
+				server->getObject(waypointID).castTo<WaypointObject*>();
+
+		if (waypoint != nullptr) {
+			const uint32 planetCRC = waypoint->getPlanetCRC();
+
+			for (int i = 0; i < server->getZoneCount(); ++i) {
+				Zone* candidateZone = server->getZone(i);
+
+				if (candidateZone != nullptr &&
+						!candidateZone->isSpaceZone() &&
+						candidateZone->getZoneCRC() == planetCRC) {
+					waypointZone = candidateZone->getZoneName();
+					break;
+				}
+			}
+		}
+
+		const bool identityHighConfidence =
+			structureTemplate != nullptr &&
+			ownerObjectID != 0 &&
+			waypointID != 0 &&
+			waypoint != nullptr &&
+			!waypointZone.isEmpty();
+
+		if (!identityHighConfidence) {
+			++damagedManual;
+			objectData.reset();
+			continue;
+		}
+
+		auto footprintCheck =
+			StorageManagerNamespace::checkRecoveryFootprintAvailability(
+				this,
+				server,
+				templateManager,
+				structureDatabase,
+				objectID,
+				structureTemplate,
+				waypointZone,
+				waypoint);
+
+		if (footprintCheck.status !=
+				StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {
+			++damagedManual;
+
+			warning() << "STRUCTURE-RECOVERY-EXCLUDED:"
+				<< " OID=" << objectID
+				<< " reason=" << footprintCheck.reason
+				<< " recoveredZone=" << waypointZone
+				<< " conflictingOID="
+				<< footprintCheck.conflictingObjectID
+				<< " conflictingTemplate="
+				<< (footprintCheck.conflictingTemplate.isEmpty() ?
+					String("<unknown>") :
+					footprintCheck.conflictingTemplate)
+				<< " conflictingPos=("
+				<< footprintCheck.conflictingX << ","
+				<< footprintCheck.conflictingY << ")";
+
+			objectData.reset();
+			continue;
+		}
+
+		std::fprintf(
+			plan,
+			"%llu|%s|%llu|%llu|%u\n",
+			(unsigned long long)objectID,
+			waypointZone.toCharArray(),
+			(unsigned long long)ownerObjectID,
+			(unsigned long long)waypointID,
+			serverObjectCRC);
+
+		++highCandidates;
+
+		if (summaryOIDCount < maxSummaryOIDs) {
+			if (summaryOIDCount > 0)
+				summaryOIDs << ", ";
+
+			summaryOIDs << objectID;
+		}
+
+		++summaryOIDCount;
+
+		warning() << "STRUCTURE-RECOVERY-QUEUED:"
+			<< " OID=" << objectID
+			<< " recoveredZone=" << waypointZone
+			<< " ownerOID=" << ownerObjectID
+			<< " waypointOID=" << waypointID
+			<< " serverObjectCRC=" << serverObjectCRC;
+
+		objectData.reset();
+	}
+
+	std::fclose(plan);
+
+	if (highCandidates == 0) {
+		std::remove(
+			StorageManagerNamespace::
+				STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+
+		StringBuffer none;
+		none << "HIGH-Confidence Structure Recovery" << endl
+			<< "  Total playerstructure records scanned: "
+			<< totalRecords << endl
+			<< "  HIGH-confidence candidates: 0" << endl
+			<< "  Damaged/manual-review records: "
+			<< damagedManual << endl
+			<< "  No recovery plan was created." << endl
+			<< "  No database records were modified.";
+
+		result = none.toString();
+		return true;
+	}
+
+	if (std::rename(
+			StorageManagerNamespace::
+				STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP,
+			StorageManagerNamespace::
+				STRUCTURE_RECOVERY_PENDING_HIGH_PLAN) != 0) {
+		std::remove(
+			StorageManagerNamespace::
+				STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+
+		result =
+			"Could not atomically publish the HIGH-confidence recovery plan. "
+			"No database records were modified.";
+		return false;
+	}
+
+	StringBuffer queued;
+	queued << "HIGH-Confidence Structure Recovery Plan QUEUED" << endl
+		<< "  Total playerstructure records scanned: "
+		<< totalRecords << endl
+		<< "  HIGH-confidence candidates queued: "
+		<< highCandidates << endl
+		<< "  Damaged/manual-review records excluded: "
+		<< damagedManual << endl
+		<< "  Candidate OIDs: " << summaryOIDs.toString();
+
+	if (summaryOIDCount > maxSummaryOIDs)
+		queued << " ... ("
+			<< (summaryOIDCount - maxSummaryOIDs)
+			<< " additional; see server log)";
+
+	queued << endl
+		<< "  No playerstructures.db record was changed live." << endl
+		<< "  Restart Core3 to apply the queued root-zone repairs." << endl
+		<< "  The plan remains until a later startup verifies all repairs.";
+
+	result = queued.toString();
+
+	return true;
+}
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+// Startup-only recovery/verification pass.
+// Returns the number of playerstructures DB records staged for repair.
+// Caller commits before concurrent ground-zone manager startup when > 0.
+int StructureManager::applyPendingHighConfidencePlayerStructureRecovery() {
+	std::FILE* plan =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN,
+			"r");
+
+	if (plan == nullptr)
+		return 0;
+
+	char header[128] = {0};
+
+	if (std::fgets(header, sizeof(header), plan) == nullptr ||
+			String(header).trim() !=
+				"BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V1") {
+		std::fclose(plan);
+		warning(
+			"STRUCTURE-RECOVERY: pending recovery plan has an invalid header; "
+			"marker retained and no DB changes made.");
+		return 0;
+	}
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase =
+		dbManager->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr) {
+		std::fclose(plan);
+		warning(
+			"STRUCTURE-RECOVERY: playerstructures DB unavailable; "
+			"plan retained.");
+		return 0;
+	}
+
+        // BELLUM_GERO_STRUCTURE_RECOVERY_SECONDARY_INDEX_BUILD2
+        // Recovery writes must occur while the Berkeley secondary association is
+        // active. Otherwise SceneObject.zone can be repaired in playerstructures.db
+        // without recreating the planet -> OID entry in playerstructuresindex.db.
+        IndexDatabase* playerStructuresDatabaseIndex = createSubIndex();
+
+        auto hasExpectedRecoverySecondaryIndexEntry =
+                [playerStructuresDatabaseIndex](
+                        uint64 expectedHash, uint64 objectID) -> bool {
+                        if (playerStructuresDatabaseIndex == nullptr ||
+                                        expectedHash == 0 ||
+                                        objectID == 0) {
+                                return false;
+                        }
+
+                        berkeley::CursorConfig indexConfig;
+                        indexConfig.setReadUncommitted(true);
+
+                        IndexDatabaseIterator indexIterator(
+                                playerStructuresDatabaseIndex,
+                                indexConfig);
+
+                        uint64 indexedObjectID = 0;
+
+                        if (!indexIterator.setKeyAndGetValue(
+                                        expectedHash,
+                                        indexedObjectID,
+                                        nullptr)) {
+                                return false;
+                        }
+
+                        if (indexedObjectID == objectID)
+                                return true;
+
+                        while (indexIterator.getNextKeyAndValue(
+                                        expectedHash,
+                                        indexedObjectID,
+                                        nullptr)) {
+                                if (indexedObjectID == objectID)
+                                        return true;
+                        }
+
+                        return false;
+                };
+
+
+
+	int totalPlanEntries = 0;
+	int stagedRepairs = 0;
+	int verifiedRepairs = 0;
+	int refusedEntries = 0;
+
+	char line[1024] = {0};
+
+	while (std::fgets(line, sizeof(line), plan) != nullptr) {
+		unsigned long long rawOID = 0;
+		unsigned long long rawOwner = 0;
+		unsigned long long rawWaypoint = 0;
+		unsigned int rawCRC = 0;
+		char zoneBuffer[128] = {0};
+
+		int parsed =
+			std::sscanf(
+				line,
+				"%llu|%127[^|]|%llu|%llu|%u",
+				&rawOID,
+				zoneBuffer,
+				&rawOwner,
+				&rawWaypoint,
+				&rawCRC);
+
+		if (parsed != 5 ||
+				rawOID == 0 ||
+				rawOwner == 0 ||
+				rawWaypoint == 0 ||
+				rawCRC == 0 ||
+				zoneBuffer[0] == '\0') {
+			++refusedEntries;
+			warning(
+				"STRUCTURE-RECOVERY: malformed recovery-plan entry; "
+				"plan retained.");
+			continue;
+		}
+
+		++totalPlanEntries;
+
+		uint64 objectID = (uint64)rawOID;
+		uint64 expectedOwner = (uint64)rawOwner;
+		uint64 expectedWaypoint = (uint64)rawWaypoint;
+		uint32 expectedCRC = (uint32)rawCRC;
+		String expectedZone = zoneBuffer;
+
+		Zone* expectedZoneObject =
+			server != nullptr ? server->getZone(expectedZone) : nullptr;
+
+		if (expectedZoneObject == nullptr ||
+				expectedZoneObject->isSpaceZone()) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=EXPECTED_ZONE_NOT_VALID_GROUND"
+				<< " expectedZone=" << expectedZone;
+			continue;
+		}
+
+		ObjectInputStream objectData(2000);
+
+		if (structureDatabase->getData(objectID, &objectData)) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=OID_NOT_FOUND";
+			continue;
+		}
+
+		String currentZone;
+		uint32 currentCRC = 0;
+		uint64 currentOwner = 0;
+		uint64 currentWaypoint = 0;
+		bool hasZoneVariable = false;
+
+		try {
+			Serializable::getVariable<uint32>(
+				STRING_HASHCODE("SceneObject.serverObjectCRC"),
+				&currentCRC, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.ownerObjectID"),
+				&currentOwner, &objectData);
+			Serializable::getVariable<uint64>(
+				STRING_HASHCODE("StructureObject.waypointID"),
+				&currentWaypoint, &objectData);
+			hasZoneVariable = Serializable::getVariable<String>(
+				STRING_HASHCODE("SceneObject.zone"),
+				&currentZone, &objectData);
+		} catch (...) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=DESERIALIZE_FAILED";
+			continue;
+		}
+
+		Reference<SharedStructureObjectTemplate*> structureTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(
+				templateManager->getTemplate(currentCRC));
+
+		if (structureTemplate == nullptr ||
+				currentCRC != expectedCRC ||
+				currentOwner != expectedOwner ||
+				currentWaypoint != expectedWaypoint) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=PERSISTED_EVIDENCE_CHANGED"
+				<< " currentCRC=" << currentCRC
+				<< " expectedCRC=" << expectedCRC
+				<< " currentOwner=" << currentOwner
+				<< " expectedOwner=" << expectedOwner
+				<< " currentWaypoint=" << currentWaypoint
+				<< " expectedWaypoint=" << expectedWaypoint;
+			continue;
+		}
+
+		ManagedReference<WaypointObject*> waypoint =
+			server != nullptr && currentWaypoint != 0 ?
+				server->getObject(currentWaypoint).castTo<WaypointObject*>() :
+				nullptr;
+
+		String waypointZone;
+
+		if (waypoint != nullptr) {
+			const uint32 waypointPlanetCRC = waypoint->getPlanetCRC();
+
+			for (int i = 0; i < server->getZoneCount(); ++i) {
+				Zone* candidateZone = server->getZone(i);
+
+				if (candidateZone != nullptr &&
+						!candidateZone->isSpaceZone() &&
+						candidateZone->getZoneCRC() ==
+							waypointPlanetCRC) {
+					waypointZone = candidateZone->getZoneName();
+					break;
+				}
+			}
+		}
+
+		if (waypoint == nullptr ||
+				waypointZone.isEmpty() ||
+				waypointZone != expectedZone) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=WAYPOINT_EVIDENCE_NO_LONGER_MATCHES"
+				<< " expectedZone=" << expectedZone
+				<< " waypointZone="
+				<< (waypointZone.isEmpty() ?
+					String("<unresolved>") : waypointZone);
+			continue;
+		}
+
+				if (hasZoneVariable && !currentZone.isEmpty()) {
+		        if (currentZone != expectedZone) {
+		                ++refusedEntries;
+		                warning() << "STRUCTURE-RECOVERY-REFUSED:"
+		                        << " OID=" << objectID
+		                        << " reason=CONFLICTING_NONEMPTY_ZONE"
+		                        << " currentZone=" << currentZone
+		                        << " expectedZone=" << expectedZone;
+		                continue;
+		        }
+
+		        const uint64 expectedZoneHash = expectedZone.hashCode();
+
+		        if (hasExpectedRecoverySecondaryIndexEntry(
+		                        expectedZoneHash,
+		                        objectID)) {
+		                ++verifiedRepairs;
+		                warning() << "STRUCTURE-RECOVERY-VERIFIED:"
+		                        << " OID=" << objectID
+		                        << " zone=" << expectedZone
+		                        << " secondaryIndex=present";
+		                continue;
+		        }
+
+		        // BELLUM_GERO_STRUCTURE_RECOVERY_SECONDARY_INDEX_BUILD2
+		        // Root zone is correct but the secondary entry is missing.
+		        // Re-put an unchanged copy of the primary record while the
+		        // association is active so indexCallback recreates the
+		        // expected zoneHash -> OID mapping.
+		        ObjectOutputStream* refreshedRecord =
+		                new ObjectOutputStream(objectData.size());
+		        objectData.reset();
+		        objectData.copy(refreshedRecord);
+		        refreshedRecord->reset();
+		        objectData.reset();
+
+
+			// Recheck the original footprint immediately before rebuilding the
+			// secondary index. The root zone may already have been repaired on a
+			// prior startup while the structure remained invisible because its
+			// index entry was missing. A replacement could have been placed in
+			// that footprint since then, so index refresh must fail closed too.
+			auto indexRefreshFootprintCheck =
+				StorageManagerNamespace::checkRecoveryFootprintAvailability(
+					this,
+					server,
+					templateManager,
+					structureDatabase,
+					objectID,
+					structureTemplate,
+					expectedZone,
+					waypoint);
+
+			if (indexRefreshFootprintCheck.status !=
+					StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {
+				++refusedEntries;
+
+				warning() << "STRUCTURE-RECOVERY-REFUSED:"
+					<< " OID=" << objectID
+					<< " reason=" << indexRefreshFootprintCheck.reason
+					<< " phase=SECONDARY_INDEX_REFRESH"
+					<< " expectedZone=" << expectedZone
+					<< " conflictingOID="
+					<< indexRefreshFootprintCheck.conflictingObjectID
+					<< " conflictingTemplate="
+					<< (indexRefreshFootprintCheck.conflictingTemplate.isEmpty() ?
+						String("<unknown>") :
+						indexRefreshFootprintCheck.conflictingTemplate)
+					<< " conflictingPos=("
+					<< indexRefreshFootprintCheck.conflictingX << ","
+					<< indexRefreshFootprintCheck.conflictingY << ")";
+
+				continue;
+			}
+
+structureDatabase->putData(
+		                objectID,
+		                refreshedRecord,
+		                nullptr);
+
+		        ++stagedRepairs;
+
+		        warning() << "STRUCTURE-RECOVERY-INDEX-REFRESH-STAGED:"
+		                << " OID=" << objectID
+		                << " zone=" << expectedZone
+		                << " expectedHash=" << expectedZoneHash
+		                << " plan retained for next-start verification.";
+
+		        continue;
+		}
+
+		// BELLUM_GERO_STRUCTURE_RECOVERY_FOOTPRINT_GUARD_BUILD1
+		// Recheck the original footprint immediately before the startup DB
+		// mutation. This closes the audit/queue -> replacement -> restart race.
+		auto footprintCheck =
+			StorageManagerNamespace::checkRecoveryFootprintAvailability(
+				this,
+				server,
+				templateManager,
+				structureDatabase,
+				objectID,
+				structureTemplate,
+				expectedZone,
+				waypoint);
+
+		if (footprintCheck.status !=
+				StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {
+			++refusedEntries;
+
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=" << footprintCheck.reason
+				<< " expectedZone=" << expectedZone
+				<< " conflictingOID="
+				<< footprintCheck.conflictingObjectID
+				<< " conflictingTemplate="
+				<< (footprintCheck.conflictingTemplate.isEmpty() ?
+					String("<unknown>") :
+					footprintCheck.conflictingTemplate)
+				<< " conflictingPos=("
+				<< footprintCheck.conflictingX << ","
+				<< footprintCheck.conflictingY << ")";
+
+			continue;
+		}
+
+		String zoneValue = expectedZone;
+		ObjectOutputStream zoneData;
+		TypeInfo<String>::toBinaryStream(&zoneValue, &zoneData);
+
+		ObjectOutputStream* modifiedRecord =
+			hasZoneVariable ?
+				StorageManagerNamespace::
+					replaceSerializedVariableDataForStructureRecovery(
+						STRING_HASHCODE("SceneObject.zone"),
+						&objectData,
+						&zoneData) :
+				StorageManagerNamespace::
+					addSerializedVariableDataForStructureRecovery(
+						"SceneObject.zone",
+						&objectData,
+						&zoneData);
+
+		if (modifiedRecord == nullptr) {
+			++refusedEntries;
+			warning() << "STRUCTURE-RECOVERY-REFUSED:"
+				<< " OID=" << objectID
+				<< " reason=COULD_NOT_BUILD_REPAIRED_RECORD";
+			continue;
+		}
+
+		modifiedRecord->reset();
+
+		structureDatabase->putData(
+			objectID,
+			modifiedRecord,
+			nullptr);
+
+		++stagedRepairs;
+
+		warning() << "STRUCTURE-RECOVERY-STAGED:"
+			<< " OID=" << objectID
+			<< " recoveredZone=" << expectedZone
+			<< " ownerOID=" << expectedOwner
+			<< " waypointOID=" << expectedWaypoint
+			<< " plan retained for next-start verification.";
+	}
+
+	std::fclose(plan);
+
+	if (totalPlanEntries == 0) {
+		warning(
+			"STRUCTURE-RECOVERY: recovery plan contained no valid entries; "
+			"plan retained.");
+		return 0;
+	}
+
+	if (stagedRepairs == 0 &&
+			refusedEntries == 0 &&
+			verifiedRepairs == totalPlanEntries) {
+		if (std::remove(
+				StorageManagerNamespace::
+					STRUCTURE_RECOVERY_PENDING_HIGH_PLAN) == 0) {
+			warning() << "STRUCTURE-RECOVERY-PLAN-VERIFIED:"
+				<< " entries=" << verifiedRepairs
+				<< " root zones and secondary index entries verified; plan consumed.";
+		} else {
+			warning(
+				"STRUCTURE-RECOVERY-PLAN-VERIFIED: all entries verified but "
+				"plan file could not be removed; it will verify again.");
+		}
+	} else {
+		warning() << "STRUCTURE-RECOVERY-PLAN-STATUS:"
+			<< " entries=" << totalPlanEntries
+			<< " staged=" << stagedRepairs
+			<< " verified=" << verifiedRepairs
+			<< " refused=" << refusedEntries
+			<< " plan retained.";
+	}
+
+	return stagedRepairs;
 }

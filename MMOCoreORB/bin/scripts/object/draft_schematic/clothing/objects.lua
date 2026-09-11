@@ -25938,3 +25938,127 @@ object_draft_schematic_clothing_shared_clothing_armor_marine_leggings = SharedDr
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_marine_leggings, "object/draft_schematic/clothing/shared_clothing_armor_marine_leggings.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_composite_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName =
+		"object/draft_schematic/clothing/shared_clothing_armor_composite_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_composite_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_composite_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_padded_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_padded_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_padded_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_padded_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_chitin_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_chitin_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_chitin_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_chitin_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_bone_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_bone_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_bone_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_bone_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_ubese_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_ubese_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_ubese_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_ubese_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_ithorian_guardian_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_ithorian_guardian_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_ithorian_guardian_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_ithorian_guardian_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_ithorian_defender_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_ithorian_defender_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_ithorian_defender_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_ithorian_defender_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_ithorian_sentinel_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_ithorian_sentinel_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_ithorian_sentinel_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_ithorian_sentinel_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_ceremonial_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_ceremonial_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_ceremonial_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_ceremonial_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_hunting_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_hunting_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_hunting_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_hunting_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_black_mtn_suit =
+	SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_black_mtn_suit.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_draft_schematic_clothing_shared_clothing_armor_kashyyykian_black_mtn_suit,
+	"object/draft_schematic/clothing/shared_clothing_armor_kashyyykian_black_mtn_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_clonetrooper_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_clonetrooper_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_clonetrooper_suit, "object/draft_schematic/clothing/shared_clothing_armor_clonetrooper_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_501st_clonetrooper_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_501st_clonetrooper_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_501st_clonetrooper_suit, "object/draft_schematic/clothing/shared_clothing_armor_501st_clonetrooper_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_coruscant_clonetrooper_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_coruscant_clonetrooper_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_coruscant_clonetrooper_suit, "object/draft_schematic/clothing/shared_clothing_armor_coruscant_clonetrooper_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_bounty_hunter_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_bounty_hunter_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_bounty_hunter_suit, "object/draft_schematic/clothing/shared_clothing_armor_bounty_hunter_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_stormtrooper_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_stormtrooper_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_stormtrooper_suit, "object/draft_schematic/clothing/shared_clothing_armor_stormtrooper_suit.iff")
+
+object_draft_schematic_clothing_shared_clothing_armor_marine_suit =
+	SharedDraftSchematicObjectTemplate:new { clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_marine_suit.iff" }
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_marine_suit, "object/draft_schematic/clothing/shared_clothing_armor_marine_suit.iff")

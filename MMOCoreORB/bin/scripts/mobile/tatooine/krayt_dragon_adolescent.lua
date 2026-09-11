@@ -55,21 +55,25 @@ krayt_dragon_adolescent = Creature:new {
 			{group = "clothing_attachments", chance = 1000000},          -- 10.00% of group, 2.00% total
 			{group = "weapon_component_advanced", chance = 1000000},     -- 10.00% of group, 2.00% total
 		},
-		lootChance = 2000000, -- 20.00% total chance
-	},
-	{
-        groups = {
-			{group = "krayt_pearls", chance = 10000000},                 -- 100.00% of group, 5.00% total
-		},
-		lootChance = 500000, -- 5.00% total chance
-	},
 		{
 			groups = {
-				{group = "bg_token_group", chance = 10000000}
+				{group = "krayt_pearls", chance = 10000000},                 -- 100.00% of group, 5.00% total
 			},
-			lootChance = 350000
-		}
-},
+			lootChance = 500000, -- 5.00% total chance
+		},
+		{
+			groups = {
+				{group = "bg_token_group", chance = 10000000},
+			},
+			lootChance = 350000,
+		},
+		{
+			groups = {
+				{group = "krayt_tissue_epic", chance = 10000000},            -- 100.00% of group, 5.00% total
+			},
+			lootChance = 10000000, -- 5.00% total chance
+		},
+	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
 	-- Unarmed should be put on secondary unless the mobile doesn't use weapons, in which case "unarmed" should be put primary and "none" as secondary

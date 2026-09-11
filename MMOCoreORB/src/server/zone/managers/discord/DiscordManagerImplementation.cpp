@@ -43,6 +43,9 @@ constexpr uint64 DISCORD_RECONNECT_BASE_BACKOFF_MS = 30000;
 constexpr uint64 DISCORD_RECONNECT_MAX_BACKOFF_MS = 300000;
 constexpr uint64 DISCORD_STARTUP_GRACE_MS = 180000;
 constexpr uint64 DISCORD_MIN_HEARTBEAT_TIMEOUT_MS = 120000;
+// A gateway socket close is normal; DPP resumes the shard on its own. Give it this
+// long to recover before the health check escalates to a full cluster rebuild.
+constexpr uint64 DISCORD_GATEWAY_RESUME_GRACE_MS = 90000;
 
 struct DiscordRuntimeState {
     std::mutex lifecycleMutex;
@@ -208,6 +211,7 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             discordRuntime.gatewayConnected = true;
             discordRuntime.state = DiscordLifecycleState::Connected;
             discordRuntime.lastReadyMs = getDiscordNowMs();
+            discordRuntime.lastDisconnectMs = 0;
             discordRuntime.reconnectAttempts = 0;
             discordRuntime.nextReconnectAllowedMs = discordRuntime.lastReadyMs;
             discordRuntime.pendingReconnectReason = "";
@@ -238,6 +242,9 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             discordRuntime.gatewayConnected = true;
             discordRuntime.state = DiscordLifecycleState::Connected;
             discordRuntime.lastResumeMs = getDiscordNowMs();
+            discordRuntime.lastDisconnectMs = 0;
+            discordRuntime.reconnectAttempts = 0;
+            discordRuntime.pendingReconnectReason = "";
         }
 
         manager->info("Discord Gateway resumed.", true);
@@ -262,12 +269,20 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             }
 
             discordRuntime.gatewayConnected = false;
-            discordRuntime.state = DiscordLifecycleState::Reconnecting;
             discordRuntime.lastDisconnectMs = getDiscordNowMs();
+
+            // Only move to Reconnecting from a healthy state; leave Starting/Reconnecting
+            // as-is so an in-flight reconnect isn't disturbed.
+            if (discordRuntime.state == DiscordLifecycleState::Connected) {
+                discordRuntime.state = DiscordLifecycleState::Reconnecting;
+            }
         }
 
-        manager->info("Discord Gateway disconnected.", true);
-        requestDiscordReconnect(manager, managerRef, "Discord Gateway socket closed");
+        // A socket close is expected periodically (Discord opcode 7, transient network
+        // blips, zombied connections). DPP reconnects and RESUMEs the shard on its own,
+        // so don't tear down the cluster here. runDiscordHealthCheck escalates to a full
+        // rebuild only if the gateway is still down after DISCORD_GATEWAY_RESUME_GRACE_MS.
+        manager->info("Discord Gateway disconnected; waiting for automatic resume.", true);
     });
 
     bot->on_message_create([managerRef, generation](const dpp::message_create_t& event) {
@@ -516,8 +531,16 @@ void runDiscordHealthCheck(DiscordManagerImplementation* manager, const ManagedR
         shouldReschedule = true;
 
         if (!discordRuntime.gatewayConnected) {
-            if (getDiscordNowMs() - discordRuntime.lastStartMs > DISCORD_STARTUP_GRACE_MS) {
-                failureReason = "Discord Gateway did not reach a healthy ready state";
+            const uint64 nowMs = getDiscordNowMs();
+            const bool pastStartupGrace = nowMs - discordRuntime.lastStartMs > DISCORD_STARTUP_GRACE_MS;
+            const uint64 sinceDisconnectMs = discordRuntime.lastDisconnectMs != 0
+                ? nowMs - discordRuntime.lastDisconnectMs
+                : nowMs - discordRuntime.lastStartMs;
+
+            // Let DPP resume the shard on its own first; only force a rebuild if it is
+            // still down well past both the startup grace and the resume grace window.
+            if (pastStartupGrace && sinceDisconnectMs > DISCORD_GATEWAY_RESUME_GRACE_MS) {
+                failureReason = "Discord Gateway did not resume within the grace window";
             }
         } else {
             isDiscordShardHealthyLocked(failureReason);
@@ -612,6 +635,23 @@ void scheduleDiscordReconnectTask(const ManagedReference<DiscordManager*>& manag
 
         {
             std::lock_guard<std::mutex> stateLock(discordRuntime.mutex);
+
+            // If DPP resumed / re-readied the gateway on its own while this task sat in
+            // the queue, don't tear down a now-healthy connection.
+            if (discordRuntime.gatewayConnected &&
+                    discordRuntime.state == DiscordLifecycleState::Connected) {
+                discordRuntime.pendingReconnectReason = "";
+                discordRuntime.reconnectInProgress = false;
+                discordRuntime.reconnectAttempts = 0;
+                discordRuntime.nextReconnectAllowedMs = getDiscordNowMs();
+
+                if (manager->isDebugMode()) {
+                    manager->info("Discord reconnect cancelled; gateway already recovered.", true);
+                }
+
+                return;
+            }
+
             reason = discordRuntime.pendingReconnectReason;
             attempt = discordRuntime.reconnectAttempts + 1;
         }

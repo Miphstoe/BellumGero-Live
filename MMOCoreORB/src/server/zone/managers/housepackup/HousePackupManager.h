@@ -29,6 +29,8 @@ public:
     bool packUpHouse(bld::BuildingObject* building, crt::CreatureObject* requester);
     bool restoreFromDeed(bld::BuildingObject* building, tang::TangibleObject* deed, crt::CreatureObject* placer);
     bool hasVendorsInside(bld::BuildingObject* building) const;
+    // BG: mirrors hasVendorsInside - true if any Bellum Gero display mannequin is in any cell
+    bool hasMannequinsInside(bld::BuildingObject* building) const;
     // Add to HousePackupManager.h
     bool hasLotPlaceholder(uint64 deedOID) const;
 

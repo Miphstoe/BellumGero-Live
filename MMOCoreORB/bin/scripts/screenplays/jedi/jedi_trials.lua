@@ -787,5 +787,10 @@ function JediTrials:getPointsForCreatureLevel(creatureLevel)
 	return 0
 end
 
+-- All JediTrials logic is login/observer driven; start() exists only so registration
+-- with start enabled does not error in DirectorManager.
+function JediTrials:start()
+end
+
 -- Register screenplay to enable onPlayerLoggedIn hook
 registerScreenPlay("JediTrials", true)

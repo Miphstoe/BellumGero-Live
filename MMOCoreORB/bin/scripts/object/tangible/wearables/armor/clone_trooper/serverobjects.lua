@@ -31,3 +31,9 @@ includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s0
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s01_gloves.lua")
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s01_helmet.lua")
 includeFile("tangible/wearables/armor/clone_trooper/armor_clone_trooper_rebel_s01_leggings.lua")
+
+includeFile("tangible/wearables/armor/clone_trooper/armor_clonetrooper_suit_package.lua")
+
+includeFile("tangible/wearables/armor/clone_trooper/armor_501st_clonetrooper_suit_package.lua")
+
+includeFile("tangible/wearables/armor/clone_trooper/armor_coruscant_clonetrooper_suit_package.lua")
