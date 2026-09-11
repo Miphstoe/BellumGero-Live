@@ -107,6 +107,7 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<Creature>(SceneObjectType::CREATURE);
 	objectFactory.registerObject<NonPlayerCreatureObject>(SceneObjectType::NPCCREATURE);
 	objectFactory.registerObject<NonPlayerCreatureObject>(SceneObjectType::PROBOTCREATURE);
+	objectFactory.registerObject<MannequinObject>(SceneObjectType::MANNEQUINCREATURE); // BG: display mannequin
 	objectFactory.registerObject<TangibleObject>(SceneObjectType::VENDOR);
 	objectFactory.registerObject<CreatureObject>(SceneObjectType::PLAYERCREATURE);
 	objectFactory.registerObject<IntangibleObject>(SceneObjectType::INTANGIBLE);

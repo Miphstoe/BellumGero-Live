@@ -225,6 +225,13 @@ bool HousePackupManager::hasSavedPayloadForBuilding(uint64 buildingOID) const {
 bool HousePackupManager::autoPackIfNeeded(BuildingObject* building, CreatureObject* requester) {
     if (building == nullptr || requester == nullptr) return false;
 
+    // BG: mannequins are creatures and are skipped by the item scan below / by collectDeep,
+    // so a destroy or redeed would orphan them. Refuse until they are removed.
+    if (hasMannequinsInside(building)) {
+        requester->sendSystemMessage("This structure cannot be packed up or redeeded while mannequins are inside. Remove all mannequins first. (Nothing was destroyed.)");
+        return false;
+    }
+
     // If we already have a saved payload OR a lot placeholder, we're good.
     if (hasSavedPayloadForBuilding(building->getObjectID()) || 
         gLotHoldByDeed.containsKey(building->getDeedObjectID())) {
@@ -600,6 +607,36 @@ bool HousePackupManager::hasVendorsInside(BuildingObject* building) const {
 }
 
 // -----------------------------
+// Mannequin detection helper (BG) - identical traversal to hasVendorsInside
+// -----------------------------
+
+bool HousePackupManager::hasMannequinsInside(BuildingObject* building) const {
+    if (building == nullptr)
+        return false;
+
+    int totalCells = building->getTotalCellNumber();
+
+    // Cell numbering starts at 1, not 0
+    for (int i = 1; i <= totalCells; i++) {
+        ManagedReference<CellObject*> cell = building->getCell(i);
+        if (cell == nullptr)
+            continue;
+
+        int containerSize = cell->getContainerObjectsSize();
+        for (int j = 0; j < containerSize; j++) {
+            ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
+            // Detection is by object class/type via the virtual on SceneObject
+            // (MannequinObject overrides isMannequinObject() -> true), never by name.
+            if (obj != nullptr && obj->isMannequinObject()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// -----------------------------
 // Recursive collector
 // -----------------------------
 
@@ -637,6 +674,15 @@ static void collectDeep(
 bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* requester) {
     if (building == nullptr || requester == nullptr)
         return false;
+
+    // BG safety layer: the radial is hidden when mannequins are present, but re-check here
+    // to defend against stale menus, delayed callbacks, or another player placing a
+    // mannequin after the menu was opened. Mannequins are creatures and would be skipped
+    // by collectDeep(), so packing up around one would orphan it.
+    if (hasMannequinsInside(building)) {
+        requester->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
+        return false;
+    }
 
     // Keep a managed reference to the building to prevent it from being deleted
     ManagedReference<BuildingObject*> buildingRef = building;
