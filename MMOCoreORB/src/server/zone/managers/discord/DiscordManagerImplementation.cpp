@@ -41,6 +41,7 @@ constexpr uint64 DISCORD_HEALTH_CHECK_INTERVAL_MS = 30000;
 constexpr uint64 DISCORD_RECONNECT_DELAY_MS = 15000;
 constexpr uint64 DISCORD_RECONNECT_BASE_BACKOFF_MS = 30000;
 constexpr uint64 DISCORD_RECONNECT_MAX_BACKOFF_MS = 300000;
+constexpr uint64 DISCORD_SESSION_START_LIMIT_BACKOFF_MS = 3600000;
 constexpr uint64 DISCORD_STARTUP_GRACE_MS = 180000;
 constexpr uint64 DISCORD_MIN_HEARTBEAT_TIMEOUT_MS = 120000;
 // A gateway socket close is normal; DPP resumes the shard on its own. Give it this
@@ -108,6 +109,12 @@ uint64 getReconnectBackoffMs(uint32 attempt) {
     }
 
     return delay;
+}
+
+bool isDiscordSessionStartLimitError(const String& error) {
+    return error.indexOf("cannot start enough sessions") != -1 ||
+        error.indexOf("session starts remaining") != -1 ||
+        error.indexOf("Cluster startup aborted") != -1;
 }
 
 bool shouldIgnoreDiscordCallback(uint64 generation) {
@@ -549,7 +556,7 @@ void runDiscordHealthCheck(DiscordManagerImplementation* manager, const ManagedR
 
     if (!failureReason.isEmpty()) {
         manager->info("Discord health check detected an unhealthy gateway: " + failureReason, true);
-        requestDiscordReconnect(manager, managerRef, failureReason, 0);
+        requestDiscordReconnect(manager, managerRef, failureReason);
     }
 
     if (shouldReschedule) {
@@ -1067,6 +1074,33 @@ void DiscordManagerImplementation::handleDiscordReady() {
 
 void DiscordManagerImplementation::handleDiscordError(const String& error) {
     this->error("Discord error: " + error);
+
+    if (isDiscordSessionStartLimitError(error)) {
+        ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();
+
+        {
+            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
+            const uint64 retryAfterMs = getDiscordNowMs() + DISCORD_SESSION_START_LIMIT_BACKOFF_MS;
+            discordRuntime.gatewayConnected = false;
+            discordRuntime.nextReconnectAllowedMs = std::max<uint64>(
+                discordRuntime.nextReconnectAllowedMs,
+                retryAfterMs
+            );
+
+            if (discordRuntime.state != DiscordLifecycleState::Stopped &&
+                    discordRuntime.state != DiscordLifecycleState::Stopping) {
+                discordRuntime.state = DiscordLifecycleState::Reconnecting;
+            }
+        }
+
+        requestDiscordReconnect(
+            this,
+            managerRef,
+            "Discord session start limit exhausted",
+            DISCORD_SESSION_START_LIMIT_BACKOFF_MS
+        );
+        return;
+    }
     
     if (error.indexOf("connection") != -1 || error.indexOf("websocket") != -1 || error.indexOf("heartbeat") != -1) {
         ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();
