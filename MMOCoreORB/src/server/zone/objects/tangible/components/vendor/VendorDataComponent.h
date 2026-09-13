@@ -45,6 +45,8 @@ protected:
 
 	float originalDirection;
 
+	VectorMap<uint64, int> guildDiscounts;
+
 	Mutex adBarkingMutex;
 
 public:
@@ -61,7 +63,11 @@ public:
 		DELETEWARNING       = 60 * 60 * 24 * 100, // 100 days
 
 		BARKRANGE           = 15, // 15 Meters
-		BARKINTERVAL        = 60 * 2 // 2 Minutes
+		BARKINTERVAL        = 60 * 2, // 2 Minutes
+
+		MAXGUILDDISCOUNTS   = 10,
+		MINGUILDDISCOUNT    = 1,
+		MAXGUILDDISCOUNT    = 50
 	};
 
 public:
@@ -225,6 +231,55 @@ public:
 	bool hasBarkTarget(uint64 targetID) {
 		Locker locker(&adBarkingMutex);
 		return vendorBarks.contains(targetID);
+	}
+
+	int getGuildDiscountCount() {
+		return guildDiscounts.size();
+	}
+
+	uint64 getGuildDiscountGuildID(int index) {
+		if (index < 0 || index >= guildDiscounts.size())
+			return 0;
+
+		return guildDiscounts.elementAt(index).getKey();
+	}
+
+	int getGuildDiscountPercentAt(int index) {
+		if (index < 0 || index >= guildDiscounts.size())
+			return 0;
+
+		return guildDiscounts.get(index);
+	}
+
+	bool hasGuildDiscount(uint64 guildID) {
+		return guildDiscounts.contains(guildID);
+	}
+
+	int getGuildDiscountPercent(uint64 guildID) {
+		if (!guildDiscounts.contains(guildID))
+			return 0;
+
+		return clampGuildDiscount(guildDiscounts.get(guildID));
+	}
+
+	bool setGuildDiscount(uint64 guildID, int percent);
+
+	bool removeGuildDiscount(uint64 guildID) {
+		return guildDiscounts.drop(guildID);
+	}
+
+	int getGuildDiscountForBuyer(CreatureObject* buyer);
+
+	int calculateGuildDiscountedPrice(CreatureObject* buyer, int listedPrice);
+
+	static int clampGuildDiscount(int percent) {
+		if (percent < MINGUILDDISCOUNT)
+			return 0;
+
+		if (percent > MAXGUILDDISCOUNT)
+			return MAXGUILDDISCOUNT;
+
+		return percent;
 	}
 
 	void addBarkTarget(uint64 targetID) {
