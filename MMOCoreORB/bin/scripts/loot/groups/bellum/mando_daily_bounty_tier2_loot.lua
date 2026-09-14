@@ -83,12 +83,16 @@ mando_daily_bounty_tier2_loot = {
 		{itemTemplate = "radar_screen_schematic", weight = 37500},
 		{itemTemplate = "radio_schematic", weight = 30000},
 		-- Decorations and trophies: 77.8% per roll
-		{itemTemplate = "art_sm_s1", weight = 1556000},
-		{itemTemplate = "art_sm_s2", weight = 1556000},
-		{itemTemplate = "art_sm_s3", weight = 1167000},
-		{itemTemplate = "art_sm_s4", weight = 1167000},
-		{itemTemplate = "art_lg_s1", weight = 1167000},
-		{itemTemplate = "art_lg_s2", weight = 1167000},
+		{itemTemplate = "art_sm_s1", weight = 1456000},
+		{itemTemplate = "art_sm_s2", weight = 1456000},
+		{itemTemplate = "art_sm_s3", weight = 1092000},
+		{itemTemplate = "art_sm_s4", weight = 1092000},
+		{itemTemplate = "art_lg_s1", weight = 1092000},
+		{itemTemplate = "art_lg_s2", weight = 1092000},
+		{itemTemplate = "mando_clan_banner", weight = 200000},
+		{itemTemplate = "mando_clan_painting", weight = 200000},
+		{itemTemplate = "mando_holo_emblem", weight = 50000},
+		{itemTemplate = "mando_helmet_holo", weight = 50000},
 	}
 }
 addLootGroupTemplate("mando_daily_bounty_tier2_loot", mando_daily_bounty_tier2_loot)

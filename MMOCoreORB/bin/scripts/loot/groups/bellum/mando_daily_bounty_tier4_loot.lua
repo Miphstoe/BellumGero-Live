@@ -83,15 +83,19 @@ mando_daily_bounty_tier4_loot = {
 		{itemTemplate = "radar_screen_schematic", weight = 50000},
 		{itemTemplate = "radio_schematic", weight = 40000},
 		-- Decorations and trophies: 62.85% per roll
-		{itemTemplate = "art_sm_s1", weight = 628500},
-		{itemTemplate = "art_sm_s2", weight = 628500},
-		{itemTemplate = "art_sm_s3", weight = 628500},
-		{itemTemplate = "art_sm_s4", weight = 628500},
-		{itemTemplate = "art_lg_s1", weight = 785625},
-		{itemTemplate = "art_lg_s2", weight = 785625},
-		{itemTemplate = "dwb_viewscreen_s1", weight = 785625},
-		{itemTemplate = "dwb_viewscreen_s2", weight = 785625},
-		{itemTemplate = "mando_hunter_portrait", weight = 628500},
+		{itemTemplate = "art_sm_s1", weight = 508500},
+		{itemTemplate = "art_sm_s2", weight = 508500},
+		{itemTemplate = "art_sm_s3", weight = 508500},
+		{itemTemplate = "art_sm_s4", weight = 508500},
+		{itemTemplate = "art_lg_s1", weight = 635625},
+		{itemTemplate = "art_lg_s2", weight = 635625},
+		{itemTemplate = "dwb_viewscreen_s1", weight = 635625},
+		{itemTemplate = "dwb_viewscreen_s2", weight = 635625},
+		{itemTemplate = "mando_hunter_portrait", weight = 508500},
+		{itemTemplate = "mando_clan_banner", weight = 500000},
+		{itemTemplate = "mando_clan_painting", weight = 500000},
+		{itemTemplate = "mando_holo_emblem", weight = 100000},
+		{itemTemplate = "mando_helmet_holo", weight = 100000},
 	}
 }
 addLootGroupTemplate("mando_daily_bounty_tier4_loot", mando_daily_bounty_tier4_loot)

@@ -73,6 +73,11 @@ weapon definitions are unchanged.
 Existing decorations remain in each tier, furniture schematics are available
 at every tier, and the tier 5 trophy selection remains available. The camp
 message says "reward" because successful drops are not always schematics.
+Four Mandalorian decorations appear at every tier with increasing per-roll
+odds: the clan banner and clan painting rise through 1%, 2%, 3%, 5%, and 7.5%;
+the clan hologram painting and helmet hologram rise through 0.25%, 0.5%,
+0.75%, 1%, and 2%. Their weights come from the decoration category, leaving
+all rare-reward category probabilities unchanged.
 For tier 5's two rolls, the chance of at least one item from a category is
 `1 - (1 - p)^2`: for example, armor is 15.36% and epic tissue is 0.9975%.
 

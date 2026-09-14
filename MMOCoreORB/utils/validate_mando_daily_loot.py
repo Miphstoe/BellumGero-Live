@@ -11,6 +11,18 @@ EXPECTED = [
     [400000, 200000, 75000, 200000, 40000, 100000, 300000, 2400000, 6285000],
     [800000, 400000, 100000, 300000, 50000, 200000, 400000, 2700000, 5050000],
 ]
+MANDO_DECOR_WEIGHTS = [
+    {"mando_clan_banner": 100000, "mando_clan_painting": 100000,
+     "mando_holo_emblem": 25000, "mando_helmet_holo": 25000},
+    {"mando_clan_banner": 200000, "mando_clan_painting": 200000,
+     "mando_holo_emblem": 50000, "mando_helmet_holo": 50000},
+    {"mando_clan_banner": 300000, "mando_clan_painting": 300000,
+     "mando_holo_emblem": 75000, "mando_helmet_holo": 75000},
+    {"mando_clan_banner": 500000, "mando_clan_painting": 500000,
+     "mando_holo_emblem": 100000, "mando_helmet_holo": 100000},
+    {"mando_clan_banner": 750000, "mando_clan_painting": 750000,
+     "mando_holo_emblem": 200000, "mando_helmet_holo": 200000},
+]
 ENTRY = re.compile(r'itemTemplate = "([^"]+)",\s*weight = (\d+)')
 
 
@@ -48,6 +60,9 @@ def main():
         assert len(ENTRY.findall(sections[2])) == 9
         assert len(ENTRY.findall(sections[3])) == 5
         assert ENTRY.findall(sections[4])[0][0] == "krayt_dragon_tissue_epic"
+        decor = {name: int(weight) for name, weight in ENTRY.findall(sections[8])}
+        for name, weight in MANDO_DECOR_WEIGHTS[tier - 1].items():
+            assert decor.get(name) == weight, (tier, name, decor.get(name))
         print(f"Tier {tier}: total 10,000,000; all category odds and registrations valid")
 
     weapons = (LOOT / "items/bellum/mando_daily_weapons.lua").read_text()
