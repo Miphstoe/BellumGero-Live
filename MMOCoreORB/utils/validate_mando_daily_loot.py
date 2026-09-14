@@ -5,11 +5,11 @@ import re
 SCRIPTS = Path(__file__).resolve().parents[1] / "bin/scripts"
 LOOT = SCRIPTS / "loot"
 EXPECTED = [
-    [50000, 25000, 10000, 50000, 10000, 10000, 50000, 1500000, 8295000],
-    [100000, 50000, 25000, 100000, 20000, 25000, 100000, 1800000, 7780000],
-    [200000, 100000, 50000, 150000, 30000, 50000, 200000, 2100000, 7120000],
-    [400000, 200000, 75000, 200000, 40000, 100000, 300000, 2400000, 6285000],
-    [800000, 400000, 100000, 300000, 50000, 200000, 400000, 2700000, 5050000],
+    [50000, 25000, 10000, 50000, 10000, 50000, 1500000, 8305000],
+    [100000, 50000, 25000, 100000, 25000, 100000, 1800000, 7800000],
+    [200000, 100000, 50000, 150000, 50000, 200000, 2100000, 7150000],
+    [400000, 200000, 75000, 200000, 100000, 300000, 2400000, 6325000],
+    [800000, 400000, 100000, 300000, 200000, 400000, 2700000, 5100000],
 ]
 MANDO_DECOR_WEIGHTS = [
     {"mando_clan_banner": 100000, "mando_clan_painting": 100000,
@@ -46,12 +46,13 @@ def main():
         assert len(dict(entries)) == len(entries), f"Tier {tier}: duplicate item"
         assert sum(weight for _, weight in entries) == 10000000
         assert all(weight > 0 and name in registered for name, weight in entries)
+        assert all(name != "krayt_dragon_tissue_epic" for name, _ in entries)
         sections = re.split(r'\t\t-- [^\n]+\n', source)[1:]
         assert len(sections) == len(expected)
         for index, (section, total) in enumerate(zip(sections, expected)):
             items = [(name, int(weight)) for name, weight in ENTRY.findall(section)]
             assert sum(weight for _, weight in items) == total, (tier, index)
-            if index < 8:
+            if index < 7:
                 for name, weight in items:
                     assert weight > previous.get(name, 0), (tier, name)
                     previous[name] = weight
@@ -59,8 +60,7 @@ def main():
         assert len(ENTRY.findall(sections[1])) == 6
         assert len(ENTRY.findall(sections[2])) == 9
         assert len(ENTRY.findall(sections[3])) == 5
-        assert ENTRY.findall(sections[4])[0][0] == "krayt_dragon_tissue_epic"
-        decor = {name: int(weight) for name, weight in ENTRY.findall(sections[8])}
+        decor = {name: int(weight) for name, weight in ENTRY.findall(sections[7])}
         for name, weight in MANDO_DECOR_WEIGHTS[tier - 1].items():
             assert decor.get(name) == weight, (tier, name, decor.get(name))
         print(f"Tier {tier}: total 10,000,000; all category odds and registrations valid")

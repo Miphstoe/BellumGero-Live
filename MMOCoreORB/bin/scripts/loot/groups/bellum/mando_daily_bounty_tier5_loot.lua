@@ -47,8 +47,6 @@ mando_daily_bounty_tier5_loot = {
 		{itemTemplate = "blaster_rifle_barrel_advanced", weight = 60000},
 		{itemTemplate = "sword_core_advanced", weight = 60000},
 		{itemTemplate = "vibro_unit_advanced", weight = 60000},
-		-- Epic krayt tissues: 0.5% per roll
-		{itemTemplate = "krayt_dragon_tissue_epic", weight = 50000},
 		-- Jetpack schematic: 2% per roll
 		{itemTemplate = "dw_mando_jetpack_schematic", weight = 200000},
 		-- Jetpack components: 4% per roll
@@ -82,16 +80,16 @@ mando_daily_bounty_tier5_loot = {
 		{itemTemplate = "technical_console_schematic_2", weight = 67500},
 		{itemTemplate = "radar_screen_schematic", weight = 56250},
 		{itemTemplate = "radio_schematic", weight = 45000},
-		-- Decorations and trophies: 50.5% per roll
-		{itemTemplate = "dwb_viewscreen_s1", weight = 429546},
-		{itemTemplate = "dwb_viewscreen_s2", weight = 429545},
-		{itemTemplate = "mando_armor_blueprint_painting", weight = 572727},
-		{itemTemplate = "mando_hunter_portrait", weight = 572727},
+		-- Decorations and trophies: 51% per roll
+		{itemTemplate = "dwb_viewscreen_s1", weight = 436364},
+		{itemTemplate = "dwb_viewscreen_s2", weight = 436363},
+		{itemTemplate = "mando_armor_blueprint_painting", weight = 581818},
+		{itemTemplate = "mando_hunter_portrait", weight = 581818},
 		{itemTemplate = "mando_clan_banner", weight = 750000},
-		{itemTemplate = "death_watch_lamp", weight = 859091},
+		{itemTemplate = "death_watch_lamp", weight = 872727},
 		{itemTemplate = "mando_clan_painting", weight = 750000},
 		{itemTemplate = "mando_holo_emblem", weight = 200000},
-		{itemTemplate = "mando_helmet_trophy", weight = 286364},
+		{itemTemplate = "mando_helmet_trophy", weight = 290910},
 		{itemTemplate = "mando_helmet_holo", weight = 200000},
 	}
 }

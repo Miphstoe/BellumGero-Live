@@ -49,11 +49,10 @@ its camp reward plus an additional guild-contact roll from the same pool.
 | Weapon schematics | 0.25% | 0.5% | 1% | 2% | 4% |
 | Finished Mandalorian weapons | 0.1% | 0.25% | 0.5% | 0.75% | 1% |
 | Advanced weapon components | 0.5% | 1% | 1.5% | 2% | 3% |
-| Epic krayt tissues | 0.1% | 0.2% | 0.3% | 0.4% | 0.5% |
 | Jetpack schematic | 0.1% | 0.25% | 0.5% | 1% | 2% |
 | Jetpack components | 0.5% | 1% | 2% | 3% | 4% |
 | Furniture schematics | 15% | 18% | 21% | 24% | 27% |
-| Decorations and trophies | 82.95% | 77.8% | 71.2% | 62.85% | 50.5% |
+| Decorations and trophies | 83.05% | 78% | 71.5% | 63.25% | 51% |
 
 Armor includes all ten BH and all ten DW Mandalorian armor schematics,
 retaining the previous 10:41 BH-to-DW weighting within that category.
@@ -64,11 +63,8 @@ certifications, and experimental stat ranges, with normal loot quality and
 condition rolls; they are usable weapons rather than schematic items.
 
 Advanced components are the blaster power handler, blaster pistol barrel,
-blaster rifle barrel, sword core, and vibro unit. Tissues use the existing
-`krayt_dragon_tissue_epic` definition (base crafting ranges: 50–75 minimum
-damage, 85–100 maximum damage, -0.3 to -1.4 attack speed, 3–13 uses).
-Existing loot quality modifiers still apply. Global component, tissue, and
-weapon definitions are unchanged.
+blaster rifle barrel, sword core, and vibro unit. Existing loot quality
+modifiers still apply. Global component and weapon definitions are unchanged.
 
 Existing decorations remain in each tier, furniture schematics are available
 at every tier, and the tier 5 trophy selection remains available. The camp

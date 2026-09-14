@@ -47,8 +47,6 @@ mando_daily_bounty_tier3_loot = {
 		{itemTemplate = "blaster_rifle_barrel_advanced", weight = 30000},
 		{itemTemplate = "sword_core_advanced", weight = 30000},
 		{itemTemplate = "vibro_unit_advanced", weight = 30000},
-		-- Epic krayt tissues: 0.3% per roll
-		{itemTemplate = "krayt_dragon_tissue_epic", weight = 30000},
 		-- Jetpack schematic: 0.5% per roll
 		{itemTemplate = "dw_mando_jetpack_schematic", weight = 50000},
 		-- Jetpack components: 2% per roll
@@ -82,15 +80,15 @@ mando_daily_bounty_tier3_loot = {
 		{itemTemplate = "technical_console_schematic_2", weight = 52500},
 		{itemTemplate = "radar_screen_schematic", weight = 43750},
 		{itemTemplate = "radio_schematic", weight = 35000},
-		-- Decorations and trophies: 71.2% per roll
-		{itemTemplate = "art_sm_s1", weight = 796250},
-		{itemTemplate = "art_sm_s2", weight = 796250},
-		{itemTemplate = "art_sm_s3", weight = 796250},
-		{itemTemplate = "art_sm_s4", weight = 796250},
-		{itemTemplate = "art_lg_s1", weight = 955500},
-		{itemTemplate = "art_lg_s2", weight = 955500},
-		{itemTemplate = "dwb_viewscreen_s1", weight = 637000},
-		{itemTemplate = "dwb_viewscreen_s2", weight = 637000},
+		-- Decorations and trophies: 71.5% per roll
+		{itemTemplate = "art_sm_s1", weight = 800000},
+		{itemTemplate = "art_sm_s2", weight = 800000},
+		{itemTemplate = "art_sm_s3", weight = 800000},
+		{itemTemplate = "art_sm_s4", weight = 800000},
+		{itemTemplate = "art_lg_s1", weight = 960000},
+		{itemTemplate = "art_lg_s2", weight = 960000},
+		{itemTemplate = "dwb_viewscreen_s1", weight = 640000},
+		{itemTemplate = "dwb_viewscreen_s2", weight = 640000},
 		{itemTemplate = "mando_clan_banner", weight = 300000},
 		{itemTemplate = "mando_clan_painting", weight = 300000},
 		{itemTemplate = "mando_holo_emblem", weight = 75000},
