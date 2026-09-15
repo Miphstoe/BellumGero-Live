@@ -85,6 +85,11 @@ int MannequinDeedMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		return 0;
 	}
 
+	if ((structure->getCurrentNumberOfPlayerItems() + 1) > structure->getMaximumNumberOfPlayerItems()) {
+		player->sendSystemMessage("@container_error_message:container13"); // This house has too many items in it
+		return 0;
+	}
+
 	Locker plocker(player);
 
 	ManagedReference<SceneObject*> mannequinScene = zoneServer->createObject(mannequinTemplate.hashCode(), 2);
@@ -108,7 +113,21 @@ int MannequinDeedMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 	mannequin->initializePosition(player->getPositionX(), player->getPositionZ(), player->getPositionY());
 	mannequin->setDirection(Math::deg2rad(player->getDirectionAngle()));
 
-	if (!cell->transferObject(mannequin, -1, true)) {
+	String errorDescription;
+	int validationResult = cell->canAddObject(mannequin, -1, errorDescription);
+
+	if (validationResult != 0) {
+		if (errorDescription.isEmpty())
+			player->sendSystemMessage("The mannequin could not be placed here.");
+		else
+			player->sendSystemMessage(errorDescription);
+
+		mannequin->destroyObjectFromWorld(true);
+		mannequin->destroyObjectFromDatabase(true);
+		return 0;
+	}
+
+	if (!cell->transferObject(mannequin, -1, true, false)) {
 		player->sendSystemMessage("The mannequin could not be placed here.");
 		mannequin->destroyObjectFromWorld(true);
 		mannequin->destroyObjectFromDatabase(true);

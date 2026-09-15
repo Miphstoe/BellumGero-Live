@@ -31,6 +31,7 @@
 #include "server/zone/managers/vendor/VendorManager.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/objects/tangible/components/vendor/AuctionTerminalDataComponent.h"
+#include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 #include "server/zone/objects/player/sessions/TradeSession.h"
 #include "AuctionSearchTask.h"
@@ -1155,6 +1156,13 @@ void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionI
         return;
     }
 
+    VendorDataComponent* vendorData = nullptr;
+    if (vendor->isVendor()) {
+        DataObjectComponentReference* data = vendor->getDataObjectComponent();
+        if (data != nullptr && data->get() != nullptr && data->get()->isVendorData())
+            vendorData = cast<VendorDataComponent*>(data->get());
+    }
+
     // Location info for mail
     ManagedReference<CityRegion*> city = vendor->getCityRegion().get();
     String vendorPlanetName("@planet_n:" + vendor->getZone()->getZoneName());
@@ -1173,12 +1181,39 @@ void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionI
     uint64 currentTime = now.getMiliTime() / 1000;
     uint64 availableTime = 0;
 
+    int listedPrice = 0;
     int finalPrice = 0;
+    int guildDiscountPercent = 0;
+    uint64 guildDiscountID = 0;
     uint64 auctionedOid = 0;
 
     // --- Mutate the item quickly under lock ---
     {
         Locker locker(item);
+
+        if (item->getStatus() != AuctionItem::FORSALE && item->getStatus() != AuctionItem::OFFERED) {
+            player->sendMessage(new BidAuctionResponseMessage(item->getAuctionedItemObjectID(),
+                                                              BidAuctionResponseMessage::INVALIDITEM));
+            return;
+        }
+
+        listedPrice = item->getPrice();
+        finalPrice = listedPrice;
+
+        if (vendorData != nullptr && !item->isOnBazaar()) {
+            guildDiscountPercent = vendorData->getGuildDiscountForBuyer(player);
+            finalPrice = vendorData->calculateGuildDiscountedPrice(player, listedPrice);
+
+            ManagedReference<GuildObject*> buyerGuild = player->getGuildObject().get();
+            if (buyerGuild != nullptr && guildDiscountPercent > 0)
+                guildDiscountID = buyerGuild->getObjectID();
+        }
+
+        if (player->getBankCredits() < finalPrice) {
+            player->sendMessage(new BidAuctionResponseMessage(item->getAuctionedItemObjectID(),
+                                                              BidAuctionResponseMessage::NOTENOUGHCREDITS));
+            return;
+        }
 
         if (item->isOnBazaar() || item->getStatus() == AuctionItem::OFFERED)
             availableTime = currentTime + AuctionManager::COMMODITYEXPIREPERIOD;
@@ -1192,7 +1227,6 @@ void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionI
         item->setBidderName(player->getFirstName().toLowerCase());
         item->clearAuctionWithdraw();
 
-        finalPrice   = item->getPrice();
         auctionedOid = item->getAuctionedItemObjectID();
     }
     // --- Item lock released ---
@@ -1212,6 +1246,13 @@ void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionI
         trx.setAutoCommit(false);
         trx.addRelatedObject(auctionedOid, true);
         trx.setExportRelatedObjects(true);
+        if (guildDiscountPercent > 0) {
+            trx.addState("vendorID", vendor->getObjectID());
+            trx.addState("listedPrice", listedPrice);
+            trx.addState("guildID", guildDiscountID);
+            trx.addState("guildDiscount", guildDiscountPercent);
+            trx.addState("finalPrice", finalPrice);
+        }
         player->subtractBankCredits(finalPrice);
     }
 
@@ -1502,6 +1543,17 @@ void AuctionManagerImplementation::buyItem(CreatureObject* player, uint64 object
         {   // read under lock
             Locker locker(item);
             cost = item->getPrice();
+        }
+
+        if (!item->isOnBazaar() && vendor->isVendor()) {
+            DataObjectComponentReference* data = vendor->getDataObjectComponent();
+            VendorDataComponent* vendorData = nullptr;
+
+            if (data != nullptr && data->get() != nullptr && data->get()->isVendorData())
+                vendorData = cast<VendorDataComponent*>(data->get());
+
+            if (vendorData != nullptr)
+                cost = vendorData->calculateGuildDiscountedPrice(player, cost);
         }
 
         if (player->getBankCredits() < cost) {
@@ -2074,6 +2126,28 @@ void AuctionManagerImplementation::getItemAttributes(CreatureObject* player, uin
 
 		if (isCrate) {
 			msg->insertAttribute("Crated Item Type:", auctionItem->getCratedItemType());
+		}
+	}
+
+	ManagedReference<SceneObject*> vendor = zoneServer->getObject(auctionItem->getVendorID());
+	VendorDataComponent* vendorData = nullptr;
+
+	if (vendor != nullptr && vendor->isVendor() && !auctionItem->isOnBazaar()) {
+		DataObjectComponentReference* data = vendor->getDataObjectComponent();
+
+		if (data != nullptr && data->get() != nullptr && data->get()->isVendorData())
+			vendorData = cast<VendorDataComponent*>(data->get());
+	}
+
+	if (vendorData != nullptr && !auctionItem->isAuction()) {
+		int listedPrice = auctionItem->getPrice();
+		int discountPercent = vendorData->getGuildDiscountForBuyer(player);
+
+		if (discountPercent > 0) {
+			int finalPrice = vendorData->calculateGuildDiscountedPrice(player, listedPrice);
+			msg->insertAttribute("Listed Price", String::valueOf(listedPrice) + " credits");
+			msg->insertAttribute("Guild Discount", String::valueOf(discountPercent) + "%");
+			msg->insertAttribute("Final Price", String::valueOf(finalPrice) + " credits");
 		}
 	}
 

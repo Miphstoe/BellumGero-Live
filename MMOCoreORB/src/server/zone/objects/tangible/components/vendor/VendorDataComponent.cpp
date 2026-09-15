@@ -18,6 +18,7 @@
 #include "server/zone/packets/object/SpatialChat.h"
 #include "server/zone/objects/tangible/tasks/VendorReturnToPositionTask.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/objects/guild/GuildObject.h"
 
 VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adBarkingMutex() {
 	ownerId = 0;
@@ -33,6 +34,7 @@ VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adB
 	barkMessage = "";
 	lastBark = 0;
 	originalDirection = 1000;
+	guildDiscounts.setNoDuplicateInsertPlan();
 	addSerializableVariables();
 }
 
@@ -53,6 +55,7 @@ void VendorDataComponent::addSerializableVariables() {
 	addSerializableVariable("barkMood", &barkMood);
 	addSerializableVariable("barkAnimation", &barkAnimation);
 	addSerializableVariable("originalDirection", &originalDirection);
+	addSerializableVariable("guildDiscounts", &guildDiscounts);
 }
 
 void VendorDataComponent::writeJSON(nlohmann::json& j) const {
@@ -74,6 +77,7 @@ void VendorDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(barkMood);
 	SERIALIZE_JSON_MEMBER(barkAnimation);
 	SERIALIZE_JSON_MEMBER(originalDirection);
+	SERIALIZE_JSON_MEMBER(guildDiscounts);
 }
 
 void VendorDataComponent::initializeTransientMembers() {
@@ -211,6 +215,58 @@ void VendorDataComponent::runVendorUpdate() {
 
 	awardUsageXP = 0;
 	lastSuccessfulUpdate.updateToCurrentTime();
+}
+
+bool VendorDataComponent::setGuildDiscount(uint64 guildID, int percent) {
+	if (guildID == 0)
+		return false;
+
+	int clampedPercent = clampGuildDiscount(percent);
+
+	if (clampedPercent < MINGUILDDISCOUNT)
+		return false;
+
+	if (!guildDiscounts.contains(guildID) && guildDiscounts.size() >= MAXGUILDDISCOUNTS)
+		return false;
+
+	if (guildDiscounts.contains(guildID))
+		guildDiscounts.drop(guildID);
+
+	guildDiscounts.put(guildID, clampedPercent);
+	return true;
+}
+
+int VendorDataComponent::getGuildDiscountForBuyer(CreatureObject* buyer) {
+	if (buyer == nullptr || !buyer->isInGuild())
+		return 0;
+
+	ManagedReference<GuildObject*> guild = buyer->getGuildObject().get();
+
+	if (guild == nullptr)
+		return 0;
+
+	return getGuildDiscountPercent(guild->getObjectID());
+}
+
+int VendorDataComponent::calculateGuildDiscountedPrice(CreatureObject* buyer, int listedPrice) {
+	if (listedPrice <= 0)
+		return 0;
+
+	int discountPercent = getGuildDiscountForBuyer(buyer);
+
+	if (discountPercent <= 0)
+		return listedPrice;
+
+	int64 discountAmount = ((int64)listedPrice * discountPercent) / 100;
+	int64 finalPrice = (int64)listedPrice - discountAmount;
+
+	if (finalPrice < 0)
+		return 0;
+
+	if (finalPrice > INT_MAX)
+		return INT_MAX;
+
+	return (int)finalPrice;
 }
 
 float VendorDataComponent::getMaintenanceRate() {
