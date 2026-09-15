@@ -152,7 +152,7 @@ local function finishBountyCamp(theater, pOwner, ownerID)
 		if (pInventory ~= nil) then
 			local itemID = createLoot(pInventory, theater.lootGroup, theater.lootLevel, false)
 			if (itemID ~= nil and itemID ~= 0) then
-				CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] You received a schematic from the mark's belongings.")
+				CreatureObject(pOwner):sendSystemMessage("[Mandalorian Daily Bounty] You received a reward from the mark's belongings.")
 			end
 		end
 	end
