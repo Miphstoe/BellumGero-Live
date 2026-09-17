@@ -9,6 +9,7 @@
 #define DESTROYCOMMANDSUICALLBACK_H_
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
+#include "server/zone/objects/tangible/deed/structure/StructureDeed.h"
 
 class DestroyCommandSuiCallback : public SuiCallback {
 public:
@@ -32,6 +33,20 @@ public:
 			return;
 		}
 
+		// House Pack-Up safety: a deed still holding packed structure contents is the
+		// only reference that can recover those items. Refuse to destroy it outright
+		// rather than silently stranding hundreds of player objects; a GM who is sure
+		// this deed's contents are truly gone should first clear it via /housepackinfo
+		// review, not this generic destroy tool.
+		if (StructureDeed* packedDeed = dynamic_cast<StructureDeed*>(obj.get())) {
+			if (packedDeed->isPackedWithContents()) {
+				creature->sendSystemMessage("This deed still holds packed structure contents (state="
+					+ String::valueOf(packedDeed->getHousePackState()) + ", "
+					+ String::valueOf((int)packedDeed->getHousePackedItemCount()) + " item(s)). "
+					"Destroying it would strand that player's property. Use /housepackinfo to review it first.");
+				return;
+			}
+		}
 
 		obj->destroyObjectFromWorld(true);
 

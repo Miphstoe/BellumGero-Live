@@ -7,6 +7,7 @@ package server.zone.objects.tangible.deed.structure;
 import server.zone.objects.structure.StructureObject;
 import server.zone.objects.creature.CreatureObject;
 import server.zone.objects.tangible.deed.Deed;
+import system.util.Vector;
 include server.zone.packets.scene.AttributeListMessage;
 include server.zone.objects.tangible.deed.components.PlaceStructureComponent;
 include server.zone.objects.manufactureschematic.craftingvalues.CraftingValues;
@@ -21,6 +22,26 @@ class StructureDeed extends Deed {
 	protected float maintenanceReductionBonus;
 	protected int storageBonus;
 
+	/**
+	 * House Pack-Up transactional state carried on the deed itself:
+	 * 0 = NONE, 1 = PACKED, 2 = RESTORING, 3 = CONSUMED, 4 = PARTIAL (needs admin review).
+	 * Persisted through normal deed persistence (the same mechanism that already
+	 * reliably preserves surplusMaintenance/surplusPower), so it survives logout,
+	 * restart, and indefinite time in inventory -- unlike the legacy RAM-hashtable/
+	 * external-file tracking it replaces. Also used to make restoration idempotent:
+	 * a deed can only be restored once (see HousePackupManager::restoreFromDeed).
+	 */
+	protected int housePackState;
+
+	@dereferenced
+	protected Vector<byte> housePackedPayload;
+
+	protected unsigned int housePackedItemCount;
+
+	protected unsigned int housePackTimestamp;
+
+	protected unsigned long housePackedOriginalStructureID;
+
 	protected transient PlaceStructureComponent placeStructureComponent;
 
 	public StructureDeed() {
@@ -32,6 +53,11 @@ class StructureDeed extends Deed {
 		hopperSizeMax = 0;
 		maintenanceReductionBonus = 0;
 		storageBonus = 0;
+
+		housePackState = 0;
+		housePackedItemCount = 0;
+		housePackTimestamp = 0;
+		housePackedOriginalStructureID = 0;
 	}
 
 	@local
@@ -113,6 +139,82 @@ class StructureDeed extends Deed {
 	@read
 	public int getStorageBonus() {
 		return storageBonus;
+	}
+
+	@preLocked
+	public void setHousePackState(int state) {
+		housePackState = state;
+	}
+
+	@read
+	public int getHousePackState() {
+		return housePackState;
+	}
+
+	/**
+	 * True whenever this deed is currently holding packed structure contents that
+	 * have not yet been fully, successfully restored. Used to gate destructive or
+	 * ownership-transferring operations on the deed (destroy, trade, vendor sale,
+	 * Bazaar listing) so hundreds of player items can't be stranded by losing the
+	 * only reference that can recover them.
+	 */
+	@read
+	public boolean isPackedWithContents() {
+		return housePackState == 1 || housePackState == 2 || housePackState == 4;
+	}
+
+	// Implemented by hand in StructureDeedImplementation.cpp -- idlc's body
+	// codegen always takes the address of an object-typed argument passed to a
+	// nested call, which is incompatible with Vector::addAll's reference
+	// parameter. A native method sidesteps idlc's body translation entirely.
+	@local
+	@preLocked
+	public native void setHousePackedPayload(@dereferenced Vector<byte> payload);
+
+	@preLocked
+	public void clearHousePackedPayload() {
+		housePackedPayload.removeAll();
+	}
+
+	@read
+	public boolean hasHousePackedPayload() {
+		return housePackedPayload.size() > 0;
+	}
+
+	@local
+	@read
+	public final Vector<byte> getHousePackedPayload() {
+		return housePackedPayload;
+	}
+
+	@preLocked
+	public void setHousePackedItemCount(unsigned int count) {
+		housePackedItemCount = count;
+	}
+
+	@read
+	public unsigned int getHousePackedItemCount() {
+		return housePackedItemCount;
+	}
+
+	@preLocked
+	public void setHousePackTimestamp(unsigned int timestamp) {
+		housePackTimestamp = timestamp;
+	}
+
+	@read
+	public unsigned int getHousePackTimestamp() {
+		return housePackTimestamp;
+	}
+
+	@preLocked
+	public void setHousePackedOriginalStructureID(unsigned long oid) {
+		housePackedOriginalStructureID = oid;
+	}
+
+	@read
+	public unsigned long getHousePackedOriginalStructureID() {
+		return housePackedOriginalStructureID;
 	}
 
 	@dirty
