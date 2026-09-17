@@ -81,6 +81,7 @@ public:
 	void kickFromGroup(ManagedReference<GroupObject*> group, CreatureObject* player, CreatureObject* memberToKick);
 	void leaveGroup(ManagedReference<GroupObject*> group, CreatureObject* player);
 	void makeLeader(GroupObject* group, CreatureObject* player, CreatureObject* newLeader);
+	void toggleCoLeader(GroupObject* group, CreatureObject* player, CreatureObject* newCoLeader);
 
 	void changeLootRule(GroupObject* group, int newRule);
 	void changeMasterLooter(GroupObject* group, CreatureObject* newLooter, bool enableRule);

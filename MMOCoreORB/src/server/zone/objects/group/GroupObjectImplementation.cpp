@@ -192,6 +192,34 @@ void GroupObjectImplementation::removeMember(CreatureObject* memberRemoved) {
 	uint64 memberRemovedID = memberRemoved->getObjectID();
 	bool wasLeader = getLeaderID() == memberRemovedID;
 
+	if (getCoLeaderID() == memberRemovedID) {
+		StringBuffer coLeaderRemovedMsg;
+		coLeaderRemovedMsg << memberRemoved->getDisplayedName() << " is no longer Group Co-Leader.";
+		sendSystemMessage(coLeaderRemovedMsg.toString());
+
+		setCoLeaderID(0);
+		info(true) << "Cleared group co-leader on member removal -- Group ID: " << getObjectID() << " Co-Leader ID: " << memberRemovedID;
+	} else if (wasLeader && getCoLeaderID() != 0) {
+		uint64 oldCoLeaderID = getCoLeaderID();
+		String oldCoLeaderName = "The previous Co-Leader";
+
+		for (int i = 0; i < groupMembers.size(); i++) {
+			CreatureObject* member = groupMembers.get(i).get().get();
+
+			if (member != nullptr && member->getObjectID() == oldCoLeaderID) {
+				oldCoLeaderName = member->getDisplayedName();
+				break;
+			}
+		}
+
+		StringBuffer coLeaderRemovedMsg;
+		coLeaderRemovedMsg << oldCoLeaderName << " is no longer Group Co-Leader.";
+		sendSystemMessage(coLeaderRemovedMsg.toString());
+
+		info(true) << "Cleared group co-leader on leader removal -- Group ID: " << getObjectID() << " Old Co-Leader ID: " << getCoLeaderID() << " Removed Leader ID: " << memberRemovedID;
+		setCoLeaderID(0);
+	}
+
 	if (hasSquadLeader()) {
 		if (wasLeader)
 			removeGroupModifiers();
@@ -345,6 +373,27 @@ void GroupObjectImplementation::makeLeader(CreatureObject* newLeader) {
 	if (groupPosition < 0)
 		return;
 
+	if (getCoLeaderID() != 0) {
+		uint64 oldCoLeaderID = getCoLeaderID();
+		String oldCoLeaderName = "The previous Co-Leader";
+
+		for (int i = 0; i < groupMembers.size(); ++i) {
+			CreatureObject* member = groupMembers.get(i).get();
+
+			if (member != nullptr && member->getObjectID() == oldCoLeaderID) {
+				oldCoLeaderName = member->getDisplayedName();
+				break;
+			}
+		}
+
+		StringBuffer coLeaderRemovedMsg;
+		coLeaderRemovedMsg << oldCoLeaderName << " is no longer Group Co-Leader.";
+		sendSystemMessage(coLeaderRemovedMsg.toString());
+
+		info(true) << "Cleared group co-leader on leadership transfer -- Group ID: " << getObjectID() << " Old Co-Leader ID: " << getCoLeaderID() << " New Leader ID: " << newLeaderID;
+		setCoLeaderID(0);
+	}
+
 	if (hasSquadLeader())
 		removeGroupModifiers();
 
@@ -392,6 +441,11 @@ void GroupObjectImplementation::disband() {
 	bool hasSL = hasSquadLeader();
 	int groupSize = groupMembers.size();
 	uint64 leaderID = getLeaderID();
+
+	if (getCoLeaderID() != 0) {
+		info(true) << "Cleared group co-leader on disband -- Group ID: " << getObjectID() << " Co-Leader ID: " << getCoLeaderID();
+		setCoLeaderID(0);
+	}
 
 	for (int i = groupSize - 1; i >= 0; --i) {
 		ManagedReference<CreatureObject*> groupMember = getGroupMember(i);
@@ -776,6 +830,7 @@ bool GroupObjectImplementation::initializeLeader(CreatureObject* leader, Creatur
 	groupMembers.add(leader, nullptr);
 	groupMembers.add(member, nullptr, 0);
 
+	setCoLeaderID(0);
 	setMasterLooterID(leader->getObjectID());
 	setLootRule(GroupManager::FREEFORALL);
 	calculateGroupLevel();

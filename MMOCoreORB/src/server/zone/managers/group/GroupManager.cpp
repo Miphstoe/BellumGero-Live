@@ -83,7 +83,7 @@ void GroupManager::inviteToGroup(CreatureObject* inviter, CreatureObject* target
 			if (!target->isInRange(inviter, 120)) {
 				return;
 			}
-		} else if (group->getLeader() != inviter) {
+		} else if (!group->canInviteToGroup(inviter)) {
 			inviter->sendSystemMessage("@group:must_be_leader");
 			return;
 		}
@@ -239,8 +239,8 @@ void GroupManager::joinGroup(CreatureObject* creature) {
 		return;
 	}
 
-	// if inviter IS in the group but is not the leader
-	if (group->getLeaderID() != leader->getObjectID() && !playerIsInvitingOwnPet(leader, creature)) {
+	// if inviter IS in the group but cannot invite
+	if (!group->canInviteToGroup(leader) && !playerIsInvitingOwnPet(leader, creature)) {
 		creature->updateGroupInviterID(0);
 
 		StringIdChatParameter param("group", "prose_leader_changed"); // "%TU has abdicated group leadership to %TT."
@@ -604,6 +604,63 @@ void GroupManager::makeLeader(GroupObject* group, CreatureObject* leader, Creatu
 	}
 }
 
+void GroupManager::toggleCoLeader(GroupObject* group, CreatureObject* leader, CreatureObject* newCoLeader) {
+	// Pre: Group is locked
+	if (group == nullptr || leader == nullptr || newCoLeader == nullptr)
+		return;
+
+	uint64 leaderID = leader->getObjectID();
+	uint64 newCoLeaderID = newCoLeader->getObjectID();
+
+	if (group->getLeaderID() != leaderID) {
+		leader->sendSystemMessage("Only the Group Leader can assign a Co-Leader.");
+		info(true) << "Rejected group co-leader assignment -- Group ID: " << group->getObjectID() << " Requester ID: " << leaderID << " Target ID: " << newCoLeaderID;
+		return;
+	}
+
+	if (!newCoLeader->isPlayerCreature() || !group->hasMember(newCoLeader) || newCoLeaderID == leaderID) {
+		leader->sendSystemMessage("You must target a member of your group.");
+		return;
+	}
+
+	uint64 oldCoLeaderID = group->getCoLeaderID();
+
+	if (oldCoLeaderID == newCoLeaderID) {
+		group->setCoLeaderID(0);
+
+		StringBuffer removedMsg;
+		removedMsg << newCoLeader->getDisplayedName() << " is no longer Group Co-Leader.";
+		group->sendSystemMessage(removedMsg.toString());
+
+		info(true) << "Removed group co-leader -- Group ID: " << group->getObjectID() << " Leader ID: " << leaderID << " Co-Leader ID: " << newCoLeaderID;
+		return;
+	}
+
+	if (oldCoLeaderID != 0) {
+		ManagedReference<SceneObject*> oldObject = leader->getZoneServer()->getObject(oldCoLeaderID);
+		CreatureObject* oldCoLeader = oldObject != nullptr && oldObject->isCreatureObject() ? oldObject->asCreatureObject() : nullptr;
+
+		StringBuffer oldMsg;
+
+		if (oldCoLeader != nullptr) {
+			oldMsg << oldCoLeader->getDisplayedName();
+		} else {
+			oldMsg << "The previous Co-Leader";
+		}
+
+		oldMsg << " is no longer Group Co-Leader.";
+		group->sendSystemMessage(oldMsg.toString());
+	}
+
+	group->setCoLeaderID(newCoLeaderID);
+
+	StringBuffer newMsg;
+	newMsg << newCoLeader->getDisplayedName() << " has been appointed Group Co-Leader.";
+	group->sendSystemMessage(newMsg.toString());
+
+	info(true) << "Assigned group co-leader -- Group ID: " << group->getObjectID() << " Leader ID: " << leaderID << " Co-Leader ID: " << newCoLeaderID << " Previous Co-Leader ID: " << oldCoLeaderID;
+}
+
 void GroupManager::joinGroupEntertainingSession(CreatureObject* player) {
 	// Pre: player is locked
 
@@ -932,4 +989,3 @@ void GroupManager::transferLoot(GroupObject* group, CreatureObject* winner, Scen
 		}
 
 	}
-
