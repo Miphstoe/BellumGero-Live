@@ -94,6 +94,12 @@ public:
 	/// See if this entry has enough resources to continue
 	bool hasEnoughResources();
 
+	/// Current quantity represented by valid matches still in the assigned hopper.
+	int getAvailableQuantity() const;
+
+	/// Compact object-id/quantity list used only by failure diagnostics.
+	String getMatchingHopperItemsSummary() const;
+
 	/// Remove resources from vector
 	void removeResources(FactoryObject* factory);
 

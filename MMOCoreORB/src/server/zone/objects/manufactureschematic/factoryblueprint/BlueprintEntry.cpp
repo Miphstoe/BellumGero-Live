@@ -135,6 +135,44 @@ bool BlueprintEntry::hasEnoughResources() {
 	return false;
 }
 
+int BlueprintEntry::getAvailableQuantity() const {
+	if (inputHopper == nullptr)
+		return 0;
+
+	int count = 0;
+
+	for (int i = 0; i < matchingHopperItems.size(); ++i) {
+		TangibleObject* object = matchingHopperItems.get(i);
+
+		if (object == nullptr || object->getParentID() != inputHopper->getObjectID())
+			continue;
+
+		int useCount = object->getUseCount();
+		count += (useCount == 0 ? 1 : useCount);
+	}
+
+	return count;
+}
+
+String BlueprintEntry::getMatchingHopperItemsSummary() const {
+	StringBuffer summary;
+
+	for (int i = 0; i < matchingHopperItems.size(); ++i) {
+		TangibleObject* object = matchingHopperItems.get(i);
+
+		if (object == nullptr || inputHopper == nullptr || object->getParentID() != inputHopper->getObjectID())
+			continue;
+
+		if (summary.length() > 0)
+			summary << ",";
+
+		int useCount = object->getUseCount();
+		summary << object->getObjectID() << ":" << (useCount == 0 ? 1 : useCount);
+	}
+
+	return summary.toString();
+}
+
 void BlueprintEntry::removeResources(FactoryObject* factory) {
 	int count = 0;
 
