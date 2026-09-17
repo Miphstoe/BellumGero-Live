@@ -10,7 +10,11 @@ namespace server { namespace zone {
     namespace objects {
         namespace building { class BuildingObject; }
         namespace creature { class CreatureObject; }
-        namespace tangible { class TangibleObject; }
+        namespace tangible {
+            class TangibleObject;
+            namespace deed { namespace structure { class StructureDeed; } }
+        }
+        namespace scene { class SceneObject; }
     }
 }}
 
@@ -19,6 +23,7 @@ namespace sz   = server::zone;
 namespace bld  = server::zone::objects::building;
 namespace crt  = server::zone::objects::creature;
 namespace tang = server::zone::objects::tangible;
+namespace sdeed = server::zone::objects::tangible::deed::structure;
 
 class HousePackupManager : public Logger, public Object, public Singleton<HousePackupManager> {
 public:
@@ -27,15 +32,29 @@ public:
 
     // Main entry points
     bool packUpHouse(bld::BuildingObject* building, crt::CreatureObject* requester);
-    bool restoreFromDeed(bld::BuildingObject* building, tang::TangibleObject* deed, crt::CreatureObject* placer);
+    bool restoreFromDeed(bld::BuildingObject* building, sdeed::StructureDeed* deed, crt::CreatureObject* placer);
     bool hasVendorsInside(bld::BuildingObject* building) const;
     // BG: mirrors hasVendorsInside - true if any Bellum Gero display mannequin is in any cell
     bool hasMannequinsInside(bld::BuildingObject* building) const;
     // Add to HousePackupManager.h
     bool hasLotPlaceholder(uint64 deedOID) const;
 
+    // Read-only diagnostics for the /housepackinfo GM command. Returns false if
+    // neither object carries any House Pack-Up state (never modifies anything).
+    struct PackDiagnostics {
+        bool found = false;
+        bool isDeed = false;
+        int packState = 0;
+        uint64 originalStructureID = 0;
+        uint32 itemCount = 0;
+        uint32 timestamp = 0;
+        bool hasPayload = false;
+        bool legacyPayload = false;
+    };
+    PackDiagnostics getPackDiagnostics(server::zone::objects::scene::SceneObject* target) const;
+
     // Payload wiring
-    void attachPayloadToDeedFromBuilding(uint64 buildingOID, uint64 deedOID);
+    void attachPayloadToDeedFromBuilding(bld::BuildingObject* building, sdeed::StructureDeed* deed);
     void rememberPayloadForDeed(uint64 deedOID, const Vector<uint8>& blob);
     void rememberPayloadForBuilding(uint64 buildingOID, const Vector<uint8>& blob);
     bool takePayloadForBuilding(uint64 buildingOID, Vector<uint8>& out);

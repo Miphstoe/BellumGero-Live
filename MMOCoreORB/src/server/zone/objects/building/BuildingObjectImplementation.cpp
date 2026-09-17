@@ -111,6 +111,11 @@ int BuildingObjectImplementation::getCurrentNumberOfPlayerItems() {
 	return items;
 }
 
+void BuildingObjectImplementation::setHousePackedPayload(Vector<byte>& payload) {
+	housePackedPayload.removeAll();
+	housePackedPayload.addAll(payload);
+}
+
 void BuildingObjectImplementation::createCellObjects() {
 	for (int i = 0; i < totalCellNumber; ++i) {
 		auto newCell = getZoneServer()->createObject(0xAD431713, getPersistenceLevel());
