@@ -675,6 +675,13 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     if (building == nullptr || requester == nullptr)
         return false;
 
+    // Packing serializes contents, destroys the building, refunds its lot, and
+    // creates a deed. Administrative permission is deliberately insufficient.
+    if (building->getOwnerObjectID() != requester->getObjectID()) {
+        requester->sendSystemMessage("You must be the owner to pack up this structure.");
+        return false;
+    }
+
     // BG safety layer: the radial is hidden when mannequins are present, but re-check here
     // to defend against stale menus, delayed callbacks, or another player placing a
     // mannequin after the menu was opened. Mannequins are creatures and would be skipped
