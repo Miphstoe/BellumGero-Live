@@ -19,6 +19,7 @@ StructurePermissionList::StructurePermissionList() {
 	ownerID = 0;
 
 	//TODO: Load these from the structure template script.
+	addList("COOWNER");
 	addList("ADMIN");
 	addList("ENTRY");
 	addList("HOPPER");
@@ -376,5 +377,4 @@ bool StructurePermissionList::isListFull(const String& listName) const {
 
 	return list.size() >= MAX_ENTRIES;
 }
-
 

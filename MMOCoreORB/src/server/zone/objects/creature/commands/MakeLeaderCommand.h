@@ -34,20 +34,21 @@ public:
 		ManagedReference<CreatureObject*> tarCreo = nullptr;
 
 		StringTokenizer args(arguments.toString());
+		bool coLeaderMode = false;
+		String firstArg;
 
-		if (galaxyWide && args.hasMoreTokens()) {
-			String firstName;
+		if (args.hasMoreTokens()) {
+			args.getStringToken(firstArg);
+			coLeaderMode = firstArg.toLowerCase() == "coleader";
+		}
 
-			args.getStringToken(firstName);
-
-			if (firstName != "") {
+		if (galaxyWide && !coLeaderMode && firstArg != "") {
 				ChatManager* chatManager = zoneServer->getChatManager();
 
 				if (chatManager == nullptr)
 					return GENERALERROR;
 
-				tarCreo = chatManager->getPlayer(firstName);
-			}
+				tarCreo = chatManager->getPlayer(firstArg);
 		} else {
 			ManagedReference<SceneObject*> object = zoneServer->getObject(target);
 
@@ -68,16 +69,23 @@ public:
 		uint64 leaderID = group->getLeaderID();
 
 		if (leaderID != creature->getObjectID()) {
-			creature->sendSystemMessage("@group:must_be_leader");
+			if (coLeaderMode)
+				creature->sendSystemMessage("Only the Group Leader can assign a Co-Leader.");
+			else
+				creature->sendSystemMessage("@group:must_be_leader");
+
 			return GENERALERROR;
 		} else if (leaderID == tarCreo->getObjectID()) {
 			// target is already the leader
+			if (coLeaderMode)
+				creature->sendSystemMessage("You must target a member of your group.");
+
 			return GENERALERROR;
 		}
 
 		Reference<CreatureObject*> leaderRef = creature;
 
-		Core::getTaskManager()->executeTask([group, leaderRef, tarCreo]() {
+		Core::getTaskManager()->executeTask([group, leaderRef, tarCreo, coLeaderMode]() {
 			if (group == nullptr || leaderRef == nullptr || tarCreo == nullptr)
 				return;
 
@@ -88,8 +96,11 @@ public:
 
 			Locker locker(group);
 
-			groupManager->makeLeader(group, leaderRef, tarCreo);
-		}, "MakeGroupLeaderLambda");
+			if (coLeaderMode)
+				groupManager->toggleCoLeader(group, leaderRef, tarCreo);
+			else
+				groupManager->makeLeader(group, leaderRef, tarCreo);
+		}, coLeaderMode ? "MakeGroupCoLeaderLambda" : "MakeGroupLeaderLambda");
 
 		return SUCCESS;
 	}
@@ -97,4 +108,3 @@ public:
 };
 
 #endif //MAKELEADERCOMMAND_H_
-

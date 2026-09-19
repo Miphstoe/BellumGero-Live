@@ -479,8 +479,10 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 		String displayedName = "";
 		schematic->canManufactureItem(type, displayedName);
 		if (displayedName != "") {
-			if (!queueIdleNoticeLogged)
+			if (!queueIdleNoticeLogged) {
 				info() << "Factory queue readiness failed. FactoryID: " << getObjectID() << " SchematicID: " << schematic->getObjectID() << " Position: " << i + 1 << " Validation: " << (type == "resource" ? "MISSING_RESOURCES" : "MISSING_COMPONENTS") << " Detail: " << displayedName;
+				logIngredientValidationFailure(schematic, i, "QUEUE_READINESS");
+			}
 			markQueueEntryBlocked(i, type == "resource" ? QUEUE_BLOCKED_RESOURCES : QUEUE_BLOCKED_COMPONENTS, displayedName);
 			continue;
 		}
@@ -1141,6 +1143,50 @@ bool FactoryObjectImplementation::populateSchematicBlueprint(ManufactureSchemati
 	return true;
 }
 
+void FactoryObjectImplementation::logIngredientValidationFailure(ManufactureSchematic* schematic, int queueIndex, const String& phase) {
+	if (schematic == nullptr)
+		return;
+
+	unsigned long long activeSchematicID = 0;
+	for (int i = 0; i < queueStatuses.size() && i < queueSchematicIDs.size(); ++i) {
+		if (queueStatuses.get(i) == QUEUE_ACTIVE) {
+			activeSchematicID = queueSchematicIDs.get(i);
+			break;
+		}
+	}
+
+	info() << "[FactoryQueue] START FAILURE Factory: " << getObjectID()
+		<< " QueueSize: " << queueSchematicIDs.size()
+		<< " QueueIndex: " << queueIndex
+		<< " QueuedSchematic: " << schematic->getObjectID()
+		<< " ActiveSchematic: " << activeSchematicID
+		<< " Schematic: " << schematic->getDisplayedName()
+		<< " QueueEnabled: " << (queueEnabled ? "true" : "false")
+		<< " Operating: " << (isActive() ? "true" : "false")
+		<< " Phase: " << phase;
+
+	for (int i = 0; i < schematic->getBlueprintSize(); ++i) {
+		BlueprintEntry* entry = schematic->getBlueprintEntry(i);
+
+		if (entry == nullptr) {
+			warning() << "[FactoryQueue] Ingredient Factory: " << getObjectID() << " Schematic: " << schematic->getObjectID() << " Slot: " << i << " Result: INVALID_ENTRY";
+			continue;
+		}
+
+		int available = entry->getAvailableQuantity();
+		info() << "[FactoryQueue] Ingredient Factory: " << getObjectID()
+			<< " Schematic: " << schematic->getObjectID()
+			<< " Slot: " << i
+			<< " Type: " << entry->getType()
+			<< " Key: " << entry->getKey()
+			<< " Serial: " << entry->getSerial()
+			<< " Required: " << entry->getQuantity()
+			<< " Available: " << available
+			<< " Matches: " << entry->getMatchingHopperItemsSummary()
+			<< " Result: " << (available >= entry->getQuantity() ? "PASS" : "FAIL");
+	}
+}
+
 void FactoryObjectImplementation::stopFactory(const String& message, const String& tt, const String& to, const int di) {
 	Locker _locker(_this.getReferenceUnsafeStaticCast());
 
@@ -1247,6 +1293,16 @@ void FactoryObjectImplementation::createNewObject() {
 
 	verifyOperators();
 
+	// Blueprint hopper pointers and match vectors are transient caches. Hopper
+	// changes while the factory is active intentionally do not restart queue
+	// evaluation, so rebuild the active schematic's matches at the transaction
+	// boundary before validating and consuming this item.
+	if (!populateSchematicBlueprint(schematic)) {
+		markQueueEntryBlocked(findQueueEntry(schematic->getObjectID()), QUEUE_BLOCKED_INVALID, "Factory ingredient hopper is unavailable.");
+		stopFactory("manf_error_5", "", "", -1);
+		return;
+	}
+
 	String type = "";
 	String displayedName = "";
 
@@ -1254,6 +1310,7 @@ void FactoryObjectImplementation::createNewObject() {
 
 	if (displayedName != "") {
 		int queueIndex = findQueueEntry(schematic->getObjectID());
+		logIngredientValidationFailure(schematic, queueIndex, "PRODUCTION_TICK");
 		markQueueEntryBlocked(queueIndex, type == "resource" ? QUEUE_BLOCKED_RESOURCES : QUEUE_BLOCKED_COMPONENTS, displayedName);
 		stopFactory(type, displayedName);
 		evaluateManufacturingQueue();

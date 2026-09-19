@@ -29,6 +29,10 @@ require("sui.custom.SuiReceiverPuzzle")
 
 includeFile("helperfuncs.lua")
 includeFile("playerTriggers.lua")
+-- Load the player-kill bounty listener with the login trigger it depends on.
+-- Keeping it near the end of this large include list made the feature
+-- unavailable whenever an unrelated later screenplay stopped loading.
+includeFile("player_bounty/player_bounty_system.lua")
 
 -- Theme parks
 includeFile("themepark/conversations/goru_conv_handler.lua")
@@ -831,9 +835,6 @@ includeFile("vendors/bg_token_vendor_3.lua")
 includeFile("vendors/apprentice_coin_vendor.lua")
 includeFile("vendors/artisan_procurement_conv_handler.lua")
 includeFile("vendors/artisan_procurement_vendor.lua")
-
--- Player Bounty System
-includeFile("player_bounty/player_bounty_system.lua")
 
 includeFile("static_spawns/master_bounty_guild.lua")
 

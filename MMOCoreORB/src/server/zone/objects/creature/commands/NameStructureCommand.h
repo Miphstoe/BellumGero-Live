@@ -40,7 +40,7 @@ public:
 
 		Locker _lock(structure, creature);
 
-		if (!structure->isOwnerOf(creature)) {
+		if (!structure->hasCoOwnerPermission(creature)) {
 			creature->sendSystemMessage("@player_structure:rename_must_be_owner"); //You must be the owner to rename a structure.
 			return GENERALERROR;
 		}

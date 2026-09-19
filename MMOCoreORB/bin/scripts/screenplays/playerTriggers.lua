@@ -2,6 +2,13 @@ PlayerTriggers = { }
 
 function PlayerTriggers:playerLoggedIn(pPlayer)
     if (pPlayer == nil) then return end
+    -- PLAYERKILLED is the only entry point for the player-placed bounty UI.
+    -- Register it before unrelated login hooks so an error in another
+    -- screenplay cannot leave this player without the death observer for the
+    -- rest of the session.
+    if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedIn then
+        PlayerBountySystem:onPlayerLoggedIn(pPlayer)
+    end
     ServerEventAutomation:playerLoggedIn(pPlayer)
     BestineElection:playerLoggedIn(pPlayer)
     if MandoWayOfLife and MandoWayOfLife.onPlayerLoggedIn then
@@ -17,10 +24,6 @@ function PlayerTriggers:playerLoggedIn(pPlayer)
     end
     if GCWRankedAmbushImperials and GCWRankedAmbushImperials.onPlayerLoggedIn then
         GCWRankedAmbushImperials:onPlayerLoggedIn(pPlayer)
-    end
-    -- Register player bounty system observer
-    if PlayerBountySystem and PlayerBountySystem.onPlayerLoggedIn then
-        PlayerBountySystem:onPlayerLoggedIn(pPlayer)
     end
     if GalaxyCombatBoard and GalaxyCombatBoard.onPlayerLoggedIn then
         GalaxyCombatBoard:onPlayerLoggedIn(pPlayer)
