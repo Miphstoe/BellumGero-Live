@@ -1364,27 +1364,40 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 	// PLAYERKILLED observer (and the Lua PlayerBountySystem listening on it)
 	// runs, areInDuel() would already report false for what was in fact a
 	// duel death. Qualifying requires: a real player killer, not a self-kill,
-	// not a duel, and not a kill/death that was part of either side's active
-	// bounty-hunter mission relationship (bounty hunter legally completing
-	// their mission, or a bounty target defending against their hunter).
+	// not a duel, and not a bounty target killing the hunter pursuing them.
+	// A bounty hunter successfully killing their mission target is explicitly
+	// eligible: that is the retaliation-bounty workflow this verdict feeds.
+	// Capture the mission relationship before PLAYERKILLED observers complete
+	// and remove the mission.
 	bool qualifiesForPlayerBounty = false;
 	String playerBountyDisqualifyReason;
+	CreatureObject* responsiblePlayerKiller = nullptr;
 
-	if (!attacker->isPlayerCreature()) {
+	if (attacker->isPlayerCreature()) {
+		responsiblePlayerKiller = attacker->asCreatureObject();
+	} else if (attacker->isPet()) {
+		CreatureObject* petAttacker = attacker->asCreatureObject();
+
+		if (petAttacker != nullptr) {
+			CreatureObject* owner = petAttacker->getLinkedCreature().get();
+
+			if (owner != nullptr && owner->isPlayerCreature())
+				responsiblePlayerKiller = owner;
+		}
+	}
+
+	if (responsiblePlayerKiller == nullptr) {
 		playerBountyDisqualifyReason = "killer_not_player";
 	} else {
-		CreatureObject* attackerCreo = attacker->asCreatureObject();
-
-		if (attackerCreo == nullptr || attackerCreo->getObjectID() == player->getObjectID()) {
+		if (responsiblePlayerKiller->getObjectID() == player->getObjectID()) {
 			playerBountyDisqualifyReason = "self_kill";
-		} else if (CombatManager::instance()->areInDuel(attackerCreo, player)) {
+		} else if (CombatManager::instance()->areInDuel(responsiblePlayerKiller, player)) {
 			playerBountyDisqualifyReason = "duel";
-		} else if (attackerCreo->hasBountyMissionFor(player)) {
-			playerBountyDisqualifyReason = "attacker_has_active_bounty_mission_on_victim";
-		} else if (player->hasBountyMissionFor(attackerCreo)) {
+		} else if (player->hasBountyMissionFor(responsiblePlayerKiller)) {
 			playerBountyDisqualifyReason = "victim_has_active_bounty_mission_on_attacker";
 		} else {
 			qualifiesForPlayerBounty = true;
+			playerBountyDisqualifyReason = responsiblePlayerKiller->hasBountyMissionFor(player) ? "active_bounty_mission_kill" : "generic_pvp_kill";
 		}
 	}
 
@@ -1610,8 +1623,8 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 
 	if (victimGhostForBounty != nullptr) {
 		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeath", qualifiesForPlayerBounty ? "1" : "0");
-		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathKillerId", String::valueOf(attacker->getObjectID()));
-		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathReason", qualifiesForPlayerBounty ? "ok" : playerBountyDisqualifyReason);
+		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathKillerId", String::valueOf(responsiblePlayerKiller != nullptr ? responsiblePlayerKiller->getObjectID() : attacker->getObjectID()));
+		victimGhostForBounty->setScreenPlayData("PlayerBountySystem", "qualifyingPvpDeathReason", playerBountyDisqualifyReason);
 	}
 
 	player->notifyObjectKillObservers(attacker);
