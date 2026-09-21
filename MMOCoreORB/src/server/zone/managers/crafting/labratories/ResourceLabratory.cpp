@@ -115,6 +115,11 @@ namespace {
 
 		std::vector<BellumComponentAggregate> aggregates;
 
+		// Bellum Gero: missing mixed-segment properties count as zero
+		// Every valid segment use participates in the denominator for every
+		// property that appears anywhere in the mixed pool.
+		int totalUseWeight = 0;
+
 		for (int i = 0; i < compSlot->getContentCount(); ++i) {
 			TangibleObject* tano = compSlot->getContentAt(i);
 			if (tano == nullptr || !tano->isComponent())
@@ -127,6 +132,8 @@ namespace {
 			int useWeight = tano->getUseCount();
 			if (useWeight < 1)
 				useWeight = 1;
+
+			totalUseWeight += useWeight;
 
 			for (int j = 0; j < component->getPropertyCount(); ++j) {
 				String attribute = component->getProperty(j);
@@ -152,6 +159,10 @@ namespace {
 
 		bool modified = false;
 		for (int i = 0; i < aggregates.size(); ++i) {
+			// aggregate.total contains only actual values; the full segment
+			// pool denominator makes missing properties contribute zero.
+			aggregates[i].weight = totalUseWeight;
+
 			if (applyBellumAveragedComponentProperty(values, draftSlot, aggregates[i]))
 				modified = true;
 		}
