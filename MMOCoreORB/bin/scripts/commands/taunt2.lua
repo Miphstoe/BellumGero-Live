@@ -42,7 +42,7 @@ Taunt2Command = {
     speed = 0.0,               -- instant
     cooldown = 3000,           -- 3 second cooldown
     poolsToDamage = NO_ATTRIBUTE,
-    range = 64,
+    range = 16,
 }
 
 AddCommand(Taunt2Command)
