@@ -587,7 +587,26 @@ void ManufactureSchematicImplementation::createFactoryBlueprint() {
 			continue;
 		}
 
-		factoryBlueprint.addIngredient(ingredientSlot->getFactoryIngredient(), ingredientSlot->getQuantityNeeded(), ingredientSlot->requiresIdentical());
+		bool factoryIdentical = ingredientSlot->requiresIdentical();
+
+		// Bellum Gero: preserve factory serial locking for full-suit armor segments
+		if (!factoryIdentical && prototype != nullptr &&
+				prototype->getObjectTemplate() != nullptr &&
+				prototype->getObjectTemplate()->getFullTemplateString().endsWith("_suit_package.iff") &&
+				draftSchematic != nullptr) {
+			DraftSlot* draftSlot = draftSchematic->getDraftSlot(i);
+			if (draftSlot != nullptr &&
+					draftSlot->getSlotType() == IngredientSlot::MIXEDSLOT &&
+					draftSlot->getResourceType().contains(
+						"object/tangible/component/armor/shared_armor_segment")) {
+				factoryIdentical = true;
+			}
+		}
+
+		factoryBlueprint.addIngredient(
+			ingredientSlot->getFactoryIngredient(),
+			ingredientSlot->getQuantityNeeded(),
+			factoryIdentical);
 	}
 }
 

@@ -16,6 +16,7 @@
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
+#include "server/zone/objects/draftschematic/DraftSchematic.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/managers/loot/LootManager.h"
@@ -48,6 +49,38 @@
 // #define DEBUG_EXPERIMENTATION
 
 namespace {
+
+	// Bellum Gero: mixed full-suit factory safeguard
+	bool isBellumSuitPackageForFactory(TangibleObject* prototype) {
+		if (prototype == nullptr || prototype->getObjectTemplate() == nullptr)
+			return false;
+		return prototype->getObjectTemplate()->getFullTemplateString().endsWith("_suit_package.iff");
+	}
+
+	bool hasBellumMixedSuitSegmentComposition(TangibleObject* prototype,
+			ManufactureSchematic* manufactureSchematic) {
+		if (!isBellumSuitPackageForFactory(prototype) || manufactureSchematic == nullptr)
+			return false;
+
+		DraftSchematic* draftSchematic = manufactureSchematic->getDraftSchematic();
+		if (draftSchematic == nullptr)
+			return false;
+
+		for (int i = 0; i < manufactureSchematic->getSlotCount(); ++i) {
+			DraftSlot* draftSlot = draftSchematic->getDraftSlot(i);
+			if (draftSlot == nullptr ||
+					draftSlot->getSlotType() != IngredientSlot::MIXEDSLOT ||
+					!draftSlot->getResourceType().contains(
+						"object/tangible/component/armor/shared_armor_segment"))
+				continue;
+
+			ComponentSlot* compSlot = cast<ComponentSlot*>(manufactureSchematic->getSlot(i));
+			if (compSlot != nullptr && !compSlot->hasSingleTemplateAndSerial())
+				return true;
+		}
+		return false;
+	}
+
 	const int BIO_ENGINEER_DNA_TEMPLATE_MENU_OFFSET = 1000000;
 
 	bool isBioEngineerGeneticDnaTemplate(DraftSchematic* draftSchematic) {
@@ -1171,6 +1204,21 @@ void CraftingSessionImplementation::addIngredient(TangibleObject* tano, int slot
 
 	int result = manufactureSchematic->addIngredientToSlot(crafter, craftingComponentsSatchel, tano, slot);
 
+	// Bellum Gero: explain Full Suit Special Protection mismatch
+	if (result == IngredientSlot::INVALIDINGREDIENT) {
+		IngredientSlot* ingredientSlot = manufactureSchematic->getSlot(slot);
+		ComponentSlot* componentSlot = cast<ComponentSlot*>(ingredientSlot);
+
+		if (componentSlot != nullptr &&
+				componentSlot->hasBellumArmorSpecialProfileMismatch(tano)) {
+			crafter->sendSystemMessage(
+				"Full Suit armor segments must have matching Special Protection profiles. "
+				"Segments with Special Protection cannot be mixed with segments that have "
+				"no Special Protection or a different Special Protection.");
+		}
+	}
+
+
 	sendSlotMessage(clientCounter, result);
 
 	if (crafterGhost != nullptr && crafterGhost->getDebug()) {
@@ -2070,6 +2118,21 @@ void CraftingSessionImplementation::createManufactureSchematic(int clientCounter
 
 	if (!manufactureSchematic->allowFactoryRun()) {
 		sendSlotMessage(0, IngredientSlot::NOSCHEMATIC);
+		return;
+	}
+
+	if (hasBellumMixedSuitSegmentComposition(prototype, manufactureSchematic)) {
+		// Bellum Gero: mixed Full Suit factory selection fallback
+		// The client learned factory eligibility before ingredient composition was
+		// finalized. If the player chooses Manufacturing Schematic for a mixed
+		// Full Suit, deny the factory conversion but finish the crafted package
+		// normally so the player does not lose the suit or its components.
+		crafter->sendSystemMessage(
+			"This Full Suit uses mixed armor segment stacks, so a Manufacturing "
+			"Schematic cannot be created. Your finished Armor Suit Package will be "
+			"created instead.");
+
+		createPrototype(clientCounter, true);
 		return;
 	}
 

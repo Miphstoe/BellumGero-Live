@@ -10,7 +10,7 @@ object_draft_schematic_clothing_clothing_armor_bounty_hunter_suit = object_draft
 	customizationOptions = {}, customizationStringNames = {}, customizationDefaults = {},
 	ingredientTemplateNames = {"craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n","craft_clothing_ingredients_n"},
 	ingredientTitleNames = {"shell","binding_and_reinforcement","hardware","auxilary_coverage","body","liner","hardware_and_attachments","auxilary_coverage_2","armor","load_bearing_harness"},
-	ingredientSlotType = {0,0,1,0,0,0,0,0,1,1},
+	ingredientSlotType = {0, 0, 1, 0, 0, 0, 0, 0, 2, 1},
 	resourceTypes = {"copper_beyrllius","hide_wooly","object/tangible/component/clothing/shared_reinforced_fiber_panels.iff","ore_intrusive","fuel_petrochem_solid_known","fiberplast_naboo","aluminum","steel","object/tangible/component/armor/shared_armor_segment_composite.iff","object/tangible/component/clothing/shared_synthetic_cloth.iff"},
 	resourceQuantities = {225,215,10,515,515,260,300,210,21,10},
 	contribution = {100,100,100,100,100,100,100,100,100,100},
