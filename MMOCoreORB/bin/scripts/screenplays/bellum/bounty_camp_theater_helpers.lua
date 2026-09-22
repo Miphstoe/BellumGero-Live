@@ -245,6 +245,18 @@ function BellumBountyCampTheaterHelpers.notifyBountyMobileKilled(theater, pVicti
 	deleteData(mobileID .. taskName .. ":isMark")
 	deleteData(mobileID .. taskName .. ":isBoss")
 
+	-- Recheck daily hunters during combat, before credits, loot, or progression.
+	-- Retire an invalid camp so the hunter can re-sync this tier once eligible.
+	if (theater.dailyBountyTier ~= nil and pOwner ~= nil) then
+		local eligible, message = MandoWayOfLife:checkDailyBountyEligibility(pOwner)
+		if (not eligible) then
+			CreatureObject(pOwner):sendSystemMessage(message .. " Re-sync your daily hunt once eligible.")
+			theater:removeTheaterWaypoint(pOwner)
+			MandoWayOfLife:cleanupDailyBountyTheater(pOwner, theater)
+			return 1
+		end
+	end
+
 	local pPayee = resolveCreditRecipient(pAttacker)
 	if (pPayee ~= nil) then
 		local loH = tonumber(theater.bountyHenchCreditMin) or 500
