@@ -99,6 +99,7 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 
 		// NEW: Relist expired at previous price (owner only, initialized vendors)
 		menuResponse->addRadialMenuItemToRadialID(70, 80, 3, "Relist expired (previous price)");
+		menuResponse->addRadialMenuItemToRadialID(70, 81, 3, "Guild Discounts");
 	}
 
 	menuResponse->addRadialMenuItemToRadialID(70, 78, 3, "@player_structure:remove_vendor");
@@ -219,6 +220,10 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 		}
 		return 0;
 	}
+	case 81: {
+		VendorManager::instance()->sendGuildDiscountManagementTo(player, vendor);
+		return 0;
+	}
 
 	default:
 		return 0;
@@ -226,4 +231,3 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 
 	return 0;
 }
-

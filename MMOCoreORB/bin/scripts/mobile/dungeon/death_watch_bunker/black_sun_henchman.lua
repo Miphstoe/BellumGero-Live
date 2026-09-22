@@ -45,6 +45,12 @@ black_sun_henchman = Creature:new {
 		},
 		{
 			groups = {
+				{group = "blacksun_rare", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
