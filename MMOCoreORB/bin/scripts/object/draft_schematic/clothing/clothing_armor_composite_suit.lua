@@ -47,7 +47,7 @@ object_draft_schematic_clothing_clothing_armor_composite_suit =
 		"load_bearing_harness",
 		"reinforcement"
 	},
-	ingredientSlotType = {0, 0, 0, 0, 0, 0, 1, 1, 1},
+	ingredientSlotType = {0, 0, 0, 0, 0, 0, 2, 1, 1},
 
 	resourceTypes = {
 		"ore_intrusive",
