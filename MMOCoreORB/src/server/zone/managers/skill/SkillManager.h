@@ -147,6 +147,10 @@ public:
 	}
 
 	void getPlayerDroidCommands(PlayerObject* ghost, Vector<String>& playerDroidCommands);
+
+private:
+	// Removes hidden certification skills while the caller already holds the creature lock.
+	void surrenderCertificationGrants(CreatureObject* creature, PlayerObject* ghost, const Vector<String>& certSkillNames, bool notifyClient);
 };
 
 }
