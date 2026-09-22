@@ -200,8 +200,12 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 			BuildingObject* building = cast<BuildingObject*>(structureObject.get());
 			if (building != nullptr && ghost != nullptr) {
 				if (ghost->isOwnedStructure(structureObject)) {
-					// Only show option if no vendors AND no mannequins inside
-					if (!HousePackupManager::instance()->hasVendorsInside(building)
+					// Only show option if not already packed/packing, and no vendors/mannequins inside.
+					// This is a convenience -- the authoritative check is the server-side guard in
+					// HousePackupManager::packUpHouse(), which rejects a second pack request even if
+					// a stale menu still shows this option (double click, lag, duplicate packet).
+					if (building->getHousePackState() == 0
+						&& !HousePackupManager::instance()->hasVendorsInside(building)
 						&& !HousePackupManager::instance()->hasMannequinsInside(building)) {
 						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up Structure");
 					}
@@ -466,6 +470,17 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 						// Check 1: Owner-only validation
 						if (!ghost->isOwnedStructure(structureObject)) {
 							creature->sendSystemMessage("You must be the owner to pack up this structure.");
+							break;
+						}
+
+						// Check 1b: Server-side idempotency guard (defense in depth -- the radial
+						// is hidden once packed/packing, but this guards a stale menu, lag, or a
+						// duplicate/replayed command). packUpHouse() re-checks this authoritatively
+						// under lock regardless.
+						if (building->getHousePackState() != 0) {
+							creature->sendSystemMessage(building->getHousePackState() == 2
+								? "This structure has already been packed up. Use 'Destroy Structure' to reclaim the deed."
+								: "This structure is already being packed up. Please wait.");
 							break;
 						}
 

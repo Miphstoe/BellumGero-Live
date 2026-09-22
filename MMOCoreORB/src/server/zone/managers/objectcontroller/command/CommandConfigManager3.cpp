@@ -81,6 +81,7 @@
 #include "server/zone/objects/creature/commands/MandoFoundlingAdminCommand.h"
 #include "server/zone/objects/creature/commands/MandoStatusCommand.h"
 #include "server/zone/objects/creature/commands/AccountCreditsCommand.h"
+#include "server/zone/objects/creature/commands/HousePackInfoCommand.h"
 #include "server/zone/objects/creature/commands/KtStatusCommand.h"
 #include "server/zone/objects/creature/commands/MobileStatusCommand.h"
 #include "server/zone/objects/creature/commands/EPBSPayCommand.h"
@@ -398,6 +399,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<MandoFoundlingAdminCommand>(String("mandoFoundlingAdmin").toLowerCase());
 	commandFactory.registerCommand<MandoStatusCommand>(String("mandoStatus").toLowerCase());
 	commandFactory.registerCommand<AccountCreditsCommand>(String("accountcredits").toLowerCase());
+	commandFactory.registerCommand<HousePackInfoCommand>(String("housepackinfo").toLowerCase());
 	commandFactory.registerCommand<KtStatusCommand>(String("ktStatus").toLowerCase());
 	commandFactory.registerCommand<MobileStatusCommand>(String("mobilestatus").toLowerCase());
 	commandFactory.registerCommand<EPBSPayCommand>(String("epbspay").toLowerCase());

@@ -1830,11 +1830,10 @@ int StructureManager::redeedStructure(CreatureObject* creature, bool requireRede
             deed->setSurplusPower(structureObject->getSurplusPower());
 
             // move packed payload from building -> deed BEFORE destroying the structure
-            // move packed payload from building -> deed BEFORE destroying the structure
-info(true) << "Attaching payload: building ID=" << structureObject->getObjectID() << " deed ID=" << deed->getObjectID();
-HousePackupManager::instance()->attachPayloadToDeedFromBuilding(
-    structureObject->getObjectID(), deed->getObjectID());
-info(true) << "Payload attached successfully";
+            info(true) << "Attaching payload: building ID=" << structureObject->getObjectID() << " deed ID=" << deed->getObjectID();
+            BuildingObject* packBuilding = structureObject->isBuildingObject() ? cast<BuildingObject*>(structureObject.get()) : nullptr;
+            HousePackupManager::instance()->attachPayloadToDeedFromBuilding(packBuilding, deed);
+            info(true) << "Payload attached successfully";
 
             // make sure the deed itself won't be deleted with the structure
             structureObject->setDeedObjectID(0);

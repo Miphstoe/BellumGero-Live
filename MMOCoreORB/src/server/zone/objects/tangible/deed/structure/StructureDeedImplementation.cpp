@@ -84,6 +84,11 @@ void StructureDeedImplementation::fillAttributeList(AttributeListMessage* alm, C
 	}
 }
 
+void StructureDeedImplementation::setHousePackedPayload(Vector<byte>& payload) {
+	housePackedPayload.removeAll();
+	housePackedPayload.addAll(payload);
+}
+
 void StructureDeedImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate){
 	setExtractionRate(values->getCurrentValue("extractrate"));
 	setHopperSize(values->getCurrentValue("hoppersize"));
