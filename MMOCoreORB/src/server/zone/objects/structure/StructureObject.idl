@@ -165,6 +165,19 @@ class StructureObject extends TangibleObject {
 	@read
 	public native boolean isOnAdminList(CreatureObject player);
 
+	/** Returns true only for an explicit character COOWNER entry. */
+	@read
+	public native boolean isCoOwner(CreatureObject player);
+
+	@read
+	public boolean isCoOwner(final unsigned long objectID) {
+		return structurePermissionList.isOnPermissionList("COOWNER", objectID) && objectID != ownerObjectID;
+	}
+
+	/** Owner/staff or an explicit Co-Owner; does not include normal Admins. */
+	@read
+	public native boolean hasCoOwnerPermission(CreatureObject player);
+
 	/**
 	 * Checks if the player/guild is on the admin list.
 	 * For PermissionsListModify command
@@ -173,7 +186,8 @@ class StructureObject extends TangibleObject {
 	 */
 	@read
 	public boolean isOnAdminList(final unsigned long objectID) {
-		return structurePermissionList.isOnPermissionList("ADMIN", objectID);
+		return structurePermissionList.isOnPermissionList("COOWNER", objectID)
+			|| structurePermissionList.isOnPermissionList("ADMIN", objectID);
 	}
 
 	/**
@@ -259,6 +273,11 @@ class StructureObject extends TangibleObject {
 	@read
 	public boolean isPermissionListFull(final string listName) {
 		return structurePermissionList.isListFull(listName);
+	}
+
+	@read
+	public int getPermissionListSize(final string listName) {
+		return structurePermissionList.getListSize(listName);
 	}
 
 	@dirty

@@ -69,12 +69,6 @@ krayt_dragon_adolescent = Creature:new {
 		},
 		lootChance = 350000,
 	},
-	{
-		groups = {
-			{group = "krayt_tissue_epic", chance = 10000000},            -- 100.00% of group, 5.00% total
-		},
-		lootChance = 10000000, -- 5.00% total chance
-	},
 },
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)

@@ -15,6 +15,6 @@ ForceTaunt2Command = {
     combatSpam = "taunt",
     effectString = "clienteffect/combat_special_attacker_taunt.cef",
 
-    range = 64,
+    range = 16,
 }
 AddCommand(ForceTaunt2Command)

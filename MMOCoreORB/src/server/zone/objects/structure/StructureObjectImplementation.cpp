@@ -110,6 +110,9 @@ void StructureObjectImplementation::createNavMesh() {
 
 void StructureObjectImplementation::notifyLoadFromDatabase() {
 	TangibleObjectImplementation::notifyLoadFromDatabase();
+	// Older serialized structures predate this permission tier. Named lists are
+	// extensible, so adding the missing empty list requires no data migration.
+	structurePermissionList.addList("COOWNER");
 
 	if (structurePermissionList.getOwner() != getOwnerObjectID()) {
 		structurePermissionList.setOwner(getOwnerObjectID());
@@ -899,7 +902,8 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 			return true;
 	}
 
-	if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
+	if (structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
 		return true;
 	} else {
 		ManagedReference<GuildObject*> guild = player->getGuildObject().get();
@@ -911,12 +915,24 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 	return false;
 }
 
+bool StructureObjectImplementation::isCoOwner(CreatureObject* player) const {
+	if (player == nullptr || !player->isPlayerCreature() || player->getObjectID() == ownerObjectID)
+		return false;
+
+	return structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID());
+}
+
+bool StructureObjectImplementation::hasCoOwnerPermission(CreatureObject* player) const {
+	return player != nullptr && (isOwnerOf(player) || isCoOwner(player));
+}
+
 bool StructureObjectImplementation::isOnEntryList(CreatureObject* player) const {
 	PlayerObject* ghost = player->getPlayerObject();
 
 	if (ghost != nullptr && ghost->hasGodMode())
 		return true;
-	else if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())
+	else if (structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("ENTRY", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("VENDOR", player->getObjectID()))
 		return true;
@@ -955,6 +971,7 @@ bool StructureObjectImplementation::isOnHopperList(CreatureObject* player) const
 	if (ghost != nullptr && ghost->isPrivileged())
 		return true;
 	else if (structurePermissionList.isOnPermissionList("HOPPER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID()))
 		return true;
 	else {

@@ -92,6 +92,12 @@ public:
 	 */
 	bool isListFull(const String& listName) const;
 
+	int getListSize(const String& listName) const {
+		ReadLocker locker(&lock);
+		int pos = idPermissionLists.find(listName);
+		return pos == -1 ? 0 : idPermissionLists.get(pos).size();
+	}
+
 	/**
 	 * Adds the specified list name to this permission list.
 	 * @param listName The list to add.
