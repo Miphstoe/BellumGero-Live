@@ -447,6 +447,7 @@ void MissionObjectiveImplementation::awardReward() {
 			// Patch 3: Foundling planet quota counting (Chapter 0).
 			// Count standard mission-terminal completions (not player bounties / Guild work).
 			if (ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCountingEnabled") == "1" &&
+				ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetDone") != "1" &&
 				ghost->getScreenPlayData("MandoWayOfLife", "foundlingCounted_" + missionId) != "1") {
 
 				uint32 typeCRC = mission->getTypeCRC();
@@ -458,7 +459,17 @@ void MissionObjectiveImplementation::awardReward() {
 						|| typeCRC == MissionTypes::ESCORT || typeCRC == MissionTypes::ESCORT2ME
 						|| typeCRC == MissionTypes::ESCORTTOCREATOR);
 
-				if (foundlingCounts) {
+				// The active informant assignment owns the quota. Check the mission origin as
+				// well as the completion zone so off-world work cannot be credited by traveling back.
+				const String assignedPlanet = ghost->getScreenPlayData("MandoWayOfLife", "foundling.currentPlanet");
+				const bool onAssignedPlanet = assignedPlanet != "" && ownerZone != nullptr &&
+					ownerZone->getZoneName() == assignedPlanet && mission->getStartPlanet() == assignedPlanet;
+
+				if (foundlingCounts && !onAssignedPlanet) {
+					owner->sendSystemMessage("This mission does not count toward your Foundling quota. Take and complete mission terminal jobs on your assigned planet: " + assignedPlanet + ".");
+				}
+
+				if (foundlingCounts && onAssignedPlanet) {
 					int done = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetCompleted"));
 					int target = Integer::valueOf(ghost->getScreenPlayData("MandoWayOfLife", "foundling.planetTarget"));
 					done++;
