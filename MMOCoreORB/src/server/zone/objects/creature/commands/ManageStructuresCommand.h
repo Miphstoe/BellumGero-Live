@@ -210,7 +210,9 @@ public:
 			}
 
 			StringBuffer row;
-			row << structureName << " [" << planet << "]";
+			// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+			// Keep the OID first so it remains easy to read/copy even on long rows.
+			row << "OID: " << structureID << " | " << structureName << " [" << planet << "]";
 
 			if (maintenancePool > 0 && totalRate > 0.0f)
 				row << " | Maint: " << maintenancePool << " (" << maintenanceRemaining << ")";
