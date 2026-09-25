@@ -105,6 +105,14 @@ void FactoryObjectImplementation::notifyLoadFromDatabase() {
 
 	FactoryObject* thisFactory = _this.getReferenceUnsafeStaticCast();
 	restoreQueueMetadata();
+
+	if (queueSchematicIDs.size() > MAX_FACTORY_QUEUE) {
+		warning() << "Factory queue loaded in non-destructive recovery state above the normal queue cap. FactoryID: "
+			<< getObjectID() << " QueueSize: " << queueSchematicIDs.size()
+			<< " MaxNormalQueue: " << MAX_FACTORY_QUEUE
+			<< ". No new schematics can be added until entries are removed.";
+	}
+
 	if (isActive() && !queueEnabled)
 		queueEnabled = true;
 
@@ -271,64 +279,188 @@ void FactoryObjectImplementation::sendTo(SceneObject* player, bool doClose, bool
 }
 
 void FactoryObjectImplementation::restoreQueueMetadata() {
-	int metadataSize = queueSchematicIDs.size();
-	if (metadataSize == 0) {
-		for (int i = 0; i < getContainerObjectsSize(); ++i) {
-			ManagedReference<ManufactureSchematic*> schematic = getContainerObject(i).castTo<ManufactureSchematic*>();
-			if (schematic == nullptr)
-				continue;
-			queueSchematicIDs.add(schematic->getObjectID());
-			queueSequence.add(i + 1);
-			queueRequestedLimits.add(schematic->getManufactureLimit());
-			queueRemainingLimits.add(schematic->getManufactureLimit());
-			queueStatuses.add(i == 0 ? QUEUE_ACTIVE : QUEUE_WAITING);
-			queueBlockedReasons.add("");
-			queueEvaluationTimes.add(0);
-		}
-		if (queueSchematicIDs.size() > 0)
-			info() << "Factory queue restored from legacy contents. FactoryID: " << getObjectID();
+	int size = queueSchematicIDs.size();
+
+	// Keep all persisted vectors aligned with the queue ID vector. If older or
+	// partially-written metadata is missing a requested/remaining value, use the
+	// schematic's current lifetime as the safest non-destructive fallback.
+	while (queueSequence.size() > size)
+		queueSequence.remove(queueSequence.size() - 1);
+	while (queueRequestedLimits.size() > size)
+		queueRequestedLimits.remove(queueRequestedLimits.size() - 1);
+	while (queueRemainingLimits.size() > size)
+		queueRemainingLimits.remove(queueRemainingLimits.size() - 1);
+	while (queueStatuses.size() > size)
+		queueStatuses.remove(queueStatuses.size() - 1);
+	while (queueBlockedReasons.size() > size)
+		queueBlockedReasons.remove(queueBlockedReasons.size() - 1);
+	while (queueEvaluationTimes.size() > size)
+		queueEvaluationTimes.remove(queueEvaluationTimes.size() - 1);
+
+	while (queueSequence.size() < size)
+		queueSequence.add(queueSequence.size() + 1);
+
+	while (queueRequestedLimits.size() < size) {
+		int index = queueRequestedLimits.size();
+		int fallback = 0;
+
+		ManagedReference<ManufactureSchematic*> schematic =
+			server->getZoneServer()->getObject(queueSchematicIDs.get(index)).castTo<ManufactureSchematic*>();
+
+		if (schematic != nullptr)
+			fallback = schematic->getManufactureLimit();
+
+		queueRequestedLimits.add(fallback);
 	}
 
-	int size = queueSchematicIDs.size();
-	if (size > MAX_FACTORY_QUEUE) {
-		warning() << "Factory queue invariant repaired. FactoryID: " << getObjectID() << " Entries: " << size;
-		while (queueSchematicIDs.size() > MAX_FACTORY_QUEUE) {
-			int last = queueSchematicIDs.size() - 1;
-			queueSchematicIDs.remove(last);
-			if (queueSequence.size() > last) queueSequence.remove(last);
-			if (queueRequestedLimits.size() > last) queueRequestedLimits.remove(last);
-			if (queueRemainingLimits.size() > last) queueRemainingLimits.remove(last);
-			if (queueStatuses.size() > last) queueStatuses.remove(last);
-			if (queueBlockedReasons.size() > last) queueBlockedReasons.remove(last);
-			if (queueEvaluationTimes.size() > last) queueEvaluationTimes.remove(last);
-		}
-		size = MAX_FACTORY_QUEUE;
+	while (queueRemainingLimits.size() < size) {
+		int index = queueRemainingLimits.size();
+		queueRemainingLimits.add(queueRequestedLimits.get(index));
 	}
-	while (queueSequence.size() < size) queueSequence.add(queueSequence.size() + 1);
-	while (queueRequestedLimits.size() < size) queueRequestedLimits.add(0);
-	while (queueRemainingLimits.size() < size) queueRemainingLimits.add(queueRequestedLimits.get(queueRemainingLimits.size()));
-	while (queueStatuses.size() < size) queueStatuses.add(QUEUE_WAITING);
-	while (queueBlockedReasons.size() < size) queueBlockedReasons.add("");
-	while (queueEvaluationTimes.size() < size) queueEvaluationTimes.add(0);
+
+	while (queueStatuses.size() < size)
+		queueStatuses.add(QUEUE_WAITING);
+	while (queueBlockedReasons.size() < size)
+		queueBlockedReasons.add("");
+	while (queueEvaluationTimes.size() < size)
+		queueEvaluationTimes.add(0);
+
+	// Duplicate metadata is safe to collapse because it points at the same
+	// physical schematic object. Never destroy or move an object during repair.
+	for (int i = queueSchematicIDs.size() - 1; i >= 0; --i) {
+		bool duplicate = false;
+
+		for (int j = 0; j < i; ++j) {
+			if (queueSchematicIDs.get(j) == queueSchematicIDs.get(i)) {
+				duplicate = true;
+				break;
+			}
+		}
+
+		if (!duplicate)
+			continue;
+
+		unsigned long long duplicateID = queueSchematicIDs.get(i);
+
+		queueSchematicIDs.remove(i);
+		queueSequence.remove(i);
+		queueRequestedLimits.remove(i);
+		queueRemainingLimits.remove(i);
+		queueStatuses.remove(i);
+		queueBlockedReasons.remove(i);
+		queueEvaluationTimes.remove(i);
+
+		warning() << "Factory queue duplicate metadata removed without moving the schematic. FactoryID: "
+			<< getObjectID() << " SchematicID: " << duplicateID;
+	}
+
+	// The factory's physical contents are authoritative for ownership. Recover
+	// any contained manufacturing schematic that is missing from queue metadata.
+	// This is intentionally non-destructive and may temporarily preserve more
+	// than MAX_FACTORY_QUEUE entries so an owner can see/remove every object.
+	for (int i = 0; i < getContainerObjectsSize(); ++i) {
+		ManagedReference<ManufactureSchematic*> schematic =
+			getContainerObject(i).castTo<ManufactureSchematic*>();
+
+		if (schematic == nullptr || findQueueEntry(schematic->getObjectID()) >= 0)
+			continue;
+
+		int usesRemaining = schematic->getManufactureLimit();
+
+		queueSchematicIDs.add(schematic->getObjectID());
+		queueSequence.add(queueSchematicIDs.size());
+		queueRequestedLimits.add(usesRemaining > 0 ? usesRemaining : 0);
+		queueRemainingLimits.add(usesRemaining > 0 ? usesRemaining : 0);
+		queueStatuses.add(usesRemaining > 0 ? QUEUE_WAITING : QUEUE_COMPLETED);
+		queueBlockedReasons.add("");
+		queueEvaluationTimes.add(0);
+
+		warning() << "Factory queue recovered a physically contained schematic missing from metadata. FactoryID: "
+			<< getObjectID() << " SchematicID: " << schematic->getObjectID()
+			<< " QueueSize: " << queueSchematicIDs.size();
+	}
+
+	size = queueSchematicIDs.size();
+
+	// Sanitize recoverable counter/state mismatches without reducing a requested
+	// batch or destroying anything. Stale entries that resolve outside this
+	// factory are retained as INVALID so the owner can explicitly remove them.
+	for (int i = 0; i < size; ++i) {
+		ManagedReference<ManufactureSchematic*> schematic =
+			server->getZoneServer()->getObject(queueSchematicIDs.get(i)).castTo<ManufactureSchematic*>();
+
+		if (schematic == nullptr)
+			continue;
+
+		ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+		if (parent == nullptr || parent->getObjectID() != getObjectID()) {
+			queueStatuses.set(i, QUEUE_BLOCKED_INVALID);
+			queueBlockedReasons.set(i, "Manufacturing schematic is not contained by this factory.");
+			continue;
+		}
+
+		int requested = queueRequestedLimits.get(i);
+		int remaining = queueRemainingLimits.get(i);
+		int usesRemaining = schematic->getManufactureLimit();
+
+		if (queueStatuses.get(i) != QUEUE_COMPLETED &&
+				requested <= 0 && remaining <= 0 && usesRemaining > 0) {
+			queueRequestedLimits.set(i, usesRemaining);
+			queueRemainingLimits.set(i, usesRemaining);
+			requested = usesRemaining;
+			remaining = usesRemaining;
+
+			warning() << "Factory queue repaired missing batch counters using schematic lifetime. FactoryID: "
+				<< getObjectID() << " SchematicID: " << schematic->getObjectID()
+				<< " RestoredAmount: " << usesRemaining;
+		}
+
+		if (requested < remaining) {
+			queueRequestedLimits.set(i, remaining);
+
+			warning() << "Factory queue repaired requested amount below remaining amount. FactoryID: "
+				<< getObjectID() << " SchematicID: " << schematic->getObjectID()
+				<< " Requested: " << requested << " Remaining: " << remaining;
+		}
+
+		if (remaining <= 0 && queueStatuses.get(i) != QUEUE_COMPLETED) {
+			queueStatuses.set(i, QUEUE_COMPLETED);
+			queueBlockedReasons.set(i, "");
+		}
+	}
+
+	for (int i = 0; i < queueSequence.size(); ++i)
+		queueSequence.set(i, i + 1);
 
 	bool activeFound = false;
+
 	for (int i = 0; i < size; ++i) {
-		if (queueStatuses.get(i) == QUEUE_ACTIVE) {
-			if (activeFound)
-				queueStatuses.set(i, QUEUE_WAITING);
-			else
-				activeFound = true;
+		if (queueStatuses.get(i) != QUEUE_ACTIVE)
+			continue;
+
+		if (queueRemainingLimits.get(i) <= 0) {
+			queueStatuses.set(i, QUEUE_COMPLETED);
+			queueBlockedReasons.set(i, "");
+			continue;
 		}
+
+		if (activeFound)
+			queueStatuses.set(i, QUEUE_WAITING);
+		else
+			activeFound = true;
 	}
+
 	if (!activeFound) {
 		for (int i = 0; i < size; ++i) {
-			if (queueStatuses.get(i) == QUEUE_WAITING) {
+			if (queueStatuses.get(i) == QUEUE_WAITING && queueRemainingLimits.get(i) > 0) {
 				queueStatuses.set(i, QUEUE_ACTIVE);
 				break;
 			}
 		}
 	}
 }
+
 
 int FactoryObjectImplementation::findQueueEntry(unsigned long long schematicID) {
 	for (int i = 0; i < queueSchematicIDs.size(); ++i)
@@ -461,6 +593,104 @@ bool FactoryObjectImplementation::isQueuedOutputReady(ManufactureSchematic* sche
 	return !outputHopper->isContainerFull();
 }
 
+bool FactoryObjectImplementation::refreshQueuedSchematicReadiness(int queueIndex) {
+	restoreQueueMetadata();
+
+	if (queueIndex < 0 || queueIndex >= queueSchematicIDs.size())
+		return false;
+
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED || queueRemainingLimits.get(queueIndex) <= 0) {
+		queueStatuses.set(queueIndex, QUEUE_COMPLETED);
+		queueBlockedReasons.set(queueIndex, "");
+		return false;
+	}
+
+	bool wasActive = queueStatuses.get(queueIndex) == QUEUE_ACTIVE;
+
+	// Power and maintenance are factory-wide gates. Only stamp them onto an
+	// entry while the factory is stopped/paused; a running factory is already
+	// past these gates and its active production tick owns that validation.
+	if (!isActive()) {
+		if (getMaintenanceRate() != 0 && getSurplusMaintenance() <= 0) {
+			markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_MAINTENANCE, "Factory maintenance is insufficient.");
+			return false;
+		}
+
+		if (getBasePowerRate() != 0 && getSurplusPower() <= 0) {
+			markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_POWER, "Factory power is insufficient.");
+			return false;
+		}
+	}
+
+	ManagedReference<ManufactureSchematic*> schematic =
+		server->getZoneServer()->getObject(queueSchematicIDs.get(queueIndex)).castTo<ManufactureSchematic*>();
+
+	if (schematic == nullptr) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic could not be resolved.");
+		return false;
+	}
+
+	ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+	if (parent == nullptr || parent->getObjectID() != getObjectID()) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic is not contained by this factory.");
+		return false;
+	}
+
+	int schematicUsesRemaining = schematic->getManufactureLimit();
+
+	if (schematicUsesRemaining <= 0) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic has no uses remaining.");
+		return false;
+	}
+
+	if (queueRemainingLimits.get(queueIndex) > schematicUsesRemaining) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Requested batch exceeds the manufacturing schematic uses remaining.");
+		return false;
+	}
+
+	if (schematic->getPrototype() == nullptr) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic has no prototype.");
+		return false;
+	}
+
+	if (!populateSchematicBlueprint(schematic)) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Factory ingredient hopper is unavailable.");
+		return false;
+	}
+
+	String type = "";
+	String displayedName = "";
+
+	schematic->canManufactureItem(type, displayedName);
+
+	if (!displayedName.isEmpty()) {
+		markQueueEntryBlocked(
+			queueIndex,
+			type == "resource" ? QUEUE_BLOCKED_RESOURCES : QUEUE_BLOCKED_COMPONENTS,
+			displayedName);
+
+		return false;
+	}
+
+	if (!isQueuedOutputReady(schematic)) {
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_OUTPUT_FULL, "Output hopper is full.");
+		return false;
+	}
+
+	queueStatuses.set(queueIndex, wasActive && !isActive() ? QUEUE_ACTIVE : QUEUE_WAITING);
+	queueBlockedReasons.set(queueIndex, "");
+	queueEvaluationTimes.set(queueIndex, (unsigned long long)Time().getTime());
+	queueIdleNoticeLogged = false;
+
+	info() << "Factory queue entry readiness refreshed. FactoryID: " << getObjectID()
+		<< " SchematicID: " << schematic->getObjectID()
+		<< " Position: " << queueIndex + 1
+		<< " Validation: READY";
+
+	return true;
+}
+
 void FactoryObjectImplementation::evaluateManufacturingQueue() {
 	if (queueEvaluationInProgress)
 		return;
@@ -528,13 +758,19 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 				info() << "Factory queue idle. FactoryID: " << getObjectID() << " Reason: " << gateReason;
 			}
 
-			if (getPendingTask("factoryQueueRetry") == nullptr) {
-				Reference<FactoryQueueRetryTask*> retryTask =
-					new FactoryQueueRetryTask(_this.getReferenceUnsafeStaticCast());
+			queueEnabled = false;
+			currentUserName = "";
 
-				addPendingTask("factoryQueueRetry", retryTask, 60000);
-			}
+			Reference<Task*> retryTask = getPendingTask("factoryQueueRetry");
+			removePendingTask("factoryQueueRetry");
 
+			if (retryTask != nullptr && retryTask->isScheduled())
+				retryTask->cancel();
+
+			info() << "Factory queue session auto-stopped. FactoryID: " << getObjectID()
+				<< " Reason: " << gateReason;
+
+			queueIdleNoticeLogged = false;
 			queueEvaluationInProgress = false;
 			return;
 		}
@@ -557,6 +793,13 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 
 		if (schematic == nullptr) {
 			markQueueEntryBlocked(i, QUEUE_BLOCKED_INVALID, "Manufacturing schematic could not be resolved.");
+			continue;
+		}
+
+		ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+		if (parent == nullptr || parent->getObjectID() != getObjectID()) {
+			markQueueEntryBlocked(i, QUEUE_BLOCKED_INVALID, "Manufacturing schematic is not contained by this factory.");
 			continue;
 		}
 
@@ -641,16 +884,24 @@ void FactoryObjectImplementation::evaluateManufacturingQueue() {
 
 	if (activated) {
 		queueIdleNoticeLogged = false;
-	} else if (!queueIdleNoticeLogged) {
-		queueIdleNoticeLogged = true;
-		info() << "Factory queue exhausted or blocked. FactoryID: " << getObjectID();
-	}
+	} else {
+		if (!queueIdleNoticeLogged)
+			info() << "Factory queue exhausted or blocked. FactoryID: " << getObjectID();
 
-	if (!activated && hasUnfinishedBatch && getPendingTask("factoryQueueRetry") == nullptr) {
-		Reference<FactoryQueueRetryTask*> retryTask =
-			new FactoryQueueRetryTask(_this.getReferenceUnsafeStaticCast());
+		queueEnabled = false;
+		currentUserName = "";
 
-		addPendingTask("factoryQueueRetry", retryTask, 60000);
+		Reference<Task*> retryTask = getPendingTask("factoryQueueRetry");
+		removePendingTask("factoryQueueRetry");
+
+		if (retryTask != nullptr && retryTask->isScheduled())
+			retryTask->cancel();
+
+		info() << "Factory queue session auto-stopped. FactoryID: " << getObjectID()
+			<< " HasUnfinishedBatch: " << (hasUnfinishedBatch ? "true" : "false")
+			<< " Reason: no runnable queue entries remain.";
+
+		queueIdleNoticeLogged = false;
 	}
 
 	queueEvaluationInProgress = false;
@@ -978,6 +1229,325 @@ void FactoryObjectImplementation::sendManufacturingBatchConfirmSui(CreatureObjec
 	player->sendMessage(confirm->generateMessage());
 }
 
+void FactoryObjectImplementation::sendManufacturingBatchEditAmountSui(CreatureObject* player, int queueIndex) {
+	if (player == nullptr || !isOnAdminList(player))
+		return;
+
+	restoreQueueMetadata();
+
+	if (queueIndex < 0 || queueIndex >= queueSchematicIDs.size()) {
+		player->sendSystemMessage("That manufacturing queue entry is no longer available.");
+		sendManufacturingQueueSui(player);
+		return;
+	}
+
+	if (isActive() && queueStatuses.get(queueIndex) == QUEUE_ACTIVE) {
+		player->sendSystemMessage("Stop the factory before changing the batch that is currently being manufactured.");
+		sendManufacturingQueueEntrySui(player, queueIndex);
+		return;
+	}
+
+	ManagedReference<ManufactureSchematic*> schematic =
+		server->getZoneServer()->getObject(queueSchematicIDs.get(queueIndex)).castTo<ManufactureSchematic*>();
+
+	if (schematic == nullptr) {
+		player->sendSystemMessage("The selected manufacturing schematic could not be resolved.");
+		sendManufacturingQueueSui(player);
+		return;
+	}
+
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED && schematic->getManufactureLimit() <= 0) {
+		player->sendSystemMessage("This completed manufacturing schematic has no lifetime uses remaining.");
+		sendManufacturingQueueEntrySui(player, queueIndex);
+		return;
+	}
+
+	ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+	if (parent == nullptr || parent->getObjectID() != getObjectID()) {
+		player->sendSystemMessage("The selected manufacturing schematic is not contained by this factory.");
+		sendManufacturingQueueSui(player);
+		return;
+	}
+
+	int currentRequested = queueRequestedLimits.get(queueIndex);
+	int currentRemaining = queueRemainingLimits.get(queueIndex);
+	int produced = currentRequested > currentRemaining ? currentRequested - currentRemaining : 0;
+	int minimum = produced > 0 ? produced : 1;
+	int maximum = produced + schematic->getManufactureLimit();
+
+	if (maximum < minimum) {
+		player->sendSystemMessage("This manufacturing batch cannot be resized because its remaining schematic uses are inconsistent.");
+		sendManufacturingQueueEntrySui(player, queueIndex);
+		return;
+	}
+
+	ManagedReference<SuiInputBox*> input =
+		new SuiInputBox(player, SuiWindowType::FACTORY_QUEUE_BATCH_EDIT_AMOUNT);
+
+	String name = schematic->getCustomObjectName().isEmpty()
+		? "@" + schematic->getObjectNameStringIdFile() + ":" + schematic->getObjectNameStringIdName()
+		: schematic->getCustomObjectName().toString();
+
+	StringBuffer prompt;
+	prompt << name << "\n\n";
+	prompt << "Current Requested Batch: " << currentRequested << "\n";
+	prompt << "Already Produced: " << produced << "\n";
+	prompt << "Current Remaining: " << currentRemaining << "\n";
+	prompt << "Schematic Uses Remaining: " << schematic->getManufactureLimit() << "\n\n";
+	prompt << "Enter the NEW TOTAL batch size.\n";
+	prompt << "Minimum: " << minimum << "   Maximum: " << maximum << "\n\n";
+
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED)
+		prompt << "This batch is COMPLETE. Enter a total greater than " << produced << " to reopen it for additional production.\n";
+	else if (produced > 0)
+		prompt << "Setting the total to " << produced << " will mark this batch complete with no additional production.\n";
+
+	prompt << "Existing ingredients already in the factory hopper are not automatically removed if you reduce the batch.";
+
+	input->setPromptTitle("UPDATE BATCH AMOUNT");
+	input->setPromptText(prompt.toString());
+	input->setMaxInputSize(10);
+	input->setDefaultInput(String::valueOf(currentRequested));
+	input->setCancelButton(true, "@cancel");
+	input->setOkButton(true, "@ok");
+	input->setCallback(
+		new FactoryQueueBatchEditAmountSuiCallback(
+			server->getZoneServer(), schematic->getObjectID()));
+	input->setUsingObject(_this.getReferenceUnsafeStaticCast());
+
+	player->getPlayerObject()->addSuiBox(input);
+	player->sendMessage(input->generateMessage());
+}
+
+void FactoryObjectImplementation::sendManufacturingBatchEditConfirmSui(
+		CreatureObject* player,
+		int queueIndex,
+		int requestedAmount) {
+
+	if (player == nullptr || !isOnAdminList(player))
+		return;
+
+	restoreQueueMetadata();
+
+	if (queueIndex < 0 || queueIndex >= queueSchematicIDs.size()) {
+		player->sendSystemMessage("That manufacturing queue entry is no longer available.");
+		sendManufacturingQueueSui(player);
+		return;
+	}
+
+	if (isActive() && queueStatuses.get(queueIndex) == QUEUE_ACTIVE) {
+		player->sendSystemMessage("Stop the factory before changing the batch that is currently being manufactured.");
+		sendManufacturingQueueEntrySui(player, queueIndex);
+		return;
+	}
+
+	ManagedReference<ManufactureSchematic*> schematic =
+		server->getZoneServer()->getObject(queueSchematicIDs.get(queueIndex)).castTo<ManufactureSchematic*>();
+
+	if (schematic == nullptr)
+		return;
+
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED && schematic->getManufactureLimit() <= 0) {
+		player->sendSystemMessage("This completed manufacturing schematic has no lifetime uses remaining.");
+		sendManufacturingQueueEntrySui(player, queueIndex);
+		return;
+	}
+
+	int currentRequested = queueRequestedLimits.get(queueIndex);
+	int currentRemaining = queueRemainingLimits.get(queueIndex);
+	int produced = currentRequested > currentRemaining ? currentRequested - currentRemaining : 0;
+	int minimum = produced > 0 ? produced : 1;
+	int maximum = produced + schematic->getManufactureLimit();
+
+	if (requestedAmount < minimum || requestedAmount > maximum) {
+		player->sendSystemMessage(
+			"Enter a total batch amount between " + String::valueOf(minimum) +
+			" and " + String::valueOf(maximum) + ".");
+		sendManufacturingBatchEditAmountSui(player, queueIndex);
+		return;
+	}
+
+	int newRemaining = requestedAmount - produced;
+
+	if (!populateSchematicBlueprint(schematic)) {
+		player->sendSystemMessage("The factory ingredient hopper is unavailable.");
+		return;
+	}
+
+	ResourceManager* resourceManager = server->getZoneServer()->getResourceManager();
+
+	ManagedReference<SuiListBox*> confirm =
+		new SuiListBox(player, SuiWindowType::FACTORY_QUEUE_BATCH_EDIT_CONFIRM, SuiListBox::HANDLETHREEBUTTON);
+
+	confirm->setPromptTitle("CONFIRM BATCH UPDATE");
+
+	StringBuffer prompt;
+	prompt << "Current Requested: " << currentRequested << "\n";
+	prompt << "Already Produced: " << produced << "\n";
+	prompt << "New Requested: " << requestedAmount << "\n";
+	prompt << "New Remaining: " << newRemaining << "\n\n";
+
+	if (newRemaining == 0)
+		prompt << "This will mark the batch COMPLETE immediately.";
+	else
+		prompt << "Requirements below are for the NEW remaining production amount.";
+
+	prompt << "\nExisting hopper contents remain in the factory even if the batch is reduced.";
+
+	confirm->setPromptText(prompt.toString());
+	confirm->setOtherButton(true, "@back");
+	confirm->setOkButton(true, "Update");
+	confirm->setCancelButton(true, "@cancel");
+
+	if (newRemaining <= 0) {
+		confirm->addMenuItem("[COMPLETE] No additional items will be manufactured.", 0);
+	} else {
+		for (int i = 0; i < schematic->getBlueprintSize(); ++i) {
+			BlueprintEntry* entry = schematic->getBlueprintEntry(i);
+
+			if (entry == nullptr)
+				continue;
+
+			unsigned long long perItem = entry->getQuantity();
+			unsigned long long batchRequired = perItem * (unsigned long long)newRemaining;
+			unsigned long long available = entry->getAvailableQuantity();
+			unsigned long long missing = batchRequired > available ? batchRequired - available : 0;
+
+			StringBuffer row;
+
+			if (available >= batchRequired)
+				row << "[READY] ";
+			else if (available >= perItem)
+				row << "[PARTIAL] ";
+			else
+				row << "[MISSING] ";
+
+			appendFactoryQueueIngredientIdentity(row, entry, resourceManager);
+
+			row << " | " << perItem << " ea";
+			row << " | Need " << batchRequired;
+			row << " | Have " << available;
+
+			if (missing > 0)
+				row << " | Short " << missing;
+
+			confirm->addMenuItem(row.toString(), 0);
+		}
+	}
+
+	confirm->setCallback(
+		new FactoryQueueBatchEditConfirmSuiCallback(
+			server->getZoneServer(), schematic->getObjectID(), requestedAmount));
+	confirm->setUsingObject(_this.getReferenceUnsafeStaticCast());
+
+	player->getPlayerObject()->addSuiBox(confirm);
+	player->sendMessage(confirm->generateMessage());
+}
+
+bool FactoryObjectImplementation::updateQueuedSchematicBatchAmount(
+		CreatureObject* player,
+		int queueIndex,
+		int requestedAmount) {
+
+	if (player == nullptr || !isOnAdminList(player))
+		return false;
+
+	restoreQueueMetadata();
+
+	if (queueIndex < 0 || queueIndex >= queueSchematicIDs.size())
+		return false;
+
+	if (isActive() && queueStatuses.get(queueIndex) == QUEUE_ACTIVE) {
+		player->sendSystemMessage("Stop the factory before changing the batch that is currently being manufactured.");
+		return false;
+	}
+
+	ManagedReference<ManufactureSchematic*> schematic =
+		server->getZoneServer()->getObject(queueSchematicIDs.get(queueIndex)).castTo<ManufactureSchematic*>();
+
+	if (schematic == nullptr)
+		return false;
+
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED && schematic->getManufactureLimit() <= 0) {
+		player->sendSystemMessage("This completed manufacturing schematic has no lifetime uses remaining.");
+		return false;
+	}
+
+	ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+	if (parent == nullptr || parent->getObjectID() != getObjectID())
+		return false;
+
+	int oldRequested = queueRequestedLimits.get(queueIndex);
+	int oldRemaining = queueRemainingLimits.get(queueIndex);
+	int produced = oldRequested > oldRemaining ? oldRequested - oldRemaining : 0;
+	int minimum = produced > 0 ? produced : 1;
+	int maximum = produced + schematic->getManufactureLimit();
+
+	if (requestedAmount < minimum || requestedAmount > maximum) {
+		player->sendSystemMessage(
+			"Enter a total batch amount between " + String::valueOf(minimum) +
+			" and " + String::valueOf(maximum) + ".");
+		return false;
+	}
+
+	int newRemaining = requestedAmount - produced;
+	bool wasActiveEntry = queueStatuses.get(queueIndex) == QUEUE_ACTIVE;
+	bool wasCompletedEntry = queueStatuses.get(queueIndex) == QUEUE_COMPLETED;
+
+	TransactionLog trx(asSceneObject(), player, schematic, TrxCode::FACTORYOPERATION);
+	trx.setType("factory_queue_batch_update");
+	trx.addState("factoryId", (uint64)getObjectID());
+	trx.addState("playerId", (uint64)player->getObjectID());
+	trx.addState("schematicId", (uint64)schematic->getObjectID());
+	trx.addState("queuePosition", queueIndex + 1);
+	trx.addState("oldRequested", oldRequested);
+	trx.addState("oldRemaining", oldRemaining);
+	trx.addState("produced", produced);
+	trx.addState("newRequested", requestedAmount);
+	trx.addState("newRemaining", newRemaining);
+	trx.addState("schematicUsesRemaining", schematic->getManufactureLimit());
+
+	queueRequestedLimits.set(queueIndex, requestedAmount);
+	queueRemainingLimits.set(queueIndex, newRemaining);
+	queueEvaluationTimes.set(queueIndex, (unsigned long long)Time().getTime());
+
+	if (newRemaining <= 0) {
+		queueStatuses.set(queueIndex, QUEUE_COMPLETED);
+		queueBlockedReasons.set(queueIndex, "");
+	} else {
+		if (wasCompletedEntry)
+			queueStatuses.set(queueIndex, QUEUE_WAITING);
+		else if (wasActiveEntry && !isActive())
+			queueStatuses.set(queueIndex, QUEUE_ACTIVE);
+
+		refreshQueuedSchematicReadiness(queueIndex);
+	}
+
+	trx.commit();
+
+	info() << "Factory queue batch amount updated. FactoryID: " << getObjectID()
+		<< " PlayerID: " << player->getObjectID()
+		<< " SchematicID: " << schematic->getObjectID()
+		<< " QueuePosition: " << queueIndex + 1
+		<< " OldRequested: " << oldRequested
+		<< " Produced: " << produced
+		<< " NewRequested: " << requestedAmount
+		<< " NewRemaining: " << newRemaining
+		<< " SchematicUsesRemaining: " << schematic->getManufactureLimit();
+
+	player->sendSystemMessage(
+		"Manufacturing batch updated to " + String::valueOf(requestedAmount) +
+		" total items with " + String::valueOf(newRemaining) + " remaining.");
+
+	if (queueEnabled && !isActive())
+		evaluateManufacturingQueue();
+
+	return true;
+}
+
+
 
 
 
@@ -987,6 +1557,25 @@ void FactoryObjectImplementation::sendManufacturingQueueSui(CreatureObject* play
 		return;
 
 	restoreQueueMetadata();
+
+	// Refresh displayed readiness whenever the dashboard opens.
+	// Do not mutate the currently running ACTIVE job. Power/maintenance
+	// remain factory-wide dashboard state rather than per-entry noise.
+	bool factoryWideBlocked =
+		(!isActive() && getMaintenanceRate() != 0 && getSurplusMaintenance() <= 0) ||
+		(!isActive() && getBasePowerRate() != 0 && getSurplusPower() <= 0);
+
+	if (!factoryWideBlocked) {
+		for (int i = 0; i < queueSchematicIDs.size(); ++i) {
+			if (queueStatuses.get(i) == QUEUE_COMPLETED || queueRemainingLimits.get(i) <= 0)
+				continue;
+
+			if (isActive() && queueStatuses.get(i) == QUEUE_ACTIVE)
+				continue;
+
+			refreshQueuedSchematicReadiness(i);
+		}
+	}
 
 	ManagedReference<SuiListBox*> queue =
 		new SuiListBox(player, SuiWindowType::FACTORY_SCHEMATIC3BUTTON, SuiListBox::HANDLETHREEBUTTON);
@@ -1022,6 +1611,10 @@ void FactoryObjectImplementation::sendManufacturingQueueSui(CreatureObject* play
 	StringBuffer prompt;
 	prompt << "Factory Status: " << factoryState << "\n";
 	prompt << "Queue: " << queueSchematicIDs.size() << " / " << MAX_FACTORY_QUEUE << "\n";
+
+	if (queueSchematicIDs.size() > MAX_FACTORY_QUEUE)
+		prompt << "Recovery State: remove entries until the queue is back to " << MAX_FACTORY_QUEUE << " or fewer.\n";
+
 	prompt << "Queue Mode: Skip blocked entries\n";
 
 	if (!blockedSummary.isEmpty())
@@ -1168,6 +1761,11 @@ void FactoryObjectImplementation::sendManufacturingQueueEntrySui(CreatureObject*
 
 	if (schematic != nullptr && queueStatuses.get(queueIndex) != QUEUE_COMPLETED && remaining > 0)
 		actions->addMenuItem("Load Batch Ingredients", ManageFactoryQueueSuiCallback::ACTION_LOAD_BATCH_INGREDIENTS);
+
+	if (schematic != nullptr &&
+			!(isActive() && queueStatuses.get(queueIndex) == QUEUE_ACTIVE) &&
+			(queueStatuses.get(queueIndex) != QUEUE_COMPLETED || schematic->getManufactureLimit() > 0))
+		actions->addMenuItem("Update Batch Amount", ManageFactoryQueueSuiCallback::ACTION_UPDATE_BATCH_AMOUNT);
 
 	actions->addMenuItem("Manage Ingredient Hopper", ManageFactoryQueueSuiCallback::ACTION_MANAGE_INGREDIENT_HOPPER);
 
@@ -1425,11 +2023,15 @@ void FactoryObjectImplementation::sendFactoryIngredientHopperManagerSui(Creature
 	StringBuffer prompt;
 	prompt << "Server-side hopper contents: " << inputHopper->getContainerObjectsSize() << " object(s).\n\n";
 	prompt << "This reads the actual factory container directly, even if the stock hopper window does not render an item.\n";
-	prompt << "Select one object and press Return to move that exact stack/crate back to your inventory.";
+
+	if (isActive())
+		prompt << "The factory is RUNNING. Hopper contents are viewable, but ingredients cannot be returned until production is stopped.";
+	else
+		prompt << "Select one object and press Return to move that exact stack/crate back to your inventory.";
 
 	manager->setPromptText(prompt.toString());
 	manager->setOtherButton(true, "@back");
-	manager->setOkButton(true, "@return");
+	manager->setOkButton(true, "Retrieve");
 	manager->setCancelButton(true, "@cancel");
 
 	for (int i = 0; i < inputHopper->getContainerObjectsSize(); ++i) {
@@ -1468,9 +2070,15 @@ void FactoryObjectImplementation::sendFactoryIngredientHopperManagerSui(Creature
 	player->sendMessage(manager->generateMessage());
 }
 
+
 bool FactoryObjectImplementation::returnFactoryIngredientToInventory(CreatureObject* player, unsigned long long objectID) {
 	if (player == nullptr || !isOnAdminList(player) || objectID == 0)
 		return false;
+
+	if (isActive()) {
+		player->sendSystemMessage("Stop the factory before returning ingredients from the hopper.");
+		return false;
+	}
 
 	ManagedReference<SceneObject*> inputHopper = getSlottedObject("ingredient_hopper");
 	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
@@ -1486,9 +2094,37 @@ bool FactoryObjectImplementation::returnFactoryIngredientToInventory(CreatureObj
 		return false;
 	}
 
+	String transferError;
+
+	if (inventory->canAddObject(object, -1, transferError) != 0) {
+		player->sendSystemMessage(
+			"The ingredient could not be returned to your inventory. Make sure you have enough inventory space.");
+
+		info() << "Factory hopper return preflight rejected. FactoryID: " << getObjectID()
+			<< " PlayerID: " << player->getObjectID()
+			<< " IngredientOID: " << objectID
+			<< " Reason: " << transferError;
+
+		return false;
+	}
+
+	int quantity = getFactoryQueueInventoryObjectQuantity(object);
+
 	Locker objectLocker(object, player);
 
+	TransactionLog trx(inputHopper.get(), inventory.get(), object.get(), TrxCode::FACTORYOPERATION);
+	trx.setType("factory_queue_hopper_return");
+	trx.addRelatedObject(asSceneObject());
+	trx.addState("factoryId", (uint64)getObjectID());
+	trx.addState("playerId", (uint64)player->getObjectID());
+	trx.addState("ingredientObjectId", (uint64)objectID);
+	trx.addState("quantity", quantity);
+	trx.addState("resourceContainer", object->isResourceContainer());
+	trx.addState("factoryCrate", object->isFactoryCrate());
+
 	if (!inventory->transferObject(object, -1, true)) {
+		trx.abort() << "Factory queue ingredient return transfer failed.";
+
 		player->sendSystemMessage(
 			"The ingredient could not be returned to your inventory. Make sure you have enough inventory space.");
 		return false;
@@ -1497,11 +2133,19 @@ bool FactoryObjectImplementation::returnFactoryIngredientToInventory(CreatureObj
 	inventory->broadcastObject(object, true);
 	object->sendTo(player, true, true);
 
+	trx.commit();
+
+	info() << "Factory hopper ingredient returned. FactoryID: " << getObjectID()
+		<< " PlayerID: " << player->getObjectID()
+		<< " IngredientOID: " << objectID
+		<< " Quantity: " << quantity;
+
 	player->sendSystemMessage(
 		"Returned " + object->getDisplayedName() + " to your inventory.");
 
 	return true;
 }
+
 
 
 void FactoryObjectImplementation::loadBatchIngredientsFromInventory(CreatureObject* player, int queueIndex) {
@@ -1560,7 +2204,7 @@ void FactoryObjectImplementation::loadBatchIngredientsFromInventory(CreatureObje
 		if (shortage <= 0)
 			continue;
 
-		int loaded = loadFactoryQueueIngredientFromInventory(player, entry, shortage);
+		int loaded = loadFactoryQueueIngredientFromInventory(player, entry, shortage, schematicID, queueIndex);
 		totalLoaded += loaded;
 
 		populateSchematicBlueprint(schematic);
@@ -1806,39 +2450,75 @@ bool FactoryObjectImplementation::handleRemoveFactorySchem(CreatureObject* playe
 }
 
 bool FactoryObjectImplementation::removeQueuedSchematic(CreatureObject* player, int queueIndex) {
-	if (player == nullptr || queueIndex < 0)
+	if (player == nullptr || !isOnAdminList(player) || queueIndex < 0)
 		return false;
+
 	restoreQueueMetadata();
-	if (queueIndex >= queueSchematicIDs.size()) return false;
+
+	if (queueIndex >= queueSchematicIDs.size())
+		return false;
+
 	if (queueStatuses.get(queueIndex) == QUEUE_ACTIVE && isActive()) {
 		player->sendSystemMessage("Stop the factory before removing the active schematic.");
 		return false;
 	}
 
-	ManagedReference<SceneObject*> datapad = player->getSlottedObject("datapad");
-	ManagedReference<SceneObject*> schematic = server->getZoneServer()->getObject(queueSchematicIDs.get(queueIndex));
+	auto removeMetadataAt = [this](int index) {
+		queueSchematicIDs.remove(index);
+		queueSequence.remove(index);
+		queueRequestedLimits.remove(index);
+		queueRemainingLimits.remove(index);
+		queueStatuses.remove(index);
+		queueBlockedReasons.remove(index);
+		queueEvaluationTimes.remove(index);
+
+		for (int i = 0; i < queueSequence.size(); ++i)
+			queueSequence.set(i, i + 1);
+	};
+
+	unsigned long long schematicID = queueSchematicIDs.get(queueIndex);
+	ManagedReference<SceneObject*> schematic = server->getZoneServer()->getObject(schematicID);
 
 	if (schematic == nullptr) {
-		unsigned long long invalidID = queueSchematicIDs.get(queueIndex);
-		queueSchematicIDs.remove(queueIndex);
-		queueSequence.remove(queueIndex);
-		queueRequestedLimits.remove(queueIndex);
-		queueRemainingLimits.remove(queueIndex);
-		queueStatuses.remove(queueIndex);
-		queueBlockedReasons.remove(queueIndex);
-		queueEvaluationTimes.remove(queueIndex);
-		for (int i = 0; i < queueSequence.size(); ++i) queueSequence.set(i, i + 1);
+		removeMetadataAt(queueIndex);
+
 		player->sendSystemMessage("The invalid manufacturing queue entry was removed.");
-		info() << "Invalid factory queue entry removed. FactoryID: " << getObjectID() << " SchematicID: " << invalidID << " Position: " << queueIndex + 1;
+		info() << "Invalid factory queue metadata removed. FactoryID: " << getObjectID()
+			<< " SchematicID: " << schematicID << " Position: " << queueIndex + 1;
+
+		restoreQueueMetadata();
+		evaluateManufacturingQueue();
 		return true;
 	}
 
-	if (datapad == nullptr || !schematic->isManufactureSchematic())
+	if (!schematic->isManufactureSchematic())
 		return false;
 
 	ManagedReference<ManufactureSchematic*> manuSchem = schematic.castTo<ManufactureSchematic*>();
 
 	if (manuSchem == nullptr)
+		return false;
+
+	ManagedReference<SceneObject*> parent = schematic->getParent().get();
+
+	// A stale metadata row must never pull a schematic out of another factory,
+	// datapad, or container. Remove only the stale queue metadata.
+	if (parent == nullptr || parent->getObjectID() != getObjectID()) {
+		removeMetadataAt(queueIndex);
+
+		player->sendSystemMessage("Removed stale factory queue metadata. The schematic itself was not moved.");
+		warning() << "Stale factory queue metadata removed without moving object. FactoryID: " << getObjectID()
+			<< " SchematicID: " << schematicID << " Position: " << queueIndex + 1
+			<< " ParentID: " << (parent != nullptr ? parent->getObjectID() : 0);
+
+		restoreQueueMetadata();
+		evaluateManufacturingQueue();
+		return true;
+	}
+
+	ManagedReference<SceneObject*> datapad = player->getSlottedObject("datapad");
+
+	if (datapad == nullptr)
 		return false;
 
 	Locker locker(schematic);
@@ -1858,35 +2538,32 @@ bool FactoryObjectImplementation::removeQueuedSchematic(CreatureObject* player, 
 		trx.abort() << "Failed to transfer schematic out of factory.";
 
 		sendRemoveFailureMessage(player, manuSchem);
-
 		return false;
 	}
 
 	datapad->broadcastObject(schematic, true);
 
-	StringIdChatParameter message("manf_station", "schematic_removed"); // Schematic %TT has been removed from the station and been placed in your datapad. Have a nice day!
+	StringIdChatParameter message("manf_station", "schematic_removed");
 
-	if (schematic->getCustomObjectName().isEmpty()) {
+	if (schematic->getCustomObjectName().isEmpty())
 		message.setTT(schematic->getObjectNameStringIdFile(), schematic->getObjectNameStringIdName());
-	} else {
+	else
 		message.setTT(schematic->getCustomObjectName().toString());
-	}
 
 	player->sendSystemMessage(message);
-	queueSchematicIDs.remove(queueIndex);
-	queueSequence.remove(queueIndex);
-	queueRequestedLimits.remove(queueIndex);
-	queueRemainingLimits.remove(queueIndex);
-	queueStatuses.remove(queueIndex);
-	queueBlockedReasons.remove(queueIndex);
-	queueEvaluationTimes.remove(queueIndex);
-	for (int i = 0; i < queueSequence.size(); ++i) queueSequence.set(i, i + 1);
-	info() << "Factory queue entry removed. FactoryID: " << getObjectID() << " SchematicID: " << manuSchem->getObjectID() << " Position: " << queueIndex + 1;
+
+	removeMetadataAt(queueIndex);
+
+	info() << "Factory queue entry removed. FactoryID: " << getObjectID()
+		<< " SchematicID: " << manuSchem->getObjectID()
+		<< " Position: " << queueIndex + 1;
+
 	restoreQueueMetadata();
 	evaluateManufacturingQueue();
 
 	return true;
 }
+
 
 bool FactoryObjectImplementation::moveQueuedSchematic(CreatureObject* player, int queueIndex, int direction) {
 	if (player == nullptr || !isOnAdminList(player))
@@ -1947,15 +2624,23 @@ bool FactoryObjectImplementation::moveQueuedSchematic(CreatureObject* player, in
 void FactoryObjectImplementation::retryQueuedSchematic(int queueIndex) {
 	restoreQueueMetadata();
 
-	if (queueIndex >= 0 && queueIndex < queueStatuses.size() &&
-			queueStatuses.get(queueIndex) != QUEUE_ACTIVE &&
-			queueStatuses.get(queueIndex) != QUEUE_COMPLETED) {
-		queueStatuses.set(queueIndex, QUEUE_WAITING);
-		queueBlockedReasons.set(queueIndex, "");
-	}
+	if (queueIndex < 0 || queueIndex >= queueStatuses.size())
+		return;
 
-	evaluateManufacturingQueue();
+	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED)
+		return;
+
+	// The active running job is validated at every production tick. Do not
+	// mutate its ACTIVE state from a management SUI action.
+	if (isActive() && queueStatuses.get(queueIndex) == QUEUE_ACTIVE)
+		return;
+
+	refreshQueuedSchematicReadiness(queueIndex);
+
+	if (queueEnabled && !isActive())
+		evaluateManufacturingQueue();
 }
+
 
 
 void FactoryObjectImplementation::retryAllQueuedSchematics() {
@@ -2680,18 +3365,85 @@ int FactoryObjectImplementation::getFactoryQueueInventoryLoadableQuantity(
 		return 0;
 
 	ManagedReference<SceneObject*> inventory = player->getSlottedObject("inventory");
+	ManagedReference<SceneObject*> inputHopper = getSlottedObject("ingredient_hopper");
 
-	if (inventory == nullptr)
+	if (inventory == nullptr || inputHopper == nullptr)
 		return 0;
+
+	int capacityRemaining =
+		inputHopper->getContainerVolumeLimit() - inputHopper->getCountableObjectsRecursive();
+
+	if (capacityRemaining <= 0)
+		return 0;
+
+	Vector<ManagedReference<TangibleObject*> > candidates;
+
+	for (int i = 0; i < inventory->getContainerObjectsSize(); ++i) {
+		ManagedReference<TangibleObject*> object =
+			inventory->getContainerObject(i).castTo<TangibleObject*>();
+
+		if (factoryQueueInventoryObjectMatches(entry, object))
+			candidates.add(object);
+	}
 
 	int remaining = amountNeeded;
 	int loadable = 0;
 
-	for (int i = 0; i < inventory->getContainerObjectsSize() && remaining > 0; ++i) {
-		ManagedReference<TangibleObject*> object =
-			inventory->getContainerObject(i).castTo<TangibleObject*>();
+	while (candidates.size() > 0 && remaining > 0 && capacityRemaining > 0) {
+		int exactIndex = -1;
+		int underIndex = -1;
+		int underQuantity = 0;
+		int overIndex = -1;
+		int overQuantity = 0;
 
-		if (!factoryQueueInventoryObjectMatches(entry, object))
+		for (int i = 0; i < candidates.size(); ++i) {
+			TangibleObject* object = candidates.get(i);
+
+			if (object == nullptr)
+				continue;
+
+			int quantity = getFactoryQueueInventoryObjectQuantity(object);
+
+			if (quantity <= 0)
+				continue;
+
+			if (quantity == remaining) {
+				exactIndex = i;
+				break;
+			}
+
+			if (quantity < remaining) {
+				if (underIndex < 0 || quantity > underQuantity) {
+					underIndex = i;
+					underQuantity = quantity;
+				}
+			} else if ((object->isResourceContainer() || object->isFactoryCrate()) &&
+					(overIndex < 0 || quantity < overQuantity)) {
+				overIndex = i;
+				overQuantity = quantity;
+			}
+		}
+
+		int selectedIndex = exactIndex >= 0 ? exactIndex : (underIndex >= 0 ? underIndex : overIndex);
+
+		if (selectedIndex < 0)
+			break;
+
+		ManagedReference<TangibleObject*> object = candidates.get(selectedIndex);
+		candidates.remove(selectedIndex);
+
+		if (object == nullptr)
+			continue;
+
+		int objectSize =
+			object->isContainerObject() ? object->getContainerObjectsSize() + 1 : 1;
+
+		if (objectSize > capacityRemaining)
+			continue;
+
+		String transferError;
+
+		if (inputHopper->canAddObject(object, -1, transferError) != 0)
 			continue;
 
 		int quantity = getFactoryQueueInventoryObjectQuantity(object);
@@ -2699,23 +3451,26 @@ int FactoryObjectImplementation::getFactoryQueueInventoryLoadableQuantity(
 		if (quantity <= 0)
 			continue;
 
-		if (object->isResourceContainer() || object->isFactoryCrate()) {
-			int amount = quantity < remaining ? quantity : remaining;
-			loadable += amount;
-			remaining -= amount;
-		} else if (quantity <= remaining) {
-			loadable += quantity;
-			remaining -= quantity;
-		}
+		int amount = quantity < remaining ? quantity : remaining;
+
+		if (!(object->isResourceContainer() || object->isFactoryCrate()) && quantity > remaining)
+			continue;
+
+		loadable += amount;
+		remaining -= amount;
+		capacityRemaining -= objectSize;
 	}
 
 	return loadable;
 }
 
+
 int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 		CreatureObject* player,
 		BlueprintEntry* entry,
-		int amountNeeded) {
+		int amountNeeded,
+		unsigned long long schematicID,
+		int queueIndex) {
 
 	if (player == nullptr || entry == nullptr || amountNeeded <= 0)
 		return 0;
@@ -2738,8 +3493,49 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 
 	int loaded = 0;
 
-	for (int i = 0; i < candidates.size() && loaded < amountNeeded; ++i) {
-		ManagedReference<TangibleObject*> source = candidates.get(i);
+	while (candidates.size() > 0 && loaded < amountNeeded) {
+		int remaining = amountNeeded - loaded;
+		int exactIndex = -1;
+		int underIndex = -1;
+		int underQuantity = 0;
+		int overIndex = -1;
+		int overQuantity = 0;
+
+		for (int i = 0; i < candidates.size(); ++i) {
+			TangibleObject* object = candidates.get(i);
+
+			if (object == nullptr || object->getParentID() != inventory->getObjectID())
+				continue;
+
+			int quantity = getFactoryQueueInventoryObjectQuantity(object);
+
+			if (quantity <= 0)
+				continue;
+
+			if (quantity == remaining) {
+				exactIndex = i;
+				break;
+			}
+
+			if (quantity < remaining) {
+				if (underIndex < 0 || quantity > underQuantity) {
+					underIndex = i;
+					underQuantity = quantity;
+				}
+			} else if ((object->isResourceContainer() || object->isFactoryCrate()) &&
+					(overIndex < 0 || quantity < overQuantity)) {
+				overIndex = i;
+				overQuantity = quantity;
+			}
+		}
+
+		int selectedIndex = exactIndex >= 0 ? exactIndex : (underIndex >= 0 ? underIndex : overIndex);
+
+		if (selectedIndex < 0)
+			break;
+
+		ManagedReference<TangibleObject*> source = candidates.get(selectedIndex);
+		candidates.remove(selectedIndex);
 
 		if (source == nullptr || source->getParentID() != inventory->getObjectID())
 			continue;
@@ -2749,15 +3545,56 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 		if (sourceQuantity <= 0)
 			continue;
 
-		int remaining = amountNeeded - loaded;
 		int amountToMove = sourceQuantity < remaining ? sourceQuantity : remaining;
+
+		String transferError;
+
+		// Preflight the real hopper container before mutating/splitting a source
+		// stack. This prevents the common "split succeeded but hopper was full"
+		// fragmentation case.
+		if (inputHopper->canAddObject(source, -1, transferError) != 0) {
+			info() << "Factory queue ingredient load preflight rejected. FactoryID: " << getObjectID()
+				<< " PlayerID: " << player->getObjectID()
+				<< " SchematicID: " << schematicID
+				<< " QueuePosition: " << queueIndex + 1
+				<< " SourceOID: " << source->getObjectID()
+				<< " Reason: " << transferError;
+			continue;
+		}
 
 		if (amountToMove >= sourceQuantity) {
 			Locker sourceLocker(source, player);
 
+			TransactionLog trx(inventory.get(), inputHopper.get(), source.get(), TrxCode::FACTORYOPERATION);
+			trx.setType("factory_queue_auto_load");
+			trx.addRelatedObject(asSceneObject());
+			trx.addState("factoryId", (uint64)getObjectID());
+			trx.addState("playerId", (uint64)player->getObjectID());
+			trx.addState("schematicId", (uint64)schematicID);
+			trx.addState("queuePosition", queueIndex + 1);
+			trx.addState("ingredientType", entry->getType());
+			trx.addState("ingredientKey", entry->getKey());
+			trx.addState("ingredientSerial", entry->getSerial());
+			trx.addState("sourceObjectId", (uint64)source->getObjectID());
+			trx.addState("quantity", sourceQuantity);
+			trx.addState("splitTransfer", false);
+
 			if (inputHopper->transferObject(source, -1, true)) {
 				inputHopper->broadcastObject(source, true);
 				loaded += sourceQuantity;
+				trx.commit();
+
+				info() << "Factory queue ingredient loaded. FactoryID: " << getObjectID()
+					<< " PlayerID: " << player->getObjectID()
+					<< " SchematicID: " << schematicID
+					<< " QueuePosition: " << queueIndex + 1
+					<< " IngredientType: " << entry->getType()
+					<< " IngredientKey: " << entry->getKey()
+					<< " ObjectID: " << source->getObjectID()
+					<< " Quantity: " << sourceQuantity
+					<< " Split: false";
+			} else {
+				trx.abort() << "Factory queue automatic ingredient transfer failed.";
 			}
 
 			continue;
@@ -2772,6 +3609,9 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 				if (existing != nullptr)
 					inventoryIDsBeforeSplit.add(existing->getObjectID());
 			}
+
+			unsigned long long sourceObjectID = source->getObjectID();
+			int sourceQuantityBefore = sourceQuantity;
 
 			if (source->isResourceContainer()) {
 				ResourceContainer* resource = cast<ResourceContainer*>(source.get());
@@ -2797,7 +3637,7 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 				ManagedReference<TangibleObject*> candidate =
 					inventory->getContainerObject(j).castTo<TangibleObject*>();
 
-				if (candidate == nullptr || candidate->getObjectID() == source->getObjectID())
+				if (candidate == nullptr || candidate->getObjectID() == sourceObjectID)
 					continue;
 
 				bool existedBefore = false;
@@ -2822,22 +3662,58 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 				break;
 			}
 
-			if (splitObject == nullptr)
+			if (splitObject == nullptr) {
+				warning() << "Factory queue split completed but split object could not be identified. FactoryID: "
+					<< getObjectID() << " PlayerID: " << player->getObjectID()
+					<< " SchematicID: " << schematicID
+					<< " SourceOID: " << sourceObjectID
+					<< " RequestedSplit: " << amountToMove;
 				continue;
+			}
 
 			Locker splitLocker(splitObject, player);
+
+			TransactionLog trx(inventory.get(), inputHopper.get(), splitObject.get(), TrxCode::FACTORYOPERATION);
+			trx.setType("factory_queue_auto_load");
+			trx.addRelatedObject(asSceneObject());
+			trx.addRelatedObject(sourceObjectID);
+			trx.addState("factoryId", (uint64)getObjectID());
+			trx.addState("playerId", (uint64)player->getObjectID());
+			trx.addState("schematicId", (uint64)schematicID);
+			trx.addState("queuePosition", queueIndex + 1);
+			trx.addState("ingredientType", entry->getType());
+			trx.addState("ingredientKey", entry->getKey());
+			trx.addState("ingredientSerial", entry->getSerial());
+			trx.addState("sourceObjectId", (uint64)sourceObjectID);
+			trx.addState("sourceQuantityBefore", sourceQuantityBefore);
+			trx.addState("splitObjectId", (uint64)splitObject->getObjectID());
+			trx.addState("quantity", amountToMove);
+			trx.addState("splitTransfer", true);
 
 			if (inputHopper->transferObject(splitObject, -1, true)) {
 				inputHopper->broadcastObject(splitObject, true);
 				loaded += amountToMove;
-			}
+				trx.commit();
 
-			continue;
+				info() << "Factory queue ingredient loaded. FactoryID: " << getObjectID()
+					<< " PlayerID: " << player->getObjectID()
+					<< " SchematicID: " << schematicID
+					<< " QueuePosition: " << queueIndex + 1
+					<< " IngredientType: " << entry->getType()
+					<< " IngredientKey: " << entry->getKey()
+					<< " SourceOID: " << sourceObjectID
+					<< " ObjectID: " << splitObject->getObjectID()
+					<< " Quantity: " << amountToMove
+					<< " Split: true";
+			} else {
+				trx.abort() << "Factory queue automatic split ingredient transfer failed; split remains in inventory.";
+			}
 		}
 	}
 
 	return loaded;
 }
+
 
 
 
