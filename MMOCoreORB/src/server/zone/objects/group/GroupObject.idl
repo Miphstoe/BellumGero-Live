@@ -37,6 +37,7 @@ class GroupObject extends SceneObject {
 	int lootRule;
 
 	unsigned long masterLooterID;
+	unsigned long coLeaderID;
 
 	public GroupObject() {
 		groupLevel = 0;
@@ -48,6 +49,7 @@ class GroupObject extends SceneObject {
 
 		lootRule = GroupManager.FREEFORALL;
 		masterLooterID = 0;
+		coLeaderID = 0;
 	}
 
 	@dirty
@@ -219,6 +221,24 @@ class GroupObject extends SceneObject {
 	@preLocked
 	public void setMasterLooterID(unsigned long newID) {
 		masterLooterID = newID;
+	}
+
+	@read
+	public unsigned long getCoLeaderID() {
+		return coLeaderID;
+	}
+
+	@preLocked
+	public void setCoLeaderID(unsigned long newID) {
+		coLeaderID = newID;
+	}
+
+	public boolean isGroupCoLeader(CreatureObject object) {
+		return object != null && object.getObjectID() == coLeaderID && hasMember(object);
+	}
+
+	public boolean canInviteToGroup(CreatureObject object) {
+		return object != null && (object.getObjectID() == getLeaderID() || isGroupCoLeader(object));
 	}
 
 	public boolean checkMasterLooter(CreatureObject object) {

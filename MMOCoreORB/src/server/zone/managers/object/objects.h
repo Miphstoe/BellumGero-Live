@@ -10,6 +10,7 @@
 
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/creature/ai/NonPlayerCreatureObject.h"
+#include "server/zone/objects/creature/ai/mannequin/MannequinObject.h"
 #include "server/zone/objects/creature/ai/Creature.h"
 #include "server/zone/objects/creature/VehicleObject.h"
 #include "server/zone/objects/creature/ai/DroidObject.h"

@@ -110,6 +110,9 @@ void StructureObjectImplementation::createNavMesh() {
 
 void StructureObjectImplementation::notifyLoadFromDatabase() {
 	TangibleObjectImplementation::notifyLoadFromDatabase();
+	// Older serialized structures predate this permission tier. Named lists are
+	// extensible, so adding the missing empty list requires no data migration.
+	structurePermissionList.addList("COOWNER");
 
 	if (structurePermissionList.getOwner() != getOwnerObjectID()) {
 		structurePermissionList.setOwner(getOwnerObjectID());
@@ -496,6 +499,38 @@ void StructureObjectImplementation::scheduleMaintenanceTask(int secondsFromNow) 
 }
 
 void StructureObjectImplementation::destroyObjectFromWorld(bool sendSelfDestroy) {
+	// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+	// Fail closed BEFORE cancelling maintenance, removing nav areas, or allowing
+	// BuildingObject::notifyRemoveFromZone() to empty the structure's cells.
+	// Authorization lives in StructureManager so no generated object layout changes.
+	const bool protectedPersistentBuilding =
+		isBuildingObject() && getPersistenceLevel() > 0;
+
+	ZoneServer* removalZoneServer = getZoneServer();
+	const bool serverShuttingDown =
+		removalZoneServer != nullptr && removalZoneServer->isServerShuttingDown();
+
+	StructureManager* removalStructureManager = StructureManager::instance();
+	const bool removalAuthorized =
+		removalStructureManager != nullptr &&
+		removalStructureManager->isPersistentStructureWorldRemovalAuthorized(
+			_this.getReferenceUnsafeStaticCast());
+
+	if (protectedPersistentBuilding &&
+		!serverShuttingDown &&
+		!removalAuthorized) {
+		String zoneName = "<null>";
+		Zone* currentZone = getZone();
+
+		if (currentZone != nullptr)
+			zoneName = currentZone->getZoneName();
+
+		error() << "STRUCTURE-WORLD-REMOVE-BLOCKED: unauthorized persistent "
+			<< "BuildingObject removal refused before teardown. OID="
+			<< getObjectID() << " zone=" << zoneName;
+		return;
+	}
+
 	if (structureMaintenanceTask != nullptr) {
 		if (structureMaintenanceTask->isScheduled()) {
 			structureMaintenanceTask->cancel();
@@ -513,6 +548,15 @@ void StructureObjectImplementation::destroyObjectFromWorld(bool sendSelfDestroy)
 	}
 
 	TangibleObjectImplementation::destroyObjectFromWorld(sendSelfDestroy);
+
+	// GroundZoneContainerComponent consumes the token on the normal path.
+	// Clear it here as a fallback if world removal returned before that layer.
+	if (protectedPersistentBuilding &&
+		!serverShuttingDown &&
+		removalStructureManager != nullptr) {
+		removalStructureManager->clearPersistentStructureWorldRemovalAuthorization(
+			_this.getReferenceUnsafeStaticCast());
+	}
 }
 
 void StructureObjectImplementation::destroyObjectFromDatabase(bool destroyContainedObjects) {
@@ -858,7 +902,8 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 			return true;
 	}
 
-	if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
+	if (structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())) {
 		return true;
 	} else {
 		ManagedReference<GuildObject*> guild = player->getGuildObject().get();
@@ -870,12 +915,24 @@ bool StructureObjectImplementation::isOnAdminList(CreatureObject* player) const 
 	return false;
 }
 
+bool StructureObjectImplementation::isCoOwner(CreatureObject* player) const {
+	if (player == nullptr || !player->isPlayerCreature() || player->getObjectID() == ownerObjectID)
+		return false;
+
+	return structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID());
+}
+
+bool StructureObjectImplementation::hasCoOwnerPermission(CreatureObject* player) const {
+	return player != nullptr && (isOwnerOf(player) || isCoOwner(player));
+}
+
 bool StructureObjectImplementation::isOnEntryList(CreatureObject* player) const {
 	PlayerObject* ghost = player->getPlayerObject();
 
 	if (ghost != nullptr && ghost->hasGodMode())
 		return true;
-	else if (structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())
+	else if (structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("ENTRY", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("VENDOR", player->getObjectID()))
 		return true;
@@ -914,6 +971,7 @@ bool StructureObjectImplementation::isOnHopperList(CreatureObject* player) const
 	if (ghost != nullptr && ghost->isPrivileged())
 		return true;
 	else if (structurePermissionList.isOnPermissionList("HOPPER", player->getObjectID())
+			|| structurePermissionList.isOnPermissionList("COOWNER", player->getObjectID())
 			|| structurePermissionList.isOnPermissionList("ADMIN", player->getObjectID()))
 		return true;
 	else {

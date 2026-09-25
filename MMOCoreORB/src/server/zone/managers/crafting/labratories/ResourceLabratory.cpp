@@ -10,7 +10,203 @@
 #include "server/zone/objects/tangible/component/Component.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
 
+#include <vector>
+
 //#define DEBUG_RESOURCE_LAB
+
+// Bellum Gero: weighted mixed full-suit armor segment aggregation
+namespace {
+	struct BellumComponentAggregate {
+		String attribute;
+		float total;
+		int weight;
+		int precision;
+		String group;
+		bool hidden;
+
+		BellumComponentAggregate() : total(0), weight(0), precision(0), hidden(false) {
+		}
+	};
+
+	bool isBellumSuitPackage(TangibleObject* prototype) {
+		if (prototype == nullptr || prototype->getObjectTemplate() == nullptr)
+			return false;
+		return prototype->getObjectTemplate()->getFullTemplateString().endsWith("_suit_package.iff");
+	}
+
+	bool isBellumSuitArmorSegmentSlot(TangibleObject* prototype, ComponentSlot* compSlot, DraftSlot* draftSlot) {
+		if (!isBellumSuitPackage(prototype) || compSlot == nullptr || draftSlot == nullptr)
+			return false;
+		if (compSlot->requiresIdentical() || draftSlot->getSlotType() != IngredientSlot::MIXEDSLOT)
+			return false;
+		return draftSlot->getResourceType().contains("object/tangible/component/armor/shared_armor_segment");
+	}
+
+	int findBellumAggregate(std::vector<BellumComponentAggregate>& aggregates, const String& attribute) {
+		for (int i = 0; i < aggregates.size(); ++i) {
+			if (aggregates[i].attribute == attribute)
+				return i;
+		}
+		return -1;
+	}
+
+	bool applyBellumAveragedComponentProperty(CraftingValues* values, DraftSlot* draftSlot,
+			const BellumComponentAggregate& aggregate) {
+		if (values == nullptr || draftSlot == nullptr || aggregate.weight <= 0)
+			return false;
+
+		const String& attribute = aggregate.attribute;
+		float propertyvalue = (aggregate.total / aggregate.weight) * draftSlot->getContribution();
+
+		if (values->hasExperimentalAttribute(attribute)) {
+			float max = values->getMaxValue(attribute);
+			float min = values->getMinValue(attribute);
+			float currentvalue = values->getCurrentValue(attribute);
+			short combineType = values->getCombineType(attribute);
+
+			switch (combineType) {
+			case AttributesMap::LINEARCOMBINE:
+				currentvalue += propertyvalue;
+				min += propertyvalue;
+				max += propertyvalue;
+				values->setMinValue(attribute, min);
+				values->setMaxValue(attribute, max);
+				values->setCurrentValue(attribute, currentvalue);
+				return true;
+			case AttributesMap::PERCENTAGECOMBINE:
+				currentvalue += propertyvalue;
+				min += propertyvalue;
+				max += propertyvalue;
+				values->setMinValue(attribute, min);
+				values->setMaxValue(attribute, max);
+				values->setCurrentPercentage(attribute, currentvalue);
+				return true;
+			case AttributesMap::BITSETCOMBINE:
+				currentvalue = (int)currentvalue | (int)propertyvalue;
+				values->setCurrentValue(attribute, currentvalue);
+				return true;
+			case AttributesMap::OVERRIDECOMBINE:
+				return false;
+			case AttributesMap::LIMITEDCOMBINE:
+				currentvalue += propertyvalue;
+				if (currentvalue < min)
+					currentvalue = min;
+				if (currentvalue > max)
+					currentvalue = max;
+				values->setCurrentValue(attribute, currentvalue);
+				return false;
+			default:
+				return false;
+			}
+		}
+
+		values->addExperimentalAttribute(attribute, aggregate.group, propertyvalue, propertyvalue,
+			aggregate.precision, aggregate.hidden, AttributesMap::LINEARCOMBINE);
+		values->setCurrentPercentage(attribute, 0);
+		values->setMaxPercentage(attribute, 0);
+		values->setCurrentValue(attribute, propertyvalue);
+		return true;
+	}
+
+	bool applyBellumAveragedArmorSegmentStats(CraftingValues* values, DraftSlot* draftSlot,
+			ComponentSlot* compSlot) {
+		if (values == nullptr || draftSlot == nullptr || compSlot == nullptr)
+			return false;
+
+		std::vector<BellumComponentAggregate> aggregates;
+
+		// Bellum Gero: missing mixed-segment properties count as zero
+		// Every valid segment use participates in the denominator for every
+		// property that appears anywhere in the mixed pool.
+		int totalUseWeight = 0;
+
+		for (int i = 0; i < compSlot->getContentCount(); ++i) {
+			TangibleObject* tano = compSlot->getContentAt(i);
+			if (tano == nullptr || !tano->isComponent())
+				continue;
+
+			Component* component = cast<Component*>(tano);
+			if (component == nullptr)
+				continue;
+
+			int useWeight = tano->getUseCount();
+			if (useWeight < 1)
+				useWeight = 1;
+
+			totalUseWeight += useWeight;
+
+			for (int j = 0; j < component->getPropertyCount(); ++j) {
+				String attribute = component->getProperty(j);
+				if (attribute.isEmpty() || attribute == "null" || attribute == "useCount")
+					continue;
+
+				int idx = findBellumAggregate(aggregates, attribute);
+				if (idx < 0) {
+					BellumComponentAggregate aggregate;
+					aggregate.attribute = attribute;
+					aggregate.precision = component->getAttributePrecision(attribute);
+					aggregate.group = component->getAttributeGroup(attribute);
+					aggregate.hidden = component->getAttributeHidden(attribute);
+					aggregates.push_back(aggregate);
+					idx = aggregates.size() - 1;
+				}
+
+				BellumComponentAggregate& aggregate = aggregates[idx];
+				aggregate.total += component->getAttributeValue(attribute) * useWeight;
+				aggregate.weight += useWeight;
+			}
+		}
+
+		bool modified = false;
+		for (int i = 0; i < aggregates.size(); ++i) {
+			// aggregate.total contains only actual values; the full segment
+			// pool denominator makes missing properties contribute zero.
+			aggregates[i].weight = totalUseWeight;
+
+			if (applyBellumAveragedComponentProperty(values, draftSlot, aggregates[i]))
+				modified = true;
+		}
+		return modified;
+	}
+
+	bool shouldStripBellumBaseSegmentSpecial(TangibleObject* prototype, CraftingValues* values) {
+		if (prototype == nullptr || values == nullptr || prototype->getObjectTemplate() == nullptr)
+			return false;
+		if (!values->hasSlotFilled("segment_enhancement"))
+			return false;
+
+		String templatePath = prototype->getObjectTemplate()->getFullTemplateString();
+		if (!templatePath.contains("object/tangible/component/armor/armor_segment"))
+			return false;
+
+		// Interwoven variants intentionally carry their own Special Protection.
+		if (templatePath.endsWith("_acklay.iff"))
+			return false;
+		return true;
+	}
+
+	void stripBellumBaseSegmentSpecial(CraftingValues* values) {
+		if (values == nullptr)
+			return;
+
+		const char* attributes[] = {
+			"armor_special_type",
+			"armor_special_effectiveness",
+			"armor_special_integrity"
+		};
+
+		for (int i = 0; i < 3; ++i) {
+			String attribute = attributes[i];
+			if (!values->hasExperimentalAttribute(attribute))
+				continue;
+			values->setMinValue(attribute, 0);
+			values->setMaxValue(attribute, 0);
+			values->setCurrentValue(attribute, 0);
+			values->setCurrentPercentage(attribute, 0);
+			values->setMaxPercentage(attribute, 0);
+		}
+	}
+}
 
 ResourceLabratory::ResourceLabratory() {
 	setLoggingName("ResourceLabratory");
@@ -211,6 +407,12 @@ bool ResourceLabratory::applyComponentStats(TangibleObject* prototype, Manufactu
 
 		ManagedReference<Component*> component = cast<Component*>(tano.get());
 
+		if (isBellumSuitArmorSegmentSlot(prototype, compSlot, draftSlot)) {
+			if (applyBellumAveragedArmorSegmentStats(craftingValues, draftSlot, compSlot))
+				modified = true;
+			continue;
+		}
+
 		if (prototype->isWearableObject() && !prototype->isArmorObject()) {
 			if (component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:reinforced_fiber_panels" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:synthetic_cloth" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:jewelry_setting" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:metal_fasteners" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:padding_segment" || component->getObjectTemplate()->getObjectName() == "@craft_clothing_ingredients_n:fiberplast_panel"){
 				for (int k = 0; k < component->getPropertyCount(); ++k) {
@@ -355,6 +557,11 @@ bool ResourceLabratory::applyComponentStats(TangibleObject* prototype, Manufactu
 				}
 			}
 		}
+	}
+
+	if (shouldStripBellumBaseSegmentSpecial(prototype, craftingValues)) {
+		stripBellumBaseSegmentSpecial(craftingValues);
+		modified = true;
 	}
 
 	if(isYellow) {

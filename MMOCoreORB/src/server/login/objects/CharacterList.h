@@ -8,6 +8,7 @@
 #include "server/db/ServerDatabase.h"
 #include "../objects/GalaxyList.h"
 #include "CharacterListEntry.h"
+#include "server/zone/objects/player/Races.h"
 
 class CharacterList : public Vector<CharacterListEntry> {
 	uint32 accountid;
@@ -73,7 +74,27 @@ public:
 			newEntry.setSurName(characters->getString(4));
 
 			String race = characters->getString(7);
-			newEntry.setRace(race.hashCode());
+			uint32 raceCRC = race.hashCode();
+
+			// BG EXPERIMENT: bg_species1.tre custom species (raceid 20-66) are not being
+			// selected successfully after relog -- the retail client rejects them before
+			// ever sending ClientIdMessage/SelectCharacter, i.e. purely client-side, using
+			// only the data already in this enumeration packet. SelectCharacterCallback
+			// never reads this "Player Race CRC" field (it resolves the real character
+			// solely by object ID via the database), so substituting a known-working stock
+			// CRC here cannot affect the character's actual template/identity/persistence --
+			// it only changes what this one login-boundary packet reports. Gender is taken
+			// from the template path itself (characters.gender is always written as 0 at
+			// creation and is not a reliable signal) so this doesn't depend on that column.
+			int raceId = Races::getRaceID(race);
+
+			if (raceId >= 20 && raceId <= 66) {
+				bool isFemale = race.endsWith("_female.iff");
+				int stockRaceId = isFemale ? 10 : 0; // human_female : human_male
+				raceCRC = String(Races::getCCRace(stockRaceId)).hashCode();
+			}
+
+			newEntry.setRace(raceCRC);
 			Time createdTime(characters->getUnsignedInt(8));
 			newEntry.setCreationDate(createdTime);
 			newEntry.setGalaxyName(characters->getString(9));

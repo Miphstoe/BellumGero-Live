@@ -150,6 +150,7 @@ Core3 = {
 	TrePath = "/trefiles",
 	TreFiles = {
 		"bg_worldbuilder.tre",
+		"bg_species1.tre",
 		"bg_custom1.tre",
 		"bg_mtg_assets.tre",
 		"default_patch.tre",

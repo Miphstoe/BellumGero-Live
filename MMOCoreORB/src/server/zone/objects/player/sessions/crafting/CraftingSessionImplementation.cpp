@@ -14,7 +14,9 @@
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/managers/crafting/CraftingManager.h"
 #include "server/zone/managers/crafting/ComponentMap.h"
+#include "server/zone/managers/crafting/schematicmap/SchematicMap.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
+#include "server/zone/objects/draftschematic/DraftSchematic.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/managers/loot/LootManager.h"
@@ -47,6 +49,38 @@
 // #define DEBUG_EXPERIMENTATION
 
 namespace {
+
+	// Bellum Gero: mixed full-suit factory safeguard
+	bool isBellumSuitPackageForFactory(TangibleObject* prototype) {
+		if (prototype == nullptr || prototype->getObjectTemplate() == nullptr)
+			return false;
+		return prototype->getObjectTemplate()->getFullTemplateString().endsWith("_suit_package.iff");
+	}
+
+	bool hasBellumMixedSuitSegmentComposition(TangibleObject* prototype,
+			ManufactureSchematic* manufactureSchematic) {
+		if (!isBellumSuitPackageForFactory(prototype) || manufactureSchematic == nullptr)
+			return false;
+
+		DraftSchematic* draftSchematic = manufactureSchematic->getDraftSchematic();
+		if (draftSchematic == nullptr)
+			return false;
+
+		for (int i = 0; i < manufactureSchematic->getSlotCount(); ++i) {
+			DraftSlot* draftSlot = draftSchematic->getDraftSlot(i);
+			if (draftSlot == nullptr ||
+					draftSlot->getSlotType() != IngredientSlot::MIXEDSLOT ||
+					!draftSlot->getResourceType().contains(
+						"object/tangible/component/armor/shared_armor_segment"))
+				continue;
+
+			ComponentSlot* compSlot = cast<ComponentSlot*>(manufactureSchematic->getSlot(i));
+			if (compSlot != nullptr && !compSlot->hasSingleTemplateAndSerial())
+				return true;
+		}
+		return false;
+	}
+
 	const int BIO_ENGINEER_DNA_TEMPLATE_MENU_OFFSET = 1000000;
 
 	bool isBioEngineerGeneticDnaTemplate(DraftSchematic* draftSchematic) {
@@ -54,6 +88,183 @@ namespace {
 			draftSchematic->getTanoCRC() == STRING_HASHCODE(
 				"object/tangible/component/dna/dna_template_generic.iff");
 	}
+	struct LimitedUseSuitDefinition {
+		const char* fullSuitDraftPath;
+		const char* displayName;
+		const char* const* requiredDraftPaths;
+		int requiredDraftCount;
+	};
+
+	const char* PHASE2_CLONE_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_bicep_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_bicep_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_boots_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_bracer_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_bracer_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_chest_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_gloves_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_helmet_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_leggings_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_clonetrooper_utility_belt_crafted.iff",
+	};
+	const char* CLONE_501ST_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_bicep_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_bicep_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_boots_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_bracer_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_bracer_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_chest_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_gloves_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_helmet_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_leggings_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_utility_belt_crafted.iff",
+	};
+	const char* CLONE_CORUSCANT_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_bicep_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_bicep_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_boots_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_bracer_l_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_bracer_r_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_chest_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_gloves_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_helmet_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_leggings_crafted.iff",
+		"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_utility_belt_crafted.iff",
+	};
+	const char* BOUNTY_HUNTER_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_belt.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_bicep_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_bicep_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_boots.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_bracer_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_bracer_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_chest_plate.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_gloves.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_helmet.iff",
+		"object/draft_schematic/clothing/clothing_armor_bounty_hunter_leggings.iff",
+	};
+	const char* STORMTROOPER_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_bicep_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_bicep_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_boots.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_bracer_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_bracer_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_chest_plate.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_gloves.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_helmet.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_leggings.iff",
+		"object/draft_schematic/clothing/clothing_armor_stormtrooper_utility_belt.iff",
+	};
+
+	const char* const MARINE_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_marine_bicep_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_marine_bicep_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_marine_boots.iff",
+		"object/draft_schematic/clothing/clothing_armor_marine_chest_plate.iff",
+		"object/draft_schematic/clothing/clothing_armor_marine_helmet.iff",
+		"object/draft_schematic/clothing/clothing_armor_marine_leggings.iff",
+	};
+
+	const LimitedUseSuitDefinition LIMITED_USE_SUIT_DEFINITIONS[] = {
+		{
+			"object/draft_schematic/clothing/clothing_armor_clonetrooper_suit.iff",
+			"Phase II Clone Trooper Armor",
+			PHASE2_CLONE_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(PHASE2_CLONE_REQUIRED_DRAFTS) / sizeof(PHASE2_CLONE_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_501st_clonetrooper_suit.iff",
+			"501st Clone Trooper Armor",
+			CLONE_501ST_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(CLONE_501ST_REQUIRED_DRAFTS) / sizeof(CLONE_501ST_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_coruscant_clonetrooper_suit.iff",
+			"Coruscant Guard Clone Trooper Armor",
+			CLONE_CORUSCANT_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(CLONE_CORUSCANT_REQUIRED_DRAFTS) / sizeof(CLONE_CORUSCANT_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_bounty_hunter_suit.iff",
+			"Bounty Hunter Armor",
+			BOUNTY_HUNTER_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(BOUNTY_HUNTER_REQUIRED_DRAFTS) / sizeof(BOUNTY_HUNTER_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_stormtrooper_suit.iff",
+			"Stormtrooper Armor",
+			STORMTROOPER_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(STORMTROOPER_REQUIRED_DRAFTS) / sizeof(STORMTROOPER_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_marine_suit.iff",
+			"Marine Armor",
+			MARINE_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(MARINE_REQUIRED_DRAFTS) / sizeof(MARINE_REQUIRED_DRAFTS[0]))
+		},
+	};
+
+	const int LIMITED_USE_SUIT_DEFINITION_COUNT = sizeof(LIMITED_USE_SUIT_DEFINITIONS) / sizeof(LIMITED_USE_SUIT_DEFINITIONS[0]);
+
+	const LimitedUseSuitDefinition* getLimitedUseSuitDefinition(DraftSchematic* draft) {
+		if (draft == nullptr) return nullptr;
+		auto objectTemplate = draft->getObjectTemplate();
+		if (objectTemplate == nullptr) return nullptr;
+		String path = objectTemplate->getFullTemplateString();
+		for (int i = 0; i < LIMITED_USE_SUIT_DEFINITION_COUNT; ++i) {
+			if (path == LIMITED_USE_SUIT_DEFINITIONS[i].fullSuitDraftPath)
+				return &LIMITED_USE_SUIT_DEFINITIONS[i];
+		}
+		return nullptr;
+	}
+
+	bool hasLimitedUseSuitRequirements(const LimitedUseSuitDefinition* definition, PlayerObject* ghost, CreatureObject* crafter, bool sendMessage) {
+		if (definition == nullptr || ghost == nullptr) return false;
+		SchematicList* known = ghost->getSchematics();
+		if (known == nullptr) return false;
+		for (int i = 0; i < definition->requiredDraftCount; ++i) {
+			String path = definition->requiredDraftPaths[i];
+			DraftSchematic* required = SchematicMap::instance()->get(path.hashCode());
+			if (required == nullptr || !required->isValidDraftSchematic()) {
+				if (sendMessage && crafter != nullptr)
+					crafter->sendSystemMessage("A required armor schematic could not be resolved. Please contact staff.");
+				return false;
+			}
+			if (known->getRewardedSchematicUseCount(required) < 1) {
+				if (sendMessage && crafter != nullptr) {
+					String name = required->getCustomName();
+					if (name.isEmpty()) name = path;
+					crafter->sendSystemMessage("You need at least one remaining use of " + name + " to craft the " + String(definition->displayName) + " full suit.");
+				}
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void filterUnavailableLimitedUseFullSuits(Vector<ManagedReference<DraftSchematic*>>& list, PlayerObject* ghost, CreatureObject* crafter) {
+		for (int i = list.size() - 1; i >= 0; --i) {
+			DraftSchematic* candidate = list.get(i).get();
+			const LimitedUseSuitDefinition* definition = getLimitedUseSuitDefinition(candidate);
+			if (definition != nullptr && !hasLimitedUseSuitRequirements(definition, ghost, crafter, false))
+				list.remove(i);
+		}
+	}
+
+	bool consumeLimitedUseSuitRequirements(DraftSchematic* selected, PlayerObject* ghost, CreatureObject* crafter) {
+		const LimitedUseSuitDefinition* definition = getLimitedUseSuitDefinition(selected);
+		if (definition == nullptr) return true;
+		if (!hasLimitedUseSuitRequirements(definition, ghost, crafter, true)) return false;
+		for (int i = 0; i < definition->requiredDraftCount; ++i) {
+			String path = definition->requiredDraftPaths[i];
+			DraftSchematic* required = SchematicMap::instance()->get(path.hashCode());
+			if (required == nullptr) return false;
+			ghost->decreaseSchematicUseCount(required);
+		}
+		ghost->getSchematics()->addRewardedSchematics(ghost);
+		return true;
+	}
+
 }
 
 int CraftingSessionImplementation::initializeSession(CraftingTool* tool, CraftingStation* station) {
@@ -459,6 +670,9 @@ int CraftingSessionImplementation::startSession() {
 		return true;
 	}
 
+	// Bellum Gero limited-use full-suit visibility gate.
+	filterUnavailableLimitedUseFullSuits(currentSchematicList, crafterGhost, crafter);
+
 	/// Object Controller Message 102 - Schematic List
 	ObjectControllerMessage* ocm = new ObjectControllerMessage(crafter->getObjectID(), 0x0B, 0x102);
 
@@ -705,6 +919,13 @@ void CraftingSessionImplementation::selectDraftSchematic(int index) {
 
 	if (draftschematic == nullptr || !draftschematic->isValidDraftSchematic()) {
 		crafter->sendSystemMessage("@ui_craft:err_no_draft_schematic");
+		closeCraftingWindow(0, false);
+		cancelSession();
+		return;
+	}
+
+	const LimitedUseSuitDefinition* limitedUseSuit = getLimitedUseSuitDefinition(draftschematic);
+	if (limitedUseSuit != nullptr && !hasLimitedUseSuitRequirements(limitedUseSuit, crafterGhost, crafter, true)) {
 		closeCraftingWindow(0, false);
 		cancelSession();
 		return;
@@ -982,6 +1203,21 @@ void CraftingSessionImplementation::addIngredient(TangibleObject* tano, int slot
 	Locker mlocker(manufactureSchematic);
 
 	int result = manufactureSchematic->addIngredientToSlot(crafter, craftingComponentsSatchel, tano, slot);
+
+	// Bellum Gero: explain Full Suit Special Protection mismatch
+	if (result == IngredientSlot::INVALIDINGREDIENT) {
+		IngredientSlot* ingredientSlot = manufactureSchematic->getSlot(slot);
+		ComponentSlot* componentSlot = cast<ComponentSlot*>(ingredientSlot);
+
+		if (componentSlot != nullptr &&
+				componentSlot->hasBellumArmorSpecialProfileMismatch(tano)) {
+			crafter->sendSystemMessage(
+				"Full Suit armor segments must have matching Special Protection profiles. "
+				"Segments with Special Protection cannot be mixed with segments that have "
+				"no Special Protection or a different Special Protection.");
+		}
+	}
+
 
 	sendSlotMessage(clientCounter, result);
 
@@ -1368,6 +1604,9 @@ void CraftingSessionImplementation::initialAssembly(int clientCounter) {
 
 	} else {
 		crafterGhost->decreaseSchematicUseCount(draftSchematic);
+
+		if (!consumeLimitedUseSuitRequirements(draftSchematic, crafterGhost, crafter))
+			crafter->sendSystemMessage("Unable to consume the required armor schematic uses. Please contact staff.");
 	}
 
 	if (crafterGhost != nullptr && crafterGhost->getDebug()) {
@@ -1882,6 +2121,21 @@ void CraftingSessionImplementation::createManufactureSchematic(int clientCounter
 		return;
 	}
 
+	if (hasBellumMixedSuitSegmentComposition(prototype, manufactureSchematic)) {
+		// Bellum Gero: mixed Full Suit factory selection fallback
+		// The client learned factory eligibility before ingredient composition was
+		// finalized. If the player chooses Manufacturing Schematic for a mixed
+		// Full Suit, deny the factory conversion but finish the crafted package
+		// normally so the player does not lose the suit or its components.
+		crafter->sendSystemMessage(
+			"This Full Suit uses mixed armor segment stacks, so a Manufacturing "
+			"Schematic cannot be created. Your finished Armor Suit Package will be "
+			"created instead.");
+
+		createPrototype(clientCounter, true);
+		return;
+	}
+
 	if (manufactureSchematic->isAssembled() && !manufactureSchematic->isCompleted()) {
 		// Object Controller
 		ObjectControllerMessage* objMsg = new ObjectControllerMessage(crafter->getObjectID(), 0x1B, 0x010C);
@@ -1952,7 +2206,9 @@ void CraftingSessionImplementation::addSkillMods() {
 		if (crafter != nullptr) {
 			LootManager* lootManager = crafter->getZoneServer()->getLootManager();
 
-			if (lootManager != nullptr) {
+			if (lootManager != nullptr &&
+					(prototype->getObjectTemplate() == nullptr ||
+					 !prototype->getObjectTemplate()->getFullTemplateString().endsWith("_suit_package.iff"))) {
 				int roll = System::random(99); // 0-99
 				int bonusValue = 0;
 

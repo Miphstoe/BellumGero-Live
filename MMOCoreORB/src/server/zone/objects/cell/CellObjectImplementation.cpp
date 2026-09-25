@@ -309,8 +309,10 @@ int CellObjectImplementation::getCurrentNumberOfPlayerItems() {
 		for (int j = 0; j < getContainerObjectsSize(); ++j) {
 			ManagedReference<SceneObject*> containerObject = getContainerObject(j);
 
-			if (!strongParent->containsChildObject(containerObject) && !containerObject->isCreatureObject() && !containerObject->isVendor()) {
-				if (containerObject->isContainerObject()) {
+			bool isCountableCreature = containerObject->isCreatureObject() && containerObject->isMannequinObject();
+
+			if (!strongParent->containsChildObject(containerObject) && (!containerObject->isCreatureObject() || isCountableCreature) && !containerObject->isVendor()) {
+				if (containerObject->isContainerObject() && !containerObject->isMannequinObject()) {
 					count += containerObject->getCountableObjectsRecursive();
 				} else if (containerObject->isCraftingStation()) {
 					ManagedReference<SceneObject*> hopper = containerObject->getSlottedObject("ingredient_hopper");

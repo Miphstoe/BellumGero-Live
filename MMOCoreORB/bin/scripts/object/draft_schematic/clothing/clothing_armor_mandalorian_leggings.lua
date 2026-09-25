@@ -48,16 +48,16 @@ object_draft_schematic_clothing_clothing_armor_mandalorian_leggings = object_dra
    customObjectName = "Mandalorian Armor Leggings",
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
-   complexity = 15, 
-   size = 1, 
+   complexity = 15,
+   size = 1,
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
-   xpType = "crafting_clothing_armor", 
-   xp = 550, 
+   xpType = "crafting_clothing_armor",
+   xp = 550,
 
-   assemblySkill = "armor_assembly", 
-   experimentingSkill = "armor_experimentation", 
-   customizationSkill = "armor_customization", 
+   assemblySkill = "armor_assembly",
+   experimentingSkill = "armor_experimentation",
+   customizationSkill = "armor_customization",
 
    customizationOptions = {},
    customizationStringNames = {},
@@ -76,6 +76,6 @@ object_draft_schematic_clothing_clothing_armor_mandalorian_leggings = object_dra
    additionalTemplates = {
              }
 
-}   
+}
 
 ObjectTemplates:addTemplate(object_draft_schematic_clothing_clothing_armor_mandalorian_leggings, "object/draft_schematic/clothing/clothing_armor_mandalorian_leggings.iff")

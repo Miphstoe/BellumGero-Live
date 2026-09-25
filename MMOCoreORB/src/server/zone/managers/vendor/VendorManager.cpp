@@ -13,8 +13,11 @@
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/managers/vendor/sui/RenameVendorSuiCallback.h"
 #include "server/zone/managers/vendor/sui/RegisterVendorSuiCallback.h"
+#include "server/zone/managers/vendor/sui/VendorGuildDiscountSuiCallback.h"
 #include "server/zone/managers/auction/AuctionManager.h"
 #include "server/zone/managers/auction/AuctionsMap.h"
+#include "server/zone/managers/guild/GuildManager.h"
+#include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/ZoneProcessServer.h"
 
@@ -428,6 +431,270 @@ void VendorManager::handleRenameVendor(CreatureObject* player, TangibleObject* v
 	} else
 		player->sendSystemMessage("@player_structure:vendor_rename");
 
+}
+
+bool VendorManager::canManageGuildDiscounts(CreatureObject* player, TangibleObject* vendor) {
+	if (player == nullptr || vendor == nullptr || !vendor->isVendor())
+		return false;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	if (data == nullptr || data->get() == nullptr || !data->get()->isVendorData())
+		return false;
+
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+	if (vendorData == nullptr || !vendorData->isInitialized())
+		return false;
+
+	return vendorData->getOwnerId() == player->getObjectID();
+}
+
+String VendorManager::getGuildDiscountDisplayName(uint64 guildID) {
+	ManagedReference<ZoneServer*> zoneServer = server->getZoneServer();
+	ManagedReference<GuildObject*> guild = zoneServer != nullptr ? zoneServer->getObject(guildID).castTo<GuildObject*>() : nullptr;
+
+	if (guild == nullptr)
+		return "<Unknown/Deleted Guild>";
+
+	String abbrev = guild->getGuildAbbrev();
+
+	if (abbrev.isEmpty())
+		return guild->getGuildName();
+
+	return "<" + abbrev + ">";
+}
+
+void VendorManager::sendGuildDiscountManagementTo(CreatureObject* player, TangibleObject* vendor) {
+	if (!canManageGuildDiscounts(player, vendor))
+		return;
+
+	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNTS);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorGuildDiscountMenuSuiCallback(player->getZoneServer()));
+	box->setPromptTitle("Guild Discount Management");
+	box->setPromptText("Vendor Guild Discounts");
+	box->setCancelButton(true, "@cancel");
+
+	box->addMenuItem("Add Guild Discount");
+	box->addMenuItem("View / Edit Guild Discounts");
+	box->addMenuItem("Remove Guild Discount");
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::promptAddGuildDiscount(CreatureObject* player, TangibleObject* vendor) {
+	if (!canManageGuildDiscounts(player, vendor))
+		return;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	if (vendorData == nullptr)
+		return;
+
+	if (vendorData->getGuildDiscountCount() >= VendorDataComponent::MAXGUILDDISCOUNTS) {
+		player->sendSystemMessage("This vendor already has the maximum number of guild discounts.");
+		return;
+	}
+
+	ManagedReference<SuiInputBox*> input = new SuiInputBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_GUILD);
+	input->setUsingObject(vendor);
+	input->setCallback(new VendorGuildDiscountGuildSuiCallback(player->getZoneServer()));
+	input->setCancelButton(true, "@cancel");
+	input->setPromptTitle("Add Guild Discount");
+	input->setPromptText("Enter Guild Abbreviation:");
+	input->setMaxInputSize(32);
+
+	player->getPlayerObject()->addSuiBox(input);
+	player->sendMessage(input->generateMessage());
+}
+
+void VendorManager::sendEditGuildDiscountsTo(CreatureObject* player, TangibleObject* vendor) {
+	if (!canManageGuildDiscounts(player, vendor))
+		return;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	if (vendorData == nullptr)
+		return;
+
+	if (vendorData->getGuildDiscountCount() == 0) {
+		player->sendSystemMessage("This vendor has no guild discounts configured.");
+		return;
+	}
+
+	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_SELECT);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorGuildDiscountSelectSuiCallback(player->getZoneServer(), false));
+	box->setPromptTitle("Guild Discounts");
+	box->setPromptText("Select a guild discount to edit.");
+	box->setCancelButton(true, "@cancel");
+
+	for (int i = 0; i < vendorData->getGuildDiscountCount(); ++i) {
+		uint64 guildID = vendorData->getGuildDiscountGuildID(i);
+		int percent = vendorData->getGuildDiscountPercentAt(i);
+		box->addMenuItem(getGuildDiscountDisplayName(guildID) + " - " + String::valueOf(VendorDataComponent::clampGuildDiscount(percent)) + "%", guildID);
+	}
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::sendRemoveGuildDiscountsTo(CreatureObject* player, TangibleObject* vendor) {
+	if (!canManageGuildDiscounts(player, vendor))
+		return;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	if (vendorData == nullptr)
+		return;
+
+	if (vendorData->getGuildDiscountCount() == 0) {
+		player->sendSystemMessage("This vendor has no guild discounts configured.");
+		return;
+	}
+
+	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_SELECT);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorGuildDiscountSelectSuiCallback(player->getZoneServer(), true));
+	box->setPromptTitle("Remove Guild Discount");
+	box->setPromptText("Select a guild discount to remove.");
+	box->setCancelButton(true, "@cancel");
+
+	for (int i = 0; i < vendorData->getGuildDiscountCount(); ++i) {
+		uint64 guildID = vendorData->getGuildDiscountGuildID(i);
+		int percent = vendorData->getGuildDiscountPercentAt(i);
+		box->addMenuItem(getGuildDiscountDisplayName(guildID) + " - " + String::valueOf(VendorDataComponent::clampGuildDiscount(percent)) + "%", guildID);
+	}
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::promptGuildDiscountPercent(CreatureObject* player, TangibleObject* vendor, uint64 guildID) {
+	if (!canManageGuildDiscounts(player, vendor) || guildID == 0)
+		return;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	if (vendorData == nullptr)
+		return;
+
+	if (!vendorData->hasGuildDiscount(guildID) && vendorData->getGuildDiscountCount() >= VendorDataComponent::MAXGUILDDISCOUNTS) {
+		player->sendSystemMessage("This vendor already has the maximum number of guild discounts.");
+		return;
+	}
+
+	ManagedReference<SuiInputBox*> input = new SuiInputBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_PERCENT);
+	input->setUsingObject(vendor);
+	input->setCallback(new VendorGuildDiscountPercentSuiCallback(player->getZoneServer(), guildID));
+	input->setCancelButton(true, "@cancel");
+	input->setPromptTitle("Guild Discount Percentage");
+	input->setPromptText("Guild: " + getGuildDiscountDisplayName(guildID) + "\n\nEnter Discount Percentage:");
+	input->setMaxInputSize(3);
+
+	int current = vendorData->getGuildDiscountPercent(guildID);
+	if (current > 0)
+		input->setDefaultInput(String::valueOf(current));
+
+	player->getPlayerObject()->addSuiBox(input);
+	player->sendMessage(input->generateMessage());
+}
+
+void VendorManager::confirmGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID, int percent) {
+	if (!canManageGuildDiscounts(player, vendor) || guildID == 0)
+		return;
+
+	if (percent < VendorDataComponent::MINGUILDDISCOUNT || percent > VendorDataComponent::MAXGUILDDISCOUNT) {
+		player->sendSystemMessage("Guild discounts must be between 1% and 50%.");
+		return;
+	}
+
+	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_CONFIRM);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorGuildDiscountConfirmSuiCallback(player->getZoneServer(), guildID, percent));
+	box->setPromptTitle("Add Guild Discount?");
+	box->setPromptText("Guild: " + getGuildDiscountDisplayName(guildID) + "\nDiscount: " + String::valueOf(percent) + "%");
+	box->setOkButton(true, "@yes");
+	box->setCancelButton(true, "@no");
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::confirmRemoveGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID) {
+	if (!canManageGuildDiscounts(player, vendor) || guildID == 0)
+		return;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	if (vendorData == nullptr || !vendorData->hasGuildDiscount(guildID))
+		return;
+
+	int percent = vendorData->getGuildDiscountPercent(guildID);
+
+	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(player, SuiWindowType::VENDOR_GUILD_DISCOUNT_REMOVE_CONFIRM);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorGuildDiscountRemoveConfirmSuiCallback(player->getZoneServer(), guildID));
+	box->setPromptTitle("Remove Guild Discount?");
+	box->setPromptText("Guild: " + getGuildDiscountDisplayName(guildID) + "\nCurrent Discount: " + String::valueOf(percent) + "%");
+	box->setOkButton(true, "@yes");
+	box->setCancelButton(true, "@no");
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::setGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID, int percent) {
+	if (!canManageGuildDiscounts(player, vendor) || guildID == 0)
+		return;
+
+	ManagedReference<GuildObject*> guild = server->getZoneServer()->getObject(guildID).castTo<GuildObject*>();
+
+	if (guild == nullptr) {
+		player->sendSystemMessage("That guild no longer exists.");
+		return;
+	}
+
+	if (percent < VendorDataComponent::MINGUILDDISCOUNT || percent > VendorDataComponent::MAXGUILDDISCOUNT) {
+		player->sendSystemMessage("Guild discounts must be between 1% and 50%.");
+		return;
+	}
+
+	Locker locker(vendor);
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = data != nullptr ? cast<VendorDataComponent*>(data->get()) : nullptr;
+
+	if (vendorData == nullptr || vendorData->getOwnerId() != player->getObjectID())
+		return;
+
+	if (!vendorData->setGuildDiscount(guildID, percent)) {
+		player->sendSystemMessage("This vendor already has the maximum number of guild discounts.");
+		return;
+	}
+
+	player->sendSystemMessage("Guild discount saved.");
+}
+
+void VendorManager::removeGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID) {
+	if (!canManageGuildDiscounts(player, vendor) || guildID == 0)
+		return;
+
+	Locker locker(vendor);
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = data != nullptr ? cast<VendorDataComponent*>(data->get()) : nullptr;
+
+	if (vendorData == nullptr || vendorData->getOwnerId() != player->getObjectID())
+		return;
+
+	if (vendorData->removeGuildDiscount(guildID))
+		player->sendSystemMessage("Guild discount removed.");
 }
 
 void VendorManager::randomizeVendorLooks(CreatureObject* vendor) {

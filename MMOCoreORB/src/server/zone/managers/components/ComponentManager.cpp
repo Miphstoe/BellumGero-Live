@@ -63,6 +63,7 @@
 #include "server/zone/objects/tangible/components/SarlaccTrashCanMenuComponent.h"
 #include "server/zone/objects/tangible/components/AncientCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/LockedBriefcaseMenuComponent.h"
+#include "server/zone/objects/tangible/components/ArmorSuitPackageMenuComponent.h"
 #include "server/zone/objects/tangible/components/WaypointDatapadMenuComponent.h"
 #include "server/zone/objects/tangible/components/ForceCrystalMenuComponent.h"
 #include "server/zone/objects/tangible/components/RobeObjectMenuComponent.h"
@@ -153,6 +154,9 @@
 #include "server/zone/objects/tangible/components/EventPerkMenuComponent.h"
 #include "server/zone/objects/tangible/components/EventPerkActorMenuComponent.h"
 #include "server/zone/objects/tangible/components/EventPerkActorContainerComponent.h"
+#include "server/zone/objects/tangible/components/mannequin/MannequinContainerComponent.h"
+#include "server/zone/objects/tangible/components/mannequin/MannequinMenuComponent.h"
+#include "server/zone/objects/tangible/components/mannequin/MannequinDeedMenuComponent.h"
 #include "server/zone/objects/tangible/components/FlagGameDataComponent.h"
 #include "server/zone/objects/tangible/components/FlagGameMenuComponent.h"
 #include "server/zone/objects/tangible/components/EventPerkAttributeListComponent.h"
@@ -227,6 +231,7 @@ ComponentManager::ComponentManager() {
 	components.put("HolocronDestinyMenuComponent", new HolocronDestinyMenuComponent());
 	components.put("SarlaccTrashCanMenuComponent", new SarlaccTrashCanMenuComponent());
 	components.put("LockedBriefcaseMenuComponent", new LockedBriefcaseMenuComponent());
+	components.put("ArmorSuitPackageMenuComponent", new ArmorSuitPackageMenuComponent());
 	components.put("WaypointDatapadMenuComponent", new WaypointDatapadMenuComponent());
 
 	components.put("AttributeListComponent", new AttributeListComponent());
@@ -380,6 +385,11 @@ ComponentManager::ComponentManager() {
 
 	components.put("EventPerkActorMenuComponent", new EventPerkActorMenuComponent());
 	components.put("EventPerkActorContainerComponent", new EventPerkActorContainerComponent());
+
+	// BG: Bellum Gero display mannequin
+	components.put("MannequinContainerComponent", new MannequinContainerComponent());
+	components.put("MannequinMenuComponent", new MannequinMenuComponent());
+	components.put("MannequinDeedMenuComponent", new MannequinDeedMenuComponent());
 
 	components.put("EventPerkAttributeListComponent", new EventPerkAttributeListComponent());
 	dataObjectFactory.registerObject<EventPerkDataComponent>("EventPerkDataComponent");

@@ -62,6 +62,12 @@ function PlayerBountySystem:onPlayerLoggedIn(pPlayer)
 	-- registered copy.
 	if not hasObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer) then
 		createObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer)
+
+		-- Do not log every successful login. A failure here is exceptional and
+		-- explains exactly why the later death cannot open the bounty SUI.
+		if not hasObserver(PLAYERKILLED, "PlayerBountySystem", "onPlayerKilled", pPlayer) then
+			print("PLAYER BOUNTY: failed to register PLAYERKILLED observer for player " .. SceneObject(pPlayer):getObjectID())
+		end
 	end
 end
 
@@ -81,9 +87,18 @@ function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
 		return 0
 	end
 
-	-- Validation: Killer must be a player
+	-- Match BountyMissionObjective's attribution: a pet/droid kill belongs to
+	-- its linked player owner. Direct player kills remain unchanged.
 	if not SceneObject(pKiller):isPlayerCreature() then
-		return 0
+		if not SceneObject(pKiller):isCreatureObject() then
+			return 0
+		end
+
+		pKiller = CreatureObject(pKiller):getLinkedCreature()
+
+		if pKiller == nil or not SceneObject(pKiller):isPlayerCreature() then
+			return 0
+		end
 	end
 
 	local victimID = SceneObject(pVictim):getObjectID()
@@ -95,8 +110,9 @@ function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
 	end
 
 	-- Validation: real qualifying PvP death (not a duel, not NPC/pet/droid/
-	-- environmental, not part of either side's active bounty-hunter mission
-	-- relationship). Duel state is cleared in C++ (CombatManager::freeDuelList)
+	-- environmental, and not a bounty target killing their pursuing hunter).
+	-- A hunter killing their active mission target is eligible for the
+	-- retaliation prompt. Duel state is cleared in C++ (CombatManager::freeDuelList)
 	-- before this observer runs, so it cannot be reliably re-derived here --
 	-- the verdict is computed and published in
 	-- PlayerManagerImplementation::killPlayer() *before* that clear happens,
@@ -142,7 +158,8 @@ function PlayerBountySystem:onPlayerKilled(pVictim, pKiller)
 	writeScreenPlayData(pVictim, "PlayerBountySystem", "authExpiry", tostring(authExpiry))
 	writeScreenPlayData(pVictim, "PlayerBountySystem", "authUsed", "0")
 
-	print("PLAYER BOUNTY: authorized placement window for victim " .. victimID .. " killer " .. killerID .. " expires " .. authExpiry)
+	local eligibilityReason = readScreenPlayData(pVictim, "PlayerBountySystem", "qualifyingPvpDeathReason")
+	print("PLAYER BOUNTY: authorized placement window for victim " .. victimID .. " killer " .. killerID .. " reason=" .. tostring(eligibilityReason) .. " expires " .. authExpiry)
 
 	self:showBountyConfirmationPopup(pVictim, pKiller)
 

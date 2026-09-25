@@ -9,6 +9,7 @@
 
 #include "QueueCommand.h"
 #include "server/zone/managers/structure/StructureManager.h"
+#include "server/zone/objects/player/PlayerObject.h"
 
 class DatabaseCommand : public QueueCommand {
 public:
@@ -45,6 +46,42 @@ public:
 				return SUCCESS;
 			}
 
+			// BELLUM_GERO_STRUCTURE_RECOVERY_AUDIT_BUILD1
+			if (arg0 == "structureaudit") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage(
+						"structureaudit requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				String summary =
+					StructureManager::instance()->auditPlayerStructuresForRecovery(true);
+
+				creature->sendSystemMessage(summary);
+				return SUCCESS;
+			}
+
+			// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+			if (arg0 == "structurerecoverhigh") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage(
+						"structurerecoverhigh requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				String result;
+				bool queued =
+					StructureManager::instance()->
+						queueHighConfidencePlayerStructureRecovery(result);
+
+				creature->sendSystemMessage(result);
+				return queued ? SUCCESS : GENERALERROR;
+			}
+
 			if (!tokenizer.hasMoreTokens())
 				return INVALIDPARAMETERS;
 
@@ -59,7 +96,7 @@ public:
 
 		if (!(arg0 == "cityregions" || arg0 == "factionstructures" || arg0 == "playerstructures" || arg0 == "sceneobjects" || arg0 == "clientobjects" || arg0 == "resourcespawns" ||
 				arg0 == "characters" || arg0 == "deleted_characters") ){
-			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid> or database zerostructures");
+			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid>, database zerostructures, or database structureaudit");
 
 			return INVALIDPARAMETERS;
 		}

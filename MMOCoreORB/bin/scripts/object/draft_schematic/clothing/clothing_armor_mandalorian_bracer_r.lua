@@ -48,16 +48,16 @@ object_draft_schematic_clothing_clothing_armor_mandalorian_bracer_r = object_dra
    customObjectName = "Mandalorian Armor Right Bracer",
 
    craftingToolTab = 2, -- (See DraftSchematicObjectTemplate.h)
-   complexity = 15, 
-   size = 1, 
+   complexity = 15,
+   size = 1,
    factoryCrateType = "object/factory/factory_crate_clothing.iff",
 
-   xpType = "crafting_clothing_armor", 
-   xp = 420, 
+   xpType = "crafting_clothing_armor",
+   xp = 420,
 
-   assemblySkill = "armor_assembly", 
-   experimentingSkill = "armor_experimentation", 
-   customizationSkill = "armor_customization", 
+   assemblySkill = "armor_assembly",
+   experimentingSkill = "armor_experimentation",
+   customizationSkill = "armor_customization",
 
    customizationOptions = {},
    customizationStringNames = {},
@@ -76,6 +76,6 @@ object_draft_schematic_clothing_clothing_armor_mandalorian_bracer_r = object_dra
    additionalTemplates = {
              }
 
-}    
+}
 
 ObjectTemplates:addTemplate(object_draft_schematic_clothing_clothing_armor_mandalorian_bracer_r, "object/draft_schematic/clothing/clothing_armor_mandalorian_bracer_r.iff")

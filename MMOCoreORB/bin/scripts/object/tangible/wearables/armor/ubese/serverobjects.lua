@@ -57,3 +57,5 @@ includeFile("tangible/wearables/armor/ubese/armor_ubese_jacket_quest.lua")
 includeFile("tangible/wearables/armor/ubese/armor_ubese_pants.lua")
 includeFile("tangible/wearables/armor/ubese/armor_ubese_pants_quest.lua")
 includeFile("tangible/wearables/armor/ubese/armor_ubese_shirt.lua")
+
+includeFile("tangible/wearables/armor/ubese/armor_ubese_suit_package.lua")

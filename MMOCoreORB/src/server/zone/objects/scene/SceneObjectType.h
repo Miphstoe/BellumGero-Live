@@ -72,6 +72,9 @@ public:
 	const static int INFORMANTCREATURE = 0x40D;
 	const static int VENDORCREATURE = 0x40E;
 	const static int HELPERDROIDCREATURE = 0x40F;
+	// BG: Bellum Gero display mannequin - a stationary, non-combat, non-AI humanoid
+	// that exists purely to display persistent player equipment inside player structures.
+	const static int MANNEQUINCREATURE = 0x4E0;
 	/// End not in client ************
 
 	const static int INTANGIBLE = 0x800;  // DATA

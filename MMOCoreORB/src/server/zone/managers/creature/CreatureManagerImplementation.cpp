@@ -26,6 +26,7 @@
 #include "server/zone/objects/creature/events/SampleDnaTask.h"
 #include "server/zone/objects/group/GroupObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/player/Races.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
 #include "server/zone/objects/creature/events/DespawnCreatureTask.h"
 #include "server/zone/objects/region/SpawnArea.h"
@@ -1459,7 +1460,15 @@ bool CreatureManagerImplementation::addWearableItem(CreatureObject* creature, Ta
 	const Vector<uint32>* races = tanoData->getPlayerRaces();
 	const String race = creature->getObjectTemplate()->getFullTemplateString();
 
-	if (!clothing->isWearableObject() && !races->contains(race.hashCode())) {
+	// BG: same bypass as PlayerContainerComponent::canAddObject -- vanilla playerRaces lists never
+	// include bg_species1.tre's 47 custom templates. Weapons get universal access (Hutt included);
+	// everything else (e.g. backpacks) gets it for every custom species except Hutt.
+	int bgRaceId = Races::getRaceID(race);
+	bool bgIsCustomSpecies = bgRaceId >= 20 && bgRaceId <= 66;
+	bool bgIsHutt = bgRaceId == 32 || bgRaceId == 33;
+	bool bgBypass = bgIsCustomSpecies && (clothing->isWeaponObject() || !bgIsHutt);
+
+	if (!clothing->isWearableObject() && !bgBypass && !races->contains(race.hashCode())) {
 		int species = creature->getSpecies();
 		UnicodeString message;
 

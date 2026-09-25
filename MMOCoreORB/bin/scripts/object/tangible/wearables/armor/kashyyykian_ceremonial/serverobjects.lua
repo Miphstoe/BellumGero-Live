@@ -49,3 +49,5 @@ includeFile("tangible/wearables/armor/kashyyykian_ceremonial/armor_kashyyykian_c
 includeFile("tangible/wearables/armor/kashyyykian_ceremonial/armor_kashyyykian_ceremonial_bracer_r.lua")
 includeFile("tangible/wearables/armor/kashyyykian_ceremonial/armor_kashyyykian_ceremonial_chest_plate.lua")
 includeFile("tangible/wearables/armor/kashyyykian_ceremonial/armor_kashyyykian_ceremonial_leggings.lua")
+
+includeFile("tangible/wearables/armor/kashyyykian_ceremonial/armor_kashyyykian_ceremonial_suit_package.lua")

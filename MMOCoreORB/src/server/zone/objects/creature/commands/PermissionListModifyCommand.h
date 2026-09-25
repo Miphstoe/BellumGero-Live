@@ -13,6 +13,7 @@
 #include "server/zone/managers/guild/GuildManager.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/objects/guild/GuildStructurePermissionsTask.h"
+#include "conf/ConfigManager.h"
 
 class PermissionListModifyCommand : public QueueCommand {
 public:
@@ -108,6 +109,12 @@ public:
 
 		Locker _lock(structureObject, creature);
 
+		const bool isActualOwner = structureObject->getOwnerObjectID() == creature->getObjectID();
+		if (listName == "COOWNER" && !isActualOwner) {
+			creature->sendSystemMessage("Only the structure owner may manage Co-Owners.");
+			return GENERALERROR;
+		}
+
 		if (!structureObject->hasPermissionList(listName)) {
 			creature->sendSystemMessage("@player_structure:must_specify_list"); // You must specify a valid permission list (Entry, Ban, Admin, Hopper)
 			return INVALIDPARAMETERS;
@@ -141,7 +148,29 @@ public:
 			return INVALIDPARAMETERS;
 		}
 
+		if (listName == "COOWNER" && !targetObject->isPlayerCreature()) {
+			creature->sendSystemMessage("Only player characters may be Co-Owners.");
+			return INVALIDPARAMETERS;
+		}
+
 		uint64 targetID = targetObject->getObjectID();
+
+		if (listName == "COOWNER") {
+			if (targetID == structureObject->getOwnerObjectID()) {
+				creature->sendSystemMessage("The structure owner cannot be added as a Co-Owner.");
+				return INVALIDPARAMETERS;
+			}
+
+			int maxCoOwners = ConfigManager::instance()->getInt("Core3.StructureObject.MaxCoOwners", 3);
+			if (maxCoOwners < 0)
+				maxCoOwners = 0;
+
+			if ((action == "add" || (action == "toggle" && !structureObject->isCoOwner(targetID)))
+					&& structureObject->getPermissionListSize("COOWNER") >= maxCoOwners) {
+				creature->sendSystemMessage("This structure already has the maximum of " + String::valueOf(maxCoOwners) + " Co-Owners.");
+				return INVALIDPARAMETERS;
+			}
+		}
 
 		if (structureObject->isPermissionListFull(listName)) {
 			if (action == "add" || (action == "toggle" && !structureObject->isOnPermissionList(listName, targetID))) {
@@ -157,6 +186,12 @@ public:
 
 		bool isOwner = structureObject->isOwnerOf(creature->getObjectID());
 		bool isTargetOwner = structureObject->isOwnerOf(targetID);
+		bool isTargetCoOwner = structureObject->isCoOwner(targetID);
+
+		if (listName == "BAN" && isTargetCoOwner) {
+			creature->sendSystemMessage("Remove this player from the Co-Owner list before banning them.");
+			return INVALIDPARAMETERS;
+		}
 
 		if (structureObject->isOnBanList(targetID)) {
 			if (listName == "ENTRY" || listName == "ADMIN") {
@@ -246,6 +281,14 @@ public:
 		}
 
 		creature->sendSystemMessage(params);
+
+		if (listName == "COOWNER") {
+			structureObject->info() << "STRUCTURE COOWNER " << (returnCode == StructurePermissionList::GRANTED ? "ADD" : "REMOVE")
+				<< " StructureID: " << structureObject->getObjectID()
+				<< " OwnerID: " << structureObject->getOwnerObjectID()
+				<< " PlayerID: " << targetID
+				<< " PlayerName: " << targetName;
+		}
 
 		if (targetObject->isPlayerCreature()) {
 			ManagedReference<CreatureObject*> targetPlayer = cast<CreatureObject*>(targetObject.get());

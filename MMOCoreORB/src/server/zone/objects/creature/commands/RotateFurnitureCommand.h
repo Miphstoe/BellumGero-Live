@@ -22,6 +22,7 @@ Notes:
 
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/components/EventPerkDataComponent.h"
+#include "server/zone/objects/tangible/components/mannequin/MannequinContainerComponent.h" // BG: mannequin rotate perms
 
 class RotateFurnitureCommand : public QueueCommand {
 public:
@@ -152,7 +153,8 @@ public:
             return true;
         }
 
-        if (object->isPlayerCreature() || (object->isCreatureObject() && !object->isVendor())) {
+        // BG: display mannequins are creature objects but rotate like furniture (yaw only).
+        if (object->isPlayerCreature() || (object->isCreatureObject() && !object->isVendor() && !object->isMannequinObject())) {
             player->sendSystemMessage("@player_structure:cant_manipulate");
             return false;
         }
@@ -195,6 +197,18 @@ public:
             // Vendors: yaw only (or reset)
             if (!rotateYaw && !resetRotate) {
                 player->sendSystemMessage("Vendors can only be rotated by yaw.");
+                return false;
+            }
+        } else if (object->isMannequinObject()) {
+            // BG: reuse the same permission model as mannequin equip/pose/rename/pickup
+            // (mannequin owner, structure ADMIN list, or privileged).
+            if (!MannequinContainerComponent::isAuthorized(object, player)) {
+                player->sendSystemMessage("@player_structure:admin_move_only");
+                return false;
+            }
+            // Mannequins: yaw only (or reset) - never pitch/roll, always stays upright.
+            if (!rotateYaw && !resetRotate) {
+                player->sendSystemMessage("Mannequins can only be rotated by yaw.");
                 return false;
             }
         } else if (!onAdmin) {

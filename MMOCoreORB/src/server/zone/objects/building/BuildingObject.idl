@@ -70,6 +70,29 @@ class BuildingObject extends StructureObject {
 
 	protected int storageBonus;
 
+	/**
+	 * House Pack-Up transactional state: 0 = NORMAL, 1 = PACKING, 2 = PACKED.
+	 * Persisted directly on the building (normal Core3 object persistence) so it
+	 * survives logout/restart, unlike the legacy RAM-only tracking it replaces.
+	 * Guards against a second "Pack Up Structure" invocation on the same building
+	 * (see HousePackupManager::packUpHouse).
+	 */
+	protected int housePackState;
+
+	/**
+	 * Serialized packed-contents payload captured by House Pack-Up, held here
+	 * (rather than only in a RAM hashtable / external file) so it participates in
+	 * normal object persistence between "Pack Up Structure" and "Destroy Structure".
+	 * Moved onto the StructureDeed by HousePackupManager::attachPayloadToDeedFromBuilding
+	 * once the deed exists; cleared afterward.
+	 */
+	@dereferenced
+	protected Vector<byte> housePackedPayload;
+
+	protected unsigned int housePackedItemCount;
+
+	protected unsigned int housePackTimestamp;
+
 	public BuildingObject() {
 		Logger.setLoggingName("BuildingObject");
 
@@ -93,6 +116,10 @@ class BuildingObject extends StructureObject {
 		storageBonus = 0;
 
 		factionBaseType = 0;
+
+		housePackState = 0;
+		housePackedItemCount = 0;
+		housePackTimestamp = 0;
 	}
 
 	@preLocked
@@ -387,6 +414,60 @@ class BuildingObject extends StructureObject {
 	@read
 	public int getStorageBonus() {
 		return storageBonus;
+	}
+
+	@preLocked
+	public void setHousePackState(int state) {
+		housePackState = state;
+	}
+
+	@read
+	public int getHousePackState() {
+		return housePackState;
+	}
+
+	// Implemented by hand in BuildingObjectImplementation.cpp -- idlc's body
+	// codegen always takes the address of an object-typed argument passed to a
+	// nested call, which is incompatible with Vector::addAll's reference
+	// parameter. A native method sidesteps idlc's body translation entirely.
+	@local
+	@preLocked
+	public native void setHousePackedPayload(@dereferenced Vector<byte> payload);
+
+	@preLocked
+	public void clearHousePackedPayload() {
+		housePackedPayload.removeAll();
+	}
+
+	@read
+	public boolean hasHousePackedPayload() {
+		return housePackedPayload.size() > 0;
+	}
+
+	@local
+	@read
+	public final Vector<byte> getHousePackedPayload() {
+		return housePackedPayload;
+	}
+
+	@preLocked
+	public void setHousePackedItemCount(unsigned int count) {
+		housePackedItemCount = count;
+	}
+
+	@read
+	public unsigned int getHousePackedItemCount() {
+		return housePackedItemCount;
+	}
+
+	@preLocked
+	public void setHousePackTimestamp(unsigned int timestamp) {
+		housePackTimestamp = timestamp;
+	}
+
+	@read
+	public unsigned int getHousePackTimestamp() {
+		return housePackTimestamp;
 	}
 
 	/**

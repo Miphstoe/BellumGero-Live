@@ -55,3 +55,5 @@ includeFile("tangible/wearables/armor/bounty_hunter/armor_bounty_hunter_chest_pl
 includeFile("tangible/wearables/armor/bounty_hunter/armor_bounty_hunter_gloves.lua")
 includeFile("tangible/wearables/armor/bounty_hunter/armor_bounty_hunter_helmet.lua")
 includeFile("tangible/wearables/armor/bounty_hunter/armor_bounty_hunter_leggings.lua")
+
+includeFile("tangible/wearables/armor/bounty_hunter/armor_bounty_hunter_suit_package.lua")

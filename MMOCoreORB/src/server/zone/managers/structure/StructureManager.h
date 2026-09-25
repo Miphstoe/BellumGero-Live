@@ -57,6 +57,15 @@ public:
 	void loadPlayerStructures(const String& zoneName);
 	String validatePlayerStructureZoneIndex(bool logDetails = true, bool validateSecondaryIndex = true);
 
+	// BELLUM_GERO_STRUCTURE_RECOVERY_AUDIT_BUILD1
+	// Read-only full playerstructures.db scan for damaged root-zone records.
+	String auditPlayerStructuresForRecovery(bool logDetails = true);
+
+	// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+	// Queue is read-only; startup apply returns number of staged DB repairs.
+	bool queueHighConfidencePlayerStructureRecovery(String& result);
+	int applyPendingHighConfidencePlayerStructureRecovery();
+
 	// Account-wide structure lots are centralized here so placement, transfers,
 	// and reporting all use the same pool calculation.
 	int getAccountLotCap() const;
@@ -80,6 +89,14 @@ public:
 	 * @param structure The structure that is being destroyed.
 	 */
 	int destroyStructure(StructureObject* structureObject, bool playEffect = false, bool refundLots = true);
+
+	// BELLUM_GERO_STRUCTURE_WORLD_REMOVAL_GUARD_BUILD32A_EXTERNAL_AUTH
+	// Process-local, one-shot authorization registry for intentional runtime
+	// removal of persistent BuildingObjects. Nothing here is serialized.
+	void authorizePersistentStructureWorldRemoval(StructureObject* structureObject);
+	bool isPersistentStructureWorldRemovalAuthorized(StructureObject* structureObject) const;
+	bool consumePersistentStructureWorldRemovalAuthorization(StructureObject* structureObject);
+	void clearPersistentStructureWorldRemovalAuthorization(StructureObject* structureObject);
 
 	/**
 	 * Returns whether the existing structure redeed pipeline can currently return

@@ -253,6 +253,25 @@ void ZoneServerImplementation::startGroundZones() {
 
 	resourceManager->initialize();
 
+	// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
+	// Apply/verify queued HIGH-confidence root-zone repairs before any
+	// concurrent ground-zone manager begins associating playerstructures.db.
+	int stagedStructureRecovery =
+		structureManager->
+			applyPendingHighConfidencePlayerStructureRecovery();
+
+	if (stagedStructureRecovery > 0) {
+		info(true) << "STRUCTURE RECOVERY: committing "
+			<< stagedStructureRecovery
+			<< " staged root-zone repair(s) before ground-zone manager startup.";
+
+		ObjectDatabaseManager::instance()->commitLocalTransaction();
+
+		info(true) << "STRUCTURE RECOVERY: root-zone repair transaction committed "
+			"before concurrent ground-zone loading; plan retained for "
+			"next-start verification.";
+	}
+
 	for (int i = 0; i < zones->size(); ++i) {
 		GroundZone* zone = zones->get(i);
 

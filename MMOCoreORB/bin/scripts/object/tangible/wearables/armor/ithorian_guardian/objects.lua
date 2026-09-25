@@ -571,3 +571,12 @@ object_tangible_wearables_armor_ithorian_guardian_shared_ith_armor_s02_leggings 
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_ithorian_guardian_shared_ith_armor_s02_leggings, "object/tangible/wearables/armor/ithorian_guardian/shared_ith_armor_s02_leggings.iff")
+
+object_tangible_wearables_armor_ithorian_guardian_shared_armor_ithorian_guardian_suit_package =
+	SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/ithorian_guardian/shared_armor_ithorian_guardian_suit_package_item.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_tangible_wearables_armor_ithorian_guardian_shared_armor_ithorian_guardian_suit_package,
+	"object/tangible/wearables/armor/ithorian_guardian/shared_armor_ithorian_guardian_suit_package_item.iff")

@@ -41,13 +41,17 @@ constexpr uint64 DISCORD_HEALTH_CHECK_INTERVAL_MS = 30000;
 constexpr uint64 DISCORD_RECONNECT_DELAY_MS = 15000;
 constexpr uint64 DISCORD_RECONNECT_BASE_BACKOFF_MS = 30000;
 constexpr uint64 DISCORD_RECONNECT_MAX_BACKOFF_MS = 300000;
+constexpr uint64 DISCORD_SESSION_START_LIMIT_BACKOFF_MS = 3600000;
 constexpr uint64 DISCORD_STARTUP_GRACE_MS = 180000;
 constexpr uint64 DISCORD_MIN_HEARTBEAT_TIMEOUT_MS = 120000;
+// A gateway socket close is normal; DPP resumes the shard on its own. Give it this
+// long to recover before the health check escalates to a full cluster rebuild.
+constexpr uint64 DISCORD_GATEWAY_RESUME_GRACE_MS = 90000;
 
 struct DiscordRuntimeState {
     std::mutex lifecycleMutex;
     std::mutex mutex;
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
     std::thread botThread;
     bool shutdownRequested = false;
     bool reconnectTaskScheduled = false;
@@ -107,6 +111,12 @@ uint64 getReconnectBackoffMs(uint32 attempt) {
     return delay;
 }
 
+bool isDiscordSessionStartLimitError(const String& error) {
+    return error.indexOf("cannot start enough sessions") != -1 ||
+        error.indexOf("session starts remaining") != -1 ||
+        error.indexOf("Cluster startup aborted") != -1;
+}
+
 bool shouldIgnoreDiscordCallback(uint64 generation) {
     std::lock_guard<std::mutex> lock(discordRuntime.mutex);
 
@@ -162,14 +172,14 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
         generation = discordRuntime.generation;
     }
 
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
 
     try {
         if (manager->isDebugMode()) {
             manager->info("Creating Discord cluster with DPP", true);
         }
 
-        bot = std::make_unique<dpp::cluster>(
+        bot = std::make_shared<dpp::cluster>(
             manager->getBotToken().toCharArray(),
             dpp::i_default_intents | dpp::i_message_content
         );
@@ -208,6 +218,7 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             discordRuntime.gatewayConnected = true;
             discordRuntime.state = DiscordLifecycleState::Connected;
             discordRuntime.lastReadyMs = getDiscordNowMs();
+            discordRuntime.lastDisconnectMs = 0;
             discordRuntime.reconnectAttempts = 0;
             discordRuntime.nextReconnectAllowedMs = discordRuntime.lastReadyMs;
             discordRuntime.pendingReconnectReason = "";
@@ -238,12 +249,15 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             discordRuntime.gatewayConnected = true;
             discordRuntime.state = DiscordLifecycleState::Connected;
             discordRuntime.lastResumeMs = getDiscordNowMs();
+            discordRuntime.lastDisconnectMs = 0;
+            discordRuntime.reconnectAttempts = 0;
+            discordRuntime.pendingReconnectReason = "";
         }
 
         manager->info("Discord Gateway resumed.", true);
     });
 
-    bot->on_socket_close([managerRef, generation](const dpp::socket_close_t&) {
+    bot->on_socket_close([managerRef, generation](const dpp::socket_close_t& event) {
         if (managerRef == nullptr || shouldIgnoreDiscordCallback(generation)) {
             return;
         }
@@ -254,20 +268,17 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
             return;
         }
 
-        {
-            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
-
-            if (discordRuntime.generation != generation || discordRuntime.shutdownRequested) {
-                return;
-            }
-
-            discordRuntime.gatewayConnected = false;
-            discordRuntime.state = DiscordLifecycleState::Reconnecting;
-            discordRuntime.lastDisconnectMs = getDiscordNowMs();
+        // DPP uses the same socket-close event for short-lived REST/HTTPS sockets and
+        // gateway sockets. A successful message_create closes its HTTPS socket right
+        // after the send, so do not mark the gateway disconnected here. Gateway health is
+        // tracked by ready/resumed callbacks plus heartbeat checks.
+        if (manager->isDebugMode()) {
+            manager->info(
+                "Discord socket closed. Shard: " +
+                String::valueOf(event.shard) + " FD: " + String::valueOf(event.fd),
+                true
+            );
         }
-
-        manager->info("Discord Gateway disconnected.", true);
-        requestDiscordReconnect(manager, managerRef, "Discord Gateway socket closed");
     });
 
     bot->on_message_create([managerRef, generation](const dpp::message_create_t& event) {
@@ -372,7 +383,7 @@ bool startDiscordRuntime(DiscordManagerImplementation* manager, const ManagedRef
 }
 
 void stopDiscordRuntime(DiscordManagerImplementation* manager, bool shuttingDownCore) {
-    std::unique_ptr<dpp::cluster> bot;
+    std::shared_ptr<dpp::cluster> bot;
     std::thread botThread;
 
     {
@@ -516,8 +527,16 @@ void runDiscordHealthCheck(DiscordManagerImplementation* manager, const ManagedR
         shouldReschedule = true;
 
         if (!discordRuntime.gatewayConnected) {
-            if (getDiscordNowMs() - discordRuntime.lastStartMs > DISCORD_STARTUP_GRACE_MS) {
-                failureReason = "Discord Gateway did not reach a healthy ready state";
+            const uint64 nowMs = getDiscordNowMs();
+            const bool pastStartupGrace = nowMs - discordRuntime.lastStartMs > DISCORD_STARTUP_GRACE_MS;
+            const uint64 sinceDisconnectMs = discordRuntime.lastDisconnectMs != 0
+                ? nowMs - discordRuntime.lastDisconnectMs
+                : nowMs - discordRuntime.lastStartMs;
+
+            // Let DPP resume the shard on its own first; only force a rebuild if it is
+            // still down well past both the startup grace and the resume grace window.
+            if (pastStartupGrace && sinceDisconnectMs > DISCORD_GATEWAY_RESUME_GRACE_MS) {
+                failureReason = "Discord Gateway did not resume within the grace window";
             }
         } else {
             isDiscordShardHealthyLocked(failureReason);
@@ -526,7 +545,7 @@ void runDiscordHealthCheck(DiscordManagerImplementation* manager, const ManagedR
 
     if (!failureReason.isEmpty()) {
         manager->info("Discord health check detected an unhealthy gateway: " + failureReason, true);
-        requestDiscordReconnect(manager, managerRef, failureReason, 0);
+        requestDiscordReconnect(manager, managerRef, failureReason);
     }
 
     if (shouldReschedule) {
@@ -612,6 +631,23 @@ void scheduleDiscordReconnectTask(const ManagedReference<DiscordManager*>& manag
 
         {
             std::lock_guard<std::mutex> stateLock(discordRuntime.mutex);
+
+            // If DPP resumed / re-readied the gateway on its own while this task sat in
+            // the queue, don't tear down a now-healthy connection.
+            if (discordRuntime.gatewayConnected &&
+                    discordRuntime.state == DiscordLifecycleState::Connected) {
+                discordRuntime.pendingReconnectReason = "";
+                discordRuntime.reconnectInProgress = false;
+                discordRuntime.reconnectAttempts = 0;
+                discordRuntime.nextReconnectAllowedMs = getDiscordNowMs();
+
+                if (manager->isDebugMode()) {
+                    manager->info("Discord reconnect cancelled; gateway already recovered.", true);
+                }
+
+                return;
+            }
+
             reason = discordRuntime.pendingReconnectReason;
             attempt = discordRuntime.reconnectAttempts + 1;
         }
@@ -902,16 +938,47 @@ void DiscordManagerImplementation::sendToDiscord(const String& channel, const St
     
 #ifdef WITH_DISCORD_INTEGRATION
     try {
-        std::lock_guard<std::mutex> lock(discordRuntime.mutex);
-        if (discordRuntime.bot && discordRuntime.gatewayConnected) {
-            // Create stable string copies to avoid dangling pointer issues
+        ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();
+        std::shared_ptr<dpp::cluster> bot;
+
+        {
+            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
+
+            if (discordRuntime.bot && discordRuntime.gatewayConnected) {
+                bot = discordRuntime.bot;
+            }
+        }
+
+        if (bot) {
             std::string channelStr = discordChannelId.toCharArray();
             std::string messageStr = formattedMessage.toCharArray();
 
-            // Send the message asynchronously
-            discordRuntime.bot->message_create(
-                dpp::message(std::stoull(channelStr), messageStr)
+            bot->message_create(
+                dpp::message(std::stoull(channelStr), messageStr),
+                [managerRef](const dpp::confirmation_callback_t& callback) {
+                    if (managerRef == nullptr) {
+                        return;
+                    }
+
+                    DiscordManagerImplementation* manager = getDiscordImplementation(managerRef);
+
+                    if (manager == nullptr) {
+                        return;
+                    }
+
+                    if (callback.is_error()) {
+                        dpp::error_info error = callback.get_error();
+                        manager->error(
+                            "Discord message_create failed: code=" +
+                            String::valueOf(error.code) + " message=" + String(error.message)
+                        );
+                    } else if (manager->isDebugMode()) {
+                        manager->info("Discord message_create completed successfully.", true);
+                    }
+                }
             );
+        } else if (isDebugMode()) {
+            info("Discord message skipped because cluster is no longer connected", true);
         }
     } catch (const std::exception& e) {
         error("Failed to send Discord message: " + String(e.what()));
@@ -993,16 +1060,33 @@ void DiscordManagerImplementation::handleGameMessage(const String& channel, cons
 
 void DiscordManagerImplementation::handleDiscordMessage(const String& channelId, const String& message, const String& author, const String& userId) {
     if (!isEnabled() || !isConnected()) {
+        if (isDebugMode()) {
+            info(
+                "Discord message ignored because manager is not connected. Channel: " +
+                channelId + " Author: " + author,
+                true
+            );
+        }
         return;
     }
     
     // Only process messages from the relay channel
     if (channelId != getRelayChannelId()) {
+        if (isDebugMode()) {
+            info(
+                "Discord message ignored from non-relay channel: " + channelId +
+                " expected: " + getRelayChannelId(),
+                true
+            );
+        }
         return;
     }
     
     // Ignore empty messages
     if (message.isEmpty()) {
+        if (isDebugMode()) {
+            info("Discord message ignored because content is empty. Author: " + author, true);
+        }
         return;
     }
     
@@ -1027,6 +1111,33 @@ void DiscordManagerImplementation::handleDiscordReady() {
 
 void DiscordManagerImplementation::handleDiscordError(const String& error) {
     this->error("Discord error: " + error);
+
+    if (isDiscordSessionStartLimitError(error)) {
+        ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();
+
+        {
+            std::lock_guard<std::mutex> lock(discordRuntime.mutex);
+            const uint64 retryAfterMs = getDiscordNowMs() + DISCORD_SESSION_START_LIMIT_BACKOFF_MS;
+            discordRuntime.gatewayConnected = false;
+            discordRuntime.nextReconnectAllowedMs = std::max<uint64>(
+                discordRuntime.nextReconnectAllowedMs,
+                retryAfterMs
+            );
+
+            if (discordRuntime.state != DiscordLifecycleState::Stopped &&
+                    discordRuntime.state != DiscordLifecycleState::Stopping) {
+                discordRuntime.state = DiscordLifecycleState::Reconnecting;
+            }
+        }
+
+        requestDiscordReconnect(
+            this,
+            managerRef,
+            "Discord session start limit exhausted",
+            DISCORD_SESSION_START_LIMIT_BACKOFF_MS
+        );
+        return;
+    }
     
     if (error.indexOf("connection") != -1 || error.indexOf("websocket") != -1 || error.indexOf("heartbeat") != -1) {
         ManagedReference<DiscordManager*> managerRef = _this.getReferenceUnsafeStaticCast();

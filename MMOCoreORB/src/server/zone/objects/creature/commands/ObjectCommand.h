@@ -16,6 +16,7 @@
 #include "server/zone/objects/tangible/wearables/WearableObject.h"
 #include "server/zone/objects/tangible/wearables/WearableContainerObject.h"
 #include "templates/SharedTangibleObjectTemplate.h"
+#include "server/zone/objects/creature/commands/sui/DeletePlacedItemSuiCallback.h"
 
 
 class ObjectCommand : public QueueCommand {
@@ -40,7 +41,54 @@ public:
 			String commandType;
 			args.getStringToken(commandType);
 
-			if (commandType.beginsWith("createitem")) {
+			if (commandType == "delete") {
+				uint64 objectID = target;
+				if (args.hasMoreTokens()) {
+					String idText;
+					args.getStringToken(idText);
+					// Require a positive decimal uint64; never fall back to the
+					// current target when an explicit ID is malformed.
+					objectID = 0;
+					for (int i = 0; i < idText.length(); ++i) {
+						char digit = idText.charAt(i);
+						if (digit < '0' || digit > '9' || objectID > (uint64(-1) - (digit - '0')) / 10) {
+							creature->sendSystemMessage("Usage: /object delete [decimal object ID]");
+							return INVALIDPARAMETERS;
+						}
+						objectID = objectID * 10 + (digit - '0');
+					}
+				}
+				if (objectID == 0 || args.hasMoreTokens()) {
+					creature->sendSystemMessage("Target a placed item or use /object delete <object ID>.");
+					return INVALIDPARAMETERS;
+				}
+
+				ManagedReference<SceneObject*> object = server->getZoneServer()->getObject(objectID, false);
+				if (object == nullptr) {
+					creature->sendSystemMessage("No loaded object exists with that ID.");
+					return INVALIDTARGET;
+				}
+				Locker locker(object, creature);
+				if (!DeletePlacedItemSuiCallback::validate(creature, object))
+					return GENERALERROR;
+
+				ManagedReference<SuiMessageBox*> box = new SuiMessageBox(creature, SuiWindowType::NONE);
+				box->setPromptTitle("Delete placed item permanently?");
+				StringBuffer prompt;
+				prompt << "Item: " << object->getDisplayedName()
+					<< "\nObject ID: " << objectID
+					<< "\nParent ID: " << object->getParentID()
+					<< "\nTemplate: " << object->getObjectTemplate()->getFullTemplateString()
+					<< "\n\nDelete this item from the world and database? This cannot be undone.";
+				box->setPromptText(prompt.toString());
+				box->setCancelButton(true, "@cancel");
+				box->setOkButton(true, "Delete");
+				box->setUsingObject(object);
+				box->setCallback(new DeletePlacedItemSuiCallback(server->getZoneServer(), objectID, object->getParentID()));
+				creature->getPlayerObject()->addSuiBox(box);
+				creature->sendMessage(box->generateMessage());
+				return SUCCESS;
+			} else if (commandType.beginsWith("createitem")) {
 				String objectTemplate;
 				args.getStringToken(objectTemplate);
 
@@ -668,6 +716,7 @@ public:
 			}
 
 		} catch (Exception& e) {
+			creature->sendSystemMessage("SYNTAX: /object delete [<object ID>] (placed item; opens confirmation)");
 			creature->sendSystemMessage("SYNTAX: /object createitem <objectTemplatePath> [<quantity>] [<quality 0-100>] [<visible components...>]");
 			creature->sendSystemMessage("SYNTAX: /object createattachment <AA|CA> <statname> <value>");
 			creature->sendSystemMessage("SYNTAX: /object createresource <resourceName> [<quantity>]");

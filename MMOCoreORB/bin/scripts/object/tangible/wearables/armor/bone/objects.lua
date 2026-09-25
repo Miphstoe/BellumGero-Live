@@ -631,3 +631,12 @@ object_tangible_wearables_armor_bone_shared_armor_smc_s01_bicep_l = SharedTangib
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_bone_shared_armor_smc_s01_bicep_l, "object/tangible/wearables/armor/bone/shared_armor_smc_s01_bicep_l.iff")
+
+object_tangible_wearables_armor_bone_shared_armor_bone_suit_package =
+	SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/bone/shared_armor_bone_suit_package_item.iff"
+}
+
+ObjectTemplates:addClientTemplate(
+	object_tangible_wearables_armor_bone_shared_armor_bone_suit_package,
+	"object/tangible/wearables/armor/bone/shared_armor_bone_suit_package_item.iff")

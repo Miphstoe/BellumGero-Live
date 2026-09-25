@@ -61,8 +61,20 @@ public:
 		for (int i = 0; tokenizer.hasMoreTokens() && i < 9; ++i) {
 			uint32 value = tokenizer.getIntToken();
 
-			if (value < getMinAttribute(creature, i) || value > getMaxAttribute(creature, i)) {
-				warning() << "Player: " << creature->getDisplayedName() << " ID: " << creature->getObjectID() <<  " --- Suspected stat migration hacking attempt.";
+			uint32 minAttribute = getMinAttribute(creature, i);
+			uint32 maxAttribute = getMaxAttribute(creature, i);
+
+			if (value < minAttribute || value > maxAttribute) {
+				warning() << "STAT MIGRATION VALIDATION FAILURE"
+					<< " | Player: " << creature->getDisplayedName()
+					<< " | ID: " << creature->getObjectID()
+					<< " | Species: " << creature->getSpeciesName()
+					<< " | Attribute: " << i
+					<< " | Submitted: " << value
+					<< " | Server Min: " << minAttribute
+					<< " | Server Max: " << maxAttribute
+					<< " | Server Total: " << getTotalAttribPoints(creature);
+
 				return GENERALERROR;
 			}
 

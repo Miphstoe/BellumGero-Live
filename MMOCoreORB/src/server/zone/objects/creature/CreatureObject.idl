@@ -1946,6 +1946,20 @@ class CreatureObject extends TangibleObject {
 
 	@read
 	public string getSpeciesName() {
+		// Bellum Gero: several bg_species1.tre custom player templates share a raw "species" int
+		// with Human/Wookiee/each other (documented in docs/bellum_species1_mapping.md); that raw
+		// client value is TRE-authored and must not be changed. Every player template's own
+		// template-authored objectName ("@species:<name>", set at template-parse time and never
+		// overwritten by setCustomObjectName -- that writes a separate "customName" field) is
+		// unique per template CRC, exactly like it already is for the original 10 species (e.g.
+		// human_male's objectName is "@species:human"). NPCs use unrelated STF tables for their
+		// objectName (mob/creature name tables, never the "species" table), so gating on
+		// getObjectNameStringIdFile() == "species" alone -- without an isPlayerCreature() call,
+		// which is non-const and can't be called from this const-generated accessor -- is both
+		// sufficient and safe; everything else falls through to the numeric switch below unchanged.
+		if (getObjectNameStringIdFile() == "species")
+			return getObjectNameStringIdName();
+
 		int species = getSpecies();
 		if(species == 0)
 			return "human";
@@ -1967,6 +1981,69 @@ class CreatureObject extends TangibleObject {
 			return "ithorian";
 		else if(species == 0x31)
 			return "sullustan";
+		// Bellum Gero bg_species1.tre custom species, kept as a fallback for non-player creatures
+		// (this numeric "species" int is the raw value baked into each shared_<name>_<gender>.iff;
+		// several of these ids collide with each other and with the ids above -- irrelevant for
+		// player creatures since those are resolved via objectName above, but still ambiguous here
+		// for any hypothetical NPC using one of these raw ids; see docs/bellum_species1_mapping.md).
+		else if(species == 8)
+			return "abyssin";
+		else if(species == 9)
+			return "aqualish";
+		else if(species == 10)
+			return "arcona"; // also produced by kel_dor and kubaz (TRE id collision)
+		else if(species == 11)
+			return "chiss";
+		else if(species == 12)
+			return "bith"; // also produced by togorian (TRE id collision)
+		else if(species == 14)
+			return "chadra_fan";
+		else if(species == 17)
+			return "devaronian";
+		else if(species == 19)
+			return "dug";
+		else if(species == 20)
+			return "duros";
+		else if(species == 21)
+			return "mirialan";
+		else if(species == 22)
+			return "ewok";
+		else if(species == 24)
+			return "zeltron";
+		else if(species == 25)
+			return "sanyassan";
+		else if(species == 27)
+			return "gotal";
+		else if(species == 28)
+			return "gran";
+		else if(species == 29)
+			return "gungan";
+		else if(species == 31)
+			return "hutt";
+		else if(species == 32)
+			return "ishi_tib";
+		else if(species == 38)
+			return "cerean";
+		else if(species == 42)
+			return "nikto";
+		else if(species == 43)
+			return "ortolan";
+		else if(species == 44)
+			return "droid";
+		else if(species == 45)
+			return "iktotchi";
+		else if(species == 46)
+			return "quarren";
+		else if(species == 50)
+			return "talz";
+		else if(species == 51)
+			return "nautolan";
+		else if(species == 52)
+			return "togruta";
+		else if(species == 53)
+			return "toydarian";
+		else if(species == 55)
+			return "weequay";
 		else
 			return "";
 	}

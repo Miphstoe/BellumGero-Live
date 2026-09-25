@@ -1,0 +1,90 @@
+/*
+				Copyright <SWGEmu>
+		See file COPYING for copying conditions.
+
+	Bellum Gero - Persistent Player Display Mannequin (Phase 2 PoC)
+
+	A MannequinObject is a humanoid CreatureObject for rendering/equipment purposes
+	only. It is deployed inside a player structure as a furniture-like display object.
+	It has NO AI, NO movement, NO combat, NO aggro, NO loot, NO conversation and never
+	applies any gameplay effect from the equipment it carries.
+
+	It extends AiAgent (via the same path NonPlayerCreatureObject uses) so that the
+	stock client renders it as an ordinary humanoid with worn clothing/armor and a held
+	weapon - all of which is driven purely by server-sent slotted child objects.
+*/
+
+package server.zone.objects.creature.ai.mannequin;
+
+import server.zone.objects.creature.CreatureObject;
+import server.zone.objects.creature.ai.AiAgent;
+import server.zone.objects.scene.SceneObject;
+import server.zone.packets.scene.AttributeListMessage;
+include templates.SharedObjectTemplate;
+
+@json
+class MannequinObject extends AiAgent {
+
+	// ObjectID of the player who deployed / owns this mannequin. Persistent.
+	protected unsigned long mannequinOwnerID;
+
+	// Currently applied idle pose animation name (stock client animation). Persistent.
+	protected string poseString;
+
+	public MannequinObject() {
+		Logger.setLoggingName("MannequinObject");
+		Logger.setLogging(false);
+		Logger.setGlobalLogging(true);
+
+		mannequinOwnerID = 0;
+		poseString = "";
+	}
+
+	/**
+	 * Initializes the transient members of SceneObject, must call the inherited object method first.
+	 */
+	public native void initializeTransientMembers();
+
+	@local
+	public native void loadTemplateData(SharedObjectTemplate templateData);
+
+	@dirty
+	@local
+	public native void fillAttributeList(AttributeListMessage alm, CreatureObject object);
+
+	@dirty
+	public boolean isMannequinObject() {
+		return true;
+	}
+
+	public void setMannequinOwnerID(unsigned long id) {
+		mannequinOwnerID = id;
+	}
+
+	@read
+	public unsigned long getMannequinOwnerID() {
+		return mannequinOwnerID;
+	}
+
+	public void setPoseString(final string pose) {
+		poseString = pose;
+	}
+
+	@read
+	public string getPoseString() {
+		return poseString;
+	}
+
+	/**
+	 * True when the mannequin has no slotted/held equipment (safe to pick up / destroy).
+	 * Implemented natively so it can walk the slotted-child list.
+	 */
+	@dirty
+	public native boolean isMannequinEmpty();
+
+	/**
+	 * Re-broadcasts every slotted child object + re-applies the stored pose. Called after
+	 * (re)load and on demand. Native so it can iterate slotted children safely.
+	 */
+	public native void refreshDisplay();
+}

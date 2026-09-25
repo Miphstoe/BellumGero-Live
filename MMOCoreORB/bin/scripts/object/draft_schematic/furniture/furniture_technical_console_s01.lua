@@ -44,7 +44,7 @@
 object_draft_schematic_furniture_furniture_technical_console_s01 = object_draft_schematic_furniture_shared_furniture_technical_console_s01:new {
    templateType = DRAFTSCHEMATIC,
 
-   customObjectName = "Technical Console",
+   customObjectName = "Technical Console style 1",
 
    craftingToolTab = 512, -- (See DraftSchematicObjectTemplate.h)
    complexity = 36, 

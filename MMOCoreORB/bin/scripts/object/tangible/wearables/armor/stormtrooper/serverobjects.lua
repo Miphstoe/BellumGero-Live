@@ -58,3 +58,5 @@ includeFile("tangible/wearables/armor/stormtrooper/armor_stormtrooper_helmet_que
 includeFile("tangible/wearables/armor/stormtrooper/armor_stormtrooper_leggings.lua")
 includeFile("tangible/wearables/armor/stormtrooper/armor_stormtrooper_leggings_quest.lua")
 includeFile("tangible/wearables/armor/stormtrooper/armor_stormtrooper_utility_belt.lua")
+
+includeFile("tangible/wearables/armor/stormtrooper/armor_stormtrooper_suit_package.lua")

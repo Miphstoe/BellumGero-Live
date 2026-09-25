@@ -50,7 +50,8 @@ void DraftSchematicImplementation::sendDraftSlotsTo(CreatureObject* player) {
 				" clientCRC=" + String::valueOf(getClientObjectCRC()) +
 				" template=" + templatePath);
 
-		player->sendSystemMessage("This crafting schematic is invalid and could not be learned. Please contact staff.");
+		if (player != nullptr)
+			player->sendSystemMessage("This crafting schematic is invalid and could not be learned. Please contact staff.");
 
 		return;
 	}

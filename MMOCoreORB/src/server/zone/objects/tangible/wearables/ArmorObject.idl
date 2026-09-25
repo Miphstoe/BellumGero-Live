@@ -283,4 +283,97 @@ class ArmorObject extends WearableObject {
 	 */
 	@dirty
 	public native int applyBellumBeskarTune(float kineticDelta, float energyDelta, float blastDelta, float heatDelta, float acidDelta, int maxConditionBonus);
+
+	// Bellum Gero full-suit crafting support.
+	// Raw read access avoids copying displayed/capped/sliced values.
+	@read
+	public float getBellumRawKinetic() {
+		return kinetic;
+	}
+
+	@read
+	public float getBellumRawEnergy() {
+		return energy;
+	}
+
+	@read
+	public float getBellumRawElectricity() {
+		return electricity;
+	}
+
+	@read
+	public float getBellumRawStun() {
+		return stun;
+	}
+
+	@read
+	public float getBellumRawBlast() {
+		return blast;
+	}
+
+	@read
+	public float getBellumRawHeat() {
+		return heat;
+	}
+
+	@read
+	public float getBellumRawCold() {
+		return cold;
+	}
+
+	@read
+	public float getBellumRawAcid() {
+		return acid;
+	}
+
+	@read
+	public float getBellumRawLightSaber() {
+		return lightSaber;
+	}
+
+	@read
+	public int getBellumRawHealthEncumbrance() {
+		return healthEncumbrance;
+	}
+
+	@read
+	public int getBellumRawActionEncumbrance() {
+		return actionEncumbrance;
+	}
+
+	@read
+	public int getBellumRawMindEncumbrance() {
+		return mindEncumbrance;
+	}
+
+	@read
+	public int getBellumRawSpecialResists() {
+		return specialResists;
+	}
+
+	@read
+	public float getBellumRawBaseProtection() {
+		return baseProtection;
+	}
+
+	@read
+	public float getBellumRawSpecialProtection() {
+		return specialProtection;
+	}
+
+	@read
+	public float getBellumRawEffectivenessSlice() {
+		return effectivenessSlice;
+	}
+
+	@read
+	public float getBellumRawEncumbranceSlice() {
+		return encumbranceSlice;
+	}
+
+	@preLocked
+	@arg1preLocked
+	public native void initializeBellumSuitPieceFrom(ArmorObject source, int healthEncumbranceValue,
+		int actionEncumbranceValue, int mindEncumbranceValue);
+
 }

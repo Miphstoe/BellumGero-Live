@@ -8,6 +8,7 @@
 #include "IngredientSlot.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
+#include "server/zone/objects/tangible/component/Component.h"
 
 // #define DEBUG_COMPONENT_SLOT
 
@@ -15,7 +16,60 @@ class ComponentSlot: public IngredientSlot {
 	/// Indexed by <object, parent>
 	Vector<ManagedReference<TangibleObject*> > contents;
 
+	// Bellum Gero: mixed full-suit armor segment profile support
+	bool isBellumMixedArmorSegmentSlot() {
+		return !identical &&
+			contentType.contains("object/tangible/component/armor/shared_armor_segment");
+	}
+
+	int getBellumArmorSpecialProfile(TangibleObject* tano) {
+		if (tano == nullptr || !tano->isComponent())
+			return 0;
+
+		Component* component = cast<Component*>(tano);
+		if (component == nullptr || !component->hasKey("armor_special_type"))
+			return 0;
+
+		return (int)component->getAttributeValue("armor_special_type");
+	}
+
+	bool bellumArmorSpecialProfileMatches(TangibleObject* incoming) {
+		if (!isBellumMixedArmorSegmentSlot() || incoming == nullptr)
+			return true;
+
+		int incomingProfile = getBellumArmorSpecialProfile(incoming);
+
+		for (int i = 0; i < contents.size(); ++i) {
+			TangibleObject* existing = contents.elementAt(i);
+			if (existing == nullptr)
+				continue;
+			return getBellumArmorSpecialProfile(existing) == incomingProfile;
+		}
+
+		return true;
+	}
+
 public:
+	bool hasBellumArmorSpecialProfileMismatch(TangibleObject* incomingTano) {
+		if (!isBellumMixedArmorSegmentSlot() || incomingTano == nullptr)
+			return false;
+
+		TangibleObject* profileTano = incomingTano;
+
+		if (incomingTano->isFactoryCrate()) {
+			FactoryCrate* crate = cast<FactoryCrate*>(incomingTano);
+
+			if (crate == nullptr)
+				return false;
+
+			profileTano = crate->getPrototype();
+		}
+
+		return profileTano != nullptr &&
+			!bellumArmorSpecialProfileMatches(profileTano);
+	}
+
+
 	ComponentSlot() : IngredientSlot() {
 
 		clientSlotType = 2;
@@ -69,6 +123,17 @@ public:
 		/// Check types
 		if (!baseTemplate->isDerivedFrom(contentType))
 			return false;
+
+		// Bellum Gero full-suit mixed armor segment slots may mix different
+		// serials/rolls, but never different Special Protection profiles.
+		if (isBellumMixedArmorSegmentSlot()) {
+			TangibleObject* profileTano = incomingTano.get();
+			if (crate != nullptr)
+				profileTano = crate->getPrototype();
+
+			if (!bellumArmorSpecialProfileMatches(profileTano))
+				return false;
+		}
 
 		// Serial Number check
 		if (requiresIdentical() && !contents.isEmpty()) {
@@ -297,6 +362,41 @@ public:
 			return nullptr;
 
 		return contents.elementAt(0);
+	}
+
+	int getContentCount() {
+		return contents.size();
+	}
+
+	TangibleObject* getContentAt(int index) {
+		if (index < 0 || index >= contents.size())
+			return nullptr;
+		return contents.elementAt(index);
+	}
+
+	bool hasSingleTemplateAndSerial() {
+		bool found = false;
+		uint32 templateCRC = 0;
+		String serial;
+
+		for (int i = 0; i < contents.size(); ++i) {
+			TangibleObject* tano = contents.elementAt(i);
+			if (tano == nullptr)
+				continue;
+
+			if (!found) {
+				templateCRC = tano->getServerObjectCRC();
+				serial = tano->getSerialNumber();
+				found = true;
+				continue;
+			}
+
+			if (tano->getServerObjectCRC() != templateCRC ||
+					tano->getSerialNumber() != serial)
+				return false;
+		}
+
+		return found;
 	}
 
 	SceneObject* getFactoryIngredient() {

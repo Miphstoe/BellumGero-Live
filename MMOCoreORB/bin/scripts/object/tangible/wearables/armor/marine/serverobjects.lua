@@ -53,3 +53,5 @@ includeFile("tangible/wearables/armor/marine/armor_marine_chest_plate.lua")
 includeFile("tangible/wearables/armor/marine/armor_marine_chest_plate_rebel.lua")
 includeFile("tangible/wearables/armor/marine/armor_marine_helmet.lua")
 includeFile("tangible/wearables/armor/marine/armor_marine_leggings.lua")
+
+includeFile("tangible/wearables/armor/marine/armor_marine_suit_package.lua")

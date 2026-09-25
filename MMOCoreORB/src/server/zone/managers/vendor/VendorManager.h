@@ -62,6 +62,28 @@ public:
 
 	void handleRenameVendor(CreatureObject* player, TangibleObject* vendor, String& name);
 
+	void sendGuildDiscountManagementTo(CreatureObject* player, TangibleObject* vendor);
+
+	void promptAddGuildDiscount(CreatureObject* player, TangibleObject* vendor);
+
+	void sendEditGuildDiscountsTo(CreatureObject* player, TangibleObject* vendor);
+
+	void sendRemoveGuildDiscountsTo(CreatureObject* player, TangibleObject* vendor);
+
+	void promptGuildDiscountPercent(CreatureObject* player, TangibleObject* vendor, uint64 guildID);
+
+	void confirmGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID, int percent);
+
+	void confirmRemoveGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID);
+
+	void setGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID, int percent);
+
+	void removeGuildDiscount(CreatureObject* player, TangibleObject* vendor, uint64 guildID);
+
+	bool canManageGuildDiscounts(CreatureObject* player, TangibleObject* vendor);
+
+	String getGuildDiscountDisplayName(uint64 guildID);
+
 	// Vendor is locked coming in
 	void randomizeVendorLooks(CreatureObject* vendor);
 

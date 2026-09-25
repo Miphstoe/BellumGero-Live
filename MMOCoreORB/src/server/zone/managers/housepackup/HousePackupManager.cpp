@@ -28,6 +28,7 @@
 // Add these two lines:
 #include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/objects/tangible/deed/structure/StructureDeed.h"
 
 // For object serialization/deserialization
 #include "system/io/ObjectInputStream.h"
@@ -35,6 +36,7 @@
 
 // std file helpers
 #include <cstdio>      // std::FILE, std::fopen, std::fwrite, std::fread, std::fclose, std::remove, std::rename
+#include <ctime>       // std::time
 #include <sys/stat.h>  // ::stat
 #include <sys/types.h>
 #ifdef _WIN32
@@ -46,7 +48,15 @@ using namespace server::zone::objects::scene;
 using namespace server::zone::objects::cell;
 using namespace server::zone::objects::building;
 using namespace server::zone::objects::tangible;
+using namespace server::zone::objects::tangible::deed::structure;
 using namespace server::zone::objects::creature;
+
+// House Pack-Up transactional states, mirrored on both BuildingObject
+// (housePackState) and StructureDeed (housePackState); see the .idl comments.
+namespace HousePackState {
+	enum Building { NORMAL = 0, PACKING = 1, PACKED = 2 };
+	enum Deed { NONE = 0, PACKED_ON_DEED = 1, RESTORING = 2, CONSUMED = 3, PARTIAL = 4 };
+}
 
 // -----------------------------
 // Persistent storage locations
@@ -225,6 +235,13 @@ bool HousePackupManager::hasSavedPayloadForBuilding(uint64 buildingOID) const {
 bool HousePackupManager::autoPackIfNeeded(BuildingObject* building, CreatureObject* requester) {
     if (building == nullptr || requester == nullptr) return false;
 
+    // BG: mannequins are creatures and are skipped by the item scan below / by collectDeep,
+    // so a destroy or redeed would orphan them. Refuse until they are removed.
+    if (hasMannequinsInside(building)) {
+        requester->sendSystemMessage("This structure cannot be packed up or redeeded while mannequins are inside. Remove all mannequins first. (Nothing was destroyed.)");
+        return false;
+    }
+
     // If we already have a saved payload OR a lot placeholder, we're good.
     if (hasSavedPayloadForBuilding(building->getObjectID()) || 
         gLotHoldByDeed.containsKey(building->getDeedObjectID())) {
@@ -285,6 +302,18 @@ bool HousePackupManager::hasSavedPayloadForDeed(uint64 deedOID) const {
 // Delete a file; OK if it doesn't exist.
 static void removeFile(const String& path) {
     std::remove(path.toCharArray());
+}
+
+// Reads the item count out of a pack blob's header ([u8 version][u32 count]...)
+// without fully parsing it. Used only for diagnostics/logging so a missing or
+// truncated blob never throws -- it just reports 0.
+static uint32 peekBlobItemCount(const Vector<uint8>& blob) {
+    if (blob.size() < 5)
+        return 0;
+
+    int off = 1; // skip version byte
+    return ((uint32)blob.get(off) << 24) | ((uint32)blob.get(off + 1) << 16) |
+           ((uint32)blob.get(off + 2) << 8) | ((uint32)blob.get(off + 3));
 }
 
 
@@ -488,37 +517,55 @@ void HousePackupManager::rememberPayloadForBuilding(uint64 buildingOID, const Ve
 	}
 }
 
-void HousePackupManager::attachPayloadToDeedFromBuilding(uint64 buildingOID, uint64 deedOID) {
-    Vector<uint8> blob;
+void HousePackupManager::attachPayloadToDeedFromBuilding(BuildingObject* building, StructureDeed* deed) {
+    if (deed == nullptr)
+        return;
 
-    // Prefer in-memory copy first
-    if (gBuildingPayloads.containsKey(buildingOID)) {
-        blob = gBuildingPayloads.get(buildingOID);
-        gBuildingPayloads.remove(buildingOID);
-    } else {
-        // Fallback: read from disk file created at pack time
-        const String bpath = pathForBuilding(buildingOID);
-        if (!readBlobFromFile(bpath, blob)) {
-            warning("HousePackup: no payload found for building OID " + String::valueOf((int64)buildingOID) +
-                    " (neither memory nor " + bpath + ")");
-            return;
+    Vector<uint8> blob;
+    bool usedLegacy = false;
+
+    if (building != nullptr && building->hasHousePackedPayload()) {
+        // Normal path: the payload was recorded directly on the building by
+        // the fixed packUpHouse() above.
+        blob = *building->getHousePackedPayload();
+        building->clearHousePackedPayload();
+    } else if (building != nullptr) {
+        // Legacy fallback: a payload recorded by a pre-fix server build under
+        // the building's OID in the RAM hashtable / housepacks/b-<oid>.bin.
+        const uint64 buildingOID = building->getObjectID();
+
+        if (gBuildingPayloads.containsKey(buildingOID)) {
+            blob = gBuildingPayloads.get(buildingOID);
+            gBuildingPayloads.remove(buildingOID);
+            usedLegacy = true;
+        } else {
+            const String bpath = pathForBuilding(buildingOID);
+            if (readBlobFromFile(bpath, blob)) {
+                removeFile(bpath);
+                usedLegacy = true;
+            }
         }
-        // Clean up the building file once we’ve loaded it
-        removeFile(bpath);
     }
 
-    // Put in memory under deed OID for immediate restore
-    gDeedPayloads.put(deedOID, blob);
+    if (blob.isEmpty()) {
+        // The overwhelming majority of redeeds: nothing was ever packed for
+        // this structure. Nothing to attach -- not an error.
+        return;
+    }
 
-    // Persist under deed OID so it survives restarts (until placement restores it)
-    const String dpath = pathForDeed(deedOID);
-    bool wrote = writeBlobToFile(dpath, blob);
+    const uint32 itemCount = peekBlobItemCount(blob);
 
-    // Optional: if you have the placer CreatureObject around, send them a message here.
-    // (If you don't, this is still fine; the restore step will also log.)
-    info("HousePackup: moved payload to deed OID " + String::valueOf((int64)deedOID) +
-         " and wrote " + String::valueOf((int)blob.size()) + " bytes to " + dpath +
-         (wrote ? " [OK]" : " [FAILED]"));
+    deed->setHousePackedPayload(blob);
+    deed->setHousePackedItemCount(itemCount);
+    deed->setHousePackTimestamp((uint32) std::time(nullptr));
+    deed->setHousePackedOriginalStructureID(building != nullptr ? building->getObjectID() : 0);
+    deed->setHousePackState(HousePackState::PACKED_ON_DEED);
+
+    info(true) << "[HOUSEPACK] Structure=" << (building != nullptr ? building->getObjectID() : 0)
+               << " Deed=" << deed->getObjectID()
+               << " ExpectedObjects=" << itemCount
+               << (usedLegacy ? " (recovered from legacy RAM/disk payload)" : "")
+               << " State=PACKED Result=SUCCESS (attached to deed)";
 }
 // ====== Top of HousePackupManager.cpp (near your other statics) ======
 static HashTable<uint64, uint64> gDeedByHold;    // holdOID -> deedOID  (reverse)
@@ -572,6 +619,44 @@ void HousePackupManager::releaseLotsPlaceholder(uint64 deedOID, CreatureObject* 
     // No structure to destroy since we only recorded the mapping
 }
 // -----------------------------
+// GM diagnostics (/housepackinfo) -- strictly read-only
+// -----------------------------
+
+HousePackupManager::PackDiagnostics HousePackupManager::getPackDiagnostics(SceneObject* target) const {
+    PackDiagnostics diag;
+    if (target == nullptr)
+        return diag;
+
+    if (StructureDeed* deed = cast<StructureDeed*>(target)) {
+        diag.found = true;
+        diag.isDeed = true;
+        diag.packState = deed->getHousePackState();
+        diag.originalStructureID = deed->getHousePackedOriginalStructureID();
+        diag.itemCount = deed->getHousePackedItemCount();
+        diag.timestamp = deed->getHousePackTimestamp();
+        diag.hasPayload = deed->hasHousePackedPayload();
+        diag.legacyPayload = !diag.hasPayload &&
+            (gDeedPayloads.containsKey(deed->getObjectID()) ||
+             fileExists(pathForDeed(deed->getObjectID())) ||
+             fileExists(pathForDeedLegacy(deed->getObjectID())));
+    } else if (BuildingObject* building = cast<BuildingObject*>(target)) {
+        diag.found = true;
+        diag.isDeed = false;
+        diag.packState = building->getHousePackState();
+        diag.originalStructureID = building->getObjectID();
+        diag.itemCount = building->getHousePackedItemCount();
+        diag.timestamp = building->getHousePackTimestamp();
+        diag.hasPayload = building->hasHousePackedPayload();
+        diag.legacyPayload = !diag.hasPayload &&
+            (gBuildingPayloads.containsKey(building->getObjectID()) ||
+             fileExists(pathForBuilding(building->getObjectID())) ||
+             fileExists(pathForBuildingLegacy(building->getObjectID())));
+    }
+
+    return diag;
+}
+
+// -----------------------------
 // Vendor detection helper
 // -----------------------------
 
@@ -591,6 +676,36 @@ bool HousePackupManager::hasVendorsInside(BuildingObject* building) const {
         for (int j = 0; j < containerSize; j++) {
             ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
             if (obj != nullptr && obj->isVendor()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// -----------------------------
+// Mannequin detection helper (BG) - identical traversal to hasVendorsInside
+// -----------------------------
+
+bool HousePackupManager::hasMannequinsInside(BuildingObject* building) const {
+    if (building == nullptr)
+        return false;
+
+    int totalCells = building->getTotalCellNumber();
+
+    // Cell numbering starts at 1, not 0
+    for (int i = 1; i <= totalCells; i++) {
+        ManagedReference<CellObject*> cell = building->getCell(i);
+        if (cell == nullptr)
+            continue;
+
+        int containerSize = cell->getContainerObjectsSize();
+        for (int j = 0; j < containerSize; j++) {
+            ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
+            // Detection is by object class/type via the virtual on SceneObject
+            // (MannequinObject overrides isMannequinObject() -> true), never by name.
+            if (obj != nullptr && obj->isMannequinObject()) {
                 return true;
             }
         }
@@ -638,11 +753,49 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     if (building == nullptr || requester == nullptr)
         return false;
 
+    // Packing serializes contents, destroys the building, refunds its lot, and
+    // creates a deed. Administrative permission is deliberately insufficient.
+    if (building->getOwnerObjectID() != requester->getObjectID()) {
+        requester->sendSystemMessage("You must be the owner to pack up this structure.");
+        return false;
+    }
+
+    // BG safety layer: the radial is hidden when mannequins are present, but re-check here
+    // to defend against stale menus, delayed callbacks, or another player placing a
+    // mannequin after the menu was opened. Mannequins are creatures and would be skipped
+    // by collectDeep(), so packing up around one would orphan it.
+    if (hasMannequinsInside(building)) {
+        requester->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
+        return false;
+    }
+
     // Keep a managed reference to the building to prevent it from being deleted
     ManagedReference<BuildingObject*> buildingRef = building;
 
     // Lock the building to prevent concurrent modifications
     Locker buildingLocker(buildingRef);
+
+    // --- Idempotency / concurrency guard -------------------------------
+    // Server-side authority: a structure that is already PACKING or PACKED
+    // must reject a second pack request outright, without touching any
+    // object, credit, or the deed. Checked and set while buildingRef is
+    // locked above, so two near-simultaneous radial invocations (double
+    // click, lag, duplicate packet) serialize on the lock and the second
+    // one always sees the state the first one just set -- no separate
+    // custom locking framework needed, this is Core3's normal object lock.
+    if (buildingRef->getHousePackState() != HousePackState::NORMAL) {
+        requester->sendSystemMessage(
+            buildingRef->getHousePackState() == HousePackState::PACKED
+                ? "This structure has already been packed up. Use 'Destroy Structure' to reclaim the deed."
+                : "This structure is already being packed up. Please wait.");
+        return false;
+    }
+
+    // Mark PACKING immediately (before any destructive work) so a crash mid-pack
+    // leaves a state an administrator/GM tool can positively identify as
+    // incomplete, rather than silently reading as NORMAL (which would allow a
+    // conflicting pack attempt) or PACKED (which would falsely claim success).
+    buildingRef->setHousePackState(HousePackState::PACKING);
 
     // Collect all cells
     Vector< ManagedReference<CellObject*> > cells;
@@ -792,17 +945,27 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
                 << " writtenToBlob=true";
     }
 
-    // Remember payload (RAM) and also persist to disk so it survives restarts.
-    rememberPayloadForBuilding(buildingRef->getObjectID(), blob);
+    // Persist the payload directly on the building itself (normal Core3 object
+    // persistence -- the same mechanism that already reliably preserves
+    // maintenance/power) instead of only a RAM hashtable + external file. This
+    // is the fix for packed contents disappearing after the deed sat around for
+    // a while: the old RAM-hashtable/file scheme required the underlying items
+    // to still be resident in the ORB's live object table (DOBObjectManager)
+    // when later looked up by getObject(); the engine's own periodic save
+    // cycle evicts unreferenced objects like these from RAM (they remain valid
+    // rows in Berkeley DB, but getObject() no longer finds them) well before a
+    // player gets around to placing the deed. Storing the manifest as an idl
+    // field on the building/deed sidesteps that -- it's just normal object
+    // state -- and restoreFromDeed() below now also falls back to
+    // ObjectManager::loadPersistentObject() to reclaim the *original* items
+    // even if they were evicted from RAM in the meantime.
+    buildingRef->setHousePackedPayload(blob);
+    buildingRef->setHousePackedItemCount(count);
+    buildingRef->setHousePackTimestamp((uint32) std::time(nullptr));
 
-    const String p = pathForBuilding(buildingRef->getObjectID());
-    bool wrote = writeBlobToFile(p, blob);
-
-    // Tell the player exactly what happened so we can verify paths/sizes easily.
-    requester->sendSystemMessage(
-        String("Pack: wrote ") + String::valueOf((int)blob.size()) + " bytes to " + p +
-        (wrote ? String(" [OK]") : String(" [FAILED]"))
-    );
+    debug() << "[HOUSEPACK] Structure=" << buildingRef->getObjectID()
+            << " ExpectedObjects=" << count
+            << " PayloadBytes=" << blob.size() << " State=PACKING";
 
     // Now empty the interior so the core will allow redeed/destruction.
     if (buildingRef != nullptr && buildingRef->getZone() != nullptr) {
@@ -829,57 +992,115 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
             }
         }
 
-        if (totalDeleted > 0) {
-            requester->sendSystemMessage("Removed " + String::valueOf(totalDeleted) + " items from structure.");
-        }
+        debug() << "[HOUSEPACK] Structure=" << buildingRef->getObjectID()
+                << " top-level objects removed from world=" << totalDeleted
+                << " (manifest ExpectedObjects=" << count << " includes nested children)";
     }
 
-    requester->sendSystemMessage(
-        "Packed " + String::valueOf(count) +
-        " items. Use 'Destroy Structure' to reclaim the deed. "
-        "When the deed is granted, contents will be attached automatically."
-    );
+    // Only now, after the manifest has been captured on the building and the
+    // interior successfully cleared, do we consider the pack complete. Player
+    // feedback matches the requested wording and never leaks internal file
+    // paths/object IDs.
+    buildingRef->setHousePackState(HousePackState::PACKED);
+
+    requester->sendSystemMessage(count > 0
+        ? ("Structure packed successfully. " + String::valueOf(count) + " stored objects have been preserved with this structure.")
+        : String("Structure packed successfully. No stored objects were present."));
+
+    info(true) << "[HOUSEPACK] Player=" << requester->getObjectID()
+               << " Structure=" << buildingRef->getObjectID()
+               << " StructureTemplate=" << (buildingRef->getObjectTemplate() != nullptr ? buildingRef->getObjectTemplate()->getFullTemplateString() : String("<none>"))
+               << " ExpectedObjects=" << count
+               << " Maintenance=" << buildingRef->getSurplusMaintenance()
+               << " State=PACKED Result=SUCCESS";
 
     return true;
 }
 
 
-bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleObject* deed, CreatureObject* placer) {
+bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, StructureDeed* deed, CreatureObject* placer) {
     if (!newBuilding || !deed) return false;
+
+    // Serialize concurrent restore attempts on this exact deed (double
+    // placement, duplicate packet, lag-induced replay). Core3 Lockers are
+    // recursive per-thread, so this is safe even if a caller upstream already
+    // holds the lock.
+    Locker deedLocker(deed);
 
     const uint64 deedOID = deed->getObjectID();
     Vector<uint8> blob;
 
-    // -------- Locate payload (RAM, then disk; migrate from building if found) --------
-    if (gDeedPayloads.containsKey(deedOID)) {
-        blob = gDeedPayloads.get(deedOID);
-    } else {
-        const String dpath       = pathForDeed(deedOID);
-        const String dpathLegacy = pathForDeedLegacy(deedOID);
+    // -------- Idempotency guard (server-side authority) --------
+    // A deed that is currently RESTORING, already CONSUMED, or flagged PARTIAL
+    // from a prior incomplete restore must reject a new restore request
+    // outright -- no object is touched, no credit is manipulated. This is what
+    // actually prevents duplicate placement / duplicate packets / replayed
+    // commands from restoring (and therefore duplicating) the same contents
+    // twice; the deed being consumed on successful placement is a convenience,
+    // not the safeguard.
+    int priorPackState = deed->getHousePackState();
 
-        if (!readBlobFromFile(dpath, blob)) {
-            (void)readBlobFromFile(dpathLegacy, blob);
-        }
+    if (priorPackState == HousePackState::RESTORING) {
+        if (placer) placer->sendSystemMessage("This deed's contents are already being restored. Please wait and try again.");
+        return false;
+    }
 
-        if (blob.isEmpty()) {
-            const uint64 bOID      = newBuilding->getObjectID();
-            const String bpath     = pathForBuilding(bOID);
-            const String bpathLeg  = pathForBuildingLegacy(bOID);
+    if (priorPackState == HousePackState::CONSUMED) {
+        if (placer) placer->sendSystemMessage("This deed's packed contents have already been restored.");
+        return false;
+    }
 
-            if (gBuildingPayloads.containsKey(bOID)) {
-                blob = gBuildingPayloads.get(bOID);
-                gBuildingPayloads.remove(bOID);
-            } else {
-                if (!readBlobFromFile(bpath, blob)) {
-                    (void)readBlobFromFile(bpathLeg, blob);
-                    if (!blob.isEmpty()) removeFile(bpathLeg);
-                }
-                if (!blob.isEmpty()) removeFile(bpath);
+    if (priorPackState == HousePackState::PARTIAL) {
+        if (placer) placer->sendSystemMessage(
+            "This deed has an incomplete prior restoration and requires administrator review "
+            "before it can be placed again.");
+        return false;
+    }
+
+    // -------- Locate payload: new idl field first, then legacy RAM/disk/building fallback --------
+    if (deed->hasHousePackedPayload()) {
+        blob = *deed->getHousePackedPayload();
+    }
+
+    if (blob.isEmpty()) {
+        // Legacy fallback for deeds packed by a pre-fix server build, where the
+        // manifest still lives only in the RAM hashtable / housepacks/*.bin
+        // files instead of on the deed's own persisted fields.
+        if (gDeedPayloads.containsKey(deedOID)) {
+            blob = gDeedPayloads.get(deedOID);
+        } else {
+            const String dpath       = pathForDeed(deedOID);
+            const String dpathLegacy = pathForDeedLegacy(deedOID);
+
+            if (!readBlobFromFile(dpath, blob)) {
+                (void)readBlobFromFile(dpathLegacy, blob);
             }
 
-            if (!blob.isEmpty()) {
-                gDeedPayloads.put(deedOID, blob);
-                (void)writeBlobToFile(dpath, blob);
+            if (blob.isEmpty()) {
+                const uint64 bOID = newBuilding->getObjectID();
+
+                if (newBuilding->hasHousePackedPayload()) {
+                    // Pre-fix crash window: Pack Up completed (payload landed on
+                    // the building) but Destroy Structure never got around to
+                    // moving it onto the deed. Recover it here instead of
+                    // treating the deed as unpacked.
+                    blob = *newBuilding->getHousePackedPayload();
+                    newBuilding->clearHousePackedPayload();
+                } else {
+                    const String bpath     = pathForBuilding(bOID);
+                    const String bpathLeg  = pathForBuildingLegacy(bOID);
+
+                    if (gBuildingPayloads.containsKey(bOID)) {
+                        blob = gBuildingPayloads.get(bOID);
+                        gBuildingPayloads.remove(bOID);
+                    } else {
+                        if (!readBlobFromFile(bpath, blob)) {
+                            (void)readBlobFromFile(bpathLeg, blob);
+                            if (!blob.isEmpty()) removeFile(bpathLeg);
+                        }
+                        if (!blob.isEmpty()) removeFile(bpath);
+                    }
+                }
             }
         }
     }
@@ -889,6 +1110,12 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         return false;
     }
 
+    // Committed to attempting this exact payload now. Anchor it on the deed and
+    // mark RESTORING (still holding deedLocker) so a second, near-simultaneous
+    // placement of the same deed can't also enter this function.
+    deed->setHousePackedPayload(blob);
+    deed->setHousePackState(HousePackState::RESTORING);
+
     // -------- Readers (big-endian) --------
     auto rU8   = [&](int& o)->uint8  { return blob.get(o++); };
     auto rU16B = [&](int& o)->uint16 { uint16 v = ((uint16)blob.get(o) << 8) | ((uint16)blob.get(o+1)); o += 2; return v; };
@@ -897,10 +1124,17 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
 
     int off = 0;
     if ((int)blob.size() < 5) {
-        if (placer) placer->sendSystemMessage("Packed data is corrupted.");
+        // Truly unrecoverable: we can't tell how many items (if any) this blob
+        // represented. Per the "never silently lose ambiguous state" rule this
+        // is flagged PARTIAL (needs administrator review) rather than quietly
+        // dropped or treated as "nothing was ever packed".
+        if (placer) placer->sendSystemMessage(
+            "Packed data is corrupted. This deed requires administrator review before it can be placed again.");
+        deed->setHousePackState(HousePackState::PARTIAL);
         gDeedPayloads.remove(deedOID);
         removeFile(pathForDeed(deedOID));
         removeFile(pathForDeedLegacy(deedOID));
+        warning() << "[HOUSEPACK ERROR] Deed=" << deedOID << " corrupted payload (size=" << blob.size() << ") -- RESTORE ABORTED, flagged PARTIAL for review";
         return false;
     }
 
@@ -913,10 +1147,14 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
     listCells(newBuilding, cells);
 
     if (cells.isEmpty()) {
-        gDeedPayloads.remove(deedOID);
-        removeFile(pathForDeed(deedOID));
-        removeFile(pathForDeedLegacy(deedOID));
-        if (placer) placer->sendSystemMessage("Restore aborted: building has no cells.");
+        // Not the deed's fault -- the newly placed structure simply has no
+        // cells to restore into. The payload is perfectly intact; leave it on
+        // the deed and revert to PACKED so the exact same contents can be
+        // recovered on a subsequent (successful) placement instead of being
+        // silently discarded.
+        deed->setHousePackState(HousePackState::PACKED_ON_DEED);
+        if (placer) placer->sendSystemMessage("Restore aborted: building has no cells. Your packed contents were NOT lost -- please try placing the structure again or contact an administrator.");
+        warning() << "[HOUSEPACK ERROR] Deed=" << deedOID << " Structure=" << newBuilding->getObjectID() << " has no cells -- RESTORE ABORTED, contents preserved on deed";
         return false;
     }
 
@@ -1000,9 +1238,32 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
         // Try to load existing object from database (preserves ObjVars like colors, serial numbers, stats)
         SceneObject* raw = nullptr;
         if (ver >= 4 && savedObjID != 0 && newBuilding) {
-            // Try to load from database by OID - this preserves all ObjVars
+            // First check if it's still resident in the live object table (fast
+            // path: normal case right after packing).
             ManagedReference<SceneObject*> loadedObj = newBuilding->getZone()->getZoneServer()->getObject(savedObjID);
             raw = loadedObj.get();
+
+            // THE FIX for items disappearing after any meaningful delay: getObject()
+            // above only searches objects currently loaded in RAM. Packed items are
+            // detached (no parent, no zone, nothing else referencing them), so the
+            // engine's own periodic save cycle (DOBObjectManager::runObjectsMarkedForUpdate,
+            // default every 5 minutes) evicts them from RAM once their reference count
+            // hits its minimum -- the row is still perfectly intact in Berkeley DB, but
+            // getObject() can no longer find it. ObjectManager::loadPersistentObject()
+            // reads the object directly from its owning DB table by ID regardless of
+            // RAM residency, reconstructing the correct class with its saved state (the
+            // same fallback the engine itself uses in ObjectManager::destroyObjectFromDatabase
+            // for this exact "might not be loaded" situation). Without this, any pack left
+            // sitting for more than a few minutes -- or across any logout/restart -- would
+            // silently fall through to fabricating a brand-new blank replacement below.
+            if (raw == nullptr) {
+                Reference<DistributedObjectStub*> stub = ObjectManager::instance()->loadPersistentObject(savedObjID);
+                raw = (stub != nullptr) ? cast<SceneObject*>(stub.get()) : nullptr;
+
+                debug() << "Restore item[" << k << "] objID=" << savedObjID
+                        << " not resident in RAM; loadPersistentObject() "
+                        << (raw != nullptr ? "recovered the original object" : "found nothing (object truly gone)");
+            }
         }
 
         // Fallback: Create new object if not found in database
@@ -1126,6 +1387,13 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
     }
 
     // -------- Cleanup: don't double-restore --------
+    // Clear both the new (idl field) and legacy (RAM/disk) storage now that
+    // this payload has been fully processed -- whether every item made it back
+    // or not, this exact blob is not attempted again (a genuinely partial
+    // result is flagged PARTIAL below and surfaced via /housepackinfo, never
+    // silently retried, which is how a duplicate-restore would produce
+    // duplicated items).
+    deed->clearHousePackedPayload();
     gDeedPayloads.remove(deedOID);
     removeFile(pathForDeed(deedOID));
     removeFile(pathForDeedLegacy(deedOID));
@@ -1147,6 +1415,13 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
                 " -- object IDs preserved (not deleted) and listed in " + recoveryPath);
     }
 
+    // Finalize state: only a fully clean restore consumes the deed's pack
+    // record. Any discrepancy (per the "never knowingly commit a partial
+    // result" requirement) leaves it flagged PARTIAL for administrator
+    // review via /housepackinfo instead of quietly treating it as done.
+    bool fullyRestored = failedCreate == 0 && failedTransfer == 0;
+    deed->setHousePackState(fullyRestored ? HousePackState::CONSUMED : HousePackState::PARTIAL);
+
     if (placer) {
         placer->sendSystemMessage(
             "Restore complete: " +
@@ -1156,6 +1431,20 @@ bool HousePackupManager::restoreFromDeed(BuildingObject* newBuilding, TangibleOb
             (unresolvedObjIDs.isEmpty() ? String("") :
                 String(". Unresolved items were NOT deleted; contact an administrator for recovery."))
         );
+    }
+
+    if (fullyRestored) {
+        info(true) << "[HOUSEPACK] Player=" << (placer != nullptr ? placer->getObjectID() : 0)
+                   << " Deed=" << deedOID << " Structure=" << newBuilding->getObjectID()
+                   << " ExpectedObjects=" << count << " RestoredObjects=" << restored
+                   << " State=CONSUMED Result=SUCCESS";
+    } else {
+        warning() << "[HOUSEPACK ERROR] Player=" << (placer != nullptr ? placer->getObjectID() : 0)
+                  << " Deed=" << deedOID << " Structure=" << newBuilding->getObjectID()
+                  << " ExpectedObjects=" << count << " RestoredObjects=" << restored
+                  << " CreateFailures=" << failedCreate << " TransferFailures=" << failedTransfer
+                  << " State=PARTIAL RESTORE INCOMPLETE -- see /housepackinfo and " << PACK_DIR
+                  << "/unresolved-" << deedOID << ".txt for recovery";
     }
 
     // Free any lot placeholder now that contents are restored.
