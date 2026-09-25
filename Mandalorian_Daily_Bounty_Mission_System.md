@@ -5,7 +5,8 @@ Endgame daily content system for Mandalorian Tribesmen (Chapter 5 completers). P
 
 ## FOB (Frequency Orbital Beacon)
 - **Acquisition**: One-time grant from Mandalorian Recruiter (Mos Eisley cantina)
-- **Eligibility**: Mandalorian Tribesmen only (Chapter 5 complete)
+- **Eligibility**: This character must complete Chapter 5, currently have Novice Bounty Hunter, and wear a Mandalorian Way quest helmet (any custom tier). Account-wide completion does not qualify. Checked for FOB grants/use, mission acceptance (including automatic advancement), waypoint recovery, and camp kills before rewards/progression. Losing eligibility during combat retires the camp; restore eligibility and re-sync to retry the same tier without consuming another daily mission.
+- **Regression check**: From the repository root, run `lua MMOCoreORB/utils/validate_mando_daily_eligibility.lua` (mocked engine; live equip/camp behavior still requires in-game verification).
 - **Inventory Check**: Prevents duplicate FOB grants
 - **Interface**: Right-click radial menu with two options:
   - "Mission Status" - Shows daily progress
