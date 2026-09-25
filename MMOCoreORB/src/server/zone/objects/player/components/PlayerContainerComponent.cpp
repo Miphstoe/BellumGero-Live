@@ -9,6 +9,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/FactionStatus.h"
+#include "server/zone/objects/player/Races.h"
 #include "server/zone/objects/tangible/wearables/ArmorObject.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -34,8 +35,22 @@ int PlayerContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject
         		String race = creo->getObjectTemplate()->getFullTemplateString();
 
         		if (!races->contains(race.hashCode())) {
-            errorDescription = "You lack the necessary requirements to wear this object";
-            return TransferErrorCode::PLAYERUSEMASKERROR;
+            // BG: vanilla-authored playerRaces lists (weapons, backpacks, and any other
+            // non-WearableObject equippable) only ever list the original 10 species' template
+            // paths -- bg_species1.tre's 47 custom templates are never in them. Weapons are
+            // audited independently and get the same universal access as everyone else
+            // (Hutt included). Everything else (e.g. backpacks) gets it for every custom
+            // species except Hutt, so Hutt's existing (unrestricted-by-us) behavior for those
+            // categories is left exactly as it was before this change.
+            int raceId = Races::getRaceID(race);
+            bool isCustomSpecies = raceId >= 20 && raceId <= 66;
+            bool isHutt = raceId == 32 || raceId == 33;
+            bool bypassForCustomSpecies = isCustomSpecies && (object->isWeaponObject() || !isHutt);
+
+            if (!bypassForCustomSpecies) {
+                errorDescription = "You lack the necessary requirements to wear this object";
+                return TransferErrorCode::PLAYERUSEMASKERROR;
+            }
         		}
     		}
 		}

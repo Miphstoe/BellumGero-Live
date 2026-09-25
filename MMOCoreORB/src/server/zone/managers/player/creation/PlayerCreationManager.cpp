@@ -617,16 +617,33 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	return true;
 }
 
+// BG: racialCreationData is keyed by the exact "<template>_male"/"<template>_female" strings
+// found in datatables/creation/attribute_limits.iff's own male_template/female_template columns
+// -- not simply "<species>_male"/"<species>_female". Every original species (and most bg_species1.tre
+// custom species) has a real male template, so "race + _male" has always happened to resolve
+// correctly. Nightsister, Togruta, and SMC are female-only: their row's male_template column has
+// no real male template to reference, so the TRE only ever registers a "<species>_female" key.
+// Blindly querying "<species>_male" for these three silently fell through to Human's attribute
+// range, which desynced from what the client (reading the same TRE data correctly) offered the
+// player -- causing legitimate stat migration submissions to be rejected as "hacking attempts".
+// Try "_male" first (preserves every existing species' behavior exactly), then "_female", before
+// falling back to Human.
+static Reference<RacialCreationData*> lookupRacialCreationData(const VectorMap<String, Reference<RacialCreationData*> >& racialCreationData, const String& race) {
+	Reference<RacialCreationData*> racialData = racialCreationData.get(race + "_male");
+
+	if (racialData == nullptr)
+		racialData = racialCreationData.get(race + "_female");
+
+	return racialData;
+}
+
 int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeMax(attributeNumber);
@@ -638,14 +655,11 @@ int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 
 int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeMin(attributeNumber);
@@ -656,10 +670,7 @@ int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 }
 
 int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
-	String maleRace = race + "_male";
-
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeTotal();
@@ -1056,10 +1067,27 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 		racialData = racialCreationData.get(0);
 
 	for (int i = 0; i < 9; ++i) {
-		int mod = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
-		creature->setBaseHAM(i, mod, false);
-		creature->setHAM(i, mod, false);
-		creature->setMaxHAM(i, mod, false);
+		int beforeRacial = creature->getBaseHAM(i);
+		int racialMod = racialData->getAttributeMod(i);
+		int finalHAM = beforeRacial + racialMod;
+
+		// BG DIAGNOSTIC (temporary, remove after stat-migration investigation): log Togruta/Chiss
+		// racial HAM calculation at character creation. No behavior change -- finalHAM == mod above.
+		if (race.contains("togruta") || race.contains("chiss")) {
+			info() << "CHARACTER CREATION HAM"
+					<< " | Race: " << race
+					<< " | Attribute: " << i
+					<< " | Before Racial: " << beforeRacial
+					<< " | Racial Mod: " << racialMod
+					<< " | Final: " << finalHAM
+					<< " | Racial Min: " << racialData->getAttributeMin(i)
+					<< " | Racial Max: " << racialData->getAttributeMax(i)
+					<< " | Racial Total: " << racialData->getAttributeTotal();
+		}
+
+		creature->setBaseHAM(i, finalHAM, false);
+		creature->setHAM(i, finalHAM, false);
+		creature->setMaxHAM(i, finalHAM, false);
 	}
 
 	if (startingSkills != nullptr) {

@@ -81,7 +81,8 @@ object_weapon_ranged_carbine_carbine_cdef = object_weapon_ranged_carbine_shared_
 	xpType = "combat_rangedspecialize_carbine",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	certificationsRequired = { "cert_carbine_cdef" },
+	-- BG: CDEF Carbine is a no-cert starter weapon -- anyone can use it.
+	certificationsRequired = { },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "carbine_accuracy" },
 
