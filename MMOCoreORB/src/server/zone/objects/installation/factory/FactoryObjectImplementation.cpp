@@ -1749,7 +1749,7 @@ void FactoryObjectImplementation::sendManufacturingQueueEntrySui(CreatureObject*
 		prompt << "\nReason: " << queueBlockedReasons.get(queueIndex);
 
 	if (queueStatuses.get(queueIndex) == QUEUE_COMPLETED && schematic != nullptr && schematicUsesRemaining > 0)
-		prompt << "\n\nThis batch is complete. Remove the schematic to return its remaining uses to your datapad.";
+		prompt << "\n\nThis batch is complete. Use Update Batch Amount to manufacture additional items, or remove the schematic to return it to your datapad.";
 
 	actions->setPromptText(prompt.toString());
 	actions->setOtherButton(true, "@back");
@@ -2301,14 +2301,16 @@ void FactoryObjectImplementation::sendIngredientHopper(CreatureObject* player) {
 	info(true) << "sendIngredientHopper - Player: " << player->getFirstName();
 #endif
 
-	// Send/open the hopper itself first.
+	// Match the proven output-hopper client flow: introduce the container,
+	// open it, then explicitly introduce each current child once with root
+	// notification enabled. This is required for server-created split resource
+	// stacks / factory crates that otherwise exist correctly server-side but
+	// may not render in the stock client hopper window.
 	inputHopper->sendWithoutContainerObjectsTo(player);
-	inputHopper->openContainerTo(player);
-	inputHopper->notifyObservers(ObserverEventType::OPENCONTAINER, player);
 
-	// Server-created split resource stacks / factory crates may never have been
-	// introduced to this client. Explicitly send every current hopper child
-	// when the hopper is opened, matching the output-hopper behavior.
+	ClientOpenContainerMessage* cont = new ClientOpenContainerMessage(inputHopper);
+	player->sendMessage(cont);
+
 	int hopperSize = inputHopper->getContainerObjectsSize();
 
 #ifdef DEBUG_FACTORIES
@@ -2329,6 +2331,8 @@ void FactoryObjectImplementation::sendIngredientHopper(CreatureObject* player) {
 
 		child->sendTo(player, true, true);
 	}
+
+	inputHopper->notifyObservers(ObserverEventType::OPENCONTAINER, player);
 }
 
 
@@ -2705,7 +2709,45 @@ void FactoryObjectImplementation::handleOperateToggle(CreatureObject* player) {
 		evaluateManufacturingQueue();
 
 		if (!queueEnabled && !isActive()) {
-			player->sendSystemMessage("All queued manufacturing batches are complete. Remove a completed schematic or add another batch.");
+			bool hasUnfinishedBatch = false;
+
+			for (int i = 0; i < queueStatuses.size() && i < queueRemainingLimits.size(); ++i) {
+				if (queueStatuses.get(i) != QUEUE_COMPLETED && queueRemainingLimits.get(i) > 0) {
+					hasUnfinishedBatch = true;
+					break;
+				}
+			}
+
+			if (!hasUnfinishedBatch) {
+				player->sendSystemMessage("All queued manufacturing batches are complete. Update a completed batch, remove a completed schematic, or add another batch.");
+				return;
+			}
+
+			String reason = "";
+
+			if (getMaintenanceRate() != 0 && getSurplusMaintenance() <= 0)
+				reason = "Factory maintenance is insufficient.";
+			else if (getBasePowerRate() != 0 && getSurplusPower() <= 0)
+				reason = "Factory power is insufficient.";
+			else {
+				for (int i = 0; i < queueBlockedReasons.size(); ++i) {
+					if (i < queueStatuses.size() &&
+							queueStatuses.get(i) != QUEUE_COMPLETED &&
+							!queueBlockedReasons.get(i).isEmpty()) {
+						reason = queueBlockedReasons.get(i);
+						break;
+					}
+				}
+			}
+
+			if (reason.isEmpty())
+				reason = "No queued schematic is currently ready to manufacture.";
+
+			player->sendSystemMessage(
+				"The manufacturing queue could not start and has stopped: " +
+				reason +
+				" Correct the issue, then activate the factory again.");
+
 			return;
 		}
 
@@ -2741,7 +2783,10 @@ void FactoryObjectImplementation::handleOperateToggle(CreatureObject* player) {
 			if (reason.isEmpty())
 				reason = "No queued schematic is currently ready to manufacture.";
 
-			player->sendSystemMessage("The manufacturing queue is enabled but currently paused: " + reason + " It will retry automatically.");
+			player->sendSystemMessage(
+				"The manufacturing queue is not currently running: " +
+				reason +
+				" Correct the issue, then activate the factory again.");
 		}
 	} else {
 		queueEnabled = false;
@@ -2947,6 +2992,9 @@ void FactoryObjectImplementation::createNewObject() {
 
 	if (getContainerObjectsSize() == 0) {
 		stopFactory("manf_error", "", "", -1);
+		queueEnabled = false;
+		currentUserName = "";
+		queueIdleNoticeLogged = false;
 		return;
 	}
 
@@ -2954,13 +3002,17 @@ void FactoryObjectImplementation::createNewObject() {
 
 	if (schematic == nullptr || !schematic->isManufactureSchematic()) {
 		stopFactory("manf_error_4", "", "", -1);
+		evaluateManufacturingQueue();
 		return;
 	}
 
 	ManagedReference<TangibleObject*> prototype = cast<TangibleObject*>(schematic->getPrototype());
 
 	if (prototype == nullptr) {
+		int queueIndex = findQueueEntry(schematic->getObjectID());
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic has no prototype.");
 		stopFactory("manf_error_2", "", "", -1);
+		evaluateManufacturingQueue();
 		return;
 	}
 
@@ -2996,6 +3048,7 @@ void FactoryObjectImplementation::createNewObject() {
 	if (!populateSchematicBlueprint(schematic)) {
 		markQueueEntryBlocked(findQueueEntry(schematic->getObjectID()), QUEUE_BLOCKED_INVALID, "Factory ingredient hopper is unavailable.");
 		stopFactory("manf_error_5", "", "", -1);
+		evaluateManufacturingQueue();
 		return;
 	}
 
@@ -3016,7 +3069,10 @@ void FactoryObjectImplementation::createNewObject() {
 	int crateSize = schematic->getFactoryCrateSize();
 
 	if (crateSize <= 0) {
+		int queueIndex = findQueueEntry(schematic->getObjectID());
+		markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic has an invalid factory crate size.");
 		stopFactory("manf_error", "", "", -1);
+		evaluateManufacturingQueue();
 		return;
 	}
 
@@ -3146,15 +3202,25 @@ void FactoryObjectImplementation::createNewObject() {
 			markQueueEntryBlocked(queueIndex, QUEUE_BLOCKED_INVALID, "Manufacturing schematic was exhausted before the requested batch completed.");
 
 		stopFactory("manf_done", getDisplayedName(), "", currentRunCount);
+		evaluateManufacturingQueue();
 		return;
 	}
 
 	Reference<Task*> pending = getPendingTask("createFactoryObject");
 
-	if (pending != nullptr)
+	if (pending != nullptr) {
 		pending->reschedule(timer * 1000);
-	else
+	} else {
+		warning() << "Factory production task unexpectedly missing. FactoryID: " << getObjectID()
+			<< " SchematicID: " << schematic->getObjectID()
+			<< " QueuePosition: " << queueIndex + 1
+			<< ". Stopping the queue session to avoid an automatic restart loop.";
+
 		stopFactory("manf_error", "", "", -1);
+		queueEnabled = false;
+		currentUserName = "";
+		queueIdleNoticeLogged = false;
+	}
 }
 
 FactoryCrate* FactoryObjectImplementation::locateCrateInOutputHopper(TangibleObject* prototype) {
