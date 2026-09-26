@@ -158,6 +158,12 @@ namespace creature {
 		int removeQuestMission(lua_State* L);
 		int addSpaceMissionObject(lua_State* L);
 		int removeSpaceMissionObject(lua_State* L);
+
+		// BG: Species Change Token support (see SpeciesChangeManager)
+		int speciesChangeIsNaked(lua_State* L);
+		int speciesChangeGetBlockedReason(lua_State* L);
+		int speciesChangeGetEligibleSpecies(lua_State* L);
+		int speciesChangeApply(lua_State* L);
 	private:
 		// The pointer to the 'real object' defined in object.cc
 		CreatureObject* realObject;
