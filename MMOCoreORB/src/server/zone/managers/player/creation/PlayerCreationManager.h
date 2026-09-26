@@ -135,6 +135,17 @@ public:
 	int getTotalAttributeLimit(const String& race) const;
 
 	/**
+	 * BG: Species Change Token support. Returns the same per-template racial creation data
+	 * (attribute min/max/total, and per-attribute racial HAM modifier) used at character creation,
+	 * keyed by the exact template file name (e.g. "chiss_male", from SharedObjectTemplate::
+	 * getTemplateFileName()) -- not a bare species name. Falls back to human_male's data if the
+	 * template has no TRE row, exactly like getMinimum/MaximumAttributeLimit above already do --
+	 * never the fragile, load-order-dependent ".get(0)" fallback addRacialMods() uses internally for
+	 * brand new characters.
+	 */
+	RacialCreationData* getRacialCreationData(const String& templateFileName) const;
+
+	/**
 	 * Adds starting Weapons into the target container
 	 * @param creature the player creature
 	 * @param container the target container

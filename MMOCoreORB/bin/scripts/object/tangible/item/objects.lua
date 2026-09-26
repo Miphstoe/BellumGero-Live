@@ -341,3 +341,10 @@ object_tangible_item_shared_return_ticket = SharedTangibleObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_item_shared_return_ticket, "object/tangible/item/shared_return_ticket.iff")
+
+-- Bellum Gero: Species Change Token
+object_tangible_item_shared_species_change_token = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/item/shared_species_change_token.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_item_shared_species_change_token, "object/tangible/item/shared_species_change_token.iff")

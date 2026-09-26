@@ -57,3 +57,4 @@ includeFile("tangible/item/vehicle_customization.lua")
 includeFile("tangible/item/sea_removal_tool.lua")
 
 includeFile("tangible/item/return_ticket.lua")
+includeFile("tangible/item/species_change_token.lua")

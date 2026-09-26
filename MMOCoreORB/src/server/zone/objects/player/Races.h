@@ -529,6 +529,22 @@ public:
     	return 0;
 	}
 
+	// BG: Species Change Token support -- given a species name (a Species[] value, e.g. "chiss") and
+	// a desired gender ("male"/"female"), returns the matching raceid, or -1 if that species has no
+	// template for that gender. Do not assume every species has both genders: most bg_species1.tre
+	// custom species are male-only, and Nightsister/Togruta/SMC are female-only. See
+	// docs/bellum_species1_mapping.md for the full list. Unlike getRaceID() above, this returns -1
+	// (not 0/human) on no match, since a caller here needs to distinguish "no such species/gender
+	// combination" from "human male".
+	inline static int getRaceIDForSpeciesGender(const String& speciesName, const String& gender) {
+		for (int i = 0; i < TotalRaces; ++i) {
+			if (speciesName == Species[i] && gender == Gender[i])
+				return i;
+		}
+
+		return -1;
+	}
+
 	//-- attributeLimits[10][19] only ever held data for the original 10 species; raceid % 10 was already a
 	//-- deliberate male/female-mirroring hack for that fixed 20-entry layout. It is unused anywhere in the
 	//-- codebase (real per-species attribute caps are loaded at runtime from datatables/creation/attribute_limits.iff

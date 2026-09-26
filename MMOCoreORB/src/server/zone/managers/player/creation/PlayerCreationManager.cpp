@@ -679,6 +679,15 @@ int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
 	}
 }
 
+RacialCreationData* PlayerCreationManager::getRacialCreationData(const String& templateFileName) const {
+	Reference<RacialCreationData*> data = racialCreationData.get(templateFileName);
+
+	if (data == nullptr)
+		data = racialCreationData.get("human_male");
+
+	return data;
+}
+
 bool PlayerCreationManager::validateCharacterName(const String& characterName) const {
 	return true;
 }
