@@ -146,6 +146,18 @@ public:
 	RacialCreationData* getRacialCreationData(const String& templateFileName) const;
 
 	/**
+	 * BG: Species Change Token support. Returns true only if templateFileName has its OWN curated
+	 * row in datatables/creation/racial_mods.iff/attribute_limits.iff -- i.e. getRacialCreationData()
+	 * would NOT be falling back to human_male's numbers for it. Character creation's fallback-to-
+	 * human behavior for the ~8 approved bg_species1.tre species missing this data (e.g. Talz) is
+	 * intentionally left unchanged by this method; it exists so callers that need to know whether
+	 * they'd be silently substituting Human stats (unacceptable for a permanent species conversion,
+	 * even though acceptable/pre-existing for brand-new character creation) can detect and report
+	 * that distinctly instead.
+	 */
+	bool hasCuratedRacialCreationData(const String& templateFileName) const;
+
+	/**
 	 * Adds starting Weapons into the target container
 	 * @param creature the player creature
 	 * @param container the target container

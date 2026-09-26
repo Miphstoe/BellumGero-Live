@@ -13,6 +13,7 @@
 #include "server/zone/ZoneClientSession.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
+#include "server/zone/objects/scene/SessionFacadeType.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/Races.h"
 #include "server/zone/managers/player/creation/PlayerCreationManager.h"
@@ -192,6 +193,15 @@ String SpeciesChangeManager::getBlockedReason(CreatureObject* creature) const {
 	if (creature->isPilotingShip())
 		return "You cannot use a Species Change Token while piloting a ship.";
 
+	// MigrateStatsSession is a purely transient, in-memory session (holds only the player's pending,
+	// not-yet-committed attribute redistribution) -- it has no persisted state, so nothing about it
+	// needs to be "reset" by a species change. But if one is left open while a species change
+	// commits, a subsequent migrateStats() call on it would apply a pending allocation computed
+	// against the OLD species' limits directly on top of the freshly-reset NEW species baseline,
+	// producing an invalid mixed result. Simplest safe fix: just don't allow both at once.
+	if (creature->containsActiveSession(SessionFacadeType::MIGRATESTATS))
+		return "You cannot use a Species Change Token while a stat migration is in progress. Please finish or cancel it first.";
+
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	if (ghost == nullptr)
@@ -347,18 +357,37 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	RacialCreationData* newRacialData = pcm->getRacialCreationData(newRacialKey);
 
 	if (oldRacialData == nullptr || newRacialData == nullptr) {
-		error("Species Change: missing racial creation data (old=" + oldRacialKey + " new=" + newRacialKey + ")");
+		// In practice this only happens if even the human_male fallback row itself is missing --
+		// getRacialCreationData() falls back to human_male for any template with no curated row of
+		// its own, so a true nullptr here means the racial creation data table failed to load at all.
+		error("Species Change: missing racial creation data entirely (old=" + oldRacialKey + " new=" + newRacialKey + ") -- aborting, character unchanged");
 		return "Your species could not be changed due to a server data error. Please contact staff.";
 	}
 
-	const Vector<int>& oldBaseHAM = oldCreoTemplate->getBaseHAM();
-	const Vector<int>& newBaseHAM = newCreoTemplate->getBaseHAM();
+	// BG: unlike character creation (which silently falls back to Human's numbers for the ~8
+	// approved species missing a curated datatables/creation/racial_mods.iff/attribute_limits.iff
+	// row -- an accepted, pre-existing, documented limitation), a permanent Species Change Token
+	// conversion is held to a stricter bar: we do NOT abort for this (doing so would make Talz, one
+	// of the four species this feature was explicitly extended to support, permanently unusable as a
+	// destination), but we DO log it plainly so it is never silently mistaken for curated data.
+	bool usingCuratedRacialData = pcm->hasCuratedRacialCreationData(newRacialKey);
+
+	if (!usingCuratedRacialData) {
+		error() << "SpeciesChange: destination species '" << newSpeciesName << "' (" << newRacialKey
+				<< ") has no curated racial_mods.iff/attribute_limits.iff row -- using Human's numbers"
+				<< " via PlayerCreationManager's existing character-creation fallback, exactly as a"
+				<< " brand-new character of this species would get.";
+	}
 
 	// Capture everything that must survive the template swap BEFORE calling loadTemplateData(),
 	// which unconditionally resets a CreatureObject's species-derived fields (HAM, height, speed) to
 	// the NEW template's raw defaults, and -- much less obviously -- also resets
 	// SceneObject::customName (the character's actual chosen name!) from the template's own,
 	// normally-empty-for-player-templates customName field. Both are manually reinstated below.
+	// currentBaseHAM specifically must be captured here too: it is the character's actual current
+	// allocation (profession-derived baseline, plus whatever they have since stat-migrated), and
+	// resetSpeciesStats() needs it as-is, not the raw values loadTemplateData() is about to overwrite
+	// it with.
 	UnicodeString originalFullName = creature->getCustomObjectName();
 
 	int currentBaseHAM[9];
@@ -382,32 +411,7 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	// Restore the character's actual name (see comment above).
 	creature->setCustomObjectName(originalFullName, false);
 
-	// Recompute HAM: preserve every point of legitimate progression (skills, prior stat migration,
-	// etc.) by shifting the player's EXISTING base HAM by the delta between the two species'
-	// (template baseline + racial modifier) instead of overwriting it with the new template's raw
-	// starting values, which would silently erase a played character's entire HAM growth. Then
-	// clamp into the new species' attribute_limits.iff min/max so the result can never be invalid,
-	// even though the total may not exactly match the new species' total cap -- the player can use
-	// the existing stat migration tool (Image Designer) afterward to rebalance if they want to.
-	for (int i = 0; i < 9; ++i) {
-		int oldStarting = (i < oldBaseHAM.size() ? oldBaseHAM.get(i) : 0) + oldRacialData->getAttributeMod(i);
-		int newStarting = (i < newBaseHAM.size() ? newBaseHAM.get(i) : 0) + newRacialData->getAttributeMod(i);
-
-		int delta = newStarting - oldStarting;
-		int adjusted = currentBaseHAM[i] + delta;
-
-		int minLimit = pcm->getMinimumAttributeLimit(newSpeciesName, i);
-		int maxLimit = pcm->getMaximumAttributeLimit(newSpeciesName, i);
-
-		if (adjusted < minLimit)
-			adjusted = minLimit;
-		else if (adjusted > maxLimit)
-			adjusted = maxLimit;
-
-		creature->setBaseHAM(i, adjusted, false);
-		creature->setHAM(i, adjusted, false);
-		creature->setMaxHAM(i, adjusted, false);
-	}
+	resetSpeciesStats(creature, currentBaseHAM, oldRacialData, newRacialData, usingCuratedRacialData, oldSpeciesName, newSpeciesName);
 
 	// Appearance: there is no existing Core3 mechanism to synthesize a valid randomized default
 	// appearance for an arbitrary template (Image Designer only ever nudges an EXISTING, already
@@ -441,6 +445,111 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	forceRelog(creature);
 
 	return "";
+}
+
+void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int (&currentBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const {
+	if (creature == nullptr || oldRacialData == nullptr || newRacialData == nullptr)
+		return;
+
+	PlayerCreationManager* pcm = PlayerCreationManager::instance();
+
+	// Clear buffs BEFORE touching HAM. Buff::deactivate() (invoked by clearBuffs(), via each buff's
+	// own removal path) is the only safe way to reverse whatever a buff already added to maxHAM --
+	// resetting maxHAM first and letting a still-active buff be removed afterward on its own would
+	// have it subtract its bonus from a maxHAM value it never actually contributed to, silently
+	// corrupting the result. removeAll=false mirrors the exact call Character Builder's
+	// "reset_buffs" option already uses (SuiManager.cpp) -- it respects each buff's own
+	// removeOnClearBuffs() flag rather than force-clearing everything.
+	creature->clearBuffs(true, false);
+
+	// Zero current damage/wounds/battle fatigue so the character enters the new species in a clean,
+	// fully-healed state rather than carrying old-species-relative damage forward. Mirrors Character
+	// Builder's "cleanse_character" option exactly (SuiManager.cpp).
+	for (int i = 0; i < 9; ++i)
+		creature->setWounds(i, 0);
+
+	creature->setShockWounds(0);
+
+	// Purely for the diagnostic log line below -- not used for any game logic. Standard SWG HAM
+	// attribute order, matching PlayerCreationManager::addRacialMods()'s 0-8 indexing.
+	static const char* attributeNames[9] = {
+			"health", "strength", "constitution",
+			"action", "quickness", "stamina",
+			"mind", "focus", "willpower"
+	};
+
+	StringBuffer hamLog;
+
+	// Adjust base/current/max HAM by swapping the OLD species' racial modifier out for the NEW
+	// species' -- everything else about the character's current allocation (profession-derived
+	// baseline from creation, plus any legitimate stat-migration redistribution since) is preserved
+	// as-is, because none of it is actually species-dependent (see the design comment on this method
+	// in SpeciesChangeManager.h for the full reasoning and the incorrect formula this replaces).
+	int bgSumBefore = 0;
+	int bgSumAfter = 0;
+	bool bgAnyClamped = false;
+
+	for (int i = 0; i < 9; ++i) {
+		int oldRacialMod = oldRacialData->getAttributeMod(i);
+		int newRacialMod = newRacialData->getAttributeMod(i);
+		int delta = newRacialMod - oldRacialMod;
+
+		int adjusted = currentBaseHAM[i] + delta;
+		int preClampHAM = adjusted;
+
+		int minLimit = pcm->getMinimumAttributeLimit(newSpeciesName, i);
+		int maxLimit = pcm->getMaximumAttributeLimit(newSpeciesName, i);
+
+		// Clamp into the new species' declared range -- necessary in the general case (e.g. a
+		// character who stat-migrated heavily toward one attribute under a species with a much wider
+		// range than the destination species could otherwise end up above the new max). The
+		// resulting total may not exactly match the new species' total cap either way; the existing
+		// stat migration tool remains available afterward for the player to rebalance exactly if
+		// they want to.
+		if (adjusted < minLimit)
+			adjusted = minLimit;
+		else if (adjusted > maxLimit)
+			adjusted = maxLimit;
+
+		if (adjusted != preClampHAM)
+			bgAnyClamped = true;
+
+		bgSumBefore += currentBaseHAM[i];
+		bgSumAfter += adjusted;
+
+		creature->setBaseHAM(i, adjusted, false);
+		creature->setHAM(i, adjusted, false);
+		creature->setMaxHAM(i, adjusted, false);
+
+		hamLog << " " << attributeNames[i] << "=" << adjusted << "(was=" << currentBaseHAM[i]
+				<< ",oldRacialMod=" << oldRacialMod << ",newRacialMod=" << newRacialMod
+				<< ",min=" << minLimit << ",max=" << maxLimit << ")";
+	}
+
+	int bgTotalAttributeLimit = pcm->getTotalAttributeLimit(newSpeciesName);
+
+	// MigrateStatsSession (the stat migration UI's backing session) is purely transient/in-memory --
+	// see getBlockedReason()'s comment -- so there is no persisted migration state to reset here.
+	// Future stat migration sessions will read creature->getSpeciesName() (now the new species) and
+	// creature->getBaseHAM() (now the values just set above) fresh, so the new species' min/max/total
+	// limits are automatically what's enforced from this point on with no further action needed.
+	// sumAfter is expected to still roughly track sumBefore (only the racial-modifier delta should
+	// have moved it) -- it is not expected to equal totalAttributeLimit exactly (a character rarely
+	// has every point allocated; that's what stat migration is for), so no SUM_MATCHES_TOTAL check is
+	// meaningful here the way it was in the (incorrect) template-baseline formula this replaces.
+	info(true) << "SpeciesChange: resetting base stats for " << creature->getFirstName() << " ["
+			<< creature->getObjectID() << "]: " << oldSpeciesName << " -> " << newSpeciesName
+			<< " | curatedRacialData=" << usingCuratedRacialData
+			<< " | totalAttributeLimit=" << bgTotalAttributeLimit
+			<< " | sumBeforeConversion=" << bgSumBefore
+			<< " | sumAfterConversion=" << bgSumAfter
+			<< " | anyAttributeClamped=" << bgAnyClamped
+			<< " |" << hamLog.toString();
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost != nullptr)
+		ghost->recalculateForcePower();
 }
 
 void SpeciesChangeManager::updateCharacterListRecord(CreatureObject* creature, const String& newTemplatePath, int newRace) const {

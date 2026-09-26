@@ -85,6 +85,14 @@ public:
 		// Here we set the stat migration target attributes.
 		// NOTE: We aren't actually migrating the stats at this point.
 		if (targetPointsTotal == getTotalAttribPoints(creature)) {
+			// BG STATMIGRATION DEBUG (temporary, Species Change Token investigation -- remove once
+			// resolved): confirms exactly what the server accepted this submission against.
+			creature->error() << "[BG STATMIGRATION DEBUG] valid migration submission accepted"
+					<< " | player=" << creature->getFirstName() << " [" << creature->getObjectID() << "]"
+					<< " | speciesName=" << creature->getSpeciesName()
+					<< " | targetPointsTotal=" << targetPointsTotal
+					<< " | serverTotalAttribPoints=" << getTotalAttribPoints(creature);
+
 			for (int i = 0; i < 9; ++i) {
 				session->setAttributeToModify(i, targetAttributes[i]);
 			}
