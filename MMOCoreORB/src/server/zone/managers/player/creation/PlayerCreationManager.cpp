@@ -688,6 +688,10 @@ RacialCreationData* PlayerCreationManager::getRacialCreationData(const String& t
 	return data;
 }
 
+bool PlayerCreationManager::hasCuratedRacialCreationData(const String& templateFileName) const {
+	return racialCreationData.get(templateFileName) != nullptr;
+}
+
 bool PlayerCreationManager::validateCharacterName(const String& characterName) const {
 	return true;
 }
@@ -827,24 +831,58 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 
 void PlayerCreationManager::addHair(CreatureObject* creature,
 		const String& hairTemplate, const String& hairCustomization) const {
-	if (hairTemplate.isEmpty())
+	// BG HAIR DEBUG (temporary, Test Center regression investigation -- remove once root cause of
+	// the character-creation baldness regression is confirmed fixed). Uses error() rather than
+	// info() so these lines are never suppressed by this manager's setLogging(false)/
+	// setGlobalLogging(true) construction settings (LogLevel::ERROR=1 always passes the
+	// logLevel(LOG=3) >= level check, unlike INFO=4/DEBUG=5) -- these are diagnostic markers, not
+	// genuine errors.
+	String bgPlayerTemplate = creature->getObjectTemplate() != nullptr ? creature->getObjectTemplate()->getFullTemplateString() : "<null template>";
+
+	error() << "[BG HAIR DEBUG] addHair() called | playerTemplate=" << bgPlayerTemplate
+			<< " | hairTemplate=" << (hairTemplate.isEmpty() ? "<empty>" : hairTemplate)
+			<< " | hairCustomizationLength=" << hairCustomization.length();
+
+	if (hairTemplate.isEmpty()) {
+		error() << "[BG HAIR DEBUG] addHair() aborting: hairTemplate is empty (client sent no hair selection) | playerTemplate=" << bgPlayerTemplate;
 		return;
+	}
 
 	HairStyleInfo* hairInfo = hairStyleInfo.get(hairTemplate);
 
 	if (hairInfo == nullptr)
 		hairInfo = hairStyleInfo.get(0);
 
+	// BG: hair_assets_skill_mods.iff can have multiple rows for the same hair item, one per
+	// compatible player species (this is how bg_species1.tre's custom species reuse stock
+	// hairstyles) -- pass this creature's own player template so the correct row for THIS species
+	// is selected, rather than whichever species' row happened to load last (see
+	// CustomizationIdManager::getHairAssetData()/hairAssetSkillMods for the full explanation; this
+	// was the root cause of the character-creation baldness regression).
 	HairAssetData* hairAssetData =
-			CustomizationIdManager::instance()->getHairAssetData(hairTemplate);
+			CustomizationIdManager::instance()->getHairAssetData(hairTemplate, bgPlayerTemplate);
 
 	if (hairAssetData == nullptr) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: no HairAssetData row found for hairTemplate="
+				<< hairTemplate << " matching playerTemplate=" << bgPlayerTemplate
+				<< " (either this hair template has no rows at all in hair_assets_skill_mods.iff, or"
+				<< " it has rows for other species but none for this one)";
 		error("no hair asset data detected for " + hairTemplate);
 		return;
 	}
 
+	error() << "[BG HAIR DEBUG] HairAssetData found for hairTemplate=" << hairTemplate
+			<< " | sharedTemplate=" << hairAssetData->getSharedTemplate()
+			<< " | serverTemplate=" << hairAssetData->getServerTemplate()
+			<< " | playerTemplate(col1)=" << hairAssetData->getPlayerTemplate()
+			<< " | serverPlayerTemplate=" << hairAssetData->getServerPlayerTemplate()
+			<< " | availableAtCreation=" << hairAssetData->isAvailableAtCreation();
+
 	if (hairAssetData->getServerPlayerTemplate()
 			!= creature->getObjectTemplate()->getFullTemplateString()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: serverPlayerTemplate mismatch | hairTemplate="
+				<< hairTemplate << " | hairAssetData.serverPlayerTemplate=" << hairAssetData->getServerPlayerTemplate()
+				<< " | creature.fullTemplateString=" << bgPlayerTemplate;
 		error(
 				"hair " + hairTemplate
 						+ " is not compatible with this creature player "
@@ -853,6 +891,8 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 	}
 
 	if (!hairAssetData->isAvailableAtCreation()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: hair not flagged availableAtCreation | hairTemplate="
+				<< hairTemplate << " | playerTemplate=" << bgPlayerTemplate;
 		error("hair " + hairTemplate + " not available at creation");
 		return;
 	}
@@ -862,12 +902,18 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 
 	//TODO: Validate hairCustomization
 	if (hair == nullptr) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: zoneServer->createObject(hairTemplate.hashCode(), 1)"
+				<< " returned nullptr -- hair template not registered server-side (no matching"
+				<< " ObjectTemplates:addTemplate registration for CRC of \"" << hairTemplate << "\")"
+				<< " | playerTemplate=" << bgPlayerTemplate;
 		return;
 	}
 
 	Locker locker(hair);
 
 	if (!hair->isTangibleObject()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: created hair object OID=" << hair->getObjectID()
+				<< " is not a TangibleObject | hairTemplate=" << hairTemplate;
 		hair->destroyObjectFromDatabase(true);
 		return;
 	}
@@ -885,10 +931,21 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 
 	data.parseFromClientString(hairCustomization);
 
-	if (ImageDesignManager::validateCustomizationString(&data, appearanceFilename))
+	bool bgCustomizationValid = ImageDesignManager::validateCustomizationString(&data, appearanceFilename);
+
+	error() << "[BG HAIR DEBUG] hair object created | hairOID=" << hair->getObjectID()
+			<< " | appearanceFilename=" << appearanceFilename
+			<< " | customizationValid=" << bgCustomizationValid;
+
+	if (bgCustomizationValid)
 		tanoHair->setCustomizationString(hairCustomization);
 
-	creature->transferObject(tanoHair, 4);
+	bool bgTransferResult = creature->transferObject(tanoHair, 4);
+
+	error() << "[BG HAIR DEBUG] transferObject(hairOID=" << hair->getObjectID()
+			<< ", containmentType=4) result=" << bgTransferResult
+			<< " | hairParentAfterTransfer=" << (hair->getParent().get() != nullptr ? String::valueOf(hair->getParent().get()->getObjectID()) : "<null>")
+			<< " | playerTemplate=" << bgPlayerTemplate;
 }
 
 void PlayerCreationManager::addCustomization(CreatureObject* creature,
@@ -1075,29 +1132,42 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 	if (racialData == nullptr)
 		racialData = racialCreationData.get(0);
 
+	// BG DIAGNOSTIC (temporary, Species Change Token stat-migration investigation -- remove once
+	// resolved). Broadened from the original Togruta/Chiss-only gate to every species, and upgraded
+	// from info() to error() so it is never suppressed by this manager's setLogging(false)/
+	// setGlobalLogging(false) construction settings (see SpeciesChangeManager.cpp's identical note --
+	// LogLevel::ERROR=1 always passes the logLevel(LOG=3) >= level check, unlike INFO=4/DEBUG=5).
+	// Purely diagnostic; finalHAM is computed and applied exactly as before, unclamped, matching
+	// existing behavior -- these are markers, not genuine errors.
+	int bgSumFinalHAM = 0;
+
 	for (int i = 0; i < 9; ++i) {
 		int beforeRacial = creature->getBaseHAM(i);
 		int racialMod = racialData->getAttributeMod(i);
 		int finalHAM = beforeRacial + racialMod;
 
-		// BG DIAGNOSTIC (temporary, remove after stat-migration investigation): log Togruta/Chiss
-		// racial HAM calculation at character creation. No behavior change -- finalHAM == mod above.
-		if (race.contains("togruta") || race.contains("chiss")) {
-			info() << "CHARACTER CREATION HAM"
-					<< " | Race: " << race
-					<< " | Attribute: " << i
-					<< " | Before Racial: " << beforeRacial
-					<< " | Racial Mod: " << racialMod
-					<< " | Final: " << finalHAM
-					<< " | Racial Min: " << racialData->getAttributeMin(i)
-					<< " | Racial Max: " << racialData->getAttributeMax(i)
-					<< " | Racial Total: " << racialData->getAttributeTotal();
-		}
+		bgSumFinalHAM += finalHAM;
+
+		error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM"
+				<< " | Race: " << race
+				<< " | Attribute: " << i
+				<< " | Before Racial (template baseHAM): " << beforeRacial
+				<< " | Racial Mod: " << racialMod
+				<< " | Final: " << finalHAM
+				<< " | Racial Min: " << racialData->getAttributeMin(i)
+				<< " | Racial Max: " << racialData->getAttributeMax(i)
+				<< " | Racial Total: " << racialData->getAttributeTotal()
+				<< " | OUT_OF_RANGE=" << (finalHAM < racialData->getAttributeMin(i) || finalHAM > racialData->getAttributeMax(i));
 
 		creature->setBaseHAM(i, finalHAM, false);
 		creature->setHAM(i, finalHAM, false);
 		creature->setMaxHAM(i, finalHAM, false);
 	}
+
+	error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM SUMMARY | Race: " << race
+			<< " | SumOfFinalHAM: " << bgSumFinalHAM
+			<< " | RacialTotal: " << racialData->getAttributeTotal()
+			<< " | SUM_MATCHES_TOTAL=" << (bgSumFinalHAM == racialData->getAttributeTotal());
 
 	if (startingSkills != nullptr) {
 		for (int i = 0; i < startingSkills->size(); ++i) {

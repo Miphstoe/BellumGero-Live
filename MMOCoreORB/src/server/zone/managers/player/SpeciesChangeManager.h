@@ -42,8 +42,21 @@ namespace scene {
 }
 }
 
+namespace server {
+namespace zone {
+namespace managers {
+namespace player {
+namespace creation {
+	class RacialCreationData;
+}
+}
+}
+}
+}
+
 using namespace server::zone::objects::creature;
 using namespace server::zone::objects::scene;
+using namespace server::zone::managers::player::creation;
 
 namespace server {
 namespace zone {
@@ -68,9 +81,10 @@ public:
 
 	/**
 	 * Checks every non-species, non-naked safety precondition (is an actual player character; not
-	 * dead/incapacitated/in combat/mounted/piloting; not logging out, link-dead, or teleporting).
-	 * Returns an empty string if creature may proceed, otherwise a player-facing reason the attempt
-	 * was blocked.
+	 * dead/incapacitated/in combat/mounted/piloting; not logging out, link-dead, or teleporting; does
+	 * not have an active stat-migration session open -- see applySpeciesChange()'s HAM-reset comment
+	 * for why). Returns an empty string if creature may proceed, otherwise a player-facing reason the
+	 * attempt was blocked.
 	 */
 	String getBlockedReason(CreatureObject* creature) const;
 
@@ -104,10 +118,12 @@ public:
 	 *  - swaps creature's underlying player template (species/gender/race/appearance filename all
 	 *    come from this template, so this is the only way to actually change them);
 	 *  - restores the character's name, which the template swap would otherwise clobber;
-	 *  - recomputes base/current/max HAM by shifting creature's EXISTING values by the delta between
-	 *    the old and new species' (template baseline + racial modifier), preserving every point of
-	 *    legitimate skill-driven HAM growth instead of overwriting it with the new species' raw
-	 *    starting values, then clamps into the new species' attribute_limits.iff min/max;
+	 *  - adjusts base/current/max HAM by swapping out the old species' racial modifier for the new
+	 *    species' (see resetSpeciesStats()'s comment for the full reasoning, including a hard-won
+	 *    correction: the profession-derived baseline underneath the racial modifier is
+	 *    species-independent and is deliberately left untouched, not reset to a species-only value);
+	 *  - clears removable buffs and zeroes wounds/shock wounds first, so no temporary or stale
+	 *    old-species HAM contribution leaks into the reset baseline or double-subtracts later;
 	 *  - resets appearance customization to a valid empty/default state and removes the now
 	 *    species-incompatible hair object;
 	 *  - updates the `characters`/`characters_dirty` character-list database record so the login
@@ -123,6 +139,53 @@ public:
 	String applySpeciesChange(CreatureObject* creature, const String& newSpeciesName) const;
 
 private:
+	/**
+	 * Resets creature's base/current/max HAM (all 9 attributes) so that ONLY the species-dependent
+	 * racial modifier component changes -- the old species' contribution is subtracted out and the
+	 * new species' is added in, leaving everything else about the character's current allocation
+	 * untouched:
+	 *
+	 *     newBaseHAM[i] = currentBaseHAM[i] - oldRacialData->getAttributeMod(i)
+	 *                                       + newRacialData->getAttributeMod(i)
+	 *
+	 * clamped into the new species' attribute_limits.iff min/max.
+	 *
+	 * IMPORTANT, hard-won correction: an earlier version of this method reset HAM to
+	 * "newTemplateBaseHAM[i] + newRacialData->getAttributeMod(i)" (the new player TEMPLATE's own raw
+	 * baseHAM plus the racial modifier), believing that to be the formula
+	 * PlayerCreationManager::addRacialMods() uses for a brand-new character. Tracing the actual
+	 * createCharacter() call order proved that wrong: addProfessionStartingItems() runs
+	 * IMMEDIATELY BEFORE addRacialMods() and unconditionally OVERWRITES base/current/max HAM with
+	 * the chosen starting profession's own attribute_mod row (datatables/creation/profession_mods.iff,
+	 * keyed by profession, NOT by species) -- so addRacialMods()'s "beforeRacial" is that profession
+	 * baseline, and the player TEMPLATE's own baseHAM array is never actually read for this purpose
+	 * at all. Using it here produced a flat, species-uniform, profession-blind result (verified: every
+	 * converted-to-Human character ended up with base/max HAM = attribute_limits.iff's flat minimum
+	 * on all 9 attributes, regardless of profession) that does not correspond to anything a real
+	 * character creation flow produces.
+	 *
+	 * The racial-delta-only approach here sidesteps the problem instead of replicating it: an
+	 * existing character has no single "starting profession" to fall back on (they may have mastered
+	 * several), so rather than guess one, this preserves whatever profession-derived baseline (and
+	 * any legitimate stat-migration redistribution since creation) is already present in
+	 * currentBaseHAM -- since profession_mods.iff is species-independent, none of that needs to
+	 * change for a species conversion -- and swaps out only the one component that Core3 actually
+	 * ties to species: the racial modifier.
+	 *
+	 * Skill/profession HAM bonuses beyond the creation-time baseline are never written into base/max
+	 * HAM at all regardless (SkillManager::awardSkill() applies them via the entirely separate
+	 * CreatureObject::addSkillMod()/skillModList layer, retrieved live via getSkillMod()), so this
+	 * method never needs to touch that layer either way.
+	 *
+	 * Before writing the adjustment, clears removable buffs (CreatureObject::clearBuffs(true, false)
+	 * -- the same call Character Builder's "reset_buffs" option already uses, which properly reverses
+	 * each buff's own HAM contribution via Buff::deactivate() rather than just deleting buff records)
+	 * and zeroes wounds/shock wounds (mirroring Character Builder's "cleanse_character" option), so
+	 * the resulting current HAM is a clean, fully-healed, un-buffed baseline with no stale
+	 * old-species-derived damage/wound/buff arithmetic surviving into the new species.
+	 */
+	void resetSpeciesStats(CreatureObject* creature, const int (&currentBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const;
+
 	/**
 	 * Species Change Token destination allowlist. Not every species Races.h registers a template
 	 * for is currently approved as a destination for this feature -- several bg_species1.tre custom
