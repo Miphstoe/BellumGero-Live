@@ -692,6 +692,29 @@ bool PlayerCreationManager::hasCuratedRacialCreationData(const String& templateF
 	return racialCreationData.get(templateFileName) != nullptr;
 }
 
+int PlayerCreationManager::getProfessionAttributeMod(const String& profession, int attributeNumber) const {
+	if (attributeNumber < 0 || attributeNumber > 8)
+		attributeNumber = 0;
+
+	// Mirrors addProfessionStartingItems()'s own lookup/fallback exactly (see that method below): an
+	// unrecognized profession key falls back to the first-loaded entry rather than to a hardcoded
+	// value, so this never disagrees with what a brand-new character with the same (mis)configured
+	// profession would actually receive.
+	const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.get(profession);
+
+	if (professionData == nullptr)
+		professionData = professionDefaultsInfo.get(0);
+
+	if (professionData == nullptr)
+		return 0;
+
+	return professionData->getAttributeMod(attributeNumber);
+}
+
+bool PlayerCreationManager::hasProfessionAttributeData(const String& profession) const {
+	return professionDefaultsInfo.get(profession) != nullptr;
+}
+
 bool PlayerCreationManager::validateCharacterName(const String& characterName) const {
 	return true;
 }
@@ -761,13 +784,29 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 	SkillManager::instance()->awardSkill(startingSkill->getSkillName(),
 			creature, false, true, true);
 
+	// BG DIAGNOSTIC (temporary, Species Change Token investigation -- remove once resolved; pairs
+	// with the existing "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM" block in addRacialMods()
+	// below, which logs the SAME creature's post-racial-mod final HAM immediately afterward but does
+	// not have the profession KEY available to log -- this block is what lets a fresh-creation log
+	// be correlated, attribute-by-attribute, against SpeciesChangeManager::resetSpeciesStats()'s own
+	// "starterProfession=..." diagnostic line for the same profession key. error() (not info()/debug())
+	// so it is never suppressed by this manager's setLogging(false)/setGlobalLogging(false)
+	// construction settings -- see the identical note on the addRacialMods() block below.
+	StringBuffer bgProfModLog;
+
 	//Set the hams.
 	for (int i = 0; i < 9; ++i) {
 		int mod = professionData->getAttributeMod(i);
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
 		creature->setMaxHAM(i, mod, false);
+
+		bgProfModLog << " attr" << i << "=" << mod;
 	}
+
+	error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION PROFESSION MOD | requestedProfession=\""
+			<< profession << "\" | resolvedFallbackToFirstEntry=" << (professionDefaultsInfo.get(profession) == nullptr)
+			<< " |" << bgProfModLog.toString();
 
 	auto itemTemplates = professionData->getProfessionItems(
 			clientTemplate);
