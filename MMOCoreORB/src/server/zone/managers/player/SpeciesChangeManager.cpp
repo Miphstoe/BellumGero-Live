@@ -73,6 +73,68 @@ bool SpeciesChangeManager::isApprovedDestinationSpecies(const String& speciesNam
 	return false;
 }
 
+// -- Gender-specific destination exclusions ------------------------------------------------------
+//
+// A handful of otherwise-approved species above are broken for only ONE of their two genders.
+// Unlike the species-level exclusions above (a missing/incomplete TRE row -- Races.h has no
+// template for that species/gender combination at all, so getEligibleSpeciesNames()'s own
+// gender-matching loop and Races::getRaceIDForSpeciesGender() already exclude it automatically),
+// this is different: Races.h/the TRE fully register a template, appearance file, and customization
+// data for the broken gender -- structurally it looks exactly as complete as any other entry -- but
+// the resulting in-game character model is an invalid placeholder/box rather than a valid
+// appearance. Since nothing about that failure is detectable from template completeness alone, it
+// has to be encoded here explicitly, the same way the species-level list above encodes "known not
+// to work correctly" species Bellum Gero staff have identified by hand. This exclusion is narrower
+// than the species-level one: it removes only the broken gender, leaving the other gender of the
+// same species fully approved and unaffected.
+//
+// Current policy:
+//  - Devaronian: FEMALE is excluded (produces an invalid placeholder appearance in-game). MALE
+//    remains approved and unaffected. Do not add female Devaronian back without an explicit
+//    decision to do so once/if the underlying female appearance asset is actually fixed -- this
+//    task does not attempt that repair (see SpeciesChangeManager.h's doc comment on
+//    isApprovedDestinationSpeciesForGender() for the full reasoning).
+struct SpeciesChangeGenderExclusion {
+	const char* species;
+	const char* gender;
+	const char* displayName; // player-facing name for the rejection message below, e.g. "Devaronian"
+};
+
+static const SpeciesChangeGenderExclusion SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS[] = {
+	{ "devaronian", "female", "Devaronian" },
+};
+
+static const int SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS_SIZE =
+		sizeof(SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS) / sizeof(SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS[0]);
+
+// Capitalizes just the first character -- e.g. "female" -> "Female" -- for log lines/messages.
+// Matches the exact idiom already used elsewhere in this codebase for the same purpose (see
+// ZoneServerImplementation.cpp/PerformanceManager.cpp's own "displayName" locals).
+static String capitalizeFirst(const String& s) {
+	if (s.isEmpty())
+		return s;
+
+	return s.subString(0, 1).toUpperCase() + s.subString(1);
+}
+
+bool SpeciesChangeManager::isApprovedDestinationSpeciesForGender(const String& speciesName, const String& gender, String* rejectionReason) const {
+	if (!isApprovedDestinationSpecies(speciesName))
+		return false;
+
+	for (int i = 0; i < SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS_SIZE; ++i) {
+		const SpeciesChangeGenderExclusion& exclusion = SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS[i];
+
+		if (speciesName == exclusion.species && gender == exclusion.gender) {
+			if (rejectionReason != nullptr)
+				*rejectionReason = String(exclusion.displayName) + " is not available for " + capitalizeFirst(gender) + " characters.";
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
 SceneObject* SpeciesChangeManager::findBlockingEquipment(CreatureObject* creature) const {
 	if (creature == nullptr)
 		return nullptr;
@@ -240,7 +302,11 @@ Vector<String> SpeciesChangeManager::getEligibleSpeciesNames(CreatureObject* cre
 		if (species == currentSpeciesName)
 			continue;
 
-		if (!isApprovedDestinationSpecies(species))
+		// Combined species-level allowlist + per-(species,gender) exclusion check -- see the doc
+		// comment on isApprovedDestinationSpeciesForGender() for why these are two separate layers.
+		// gender here always equals currentGender (see the "gender != currentGender" continue above),
+		// i.e. this is always the player's own current (species-change-preserved) gender.
+		if (!isApprovedDestinationSpeciesForGender(species, gender, nullptr))
 			continue;
 
 		if (!result.contains(species))
@@ -274,6 +340,23 @@ String SpeciesChangeManager::validateTargetSpecies(CreatureObject* creature, con
 	String currentFullTemplate = creature->getObjectTemplate()->getFullTemplateString();
 	int currentRaceId = Races::getRaceID(currentFullTemplate);
 	String currentGender = Races::getGender(currentRaceId);
+
+	// Second, narrower gate: newSpeciesName is approved in general (just checked above), but is it
+	// approved for THIS character's specific (species-change-preserved) gender? Runs before the
+	// template-resolution check below so a gender-excluded-but-structurally-complete combination
+	// (Devaronian/female: Races.h has a real template for it, so getRaceIDForSpeciesGender() below
+	// would otherwise happily resolve it) is caught with a clear, specific player-facing reason
+	// instead of either silently succeeding or falling through to the generic
+	// "not available for your character's gender" message below (which is reserved for the
+	// different, structural case: no template exists at all for this species/gender combination).
+	String genderRejectionReason;
+
+	if (!isApprovedDestinationSpeciesForGender(newSpeciesName, currentGender, &genderRejectionReason)) {
+		error() << "SpeciesChange: rejected unsupported species/gender combination " << capitalizeFirst(newSpeciesName)
+				<< "/" << capitalizeFirst(currentGender) << " for " << creature->getFirstName() << " [" << creature->getObjectID() << "]";
+
+		return genderRejectionReason;
+	}
 
 	int newRaceId = Races::getRaceIDForSpeciesGender(newSpeciesName, currentGender);
 
@@ -384,16 +467,17 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	// the NEW template's raw defaults, and -- much less obviously -- also resets
 	// SceneObject::customName (the character's actual chosen name!) from the template's own,
 	// normally-empty-for-player-templates customName field. Both are manually reinstated below.
-	// currentBaseHAM specifically must be captured here too: it is the character's actual current
-	// allocation (profession-derived baseline, plus whatever they have since stat-migrated), and
-	// resetSpeciesStats() needs it as-is, not the raw values loadTemplateData() is about to overwrite
-	// it with.
+	// oldBaseHAM specifically must be captured here too: resetSpeciesStats() below discards it
+	// entirely as far as computing the new allocation goes (the new species' starting allocation is
+	// derived fresh, from profession/racial creation data -- see its own doc comment), but still logs
+	// it for diagnostic before/after comparison, which requires reading it before loadTemplateData()
+	// overwrites it with the new template's raw, not-yet-corrected values.
 	UnicodeString originalFullName = creature->getCustomObjectName();
 
-	int currentBaseHAM[9];
+	int oldBaseHAM[9];
 
 	for (int i = 0; i < 9; ++i)
-		currentBaseHAM[i] = creature->getBaseHAM(i);
+		oldBaseHAM[i] = creature->getBaseHAM(i);
 
 	// -- Point of no return: actually swap the underlying player template. --
 	//
@@ -411,7 +495,7 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	// Restore the character's actual name (see comment above).
 	creature->setCustomObjectName(originalFullName, false);
 
-	resetSpeciesStats(creature, currentBaseHAM, oldRacialData, newRacialData, usingCuratedRacialData, oldSpeciesName, newSpeciesName);
+	resetSpeciesStats(creature, oldBaseHAM, oldRacialData, newRacialData, usingCuratedRacialData, oldSpeciesName, newSpeciesName);
 
 	// Appearance: there is no existing Core3 mechanism to synthesize a valid randomized default
 	// appearance for an arbitrary template (Image Designer only ever nudges an EXISTING, already
@@ -447,11 +531,31 @@ String SpeciesChangeManager::applySpeciesChange(CreatureObject* creature, const 
 	return "";
 }
 
-void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int (&currentBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const {
+void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int (&oldBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const {
 	if (creature == nullptr || oldRacialData == nullptr || newRacialData == nullptr)
 		return;
 
 	PlayerCreationManager* pcm = PlayerCreationManager::instance();
+
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	// The character's OWN starter profession (persisted at creation, unaffected by this species
+	// change) -- the same field PlayerCreationManager::addStartingItemsInto()/
+	// addStartingWeaponsInto() already read for the unrelated purpose of re-granting starting items.
+	// Reusing it here is what makes the destination allocation match "a fresh character of the new
+	// species who chose this same starting profession", per design -- not a bare racial baseline.
+	String starterProfession = ghost != nullptr ? ghost->getStarterProfession() : "";
+
+	// Diagnostic only (see PlayerCreationManager::hasProfessionAttributeData()'s doc comment): a
+	// character whose starterProfession has no curated profession_mods.iff row of its own (empty
+	// string -- predates PlayerObject::getStarterProfession() being tracked, or was otherwise never
+	// set -- or a profession key no longer offered) silently falls back to profession_mods.iff's
+	// first-loaded row, an ARBITRARY, load-order-dependent substitution, not this character's actual
+	// starting profession. This is the single most likely explanation for a converted character's
+	// result differing from a freshly-created character of the SAME intended starting profession on
+	// exactly the handful of attributes that profession's row (vs. the substituted one) actually
+	// differs on -- logged here so it is provable from a Test Center run rather than guessed at.
+	bool usingProfessionFallback = !pcm->hasProfessionAttributeData(starterProfession);
 
 	// Clear buffs BEFORE touching HAM. Buff::deactivate() (invoked by clearBuffs(), via each buff's
 	// own removal path) is the only safe way to reverse whatever a buff already added to maxHAM --
@@ -480,11 +584,12 @@ void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int
 
 	StringBuffer hamLog;
 
-	// Adjust base/current/max HAM by swapping the OLD species' racial modifier out for the NEW
-	// species' -- everything else about the character's current allocation (profession-derived
-	// baseline from creation, plus any legitimate stat-migration redistribution since) is preserved
-	// as-is, because none of it is actually species-dependent (see the design comment on this method
-	// in SpeciesChangeManager.h for the full reasoning and the incorrect formula this replaces).
+	// Reset base/current/max HAM to exactly what a brand-new character of the NEW species, with this
+	// SAME starter profession, would receive: profession_mods.iff's contribution (species-independent)
+	// plus the NEW species' own racial_mods.iff contribution. The OLD species' racial contribution,
+	// and any stat-migration redistribution applied since creation, are discarded entirely -- not
+	// preserved, not delta-adjusted (see the design comment on this method in SpeciesChangeManager.h
+	// for the full reasoning and the two incorrect formulas this replaces).
 	int bgSumBefore = 0;
 	int bgSumAfter = 0;
 	bool bgAnyClamped = false;
@@ -492,37 +597,36 @@ void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int
 	for (int i = 0; i < 9; ++i) {
 		int oldRacialMod = oldRacialData->getAttributeMod(i);
 		int newRacialMod = newRacialData->getAttributeMod(i);
-		int delta = newRacialMod - oldRacialMod;
+		int professionMod = pcm->getProfessionAttributeMod(starterProfession, i);
 
-		int adjusted = currentBaseHAM[i] + delta;
-		int preClampHAM = adjusted;
+		int startingHAM = professionMod + newRacialMod;
+		int preClampHAM = startingHAM;
 
 		int minLimit = pcm->getMinimumAttributeLimit(newSpeciesName, i);
 		int maxLimit = pcm->getMaximumAttributeLimit(newSpeciesName, i);
 
-		// Clamp into the new species' declared range -- necessary in the general case (e.g. a
-		// character who stat-migrated heavily toward one attribute under a species with a much wider
-		// range than the destination species could otherwise end up above the new max). The
-		// resulting total may not exactly match the new species' total cap either way; the existing
-		// stat migration tool remains available afterward for the player to rebalance exactly if
-		// they want to.
-		if (adjusted < minLimit)
-			adjusted = minLimit;
-		else if (adjusted > maxLimit)
-			adjusted = maxLimit;
+		// Defensive only: professionMod + newRacialMod is exactly the formula a real character
+		// creation of this species/profession combination already relies on, so in practice this
+		// should already land in range. Clamping guards against a malformed/edge-case data row rather
+		// than anything expected to actually trigger.
+		if (startingHAM < minLimit)
+			startingHAM = minLimit;
+		else if (startingHAM > maxLimit)
+			startingHAM = maxLimit;
 
-		if (adjusted != preClampHAM)
+		if (startingHAM != preClampHAM)
 			bgAnyClamped = true;
 
-		bgSumBefore += currentBaseHAM[i];
-		bgSumAfter += adjusted;
+		bgSumBefore += oldBaseHAM[i];
+		bgSumAfter += startingHAM;
 
-		creature->setBaseHAM(i, adjusted, false);
-		creature->setHAM(i, adjusted, false);
-		creature->setMaxHAM(i, adjusted, false);
+		creature->setBaseHAM(i, startingHAM, false);
+		creature->setHAM(i, startingHAM, false);
+		creature->setMaxHAM(i, startingHAM, false);
 
-		hamLog << " " << attributeNames[i] << "=" << adjusted << "(was=" << currentBaseHAM[i]
-				<< ",oldRacialMod=" << oldRacialMod << ",newRacialMod=" << newRacialMod
+		hamLog << " " << attributeNames[i] << "=" << startingHAM << "(oldBase=" << oldBaseHAM[i]
+				<< ",professionMod=" << professionMod << ",oldRacialMod=" << oldRacialMod
+				<< ",newRacialMod=" << newRacialMod << ",preClamp=" << preClampHAM
 				<< ",min=" << minLimit << ",max=" << maxLimit << ")";
 	}
 
@@ -532,21 +636,19 @@ void SpeciesChangeManager::resetSpeciesStats(CreatureObject* creature, const int
 	// see getBlockedReason()'s comment -- so there is no persisted migration state to reset here.
 	// Future stat migration sessions will read creature->getSpeciesName() (now the new species) and
 	// creature->getBaseHAM() (now the values just set above) fresh, so the new species' min/max/total
-	// limits are automatically what's enforced from this point on with no further action needed.
-	// sumAfter is expected to still roughly track sumBefore (only the racial-modifier delta should
-	// have moved it) -- it is not expected to equal totalAttributeLimit exactly (a character rarely
-	// has every point allocated; that's what stat migration is for), so no SUM_MATCHES_TOTAL check is
-	// meaningful here the way it was in the (incorrect) template-baseline formula this replaces.
+	// limits -- and "Points Left" (totalAttributeLimit minus the sum just set) -- are automatically
+	// correct from this point on with no further action needed.
 	info(true) << "SpeciesChange: resetting base stats for " << creature->getFirstName() << " ["
 			<< creature->getObjectID() << "]: " << oldSpeciesName << " -> " << newSpeciesName
+			<< " | starterProfession=\"" << starterProfession << "\""
+			<< " | usingProfessionFallback=" << usingProfessionFallback
 			<< " | curatedRacialData=" << usingCuratedRacialData
 			<< " | totalAttributeLimit=" << bgTotalAttributeLimit
-			<< " | sumBeforeConversion=" << bgSumBefore
-			<< " | sumAfterConversion=" << bgSumAfter
+			<< " | sumOldBaseHAM=" << bgSumBefore
+			<< " | sumNewStartingHAM=" << bgSumAfter
+			<< " | pointsLeft=" << (bgTotalAttributeLimit - bgSumAfter)
 			<< " | anyAttributeClamped=" << bgAnyClamped
 			<< " |" << hamLog.toString();
-
-	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	if (ghost != nullptr)
 		ghost->recalculateForcePower();

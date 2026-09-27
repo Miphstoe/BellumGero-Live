@@ -158,6 +158,33 @@ public:
 	bool hasCuratedRacialCreationData(const String& templateFileName) const;
 
 	/**
+	 * BG: Species Change Token support. Returns the per-attribute starting HAM modifier
+	 * (datatables/creation/profession_mods.iff) a brand-new character choosing this starting
+	 * profession receives, BEFORE any racial modifier is added -- i.e. exactly the value
+	 * addProfessionStartingItems() writes into base/current/max HAM for a fresh character, keyed
+	 * by profession name exactly as PlayerObject::getStarterProfession() persists it (e.g.
+	 * "combat_brawler", or "crafting_artisan" for a Jedi-flagged creation -- see createCharacter()'s
+	 * own jedi override, which already runs before setStarterProfession() stores it). Falls back to
+	 * professionDefaultsInfo's first-loaded entry for an unrecognized profession (empty string, or
+	 * one no longer offered), mirroring addProfessionStartingItems()'s own fallback for a brand-new
+	 * character exactly, so an existing character is never held to a stricter standard than
+	 * character creation's own already-accepted behavior for the same edge case.
+	 */
+	int getProfessionAttributeMod(const String& profession, int attributeNumber) const;
+
+	/**
+	 * BG: Species Change Token support. Returns true only if profession has its OWN curated row in
+	 * datatables/creation/profession_mods.iff (professionDefaultsInfo) -- i.e.
+	 * getProfessionAttributeMod() would NOT be falling back to the first-loaded profession's numbers
+	 * for it. An empty string (a character created before PlayerObject::getStarterProfession() was
+	 * tracked, or one whose value was otherwise never set) always returns false here. Exists purely so
+	 * callers -- currently only SpeciesChangeManager's diagnostic log -- can tell a genuine profession
+	 * match apart from an arbitrary, load-order-dependent fallback substitution, exactly like
+	 * hasCuratedRacialCreationData() already does for the racial data table.
+	 */
+	bool hasProfessionAttributeData(const String& profession) const;
+
+	/**
 	 * Adds starting Weapons into the target container
 	 * @param creature the player creature
 	 * @param container the target container

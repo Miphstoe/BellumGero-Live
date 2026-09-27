@@ -92,22 +92,26 @@ public:
 	 * Returns the species names creature's character may change into: every species in Races.h
 	 * (the authoritative TEMPLATE registry used by character creation and everything else -- not
 	 * modified by this feature) that (a) is on the Species Change Token's own destination allowlist
-	 * (see isApprovedDestinationSpecies()), (b) has a template for creature's CURRENT gender, and
+	 * AND approved for creature's CURRENT gender specifically (see
+	 * isApprovedDestinationSpeciesForGender()), (b) has a template for creature's CURRENT gender, and
 	 * (c) isn't creature's current species. Races.h continuing to register every template it always
-	 * has is intentional -- some of those species are simply not approved as Species Change Token
-	 * destinations. Do not maintain a second, parallel copy of this filtering anywhere else; both
-	 * this method and validateTargetSpecies() below call the same isApprovedDestinationSpecies().
+	 * has is intentional -- some of those species (or, more narrowly, one gender of some species) are
+	 * simply not approved as Species Change Token destinations. Do not maintain a second, parallel
+	 * copy of this filtering anywhere else; both this method and validateTargetSpecies() below call
+	 * the same isApprovedDestinationSpeciesForGender().
 	 */
 	Vector<String> getEligibleSpeciesNames(CreatureObject* creature) const;
 
 	/**
-	 * Validates newSpeciesName alone (it is on the Species Change Token destination allowlist, it
-	 * names a real species, that species has a template for creature's current gender, and it isn't
-	 * creature's current species) without checking naked/state and without changing anything.
-	 * Returns an empty string if valid, else a player-facing reason. This is the authoritative,
-	 * final check -- it is always re-run from applySpeciesChange() immediately before committing, so
-	 * a stale, manipulated, or unexpected SUI callback can never submit an unapproved species and
-	 * have it accepted, even if it was never offered in the SUI list to begin with.
+	 * Validates newSpeciesName alone (it is on the Species Change Token destination allowlist AND
+	 * approved for creature's current gender specifically, it names a real species, that species has
+	 * a template for creature's current gender, and it isn't creature's current species) without
+	 * checking naked/state and without changing anything. Returns an empty string if valid, else a
+	 * player-facing reason. This is the authoritative, final check -- it is always re-run from
+	 * applySpeciesChange() immediately before committing, so a stale, manipulated, or unexpected SUI
+	 * callback can never submit an unapproved species (or an approved species with an unapproved
+	 * gender, e.g. Devaronian/female) and have it accepted, even if it was never offered in the SUI
+	 * list to begin with.
 	 */
 	String validateTargetSpecies(CreatureObject* creature, const String& newSpeciesName) const;
 
@@ -140,51 +144,60 @@ public:
 
 private:
 	/**
-	 * Resets creature's base/current/max HAM (all 9 attributes) so that ONLY the species-dependent
-	 * racial modifier component changes -- the old species' contribution is subtracted out and the
-	 * new species' is added in, leaving everything else about the character's current allocation
-	 * untouched:
+	 * Resets creature's base/current/max HAM (all 9 attributes) to the exact starting allocation a
+	 * brand-new character of the NEW species -- keeping the SAME starting profession this character
+	 * already has on file -- would receive at character creation:
 	 *
-	 *     newBaseHAM[i] = currentBaseHAM[i] - oldRacialData->getAttributeMod(i)
-	 *                                       + newRacialData->getAttributeMod(i)
+	 *     newBaseHAM[i] = PlayerCreationManager::getProfessionAttributeMod(starterProfession, i)
+	 *                   + newRacialData->getAttributeMod(i)
 	 *
-	 * clamped into the new species' attribute_limits.iff min/max.
+	 * clamped into the new species' attribute_limits.iff min/max (defensive only -- these two
+	 * authoritative sources are what a real character creation already relies on for every player who
+	 * has ever created a character normally, so in practice the sum should already land in range).
+	 * The OLD species' current/base HAM (oldBaseHAM, captured only for the diagnostic log below) and
+	 * any stat-migration redistribution the player applied since creation are DISCARDED entirely, not
+	 * preserved or delta-adjusted -- this is a deliberate, explicit requirement (a species change
+	 * resets the character to that species' normal starting allocation; it does not carry the old
+	 * species' distribution forward in any form). starterProfession comes from
+	 * PlayerObject::getStarterProfession(), the same persisted field
+	 * PlayerCreationManager::addStartingItemsInto()/addStartingWeaponsInto() already use for the
+	 * unrelated purpose of re-granting starting items -- reusing it here is what keeps this
+	 * profession-dependent (the same profession's HAM contribution a real character of the new species
+	 * would get) while still discarding the old species-dependent contribution and any manual
+	 * migration, exactly as required.
 	 *
-	 * IMPORTANT, hard-won correction: an earlier version of this method reset HAM to
-	 * "newTemplateBaseHAM[i] + newRacialData->getAttributeMod(i)" (the new player TEMPLATE's own raw
-	 * baseHAM plus the racial modifier), believing that to be the formula
-	 * PlayerCreationManager::addRacialMods() uses for a brand-new character. Tracing the actual
-	 * createCharacter() call order proved that wrong: addProfessionStartingItems() runs
-	 * IMMEDIATELY BEFORE addRacialMods() and unconditionally OVERWRITES base/current/max HAM with
-	 * the chosen starting profession's own attribute_mod row (datatables/creation/profession_mods.iff,
-	 * keyed by profession, NOT by species) -- so addRacialMods()'s "beforeRacial" is that profession
-	 * baseline, and the player TEMPLATE's own baseHAM array is never actually read for this purpose
-	 * at all. Using it here produced a flat, species-uniform, profession-blind result (verified: every
-	 * converted-to-Human character ended up with base/max HAM = attribute_limits.iff's flat minimum
-	 * on all 9 attributes, regardless of profession) that does not correspond to anything a real
-	 * character creation flow produces.
-	 *
-	 * The racial-delta-only approach here sidesteps the problem instead of replicating it: an
-	 * existing character has no single "starting profession" to fall back on (they may have mastered
-	 * several), so rather than guess one, this preserves whatever profession-derived baseline (and
-	 * any legitimate stat-migration redistribution since creation) is already present in
-	 * currentBaseHAM -- since profession_mods.iff is species-independent, none of that needs to
-	 * change for a species conversion -- and swaps out only the one component that Core3 actually
-	 * ties to species: the racial modifier.
+	 * IMPORTANT, hard-won correction (superseded design history, kept for anyone re-deriving this):
+	 * an earlier version of this method reset HAM to "newTemplateBaseHAM[i] +
+	 * newRacialData->getAttributeMod(i)" (the new player TEMPLATE's own raw baseHAM plus the racial
+	 * modifier) -- wrong, because the template's own baseHAM array is never actually read by
+	 * character creation for this purpose at all (see below). The version immediately before this one
+	 * instead preserved currentBaseHAM and swapped only the racial-modifier delta -- also wrong, per
+	 * direct Test Center feedback: it left old-species-profession-derived (and old-species
+	 * stat-migrated) values baked into attributes the new species' own starting allocation does not
+	 * assign that way (e.g. a converted character retaining a heavy Chiss Health/Action lean after
+	 * becoming SMC). Tracing the actual createCharacter() call order established the correct formula
+	 * used here: addProfessionStartingItems() runs IMMEDIATELY BEFORE addRacialMods() and
+	 * unconditionally OVERWRITES base/current/max HAM with the chosen starting profession's own
+	 * attribute_mod row (datatables/creation/profession_mods.iff, keyed by profession, NOT species) --
+	 * so addRacialMods()'s "beforeRacial" is that profession baseline, onto which it adds the species'
+	 * own racial_mods.iff row. Both data sources are exposed read-only by PlayerCreationManager
+	 * (getProfessionAttributeMod(), getRacialCreationData()) specifically so this method never
+	 * maintains its own second copy of either table.
 	 *
 	 * Skill/profession HAM bonuses beyond the creation-time baseline are never written into base/max
 	 * HAM at all regardless (SkillManager::awardSkill() applies them via the entirely separate
 	 * CreatureObject::addSkillMod()/skillModList layer, retrieved live via getSkillMod()), so this
-	 * method never needs to touch that layer either way.
+	 * method never needs to touch that layer either way -- the player's skills/professions/XP/Jedi
+	 * progression are completely unaffected by this reset.
 	 *
-	 * Before writing the adjustment, clears removable buffs (CreatureObject::clearBuffs(true, false)
-	 * -- the same call Character Builder's "reset_buffs" option already uses, which properly reverses
-	 * each buff's own HAM contribution via Buff::deactivate() rather than just deleting buff records)
-	 * and zeroes wounds/shock wounds (mirroring Character Builder's "cleanse_character" option), so
-	 * the resulting current HAM is a clean, fully-healed, un-buffed baseline with no stale
+	 * Before writing the new allocation, clears removable buffs (CreatureObject::clearBuffs(true,
+	 * false) -- the same call Character Builder's "reset_buffs" option already uses, which properly
+	 * reverses each buff's own HAM contribution via Buff::deactivate() rather than just deleting buff
+	 * records) and zeroes wounds/shock wounds (mirroring Character Builder's "cleanse_character"
+	 * option), so the resulting current HAM is a clean, fully-healed, un-buffed baseline with no stale
 	 * old-species-derived damage/wound/buff arithmetic surviving into the new species.
 	 */
-	void resetSpeciesStats(CreatureObject* creature, const int (&currentBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const;
+	void resetSpeciesStats(CreatureObject* creature, const int (&oldBaseHAM)[9], RacialCreationData* oldRacialData, RacialCreationData* newRacialData, bool usingCuratedRacialData, const String& oldSpeciesName, const String& newSpeciesName) const;
 
 	/**
 	 * Species Change Token destination allowlist. Not every species Races.h registers a template
@@ -196,6 +209,28 @@ private:
 	 * the SUI list and final server-side validation can never disagree.
 	 */
 	bool isApprovedDestinationSpecies(const String& speciesName) const;
+
+	/**
+	 * Combines isApprovedDestinationSpecies(speciesName) with a second, narrower, per-(species,gender)
+	 * exclusion layer (SPECIES_CHANGE_EXCLUDED_GENDER_COMBINATIONS in SpeciesChangeManager.cpp) for
+	 * otherwise-approved species that are broken for only ONE of their two genders -- Races.h/the TRE
+	 * fully register a template, appearance file, and customization data for that gender (unlike a
+	 * species-level exclusion, where the template is missing/incomplete and so already excluded
+	 * automatically by the gender-matching logic in getEligibleSpeciesNames()/
+	 * Races::getRaceIDForSpeciesGender()), but the resulting in-game character model is an invalid
+	 * placeholder/box rather than a valid appearance (currently: Devaronian/female). Since this
+	 * failure mode isn't detectable from template completeness, it's an explicit, hand-maintained
+	 * exclusion list, exactly like isApprovedDestinationSpecies()'s own species-level list --
+	 * generalized here to per-gender specifically so it can exclude the one broken gender of a
+	 * species WITHOUT also excluding that species' other, working gender. Returns true iff
+	 * speciesName is approved overall AND not excluded for gender specifically. If rejectionReason is
+	 * non-null and this returns false due to the gender-specific exclusion (not due to
+	 * isApprovedDestinationSpecies() already being false), it is set to a player-facing reason (e.g.
+	 * "Devaronian is not available for Female characters."). Do not maintain a second, parallel copy
+	 * of this exclusion list anywhere else; both getEligibleSpeciesNames() and validateTargetSpecies()
+	 * call this same method.
+	 */
+	bool isApprovedDestinationSpeciesForGender(const String& speciesName, const String& gender, String* rejectionReason) const;
 
 	/**
 	 * Walks creature's slotted objects looking for the first genuine player-equipped item (armor,
