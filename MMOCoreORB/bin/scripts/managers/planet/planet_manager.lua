@@ -612,6 +612,35 @@ yavin4 = {
 	}
 }
 
+hoth = {
+
+	weatherEnabled = 1,
+	gcwEnabled = 1,
+
+	-- Any travel point in the galaxy (shuttleports included) may buy a ticket to Hoth.
+	allowAllDepartures = 1,
+
+	-- Starports come from snapshot/hoth.ws (outpost_starport childObjects spawn the terminal,
+	-- ticket collector and shuttle). Arrival points use the Yavin IV Labor Outpost offset.
+	planetTravelPoints = {
+		{name = "Scavenger Outpost", x = 20.34, z = 0, y = -1982.24, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Imperial Outpost", x = 5947.9, z = 3, y = -388.71, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Rebel Outpost", x = 4528.65, z = 87.8, y = 1190.75, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+	},
+
+	badgeAreas = {
+	},
+
+	navAreas = {
+		{"hoth_scavenger_outpost", 0, -2000, 150},
+		{"hoth_imperial_outpost", 5927, -406, 150},
+		{"hoth_rebel_outpost", 4525, 1164, 150},
+	},
+
+	planetObjects = {
+	}
+}
+
 tutorial = {
 	weatherEnabled = 0,
 	gcwEnabled = 0,

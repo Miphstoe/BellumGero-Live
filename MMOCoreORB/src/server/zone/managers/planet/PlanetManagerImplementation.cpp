@@ -150,6 +150,8 @@ void PlanetManagerImplementation::loadLuaConfig() {
 			info("Weather Disabled", true);
 		}
 
+		allowAllDepartures = luaObject.getIntField("allowAllDepartures");
+
 		bool gcwEnabled = luaObject.getIntField("gcwEnabled");
 
 		if (gcwEnabled) {
@@ -772,7 +774,11 @@ bool PlanetManagerImplementation::isTravelToLocationPermitted(const String& depa
 		return true;
 
 	//Check to see if interplanetary travel is allowed between both points.
-	if (!isInterplanetaryTravelAllowed(departurePoint) || !arrivalPlanetManager->isInterplanetaryTravelAllowed(arrivalPoint))
+	//Planets flagged allowAllDepartures accept interplanetary travel from any departure point.
+	if (!arrivalPlanetManager->isAllDeparturesAllowed() && !isInterplanetaryTravelAllowed(departurePoint))
+		return false;
+
+	if (!arrivalPlanetManager->isInterplanetaryTravelAllowed(arrivalPoint))
 		return false;
 
 	return true;

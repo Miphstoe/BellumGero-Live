@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-09-27 — Add Hoth as a ground zone (WIP)
+
+- **Summary:** Registers `hoth` as a playable ground zone using terrain + snapshot ported into `bg_custom1.tre` (terrain/hoth.trn, snapshot/hoth.ws, terrain shaders/textures, datatables/environment/hoth.iff sky/weather, planet map page, region names, planet + object template CRC table entries, waypoint planet row, travel.iff with a 4000cr Hoth route from every planet, planet_n "Hoth", ticket UI galaxy-map entry; 99 files added, travel.iff and object_template_crc_string_table.iff replaced). Three snapshot starports become travel points (Scavenger, Imperial, Rebel outposts), all accepting incoming travel. New planet_manager flag `allowAllDepartures` (set on hoth) lets any travel point, shuttleports included, buy interplanetary tickets to that planet; adds server templates for 4 Hoth props/cave referenced by the snapshot.
+- **Files:** `src/server/zone/managers/planet/PlanetManager.idl`, `src/server/zone/managers/planet/PlanetManagerImplementation.cpp`, `bin/conf/config.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `bin/scripts/managers/planet/hoth_regions.lua`, `bin/scripts/managers/weather_manager.lua`, `bin/scripts/object/allobjects.lua`, `bin/scripts/object/building/serverobjects.lua`, `bin/scripts/object/building/heroic/*`, `bin/scripts/object/static/item/objects.lua`, `bin/scripts/object/static/item/serverobjects.lua`, `bin/scripts/object/static/item/item_hoth_*.lua`
+- **Notes:** Requires the updated `bg_custom1.tre` (Hoth files merged in with NewPlanets `tre_pack.py --merge`) on server `/trefiles` and client. Needs a server rebuild (PlanetManager idl/cpp) and cold restart. Round-trip tickets back to a shuttleport are still refused (shuttleports stay non-interplanetary as arrivals). No creature spawns yet (no world spawner). Assets sourced from SWG Infinity/MTG — confirm permission/credit before live.
+
 ### 2026-09-07 — Assemble Mandalorian production fixes on current Main
 
 - **Summary:** Restore the quest and NPC spawns; bring in daily loot progression, guaranteed chapter trophies, repaired armor/jetpack recipes, invalid-schematic diagnostics and quarantine, Mandalorian GM tools, and the existing Beskar melee/rare-loot corrections. Preserve Main's null-player and draft-slot guards when integrating diagnostics. Ensure invalid newly created schematics reach the orphan cleanup path.

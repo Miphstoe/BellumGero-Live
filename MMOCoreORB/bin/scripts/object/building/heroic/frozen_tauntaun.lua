@@ -39,24 +39,7 @@
 --it is their choice whether to do so. The GNU Lesser General Public License 
 --gives permission to release a modified version without this exception; 
 --this exception also makes it possible to release a modified version 
+object_building_heroic_frozen_tauntaun = object_building_heroic_shared_frozen_tauntaun:new {
+}
 
-
-
---Children folder includes
-includeFile("building/base/serverobjects.lua")
-includeFile("building/corellia/serverobjects.lua")
-includeFile("building/dathomir/serverobjects.lua")
-includeFile("building/endor/serverobjects.lua")
-includeFile("building/faction_perk/serverobjects.lua")
-includeFile("building/general/serverobjects.lua")
-includeFile("building/heroic/serverobjects.lua")
-includeFile("building/lok/serverobjects.lua")
-includeFile("building/military/serverobjects.lua")
-includeFile("building/naboo/serverobjects.lua")
-includeFile("building/player/serverobjects.lua")
-includeFile("building/poi/serverobjects.lua")
-includeFile("building/tatooine/serverobjects.lua")
-includeFile("building/yavin/serverobjects.lua")
-includeFile("building/worldbuilder/serverobjects.lua")
-
--- Server Objects
+ObjectTemplates:addTemplate(object_building_heroic_frozen_tauntaun, "object/building/heroic/frozen_tauntaun.iff")
