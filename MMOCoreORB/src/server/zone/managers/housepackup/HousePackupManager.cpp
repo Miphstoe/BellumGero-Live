@@ -242,6 +242,14 @@ bool HousePackupManager::autoPackIfNeeded(BuildingObject* building, CreatureObje
         return false;
     }
 
+    // BG FMDoctorBot safety: block automatic pack/redeed/destroy too.
+    if (hasDoctorServiceUnitsInside(building)) {
+        requester->sendSystemMessage(
+            "This structure cannot be packed up, redeeded, or destroyed while an Automated Medical Station is inside. "
+            "Decommission the station first. (Nothing was destroyed.)");
+        return false;
+    }
+
     // If we already have a saved payload OR a lot placeholder, we're good.
     if (hasSavedPayloadForBuilding(building->getObjectID()) || 
         gLotHoldByDeed.containsKey(building->getDeedObjectID())) {
@@ -715,6 +723,63 @@ bool HousePackupManager::hasMannequinsInside(BuildingObject* building) const {
 }
 
 // -----------------------------
+// Automated Medical Station detection helper (BG FMDoctorBot)
+// Recursive by design so even an invalid/nested station blocks destructive structure work.
+// Detection is exact server-template CRC, never custom name or appearance.
+// -----------------------------
+
+bool HousePackupManager::hasDoctorServiceUnitsInside(BuildingObject* building) const {
+    if (building == nullptr)
+        return false;
+
+    const uint32 stationCRC =
+        String("object/tangible/vendor/doctor_service_unit.iff").hashCode();
+
+    std::function<bool(SceneObject*)> containsStation = [&](SceneObject* object) -> bool {
+        if (object == nullptr)
+            return false;
+
+        if (object->getServerObjectCRC() == stationCRC)
+            return true;
+
+        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* contents =
+            object->getContainerObjects();
+
+        if (contents == nullptr)
+            return false;
+
+        for (int i = 0; i < contents->size(); ++i) {
+            ManagedReference<SceneObject*> child = contents->elementAt(i).getValue();
+            if (child != nullptr && containsStation(child))
+                return true;
+        }
+
+        return false;
+    };
+
+    int totalCells = building->getTotalCellNumber();
+    for (int i = 1; i <= totalCells; ++i) {
+        ManagedReference<CellObject*> cell = building->getCell(i);
+        if (cell == nullptr)
+            continue;
+
+        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* contents =
+            cell->getContainerObjects();
+
+        if (contents == nullptr)
+            continue;
+
+        for (int j = 0; j < contents->size(); ++j) {
+            ManagedReference<SceneObject*> child = contents->elementAt(j).getValue();
+            if (child != nullptr && containsStation(child))
+                return true;
+        }
+    }
+
+    return false;
+}
+
+// -----------------------------
 // Recursive collector
 // -----------------------------
 
@@ -766,6 +831,14 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
     // by collectDeep(), so packing up around one would orphan it.
     if (hasMannequinsInside(building)) {
         requester->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
+        return false;
+    }
+
+    // BG FMDoctorBot safety: never serialize/destroy around an active medical station.
+    if (hasDoctorServiceUnitsInside(building)) {
+        requester->sendSystemMessage(
+            "This structure cannot be packed up while an Automated Medical Station is inside. "
+            "Decommission the station first. (Nothing was changed.)");
         return false;
     }
 

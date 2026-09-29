@@ -46,6 +46,7 @@ const char* const kJantaBuffDurationAttrNames[9] = {
 
 DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectComponent(), dataMutex() {
 	ownerId = 0;
+	ownerGuildId = 0;
 
 	for (int i = 0; i < 9; ++i) {
 		legacyBuffStockPerAttr[i] = 0;
@@ -95,6 +96,7 @@ DoctorBuffDroidDataComponent::DoctorBuffDroidDataComponent() : DataObjectCompone
 	adBarkEnabled = false;
 
 	addSerializableVariable("ownerId", &ownerId);
+	addSerializableVariable("ownerGuildId", &ownerGuildId);
 	for (int i = 0; i < 9; ++i) {
 		addSerializableVariable(kBuffStockAttrNames[i], &legacyBuffStockPerAttr[i]);
 		addSerializableVariable(kBuffPowerAttrNames[i], &legacyBuffPowerPerAttr[i]);
@@ -141,6 +143,7 @@ void DoctorBuffDroidDataComponent::writeJSON(nlohmann::json& j) const {
 	DataObjectComponent::writeJSON(j);
 
 	SERIALIZE_JSON_MEMBER(ownerId);
+	SERIALIZE_JSON_MEMBER(ownerGuildId);
 	for (int i = 0; i < 9; ++i) {
 		j["buffStockAttr" + std::to_string(i)] = legacyBuffStockPerAttr[i];
 		j["buffPowerAttr" + std::to_string(i)] = legacyBuffPowerPerAttr[i];
@@ -199,6 +202,16 @@ void DoctorBuffDroidDataComponent::setOwnerId(uint64 id) {
 uint64 DoctorBuffDroidDataComponent::getOwnerId() const {
 	Locker locker(&dataMutex);
 	return ownerId;
+}
+
+void DoctorBuffDroidDataComponent::setOwnerGuildId(uint64 id) {
+	Locker locker(&dataMutex);
+	ownerGuildId = id;
+}
+
+uint64 DoctorBuffDroidDataComponent::getOwnerGuildId() const {
+	Locker locker(&dataMutex);
+	return ownerGuildId;
 }
 
 int DoctorBuffDroidDataComponent::getLegacyBuffStock(byte attr) const {
@@ -555,6 +568,17 @@ int DoctorBuffDroidDataComponent::getDiscountedPrice(ServiceType type, CreatureO
 	if (buyerGuild == nullptr)
 		return price;
 
+	// Automated Medical Stations cache the owner's guild ID while the owner is online.
+	// This avoids resolving/cross-locking the Doctor character during unattended purchases.
+	if (ownerGuildId != 0) {
+		if (buyerGuild->getObjectID() != ownerGuildId)
+			return price;
+
+		int discounted = price - ((price * guildDiscountPercent) / 100);
+		return Math::max(minimumPriceFloor, discounted);
+	}
+
+	// Legacy Doctor Buff Droid fallback: preserve its original live-owner lookup behavior.
 	SceneObject* strongParent = const_cast<DoctorBuffDroidDataComponent*>(this)->getParent();
 	if (strongParent == nullptr || strongParent->getZoneServer() == nullptr)
 		return price;

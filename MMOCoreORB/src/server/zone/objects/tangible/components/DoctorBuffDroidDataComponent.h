@@ -17,6 +17,7 @@ public:
 
 private:
 	uint64 ownerId;
+	uint64 ownerGuildId;
 
 	int earningsBalance;
 
@@ -93,6 +94,8 @@ public:
 	bool isOwner(CreatureObject* player) const;
 	void setOwnerId(uint64 id);
 	uint64 getOwnerId() const;
+	void setOwnerGuildId(uint64 id);
+	uint64 getOwnerGuildId() const;
 
 	// Legacy pre-upgrade stock migration only. Real stock now lives as actual items in the
 	// droid's own container (see DoctorBuffDroidMenuComponent); these accessors exist solely so
