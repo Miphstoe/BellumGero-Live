@@ -54,3 +54,4 @@ compile_commands.json
 !src/tests/
 src/tests/*
 !src/tests/ResourceMapTest.cpp
+!src/tests/ResourceSnapshotTest.cpp

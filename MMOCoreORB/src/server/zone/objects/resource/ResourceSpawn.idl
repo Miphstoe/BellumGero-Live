@@ -307,6 +307,13 @@ class ResourceSpawn extends SceneObject {
 	@read
 	public native int getAttributeAndValue(string attribute, int index);
 
+	// Read-only enumeration bound; absence must not be inferred from value zero.
+	@local
+	@read
+	public int getSpawnAttributeCount() {
+		return spawnAttributes.size();
+	}
+
 	@read
 	public int getAttributeValue(int index) {
 		return spawnAttributes.get(index);
