@@ -27,8 +27,6 @@ public:
 
 		ResourceManager* resMan = creature->getZoneServer()->getResourceManager();
 
-		Locker locker(resMan);
-
 		StringTokenizer args(arguments.toString());
 
 		try {
@@ -36,6 +34,16 @@ public:
 
 			if(args.hasMoreTokens())
 				args.getStringToken(command);
+
+			if (command == "export") {
+				if (args.hasMoreTokens())
+					throw Exception();
+				// Enqueue only. No capture, disk I/O or waiting on this player thread.
+				creature->sendSystemMessage(resMan->requestResourceSnapshotExport());
+				return SUCCESS;
+			}
+
+			Locker locker(resMan);
 
 			if(command == "list") {
 				listResources(creature, &args);
@@ -67,6 +75,7 @@ public:
 			creature->sendSystemMessage("		list <planet> : Lists resources on specified planet");
 			creature->sendSystemMessage("		health : Lists resource pool health stats");
 			creature->sendSystemMessage("		dump : Performs manual dump of all resources to resource_manager_spawns.lua");
+			creature->sendSystemMessage("		export : Requests an asynchronous current live-resource JSON snapshot");
 			creature->sendSystemMessage("		despawn <resource name> : Despawns a specific resource");
 			creature->sendSystemMessage("		info <resource name> : Lists Info about a specific resource");
 			creature->sendSystemMessage("		find <class> <attribute> <gt|lt> <value> [<and|or> <attribute> <gt|lt> <value> [...]]");
