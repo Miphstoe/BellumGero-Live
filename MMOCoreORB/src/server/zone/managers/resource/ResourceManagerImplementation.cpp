@@ -248,9 +248,9 @@ ResourceSpawn* ResourceManagerImplementation::getResourceSpawn(const String& spa
 
 	ReadLocker locker(_this.getReferenceUnsafeStaticCast());
 
-	ResourceMap* resourceMap = resourceSpawner->getResourceMap();
+	const ResourceMap* resourceMap = resourceSpawner->getResourceMap();
 
-	spawn = resourceMap->get(spawnName.toLowerCase());
+	spawn = resourceMap->findByName(spawnName);
 
 	return spawn;
 }
@@ -267,13 +267,14 @@ void ResourceManagerImplementation::getResourceListByType(Vector<ManagedReferenc
 	ManagedReference<ResourceSpawn*> resourceSpawn;
 
 	try {
-		ResourceMap* resourceMap = resourceSpawner->getResourceMap();
+		const ResourceMap* resourceMap = resourceSpawner->getResourceMap();
 
-		ZoneResourceMap* zoneMap = resourceMap->getZoneResourceList(zoneName);
+		bool zoneFound = false;
+		const auto resources = resourceMap->copyZoneReferences(zoneName, &zoneFound);
 
-		if (zoneMap != nullptr) {
-			for (int i = 0; i < zoneMap->size(); ++i) {
-				resourceSpawn = zoneMap->get(i);
+		if (zoneFound) {
+			for (int i = 0; i < resources.size(); ++i) {
+				resourceSpawn = resources.get(i);
 
 				if (!resourceSpawn->inShift())
 					continue;
