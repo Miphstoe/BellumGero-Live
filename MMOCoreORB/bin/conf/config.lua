@@ -93,10 +93,10 @@ Core3 = {
 
 	------Read-only live resource snapshots------
 	ResourceSnapshot = {
-		Enabled = true,
+		Enabled = false,
 		OutputPath = "log/resource-snapshot.json", -- Relative to runtime working directory (normally MMOCoreORB/bin), or absolute.
 		IntervalSeconds = 300, -- Fixed delay after each export completes.
-		SourceInstance = "bellum-gero-test-center", -- Replace with a persistent database-lineage ID before production use.
+		SourceInstance = "bellum-gero-live", -- Replace with a persistent database-lineage ID before production use.
 	},
 
 	-------- GROUND ZONES -------
