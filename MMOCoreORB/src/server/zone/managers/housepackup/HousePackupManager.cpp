@@ -732,36 +732,21 @@ bool HousePackupManager::hasDoctorServiceUnitsInside(BuildingObject* building) c
     if (building == nullptr)
         return false;
 
+    // FMDoctorBot safety: iterative, lock-safe traversal.
     const uint32 stationCRC =
         String("object/tangible/vendor/doctor_service_unit.iff").hashCode();
 
-    std::function<bool(SceneObject*)> containsStation = [&](SceneObject* object) -> bool {
-        if (object == nullptr)
-            return false;
-
-        if (object->getServerObjectCRC() == stationCRC)
-            return true;
-
-        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* contents =
-            object->getContainerObjects();
-
-        if (contents == nullptr)
-            return false;
-
-        for (int i = 0; i < contents->size(); ++i) {
-            ManagedReference<SceneObject*> child = contents->elementAt(i).getValue();
-            if (child != nullptr && containsStation(child))
-                return true;
-        }
-
-        return false;
-    };
+    Vector<ManagedReference<SceneObject*> > pending;
+    HashTable<uint64, bool> visited;
 
     int totalCells = building->getTotalCellNumber();
+
     for (int i = 1; i <= totalCells; ++i) {
         ManagedReference<CellObject*> cell = building->getCell(i);
         if (cell == nullptr)
             continue;
+
+        Locker contentsLocker(cell->getContainerLock());
 
         const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* contents =
             cell->getContainerObjects();
@@ -771,8 +756,42 @@ bool HousePackupManager::hasDoctorServiceUnitsInside(BuildingObject* building) c
 
         for (int j = 0; j < contents->size(); ++j) {
             ManagedReference<SceneObject*> child = contents->elementAt(j).getValue();
-            if (child != nullptr && containsStation(child))
-                return true;
+            if (child != nullptr)
+                pending.add(child);
+        }
+    }
+
+    for (int cursor = 0; cursor < pending.size(); ++cursor) {
+        ManagedReference<SceneObject*> current = pending.get(cursor);
+        if (current == nullptr)
+            continue;
+
+        uint64 oid = current->getObjectID();
+
+        if (oid != 0) {
+            if (visited.containsKey(oid))
+                continue;
+            visited.put(oid, true);
+        }
+
+        if (current->getServerObjectCRC() == stationCRC)
+            return true;
+
+        if (current->isCreatureObject() || current->isTerminal())
+            continue;
+
+        Locker contentsLocker(current->getContainerLock());
+
+        const VectorMap<unsigned long long, ManagedReference<SceneObject*> >* contents =
+            current->getContainerObjects();
+
+        if (contents == nullptr)
+            continue;
+
+        for (int i = 0; i < contents->size(); ++i) {
+            ManagedReference<SceneObject*> child = contents->elementAt(i).getValue();
+            if (child != nullptr)
+                pending.add(child);
         }
     }
 
@@ -825,42 +844,26 @@ bool HousePackupManager::packUpHouse(BuildingObject* building, CreatureObject* r
         return false;
     }
 
-    // BG safety layer: the radial is hidden when mannequins are present, but re-check here
-    // to defend against stale menus, delayed callbacks, or another player placing a
-    // mannequin after the menu was opened. Mannequins are creatures and would be skipped
-    // by collectDeep(), so packing up around one would orphan it.
-    if (hasMannequinsInside(building)) {
-        requester->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
-        return false;
-    }
-
-    // BG FMDoctorBot safety: never serialize/destroy around an active medical station.
-    if (hasDoctorServiceUnitsInside(building)) {
-        requester->sendSystemMessage(
-            "This structure cannot be packed up while an Automated Medical Station is inside. "
-            "Decommission the station first. (Nothing was changed.)");
-        return false;
-    }
-
-    // Keep a managed reference to the building to prevent it from being deleted
     ManagedReference<BuildingObject*> buildingRef = building;
-
-    // Lock the building to prevent concurrent modifications
     Locker buildingLocker(buildingRef);
 
-    // --- Idempotency / concurrency guard -------------------------------
-    // Server-side authority: a structure that is already PACKING or PACKED
-    // must reject a second pack request outright, without touching any
-    // object, credit, or the deed. Checked and set while buildingRef is
-    // locked above, so two near-simultaneous radial invocations (double
-    // click, lag, duplicate packet) serialize on the lock and the second
-    // one always sees the state the first one just set -- no separate
-    // custom locking framework needed, this is Core3's normal object lock.
     if (buildingRef->getHousePackState() != HousePackState::NORMAL) {
         requester->sendSystemMessage(
             buildingRef->getHousePackState() == HousePackState::PACKED
                 ? "This structure has already been packed up. Use 'Destroy Structure' to reclaim the deed."
                 : "This structure is already being packed up. Please wait.");
+        return false;
+    }
+
+    if (hasMannequinsInside(buildingRef.get())) {
+        requester->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
+        return false;
+    }
+
+    if (hasDoctorServiceUnitsInside(buildingRef.get())) {
+        requester->sendSystemMessage(
+            "This structure cannot be packed up while an Automated Medical Station is inside. "
+            "Decommission the station first. (Nothing was changed.)");
         return false;
     }
 

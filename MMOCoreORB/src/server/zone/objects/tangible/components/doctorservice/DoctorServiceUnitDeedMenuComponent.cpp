@@ -136,7 +136,44 @@ int DoctorServiceUnitDeedMenuComponent::handleObjectMenuSelect(
 		return 0;
 	}
 
-	Locker stationLocker(station, player);
+	// FMDoctorBot final placement gate.
+	Locker buildingLocker(building, player);
+	Locker stationLocker(station, building);
+
+	if (building->getHousePackState() != 0) {
+		station->destroyObjectFromDatabase(true);
+		player->sendSystemMessage(
+			"This structure is currently being packed or otherwise changed. "
+			"The Automated Medical Station was not deployed and the deed was not consumed.");
+		return 0;
+	}
+
+	ManagedReference<SceneObject*> currentPlayerParent = player->getParent().get();
+	ManagedReference<SceneObject*> currentCellRoot = cell->getRootParent();
+
+	bool placementStillValid =
+		building->getZone() != nullptr &&
+		currentPlayerParent != nullptr &&
+		currentPlayerParent->getObjectID() == cell->getObjectID() &&
+		currentCellRoot != nullptr &&
+		currentCellRoot->getObjectID() == building->getObjectID() &&
+		isApprovedDoctorServiceVenue(building) &&
+		(privileged || building->isOnAdminList(player));
+
+	if (!placementStillValid) {
+		station->destroyObjectFromDatabase(true);
+		player->sendSystemMessage(
+			"The Hospital/Cantina changed while the station was being deployed. "
+			"Placement was cancelled safely and the deed was not consumed.");
+		return 0;
+	}
+
+	if ((building->getCurrentNumberOfPlayerItems() + 1) >
+			building->getMaximumNumberOfPlayerItems()) {
+		station->destroyObjectFromDatabase(true);
+		player->sendSystemMessage("@container_error_message:container13");
+		return 0;
+	}
 
 	DoctorBuffDroidDataComponent* data = DoctorBuffDroidMenuComponent::getDroidData(station);
 	if (data == nullptr) {
@@ -200,6 +237,19 @@ int DoctorServiceUnitDeedMenuComponent::handleObjectMenuSelect(
 
 	station->updateToDatabase();
 	hopper->updateToDatabase();
+
+	hopperLocker.release();
+	stationLocker.release();
+	buildingLocker.release();
+
+	// FMDoctorBot fresh-deploy hopper client sync.
+	//
+	// transferObject(..., notifyClient=true) only sends the containment link.
+	// Because this hopper was created AFTER the station was already sent to the
+	// deploying client, the client does not yet know the hopper object/baselines.
+	// Send the newly-created child explicitly to the owner so Open Container works
+	// immediately without requiring logout/login.
+	hopper->sendTo(player, true, true);
 
 	TransactionLog trx(player, station, deed, TrxCode::PLAYERMISCACTION);
 	trx.addState("feature", String("FMDoctorBot"));
