@@ -7,8 +7,9 @@ event_epic = {
     minimumLevel = 0,
     maximumLevel = 0,
     lootItems = {
-        { itemTemplate = "house_deeds",     weight = 5000000 },
-        { itemTemplate = "scrolling_screen", weight = 5000000 },
+        { itemTemplate = "house_deeds",     weight = 4500000 },
+        { itemTemplate = "scrolling_screen", weight = 3000000 },
+         { itemTemplate = "gambling_table_schematic", weight = 2500000 },
     }
 }
 
