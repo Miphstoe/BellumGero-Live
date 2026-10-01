@@ -181,7 +181,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "storePets", &LuaCreatureObject::storePets },
 		{ "reset_buffs", &LuaCreatureObject::reset_buffs },
 		{ "enhancePet", &LuaCreatureObject::enhancePet },
-		{ "enhancePetByIndex", &LuaCreatureObject::enhancePetByIndex },
+		{ "enhancePetByObjectID", &LuaCreatureObject::enhancePetByObjectID },
+		{ "getPetEnhancementTime", &LuaCreatureObject::getPetEnhancementTime },
 		{ "enhanceCharacterVendor", &LuaCreatureObject::enhanceCharacterVendor },
 
 		// JTL
@@ -1760,7 +1761,7 @@ int LuaCreatureObject::enhancePet(lua_State* L) {
 	// Apply enhancement buffs to the pet
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 
-	// Apply 2500 buff points to the pet for 3 hours (7200 seconds)
+	// Apply 2500 buff points to the pet for 3 hours (10800 seconds)
 	// Medical buffs for health attributes
 	playerManager->healEnhance(player, activePet, 0, 2500, 10800.0f); // medical_enhance_health
 	playerManager->healEnhance(player, activePet, 1, 2500, 10800.0f); // medical_enhance_strength
@@ -1779,23 +1780,33 @@ int LuaCreatureObject::enhancePet(lua_State* L) {
 	return 0;
 }
 
-int LuaCreatureObject::enhancePetByIndex(lua_State* L) {
-	int index = (int)lua_tointeger(L, -1);
+int LuaCreatureObject::enhancePetByObjectID(lua_State* L) {
+	uint64 petObjectID = (uint64)lua_tointeger(L, -1);
 	CreatureObject* player = realObject;
 
-	if (player == nullptr) {
+	if (player == nullptr || petObjectID == 0) {
 		lua_pushboolean(L, false);
 		return 1;
 	}
 
 	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
-	if (ghost == nullptr || index < 0 || index >= ghost->getActivePetsSize()) {
+	if (ghost == nullptr) {
 		player->sendSystemMessage("That pet is no longer active. You were not charged.");
 		lua_pushboolean(L, false);
 		return 1;
 	}
 
-	ManagedReference<AiAgent*> activePet = ghost->getActivePet(index);
+	ManagedReference<AiAgent*> activePet = nullptr;
+
+	for (int i = 0; i < ghost->getActivePetsSize(); ++i) {
+		ManagedReference<AiAgent*> pet = ghost->getActivePet(i);
+
+		if (pet != nullptr && pet->getObjectID() == petObjectID) {
+			activePet = pet;
+			break;
+		}
+	}
+
 	if (activePet == nullptr) {
 		player->sendSystemMessage("That pet is no longer active. You were not charged.");
 		lua_pushboolean(L, false);
@@ -1838,6 +1849,67 @@ int LuaCreatureObject::enhancePetByIndex(lua_State* L) {
 	player->sendSystemMessage(msg.toString());
 
 	lua_pushboolean(L, true);
+	return 1;
+}
+
+int LuaCreatureObject::getPetEnhancementTime(lua_State* L) {
+	CreatureObject* pet = realObject;
+
+	// Return values:
+	//   > 0 : complete nine-stat enhancement; shortest seconds remaining
+	//     0 : none of the nine enhancement buffs are active
+	//    -2 : only part of the nine-stat enhancement is present
+	if (pet == nullptr) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	static const char* enhancementBuffNames[] = {
+		"medical_enhance_health",
+		"medical_enhance_strength",
+		"medical_enhance_constitution",
+		"medical_enhance_action",
+		"medical_enhance_quickness",
+		"medical_enhance_stamina",
+		"medical_enhance_mind",
+		"medical_enhance_focus",
+		"medical_enhance_willpower"
+	};
+
+	int activeCount = 0;
+	float shortestTimeLeft = 0.0f;
+
+	for (int i = 0; i < 9; ++i) {
+		uint32 buffCRC = String(enhancementBuffNames[i]).hashCode();
+
+		if (!pet->hasBuff(buffCRC))
+			continue;
+
+		Buff* buff = pet->getBuff(buffCRC);
+		if (buff == nullptr)
+			continue;
+
+		float timeLeft = buff->getTimeLeft();
+		if (timeLeft <= 0.0f)
+			continue;
+
+		++activeCount;
+
+		if (shortestTimeLeft <= 0.0f || timeLeft < shortestTimeLeft)
+			shortestTimeLeft = timeLeft;
+	}
+
+	if (activeCount == 0) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	if (activeCount != 9 || shortestTimeLeft <= 0.0f) {
+		lua_pushinteger(L, -2);
+		return 1;
+	}
+
+	lua_pushinteger(L, (lua_Integer)shortestTimeLeft);
 	return 1;
 }
 

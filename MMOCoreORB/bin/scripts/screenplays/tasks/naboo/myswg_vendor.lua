@@ -11,6 +11,26 @@ registerScreenPlay("myswg_vendor", true)
 -- BG Hub targeted pet enhancement selector
 myswg_vendor.PET_BUFF_COST = 10000
 
+function myswg_vendor:formatPetBuffTime(seconds)
+    if seconds == nil or seconds <= 0 then
+        return nil
+    end
+
+    local totalMinutes = math.floor(seconds / 60)
+    local hours = math.floor(totalMinutes / 60)
+    local minutes = totalMinutes % 60
+
+    if hours > 0 then
+        return string.format("%dh %02dm remaining", hours, minutes)
+    end
+
+    if minutes > 0 then
+        return string.format("%dm remaining", minutes)
+    end
+
+    return "<1m remaining"
+end
+
 function myswg_vendor:openPetBuffSelector(pPlayer)
     if pPlayer == nil then return end
 
@@ -37,15 +57,34 @@ function myswg_vendor:openPetBuffSelector(pPlayer)
         "You are charged only after the selected pet is revalidated and successfully enhanced."
     )
 
-    -- Keep one row per active-pet slot so the selected SUI row is the exact
-    -- PlayerObject active-pet index revalidated by C++ at purchase time.
+    -- Each row is tied to the exact pet object already returned by PlayerObject.
+    -- Timer reads are performed directly on that pet, avoiding a second lookup
+    -- through the active-pet index. The pet object ID is stored with the SUI row
+    -- and is revalidated against the active-pet list at purchase time.
     for i = 0, count - 1 do
         local pPet = ghost:getActivePet(i)
         local label = "[Unavailable pet]"
+        local petObjectID = ""
 
         if pPet ~= nil then
-            label = SceneObject(pPet):getDisplayedName()
+            local petScene = SceneObject(pPet)
             local pet = CreatureObject(pPet)
+
+            label = petScene:getDisplayedName()
+            petObjectID = tostring(petScene:getObjectID())
+
+            local buffSeconds = pet:getPetEnhancementTime()
+            if buffSeconds > 0 then
+                local formatted = self:formatPetBuffTime(buffSeconds)
+                if formatted ~= nil then
+                    label = label .. " - Enhanced - " .. formatted
+                end
+            elseif buffSeconds == -2 then
+                label = label .. " - Partial enhancement"
+            else
+                label = label .. " - No active enhancement"
+            end
+
             if pet:isDead() or pet:isIncapacitated() then
                 label = label .. " [UNAVAILABLE]"
             elseif pet:isInCombat() then
@@ -53,7 +92,7 @@ function myswg_vendor:openPetBuffSelector(pPlayer)
             end
         end
 
-        sui.add(label, "")
+        sui.add(label, petObjectID)
     end
 
     sui.sendTo(pPlayer)
@@ -67,15 +106,23 @@ function myswg_vendor:petBuffSelectCallback(pPlayer, pSui, eventIndex, args)
     if selectedIndex == nil or selectedIndex < 0 then return end
 
     local player = CreatureObject(pPlayer)
-    local pGhost = player:getPlayerObject()
-    if pGhost == nil then
-        player:sendSystemMessage("Your active pet list changed. You were not charged.")
+
+    local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+    if pPageData == nil then
+        player:sendSystemMessage("Pet selection data is no longer available. You were not charged.")
         return
     end
 
-    local ghost = PlayerObject(pGhost)
-    if selectedIndex >= ghost:getActivePetsSize() then
-        player:sendSystemMessage("Your active pet list changed. You were not charged.")
+    local suiPageData = LuaSuiPageData(pPageData)
+    local selectedPetID = suiPageData:getStoredData(tostring(selectedIndex))
+    if selectedPetID == nil or selectedPetID == "" then
+        player:sendSystemMessage("That pet is no longer available. You were not charged.")
+        return
+    end
+
+    local petObjectID = tonumber(selectedPetID)
+    if petObjectID == nil or petObjectID <= 0 then
+        player:sendSystemMessage("That pet selection is invalid. You were not charged.")
         return
     end
 
@@ -88,15 +135,14 @@ function myswg_vendor:petBuffSelectCallback(pPlayer, pSui, eventIndex, args)
         return
     end
 
-    -- C++ revalidates exact active-pet index, living/incapacitated/combat state,
-    -- then applies the historical nine-stat 2500 / 2-hour enhancement.
-    local success = player:enhancePetByIndex(selectedIndex)
+    -- C++ revalidates that this exact object ID is still one of the player's
+    -- active pets, then checks living/incapacitated/combat state before buffing.
+    local success = player:enhancePetByObjectID(petObjectID)
     if not success then
         return
     end
 
-    -- Charge only after a successful enhancement. Cash first, then bank,
-    -- matching the current BG Hub vendor wallet behavior.
+    -- Charge only after a successful enhancement. Cash first, then bank.
     if cash >= cost then
         player:subtractCashCredits(cost)
     else
