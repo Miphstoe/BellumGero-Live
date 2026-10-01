@@ -11,23 +11,29 @@
 #include "server/zone/managers/name/NameManager.h"
 
 class DoctorBuffDroidAdTextSuiCallback : public SuiCallback {
-	ManagedReference<SceneObject*> droid;
+	ManagedWeakReference<SceneObject*> droidRef;
 
 public:
 	DoctorBuffDroidAdTextSuiCallback(
 		ZoneServer* serv, SceneObject* droidObject)
-		: SuiCallback(serv), droid(droidObject) {
+		: SuiCallback(serv), droidRef(droidObject) {
 	}
 
 	void run(
 		CreatureObject* player, SuiBox* sui,
 		uint32 eventIndex, Vector<UnicodeString>* args) override {
 
+		SceneObject* droid = droidRef.get();
+
 		if (player == nullptr || droid == nullptr)
 			return;
 
 		bool station =
 			DoctorBuffDroidMenuComponent::isDoctorServiceUnit(droid);
+
+		if (station &&
+				!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(droid, player))
+			return;
 
 		if (eventIndex == 1) {
 			if (station)
@@ -57,6 +63,9 @@ public:
 				dataRef->get());
 
 		if (data == nullptr)
+			return;
+
+		if (station && !data->isOwner(player))
 			return;
 
 		if (message.isEmpty()) {

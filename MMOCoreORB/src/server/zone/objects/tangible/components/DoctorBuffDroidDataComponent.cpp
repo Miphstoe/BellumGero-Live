@@ -574,8 +574,8 @@ int DoctorBuffDroidDataComponent::getDiscountedPrice(ServiceType type, CreatureO
 		if (buyerGuild->getObjectID() != ownerGuildId)
 			return price;
 
-		int discounted = price - ((price * guildDiscountPercent) / 100);
-		return Math::max(minimumPriceFloor, discounted);
+		int64 discounted = (int64)price - (((int64)price * (int64)guildDiscountPercent) / 100LL);
+		return Math::max(minimumPriceFloor, (int)discounted);
 	}
 
 	// Legacy Doctor Buff Droid fallback: preserve its original live-owner lookup behavior.
@@ -591,8 +591,8 @@ int DoctorBuffDroidDataComponent::getDiscountedPrice(ServiceType type, CreatureO
 	if (ownerGuild == nullptr || ownerGuild->getObjectID() != buyerGuild->getObjectID())
 		return price;
 
-	int discounted = price - ((price * guildDiscountPercent) / 100);
-	return Math::max(minimumPriceFloor, discounted);
+	int64 discounted = (int64)price - (((int64)price * (int64)guildDiscountPercent) / 100LL);
+	return Math::max(minimumPriceFloor, (int)discounted);
 }
 
 bool DoctorBuffDroidDataComponent::isServiceEnabled(ServiceType type) const {
@@ -660,7 +660,9 @@ void DoctorBuffDroidDataComponent::addEarnings(int amount) {
 		return;
 
 	Locker locker(&dataMutex);
-	earningsBalance += amount;
+	const int64 earningsCap = 2000000000LL;
+	int64 nextBalance = (int64)earningsBalance + (int64)amount;
+	earningsBalance = (int)Math::min(earningsCap, nextBalance);
 }
 
 int DoctorBuffDroidDataComponent::withdrawEarnings() {

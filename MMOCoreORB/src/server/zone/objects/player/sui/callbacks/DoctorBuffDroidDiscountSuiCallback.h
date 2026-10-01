@@ -26,6 +26,10 @@ public:
 		bool station =
 			DoctorBuffDroidMenuComponent::isDoctorServiceUnit(droid);
 
+		if (station &&
+				!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(droid, player))
+			return;
+
 		if (eventIndex == 1) {
 			if (station)
 				DoctorServiceUnitMenuComponent::showOwnerConfigMenu(

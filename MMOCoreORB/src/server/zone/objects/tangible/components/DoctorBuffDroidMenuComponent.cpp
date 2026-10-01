@@ -105,8 +105,9 @@ bool deductCredits(CreatureObject* player, int amount) {
 
 	int bank = player->getBankCredits();
 	int cash = player->getCashCredits();
+	int64 totalCredits = (int64)bank + (int64)cash;
 
-	if (bank + cash < amount)
+	if (totalCredits < (int64)amount)
 		return false;
 
 	if (bank >= amount) {
@@ -119,6 +120,12 @@ bool deductCredits(CreatureObject* player, int amount) {
 	}
 
 	return true;
+}
+
+bool canAcceptStationEarnings(DoctorBuffDroidDataComponent* data, int price) {
+	if (data == nullptr || price < 0)
+		return false;
+	return (int64)data->getEarningsBalance() + (int64)price <= 2000000000LL;
 }
 
 Consumable* getConsumable(SceneObject* item) {
@@ -1383,6 +1390,8 @@ void DoctorBuffDroidMenuComponent::promptPriceSelection(SceneObject* sceneObject
 	if (station) {
 		box->setCancelButton(true, "@back");
 		box->setOkButton(true, "@ok");
+		box->setUsingObject(sceneObject);
+		box->setForceCloseDistance(10.f);
 	}
 
 	box->addMenuItem(String(station ? "Standard Doctor Buffs (" : "Medical Buffs (") +
@@ -1424,6 +1433,8 @@ void DoctorBuffDroidMenuComponent::promptPriceInput(
 	if (station) {
 		box->setCancelButton(true, "@back");
 		box->setOkButton(true, "@ok");
+		box->setUsingObject(sceneObject);
+		box->setForceCloseDistance(10.f);
 	}
 
 	player->getPlayerObject()->addSuiBox(box);
@@ -1453,6 +1464,8 @@ void DoctorBuffDroidMenuComponent::promptDiscountInput(SceneObject* sceneObject,
 	if (station) {
 		box->setCancelButton(true, "@back");
 		box->setOkButton(true, "@ok");
+		box->setUsingObject(sceneObject);
+		box->setForceCloseDistance(10.f);
 	}
 
 	player->getPlayerObject()->addSuiBox(box);
@@ -1483,6 +1496,8 @@ void DoctorBuffDroidMenuComponent::promptToggleSelection(SceneObject* sceneObjec
 	if (station) {
 		box->setCancelButton(true, "@back");
 		box->setOkButton(true, "@ok");
+		box->setUsingObject(sceneObject);
+		box->setForceCloseDistance(10.f);
 	}
 
 	box->addMenuItem(String(station ? "Standard Doctor Buffs (" : "Medical Buffs (") +
@@ -1537,6 +1552,8 @@ void DoctorBuffDroidMenuComponent::promptAdTextInput(SceneObject* sceneObject, C
 	if (station) {
 		box->setCancelButton(true, "@back");
 		box->setOkButton(true, "@ok");
+		box->setUsingObject(sceneObject);
+		box->setForceCloseDistance(10.f);
 	}
 
 	player->getPlayerObject()->addSuiBox(box);
@@ -1824,10 +1841,15 @@ bool DoctorBuffDroidMenuComponent::performMedicalBuff(SceneObject* sceneObject, 
 		}
 
 		int price = data->getDiscountedPrice(service, player);
-		if (player->getBankCredits() + player->getCashCredits() < price) {
+		if ((int64)player->getBankCredits() + (int64)player->getCashCredits() < (int64)price) {
 			player->sendSystemMessage(
 				"You do not have enough credits for " +
 				String(useJanta ? "Janta" : "Standard") + " Doctor Buffs. You were not charged.");
+			return false;
+		}
+
+		if (!canAcceptStationEarnings(data, price)) {
+			player->sendSystemMessage("Automated Medical Station earnings are full. The owner must withdraw earnings before more paid services can be purchased. You were not charged.");
 			return false;
 		}
 
@@ -1968,8 +1990,13 @@ bool DoctorBuffDroidMenuComponent::performWoundHealing(SceneObject* sceneObject,
 
 	int price = data->getDiscountedPrice(DoctorBuffDroidDataComponent::SERVICE_WOUNDS, player);
 
-	if (station && player->getBankCredits() + player->getCashCredits() < price) {
+	if (station && (int64)player->getBankCredits() + (int64)player->getCashCredits() < (int64)price) {
 		player->sendSystemMessage("You do not have enough credits for Wound Healing. You were not charged.");
+		return false;
+	}
+
+	if (station && !canAcceptStationEarnings(data, price)) {
+		player->sendSystemMessage("Automated Medical Station earnings are full. The owner must withdraw earnings before more paid services can be purchased. You were not charged.");
 		return false;
 	}
 
@@ -2045,10 +2072,15 @@ bool DoctorBuffDroidMenuComponent::performResistance(
 
 	int price = data->getDiscountedPrice(type, player);
 
-	if (station && player->getBankCredits() + player->getCashCredits() < price) {
+	if (station && (int64)player->getBankCredits() + (int64)player->getCashCredits() < (int64)price) {
 		player->sendSystemMessage(
 			"You do not have enough credits for " + serviceLabel +
 			". You were not charged.");
+		return false;
+	}
+
+	if (station && !canAcceptStationEarnings(data, price)) {
+		player->sendSystemMessage("Automated Medical Station earnings are full. The owner must withdraw earnings before more paid services can be purchased. You were not charged.");
 		return false;
 	}
 
@@ -2232,12 +2264,17 @@ bool DoctorBuffDroidMenuComponent::performPetBuffForTarget(
 
 		int price = data->getDiscountedPrice(service, player);
 
-		if (player->getBankCredits() +
-				player->getCashCredits() < price) {
+		if ((int64)player->getBankCredits() +
+				(int64)player->getCashCredits() < (int64)price) {
 			player->sendSystemMessage(
 				"You do not have enough credits for " +
 				String(useJanta ? "Janta" : "Standard") +
 				" Doctor Pet Buffs. You were not charged.");
+			return false;
+		}
+
+		if (!canAcceptStationEarnings(data, price)) {
+			player->sendSystemMessage("Automated Medical Station earnings are full. The owner must withdraw earnings before more paid services can be purchased. You were not charged.");
 			return false;
 		}
 

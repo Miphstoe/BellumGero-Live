@@ -49,6 +49,8 @@ namespace {
 const String kDoctorSkill = "science_doctor_master";
 const String kDeedTemplate = "object/tangible/deed/doctor_service/doctor_service_unit_deed.iff";
 const int kLowStockThreshold = 5;
+const float kStationUseRange = 10.f;
+const char* kFinalPrePRHardening = "FMDoctorBot FINAL PRE-PR HARDENING";
 
 bool isApprovedDoctorServiceBuilding(SceneObject* root) {
 	if (root == nullptr || !root->isBuildingObject() || root->getObjectTemplate() == nullptr)
@@ -226,6 +228,24 @@ void appendBuffPoolStock(
 
 }
 
+bool DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(
+	SceneObject* station, CreatureObject* player, bool notify) {
+	if (station == nullptr || player == nullptr)
+		return false;
+
+	bool valid =
+		player->getZone() != nullptr &&
+		station->getZone() == player->getZone() &&
+		player->getParentID() == station->getParentID() &&
+		station->getDistanceTo(player) <= kStationUseRange;
+
+	if (!valid && notify)
+		player->sendSystemMessage(
+			"You must remain in the same room and within 10 meters of the Automated Medical Station to use it.");
+
+	return valid;
+}
+
 bool DoctorServiceUnitMenuComponent::isPlacementValid(SceneObject* station, String* reason) {
 	if (reason != nullptr)
 		*reason = "";
@@ -299,8 +319,6 @@ void DoctorServiceUnitMenuComponent::fillObjectMenuResponse(
 			MENU_ROOT, MENU_BUY_JANTA, 3,
 			"Purchase Janta Doctor Buffs");
 		menuResponse->addRadialMenuItemToRadialID(
-			MENU_ROOT, MENU_PET_SERVICES, 3, "Pet Buffs");
-		menuResponse->addRadialMenuItemToRadialID(
 			MENU_ROOT, MENU_MEDICAL_SERVICES, 3,
 			"Additional Medical Services");
 	}
@@ -358,6 +376,8 @@ void DoctorServiceUnitMenuComponent::showStationMainMenu(
 			"SAFETY LOCKED: " + reason);
 	box->setCancelButton(true, "@close");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 	box->setCallback(
 		new DoctorServiceMainMenuSuiCallback(
 			player->getZoneServer(), station));
@@ -407,7 +427,6 @@ void DoctorServiceUnitMenuComponent::showStationMainMenu(
 			" session(s)",
 			kMainActionJanta);
 
-		box->addMenuItem("Pet Buffs", kMainActionPet);
 		box->addMenuItem(
 			"Additional Medical Services",
 			kMainActionMedical);
@@ -485,6 +504,8 @@ void DoctorServiceUnitMenuComponent::showPetServicesMenu(
 		"If multiple living pets are active, you will choose the exact target next.");
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 
 	box->addMenuItem(
 		"Standard - " + standardState +
@@ -565,6 +586,8 @@ void DoctorServiceUnitMenuComponent::showPetTargetMenu(
 		"Select the exact active pet to receive the buffs.");
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 
 	for (int i = 0; i < ghost->getActivePetsSize(); ++i) {
 		ManagedReference<AiAgent*> pet =
@@ -623,6 +646,8 @@ void DoctorServiceUnitMenuComponent::showMedicalServicesMenu(
 		"Select a medical service. Resistance services do not consume a new Bivoli charge.");
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 
 	box->addMenuItem(
 		String("Wound Healing - ") +
@@ -692,6 +717,8 @@ void DoctorServiceUnitMenuComponent::showOwnerConfigMenu(
 		"Select a station-management option.");
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 
 	box->addMenuItem("Configure Service Prices");
 	box->addMenuItem("Toggle Services");
@@ -714,6 +741,9 @@ void DoctorServiceUnitMenuComponent::handleMainMenuSelection(
 	SceneObject* station, CreatureObject* player,
 	uint64 actionId) {
 
+	if (!isPlayerWithinUseRange(station, player))
+		return;
+
 	if (station == nullptr || player == nullptr)
 		return;
 
@@ -729,9 +759,6 @@ void DoctorServiceUnitMenuComponent::handleMainMenuSelection(
 		return;
 	case kMainActionJanta:
 		purchaseBuffs(station, player, true);
-		return;
-	case kMainActionPet:
-		showPetServicesMenu(station, player);
 		return;
 	case kMainActionMedical:
 		showMedicalServicesMenu(station, player);
@@ -778,6 +805,9 @@ void DoctorServiceUnitMenuComponent::handleMainMenuSelection(
 void DoctorServiceUnitMenuComponent::handlePetServiceSelection(
 	SceneObject* station, CreatureObject* player, int index) {
 
+	if (!isPlayerWithinUseRange(station, player))
+		return;
+
 	if (station == nullptr || player == nullptr)
 		return;
 
@@ -791,6 +821,9 @@ void DoctorServiceUnitMenuComponent::handlePetTargetSelection(
 	SceneObject* station, CreatureObject* player,
 	bool useJanta, uint64 petObjectId) {
 
+	if (!isPlayerWithinUseRange(station, player))
+		return;
+
 	purchasePetBuffs(
 		station, player, useJanta,
 		petObjectId, false);
@@ -798,6 +831,9 @@ void DoctorServiceUnitMenuComponent::handlePetTargetSelection(
 
 void DoctorServiceUnitMenuComponent::handleMedicalServiceSelection(
 	SceneObject* station, CreatureObject* player, int index) {
+
+	if (!isPlayerWithinUseRange(station, player))
+		return;
 
 	if (station == nullptr || player == nullptr)
 		return;
@@ -812,6 +848,9 @@ void DoctorServiceUnitMenuComponent::handleMedicalServiceSelection(
 
 void DoctorServiceUnitMenuComponent::handleOwnerConfigSelection(
 	SceneObject* station, CreatureObject* player, int index) {
+
+	if (!isPlayerWithinUseRange(station, player))
+		return;
 
 	if (station == nullptr || player == nullptr)
 		return;
@@ -902,6 +941,9 @@ void DoctorServiceUnitMenuComponent::handleRebuffConfirmation(
 	SceneObject* station, CreatureObject* player,
 	bool useJanta, uint64 petObjectId) {
 
+	if (!isPlayerWithinUseRange(station, player))
+		return;
+
 	if (petObjectId == 0)
 		purchaseBuffs(
 			station, player, useJanta, true);
@@ -947,6 +989,8 @@ void DoctorServiceUnitMenuComponent::showRebuffConfirm(
 	box->setPromptText(prompt.toString());
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 	box->setCallback(
 		new DoctorServiceRebuffConfirmSuiCallback(
 			player->getZoneServer(),
@@ -1142,6 +1186,9 @@ int DoctorServiceUnitMenuComponent::handleObjectMenuSelect(
 	SceneObject* sceneObject, CreatureObject* player,
 	byte selectedID) const {
 
+	if (!isPlayerWithinUseRange(sceneObject, player))
+		return 0;
+
 	if (sceneObject == nullptr || player == nullptr)
 		return 0;
 
@@ -1169,11 +1216,6 @@ int DoctorServiceUnitMenuComponent::handleObjectMenuSelect(
 	case MENU_BUY_JANTA:
 		purchaseBuffs(
 			sceneObject, player, true);
-		return 0;
-
-	case MENU_PET_SERVICES:
-		showPetServicesMenu(
-			sceneObject, player);
 		return 0;
 
 	case MENU_MEDICAL_SERVICES:
@@ -1376,11 +1418,6 @@ void DoctorServiceUnitMenuComponent::showAvailability(
 		else if (jantaSessions <= kLowStockThreshold)
 			report << "\nLOW STOCK";
 
-		report << "\n\nPet Buffs"
-			   << "\nStandard and Janta pet buffs use the same stock and price as player buffs."
-			   << "\nWhen multiple living pets are active, you can select the exact target."
-			   << "\nExisting Doctor buffs require confirmation before replacement.";
-
 		report << "\n\nWound Healing"
 			   << "\n"
 			   << (woundsEnabled ?
@@ -1449,7 +1486,7 @@ void DoctorServiceUnitMenuComponent::showAvailability(
 				   << bivoliReserve;
 		} else {
 			report << "\nOUT OF STOCK"
-				   << "\nA new Standard/Janta player or pet buff session cannot begin until Bivoli is restocked.";
+				   << "\nA new Standard/Janta player buff session cannot begin until Bivoli is restocked.";
 		}
 
 		report << "\nResistance purchases never consume a new Bivoli charge; "
@@ -1471,9 +1508,10 @@ void DoctorServiceUnitMenuComponent::showAvailability(
 	box->setPromptTitle(
 		"Automated Medical Station - Services / Availability");
 	box->setPromptText(report.toString());
-	box->setUsingObject(station);
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 	box->setCallback(
 		new DoctorServiceBackSuiCallback(
 			player->getZoneServer(),
@@ -1755,9 +1793,10 @@ void DoctorServiceUnitMenuComponent::showInventory(
 	box->setPromptTitle(
 		"Automated Medical Station - Inventory / Stock");
 	box->setPromptText(report.toString());
-	box->setUsingObject(station);
 	box->setCancelButton(true, "@back");
 	box->setOkButton(true, "@ok");
+	box->setUsingObject(station);
+	box->setForceCloseDistance(kStationUseRange);
 	box->setCallback(
 		new DoctorServiceBackSuiCallback(
 			player->getZoneServer(),

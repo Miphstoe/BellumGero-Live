@@ -28,6 +28,10 @@ public:
 		if (station == nullptr || player == nullptr)
 			return;
 
+		if (!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(
+				station, player))
+			return;
+
 		if (eventIndex == 1) {
 			if (petObjectId == 0)
 				DoctorServiceUnitMenuComponent::showStationMainMenu(

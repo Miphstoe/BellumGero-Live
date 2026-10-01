@@ -181,6 +181,7 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "storePets", &LuaCreatureObject::storePets },
 		{ "reset_buffs", &LuaCreatureObject::reset_buffs },
 		{ "enhancePet", &LuaCreatureObject::enhancePet },
+		{ "enhancePetByIndex", &LuaCreatureObject::enhancePetByIndex },
 		{ "enhanceCharacterVendor", &LuaCreatureObject::enhanceCharacterVendor },
 
 		// JTL
@@ -1759,23 +1760,85 @@ int LuaCreatureObject::enhancePet(lua_State* L) {
 	// Apply enhancement buffs to the pet
 	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
 
-	// Apply 2500 buff points to the pet for 2 hours (7200 seconds)
+	// Apply 2500 buff points to the pet for 3 hours (7200 seconds)
 	// Medical buffs for health attributes
-	playerManager->healEnhance(player, activePet, 0, 2500, 7200.0f); // medical_enhance_health
-	playerManager->healEnhance(player, activePet, 1, 2500, 7200.0f); // medical_enhance_strength
-	playerManager->healEnhance(player, activePet, 2, 2500, 7200.0f); // medical_enhance_constitution
-	playerManager->healEnhance(player, activePet, 3, 2500, 7200.0f); // medical_enhance_action
-	playerManager->healEnhance(player, activePet, 4, 2500, 7200.0f); // medical_enhance_quickness
-	playerManager->healEnhance(player, activePet, 5, 2500, 7200.0f); // medical_enhance_stamina
+	playerManager->healEnhance(player, activePet, 0, 2500, 10800.0f); // medical_enhance_health
+	playerManager->healEnhance(player, activePet, 1, 2500, 10800.0f); // medical_enhance_strength
+	playerManager->healEnhance(player, activePet, 2, 2500, 10800.0f); // medical_enhance_constitution
+	playerManager->healEnhance(player, activePet, 3, 2500, 10800.0f); // medical_enhance_action
+	playerManager->healEnhance(player, activePet, 4, 2500, 10800.0f); // medical_enhance_quickness
+	playerManager->healEnhance(player, activePet, 5, 2500, 10800.0f); // medical_enhance_stamina
 
 	// Performance buffs for mind attributes
-	playerManager->healEnhance(player, activePet, 6, 2500, 7200.0f); // performance_enhance_dance_mind
-	playerManager->healEnhance(player, activePet, 7, 2500, 7200.0f); // performance_enhance_music_focus
-	playerManager->healEnhance(player, activePet, 8, 2500, 7200.0f); // performance_enhance_music_willpower
+	playerManager->healEnhance(player, activePet, 6, 2500, 10800.0f); // performance_enhance_dance_mind
+	playerManager->healEnhance(player, activePet, 7, 2500, 10800.0f); // performance_enhance_music_focus
+	playerManager->healEnhance(player, activePet, 8, 2500, 10800.0f); // performance_enhance_music_willpower
 
-	player->sendSystemMessage("Your pet has been enhanced with 2500 buffs for 2 hours!");
+	player->sendSystemMessage("Your pet has been enhanced with 2500 buffs for 3 hours!");
 
 	return 0;
+}
+
+int LuaCreatureObject::enhancePetByIndex(lua_State* L) {
+	int index = (int)lua_tointeger(L, -1);
+	CreatureObject* player = realObject;
+
+	if (player == nullptr) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+	if (ghost == nullptr || index < 0 || index >= ghost->getActivePetsSize()) {
+		player->sendSystemMessage("That pet is no longer active. You were not charged.");
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	ManagedReference<AiAgent*> activePet = ghost->getActivePet(index);
+	if (activePet == nullptr) {
+		player->sendSystemMessage("That pet is no longer active. You were not charged.");
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	if (activePet->isDead() || activePet->isIncapacitated()) {
+		player->sendSystemMessage("That pet is not currently eligible for enhancement. You were not charged.");
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	if (activePet->isInCombat()) {
+		player->sendSystemMessage("That pet is in combat and cannot be enhanced right now. You were not charged.");
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	PlayerManager* playerManager = player->getZoneServer()->getPlayerManager();
+	if (playerManager == nullptr) {
+		player->sendSystemMessage("Pet enhancement is temporarily unavailable. You were not charged.");
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	// Historical BG Hub pet enhancement: 2500 to all nine HAM attributes for 3 hours.
+	playerManager->healEnhance(player, activePet, 0, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 1, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 2, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 3, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 4, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 5, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 6, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 7, 2500, 10800.0f);
+	playerManager->healEnhance(player, activePet, 8, 2500, 10800.0f);
+
+	StringBuffer msg;
+	msg << activePet->getDisplayedName()
+		<< " has been enhanced with 2500 buffs to Health, Action, Mind and their secondary attributes for 3 hours.";
+	player->sendSystemMessage(msg.toString());
+
+	lua_pushboolean(L, true);
+	return 1;
 }
 
 int LuaCreatureObject::getApprenticeshipXp(lua_State* L) {

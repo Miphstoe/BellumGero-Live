@@ -29,6 +29,8 @@ public:
 	void fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const override;
 	int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const override;
 
+	static bool isPlayerWithinUseRange(SceneObject* station, CreatureObject* player, bool notify = true);
+
 	// Public SUI navigation/callback entry points.
 	static void showStationMainMenu(SceneObject* station, CreatureObject* player);
 	static void showPetServicesMenu(SceneObject* station, CreatureObject* player);

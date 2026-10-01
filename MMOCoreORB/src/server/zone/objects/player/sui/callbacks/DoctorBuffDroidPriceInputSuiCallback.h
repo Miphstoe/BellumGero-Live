@@ -3,6 +3,7 @@
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidMenuComponent.h"
+#include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitMenuComponent.h"
 
 class DoctorBuffDroidPriceInputSuiCallback : public SuiCallback {
 	ManagedWeakReference<SceneObject*> droidRef;
@@ -25,6 +26,10 @@ public:
 
 		bool station =
 			DoctorBuffDroidMenuComponent::isDoctorServiceUnit(droid);
+
+		if (station &&
+				!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(droid, player))
+			return;
 
 		if (eventIndex == 1) {
 			if (station)

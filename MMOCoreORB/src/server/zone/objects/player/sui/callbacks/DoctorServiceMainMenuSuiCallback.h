@@ -27,6 +27,10 @@ public:
 		if (station == nullptr)
 			return;
 
+		if (!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(
+				station, player))
+			return;
+
 		SuiListBox* listBox =
 			cast<SuiListBox*>(suiBox);
 

@@ -29,6 +29,10 @@ public:
 		if (station == nullptr)
 			return;
 
+		if (!DoctorServiceUnitMenuComponent::isPlayerWithinUseRange(
+				station, player))
+			return;
+
 		if (ownerMenu)
 			DoctorServiceUnitMenuComponent::showOwnerConfigMenu(
 				station, player);
