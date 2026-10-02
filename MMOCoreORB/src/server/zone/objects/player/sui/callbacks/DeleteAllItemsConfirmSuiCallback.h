@@ -10,6 +10,7 @@
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/managers/housepackup/HousePackupManager.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/objects/ship/PobShipObject.h"
 
@@ -30,6 +31,19 @@ public:
 			return;
 
 		Locker _lock(sceneO, creature);
+
+		// FMDoctorBot bulk-delete gate.
+		if (sceneO->isBuildingObject()) {
+			BuildingObject* building = cast<BuildingObject*>(sceneO.get());
+
+			if (building != nullptr &&
+					HousePackupManager::instance()->hasDoctorServiceUnitsInside(building)) {
+				creature->sendSystemMessage(
+					"Delete All Items is blocked while an Automated Medical Station is inside. "
+					"Decommission the station first. No items were deleted.");
+				return;
+			}
+		}
 
 		TransactionLog trx(TrxCode::PLAYERMISCACTION, creature, sceneO);
 

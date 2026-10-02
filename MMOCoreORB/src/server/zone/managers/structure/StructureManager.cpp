@@ -1784,6 +1784,27 @@ int StructureManager::redeedStructure(CreatureObject* creature, bool requireRede
 
     Locker _locker(structureObject);
 
+    // FMDoctorBot final destruction gate.
+    if (structureObject->isBuildingObject()) {
+        BuildingObject* doctorServiceBuilding =
+            cast<BuildingObject*>(structureObject.get());
+
+        if (doctorServiceBuilding != nullptr &&
+                HousePackupManager::instance()->hasDoctorServiceUnitsInside(
+                    doctorServiceBuilding)) {
+
+            creature->sendSystemMessage(
+                "This structure cannot be redeeded or destroyed while an Automated Medical Station is inside. "
+                "Decommission the station first. (Nothing was changed.)");
+
+            warning() << "FMDoctorBot blocked structure redeed/destroy: building="
+                      << structureObject->getObjectID()
+                      << " requester=" << creature->getObjectID();
+
+            return session->cancelSession();
+        }
+    }
+
     if (requireRedeed && !canRedeedStructure(creature, structureObject))
         return 1;
 

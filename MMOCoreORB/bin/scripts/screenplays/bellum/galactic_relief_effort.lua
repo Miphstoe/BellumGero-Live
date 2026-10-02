@@ -19,6 +19,13 @@ GalacticReliefEffort.NPC_HEADING = 95
 
 GalacticReliefEffort.REWARD_CREDITS = 150000
 GalacticReliefEffort.REWARD_ITEM_TEMPLATE = "object/tangible/loot/misc/holocron_of_destiny.iff"
+
+-- Bellum Gero: one-time Master Doctor equipment reward.
+-- Additive only; the existing credits + Holocron rewards remain unchanged.
+GalacticReliefEffort.STATION_REWARD_ITEM_TEMPLATE =
+	"object/tangible/deed/doctor_service/doctor_service_unit_deed.iff"
+GalacticReliefEffort.STATION_REWARD_CLAIM_KEY = "station_reward_claimed"
+
 GalacticReliefEffort.COOLDOWN_SECONDS = 20 * 60 * 60
 GalacticReliefEffort.ASSIGNED_CITIES_PER_RUN = 5
 GalacticReliefEffort.PATIENTS_REQUIRED_PER_CITY = 5
@@ -243,6 +250,18 @@ function GalacticReliefEffort:isEligibleMedic(pPlayer)
 
 	local player = CreatureObject(pPlayer)
 	return player:getSkillMod("healing_injury_treatment") > 0 and player:getSkillMod("healing_wound_treatment") > 0
+end
+
+function GalacticReliefEffort:isMasterDoctor(pPlayer)
+	return pPlayer ~= nil and CreatureObject(pPlayer):hasSkill("science_doctor_master")
+end
+
+function GalacticReliefEffort:hasClaimedStationReward(pPlayer)
+	return self:getNumber(pPlayer, self.STATION_REWARD_CLAIM_KEY) == 1
+end
+
+function GalacticReliefEffort:shouldGrantStationReward(pPlayer)
+	return self:isMasterDoctor(pPlayer) and not self:hasClaimedStationReward(pPlayer)
 end
 
 function GalacticReliefEffort:isActive(pPlayer)
@@ -1059,8 +1078,18 @@ function GalacticReliefEffort:canGrantReward(pPlayer)
 
 	local inventory = SceneObject(pInventory)
 	local freeSlots = inventory:getContainerVolumeLimit() - inventory:getCountableObjectsRecursive()
+	local stationRewardPending = self:shouldGrantStationReward(pPlayer)
+	local requiredSlots = 1
 
-	if (freeSlots < 1) then
+	if (stationRewardPending) then
+		requiredSlots = 2
+	end
+
+	if (freeSlots < requiredSlots) then
+		if (stationRewardPending) then
+			return false, "Make room for two reward items before I process your relief compensation."
+		end
+
 		return false, "Make room in your inventory before I hand over the Holocron of Destiny."
 	end
 
@@ -1075,6 +1104,7 @@ function GalacticReliefEffort:grantReward(pPlayer)
 
 	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
 	local now = self:getNow()
+	local stationRewardPending = self:shouldGrantStationReward(pPlayer)
 
 	self:setNumber(pPlayer, "reward_lock", 1)
 	self:setNumber(pPlayer, "cooldown_until", now + self.COOLDOWN_SECONDS)
@@ -1088,6 +1118,27 @@ function GalacticReliefEffort:grantReward(pPlayer)
 
 	SceneObject(pReward):setCustomObjectName("Holocron of Destiny")
 
+	if (stationRewardPending) then
+		local pStationReward = giveItem(
+			pInventory,
+			self.STATION_REWARD_ITEM_TEMPLATE,
+			-1,
+			true
+		)
+
+		if (pStationReward == nil) then
+			SceneObject(pReward):destroyObjectFromWorld()
+			SceneObject(pReward):destroyObjectFromDatabase()
+
+			self:setNumber(pPlayer, "reward_lock", 0)
+			self:setNumber(pPlayer, "cooldown_until", 0)
+
+			return false, "I could not place the Automated Medical Station Deed into your inventory. Make room for both reward items and speak to me again."
+		end
+
+		self:setNumber(pPlayer, self.STATION_REWARD_CLAIM_KEY, 1)
+	end
+
 	CreatureObject(pPlayer):addBankCredits(self.REWARD_CREDITS, true)
 	self:cleanupCityPatients(pPlayer, self:getCurrentCityIndex(pPlayer))
 	self:clearWaypoint(pPlayer)
@@ -1096,6 +1147,10 @@ function GalacticReliefEffort:grantReward(pPlayer)
 	self:refreshObservers(pPlayer)
 
 	local rewardMessage = "Your relief circuit is complete. The Alliance of medics across the stars recognizes your service.\n\nRewarded:\n- 150,000 credits\n- 1 Holocron of Destiny"
+
+	if (stationRewardPending) then
+		rewardMessage = rewardMessage .. "\n- 1 Automated Medical Station Deed"
+	end
 
 	return true, rewardMessage
 end

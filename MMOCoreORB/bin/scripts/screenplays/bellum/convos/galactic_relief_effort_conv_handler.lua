@@ -37,9 +37,14 @@ function GalacticReliefEffortConvoHandler:runScreenHandlers(pConvTemplate, pPlay
 
 	if (screenID == "start_assignment") then
 		if (GalacticReliefEffort:isRewardPending(pPlayer)) then
+			local stationRewardPending = GalacticReliefEffort:shouldGrantStationReward(pPlayer)
 			local success, message = GalacticReliefEffort:grantReward(pPlayer)
 			if (success) then
 				local summaryMessage = "Reward granted: 150,000 credits and 1 Holocron of Destiny."
+
+				if (stationRewardPending) then
+					summaryMessage = "Reward granted: 150,000 credits, 1 Holocron of Destiny, and 1 Automated Medical Station Deed."
+				end
 
 				CreatureObject(pPlayer):sendSystemMessage(summaryMessage)
 			end

@@ -33,6 +33,16 @@ public:
 			return false;
 		}
 
+		// BG FMDoctorBot: a corrupt/missing hopper must never make the station
+		// eligible for generic destructive cleanup.
+		if (object->getServerObjectCRC() ==
+				String("object/tangible/vendor/doctor_service_unit.iff").hashCode()) {
+			player->sendSystemMessage(
+				"Automated Medical Stations are protected from /object delete. "
+				"Use Decommission Station after supplies and earnings are cleared.");
+			return false;
+		}
+
 		if (!object->isTangibleObject() || object->isCreatureObject() ||
 			object->isStructureObject() || object->isShipObject() ||
 			object->isVehicleObject() || object->isVendor() || object->isControlDevice()) {
