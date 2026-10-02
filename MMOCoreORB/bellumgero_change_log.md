@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-01 — Hoth resources: planet-specific resource classes and native spawns
+
+- **Summary:** Creature harvesting and surveying on Hoth failed ("Server cannot locate a current spawn of meat_carnivore") because Hoth was not an active resource zone and the shared resource tree had no `*_hoth` classes. Adds `hoth` to `activeZones` in the resource manager, and ships a `datatables/resource/resource_tree.iff` in `bg_custom1.tre` that is the stock BG tree plus the 55 Hoth resource classes (Hothian meats, hides, bones, milk, flora, wood, fiberplast, water vapor, ores, metals, gas, fuels, radioactive and renewable energy) inserted after their stock siblings, taken from the MTG/Infinity tree. On boot the native pool spawned 42 Hoth resources.
+- **Files:** `bin/scripts/managers/resource_manager.lua`; client/server TRE: `datatables/resource/resource_tree.iff`
+- **Notes:** Requires the rebuilt `bg_custom1.tre` on `/trefiles` and clients (the tree is read from the TRE by both). Only the Hoth rows were taken from the MTG tree; its rebalanced pool counts and attribute ranges for existing classes were deliberately not imported. Resource names come from the tree's class name column, so no `resource_names.stf` is needed.
+
 ### 2026-10-01 — Hoth creatures, NPCs, wampa caves and points of interest
 
 - **Summary:** Populates Hoth (CL 60–98). World spawner `hoth_world` with tauntaun herds/bulls, ice mynocks, Imperial probe droids, wampas/elder wampas and snowtrooper vs Rebel snow-soldier patrols. Ice caves filled cell-by-cell from the cave floor meshes (152 spawns) with fixed bosses on a 30-minute respawn: Frostfang (90), Icemaw (90), Snowblind the Ravager (92), the wampa matriarch (95) and the wampa patriarch (98), plus the mynock broodmother (85) in the northern cavern; the matriarch's random world lair is retired. Outposts get snowtrooper / Rebel snow garrisons, recruiters, mission/bank/bazaar terminals, a scavenger camp with junk dealer at the Lucky Despot wreck and an Imperial salvage team at the AT-ST wreck. Adds a Shield Generator Battlefield skirmish, a hostile Generator Raider Camp and five named POI regions. New mobile object templates for the ported wampa, snowtrooper and Rebel snow soldier models. Adds `tools/newplanets` (TRE/IFF tooling and the Hoth generators).
