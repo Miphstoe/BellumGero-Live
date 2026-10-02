@@ -220625,3 +220625,31 @@ object_mobile_shared_zucca_boar_hue = SharedCreatureObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_mobile_shared_zucca_boar_hue, "object/mobile/shared_zucca_boar_hue.iff")
+
+object_mobile_shared_wampa = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_wampa.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth mobile ported from SWG Infinity)
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_wampa, "object/mobile/shared_wampa.iff")
+
+object_mobile_shared_snowtrooper_s01 = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_snowtrooper_s01.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth mobile ported from SWG Infinity)
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_snowtrooper_s01, "object/mobile/shared_snowtrooper_s01.iff")
+
+object_mobile_shared_rebel_snow_m_01 = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_rebel_snow_m_01.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth mobile ported from SWG Infinity)
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_rebel_snow_m_01, "object/mobile/shared_rebel_snow_m_01.iff")
+
+object_mobile_shared_rebel_snow_f_01 = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_rebel_snow_f_01.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth mobile ported from SWG Infinity)
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_rebel_snow_f_01, "object/mobile/shared_rebel_snow_f_01.iff")

@@ -16,5 +16,13 @@ hoth_regions = {
 	{"hoth_imperial_outpost_nobuild", 5927, -406, {CIRCLE, 300}, NOBUILDZONEAREA},
 	{"hoth_rebel_outpost_nobuild", 4525, 1164, {CIRCLE, 300}, NOBUILDZONEAREA},
 
-	-- TODO: SPAWNAREA + WORLDSPAWNAREA world spawner once scripts/mobile/hoth exists
+	-- Points of interest
+	{"@hoth_region_names:ice_caves", -400, 2600, {CIRCLE, 450}, NAMEDREGION + NOBUILDZONEAREA},
+	{"@hoth_region_names:northern_ice_cavern", -5819, 6093, {CIRCLE, 150}, NAMEDREGION + NOBUILDZONEAREA},
+	{"@hoth_region_names:shield_generator_battlefield", 5420, 780, {CIRCLE, 450}, NAMEDREGION + NOBUILDZONEAREA},
+	{"@hoth_region_names:raider_camp", 5068, 1300, {CIRCLE, 80}, NAMEDREGION + NOSPAWNAREA + NOBUILDZONEAREA},
+	{"@hoth_region_names:lucky_despot_wreck", -100, -2048, {CIRCLE, 60}, NAMEDREGION},
+
+	-- World spawner (lairs, herds and patrols from mobile/spawn/hoth/hoth_world.lua)
+	{"@hoth_region_names:world_spawner", 0, 0, {RECTANGLE, 0, 0}, SPAWNAREA + WORLDSPAWNAREA, {"hoth_world"}, 1024},
 }

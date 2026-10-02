@@ -638,6 +638,15 @@ hoth = {
 	},
 
 	planetObjects = {
+		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -16.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -13.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -10.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_imperial.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5911.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5914.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5917.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_rebel.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4509.0, z = 87.8, y = 1150.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4512.0, z = 87.8, y = 1150.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4515.0, z = 87.8, y = 1150.0, parentid = 0},
 	}
 }
 
