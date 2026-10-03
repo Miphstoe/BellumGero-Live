@@ -43,21 +43,22 @@ local function mandoCertSkill(skillName, certCommand)
 end
 
 -- mando_cert_slugthrower: grants cert_carbine_nym_slugthrower
--- Requires: combat_carbine_novice (original skill that had this cert) + quest grant
+-- Granted only with the quest, and only while the character has combat_carbine_novice.
+-- Surrendering that profession box removes this certification instead of being blocked by it.
 local mandoCertSlugthrower = mandoCertSkill("mando_cert_slugthrower", "cert_carbine_nym_slugthrower")
 mandoCertSlugthrower.skillsRequired = { "combat_carbine_novice" }
 mandoCertSlugthrower.skillsRequiredCount = 1
 addSkill(mandoCertSlugthrower)
 
 -- mando_cert_lightning: grants cert_rifle_lightning
--- Requires: combat_bountyhunter_novice (original skill that had this cert) + quest grant
+-- Surrendering combat_bountyhunter_novice removes this certification.
 local mandoCertLightning = mandoCertSkill("mando_cert_lightning", "cert_rifle_lightning")
 mandoCertLightning.skillsRequired = { "combat_bountyhunter_novice" }
 mandoCertLightning.skillsRequiredCount = 1
 addSkill(mandoCertLightning)
 
 -- mando_cert_heavy_lightning: grants cert_heavy_lightning_beam
--- Requires: combat_commando_heavyweapon_speed_03 (original skill that had this cert) + quest grant
+-- Surrendering combat_commando_heavyweapon_speed_03 removes this certification.
 local mandoCertHeavyLightning = mandoCertSkill("mando_cert_heavy_lightning", "cert_heavy_lightning_beam")
 mandoCertHeavyLightning.skillsRequired = { "combat_commando_heavyweapon_speed_03" }
 mandoCertHeavyLightning.skillsRequiredCount = 1

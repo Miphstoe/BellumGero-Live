@@ -82,6 +82,48 @@ public:
 				return queued ? SUCCESS : GENERALERROR;
 			}
 
+			// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+			if (arg0 == "structurerecover") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage(
+						"structurerecover requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				if (!tokenizer.hasMoreTokens()) {
+					creature->sendSystemMessage(
+						"Usage: /database structurerecover <structureOID>");
+					return INVALIDPARAMETERS;
+				}
+
+				objectID = tokenizer.getLongToken();
+
+				String result;
+				bool queued =
+					StructureManager::instance()->
+						queuePlayerStructureRecoveryByOID(objectID, result);
+
+				creature->sendSystemMessage(result);
+				return queued ? SUCCESS : GENERALERROR;
+			}
+
+			if (arg0 == "structurerecoverlist") {
+				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+				if (ghost == nullptr || ghost->getAdminLevel() < 15 || !ghost->hasAbility("admin")) {
+					creature->sendSystemMessage(
+						"structurerecoverlist requires Admin Level 15 and the admin ability.");
+					return GENERALERROR;
+				}
+
+				creature->sendSystemMessage(
+					StructureManager::instance()->
+						listPendingPlayerStructureRecovery());
+				return SUCCESS;
+			}
+
 			if (!tokenizer.hasMoreTokens())
 				return INVALIDPARAMETERS;
 
@@ -96,7 +138,7 @@ public:
 
 		if (!(arg0 == "cityregions" || arg0 == "factionstructures" || arg0 == "playerstructures" || arg0 == "sceneobjects" || arg0 == "clientobjects" || arg0 == "resourcespawns" ||
 				arg0 == "characters" || arg0 == "deleted_characters") ){
-			creature->sendSystemMessage("Command format is database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid>, database zerostructures, or database structureaudit");
+			creature->sendSystemMessage("Command format: database <playerstructures | cityregions | sceneobjects | clientobjects> <objectid>; database zerostructures; database structureaudit; database structurerecoverhigh; database structurerecover <OID>; database structurerecoverlist");
 
 			return INVALIDPARAMETERS;
 		}

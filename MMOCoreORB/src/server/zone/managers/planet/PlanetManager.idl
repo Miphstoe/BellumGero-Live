@@ -78,6 +78,10 @@ class PlanetManager extends ManagedService implements Logger {
 
 	protected int numberOfCities;
 
+	// planet_manager.lua allowAllDepartures: any travel point (shuttleports
+	// included) may buy interplanetary tickets to this planet.
+	protected transient boolean allowAllDepartures;
+
 	protected transient ZoneProcessServer server;
 
 	protected transient TerrainManager terrainManager;
@@ -118,6 +122,8 @@ class PlanetManager extends ManagedService implements Logger {
 		}
 
 		numberOfCities = 0;
+
+		allowAllDepartures = false;
 
 		shuttleportAwayTime = 300;
 		shuttleportLandedTime = 120;
@@ -387,6 +393,10 @@ class PlanetManager extends ManagedService implements Logger {
 			return false;
 
 		return ptp.isInterplanetary();
+	}
+
+	public boolean isAllDeparturesAllowed() {
+		return allowAllDepartures;
 	}
 
 	/**

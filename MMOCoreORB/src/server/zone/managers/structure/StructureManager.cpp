@@ -152,6 +152,10 @@ constexpr const char* STRUCTURE_RECOVERY_PENDING_HIGH_PLAN =
 	"structure_integrity/pending_high_confidence_recovery_v1.txt";
 constexpr const char* STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP =
 	"structure_integrity/pending_high_confidence_recovery_v1.txt.tmp";
+constexpr const char* STRUCTURE_RECOVERY_PLAN_HEADER_V1 =
+	"BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V1";
+constexpr const char* STRUCTURE_RECOVERY_PLAN_HEADER_V2 =
+	"BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V2";
 
 int getSerializedVariableDataOffsetForStructureRecovery(
 		const uint32& variableHashCode, ObjectInputStream* stream) {
@@ -387,7 +391,9 @@ RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
 		uint64 targetObjectID,
 		SharedStructureObjectTemplate* targetTemplate,
 		const String& expectedZone,
-		WaypointObject* targetWaypoint) {
+		WaypointObject* targetWaypoint,
+		bool allowDamagedHistoricalOverlaps = false,
+		const std::unordered_set<uint64>* forcedConflictObjectIDs = nullptr) {
 	RecoveryFootprintCheckResult result;
 
 	if (structureManager == nullptr ||
@@ -494,8 +500,29 @@ RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
 			return result;
 		}
 
+		// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+		// Determine collision relevance BEFORE requiring zone/waypoint evidence.
+		// Normal placement ignores records that do not resolve to a structure
+		// template with a footprint. Old StaticObject junk must not poison every
+		// recovery candidate just because its zone/waypoint is unresolved.
+		Reference<SharedStructureObjectTemplate*> otherTemplate =
+			dynamic_cast<SharedStructureObjectTemplate*>(
+				templateManager->getTemplate(otherCRC));
+
+		if (otherTemplate == nullptr ||
+				otherTemplate->getStructureFootprint() == nullptr) {
+			otherData.reset();
+			continue;
+		}
+
+		const bool forceConflictEvaluation =
+			forcedConflictObjectIDs != nullptr &&
+			forcedConflictObjectIDs->find(otherObjectID) !=
+				forcedConflictObjectIDs->end();
+
 		ManagedReference<WaypointObject*> otherWaypoint = nullptr;
 		String otherResolvedZone;
+		bool otherPersistedZoneHealthy = false;
 
 		if (hasOtherZone && !otherPersistedZone.isEmpty()) {
 			Zone* persistedZoneObject = server->getZone(otherPersistedZone);
@@ -503,7 +530,19 @@ RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
 			if (persistedZoneObject != nullptr &&
 					!persistedZoneObject->isSpaceZone()) {
 				otherResolvedZone = otherPersistedZone;
+				otherPersistedZoneHealthy = true;
 			}
+		}
+
+		// Explicit OID recovery is a staff adjudication of ONE damaged root.
+		// Other damaged historical roots do not block that selection. Healthy
+		// structures still block, and already-queued OIDs are forced through the
+		// collision check so overlapping manual recoveries cannot be queued.
+		if (allowDamagedHistoricalOverlaps &&
+				!otherPersistedZoneHealthy &&
+				!forceConflictEvaluation) {
+			otherData.reset();
+			continue;
 		}
 
 		if (otherResolvedZone.isEmpty() && otherWaypointID != 0) {
@@ -520,6 +559,8 @@ RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
 		if (otherResolvedZone.isEmpty()) {
 			result.reason = "OTHER_PERSISTENT_STRUCTURE_ZONE_UNRESOLVED";
 			result.conflictingObjectID = otherObjectID;
+			result.conflictingTemplate =
+				otherTemplate->getFullTemplateString();
 			otherData.reset();
 			return result;
 		}
@@ -534,47 +575,54 @@ RecoveryFootprintCheckResult checkRecoveryFootprintAvailability(
 				server->getObject(otherWaypointID).castTo<WaypointObject*>();
 		}
 
-		if (otherWaypoint == nullptr) {
-			result.reason = "SAME_PLANET_STRUCTURE_WAYPOINT_UNAVAILABLE";
+		float otherX = 0.0f;
+		float otherY = 0.0f;
+		bool hasOtherPosition = false;
+
+		if (otherWaypoint != nullptr) {
+			otherX = otherWaypoint->getPositionX();
+			otherY = otherWaypoint->getPositionY();
+			hasOtherPosition = true;
+		} else if (otherPersistedZoneHealthy) {
+			// TreeEntry.coordinates is persisted independently of the structure
+			// waypoint. Healthy structures do not always retain a structure waypoint,
+			// so use their persisted root coordinates. This also works during the
+			// startup recovery pass before player structures have been loaded.
+			Coordinate otherCoordinates;
+
+			try {
+				if (Serializable::getVariable<Coordinate>(
+						STRING_HASHCODE("TreeEntry.coordinates"),
+						&otherCoordinates,
+						&otherData)) {
+					otherX = otherCoordinates.getPositionX();
+					otherY = otherCoordinates.getPositionY();
+					hasOtherPosition = true;
+				}
+			} catch (...) {
+				hasOtherPosition = false;
+			}
+		}
+
+		if (!hasOtherPosition) {
+			result.reason = "SAME_PLANET_STRUCTURE_POSITION_UNAVAILABLE";
 			result.conflictingObjectID = otherObjectID;
+			result.conflictingTemplate =
+				otherTemplate->getFullTemplateString();
 			otherData.reset();
 			return result;
 		}
 
-		Reference<SharedStructureObjectTemplate*> otherTemplate =
-			dynamic_cast<SharedStructureObjectTemplate*>(
-				templateManager->getTemplate(otherCRC));
-
-		// BELLUM_GERO_STRUCTURE_RECOVERY_FOOTPRINT_GUARD_BUILD21_SKIP_NONCOLLIDING_STALE
-		//
-		// Match normal Core3 placement collision semantics. Nearby objects that
-		// cannot resolve to SharedStructureObjectTemplate / StructureFootprint
-		// are ignored by the normal structure placement collision loop.
-		//
-		// A stale/unloadable playerstructures record must therefore not poison an
-		// otherwise safe recovery candidate simply because it cannot participate
-		// in normal structure-footprint collision checks.
-		if (otherTemplate == nullptr ||
-				otherTemplate->getStructureFootprint() == nullptr) {
-			otherData.reset();
-			continue;
-		}
-
-		// Once the record is confirmed to be a real footprint-bearing structure,
-		// fail closed if its persisted orientation cannot be reconstructed.
 		if (!hasOtherDirection) {
 			result.reason = "SAME_PLANET_STRUCTURE_DIRECTION_UNAVAILABLE";
 			result.conflictingObjectID = otherObjectID;
 			result.conflictingTemplate =
 				otherTemplate->getFullTemplateString();
-			result.conflictingX = otherWaypoint->getPositionX();
-			result.conflictingY = otherWaypoint->getPositionY();
+			result.conflictingX = otherX;
+			result.conflictingY = otherY;
 			otherData.reset();
 			return result;
 		}
-
-		const float otherX = otherWaypoint->getPositionX();
-		const float otherY = otherWaypoint->getPositionY();
 
 		float otherX0 = 0.0f;
 		float otherY0 = 0.0f;
@@ -3413,8 +3461,8 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 	if (existing != nullptr) {
 		std::fclose(existing);
 		result =
-			"A HIGH-confidence structure recovery plan is already pending. "
-			"Restart/verify that plan before queueing another.";
+			"A structure recovery plan is already pending. "
+			"Restart/verify that plan before queueing another HIGH-confidence plan.";
 		return false;
 	}
 
@@ -3442,7 +3490,10 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 		return false;
 	}
 
-	std::fprintf(plan, "BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V1\n");
+	std::fprintf(
+		plan,
+		"%s\n",
+		StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V2);
 
 	berkeley::CursorConfig config;
 	config.setReadUncommitted(true);
@@ -3503,20 +3554,10 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 			waypoint =
 				server->getObject(waypointID).castTo<WaypointObject*>();
 
-		if (waypoint != nullptr) {
-			const uint32 planetCRC = waypoint->getPlanetCRC();
-
-			for (int i = 0; i < server->getZoneCount(); ++i) {
-				Zone* candidateZone = server->getZone(i);
-
-				if (candidateZone != nullptr &&
-						!candidateZone->isSpaceZone() &&
-						candidateZone->getZoneCRC() == planetCRC) {
-					waypointZone = candidateZone->getZoneName();
-					break;
-				}
-			}
-		}
+		if (waypoint != nullptr)
+			waypointZone =
+				StorageManagerNamespace::resolveGroundZoneFromRecoveryWaypoint(
+					server, waypoint);
 
 		const bool identityHighConfidence =
 			structureTemplate != nullptr &&
@@ -3566,7 +3607,7 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 
 		std::fprintf(
 			plan,
-			"%llu|%s|%llu|%llu|%u\n",
+			"%llu|%s|%llu|%llu|%u|HIGH\n",
 			(unsigned long long)objectID,
 			waypointZone.toCharArray(),
 			(unsigned long long)ownerObjectID,
@@ -3586,6 +3627,7 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 
 		warning() << "STRUCTURE-RECOVERY-QUEUED:"
 			<< " OID=" << objectID
+			<< " mode=HIGH"
 			<< " recoveredZone=" << waypointZone
 			<< " ownerOID=" << ownerObjectID
 			<< " waypointOID=" << waypointID
@@ -3655,6 +3697,393 @@ bool StructureManager::queueHighConfidencePlayerStructureRecovery(String& result
 	return true;
 }
 
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+// Explicit staff-selected recovery. Queue-only: no live DB mutation.
+bool StructureManager::queuePlayerStructureRecoveryByOID(
+		uint64 objectID,
+		String& result) {
+	if (server == nullptr) {
+		result = "ZoneServer is unavailable.";
+		return false;
+	}
+
+	if (objectID == 0) {
+		result = "A non-zero structure OID is required.";
+		return false;
+	}
+
+	auto dbManager = ObjectDatabaseManager::instance();
+	auto structureDatabase =
+		dbManager->loadObjectDatabase("playerstructures", true);
+
+	if (structureDatabase == nullptr) {
+		result = "playerstructures database unavailable.";
+		return false;
+	}
+
+	ObjectInputStream objectData(2000);
+
+	if (structureDatabase->getData(objectID, &objectData)) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" was not found in playerstructures.db.";
+		return false;
+	}
+
+	String zoneReference;
+	uint32 serverObjectCRC = 0;
+	uint64 ownerObjectID = 0;
+	uint64 waypointID = 0;
+	bool hasZoneVariable = false;
+
+	try {
+		Serializable::getVariable<uint32>(
+			STRING_HASHCODE("SceneObject.serverObjectCRC"),
+			&serverObjectCRC, &objectData);
+		Serializable::getVariable<uint64>(
+			STRING_HASHCODE("StructureObject.ownerObjectID"),
+			&ownerObjectID, &objectData);
+		Serializable::getVariable<uint64>(
+			STRING_HASHCODE("StructureObject.waypointID"),
+			&waypointID, &objectData);
+		hasZoneVariable = Serializable::getVariable<String>(
+			STRING_HASHCODE("SceneObject.zone"),
+			&zoneReference, &objectData);
+	} catch (...) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" could not be safely deserialized.";
+		return false;
+	}
+
+	if (hasZoneVariable && !zoneReference.isEmpty()) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" already has persisted zone '" + zoneReference +
+			"'. Targeted recovery only accepts missing/empty-zone roots.";
+		return false;
+	}
+
+	Reference<SharedStructureObjectTemplate*> structureTemplate =
+		dynamic_cast<SharedStructureObjectTemplate*>(
+			templateManager->getTemplate(serverObjectCRC));
+
+	if (structureTemplate == nullptr) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" does not resolve to a valid structure template.";
+		return false;
+	}
+
+	if (ownerObjectID == 0) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" has no persisted owner and cannot be targeted safely.";
+		return false;
+	}
+
+	ManagedReference<WaypointObject*> waypoint = nullptr;
+
+	if (waypointID != 0)
+		waypoint =
+			server->getObject(waypointID).castTo<WaypointObject*>();
+
+	if (waypoint == nullptr) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" has no usable persisted structure waypoint.";
+		return false;
+	}
+
+	String waypointZone =
+		StorageManagerNamespace::resolveGroundZoneFromRecoveryWaypoint(
+			server, waypoint);
+
+	if (waypointZone.isEmpty()) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" has a waypoint whose ground planet cannot be resolved.";
+		return false;
+	}
+
+	std::unordered_set<uint64> queuedObjectIDs;
+	bool existingPlanIsV2 = false;
+
+	std::FILE* existing =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN,
+			"r");
+
+	if (existing != nullptr) {
+		char header[128] = {0};
+
+		if (std::fgets(header, sizeof(header), existing) == nullptr) {
+			std::fclose(existing);
+			result = "Existing structure recovery plan is unreadable.";
+			return false;
+		}
+
+		String planHeader = String(header).trim();
+
+		if (planHeader !=
+				StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V2) {
+			std::fclose(existing);
+			result =
+				"An older V1 recovery plan is already pending. "
+				"Restart/verify it before adding targeted OIDs.";
+			return false;
+		}
+
+		existingPlanIsV2 = true;
+		char line[1024] = {0};
+
+		while (std::fgets(line, sizeof(line), existing) != nullptr) {
+			unsigned long long queuedOID = 0;
+
+			if (std::sscanf(line, "%llu|", &queuedOID) == 1 &&
+					queuedOID != 0) {
+				queuedObjectIDs.insert((uint64)queuedOID);
+			}
+		}
+
+		std::fclose(existing);
+	}
+
+	if (queuedObjectIDs.find(objectID) != queuedObjectIDs.end()) {
+		result = "Structure OID " + String::valueOf(objectID) +
+			" is already queued for recovery.";
+		return true;
+	}
+
+	auto footprintCheck =
+		StorageManagerNamespace::checkRecoveryFootprintAvailability(
+			this,
+			server,
+			templateManager,
+			structureDatabase,
+			objectID,
+			structureTemplate,
+			waypointZone,
+			waypoint,
+			true,
+			&queuedObjectIDs);
+
+	if (footprintCheck.status !=
+			StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {
+		StringBuffer refused;
+		refused << "Targeted recovery REFUSED for OID " << objectID << endl
+			<< "  Reason: " << footprintCheck.reason;
+
+		if (footprintCheck.conflictingObjectID != 0)
+			refused << endl
+				<< "  Conflicting/queued OID: "
+				<< footprintCheck.conflictingObjectID;
+
+		if (!footprintCheck.conflictingTemplate.isEmpty())
+			refused << endl
+				<< "  Template: "
+				<< footprintCheck.conflictingTemplate;
+
+		result = refused.toString();
+		return false;
+	}
+
+	::mkdir(
+		StorageManagerNamespace::STRUCTURE_RECOVERY_ROOT_DIR,
+		0755);
+
+	std::remove(
+		StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+
+	std::FILE* out =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP,
+			"w");
+
+	if (out == nullptr) {
+		result = "Could not create temporary targeted recovery plan.";
+		return false;
+	}
+
+	if (existingPlanIsV2) {
+		std::FILE* source =
+			std::fopen(
+				StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN,
+				"r");
+
+		if (source == nullptr) {
+			std::fclose(out);
+			std::remove(
+				StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+			result = "Existing recovery plan disappeared while queueing the OID.";
+			return false;
+		}
+
+		char copyBuffer[4096];
+		size_t bytesRead = 0;
+
+		while ((bytesRead =
+				std::fread(copyBuffer, 1, sizeof(copyBuffer), source)) > 0) {
+			if (std::fwrite(copyBuffer, 1, bytesRead, out) != bytesRead) {
+				std::fclose(source);
+				std::fclose(out);
+				std::remove(
+					StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+				result = "Could not copy the existing recovery plan.";
+				return false;
+			}
+		}
+
+		std::fclose(source);
+	} else {
+		std::fprintf(
+			out,
+			"%s\n",
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V2);
+	}
+
+	std::fprintf(
+		out,
+		"%llu|%s|%llu|%llu|%u|OID\n",
+		(unsigned long long)objectID,
+		waypointZone.toCharArray(),
+		(unsigned long long)ownerObjectID,
+		(unsigned long long)waypointID,
+		serverObjectCRC);
+
+	std::fclose(out);
+
+	if (std::rename(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP,
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN) != 0) {
+		std::remove(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN_TMP);
+		result =
+			"Could not atomically publish the targeted recovery plan. "
+			"No database records were modified.";
+		return false;
+	}
+
+	warning() << "STRUCTURE-RECOVERY-QUEUED:"
+		<< " OID=" << objectID
+		<< " mode=OID"
+		<< " recoveredZone=" << waypointZone
+		<< " ownerOID=" << ownerObjectID
+		<< " waypointOID=" << waypointID
+		<< " serverObjectCRC=" << serverObjectCRC;
+
+	StringBuffer queued;
+	queued << "Targeted Structure Recovery QUEUED" << endl
+		<< "  OID: " << objectID << endl
+		<< "  Template: " << structureTemplate->getFullTemplateString() << endl
+		<< "  Owner OID: " << ownerObjectID << endl
+		<< "  Recovered planet: " << waypointZone << endl
+		<< "  Position: (" << waypoint->getPositionX()
+		<< "," << waypoint->getPositionY() << ")" << endl
+		<< "  No database record was changed live." << endl
+		<< "  Run /database structurerecoverlist to review the queue." << endl
+		<< "  Restart Core3 to apply the queued repair.";
+
+	result = queued.toString();
+	return true;
+}
+
+
+// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+String StructureManager::listPendingPlayerStructureRecovery() {
+	std::FILE* plan =
+		std::fopen(
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PENDING_HIGH_PLAN,
+			"r");
+
+	if (plan == nullptr)
+		return "No structure recovery plan is currently queued.";
+
+	char header[128] = {0};
+
+	if (std::fgets(header, sizeof(header), plan) == nullptr) {
+		std::fclose(plan);
+		return "Pending structure recovery plan is unreadable.";
+	}
+
+	String planHeader = String(header).trim();
+	const bool planVersion1 =
+		planHeader ==
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V1;
+	const bool planVersion2 =
+		planHeader ==
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V2;
+
+	if (!planVersion1 && !planVersion2) {
+		std::fclose(plan);
+		return "Pending structure recovery plan has an unknown header.";
+	}
+
+	constexpr int maxDisplayed = 25;
+	int entryCount = 0;
+	StringBuffer details;
+	char line[1024] = {0};
+
+	while (std::fgets(line, sizeof(line), plan) != nullptr) {
+		unsigned long long rawOID = 0;
+		unsigned long long rawOwner = 0;
+		unsigned long long rawWaypoint = 0;
+		unsigned int rawCRC = 0;
+		char zoneBuffer[128] = {0};
+		char modeBuffer[32] = "HIGH";
+
+		int parsed =
+			planVersion2 ?
+				std::sscanf(
+					line,
+					"%llu|%127[^|]|%llu|%llu|%u|%31s",
+					&rawOID,
+					zoneBuffer,
+					&rawOwner,
+					&rawWaypoint,
+					&rawCRC,
+					modeBuffer) :
+				std::sscanf(
+					line,
+					"%llu|%127[^|]|%llu|%llu|%u",
+					&rawOID,
+					zoneBuffer,
+					&rawOwner,
+					&rawWaypoint,
+					&rawCRC);
+
+		if (parsed != (planVersion2 ? 6 : 5))
+			continue;
+
+		if (entryCount < maxDisplayed) {
+			details << endl
+				<< "  " << (entryCount + 1) << ") OID " << (uint64)rawOID
+				<< " | " << (planVersion2 ? String(modeBuffer).trim() : String("HIGH"))
+				<< " | " << zoneBuffer
+				<< " | owner " << (uint64)rawOwner;
+		}
+
+		++entryCount;
+	}
+
+	std::fclose(plan);
+
+	StringBuffer result;
+	result << "Pending Structure Recovery Queue" << endl
+		<< "  Entries: " << entryCount;
+
+	if (entryCount == 0) {
+		result << endl << "  Plan contains no valid recovery entries.";
+		return result.toString();
+	}
+
+	result << details.toString();
+
+	if (entryCount > maxDisplayed)
+		result << endl
+			<< "  ... " << (entryCount - maxDisplayed)
+			<< " additional queued entries (see server log/plan).";
+
+	result << endl
+		<< "  Repairs apply on the next Core3 restart.";
+
+	return result.toString();
+}
+
 // BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
 // Startup-only recovery/verification pass.
 // Returns the number of playerstructures DB records staged for repair.
@@ -3670,13 +4099,54 @@ int StructureManager::applyPendingHighConfidencePlayerStructureRecovery() {
 
 	char header[128] = {0};
 
-	if (std::fgets(header, sizeof(header), plan) == nullptr ||
-			String(header).trim() !=
-				"BELLUM_GERO_STRUCTURE_RECOVERY_PLAN_V1") {
+	if (std::fgets(header, sizeof(header), plan) == nullptr) {
 		std::fclose(plan);
 		warning(
 			"STRUCTURE-RECOVERY: pending recovery plan has an invalid header; "
 			"marker retained and no DB changes made.");
+		return 0;
+	}
+
+	String planHeader = String(header).trim();
+	const bool planVersion1 =
+		planHeader ==
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V1;
+	const bool planVersion2 =
+		planHeader ==
+			StorageManagerNamespace::STRUCTURE_RECOVERY_PLAN_HEADER_V2;
+
+	if (!planVersion1 && !planVersion2) {
+		std::fclose(plan);
+		warning(
+			"STRUCTURE-RECOVERY: pending recovery plan has an invalid header; "
+			"marker retained and no DB changes made.");
+		return 0;
+	}
+
+	const long recoveryPlanEntriesOffset = std::ftell(plan);
+	std::unordered_set<uint64> pendingRecoveryObjectIDs;
+	char recoveryPlanScanLine[1024] = {0};
+
+	while (std::fgets(
+			recoveryPlanScanLine,
+			sizeof(recoveryPlanScanLine),
+			plan) != nullptr) {
+		unsigned long long queuedOID = 0;
+
+		if (std::sscanf(
+				recoveryPlanScanLine,
+				"%llu|",
+				&queuedOID) == 1 &&
+				queuedOID != 0) {
+			pendingRecoveryObjectIDs.insert((uint64)queuedOID);
+		}
+	}
+
+	if (std::fseek(plan, recoveryPlanEntriesOffset, SEEK_SET) != 0) {
+		std::fclose(plan);
+		warning(
+			"STRUCTURE-RECOVERY: could not rewind pending recovery plan; "
+			"plan retained and no DB changes made.");
 		return 0;
 	}
 
@@ -3753,17 +4223,36 @@ int StructureManager::applyPendingHighConfidencePlayerStructureRecovery() {
 		unsigned int rawCRC = 0;
 		char zoneBuffer[128] = {0};
 
-		int parsed =
-			std::sscanf(
-				line,
-				"%llu|%127[^|]|%llu|%llu|%u",
-				&rawOID,
-				zoneBuffer,
-				&rawOwner,
-				&rawWaypoint,
-				&rawCRC);
+		char modeBuffer[32] = "HIGH";
 
-		if (parsed != 5 ||
+		int parsed =
+			planVersion2 ?
+				std::sscanf(
+					line,
+					"%llu|%127[^|]|%llu|%llu|%u|%31s",
+					&rawOID,
+					zoneBuffer,
+					&rawOwner,
+					&rawWaypoint,
+					&rawCRC,
+					modeBuffer) :
+				std::sscanf(
+					line,
+					"%llu|%127[^|]|%llu|%llu|%u",
+					&rawOID,
+					zoneBuffer,
+					&rawOwner,
+					&rawWaypoint,
+					&rawCRC);
+
+		String recoveryMode =
+			planVersion2 ? String(modeBuffer).trim() : String("HIGH");
+		const bool manualTarget = recoveryMode == "OID";
+
+		if (parsed != (planVersion2 ? 6 : 5) ||
+				(planVersion2 &&
+					recoveryMode != "HIGH" &&
+					recoveryMode != "OID") ||
 				rawOID == 0 ||
 				rawOwner == 0 ||
 				rawWaypoint == 0 ||
@@ -3943,7 +4432,9 @@ int StructureManager::applyPendingHighConfidencePlayerStructureRecovery() {
 					objectID,
 					structureTemplate,
 					expectedZone,
-					waypoint);
+					waypoint,
+					manualTarget,
+					&pendingRecoveryObjectIDs);
 
 			if (indexRefreshFootprintCheck.status !=
 					StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {
@@ -3995,7 +4486,9 @@ structureDatabase->putData(
 				objectID,
 				structureTemplate,
 				expectedZone,
-				waypoint);
+				waypoint,
+				manualTarget,
+				&pendingRecoveryObjectIDs);
 
 		if (footprintCheck.status !=
 				StorageManagerNamespace::RECOVERY_FOOTPRINT_CLEAR) {

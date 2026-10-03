@@ -13,8 +13,8 @@ function MandoDailyBountyFobMenuComponent:fillObjectMenuResponse(pSceneObject, p
 		return
 	end
 
-	-- Check if player is eligible (Mandalorian Tribesman)
-	if (not MandoWayOfLife:isMandoTribesman(pPlayer)) then
+	-- Check character completion, current profession, and equipped quest helmet.
+	if (not MandoWayOfLife:checkDailyBountyEligibility(pPlayer)) then
 		return
 	end
 
@@ -39,9 +39,10 @@ function MandoDailyBountyFobMenuComponent:handleObjectMenuSelect(pObject, pPlaye
 		return 0
 	end
 
-	-- Check eligibility
-	if (not MandoWayOfLife:isMandoTribesman(pPlayer)) then
-		CreatureObject(pPlayer):sendSystemMessage("Only Mandalorian Tribesmen may use this device.")
+	-- Recheck in case equipment or skills changed after opening the menu.
+	local eligible, message = MandoWayOfLife:checkDailyBountyEligibility(pPlayer)
+	if (not eligible) then
+		CreatureObject(pPlayer):sendSystemMessage(message)
 		return 0
 	end
 

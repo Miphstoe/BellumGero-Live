@@ -22,7 +22,164 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/sui/callbacks/SurrenderPilotSuiCallback.h"
+#include "server/zone/managers/stringid/StringIdManager.h"
 #include "templates/faction/Factions.h"
+
+namespace {
+
+String normalizeSurrenderSkillName(const String& skillName) {
+	String name = skillName.trim();
+
+	if (name.beginsWith("@skl_n:"))
+		name = name.subString(7);
+	else if (name.beginsWith("skl_n:"))
+		name = name.subString(6);
+
+	return name;
+}
+
+String localizedSkillName(const String& skillName) {
+	StringIdManager* stringIdManager = StringIdManager::instance();
+
+	if (stringIdManager == nullptr || skillName.isEmpty())
+		return skillName;
+
+	String localized = stringIdManager->getStringId(String("@skl_n:" + skillName).hashCode()).toString();
+
+	if (localized.isEmpty() || localized.beginsWith("@"))
+		return skillName;
+
+	return localized;
+}
+
+bool learnedSkillListsRequirement(const Skill* learned, const String& requiredName) {
+	if (learned == nullptr || requiredName.isEmpty())
+		return false;
+
+	const Vector<String>* required = learned->getSkillsRequired();
+
+	if (required == nullptr)
+		return false;
+
+	for (int i = 0; i < required->size(); ++i) {
+		const String& name = required->get(i);
+
+		if (!name.isEmpty() && name == requiredName)
+			return true;
+	}
+
+	return false;
+}
+
+// Hidden, zero-point skills that grant only cert_* commands. These record the
+// profession box they came from, but surrendering that box removes the cert.
+bool grantsOnlyCertifications(const Skill* skill) {
+	if (skill == nullptr || !skill->isHidden() || skill->getSkillPointsRequired() != 0)
+		return false;
+
+	const Vector<String>* abilities = skill->getAbilities();
+
+	if (abilities == nullptr || abilities->size() == 0)
+		return false;
+
+	for (int i = 0; i < abilities->size(); ++i) {
+		const String& ability = abilities->get(i);
+
+		if (ability.isEmpty() || !ability.beginsWith("cert_"))
+			return false;
+	}
+
+	return true;
+}
+
+// Real profession boxes that still require target go in hardBlocker.
+// Certification-only skills that require target, and that nothing else requires,
+// are returned so the caller can remove them with the box.
+void classifyLearnedDependents(const SkillList* skillList, const Skill* target, String& hardBlocker, Vector<String>& certificationSkills) {
+	hardBlocker = "";
+	certificationSkills.removeAll();
+
+	if (skillList == nullptr || target == nullptr)
+		return;
+
+	const String& targetName = target->getSkillName();
+
+	if (targetName.isEmpty())
+		return;
+
+	for (int i = 0; i < skillList->size(); ++i) {
+		const Skill* learned = skillList->get(i);
+
+		if (learned == nullptr || learned == target || learned->getSkillName() == targetName)
+			continue;
+
+		if (!learnedSkillListsRequirement(learned, targetName))
+			continue;
+
+		if (!grantsOnlyCertifications(learned)) {
+			if (hardBlocker.isEmpty())
+				hardBlocker = learned->getSkillName();
+
+			continue;
+		}
+
+		String certBlocker = "";
+
+		for (int j = 0; j < skillList->size(); ++j) {
+			const Skill* other = skillList->get(j);
+
+			if (other == nullptr || other == learned || other == target)
+				continue;
+
+			if (learnedSkillListsRequirement(other, learned->getSkillName())) {
+				certBlocker = other->getSkillName();
+				break;
+			}
+		}
+
+		if (!certBlocker.isEmpty()) {
+			if (hardBlocker.isEmpty())
+				hardBlocker = certBlocker;
+		} else {
+			certificationSkills.add(learned->getSkillName());
+		}
+	}
+}
+
+void reconcileSurrenderedSkillPoints(CreatureObject* creature, PlayerObject* ghost) {
+	if (creature == nullptr || ghost == nullptr)
+		return;
+
+	const SkillList* list = creature->getSkillList();
+	int totalSkillPoints = 250;
+
+	if (list != nullptr) {
+		for (int i = 0; i < list->size(); ++i) {
+			const Skill* learned = list->get(i);
+
+			if (learned == nullptr)
+				continue;
+
+			totalSkillPoints -= learned->getSkillPointsRequired();
+		}
+	}
+
+	if (totalSkillPoints < 0 || totalSkillPoints > 250) {
+		creature->error("skill point total out of range calculated: " + String::valueOf(totalSkillPoints) + " oid: " + String::valueOf(creature->getObjectID()));
+
+		if (totalSkillPoints < 0)
+			totalSkillPoints = 0;
+		else
+			totalSkillPoints = 250;
+	}
+
+	if (ghost->getSkillPoints() != totalSkillPoints) {
+		creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPoints) + " found: " + String::valueOf(ghost->getSkillPoints()));
+		ghost->setSkillPoints(totalSkillPoints);
+	}
+}
+
+}
 
 SkillManager::SkillManager()
 	: Logger("SkillManager") {
@@ -664,6 +821,69 @@ bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature,
 	return true;
 }
 
+void SkillManager::surrenderCertificationGrants(CreatureObject* creature, PlayerObject* ghost, const Vector<String>& certSkillNames, bool notifyClient) {
+	if (creature == nullptr || ghost == nullptr)
+		return;
+
+	for (int i = 0; i < certSkillNames.size(); ++i) {
+		Skill* certSkill = skillMap.get(certSkillNames.get(i).hashCode());
+
+		if (certSkill == nullptr || !grantsOnlyCertifications(certSkill) || !creature->hasSkill(certSkill->getSkillName()))
+			continue;
+
+		creature->removeSkill(certSkill, notifyClient);
+
+		auto skillModifiers = certSkill->getSkillModifiers();
+
+		if (skillModifiers != nullptr) {
+			for (int j = 0; j < skillModifiers->size(); ++j) {
+				auto entry = &skillModifiers->elementAt(j);
+				creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
+			}
+		}
+
+		auto abilities = certSkill->getAbilities();
+
+		if (abilities != nullptr && abilities->size() > 0) {
+			SortedVector<String> abilitiesLost;
+
+			for (int j = 0; j < abilities->size(); ++j)
+				abilitiesLost.put(abilities->get(j));
+
+			const SkillList* remaining = creature->getSkillList();
+
+			if (remaining != nullptr) {
+				for (int j = 0; j < remaining->size() && abilitiesLost.size() > 0; ++j) {
+					Skill* other = remaining->get(j);
+
+					if (other == nullptr)
+						continue;
+
+					auto otherAbilities = other->getAbilities();
+
+					if (otherAbilities == nullptr)
+						continue;
+
+					for (int k = 0; k < otherAbilities->size(); ++k) {
+						if (abilitiesLost.contains(otherAbilities->get(k)))
+							abilitiesLost.drop(otherAbilities->get(k));
+					}
+				}
+			}
+
+			if (abilitiesLost.size() > 0)
+				removeAbilities(ghost, abilitiesLost, notifyClient);
+		}
+
+		auto schematicsGranted = certSkill->getSchematicsGranted();
+
+		if (schematicsGranted != nullptr)
+			SchematicMap::instance()->removeSchematics(ghost, *schematicsGranted, notifyClient);
+
+		creature->info("removed certification skill " + certSkill->getSkillName() + " with its profession box, oid=" + String::valueOf(creature->getObjectID()), true);
+	}
+}
+
 void SkillManager::removeSkillRelatedMissions(CreatureObject* creature, Skill* skill) {
 	if(skill->getSkillName().hashCode() == STRING_HASHCODE("combat_bountyhunter_investigation_03")) {
 		ManagedReference<ZoneServer*> zoneServer = creature->getZoneServer();
@@ -677,7 +897,11 @@ void SkillManager::removeSkillRelatedMissions(CreatureObject* creature, Skill* s
 }
 
 bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool forceSurrender) {
-	Skill* skill = skillMap.get(skillName.hashCode());
+	if (creature == nullptr)
+		return false;
+
+	String resolvedName = normalizeSurrenderSkillName(skillName);
+	Skill* skill = skillMap.get(resolvedName.hashCode());
 
 	if (skill == nullptr) {
 		return false;
@@ -685,20 +909,42 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 
 	Locker locker(creature);
 
-	//If they have already surrendered the skill, then return true.
+	// Category nodes such as combat_marksman are not learned boxes. If that name is
+	// requested and the character still has the matching Novice box, surrender the
+	// Novice box under the normal dependency rules.
 	if (!creature->hasSkill(skill->getSkillName())) {
-		return true;
+		if (skill->isSkill()) {
+			String noviceName = skill->getSkillName() + "_novice";
+			Skill* novice = skillMap.get(noviceName.hashCode());
+
+			if (novice != nullptr && creature->hasSkill(noviceName)) {
+				skill = novice;
+			} else {
+				return true;
+			}
+		} else {
+			return true;
+		}
 	}
 
 	const SkillList* skillList = creature->getSkillList();
+	String blockingSkill;
+	Vector<String> certificationSkills;
+	classifyLearnedDependents(skillList, skill, blockingSkill, certificationSkills);
 
-		for (int i = 0; i < skillList->size(); ++i) {
-			Skill* checkSkill = skillList->get(i);
+	if (!blockingSkill.isEmpty()) {
+		creature->sendSystemMessage("You cannot surrender " + localizedSkillName(skill->getSkillName()) + " while you still know " + localizedSkillName(blockingSkill) + ".");
 
-			if (checkSkill->isRequiredSkillOf(skill)) {
-				return false;
-			}
-		}
+		int points = -1;
+		PlayerObject* ghostForLog = creature->getPlayerObject();
+
+		if (ghostForLog != nullptr)
+			points = ghostForLog->getSkillPoints();
+
+		creature->info("surrender rejected oid=" + String::valueOf(creature->getObjectID()) + " skill=" + skill->getSkillName() + " blocker=" + blockingSkill + " points=" + String::valueOf(points), true);
+
+		return false;
+	}
 
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
@@ -706,9 +952,9 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		return false;
 	}
 
-		if (!forceSurrender && skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+		if (!forceSurrender && skill->getSkillName().beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skill->getSkillName()))) {
 			return false;
-		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
+		} else if (!allowPilot && skill->getSkillName().beginsWith("pilot_")) {
 			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
 				return false;
 			}
@@ -749,6 +995,9 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 			return false;
 		}
 
+		if (certificationSkills.size() > 0)
+			surrenderCertificationGrants(creature, ghost, certificationSkills, notifyClient);
+
 		removeSkillRelatedMissions(creature, skill);
 
 	creature->removeSkill(skill, notifyClient);
@@ -756,10 +1005,11 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	//Remove skill modifiers
 	auto skillModifiers = skill->getSkillModifiers();
 
-	for (int i = 0; i < skillModifiers->size(); ++i) {
-		auto entry = &skillModifiers->elementAt(i);
-		creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
-
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+			creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
+		}
 	}
 
 	//Give the player the used skill points back.
@@ -770,19 +1020,29 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	//and musicians.
 	auto skillAbilities = skill->getAbilities();
 
-	if (skillAbilities->size() > 0) {
+	if (skillAbilities != nullptr && skillAbilities->size() > 0) {
 		SortedVector<String> abilitiesLost;
 		for (int i = 0; i < skillAbilities->size(); i++) {
 			abilitiesLost.put(skillAbilities->get(i));
 		}
-		for (int i = 0; i < skillList->size(); i++) {
-			Skill* remainingSkill = skillList->get(i);
-			auto remainingAbilities = remainingSkill->getAbilities();
-			for(int j = 0; j < remainingAbilities->size(); j++) {
-				if (abilitiesLost.contains(remainingAbilities->get(j))) {
-					abilitiesLost.drop(remainingAbilities->get(j));
-					if (abilitiesLost.size() == 0) {
-						break;
+		if (skillList != nullptr) {
+			for (int i = 0; i < skillList->size(); i++) {
+				Skill* remainingSkill = skillList->get(i);
+
+				if (remainingSkill == nullptr)
+					continue;
+
+				auto remainingAbilities = remainingSkill->getAbilities();
+
+				if (remainingAbilities == nullptr)
+					continue;
+
+				for (int j = 0; j < remainingAbilities->size(); j++) {
+					if (abilitiesLost.contains(remainingAbilities->get(j))) {
+						abilitiesLost.drop(remainingAbilities->get(j));
+						if (abilitiesLost.size() == 0) {
+							break;
+						}
 					}
 				}
 			}
@@ -790,84 +1050,73 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		if (abilitiesLost.size() > 0) {
 			removeAbilities(ghost, abilitiesLost, notifyClient);
 		}
+	}
 
-		//Remove draft schematic groups
-		auto schematicsGranted = skill->getSchematicsGranted();
+	// These updates used to run only when the box granted a command. Novice boxes
+	// with schematics or mods and no commands skipped the refund check.
+	auto schematicsGranted = skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr)
 		SchematicMap::instance()->removeSchematics(ghost, *schematicsGranted, notifyClient);
 
-			//Update maximum experience.
-			updateXpLimits(ghost);
+	updateXpLimits(ghost);
 
-			FrsManager* frsManager = creature->getZoneServer()->getFrsManager();
+	ZoneServer* zoneServer = creature->getZoneServer();
+	FrsManager* frsManager = zoneServer != nullptr ? zoneServer->getFrsManager() : nullptr;
 
-			if (checkFrs && frsManager->isFrsEnabled()) {
-				frsManager->handleSkillRevoked(creature, skillName);
-			}
+	if (checkFrs && frsManager != nullptr && frsManager->isFrsEnabled()) {
+		frsManager->handleSkillRevoked(creature, skill->getSkillName());
+	}
 
-			/// Update Force Power Max
-			ghost->recalculateForcePower();
+	ghost->recalculateForcePower();
+	reconcileSurrenderedSkillPoints(creature, ghost);
 
-			const SkillList* list = creature->getSkillList();
+	ManagedReference<PlayerManager*> playerManager = zoneServer != nullptr ? zoneServer->getPlayerManager() : nullptr;
 
-			int totalSkillPointsWasted = 250;
+	if (playerManager != nullptr) {
+		creature->setLevel(playerManager->calculatePlayerLevel(creature));
+	}
 
-			for (int i = 0; i < list->size(); ++i) {
-				Skill* skill = list->get(i);
+	MissionManager* missionManager = zoneServer != nullptr ? zoneServer->getMissionManager() : nullptr;
 
-				totalSkillPointsWasted -= skill->getSkillPointsRequired();
-			}
+	if (skill->getSkillName() == "force_title_jedi_rank_02") {
+		if (missionManager != nullptr)
+			missionManager->removePlayerFromBountyList(creature->getObjectID());
 
-			if (ghost->getSkillPoints() != totalSkillPointsWasted) {
-				creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
-				ghost->setSkillPoints(totalSkillPointsWasted);
-			}
+		// Losing the core Jedi skill means the player is no longer Jedi;
+		// jediState must not remain stale, or Jedi-only systems (death XP
+		// penalty, cloning restrictions, etc.) keep firing indefinitely.
+		if (ghost->getJediState() >= 2) {
+			ghost->setJediState(0);
+			creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
+		}
+	} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
+		// Dropping Knight rank must revert jediState back down to the
+		// Padawan tier (the player still holds force_title_jedi_rank_02,
+		// which can never be surrendered while a Jedi). Leaving jediState
+		// at its Light/Dark Knight value (4/8) here would let stale
+		// alignment state leak into systems that key off jediState
+		// instead of the force_title_jedi_rank_03 skill directly.
+		if (ghost->getJediState() >= 4) {
+			ghost->setJediState(2);
+			creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
+		}
+	} else if (skill->getSkillName().contains("force_discipline")) {
+		if (missionManager != nullptr)
+			missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
+	} else if (skill->getSkillName().contains("squadleader")) {
+		Reference<GroupObject*> group = creature->getGroup();
 
-			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
-			if (playerManager != nullptr) {
-				creature->setLevel(playerManager->calculatePlayerLevel(creature));
-			}
+		if (group != nullptr && group->getLeader() == creature) {
+			Core::getTaskManager()->executeTask([group] () {
+				Locker locker(group);
 
-			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
+				group->removeGroupModifiers();
 
-			if (skill->getSkillName() == "force_title_jedi_rank_02") {
-				if (missionManager != nullptr)
-					missionManager->removePlayerFromBountyList(creature->getObjectID());
-
-				// Losing the core Jedi skill means the player is no longer Jedi;
-				// jediState must not remain stale, or Jedi-only systems (death XP
-				// penalty, cloning restrictions, etc.) keep firing indefinitely.
-				if (ghost->getJediState() >= 2) {
-					ghost->setJediState(0);
-					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
-				}
-			} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
-				// Dropping Knight rank must revert jediState back down to the
-				// Padawan tier (the player still holds force_title_jedi_rank_02,
-				// which can never be surrendered while a Jedi). Leaving jediState
-				// at its Light/Dark Knight value (4/8) here would let stale
-				// alignment state leak into systems that key off jediState
-				// instead of the force_title_jedi_rank_03 skill directly.
-				if (ghost->getJediState() >= 4) {
-					ghost->setJediState(2);
-					creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
-				}
-			} else if (skill->getSkillName().contains("force_discipline")) {
-				if (missionManager != nullptr)
-					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
-			} else if (skill->getSkillName().contains("squadleader")) {
-				Reference<GroupObject*> group = creature->getGroup();
-
-				if (group != nullptr && group->getLeader() == creature) {
-					Core::getTaskManager()->executeTask([group] () {
-						Locker locker(group);
-
-						group->removeGroupModifiers();
-
-						if (group->hasSquadLeader())
-							group->addGroupModifiers();
-					}, "UpdateGroupModsLambda2");
-				}
-			}
+				if (group->hasSquadLeader())
+					group->addGroupModifiers();
+			}, "UpdateGroupModsLambda2");
+		}
 	}
 
 	/// Update client with new values for things like Terrain Negotiation
@@ -1219,7 +1468,11 @@ bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject
 }
 
 bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool regrant) {
-	Skill* skill = skillMap.get(skillName.hashCode());
+	if (creature == nullptr)
+		return false;
+
+	String resolvedName = normalizeSurrenderSkillName(skillName);
+	Skill* skill = skillMap.get(resolvedName.hashCode());
 
 	if (skill == nullptr) {
 		return false;
@@ -1227,20 +1480,33 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 
 	Locker locker(creature);
 
-	//If they have already surrendered the skill, then return true.
 	if (!creature->hasSkill(skill->getSkillName())) {
-		return true;
+		if (skill->isSkill()) {
+			String noviceName = skill->getSkillName() + "_novice";
+			Skill* novice = skillMap.get(noviceName.hashCode());
+
+			if (novice != nullptr && creature->hasSkill(noviceName)) {
+				skill = novice;
+			} else {
+				return true;
+			}
+		} else {
+			return true;
+		}
 	}
 
 	const SkillList* skillList = creature->getSkillList();
 
-	if (!regrant) {
-		for (int i = 0; i < skillList->size(); ++i) {
-			Skill* checkSkill = skillList->get(i);
+	String blockingSkill;
+	Vector<String> certificationSkills;
 
-			if (checkSkill->isRequiredSkillOf(skill)) {
-				return false;
-			}
+	if (!regrant) {
+		classifyLearnedDependents(skillList, skill, blockingSkill, certificationSkills);
+
+		if (!blockingSkill.isEmpty()) {
+			creature->sendSystemMessage("You cannot surrender " + localizedSkillName(skill->getSkillName()) + " while you still know " + localizedSkillName(blockingSkill) + ".");
+			creature->info("surrender rejected oid=" + String::valueOf(creature->getObjectID()) + " skill=" + skill->getSkillName() + " blocker=" + blockingSkill, true);
+			return false;
 		}
 	}
 
@@ -1251,9 +1517,9 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 	}
 
 	if (!regrant) {
-		if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
+		if (skill->getSkillName().beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skill->getSkillName()))) {
 			return false;
-		} else if (!allowPilot && skillName.beginsWith("pilot_")) {
+		} else if (!allowPilot && skill->getSkillName().beginsWith("pilot_")) {
 			if (ghost->hasSuiBoxWindowType(SuiWindowType::SURRENDER_PILOT_DENY)) {
 				return false;
 			}
@@ -1294,6 +1560,9 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 			return false;
 		}
 
+		if (certificationSkills.size() > 0)
+			surrenderCertificationGrants(creature, ghost, certificationSkills, notifyClient);
+
 		removeSkillRelatedMissions(creature, skill);
 	}
 
@@ -1302,10 +1571,11 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 	//Remove skill modifiers
 	auto skillModifiers = skill->getSkillModifiers();
 
-	for (int i = 0; i < skillModifiers->size(); ++i) {
-		auto entry = &skillModifiers->elementAt(i);
-		creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
-
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+			creature->removeSkillMod(SkillModManager::SKILLBOX, entry->getKey(), entry->getValue(), notifyClient);
+		}
 	}
 
 	//Give the player the used skill points back.
@@ -1316,19 +1586,29 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 	//and musicians.
 	auto skillAbilities = skill->getAbilities();
 
-	if (skillAbilities->size() > 0) {
+	if (skillAbilities != nullptr && skillAbilities->size() > 0) {
 		SortedVector<String> abilitiesLost;
 		for (int i = 0; i < skillAbilities->size(); i++) {
 			abilitiesLost.put(skillAbilities->get(i));
 		}
-		for (int i = 0; i < skillList->size(); i++) {
-			Skill* remainingSkill = skillList->get(i);
-			auto remainingAbilities = remainingSkill->getAbilities();
-			for(int j = 0; j < remainingAbilities->size(); j++) {
-				if (abilitiesLost.contains(remainingAbilities->get(j))) {
-					abilitiesLost.drop(remainingAbilities->get(j));
-					if (abilitiesLost.size() == 0) {
-						break;
+		if (skillList != nullptr) {
+			for (int i = 0; i < skillList->size(); i++) {
+				Skill* remainingSkill = skillList->get(i);
+
+				if (remainingSkill == nullptr)
+					continue;
+
+				auto remainingAbilities = remainingSkill->getAbilities();
+
+				if (remainingAbilities == nullptr)
+					continue;
+
+				for (int j = 0; j < remainingAbilities->size(); j++) {
+					if (abilitiesLost.contains(remainingAbilities->get(j))) {
+						abilitiesLost.drop(remainingAbilities->get(j));
+						if (abilitiesLost.size() == 0) {
+							break;
+						}
 					}
 				}
 			}
@@ -1336,80 +1616,67 @@ bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureOb
 		if (abilitiesLost.size() > 0) {
 			removeAbilities(ghost, abilitiesLost, notifyClient);
 		}
+	}
 
-		//Remove draft schematic groups
-		auto schematicsGranted = skill->getSchematicsGranted();
+	auto schematicsGranted = skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr)
 		SchematicMap::instance()->removeSchematics(ghost, *schematicsGranted, notifyClient);
 
-		if (!regrant) {
-			//Update maximum experience.
-			updateXpLimits(ghost);
+	if (!regrant) {
+		updateXpLimits(ghost);
 
-			FrsManager* frsManager = creature->getZoneServer()->getFrsManager();
+		ZoneServer* zoneServer = creature->getZoneServer();
+		FrsManager* frsManager = zoneServer != nullptr ? zoneServer->getFrsManager() : nullptr;
 
-			if (checkFrs && frsManager->isFrsEnabled()) {
-				frsManager->handleSkillRevoked(creature, skillName);
+		if (checkFrs && frsManager != nullptr && frsManager->isFrsEnabled()) {
+			frsManager->handleSkillRevoked(creature, skill->getSkillName());
+		}
+
+		ghost->recalculateForcePower();
+		reconcileSurrenderedSkillPoints(creature, ghost);
+
+		ManagedReference<PlayerManager*> playerManager = zoneServer != nullptr ? zoneServer->getPlayerManager() : nullptr;
+
+		if (playerManager != nullptr) {
+			creature->setLevel(playerManager->calculatePlayerLevel(creature));
+		}
+
+		MissionManager* missionManager = zoneServer != nullptr ? zoneServer->getMissionManager() : nullptr;
+
+		if (skill->getSkillName() == "force_title_jedi_rank_02") {
+			if (missionManager != nullptr)
+				missionManager->removePlayerFromBountyList(creature->getObjectID());
+
+			// Losing the core Jedi skill means the player is no longer Jedi;
+			// jediState must not remain stale, or Jedi-only systems (death XP
+			// penalty, cloning restrictions, etc.) keep firing indefinitely.
+			if (ghost->getJediState() >= 2) {
+				ghost->setJediState(0);
+				creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
 			}
-
-			/// Update Force Power Max
-			ghost->recalculateForcePower();
-
-			const SkillList* list = creature->getSkillList();
-
-			int totalSkillPointsWasted = 250;
-
-			for (int i = 0; i < list->size(); ++i) {
-				Skill* skill = list->get(i);
-
-				totalSkillPointsWasted -= skill->getSkillPointsRequired();
+		} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
+			// See the matching branch in SkillManager::surrenderSkill - keeps
+			// jediState consistent regardless of which surrender path is used.
+			if (ghost->getJediState() >= 4) {
+				ghost->setJediState(2);
+				creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
 			}
+		} else if (skill->getSkillName().contains("force_discipline")) {
+			if (missionManager != nullptr)
+				missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
+		} else if (skill->getSkillName().contains("squadleader")) {
+			Reference<GroupObject*> group = creature->getGroup();
 
-			if (ghost->getSkillPoints() != totalSkillPointsWasted) {
-				creature->error("skill points mismatch calculated: " + String::valueOf(totalSkillPointsWasted) + " found: " + String::valueOf(ghost->getSkillPoints()));
-				ghost->setSkillPoints(totalSkillPointsWasted);
-			}
+			if (group != nullptr && group->getLeader() == creature) {
+				Core::getTaskManager()->executeTask([group] () {
+					Locker locker(group);
 
-			ManagedReference<PlayerManager*> playerManager = creature->getZoneServer()->getPlayerManager();
-			if (playerManager != nullptr) {
-				creature->setLevel(playerManager->calculatePlayerLevel(creature));
-			}
+					group->removeGroupModifiers();
 
-			MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
-
-			if (skill->getSkillName() == "force_title_jedi_rank_02") {
-				if (missionManager != nullptr)
-					missionManager->removePlayerFromBountyList(creature->getObjectID());
-
-				// Losing the core Jedi skill means the player is no longer Jedi;
-				// jediState must not remain stale, or Jedi-only systems (death XP
-				// penalty, cloning restrictions, etc.) keep firing indefinitely.
-				if (ghost->getJediState() >= 2) {
-					ghost->setJediState(0);
-					creature->info("jediState reset to 0 after surrendering force_title_jedi_rank_02", true);
-				}
-			} else if (skill->getSkillName() == "force_title_jedi_rank_03") {
-				// See the matching branch in SkillManager::surrenderSkill - keeps
-				// jediState consistent regardless of which surrender path is used.
-				if (ghost->getJediState() >= 4) {
-					ghost->setJediState(2);
-					creature->info("jediState reset to 2 after surrendering force_title_jedi_rank_03", true);
-				}
-			} else if (skill->getSkillName().contains("force_discipline")) {
-				if (missionManager != nullptr)
-					missionManager->updatePlayerBountyReward(creature->getObjectID(), ghost->calculateBhReward());
-			} else if (skill->getSkillName().contains("squadleader")) {
-				Reference<GroupObject*> group = creature->getGroup();
-
-				if (group != nullptr && group->getLeader() == creature) {
-					Core::getTaskManager()->executeTask([group] () {
-						Locker locker(group);
-
-						group->removeGroupModifiers();
-
-						if (group->hasSquadLeader())
-							group->addGroupModifiers();
-					}, "UpdateGroupModsLambda2");
-				}
+					if (group->hasSquadLeader())
+						group->addGroupModifiers();
+				}, "UpdateGroupModsLambda2");
 			}
 		}
 	}

@@ -1,16 +1,9 @@
-/*
- * SurveyToolApproveRadioactiveSuiCallback.h
- *
- *  Created on: may 22, 2012
- *      Author: kyle
- */
-
 #ifndef INSERTSCHEMATICSUICALLBACK_H_
 #define INSERTSCHEMATICSUICALLBACK_H_
 
-
 #include "server/zone/objects/installation/factory/FactoryObject.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/manufactureschematic/ManufactureSchematic.h"
 
 class InsertSchematicSuiCallback : public SuiCallback, public Logger {
@@ -23,59 +16,11 @@ public:
 		if (player == nullptr || suiBox == nullptr)
 			return;
 
-		bool cancelPressed = (eventIndex == 1);
-
-		if (cancelPressed)
+		if (eventIndex == 1)
 			return;
 
-		int windowType = suiBox->getWindowType();
-
-		if (windowType == SuiWindowType::FACTORY_SCHEMATIC2BUTTON) {
-			handleInsertFactorySchem2(player, suiBox, eventIndex, args);
-		} else if (windowType == SuiWindowType::FACTORY_SCHEMATIC3BUTTON) {
-			handleInsertFactorySchem3(player, suiBox, eventIndex, args);
-		}
-	}
-
-	void handleInsertFactorySchem2(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
-		if (!suiBox->isListBox() || eventIndex == 1)
+		if (!suiBox->isListBox() || args == nullptr || args->size() < 2)
 			return;
-
-		if (args->size() < 1)
-			return;
-
-		int index = Integer::valueOf(args->get(0).toString());
-
-		SuiListBox* listBox = cast<SuiListBox*>( suiBox);
-
-		ManagedReference<SceneObject*> object = suiBox->getUsingObject().get();
-
-		if (object == nullptr || !object->isFactory())
-			return;
-
-		FactoryObject* factory = cast<FactoryObject*>( object.get());
-
-		Locker locker(player);
-		Locker clocker(factory, player);
-
-		ManagedReference<ManufactureSchematic*> schematic = server->getObject(listBox->getMenuObjectID(index)).castTo<ManufactureSchematic*>();
-		factory->handleInsertFactorySchem(player, schematic);
-	}
-
-	void handleInsertFactorySchem3(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
-		if (player == nullptr || suiBox == nullptr)
-			return;
-
-		if (!suiBox->isListBox() || eventIndex == 1)
-			return;
-
-		if (args->size() < 2)
-			return;
-
-		bool otherPressed = Bool::valueOf(args->get(0).toString());
-		int index = Integer::valueOf(args->get(1).toString());
-
-		SuiListBox* listBox = cast<SuiListBox*>(suiBox);
 
 		ManagedReference<SceneObject*> object = suiBox->getUsingObject().get();
 
@@ -84,16 +29,168 @@ public:
 
 		FactoryObject* factory = cast<FactoryObject*>(object.get());
 
-		Locker locker(player);
-		Locker clocker(factory, player);
+		Locker playerLocker(player);
+		Locker factoryLocker(factory, player);
 
-		if (otherPressed) {
-			factory->handleRemoveFactorySchem(player);
+		bool backPressed = Bool::valueOf(args->get(0).toString());
+
+		if (backPressed) {
+			factory->sendManufacturingQueueSui(player);
+			return;
+		}
+
+		int index = Integer::valueOf(args->get(1).toString());
+
+		if (index < 0)
+			return;
+
+		SuiListBox* listBox = cast<SuiListBox*>(suiBox);
+
+		ManagedReference<ManufactureSchematic*> schematic =
+			server->getObject(listBox->getMenuObjectID(index)).castTo<ManufactureSchematic*>();
+
+		if (schematic == nullptr)
+			return;
+
+		factory->sendManufacturingBatchAmountSui(
+			player,
+			schematic,
+			schematic->getManufactureLimit());
+	}
+};
+
+class FactoryQueueBatchAmountSuiCallback : public SuiCallback {
+private:
+	unsigned long long schematicID;
+
+public:
+	FactoryQueueBatchAmountSuiCallback(ZoneServer* server, unsigned long long id)
+		: SuiCallback(server), schematicID(id) {
+	}
+
+	void run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
+		if (player == nullptr || suiBox == nullptr || !suiBox->isInputBox())
+			return;
+
+		ManagedReference<SceneObject*> object = suiBox->getUsingObject().get();
+
+		if (object == nullptr || !object->isFactory())
+			return;
+
+		FactoryObject* factory = cast<FactoryObject*>(object.get());
+
+		Locker playerLocker(player);
+		Locker factoryLocker(factory, player);
+
+		ManagedReference<ManufactureSchematic*> schematic =
+			server->getObject(schematicID).castTo<ManufactureSchematic*>();
+
+		if (schematic == nullptr || !schematic->isASubChildOf(player)) {
+			player->sendSystemMessage("That manufacturing schematic is no longer available.");
+			factory->sendInsertManuSui(player);
+			return;
+		}
+
+		if (eventIndex == 1) {
+			factory->sendInsertManuSui(player);
+			return;
+		}
+
+		if (args == nullptr || args->size() < 1)
+			return;
+
+		int requestedAmount = 0;
+
+		try {
+			requestedAmount = Integer::valueOf(args->get(0).toString());
+		} catch (Exception& e) {
+			player->sendSystemMessage("Enter a whole-number production amount.");
+			factory->sendManufacturingBatchAmountSui(
+				player,
+				schematic,
+				schematic->getManufactureLimit());
+			return;
+		}
+
+		int maxAmount = schematic->getManufactureLimit();
+
+		if (requestedAmount < 1 || requestedAmount > maxAmount) {
+			player->sendSystemMessage(
+				"Enter a production amount between 1 and " + String::valueOf(maxAmount) + ".");
+
+			factory->sendManufacturingBatchAmountSui(player, schematic, maxAmount);
+			return;
+		}
+
+		factory->sendManufacturingBatchConfirmSui(player, schematic, requestedAmount);
+	}
+};
+
+class FactoryQueueBatchConfirmSuiCallback : public SuiCallback {
+private:
+	unsigned long long schematicID;
+	int requestedAmount;
+
+public:
+	FactoryQueueBatchConfirmSuiCallback(ZoneServer* server, unsigned long long id, int amount)
+		: SuiCallback(server), schematicID(id), requestedAmount(amount) {
+	}
+
+	void run(CreatureObject* player, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) {
+		if (player == nullptr || suiBox == nullptr)
+			return;
+
+		if (eventIndex == 1)
+			return;
+
+		ManagedReference<SceneObject*> object = suiBox->getUsingObject().get();
+
+		if (object == nullptr || !object->isFactory())
+			return;
+
+		FactoryObject* factory = cast<FactoryObject*>(object.get());
+
+		Locker playerLocker(player);
+		Locker factoryLocker(factory, player);
+
+		ManagedReference<ManufactureSchematic*> schematic =
+			server->getObject(schematicID).castTo<ManufactureSchematic*>();
+
+		if (schematic == nullptr || !schematic->isASubChildOf(player)) {
+			player->sendSystemMessage("That manufacturing schematic is no longer available.");
+			factory->sendManufacturingQueueSui(player);
+			return;
+		}
+
+		bool backPressed = false;
+
+		if (args != nullptr && args->size() > 0)
+			backPressed = Bool::valueOf(args->get(0).toString());
+
+		if (backPressed) {
+			factory->sendManufacturingBatchAmountSui(player, schematic, requestedAmount);
+			return;
+		}
+
+		if (requestedAmount < 1 || requestedAmount > schematic->getManufactureLimit()) {
+			player->sendSystemMessage("The schematic's remaining uses changed. Please choose the production amount again.");
+			factory->sendManufacturingBatchAmountSui(
+				player,
+				schematic,
+				schematic->getManufactureLimit());
+			return;
+		}
+
+		if (factory->addQueuedSchematicBatch(player, schematic, requestedAmount)) {
+			player->sendSystemMessage(
+				"The manufacturing schematic was added to the factory queue for a batch of " +
+				String::valueOf(requestedAmount) + ".");
+
+			factory->sendManufacturingQueueSui(player);
 		} else {
-			ManagedReference<ManufactureSchematic*> schematic = server->getObject(listBox->getMenuObjectID(index)).castTo<ManufactureSchematic*>();
-			factory->handleInsertFactorySchem(player, schematic);
+			factory->sendInsertManuSui(player);
 		}
 	}
 };
 
-#endif /* INSERTSCHEMATICSUICALLBACK_H_ */
+#endif

@@ -612,6 +612,44 @@ yavin4 = {
 	}
 }
 
+hoth = {
+
+	weatherEnabled = 1,
+	gcwEnabled = 1,
+
+	-- Any travel point in the galaxy (shuttleports included) may buy a ticket to Hoth.
+	allowAllDepartures = 1,
+
+	-- Starports come from snapshot/hoth.ws (outpost_starport childObjects spawn the terminal,
+	-- ticket collector and shuttle). Arrival points use the Yavin IV Labor Outpost offset.
+	planetTravelPoints = {
+		{name = "Scavenger Outpost", x = 20.34, z = 0, y = -1982.24, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Imperial Outpost", x = 5947.9, z = 3, y = -388.71, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Rebel Outpost", x = 4528.65, z = 87.8, y = 1190.75, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+	},
+
+	badgeAreas = {
+	},
+
+	navAreas = {
+		{"hoth_scavenger_outpost", 0, -2000, 150},
+		{"hoth_imperial_outpost", 5927, -406, 150},
+		{"hoth_rebel_outpost", 4525, 1164, 150},
+	},
+
+	planetObjects = {
+		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -16.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -13.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -10.0, z = 0.0, y = -2014.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_imperial.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5911.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5914.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5917.6, z = 3.0, y = -420.5, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_rebel.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4509.0, z = 87.8, y = 1150.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4512.0, z = 87.8, y = 1150.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4515.0, z = 87.8, y = 1150.0, parentid = 0},
+	}
+}
+
 tutorial = {
 	weatherEnabled = 0,
 	gcwEnabled = 0,

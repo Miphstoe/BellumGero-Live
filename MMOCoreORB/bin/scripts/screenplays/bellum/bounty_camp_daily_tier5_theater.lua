@@ -5,6 +5,7 @@ local BountyCamp = require("screenplays.bellum.bounty_camp_theater_helpers")
 
 BellumBountyDailyTier5Theater = GoToTheater:new {
 	taskName = "BellumBountyDailyTier5Theater",
+	dailyBountyTier = 5,
 	minimumDistance = 1600,
 	maximumDistance = 2200,
 	theater = BountyCamp.CAMP_DECOR,

@@ -43,7 +43,7 @@ function MandoTrialmasterConvoHandler:withRecruiterRetroOptions(pPlayer, pNpc, p
 		end
 	end
 
-	if (MandoWayOfLife:isMandoTribesman(pPlayer)) then
+	if (MandoWayOfLife:checkDailyBountyEligibility(pPlayer)) then
 		cloned:addOption(
 			"Request Daily Bounty Mission Fob.",
 			"mando_daily_bounty_fob"

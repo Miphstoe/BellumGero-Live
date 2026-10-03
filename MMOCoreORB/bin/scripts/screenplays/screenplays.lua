@@ -649,6 +649,7 @@ includeFile("caves/tatooine_tusken_bunker.lua")
 includeFile("caves/conversations/gcw_cave_daily_conv_handler.lua")
 includeFile("caves/conversations/bsv_gate_convo_handler.lua")
 includeFile("caves/conversations/bsv_quiz_convo_handler.lua")
+includeFile("caves/hoth_ice_caves.lua")
 
 -- Cantinas
 includeFile("cities/cantinas/bartenders.lua")
@@ -838,6 +839,7 @@ includeFile("vendors/artisan_procurement_conv_handler.lua")
 includeFile("vendors/artisan_procurement_vendor.lua")
 
 includeFile("static_spawns/master_bounty_guild.lua")
+includeFile("static_spawns/hoth_static_spawns.lua")
 
 -- Painting Exchange Vendor
 includeFile("bellum/painting_exchange_vendor.lua")

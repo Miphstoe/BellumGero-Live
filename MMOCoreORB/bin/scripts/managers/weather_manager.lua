@@ -228,8 +228,14 @@ yavin4 = {
 	weatherStability = 70, -- Range 0 - 100, Higher = Less weather changes, Overall better weather
 }
 
+-----------------
+--   Hoth
+-----------------
+hoth = {
 
+	defaultWeather = 2, -- Moderate (0 calm - 4 severe)
 
+	averageWeatherDuration = 1800, -- In seconds
 
-
-
+	weatherStability = 40, -- Range 0 - 100, Higher = Less weather changes, Overall better weather
+}
