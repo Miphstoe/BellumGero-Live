@@ -48,6 +48,18 @@ hoth_scavenger_raider = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 1000000
 		}
 	},
 	primaryWeapon = "pirate_weapons_heavy",

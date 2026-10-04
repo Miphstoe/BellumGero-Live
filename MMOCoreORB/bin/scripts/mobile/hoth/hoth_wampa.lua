@@ -42,6 +42,18 @@ hoth_wampa = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_ice_decor", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 300000
 		}
 	},
 	primaryWeapon = "unarmed",

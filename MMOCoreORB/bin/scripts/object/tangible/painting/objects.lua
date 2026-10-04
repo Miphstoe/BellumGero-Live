@@ -4772,3 +4772,75 @@ object_tangible_painting_shared_painting_mando_holo = SharedTangibleObjectTempla
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_painting_shared_painting_mando_holo, "object/tangible/painting/shared_painting_mando_holo.iff")
+
+object_tangible_painting_shared_hothbattle_01_f00_000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_hothbattle_01_f00_000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hothbattle_01_f00_000000000000, "object/tangible/painting/shared_hothbattle_01_f00_000000000000.iff")
+
+object_tangible_painting_shared_battlehoth_01_f05_000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_battlehoth_01_f05_000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_battlehoth_01_f05_000000000000, "object/tangible/painting/shared_battlehoth_01_f05_000000000000.iff")
+
+object_tangible_painting_shared_hothatatlg_01_f00_000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_hothatatlg_01_f00_000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hothatatlg_01_f00_000000000000, "object/tangible/painting/shared_hothatatlg_01_f00_000000000000.iff")
+
+object_tangible_painting_shared_hothatatsm_01_f00_000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_hothatatsm_01_f00_000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hothatatsm_01_f00_000000000000, "object/tangible/painting/shared_hothatatsm_01_f00_000000000000.iff")
+
+object_tangible_painting_shared_hothshieldlg_01_f00_0000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_hothshieldlg_01_f00_0000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hothshieldlg_01_f00_0000000000, "object/tangible/painting/shared_hothshieldlg_01_f00_0000000000.iff")
+
+object_tangible_painting_shared_hothshieldsm_01_f00_0000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_hothshieldsm_01_f00_0000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hothshieldsm_01_f00_0000000000, "object/tangible/painting/shared_hothshieldsm_01_f00_0000000000.iff")
+
+object_tangible_painting_shared_art_esb1_1_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb1_1_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb1_1_f02_000000000000000, "object/tangible/painting/shared_art_esb1_1_f02_000000000000000.iff")
+
+object_tangible_painting_shared_art_esb1_2_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb1_2_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb1_2_f02_000000000000000, "object/tangible/painting/shared_art_esb1_2_f02_000000000000000.iff")
+
+object_tangible_painting_shared_art_esb1_3_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb1_3_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb1_3_f02_000000000000000, "object/tangible/painting/shared_art_esb1_3_f02_000000000000000.iff")
+
+object_tangible_painting_shared_art_esb2_1_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb2_1_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb2_1_f02_000000000000000, "object/tangible/painting/shared_art_esb2_1_f02_000000000000000.iff")
+
+object_tangible_painting_shared_art_esb2_2_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb2_2_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb2_2_f02_000000000000000, "object/tangible/painting/shared_art_esb2_2_f02_000000000000000.iff")
+
+object_tangible_painting_shared_art_esb2_3_f02_000000000000000 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_art_esb2_3_f02_000000000000000.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_art_esb2_3_f02_000000000000000, "object/tangible/painting/shared_art_esb2_3_f02_000000000000000.iff")

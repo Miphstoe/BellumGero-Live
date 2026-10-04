@@ -437,3 +437,9 @@ object_intangible_vehicle_shared_vehicle_pcd_base = SharedIntangibleObjectTempla
 }
 
 ObjectTemplates:addClientTemplate(object_intangible_vehicle_shared_vehicle_pcd_base, "object/intangible/vehicle/shared_vehicle_pcd_base.iff")
+
+object_intangible_vehicle_shared_snowspeeder = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/vehicle/shared_snowspeeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_intangible_vehicle_shared_snowspeeder, "object/intangible/vehicle/shared_snowspeeder.iff")

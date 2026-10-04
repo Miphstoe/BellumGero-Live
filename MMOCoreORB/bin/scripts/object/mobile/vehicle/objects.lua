@@ -960,3 +960,9 @@ object_mobile_vehicle_shared_vehicle_base = SharedCreatureObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_mobile_vehicle_shared_vehicle_base, "object/mobile/vehicle/shared_vehicle_base.iff")
+
+object_mobile_vehicle_shared_snowspeeder = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/vehicle/shared_snowspeeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_vehicle_shared_snowspeeder, "object/mobile/vehicle/shared_snowspeeder.iff")

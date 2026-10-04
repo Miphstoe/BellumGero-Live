@@ -1,0 +1,5 @@
+object_tangible_loot_themepark_item_ice_sculpture_wampa = object_tangible_loot_themepark_shared_item_ice_sculpture_wampa:new {
+	gameObjectType = 8203,
+}
+
+ObjectTemplates:addTemplate(object_tangible_loot_themepark_item_ice_sculpture_wampa, "object/tangible/loot/themepark/item_ice_sculpture_wampa.iff")

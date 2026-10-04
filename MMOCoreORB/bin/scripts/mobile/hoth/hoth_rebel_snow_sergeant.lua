@@ -43,6 +43,18 @@ hoth_rebel_snow_sergeant = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_rebel_snow_schematics", chance = 10000000}
+			},
+			lootChance = 400000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 300000
 		}
 	},
 	primaryWeapon = "rebel_carbine",

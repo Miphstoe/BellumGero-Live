@@ -42,6 +42,18 @@ hoth_snowtrooper = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_snowtrooper_schematics", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 200000
 		}
 	},
 	primaryWeapon = "stormtrooper_rifle",

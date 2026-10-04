@@ -57,6 +57,24 @@ hoth_mynock_broodmother = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_rare", chance = 10000000}
+			},
+			lootChance = 1500000
+		},
+		{
+			groups = {
+				{group = "hoth_ice_decor", chance = 10000000}
+			},
+			lootChance = 2000000
 		}
 	},
 	primaryWeapon = "unarmed",

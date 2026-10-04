@@ -119,6 +119,12 @@ includeFile("groups/bellum/mando_daily_bounty_tier2_loot.lua")
 includeFile("groups/bellum/mando_daily_bounty_tier3_loot.lua")
 includeFile("groups/bellum/mando_daily_bounty_tier4_loot.lua")
 includeFile("groups/bellum/mando_daily_bounty_tier5_loot.lua")
+includeFile("groups/bellum/hoth/hoth_snowtrooper_schematics.lua")
+includeFile("groups/bellum/hoth/hoth_rebel_snow_schematics.lua")
+includeFile("groups/bellum/hoth/hoth_paintings.lua")
+includeFile("groups/bellum/hoth/hoth_decor_common.lua")
+includeFile("groups/bellum/hoth/hoth_decor_rare.lua")
+includeFile("groups/bellum/hoth/hoth_ice_decor.lua")
 
 -- death_watch_bunker sub-folder
 includeFile("groups/death_watch_bunker/death_watch_bunker_art.lua")

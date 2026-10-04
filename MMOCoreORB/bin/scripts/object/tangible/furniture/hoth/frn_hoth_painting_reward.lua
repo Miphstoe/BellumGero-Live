@@ -1,0 +1,4 @@
+object_tangible_furniture_hoth_frn_hoth_painting_reward = object_tangible_furniture_hoth_shared_frn_hoth_painting_reward:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_hoth_frn_hoth_painting_reward, "object/tangible/furniture/hoth/frn_hoth_painting_reward.iff")

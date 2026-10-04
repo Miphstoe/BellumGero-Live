@@ -67,3 +67,5 @@ includeFile("tangible/wearables/armor/ubese/serverobjects.lua")
 includeFile("tangible/wearables/armor/zam/serverobjects.lua")
 
 -- Server Objects
+includeFile("tangible/wearables/armor/snowtrooper/serverobjects.lua")
+includeFile("tangible/wearables/armor/rebel_snow/serverobjects.lua")

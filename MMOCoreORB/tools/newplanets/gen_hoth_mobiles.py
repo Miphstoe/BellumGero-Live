@@ -57,6 +57,18 @@ LOOT_BEAST = """{
 		}
 	}"""
 
+
+def HOOK(group, chance):
+    """Extra lootGroups entry (with leading comma), rolled independently of the other entries. Groups come from gen_hoth_loot.py."""
+    return f''',
+		{{
+			groups = {{
+				{{group = "{group}", chance = 10000000}}
+			}},
+			lootChance = {chance}
+		}}'''
+
+
 CREATURES = [
     dict(key='hoth_tauntaun', name='a Hoth tauntaun', social='tauntaun', mob='MOB_HERBIVORE', level=60,
          hit=0.55, dmg=(430, 560), xp=5830, ham=(11000, 13000), armor=1, res='{120,120,20,150,20,150,20,20,-1}',
@@ -86,13 +98,13 @@ CREATURES = [
          hit=0.78, dmg=(570, 850), xp=7668, ham=(12000, 15000), armor=1, res='{140,160,30,200,30,200,30,30,-1}',
          meat=('meat_carnivore', 900), hide=('hide_wooly', 900), bone=('bone_mammal', 750), milk=0,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='KILLER + STALKER', diet='CARNIVORE', tmpl='object/mobile/wampa.iff',
-         hues=None, scale=1.0, loot=2300000,
+         hues=None, scale=1.0, loot=2300000, extra=HOOK('hoth_ice_decor', 500000) + HOOK('hoth_decor_common', 300000),
          attacks='{ {"intimidationattack",""}, {"knockdownattack",""} }'),
     dict(key='hoth_elder_wampa', name='an elder wampa', social='wampa', mob='MOB_CARNIVORE', level=88,
          hit=0.85, dmg=(600, 900), xp=8408, ham=(13000, 16000), armor=1, res='{150,170,40,210,40,210,40,40,-1}',
          meat=('meat_carnivore', 1000), hide=('hide_wooly', 1000), bone=('bone_mammal', 850), milk=0,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='KILLER + STALKER', diet='CARNIVORE', tmpl='object/mobile/wampa.iff',
-         hues=None, scale=1.15, loot=2780000,
+         hues=None, scale=1.15, loot=2780000, extra=HOOK('hoth_ice_decor', 700000) + HOOK('hoth_decor_common', 400000),
          attacks='{ {"stunattack",""}, {"creatureareaknockdown",""} }'),
     dict(key='hoth_wampa_matriarch', name='the wampa matriarch', social='wampa', mob='MOB_CARNIVORE', level=95,
          hit=0.92, dmg=(650, 1000), xp=9057, ham=(36000, 40000), armor=2, res='{160,180,45,220,45,220,45,45,-1}',
@@ -131,6 +143,24 @@ LOOT_BOSS = """{
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_rare", chance = 10000000}
+			},
+			lootChance = 1500000
+		},
+		{
+			groups = {
+				{group = "hoth_ice_decor", chance = 10000000}
+			},
+			lootChance = 2000000
 		}
 	}"""
 
@@ -165,6 +195,8 @@ next(c for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')['lootstr'] = LO
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
     loot = c.get('lootstr') or (LOOT_BEAST % c['loot'] if c['loot'] else '{}')
+    if c.get('extra'):
+        loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
     return f'''{c['key']} = Creature:new {{
 	objectName = "",
 	customName = "{c['name']}",
@@ -262,21 +294,25 @@ NPCS = [
     dict(key='hoth_snowtrooper', name='a snowtrooper', rname='NAME_STORMTROOPER', social='imperial', faction='imperial',
          level=70, hit=0.7, dmg=(500, 700), xp=6747, ham=(12000, 14500), armor=1, res='{40,40,60,40,80,40,40,-1,-1}',
          tmpls=['object/mobile/snowtrooper_s01.iff'], loot='imperial_tier_3', pw='stormtrooper_rifle', sw='stormtrooper_pistol',
+         extra=HOOK('hoth_snowtrooper_schematics', 150000) + HOOK('hoth_decor_common', 200000),
          pa='merge(riflemanmaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/stormtrooper', pers='@hireling/hireling_stormtrooper'),
     dict(key='hoth_snowtrooper_sergeant', name='a snowtrooper sergeant', rname='NAME_STORMTROOPER', social='imperial', faction='imperial',
          level=78, hit=0.78, dmg=(560, 800), xp=7484, ham=(13500, 16000), armor=1, res='{50,50,70,50,90,50,50,-1,-1}',
          tmpls=['object/mobile/snowtrooper_s01.iff'], loot='imperial_tier_4', pw='stormtrooper_rifle', sw='stormtrooper_pistol',
+         extra=HOOK('hoth_snowtrooper_schematics', 400000) + HOOK('hoth_decor_common', 300000),
          pa='merge(riflemanmaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/stormtrooper', pers='@hireling/hireling_stormtrooper'),
     dict(key='hoth_rebel_snow_soldier', name='a Rebel snow soldier', rname='NAME_GENERIC', social='rebel', faction='rebel',
          level=70, hit=0.7, dmg=(500, 700), xp=6747, ham=(12000, 14500), armor=1, res='{40,40,60,40,80,40,40,-1,-1}',
          tmpls=['object/mobile/rebel_snow_m_01.iff', 'object/mobile/rebel_snow_f_01.iff'], loot='rebel_tier_3',
+         extra=HOOK('hoth_rebel_snow_schematics', 150000) + HOOK('hoth_decor_common', 200000),
          pw='rebel_carbine', sw='rebel_pistol', pa='merge(carbineermaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/military', pers='@hireling/hireling_military'),
     dict(key='hoth_rebel_snow_sergeant', name='a Rebel snow sergeant', rname='NAME_GENERIC', social='rebel', faction='rebel',
          level=78, hit=0.78, dmg=(560, 800), xp=7484, ham=(13500, 16000), armor=1, res='{50,50,70,50,90,50,50,-1,-1}',
          tmpls=['object/mobile/rebel_snow_m_01.iff', 'object/mobile/rebel_snow_f_01.iff'], loot='rebel_tier_4',
+         extra=HOOK('hoth_rebel_snow_schematics', 400000) + HOOK('hoth_decor_common', 300000),
          pw='rebel_carbine', sw='rebel_pistol', pa='merge(carbineermaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/military', pers='@hireling/hireling_military'),
 ]
@@ -328,7 +364,7 @@ def npc_lua(n):
 				{{group = "bg_token_group", chance = 10000000}}
 			}},
 			lootChance = 250000
-		}}
+		}}{n.get('extra', '')}
 	}},
 	primaryWeapon = "{n['pw']}",
 	secondaryWeapon = "{n['sw']}",
@@ -413,7 +449,7 @@ RAIDER = SCAVENGER.replace('hoth_scavenger', 'hoth_scavenger_raider') \
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
-		}
+		}''' + HOOK('hoth_paintings', 500000) + HOOK('hoth_decor_common', 1000000) + '''
 	},''')
 
 SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
@@ -429,7 +465,8 @@ SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
 		"object/mobile/dressed_goon_twk_male_01.iff",
 		"object/mobile/dressed_robber_human_female_01.iff"''', '		"object/mobile/dressed_imperial_atat_pilot_m.iff"') \
     .replace('primaryWeapon = "pirate_weapons_heavy"', 'primaryWeapon = "imperial_weapons_light"') \
-    .replace('reactionStf = "@npc_reaction/slang"', 'reactionStf = "@npc_reaction/military"')
+    .replace('reactionStf = "@npc_reaction/slang"', 'reactionStf = "@npc_reaction/military"') \
+    .replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_decor_common', 1500000)[1:] + '\n\t},')
 
 # --------------------------------------------------------------------------
 # Lairs: (key, folder, mobiles, buildingType/lair building, extra)

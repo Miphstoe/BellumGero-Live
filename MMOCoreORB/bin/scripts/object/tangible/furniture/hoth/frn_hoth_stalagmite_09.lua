@@ -1,0 +1,4 @@
+object_tangible_furniture_hoth_frn_hoth_stalagmite_09 = object_tangible_furniture_hoth_shared_frn_hoth_stalagmite_09:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_hoth_frn_hoth_stalagmite_09, "object/tangible/furniture/hoth/frn_hoth_stalagmite_09.iff")

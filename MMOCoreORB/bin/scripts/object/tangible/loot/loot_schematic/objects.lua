@@ -6526,3 +6526,141 @@ object_tangible_loot_loot_schematic_shared_droideka_foundry_schematic = SharedTa
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_droideka_foundry_schematic, "object/tangible/loot/loot_schematic/shared_droideka_foundry_schematic.iff")
 
 --------------------------------------------------------------------
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_belt_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_belt_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_belt_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_belt_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_bicep_l_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_bicep_l_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_bicep_l_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_bicep_l_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_bicep_r_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_bicep_r_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_bicep_r_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_bicep_r_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_boots_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_boots_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_boots_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_boots_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_bracer_l_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_bracer_l_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_bracer_l_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_bracer_l_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_bracer_r_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_bracer_r_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_bracer_r_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_bracer_r_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_chest_plate_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_chest_plate_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_chest_plate_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_chest_plate_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_gloves_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_gloves_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_gloves_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_gloves_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_helmet_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_helmet_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_helmet_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_helmet_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_leggings_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_leggings_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_leggings_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_leggings_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_snowtrooper_backpack_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_snowtrooper_backpack_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_snowtrooper_backpack_crafted_schematic, "object/tangible/loot/loot_schematic/shared_snowtrooper_backpack_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_belt_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_belt_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_belt_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_belt_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_bicep_l_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_bicep_l_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_bicep_l_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_bicep_l_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_bicep_r_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_bicep_r_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_bicep_r_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_bicep_r_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_boots_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_boots_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_boots_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_boots_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_bracer_l_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_bracer_l_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_bracer_l_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_bracer_l_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_bracer_r_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_bracer_r_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_bracer_r_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_bracer_r_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_chest_plate_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_chest_plate_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_chest_plate_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_chest_plate_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_gloves_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_gloves_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_gloves_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_gloves_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_helmet_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_helmet_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_helmet_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_helmet_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_leggings_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_leggings_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_leggings_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_leggings_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_rebel_snow_backpack_crafted_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_rebel_snow_backpack_crafted_schematic.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_rebel_snow_backpack_crafted_schematic, "object/tangible/loot/loot_schematic/shared_rebel_snow_backpack_crafted_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_loot_schem_snowspeeder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_loot_schem_snowspeeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_loot_schem_snowspeeder, "object/tangible/loot/loot_schematic/shared_loot_schem_snowspeeder.iff")

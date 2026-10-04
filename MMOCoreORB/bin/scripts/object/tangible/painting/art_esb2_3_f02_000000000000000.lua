@@ -1,0 +1,4 @@
+object_tangible_painting_art_esb2_3_f02_000000000000000 = object_tangible_painting_shared_art_esb2_3_f02_000000000000000:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_art_esb2_3_f02_000000000000000, "object/tangible/painting/art_esb2_3_f02_000000000000000.iff")

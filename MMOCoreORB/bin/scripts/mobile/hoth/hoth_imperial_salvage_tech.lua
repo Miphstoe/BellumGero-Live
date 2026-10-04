@@ -31,7 +31,14 @@ hoth_imperial_salvage_tech = Creature:new {
 	templates = {
 		"object/mobile/dressed_imperial_atat_pilot_m.iff"
 	},
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 1500000
+		}
+	},
 	primaryWeapon = "imperial_weapons_light",
 	secondaryWeapon = "unarmed",
 	conversationTemplate = "",
