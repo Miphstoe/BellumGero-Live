@@ -34,6 +34,22 @@ def bg_file(path):
     return extract_entry(tre, e, CACHE)
 
 
+INF = r'C:\SWG Infinity\Live'
+_inf = None
+
+
+def inf_file(path, dest_root):
+    """Extract an Infinity client file (highest-priority TRE wins) under dest_root and return its local path."""
+    global _inf
+    if _inf is None:
+        _inf = {}
+        for tre in walk_tres(INF):
+            for e in read_tre(tre):
+                _inf[e['name'].lower()] = (tre, e)
+    tre, e = _inf[path.lower()]
+    return extract_entry(tre, e, dest_root)
+
+
 def out(path):
     p = os.path.join(OUT, *path.split('/'))
     os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -145,6 +161,41 @@ def decor():
               objectName=f'frn_n:frn_hoth_{key}', detailedDescription=f'frn_d:frn_hoth_{key}', lookAtText=f'frn_n:frn_hoth_{key}')
 
 
+# ---------------------------------------------------------------- vehicle mount tables (snowspeeder)
+# The mount datatables are not reachable through file references, so dep_closure never sees them. Both the client
+# (saddle/rider pose) and the server (PetManager valid_scale_range) need the snowspeeder rows; they are copied from
+# Infinity's tables onto BG's current tables. The vehicle client-data file is referenced only from these rows.
+MOUNT_TABLES = ['logical_saddle_name_map', 'rider_pose_map', 'saddle_appearance_map', 'valid_scale_range']
+MOUNT_KEYS = ('appearance/pv_snowspeeder.sat', 'lookup/snowspeeder')
+
+
+def vehicle_tables():
+    import dt_tool
+    tmp = os.path.join(HERE, 'extract', 'inf')
+    for name in MOUNT_TABLES:
+        rel = f'datatables/mount/{name}.iff'
+        bg = dt_tool.read(bg_file(rel))
+        inf = dt_tool.read(inf_file(rel, tmp))
+        assert bg['names'] == inf['names'], (name, bg['names'], inf['names'])
+        have = {tuple(r) for r in bg['rows']}
+        added = 0
+        for row in inf['rows']:
+            if row[0] in MOUNT_KEYS and tuple(row) not in have:
+                bg['rows'].append(list(row)); have.add(tuple(row)); added += 1
+        dt_tool.write(bg, out(rel))
+        print(f'{rel}: +{added} rows -> {len(bg["rows"])}')
+    # vehicle client data + what it pulls in (dep_closure stops at .snd, so the samples are listed by hand)
+    extra = ['clientdata/vehicle/snowspeeder.cdf', 'appearance/pt_vehicle_dust_trail_hoth.prt',
+             'sound/hoth_snowspeeder_accel.snd', 'sound/hoth_snowspeeder_decel_02.snd',
+             'sound/hoth_snowspeeder_idle_lp_02.snd', 'sound/hoth_snowspeeder_run_lp.snd',
+             'sample/hoth_snowspeeder_accelerate.wav', 'sample/hoth_snowspeeder_decelerate_02.wav',
+             'sample/hoth_snowspeeder_engine_idle_lp_02.wav', 'sample/hoth_snowspeeder_engine_lp.wav']
+    for rel in extra:
+        if not os.path.exists(out(rel)):
+            inf_file(rel, OUT)
+            print('staged', rel)
+
+
 # ---------------------------------------------------------------- strings
 ART_N = {k: n for _, _, k, n, _ in PAINTINGS}
 ART_D = {k: d for _, _, k, _, d in PAINTINGS}
@@ -212,6 +263,7 @@ if __name__ == '__main__':
     paintings()
     decor()
     gen_hoth_art.client()
+    vehicle_tables()
     strings()
     crc()
     print(f'{len(NEW_OBJECTS)} cloned object templates; {len(list(ported_objects()))} object templates total in overlay')
