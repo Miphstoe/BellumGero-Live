@@ -180,8 +180,13 @@ def vehicle_tables():
         have = {tuple(r) for r in bg['rows']}
         added = 0
         for row in inf['rows']:
-            if row[0] in MOUNT_KEYS and tuple(row) not in have:
-                bg['rows'].append(list(row)); have.add(tuple(row)); added += 1
+            if row[0] in MOUNT_KEYS:
+                row = list(row)
+                if tuple(row) not in have:
+                    # one pose row per appearance: drop any earlier override before adding
+                    if name == 'rider_pose_map':
+                        bg['rows'] = [r for r in bg['rows'] if r[0] != row[0]]
+                    bg['rows'].append(row); have.add(tuple(row)); added += 1
         dt_tool.write(bg, out(rel))
         print(f'{rel}: +{added} rows -> {len(bg["rows"])}')
     # vehicle client data + what it pulls in (dep_closure stops at .snd, so the samples are listed by hand)
@@ -194,6 +199,25 @@ def vehicle_tables():
         if not os.path.exists(out(rel)):
             inf_file(rel, OUT)
             print('staged', rel)
+    rider_poses()
+
+
+# The snowspeeder (and the other Infinity vehicles, if added later) seat the pilot with NGE rider poses that the
+# BG client's player animation table does not know. lat_add_pose.py copies the pose entries from Infinity's
+# all_m.lat into BG's (every *_riding animation gets one more selector entry) and we ship the .ans files.
+RIDER_POSES = ['vehicle_hover_chair']
+
+
+def rider_poses():
+    import lat_add_pose
+    tmp = os.path.join(HERE, 'extract', 'inf')
+    rel = 'appearance/lat/all_m.lat'
+    needed = lat_add_pose.add_poses(bg_file(rel), inf_file(rel, tmp), out(rel), RIDER_POSES)
+    lat_add_pose.verify(out(rel), RIDER_POSES)
+    for ans in needed:
+        if not os.path.exists(out(ans)):
+            inf_file(ans, OUT)
+            print('staged', ans)
 
 
 # ---------------------------------------------------------------- strings
