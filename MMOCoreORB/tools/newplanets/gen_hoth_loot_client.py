@@ -196,12 +196,13 @@ def strings():
 
 
 def crc():
-    t = cstb_tool.read(os.path.join(HERE, 'build', 'hoth', 'misc', 'object_template_crc_string_table.iff'))
-    before = len(t)
-    for p in sorted(set(NEW_OBJECTS) | set(ported_objects())):
-        cstb_tool.add(t, p)
-    cstb_tool.write(t, out('misc/object_template_crc_string_table.iff'))
-    print(f'CRC table: {before} -> {len(t)} entries')
+    """The CRC table is generated per base TRE by build_tre.py (base table + every object iff in the overlays),
+    so the overlays must not carry one. Remove stale copies."""
+    for d in ('hoth', 'hoth_loot'):
+        p = os.path.join(HERE, 'build', d, 'misc', 'object_template_crc_string_table.iff')
+        if os.path.exists(p):
+            os.remove(p); print('removed stale', p)
+    print(f'{len(set(NEW_OBJECTS) | set(ported_objects()))} object paths will get CRC entries at build time (build_tre.py)')
 
 
 if __name__ == '__main__':
