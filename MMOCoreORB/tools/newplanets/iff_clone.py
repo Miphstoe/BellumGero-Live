@@ -47,6 +47,35 @@ def patch(nodes, patches, hits):
             res.append((tag, ft, off, size, kids))
     return res
 
+def clone_raw(src, dst, replacements):
+    """Clone any IFF (mesh, shader, apt...) replacing NUL-terminated strings inside leaf chunks; FORM sizes are recomputed.
+    replacements: {old_string: new_string}. Every old string must occur at least once."""
+    buf = open(src, 'rb').read()
+    nodes = parse(buf)
+    assert serialize(nodes) == buf, f'round-trip mismatch for {src}'
+    hits = set()
+
+    def walk(ns):
+        res = []
+        for tag, ft, off, size, kids in ns:
+            if tag == 'FORM':
+                res.append((tag, ft, off, size, walk(kids)))
+            else:
+                for old, new in replacements.items():
+                    needle = old.encode('latin-1') + b'\x00'
+                    if needle in kids:
+                        kids = kids.replace(needle, new.encode('latin-1') + b'\x00'); hits.add(old)
+                res.append((tag, ft, off, size, kids))
+        return res
+    nodes = walk(nodes)
+    missing = set(replacements) - hits
+    if missing:
+        raise SystemExit(f'{src}: strings not found: {sorted(missing)}')
+    os.makedirs(os.path.dirname(dst) or '.', exist_ok=True)
+    open(dst, 'wb').write(serialize(nodes))
+    return dst
+
+
 def clone(src, dst, patches):
     buf = open(src, 'rb').read()
     nodes = parse(buf)

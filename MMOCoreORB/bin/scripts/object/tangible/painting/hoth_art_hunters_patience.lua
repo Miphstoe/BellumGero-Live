@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_hunters_patience = object_tangible_painting_shared_hoth_art_hunters_patience:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_hunters_patience, "object/tangible/painting/hoth_art_hunters_patience.iff")

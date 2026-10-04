@@ -15,6 +15,7 @@ import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import gen_hoth_mobiles as g
 import gen_hoth_loot_client as c
+import gen_hoth_art as art
 
 ROOT = g.ROOT
 FURNITURE_GOT = 8203  # SceneObjectType::FURNITURE — makes a generic tangible placeable/movable in structures
@@ -185,7 +186,16 @@ def paintings():
         loot_files.append(f'painting_schematic_hoth_{key}.lua'); loot_shared.append(f'object/tangible/loot/hoth/shared_painting_schematic_hoth_{key}.iff')
         loot_item(f'hoth_painting_{key}_schematic', f'object/tangible/loot/hoth/painting_schematic_hoth_{key}.iff')
         loot_item(f'hoth_painting_{key}', tangible)
-    ensure_shared('object/tangible/painting/objects.lua', [f'object/tangible/painting/shared_{stem}.iff' for _, stem, _, _, _ in c.PAINTINGS])
+    # custom boss paintings (gen_hoth_art.py): finished paintings only, no schematic
+    for key, *_ in art.ART:
+        stem = f'hoth_art_{key}'; tangible = f'object/tangible/painting/{stem}.iff'; lid = luaid(tangible)
+        write(f'object/tangible/painting/{stem}.lua',
+              f'{lid} = {luaid(f"object/tangible/painting/shared_{stem}.iff")}:new {{\n}}\n\nObjectTemplates:addTemplate({lid}, "{tangible}")\n')
+        g.register('object/tangible/painting/serverobjects.lua', f'includeFile("tangible/painting/{stem}.lua")')
+        loot_item(stem, tangible)
+    GROUPS['hoth_art_rare'] = [f'hoth_art_{key}' for key, *_ in art.ART]
+    ensure_shared('object/tangible/painting/objects.lua', [f'object/tangible/painting/shared_{stem}.iff' for _, stem, _, _, _ in c.PAINTINGS]
+                  + [f'object/tangible/painting/shared_hoth_art_{key}.iff' for key, *_ in art.ART])
     new_dir('object/draft_schematic/furniture/hoth', 'includeFile("draft_schematic/furniture/', 'object/draft_schematic/furniture/serverobjects.lua', draft_shared, draft_files)
     new_dir('object/tangible/loot/hoth', 'includeFile("tangible/loot/bestine/', 'object/tangible/loot/serverobjects.lua', loot_shared, loot_files)
     GROUPS['hoth_paintings'] = [(f'hoth_painting_{k}_schematic', 7) for k, *_ in c.PAINTINGS] + [(f'hoth_painting_{k}', 1) for k, *_ in c.PAINTINGS]

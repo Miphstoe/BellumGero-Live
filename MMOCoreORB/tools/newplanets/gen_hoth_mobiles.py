@@ -161,8 +161,18 @@ LOOT_BOSS = """{
 				{group = "hoth_ice_decor", chance = 10000000}
 			},
 			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 1000000
 		}
 	}"""
+
+# Custom boss paintings (gen_hoth_art.py): bosses roll hoth_art_rare at 10% (LOOT_BOSS above); every other Hoth
+# mobile gets this trickle chance.
+ART_TRICKLE = 50000  # 0.5%
 
 
 def _boss(key, name, level, ham, dmg, scale, social='wampa', tmpl='object/mobile/wampa.iff', attacks=None, hues=None,
@@ -190,6 +200,9 @@ BOSSES = [
 ]
 # The matriarch moved from a random world lair to a fixed cave boss: give her boss loot too.
 next(c for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')['lootstr'] = LOOT_BOSS
+for _c in CREATURES:
+    if _c.get('lootstr') is None:  # non-boss creatures: trickle chance at the custom paintings
+        _c['extra'] = _c.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
 
 
 def creature_lua(c):
@@ -276,7 +289,7 @@ PROBE = '''hoth_probe_droid = Creature:new {
 				{group = "wearables_all", chance = 3500000}
 			},
 			lootChance = 2000000
-		}
+		}''' + HOOK('hoth_art_rare', ART_TRICKLE) + '''
 	},
 	defaultAttack = "attack",
 	primaryWeapon = "droid_probot_ranged",
@@ -316,6 +329,8 @@ NPCS = [
          pw='rebel_carbine', sw='rebel_pistol', pa='merge(carbineermaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/military', pers='@hireling/hireling_military'),
 ]
+for _n in NPCS:
+    _n['extra'] = _n.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
 
 
 def npc_lua(n):
@@ -449,7 +464,7 @@ RAIDER = SCAVENGER.replace('hoth_scavenger', 'hoth_scavenger_raider') \
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
-		}''' + HOOK('hoth_paintings', 500000) + HOOK('hoth_decor_common', 1000000) + '''
+		}''' + HOOK('hoth_paintings', 500000) + HOOK('hoth_decor_common', 1000000) + HOOK('hoth_art_rare', ART_TRICKLE) + '''
 	},''')
 
 SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
@@ -466,7 +481,10 @@ SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
 		"object/mobile/dressed_robber_human_female_01.iff"''', '		"object/mobile/dressed_imperial_atat_pilot_m.iff"') \
     .replace('primaryWeapon = "pirate_weapons_heavy"', 'primaryWeapon = "imperial_weapons_light"') \
     .replace('reactionStf = "@npc_reaction/slang"', 'reactionStf = "@npc_reaction/military"') \
-    .replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_decor_common', 1500000)[1:] + '\n\t},')
+    .replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_decor_common', 1500000)[1:] + HOOK('hoth_art_rare', ART_TRICKLE) + '\n\t},')
+
+# Plain scavengers (derived templates above already replaced their own lootGroups block).
+SCAVENGER = SCAVENGER.replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_art_rare', ART_TRICKLE)[1:] + '\n\t},')
 
 # --------------------------------------------------------------------------
 # Lairs: (key, folder, mobiles, buildingType/lair building, extra)

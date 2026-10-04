@@ -35,6 +35,12 @@ hoth_probe_droid = Creature:new {
 				{group = "wearables_all", chance = 3500000}
 			},
 			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	defaultAttack = "attack",

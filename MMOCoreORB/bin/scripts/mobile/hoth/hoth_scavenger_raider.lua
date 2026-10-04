@@ -60,6 +60,12 @@ hoth_scavenger_raider = Creature:new {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
 			lootChance = 1000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	primaryWeapon = "pirate_weapons_heavy",

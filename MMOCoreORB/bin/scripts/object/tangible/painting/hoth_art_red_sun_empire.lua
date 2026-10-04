@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_red_sun_empire = object_tangible_painting_shared_hoth_art_red_sun_empire:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_red_sun_empire, "object/tangible/painting/hoth_art_red_sun_empire.iff")

@@ -11,6 +11,7 @@ import os, sys, shutil
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 exec(open(os.path.join(HERE, 'tre_inventory.py')).read().split('if __name__')[0])
 import iff_clone, stf_tool, cstb_tool
+import gen_hoth_art
 
 BG = r'C:\BellumGero'
 OUT = os.path.join(HERE, 'build', 'hoth_loot')
@@ -180,6 +181,7 @@ def new_stf(like):
 
 def strings():
     like = os.path.join(HERE, 'build', 'hoth', 'string', 'en', 'hoth_region_names.stf')
+    ART_N.update(gen_hoth_art.names()); ART_D.update(gen_hoth_art.descs())
     for name, table in [('art_n', ART_N), ('art_d', ART_D), ('dt_n', DT_N), ('dt_d', DT_D)]:
         t = new_stf(like)
         for k, v in table.items():
@@ -209,6 +211,7 @@ if __name__ == '__main__':
     armor()
     paintings()
     decor()
+    gen_hoth_art.client()
     strings()
     crc()
     print(f'{len(NEW_OBJECTS)} cloned object templates; {len(list(ported_objects()))} object templates total in overlay')

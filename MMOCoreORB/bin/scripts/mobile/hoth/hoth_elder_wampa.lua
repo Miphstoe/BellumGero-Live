@@ -54,6 +54,12 @@ hoth_elder_wampa = Creature:new {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
 			lootChance = 400000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	primaryWeapon = "unarmed",

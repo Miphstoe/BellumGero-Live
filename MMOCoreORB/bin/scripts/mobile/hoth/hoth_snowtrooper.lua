@@ -54,6 +54,12 @@ hoth_snowtrooper = Creature:new {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
 			lootChance = 200000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	primaryWeapon = "stormtrooper_rifle",
