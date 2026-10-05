@@ -240,13 +240,13 @@ def decor():
         loot_item(f'hoth_decor_{stem}', sp)
     new_dir('object/tangible/furniture/hoth', 'includeFile("tangible/furniture/', 'object/tangible/furniture/serverobjects.lua', shared, files)
     GROUPS['hoth_decor_common'] = [f'hoth_decor_{s}' for s in COMMON]
-    GROUPS['hoth_decor_rare'] = [(f'hoth_decor_{s}', 4) for s in RARE] + [('snowspeeder_schematic', 1)]
+    GROUPS['hoth_decor_rare'] = [f'hoth_decor_{s}' for s in RARE]  # vehicles moved to hoth_vehicle_* groups
     GROUPS['hoth_ice_decor'] = [f'hoth_decor_{s}' for s in ICE]
     known = {f'hoth_decor_{server_path(p).rsplit("/", 1)[1][:-4]}' for p, _ in PORTED_DECOR} | {f'hoth_decor_{r[0] if r[0].startswith("frn_hoth") else "frn_hoth_" + r[0]}' for r in c.DECOR}
     for grp in ('hoth_decor_common', 'hoth_decor_rare', 'hoth_ice_decor'):
         for it in GROUPS[grp]:
             name = it[0] if isinstance(it, tuple) else it
-            assert name == 'snowspeeder_schematic' or name in known, name
+            assert name in known, name
 
 
 # ---------------------------------------------------------------- snowspeeder
@@ -338,5 +338,8 @@ addLootGroupTemplate("{name}", {name})
 
 
 if __name__ == '__main__':
-    armor(); paintings(); decor(); snowspeeder(); loot_items(); groups()
+    armor(); paintings(); decor()
+    import gen_hoth_vehicles
+    gen_hoth_vehicles.server(g, write, body, read, ensure_shared, loot_item, GROUPS)
+    loot_items(); groups()
     print(f'{len(LOOT_ITEMS)} loot items, groups: ' + ', '.join(f'{k}({len(v)})' for k, v in GROUPS.items()))

@@ -199,21 +199,23 @@ def vehicle_tables():
         if not os.path.exists(out(rel)):
             inf_file(rel, OUT)
             print('staged', rel)
-    rider_poses()
+    import gen_hoth_vehicles
+    poses = gen_hoth_vehicles.client()
+    rider_poses(sorted(set(RIDER_POSES) | set(poses)))
 
 
-# The snowspeeder (and the other Infinity vehicles, if added later) seat the pilot with NGE rider poses that the
-# BG client's player animation table does not know. lat_add_pose.py copies the pose entries from Infinity's
-# all_m.lat into BG's (every *_riding animation gets one more selector entry) and we ship the .ans files.
+# Infinity's vehicles seat the pilot with NGE rider poses that the BG client's player animation table does not know.
+# lat_add_pose.py copies the pose entries from Infinity's all_m.lat into BG's (every *_riding animation gets one more
+# selector entry) and we ship the .ans files.
 RIDER_POSES = ['vehicle_hover_chair']
 
 
-def rider_poses():
+def rider_poses(poses):
     import lat_add_pose
     tmp = os.path.join(HERE, 'extract', 'inf')
     rel = 'appearance/lat/all_m.lat'
-    needed = lat_add_pose.add_poses(bg_file(rel), inf_file(rel, tmp), out(rel), RIDER_POSES)
-    lat_add_pose.verify(out(rel), RIDER_POSES)
+    needed = lat_add_pose.add_poses(bg_file(rel), inf_file(rel, tmp), out(rel), poses)
+    lat_add_pose.verify(out(rel), [p for p in poses if p in ('vehicle_hover_chair',)])
     for ans in needed:
         if not os.path.exists(out(ans)):
             inf_file(ans, OUT)
@@ -256,7 +258,9 @@ def new_stf(like):
 
 def strings():
     like = os.path.join(HERE, 'build', 'hoth', 'string', 'en', 'hoth_region_names.stf')
+    import gen_hoth_vehicles
     ART_N.update(gen_hoth_art.names()); ART_D.update(gen_hoth_art.descs())
+    ART_N.update(gen_hoth_vehicles.names()); ART_D.update(gen_hoth_vehicles.descs())
     for name, table in [('art_n', ART_N), ('art_d', ART_D), ('dt_n', DT_N), ('dt_d', DT_D)]:
         t = new_stf(like)
         for k, v in table.items():

@@ -4,20 +4,19 @@ hoth_decor_rare = {
 	minimumLevel = 0,
 	maximumLevel = 0,
 	lootItems = {
-		{itemTemplate = "hoth_decor_col_reward_hoth_tauntaun_head", weight = 754716},
-		{itemTemplate = "hoth_decor_diorama_atat_attack", weight = 754716},
-		{itemTemplate = "hoth_decor_tauntaun_armored_statue", weight = 754716},
-		{itemTemplate = "hoth_decor_item_ice_sculpture_wampa", weight = 754716},
-		{itemTemplate = "hoth_decor_item_ice_sculpture_tauntaun", weight = 754716},
-		{itemTemplate = "hoth_decor_item_wampa_arm", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_all_atat_chair", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_wampa_rug", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_snowspeeder_holo", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_imperial", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_neutral", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_rebel", weight = 754716},
-		{itemTemplate = "hoth_decor_frn_hoth_painting_reward", weight = 754716},
-		{itemTemplate = "snowspeeder_schematic", weight = 188692}
+		{itemTemplate = "hoth_decor_col_reward_hoth_tauntaun_head", weight = 769230},
+		{itemTemplate = "hoth_decor_diorama_atat_attack", weight = 769230},
+		{itemTemplate = "hoth_decor_tauntaun_armored_statue", weight = 769230},
+		{itemTemplate = "hoth_decor_item_ice_sculpture_wampa", weight = 769230},
+		{itemTemplate = "hoth_decor_item_ice_sculpture_tauntaun", weight = 769230},
+		{itemTemplate = "hoth_decor_item_wampa_arm", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_all_atat_chair", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_wampa_rug", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_snowspeeder_holo", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_imperial", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_neutral", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_painting_esb_rebel", weight = 769230},
+		{itemTemplate = "hoth_decor_frn_hoth_painting_reward", weight = 769240}
 	}
 }
 

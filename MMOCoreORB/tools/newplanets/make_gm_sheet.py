@@ -41,9 +41,11 @@ sections.append(('Rare decor', [
 sections.append(('Ice-cave decor', ['object/tangible/borrie/wall/cave_ice_wall.iff'] +
                  [f'object/tangible/furniture/hoth/frn_hoth_stalagmite_{i:02d}.iff' for i in range(1, 10)] +
                  [f'object/tangible/furniture/hoth/frn_hoth_stalactite_{i:02d}.iff' for i in range(1, 7)]))
-sections.append(('T-47 snowspeeder', [
-    'object/tangible/deed/vehicle_deed/snowspeeder_deed.iff   -- deed: use it, then call the vehicle from the datapad',
-    'object/tangible/loot/loot_schematic/loot_schem_snowspeeder.iff   -- loot schematic (Artisan Engineering IV, 1 use)']))
+import gen_hoth_vehicles as V
+sections.append(('Vehicle deeds (use the deed, then call the vehicle from the datapad)',
+                 [f'{V.server_path(V.deed_client(v))}   -- {v[1]}' for v in V.VEHICLES]))
+sections.append(('Vehicle loot schematics (Artisan Engineering IV, 1 use)',
+                 [f'{V.server_path(V.schem_client(v))}   -- {v[1]}' for v in V.VEHICLES]))
 sections.append(('Crafting components for one full armor set', [
     'object/tangible/component/armor/armor_segment_composite.iff 20',
     'object/tangible/component/clothing/synthetic_cloth.iff 10',
