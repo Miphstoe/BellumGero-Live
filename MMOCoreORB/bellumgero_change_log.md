@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-04 — Ported vehicles no longer glow: drop the bump-mapped envmask effect
+
+- **Summary:** Infinity shaders on `a_envmask_specmap_cbmp` rendered as a full-body bloom glow in the BG client (Republic gunship, RIC-920, XJ-6, single-pod airspeeder; mechno-chair and Yoda's levitator use the same effect). The client generator now points every overlay shader on that effect at the stock non-bump `a_envmask_specmap` (same texture slots, normal map ignored). A/B tested in game: glow gone. BG's own users of the effect (AT-AT house, C-3PO backpack) are untouched.
+- **Files:** `tools/newplanets/gen_hoth_loot_client.py`
+- **Notes:** Client TRE only (shaders); rebuild `bg_custom1.tre` with `build_tre.py`. No server restart needed.
+
 ### 2026-10-04 — Mount range 20m for long vehicles; AT-AT house placeable on Hoth
 
 - **Summary:** `/mount` refused silently when the rider stood more than 7m from the vehicle object's origin. Infinity's podracers (Balta, IPG Longtail, Anakin's) model the pod 2-14m behind the origin, so they could never be mounted. The range check is now 20m (line of sight is still required). The AT-AT player house gets `hoth` in its allowed zones.
