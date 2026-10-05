@@ -6,7 +6,10 @@ hoth_snowtrooper_patrol_imperial_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Snowtrooper Patrol",
+	faction = "imperial",
 	mobType = "npc",
+	missionBuilding = "object/tangible/lair/base/objective_banner_imperial.iff",
 	buildingType = "none"
 }
 

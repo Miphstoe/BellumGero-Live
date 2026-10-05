@@ -141,7 +141,14 @@ int MissionTerminalImplementation::handleObjectMenuSelect(CreatureObject* player
             missionGroup = "factional_rebel_destroy_missions";
     }
 
-    SpawnGroup* group = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
+    SpawnGroup* group = nullptr;
+
+    // Bellum Gero: planet-specific factional groups first (same rule as MissionManager::getRandomLairSpawn)
+    if (terminalType != "general")
+        group = CreatureTemplateManager::instance()->getDestroyMissionGroup((zone->getZoneName() + "_" + missionGroup).hashCode());
+
+    if (group == nullptr)
+        group = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
 
     // Build a newline-delimited list of "template|maxCL" to hand to Lua
     String listString;

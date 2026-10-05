@@ -6,6 +6,8 @@ hoth_wampa_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Wampa",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_bones_large.iff",
 	buildingType = "none"
 }
 

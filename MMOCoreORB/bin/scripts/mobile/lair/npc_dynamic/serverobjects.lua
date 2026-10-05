@@ -191,3 +191,5 @@ includeFile("lair/npc_dynamic/tatooine/tatooine_tusken_raider_warband_neutral_no
 includeFile("lair/npc_dynamic/tatooine/tatooine_wandering_kitonak_neutral_none.lua")
 includeFile("lair/npc_dynamic/hoth/hoth_snowtrooper_patrol_imperial_none.lua")
 includeFile("lair/npc_dynamic/hoth/hoth_rebel_snow_patrol_rebel_none.lua")
+includeFile("lair/npc_dynamic/hoth/hoth_scavenger_raider_camp_neutral_none.lua")
+includeFile("lair/npc_dynamic/hoth/hoth_imperial_salvage_team_imperial_none.lua")

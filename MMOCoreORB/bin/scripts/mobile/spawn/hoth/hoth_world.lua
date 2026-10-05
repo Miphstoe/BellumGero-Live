@@ -80,6 +80,24 @@ hoth_world = {
 			numberToSpawn = 15,
 			weighting = 12,
 			size = 25,
+		},
+		{
+			lairTemplateName = "hoth_scavenger_raider_camp_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 68,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 10,
+			size = 25,
+		},
+		{
+			lairTemplateName = "hoth_imperial_salvage_team_imperial_none",
+			spawnLimit = -1,
+			minDifficulty = 66,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 8,
+			size = 25,
 		}
 	}
 }

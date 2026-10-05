@@ -2055,7 +2055,15 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 			}
 		}
 
-		SpawnGroup* destroyMissionGroup = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
+		SpawnGroup* destroyMissionGroup = nullptr;
+
+		// Bellum Gero: a planet may define its own factional groups (e.g. hoth_factional_imperial_destroy_missions);
+		// planets without one keep the global factional groups.
+		if (faction != Factions::FACTIONNEUTRAL)
+			destroyMissionGroup = CreatureTemplateManager::instance()->getDestroyMissionGroup((zone->getZoneName() + "_" + missionGroup).hashCode());
+
+		if (destroyMissionGroup == nullptr)
+			destroyMissionGroup = CreatureTemplateManager::instance()->getDestroyMissionGroup(missionGroup.hashCode());
 
 		if (destroyMissionGroup == nullptr) {
 			return nullptr;
@@ -2173,7 +2181,12 @@ if (type == MissionTypes::DESTROY && player != nullptr) {
             String planet = zone ? zone->getZoneName() : "";
 
             Vector<String> groups;
-            if (!planet.isEmpty()) groups.add(planet + "_destroy_missions");
+            if (!planet.isEmpty()) {
+                groups.add(planet + "_destroy_missions");
+                groups.add(planet + "_factional_neutral_destroy_missions");
+                groups.add(planet + "_factional_imperial_destroy_missions");
+                groups.add(planet + "_factional_rebel_destroy_missions");
+            }
             groups.add("factional_neutral_destroy_missions");
             groups.add("factional_imperial_destroy_missions");
             groups.add("factional_rebel_destroy_missions");

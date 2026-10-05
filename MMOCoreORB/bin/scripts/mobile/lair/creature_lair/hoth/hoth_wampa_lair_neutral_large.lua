@@ -6,6 +6,7 @@ hoth_wampa_lair_neutral_large = Lair:new {
 	buildingsMedium = {"object/tangible/lair/base/poi_all_lair_bones_large.iff"},
 	buildingsHard = {"object/tangible/lair/base/poi_all_lair_bones_large.iff"},
 	buildingsVeryHard = {"object/tangible/lair/base/poi_all_lair_bones_large.iff"},
+	customName = "Wampa Den"
 }
 
 addLairTemplate("hoth_wampa_lair_neutral_large", hoth_wampa_lair_neutral_large)

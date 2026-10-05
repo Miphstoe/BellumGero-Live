@@ -6,6 +6,7 @@ hoth_ice_mynock_lair_neutral_medium = Lair:new {
 	buildingsMedium = {"object/tangible/lair/base/poi_all_lair_mound_large.iff"},
 	buildingsHard = {"object/tangible/lair/base/poi_all_lair_mound_large.iff"},
 	buildingsVeryHard = {"object/tangible/lair/base/poi_all_lair_mound_large.iff"},
+	customName = "Ice Mynock Roost"
 }
 
 addLairTemplate("hoth_ice_mynock_lair_neutral_medium", hoth_ice_mynock_lair_neutral_medium)
