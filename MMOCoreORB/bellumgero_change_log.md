@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-04 — Mount range 20m for long vehicles; AT-AT house placeable on Hoth
+
+- **Summary:** `/mount` refused silently when the rider stood more than 7m from the vehicle object's origin. Infinity's podracers (Balta, IPG Longtail, Anakin's) model the pod 2-14m behind the origin, so they could never be mounted. The range check is now 20m (line of sight is still required). The AT-AT player house gets `hoth` in its allowed zones.
+- **Files:** `src/server/zone/objects/creature/commands/MountCommand.h`, `bin/scripts/object/building/player/atat_house.lua`
+- **Notes:** C++ change: rebuild and restart. Other player structures still exclude Hoth.
+
 ### 2026-10-04 — Hoth boss vehicles: 30 Infinity vehicles as deeds and schematics
 
 - **Summary:** Ports Infinity's rideable vehicles as Hoth cave-boss loot: AB-1, XP-38, Organa, Sith, STAP, swamp speeder, RIC-920, Koro-2, Geonosian, A-1 floater, XJ-6, single-pod airspeeder, Air-2 swoop, Flare-S swoop, hoverlifter; Anakin's, Balta, IPG Longtail and FG 8T8 podracers; basilisk war droid, Grievous' wheel bike, Mustafar panning droid, enclosed military transport, Republic gunship (ground vehicle), HK-47 jetpack, hover chair, mechno-chair, senate pod and hover bird, plus the T-47 snowspeeder moved out of the decor group. Each has a control device, vehicle, deed, Artisan draft schematic (Engineering IV) and loot schematic; vehicles without an Infinity deed (gunship, HK-47 jetpack, senate pod, IPG, Balta, FG 8T8, Air-2) get a cloned deed, and the XP-38 a cloned vehicle template. Two boss-only loot groups: `hoth_vehicle_schematics` (5% per boss kill) and `hoth_vehicle_deeds` (2%), equal weights inside.
