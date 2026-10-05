@@ -623,30 +623,34 @@ hoth = {
 	-- Starports come from snapshot/hoth.ws (outpost_starport childObjects spawn the terminal,
 	-- ticket collector and shuttle). Arrival points use the Yavin IV Labor Outpost offset.
 	planetTravelPoints = {
-		{name = "Scavenger Outpost", x = 20.34, z = 0, y = -1982.24, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Imperial Outpost", x = 5947.9, z = 3, y = -388.71, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Rebel Outpost", x = 4528.65, z = 87.8, y = 1190.75, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Scavenger Outpost", x = -4009.7, z = 23.3, y = -2062.2, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Imperial Outpost", x = 3840.3, z = 29.0, y = -3062.2, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Rebel Outpost", x = -416.4, z = 27.8, y = 626.8, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Eastern Ice Fields Shuttleport", x = 5908.6, z = 3.0, y = -406.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Generator Ridge Shuttleport", x = 4506.0, z = 87.8, y = 1164.0, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
 	},
 
 	badgeAreas = {
 	},
 
 	navAreas = {
-		{"hoth_scavenger_outpost", 0, -2000, 150},
-		{"hoth_imperial_outpost", 5927, -406, 150},
-		{"hoth_rebel_outpost", 4525, 1164, 150},
+		{"hoth_scavenger_outpost", -4030, -2080, 150},
+		{"hoth_imperial_outpost", 3820, -3080, 150},
+		{"hoth_rebel_outpost", -420, 600, 150},
 	},
 
 	planetObjects = {
-		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -16.0, z = 0.0, y = -2014.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -13.0, z = 0.0, y = -2014.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -10.0, z = 0.0, y = -2014.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_mission_imperial.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5911.6, z = 3.0, y = -420.5, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5914.6, z = 3.0, y = -420.5, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5917.6, z = 3.0, y = -420.5, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_mission_rebel.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4509.0, z = 87.8, y = 1150.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4512.0, z = 87.8, y = 1150.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4515.0, z = 87.8, y = 1150.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4046.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4043.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4040.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_imperial.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3804.0, z = 29.0, y = -3094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3807.0, z = 29.0, y = -3094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3810.0, z = 29.0, y = -3094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_rebel.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -436.0, z = 27.8, y = 586.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -433.0, z = 27.8, y = 586.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -430.0, z = 27.8, y = 586.0, parentid = 0},
+		{templateFile = "object/building/corellia/shuttleport_corellia.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5927.6, z = 3.0, y = -406.5, parentid = 0},
+		{templateFile = "object/building/corellia/shuttleport_corellia.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4525.0, z = 87.8, y = 1164.0, parentid = 0},
 	}
 }
 
