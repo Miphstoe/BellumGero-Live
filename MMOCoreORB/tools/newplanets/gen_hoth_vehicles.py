@@ -125,6 +125,20 @@ def object_name(local_iff):
 
 
 # ---------------------------------------------------------------- client
+def copy_key(c, stf, key, tmp, tables):
+    """Copy string key from Infinity's <stf>.stf into (an overlay copy of) BG's if BG lacks it. Missing tables are skipped."""
+    if stf not in tables:
+        try:
+            bg_t = stf_tool.read(c.bg_file(f'string/en/{stf}.stf'))
+            inf_d = stf_tool.as_dict(stf_tool.read(c.inf_file(f'string/en/{stf}.stf', tmp)))
+        except KeyError:
+            return
+        tables[stf] = (bg_t, stf_tool.as_dict(bg_t), inf_d)
+    bg_t, bg_d, inf_d = tables[stf]
+    if key not in bg_d and key in inf_d:
+        stf_tool.add(bg_t, key, inf_d[key]); bg_d[key] = inf_d[key]
+
+
 def stage_recursive(c, rels, inf_paths, bg_paths):
     """Stage rels from Infinity (if BG lacks them) and everything they reference, to a fixpoint. Returns staged list."""
     staged, queue, seen = [], list(rels), set()
@@ -162,10 +176,7 @@ def client():
     roots, poses_needed = [], set()
     mount = {name: dt_tool.read(c.inf_file(f'datatables/mount/{name}.iff', tmp)) for name in MOUNT_TABLES}
     bgmount = {name: dt_tool.read(c.bg_file(f'datatables/mount/{name}.iff')) for name in MOUNT_TABLES}
-    monster_inf = stf_tool.as_dict(stf_tool.read(c.inf_file('string/en/monster_name.stf', tmp)))
-    detail_inf = stf_tool.as_dict(stf_tool.read(c.inf_file('string/en/monster_detail.stf', tmp)))
-    mn_t = stf_tool.read(c.bg_file('string/en/monster_name.stf')); mn = stf_tool.as_dict(mn_t)
-    md_t = stf_tool.read(c.bg_file('string/en/monster_detail.stf')); md = stf_tool.as_dict(md_t)
+    tables = {}  # stf name -> (bg table, bg dict, infinity dict); written out at the end
     snow_deed = c.inf_file(P[2] + 'shared_snowspeeder_deed.iff', tmp)
     snow_draft = c.inf_file('object/draft_schematic/vehicle/civilian/shared_snowspeeder.iff', tmp)
     snow_schem = c.inf_file('object/tangible/loot/loot_schematic/shared_loot_schem_snowspeeder.iff', tmp)
@@ -187,12 +198,25 @@ def client():
             roots.append(deed_client(v))
         else:
             iff_clone.clone(snow_deed, c.out(deed_client(v)), {'objectName': oname, 'detailedDescription': oname.replace('monster_name', 'monster_detail'), 'lookAtText': oname})
-        # names
-        stf, k = oname.split(':', 1)
-        if stf == 'monster_name' and k not in mn and k in monster_inf:
-            stf_tool.add(mn_t, k, monster_inf[k]); mn[k] = monster_inf[k]
-        if stf == 'monster_name' and k not in md and k in detail_inf:
-            stf_tool.add(md_t, k, detail_inf[k]); md[k] = detail_inf[k]
+        # names: copy any string keys the vehicle or its deed uses that BG's tables lack
+        deed_local = c.inf_file(deed_client(v), tmp) if deed else c.out(deed_client(v))
+        for ref in (oname, object_name(deed_local) or ''):
+            if ':' not in ref:
+                continue
+            stf, k = ref.split(':', 1)
+            wanted = [(stf, k)]
+            if '_name' in stf:
+                wanted.append((stf.replace('_name', '_detail'), k))
+            elif stf.endswith('_n'):
+                wanted.append((stf[:-2] + '_d', k[:-2] + '_d' if k.endswith('_n') else k))
+            elif stf == 'pet_deed':
+                wanted.append(('pet_deed', k))
+            for s, kk in wanted:
+                copy_key(c, s, kk, tmp, tables)
+            # a deed whose name key exists in neither client (e.g. Infinity's Organa deed) is renamed after its vehicle
+            if ref != oname and deed and stf in tables and k not in tables[stf][1]:
+                iff_clone.clone(deed_local, c.out(deed_client(v)), {'objectName': oname, 'detailedDescription': oname.replace('monster_name', 'monster_detail'), 'lookAtText': oname})
+                print(f'  {key}: deed renamed to {oname} (no string for {ref})')
         # mount rows
         for tname, t in mount.items():
             bg = bgmount[tname]; have = {tuple(r) for r in bg['rows']}
@@ -211,7 +235,8 @@ def client():
             import shutil; shutil.copyfile(snow_schem, c.out(schem_client(v)))
     for tname, t in bgmount.items():
         dt_tool.write(t, c.out(f'datatables/mount/{tname}.iff'))
-    stf_tool.write(mn_t, c.out('string/en/monster_name.stf')); stf_tool.write(md_t, c.out('string/en/monster_detail.stf'))
+    for stf, (bg_t, _, _) in tables.items():
+        stf_tool.write(bg_t, c.out(f'string/en/{stf}.stf'))
     staged = stage_recursive(c, roots, inf_paths, bg_paths)
     print(f'vehicles: {len(VEHICLES)} vehicles, {len(staged)} files staged this run, poses: {sorted(poses_needed)}')
     return sorted(p for p in poses_needed if p)
