@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-05 — Hoth NPCs tougher
+
+- **Summary:** Snowtroopers / Rebel snow soldiers 70 -> 76 (13.5-16.5k HAM), sergeants 78 -> 85 (15.5-18.5k HAM), scavenger raiders 68 -> 74, Imperial salvage techs 66 -> 72, probe droid 68 -> 74, damage and accuracy ~+15 %. Friendly scavengers unchanged. Spawn and mission difficulties follow.
+- **Files:** `bin/scripts/mobile/hoth/*`, `bin/scripts/mobile/spawn/hoth/hoth_world.lua`, `bin/scripts/mobile/spawn/destroy_mission/hoth_*`
+- **Notes:** `NPC_TUNE` in `tools/newplanets/gen_hoth_mobiles.py`.
+
 ### 2026-10-05 — Hoth creatures tougher (wampas on par with the top rancors)
 
 - **Summary:** Player feedback: wampas were too easy. Wampa 80 -> 90 (16-20k HAM), elder wampa 88 -> 98 (22-27k HAM, armor 2), matching the enraged / ancient bull rancors. Tauntauns and ice mynocks +5-6 levels (~10 %). Cave bosses raised to 100-115 (40-64k HAM) so they stay above the elder wampas guarding them. Spawn and mission difficulties follow.

@@ -2,9 +2,9 @@
 hoth_factional_rebel_destroy_missions = {
 	minLevelCeiling = 70,
 	lairSpawns = {
-		{ lairTemplateName = "hoth_snowtrooper_patrol_imperial_none", minDifficulty = 70, maxDifficulty = 74, size = 25 },
-		{ lairTemplateName = "hoth_imperial_salvage_team_imperial_none", minDifficulty = 66, maxDifficulty = 70, size = 25 },
-		{ lairTemplateName = "hoth_probe_droid_neutral_none", minDifficulty = 68, maxDifficulty = 72, size = 25 }
+		{ lairTemplateName = "hoth_snowtrooper_patrol_imperial_none", minDifficulty = 76, maxDifficulty = 80, size = 25 },
+		{ lairTemplateName = "hoth_imperial_salvage_team_imperial_none", minDifficulty = 72, maxDifficulty = 76, size = 25 },
+		{ lairTemplateName = "hoth_probe_droid_neutral_none", minDifficulty = 74, maxDifficulty = 78, size = 25 }
 	}
 }
 

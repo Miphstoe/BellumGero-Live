@@ -6,6 +6,7 @@ only appended when missing. Edit the tables below and re-run to rebalance.
 """
 import math
 import os
+import re
 
 ROOT = r'\\wsl.localhost\Debian\home\EnderWookie\workspace\BellumGero-Hoth\MMOCoreORB\bin\scripts'
 MOB = os.path.join(ROOT, 'mobile')
@@ -378,6 +379,31 @@ NPCS = [
 for _n in NPCS:
     _n['extra'] = _n.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
 
+# 2026-10-05: NPCs up a bit too (~+6-7 levels, ~+15 % HAM/damage), following the creature pass in TUNE.
+NPC_TUNE = {
+    'hoth_snowtrooper': dict(level=76, hit=0.76, dmg=(540, 760), ham=(13500, 16500), xp=7300),
+    'hoth_snowtrooper_sergeant': dict(level=85, hit=0.84, dmg=(610, 870), ham=(15500, 18500), xp=8160),
+    'hoth_rebel_snow_soldier': dict(level=76, hit=0.76, dmg=(540, 760), ham=(13500, 16500), xp=7300),
+    'hoth_rebel_snow_sergeant': dict(level=85, hit=0.84, dmg=(610, 870), ham=(15500, 18500), xp=8160),
+    # text templates (restat() below)
+    'hoth_probe_droid': dict(level=74, hit=0.72, dmg=(520, 720), ham=(12500, 15000), xp=7100),
+    'hoth_scavenger_raider': dict(level=74, hit=0.7, dmg=(520, 720), ham=(13000, 15500), xp=7100),
+    'hoth_imperial_salvage_tech': dict(level=72, hit=0.66, dmg=(500, 690), ham=(12500, 15000), xp=6900),
+}
+for _n in NPCS:
+    _n.update(NPC_TUNE.get(_n['key'], {}))
+
+
+def restat(text, key):
+    """Rewrite the stat lines of a text mobile template from NPC_TUNE."""
+    t = NPC_TUNE[key]
+    for field, value in (('level', t['level']), ('chanceHit', t['hit']), ('damageMin', t['dmg'][0]),
+                         ('damageMax', t['dmg'][1]), ('baseXp', t['xp']), ('baseHAM', t['ham'][0]),
+                         ('baseHAMmax', t['ham'][1])):
+        text, n = re.subn(rf'(\n\t{field} = )[0-9.]+,', rf'\g<1>{value},', text, count=1)
+        assert n == 1, (key, field)
+    return text
+
 
 def npc_lua(n):
     tm = ',\n\t\t'.join('"%s"' % t for t in n['tmpls'])
@@ -531,6 +557,9 @@ SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
 
 # Plain scavengers (derived templates above already replaced their own lootGroups block).
 SCAVENGER = SCAVENGER.replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_art_rare', ART_TRICKLE)[1:] + '\n\t},')
+RAIDER = restat(RAIDER, 'hoth_scavenger_raider')
+SALVAGE = restat(SALVAGE, 'hoth_imperial_salvage_tech')
+PROBE = restat(PROBE, 'hoth_probe_droid')
 
 # --------------------------------------------------------------------------
 # Lairs: (key, folder, mobiles, buildingType/lair building, extra)
@@ -599,13 +628,13 @@ SPAWN = [  # (lair, minDifficulty, weighting)
     ('hoth_tauntaun_lair_neutral_medium', 65, 40),
     ('hoth_ice_mynock_pack_neutral_none', 67, 45),
     ('hoth_ice_mynock_lair_neutral_medium', 67, 35),
-    ('hoth_probe_droid_neutral_none', 68, 25),
+    ('hoth_probe_droid_neutral_none', 74, 25),
     ('hoth_wampa_neutral_none', 90, 30),
     ('hoth_wampa_lair_neutral_large', 90, 25),
-    ('hoth_snowtrooper_patrol_imperial_none', 70, 12),
-    ('hoth_rebel_snow_patrol_rebel_none', 70, 12),
-    ('hoth_scavenger_raider_camp_neutral_none', 68, 10),
-    ('hoth_imperial_salvage_team_imperial_none', 66, 8),
+    ('hoth_snowtrooper_patrol_imperial_none', 76, 12),
+    ('hoth_rebel_snow_patrol_rebel_none', 76, 12),
+    ('hoth_scavenger_raider_camp_neutral_none', 74, 10),
+    ('hoth_imperial_salvage_team_imperial_none', 72, 8),
 ]
 
 # Mission terminals: (lair, difficulty = level of its weakest mobile). Every non-boss Hoth creature and attackable NPC
@@ -615,9 +644,9 @@ SPAWN = [  # (lair, minDifficulty, weighting)
 DESTROY = [
     ('hoth_tauntaun_herd_neutral_none', 65), ('hoth_tauntaun_lair_neutral_medium', 65),
     ('hoth_ice_mynock_pack_neutral_none', 67), ('hoth_ice_mynock_lair_neutral_medium', 67),
-    ('hoth_probe_droid_neutral_none', 68), ('hoth_scavenger_raider_camp_neutral_none', 68),
-    ('hoth_imperial_salvage_team_imperial_none', 66),
-    ('hoth_snowtrooper_patrol_imperial_none', 70), ('hoth_rebel_snow_patrol_rebel_none', 70),
+    ('hoth_probe_droid_neutral_none', 74), ('hoth_scavenger_raider_camp_neutral_none', 74),
+    ('hoth_imperial_salvage_team_imperial_none', 72),
+    ('hoth_snowtrooper_patrol_imperial_none', 76), ('hoth_rebel_snow_patrol_rebel_none', 76),
     ('hoth_wampa_neutral_none', 90), ('hoth_wampa_lair_neutral_large', 90),
 ]
 FACTIONAL = {  # terminal faction -> enemy Hoth groups (imperial terminal hunts rebels and vice versa)

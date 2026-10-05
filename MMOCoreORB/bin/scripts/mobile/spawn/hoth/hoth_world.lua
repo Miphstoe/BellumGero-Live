@@ -39,7 +39,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_probe_droid_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 68,
+			minDifficulty = 74,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 25,
@@ -66,7 +66,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_snowtrooper_patrol_imperial_none",
 			spawnLimit = -1,
-			minDifficulty = 70,
+			minDifficulty = 76,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 12,
@@ -75,7 +75,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_rebel_snow_patrol_rebel_none",
 			spawnLimit = -1,
-			minDifficulty = 70,
+			minDifficulty = 76,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 12,
@@ -84,7 +84,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_scavenger_raider_camp_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 68,
+			minDifficulty = 74,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 10,
@@ -93,7 +93,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_imperial_salvage_team_imperial_none",
 			spawnLimit = -1,
-			minDifficulty = 66,
+			minDifficulty = 72,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 8,

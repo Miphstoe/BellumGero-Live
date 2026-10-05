@@ -2,7 +2,7 @@
 hoth_factional_imperial_destroy_missions = {
 	minLevelCeiling = 70,
 	lairSpawns = {
-		{ lairTemplateName = "hoth_rebel_snow_patrol_rebel_none", minDifficulty = 70, maxDifficulty = 74, size = 25 }
+		{ lairTemplateName = "hoth_rebel_snow_patrol_rebel_none", minDifficulty = 76, maxDifficulty = 80, size = 25 }
 	}
 }
 

@@ -6,11 +6,11 @@ hoth_destroy_missions = {
 		{ lairTemplateName = "hoth_tauntaun_lair_neutral_medium", minDifficulty = 65, maxDifficulty = 69, size = 25 },
 		{ lairTemplateName = "hoth_ice_mynock_pack_neutral_none", minDifficulty = 67, maxDifficulty = 71, size = 25 },
 		{ lairTemplateName = "hoth_ice_mynock_lair_neutral_medium", minDifficulty = 67, maxDifficulty = 71, size = 25 },
-		{ lairTemplateName = "hoth_probe_droid_neutral_none", minDifficulty = 68, maxDifficulty = 72, size = 25 },
-		{ lairTemplateName = "hoth_scavenger_raider_camp_neutral_none", minDifficulty = 68, maxDifficulty = 72, size = 25 },
-		{ lairTemplateName = "hoth_imperial_salvage_team_imperial_none", minDifficulty = 66, maxDifficulty = 70, size = 25 },
-		{ lairTemplateName = "hoth_snowtrooper_patrol_imperial_none", minDifficulty = 70, maxDifficulty = 74, size = 25 },
-		{ lairTemplateName = "hoth_rebel_snow_patrol_rebel_none", minDifficulty = 70, maxDifficulty = 74, size = 25 },
+		{ lairTemplateName = "hoth_probe_droid_neutral_none", minDifficulty = 74, maxDifficulty = 78, size = 25 },
+		{ lairTemplateName = "hoth_scavenger_raider_camp_neutral_none", minDifficulty = 74, maxDifficulty = 78, size = 25 },
+		{ lairTemplateName = "hoth_imperial_salvage_team_imperial_none", minDifficulty = 72, maxDifficulty = 76, size = 25 },
+		{ lairTemplateName = "hoth_snowtrooper_patrol_imperial_none", minDifficulty = 76, maxDifficulty = 80, size = 25 },
+		{ lairTemplateName = "hoth_rebel_snow_patrol_rebel_none", minDifficulty = 76, maxDifficulty = 80, size = 25 },
 		{ lairTemplateName = "hoth_wampa_neutral_none", minDifficulty = 90, maxDifficulty = 94, size = 25 },
 		{ lairTemplateName = "hoth_wampa_lair_neutral_large", minDifficulty = 90, maxDifficulty = 94, size = 25 }
 	}
