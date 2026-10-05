@@ -52,6 +52,29 @@ String localizedSkillName(const String& skillName) {
 	return localized;
 }
 
+
+bool hasImageDesignStationTemporarySkillState(CreatureObject* creature) {
+	return creature != nullptr &&
+		!creature->getLuaStringData(
+			"fmidstation_temp_id_skills").isEmpty();
+}
+
+bool rejectImageDesignStationPermanentSkillChange(
+	CreatureObject* creature,
+	bool notifyPlayer = true) {
+
+	if (!hasImageDesignStationTemporarySkillState(creature))
+		return false;
+
+	if (notifyPlayer) {
+		creature->sendSystemMessage(
+			"You cannot train or surrender skills while an "
+			"Image Designer Station session is active.");
+	}
+
+	return true;
+}
+
 bool learnedSkillListsRequirement(const Skill* learned, const String& requiredName) {
 	if (learned == nullptr || requiredName.isEmpty())
 		return false;
@@ -819,6 +842,9 @@ bool SkillManager::removeTemporarySkillState(
 }
 
 bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired) {
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return false;
+
 	auto skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr)
@@ -1065,6 +1091,9 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	if (creature == nullptr)
 		return false;
 
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return false;
+
 	String resolvedName = normalizeSurrenderSkillName(skillName);
 	Skill* skill = skillMap.get(resolvedName.hashCode());
 
@@ -1306,6 +1335,12 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 }
 
 void SkillManager::surrenderAllSkills(CreatureObject* creature, bool notifyClient, bool removeForceProgression, bool removePilot) {
+	if (creature == nullptr)
+		return;
+
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return;
+
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	const SkillList* skillList = creature->getSkillList();
@@ -1462,6 +1497,9 @@ void SkillManager::updateXpLimits(PlayerObject* ghost) {
 }
 
 bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired, bool regrant) {
+	if (rejectImageDesignStationPermanentSkillChange(creature, false))
+		return false;
+
 	auto skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr)
@@ -1634,6 +1672,9 @@ bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject
 
 bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool regrant) {
 	if (creature == nullptr)
+		return false;
+
+	if (rejectImageDesignStationPermanentSkillChange(creature, false))
 		return false;
 
 	String resolvedName = normalizeSurrenderSkillName(skillName);

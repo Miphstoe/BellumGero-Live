@@ -11,13 +11,16 @@ class ImageDesignStationStatMigrationObserver extends Observer {
 	CreatureObject player;
 
 	protected transient unsigned long stationObjectId;
+	protected transient string migrationToken;
 
 	public ImageDesignStationStatMigrationObserver(
 		CreatureObject creature,
-		unsigned long stationId) {
+		unsigned long stationId,
+		string token) {
 
 		player = creature;
 		stationObjectId = stationId;
+		migrationToken = token;
 		setObserverType(ObserverType.IMAGEDESIGNPOSITION);
 	}
 

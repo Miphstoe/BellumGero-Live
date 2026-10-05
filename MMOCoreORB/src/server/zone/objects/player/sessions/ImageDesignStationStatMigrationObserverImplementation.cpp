@@ -21,8 +21,14 @@ int ImageDesignStationStatMigrationObserverImplementation::notifyObserverEvent(
 		creature->getLuaStringData(
 			"fmidstation_stat_migration_station_id");
 
+	String activeToken =
+		creature->getLuaStringData(
+			"fmidstation_stat_migration_token");
+
 	if (stationMarker.isEmpty() ||
-			stationMarker != String::valueOf(stationObjectId)) {
+			stationMarker != String::valueOf(stationObjectId) ||
+			activeToken.isEmpty() ||
+			activeToken != migrationToken) {
 		return 1;
 	}
 
@@ -30,7 +36,8 @@ int ImageDesignStationStatMigrationObserverImplementation::notifyObserverEvent(
 		ImageDesignStationMenuComponent::cancelStationStatMigration(
 			creature,
 			stationObjectId,
-			false);
+			false,
+			migrationToken);
 
 		return 1;
 	}
@@ -55,7 +62,8 @@ int ImageDesignStationStatMigrationObserverImplementation::notifyObserverEvent(
 			ImageDesignStationMenuComponent::cancelStationStatMigration(
 				creature,
 				stationObjectId,
-				true);
+				true,
+				migrationToken);
 
 			return 1;
 		}

@@ -112,6 +112,8 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 			"fmidstation_stat_migration_station_id");
 		deleteLuaStringData(
 			"fmidstation_stat_migration_ready");
+		deleteLuaStringData(
+			"fmidstation_stat_migration_token");
 	}
 
 	// FMIDStation: recover exact temporary ID skill-box state after an

@@ -36,7 +36,8 @@ public:
 	static void cancelStationStatMigration(
 		CreatureObject* player,
 		uint64 stationObjectId,
-		bool notifyPlayer);
+		bool notifyPlayer,
+		const String& expectedToken = "");
 
 private:
 	static bool isPlacementValid(

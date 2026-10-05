@@ -10,7 +10,6 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sessions/ImageDesignStationSession.h"
 #include "server/zone/objects/player/sessions/ImageDesignStationObserver.h"
-#include "server/zone/objects/player/sessions/MigrateStatsSession.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/scene/components/DataObjectComponentReference.h"
 #include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationDataComponent.h"
@@ -417,22 +416,6 @@ void ImageDesignStationSessionImplementation::updateStationImageDesign(
 		commitChanges = doStationPayment();
 
 	if (commitChanges) {
-		bool statMig =
-			imageDesignData.isStatMigrationRequested();
-
-		if (statMig) {
-			ManagedReference<Facade*> facade =
-				customer->getActiveSession(
-					SessionFacadeType::MIGRATESTATS);
-
-			ManagedReference<MigrateStatsSession*> session =
-				dynamic_cast<MigrateStatsSession*>(
-					facade.get());
-
-			if (session != nullptr)
-				session->migrateStats();
-		}
-
 		VectorMap<String, float>* bodyAttributes =
 			imageDesignData.getBodyAttributesMap();
 

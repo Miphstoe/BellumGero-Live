@@ -7,12 +7,16 @@
 class ImageDesignStationStatMigrationTimeoutTask : public Task {
 	ManagedWeakReference<CreatureObject*> player;
 	uint64 stationObjectId;
+	String migrationToken;
 
 public:
 	ImageDesignStationStatMigrationTimeoutTask(
 		CreatureObject* creature,
-		uint64 stationId)
-		: player(creature), stationObjectId(stationId) {
+		uint64 stationId,
+		const String& token)
+		: player(creature),
+		  stationObjectId(stationId),
+		  migrationToken(token) {
 	}
 
 	void run() override {
@@ -26,15 +30,22 @@ public:
 			creature->getLuaStringData(
 				"fmidstation_stat_migration_station_id");
 
+		String activeToken =
+			creature->getLuaStringData(
+				"fmidstation_stat_migration_token");
+
 		if (marker.isEmpty() ||
-				marker != String::valueOf(stationObjectId)) {
+				marker != String::valueOf(stationObjectId) ||
+				activeToken.isEmpty() ||
+				activeToken != migrationToken) {
 			return;
 		}
 
 		ImageDesignStationMenuComponent::cancelStationStatMigration(
 			creature,
 			stationObjectId,
-			true);
+			true,
+			migrationToken);
 	}
 };
 

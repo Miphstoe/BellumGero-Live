@@ -13,10 +13,9 @@
 #include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
-#include "server/zone/managers/player/creation/PlayerCreationManager.h"
-#include "server/zone/packets/player/StatMigrationTargetsMessage.h"
 #include "server/zone/managers/credit/CreditManager.h"
 #include "server/zone/objects/creature/credits/CreditObject.h"
+#include "system/lang/Time.h"
 
 namespace {
 const String kMasterImageDesignerSkill = "social_imagedesigner_master";
@@ -155,7 +154,9 @@ void ImageDesignStationMenuComponent::fillObjectMenuResponse(
 			"fmidstation_stat_migration_station_id") ==
 			String::valueOf(sceneObject->getObjectID()) &&
 			player->getLuaStringData(
-				"fmidstation_stat_migration_ready") == "1") {
+				"fmidstation_stat_migration_ready") == "1" &&
+			!player->getLuaStringData(
+				"fmidstation_stat_migration_token").isEmpty()) {
 		menuResponse->addRadialMenuItemToRadialID(
 			MENU_ROOT, MENU_APPLY_STAT_MIGRATION, 3,
 			"Apply Stat Migration (10,000 credits)");
@@ -315,7 +316,8 @@ void ImageDesignStationMenuComponent::startImageDesign(
 void ImageDesignStationMenuComponent::cancelStationStatMigration(
 	CreatureObject* player,
 	uint64 stationObjectId,
-	bool notifyPlayer) {
+	bool notifyPlayer,
+	const String& expectedToken) {
 
 	if (player == nullptr)
 		return;
@@ -329,6 +331,15 @@ void ImageDesignStationMenuComponent::cancelStationStatMigration(
 
 	if (stationObjectId != 0 &&
 			marker != String::valueOf(stationObjectId)) {
+		return;
+	}
+
+	String activeToken =
+		player->getLuaStringData(
+			"fmidstation_stat_migration_token");
+
+	if (!expectedToken.isEmpty() &&
+			activeToken != expectedToken) {
 		return;
 	}
 
@@ -348,6 +359,9 @@ void ImageDesignStationMenuComponent::cancelStationStatMigration(
 
 	player->deleteLuaStringData(
 		"fmidstation_stat_migration_ready");
+
+	player->deleteLuaStringData(
+		"fmidstation_stat_migration_token");
 
 	if (notifyPlayer) {
 		player->sendSystemMessage(
@@ -469,9 +483,19 @@ void ImageDesignStationMenuComponent::startStatMigration(
 	if (existingSession != nullptr)
 		existingSession->cancelSession();
 
+	Time tokenTime;
+	String migrationToken =
+		String::valueOf(tokenTime.getMiliTime()) + "-" +
+		String::valueOf(player->getObjectID()) + "-" +
+		String::valueOf(station->getObjectID());
+
 	player->setLuaStringData(
 		"fmidstation_stat_migration_station_id",
 		String::valueOf(station->getObjectID()));
+
+	player->setLuaStringData(
+		"fmidstation_stat_migration_token",
+		migrationToken);
 
 	player->deleteLuaStringData(
 		"fmidstation_stat_migration_ready");
@@ -479,7 +503,8 @@ void ImageDesignStationMenuComponent::startStatMigration(
 	ManagedReference<ImageDesignStationStatMigrationObserver*> observer =
 		new ImageDesignStationStatMigrationObserver(
 			player,
-			station->getObjectID());
+			station->getObjectID(),
+			migrationToken);
 
 	player->registerObserver(
 		ObserverEventType::POSITIONCHANGED,
@@ -492,7 +517,8 @@ void ImageDesignStationMenuComponent::startStatMigration(
 	Reference<ImageDesignStationStatMigrationTimeoutTask*> timeoutTask =
 		new ImageDesignStationStatMigrationTimeoutTask(
 			player,
-			station->getObjectID());
+			station->getObjectID(),
+			migrationToken);
 
 	timeoutTask->schedule(15 * 60 * 1000);
 
@@ -542,6 +568,19 @@ void ImageDesignStationMenuComponent::applyStatMigration(
 		return;
 	}
 
+	if (player->getLuaStringData(
+			"fmidstation_stat_migration_token").isEmpty()) {
+		cancelStationStatMigration(
+			player,
+			station->getObjectID(),
+			false);
+
+		player->sendSystemMessage(
+			"This Stat Migration session is no longer valid. "
+			"Please start it again from the station.");
+		return;
+	}
+
 	ManagedReference<Facade*> facade =
 		player->getActiveSession(
 			SessionFacadeType::MIGRATESTATS);
@@ -554,6 +593,8 @@ void ImageDesignStationMenuComponent::applyStatMigration(
 			"fmidstation_stat_migration_station_id");
 		player->deleteLuaStringData(
 			"fmidstation_stat_migration_ready");
+		player->deleteLuaStringData(
+			"fmidstation_stat_migration_token");
 
 		player->sendSystemMessage(
 			"There is no pending Stat Migration to apply.");
@@ -575,6 +616,8 @@ void ImageDesignStationMenuComponent::applyStatMigration(
 		"fmidstation_stat_migration_station_id");
 	player->deleteLuaStringData(
 		"fmidstation_stat_migration_ready");
+	player->deleteLuaStringData(
+		"fmidstation_stat_migration_token");
 
 	player->sendSystemMessage(
 		"Stat Migration completed. "
