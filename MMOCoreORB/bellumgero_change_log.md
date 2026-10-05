@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-05 — Glacial Rancor tougher
+
+- **Summary:** Rimeclaw, the Glacial Rancor: level 350 -> 400, HAM 1.0-1.5M -> 1.4-2.0M, damage 935-1580 -> 1050-1800, accuracy 92.5 -> 95, resists +5 to +10. Between Acklay (350) and Grak (525).
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`
+- **Notes:** `tools/newplanets/gen_hoth_rancor.py`.
+
 ### 2026-10-05 — Hoth NPCs tougher
 
 - **Summary:** Snowtroopers / Rebel snow soldiers 70 -> 76 (13.5-16.5k HAM), sergeants 78 -> 85 (15.5-18.5k HAM), scavenger raiders 68 -> 74, Imperial salvage techs 66 -> 72, probe droid 68 -> 74, damage and accuracy ~+15 %. Friendly scavengers unchanged. Spawn and mission difficulties follow.
