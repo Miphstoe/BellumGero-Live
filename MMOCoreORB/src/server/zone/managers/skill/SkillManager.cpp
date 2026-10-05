@@ -653,6 +653,171 @@ void SkillManager::removeDroidCommands(PlayerObject* ghost) {
 	return true;
 }*/
 
+bool SkillManager::grantTemporarySkillState(
+	const String& skillName,
+	CreatureObject* creature,
+	bool notifyClient) {
+
+	if (creature == nullptr)
+		return false;
+
+	auto skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr)
+		return false;
+
+	Locker locker(creature);
+
+	if (creature->hasSkill(skill->getSkillName()))
+		return true;
+
+	ManagedReference<PlayerObject*> ghost =
+		creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return false;
+
+	creature->addSkill(skill, notifyClient);
+
+	auto skillModifiers = skill->getSkillModifiers();
+
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+
+			creature->addSkillMod(
+				SkillModManager::SKILLBOX,
+				entry->getKey(),
+				entry->getValue(),
+				notifyClient);
+		}
+	}
+
+	auto abilityNames = skill->getAbilities();
+
+	if (abilityNames != nullptr && abilityNames->size() > 0)
+		addAbilities(ghost, *abilityNames, notifyClient);
+
+	auto schematicsGranted = skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr && schematicsGranted->size() > 0)
+		SchematicMap::instance()->addSchematics(
+			ghost, *schematicsGranted, notifyClient);
+
+	updateXpLimits(ghost);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+
+	return true;
+}
+
+bool SkillManager::removeTemporarySkillState(
+	const String& skillName,
+	CreatureObject* creature,
+	bool notifyClient) {
+
+	if (creature == nullptr)
+		return false;
+
+	auto skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr)
+		return false;
+
+	Locker locker(creature);
+
+	if (!creature->hasSkill(skill->getSkillName()))
+		return true;
+
+	ManagedReference<PlayerObject*> ghost =
+		creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return false;
+
+	creature->removeSkill(skill, notifyClient);
+
+	auto skillModifiers = skill->getSkillModifiers();
+
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+
+			creature->removeSkillMod(
+				SkillModManager::SKILLBOX,
+				entry->getKey(),
+				entry->getValue(),
+				notifyClient);
+		}
+	}
+
+	auto skillAbilities = skill->getAbilities();
+
+	if (skillAbilities != nullptr && skillAbilities->size() > 0) {
+		SortedVector<String> abilitiesLost;
+
+		for (int i = 0; i < skillAbilities->size(); ++i)
+			abilitiesLost.put(skillAbilities->get(i));
+
+		const SkillList* remainingSkills =
+			creature->getSkillList();
+
+		if (remainingSkills != nullptr) {
+			for (int i = 0;
+					i < remainingSkills->size() &&
+					abilitiesLost.size() > 0;
+					++i) {
+
+				Skill* remainingSkill =
+					remainingSkills->get(i);
+
+				if (remainingSkill == nullptr)
+					continue;
+
+				auto remainingAbilities =
+					remainingSkill->getAbilities();
+
+				if (remainingAbilities == nullptr)
+					continue;
+
+				for (int j = 0;
+						j < remainingAbilities->size();
+						++j) {
+
+					if (abilitiesLost.contains(
+							remainingAbilities->get(j))) {
+						abilitiesLost.drop(
+							remainingAbilities->get(j));
+					}
+				}
+			}
+		}
+
+		if (abilitiesLost.size() > 0)
+			removeAbilities(
+				ghost,
+				abilitiesLost,
+				notifyClient);
+	}
+
+	auto schematicsGranted =
+		skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr &&
+			schematicsGranted->size() > 0) {
+		SchematicMap::instance()->removeSchematics(
+			ghost,
+			*schematicsGranted,
+			notifyClient);
+	}
+
+	updateXpLimits(ghost);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+
+	return true;
+}
+
 bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired) {
 	auto skill = skillMap.get(skillName.hashCode());
 

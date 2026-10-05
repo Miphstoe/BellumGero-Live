@@ -10,6 +10,7 @@
 
 #include "ObjectControllerMessageCallback.h"
 #include "server/zone/objects/player/sessions/ImageDesignSession.h"
+#include "server/zone/objects/player/sessions/ImageDesignStationSession.h"
 
 class ImageDesignRejectMessageCallback : public MessageCallback {
 	uint64 designer;
@@ -43,8 +44,20 @@ public:
 		if (player == nullptr)
 			return;
 
-		ManagedReference<Facade*> facade = player->getActiveSession(SessionFacadeType::IMAGEDESIGN);
-		ManagedReference<ImageDesignSession*> session = dynamic_cast<ImageDesignSession*>(facade.get());
+		ManagedReference<Facade*> facade =
+			player->getActiveSession(SessionFacadeType::IMAGEDESIGN);
+
+		ManagedReference<ImageDesignStationSession*> stationSession =
+			dynamic_cast<ImageDesignStationSession*>(facade.get());
+
+		if (stationSession != nullptr) {
+			stationSession->cancelStationImageDesign(
+				designer, target, tent, type, data);
+			return;
+		}
+
+		ManagedReference<ImageDesignSession*> session =
+			dynamic_cast<ImageDesignSession*>(facade.get());
 
 		if (session == nullptr)
 			return;
