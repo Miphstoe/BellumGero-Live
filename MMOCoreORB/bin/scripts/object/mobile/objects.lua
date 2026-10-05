@@ -220653,3 +220653,9 @@ object_mobile_shared_rebel_snow_f_01 = SharedCreatureObjectTemplate:new {
 }
 
 ObjectTemplates:addClientTemplate(object_mobile_shared_rebel_snow_f_01, "object/mobile/shared_rebel_snow_f_01.iff")
+
+object_mobile_shared_exotic_rancor = SharedCreatureObjectTemplate:new {
+	clientTemplateFileName = "object/mobile/shared_exotic_rancor.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_mobile_shared_exotic_rancor, "object/mobile/shared_exotic_rancor.iff")

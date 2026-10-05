@@ -431,6 +431,7 @@ local function generateLootForPlayer(pPlayer, lootGroups, bossName, bossLevel)
     end
   end
 
+  if giveHothBossBonusLoot then giveHothBossBonusLoot(pPlayer, pInventory, lootLevel) end -- Hoth boss loot (gen_boss_loot.py)
   -- Build reward message
   if itemsSuccessful > 0 or creditsGiven then
     local rewardMsg = "\\#00FF00You received from " .. (bossName or "the World Boss") .. ": "

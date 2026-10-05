@@ -57,6 +57,7 @@ local function giveOneLootItem(pPlayer, bossLevel)
 
 	local itemOID = nil
 	pcall(function() itemOID = createLoot(pInventory, chosenGroup, bossLevel, true) end)
+	if giveHothBossBonusLoot then giveHothBossBonusLoot(pPlayer, pInventory, bossLevel) end -- Hoth boss loot (gen_boss_loot.py)
 
 	local itemName = "an item"
 	if itemOID and itemOID ~= 0 then

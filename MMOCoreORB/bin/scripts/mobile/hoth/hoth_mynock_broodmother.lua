@@ -29,72 +29,7 @@ hoth_mynock_broodmother = Creature:new {
 	templates = {"object/mobile/salt_mynock_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
 	scale = 1.8,
-	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
-		{
-			groups = {
-				{group = "endgame_weapon_schematics", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 2500000
-		},
-		{
-			groups = {
-				{group = "hoth_paintings", chance = 10000000}
-			},
-			lootChance = 2500000
-		},
-		{
-			groups = {
-				{group = "hoth_decor_rare", chance = 10000000}
-			},
-			lootChance = 1500000
-		},
-		{
-			groups = {
-				{group = "hoth_ice_decor", chance = 10000000}
-			},
-			lootChance = 2000000
-		},
-		{
-			groups = {
-				{group = "hoth_art_rare", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "hoth_vehicle_schematics", chance = 10000000}
-			},
-			lootChance = 500000
-		},
-		{
-			groups = {
-				{group = "hoth_vehicle_deeds", chance = 10000000}
-			},
-			lootChance = 200000
-		}
-	},
+	lootGroups = {},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

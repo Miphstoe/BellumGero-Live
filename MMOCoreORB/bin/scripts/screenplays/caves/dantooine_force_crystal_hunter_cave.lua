@@ -340,6 +340,7 @@ function ForceCrystalCaveScreenPlay:onInquisitorDied(pBoss, pKiller)
 
     for _, pRecipient in ipairs(recipients) do
         pcall(_giveBossLoot, pRecipient, INQUISITOR_LOOT_GROUPS, "Valen Kade (Fallen Inquisitor)", 400)
+        if giveHothBossBonusLoot then pcall(giveHothBossBonusLoot, pRecipient, nil, 400) end -- Hoth boss loot (gen_boss_loot.py)
     end
 
     -- Strip the boss corpse inventory/cash so loot only comes from the systems above
