@@ -283,6 +283,16 @@ def fix_bump_effect():
     cbmp name so every shader on the effect is fixed and the ported shaders stay byte-identical to Infinity."""
     shutil.copyfile(bg_file('effect/a_envmask_specmap.eft'), out('effect/a_envmask_specmap_cbmp.eft'))
     print('effect/a_envmask_specmap_cbmp.eft <- effect/a_envmask_specmap.eft')
+    # The glow comes from ps20 programs that call calculateHemisphericLighting (constants this client never sets).
+    # Only two exist; the other, a_specmap_cbmp_detail_ps20 (AT-AT house body, rock), is BG's override of a stock
+    # program, so ship the stock patch_11_00 copy back and keep its bump mapping.
+    rel = 'pixel_program/a_specmap_cbmp_detail_ps20.psh'
+    tre = os.path.join(BG, 'patch_11_00.tre')
+    e = next(x for x in read_tre(tre) if x['name'].lower() == rel)
+    with open(tre, 'rb') as f:
+        f.seek(e['offset']); blob = f.read(e['comp_size'] if e['comp'] else e['size'])
+    open(out(rel), 'wb').write(_inflate(blob, e['comp'], e['size']))
+    print(f'{rel} <- stock patch_11_00.tre')
 
 
 def crc():

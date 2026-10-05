@@ -14,11 +14,11 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
-### 2026-10-04 — Fix glowing envmask bump effect (AT-AT house, ported vehicles)
+### 2026-10-04 — Fix full-model glow on bump-mapped shaders (AT-AT house, ported vehicles)
 
-- **Summary:** `effect/a_envmask_specmap_cbmp.eft` renders as a full-body bloom glow in the BG client. This was already true of BG's own AT-AT house (and C-3PO backpack) before Hoth, and of every ported user (Republic gunship, RIC-920, XJ-6, single-pod airspeeder, mechno-chair, Yoda's levitator). The client TRE now ships the stock non-bump `a_envmask_specmap` effect under the cbmp name (same MAIN/SPEC/ENVM slots; the normal map is ignored). A/B tested in game: glow gone. Ported shaders stay byte-identical to Infinity.
+- **Summary:** Two ps20 pixel programs in BG's `bg_custom1.tre` call `calculateHemisphericLighting`, which this client never feeds, so every model on them renders as a full-body bloom glow: BG's own AT-AT house (already broken before Hoth) and C-3PO backpack, plus the ported Republic gunship, RIC-920, XJ-6, single-pod airspeeder, mechno-chair and Yoda's levitator. Fixes in the client TRE: `pixel_program/a_specmap_cbmp_detail_ps20.psh` is BG's override of a stock program, so the stock `patch_11_00` copy is shipped back (bump mapping kept); `a_envmask_specmap_cbmp_ps20` has no stock copy, so `effect/a_envmask_specmap_cbmp.eft` ships the stock non-bump `a_envmask_specmap` effect (normal map ignored). Verified in game: glow gone on the house and the vehicles.
 - **Files:** `tools/newplanets/gen_hoth_loot_client.py`
-- **Notes:** Client TRE only; rebuild `bg_custom1.tre` with `build_tre.py`. No server restart. Live has the AT-AT house glow until this TRE ships. Likely root cause: the cbmp ps20 program (newer compiler, hemispheric lighting) reads constants this client never sets; a recompiled pixel program could restore bump detail later.
+- **Notes:** Client TRE only; no server restart. Live keeps the AT-AT house glow until this TRE ships. A recompiled envmask program without hemispheric lighting would restore bump detail on the envmask users.
 
 ### 2026-10-04 — Mount range 20m for long vehicles; AT-AT house placeable on Hoth
 
