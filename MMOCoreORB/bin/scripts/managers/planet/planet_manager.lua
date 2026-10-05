@@ -624,8 +624,8 @@ hoth = {
 	-- ticket collector and shuttle). Arrival points use the Yavin IV Labor Outpost offset.
 	planetTravelPoints = {
 		{name = "Scavenger Outpost", x = -4009.7, z = 23.3, y = -2062.2, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Imperial Outpost", x = 3840.3, z = 29.0, y = -3062.2, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
-		{name = "Rebel Outpost", x = -416.4, z = 27.8, y = 626.8, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Imperial Forward Base", x = 3840.3, z = 29.0, y = -3062.2, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Rebel Forward Base", x = -416.4, z = 27.8, y = 626.8, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Eastern Ice Fields Shuttleport", x = 5908.6, z = 3.0, y = -406.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
 		{name = "Generator Ridge Shuttleport", x = 4506.0, z = 87.8, y = 1164.0, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 3},
 	},

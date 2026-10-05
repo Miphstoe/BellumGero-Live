@@ -15,8 +15,8 @@ import move_outposts as mo
 MISSION = os.path.join(mo.WT, 'managers', 'mission')
 CITIES = [  # name, centre, radius, spawnType
     ('Scavenger Outpost', mo.MOVES['scavenger']['new'], 200, 2 | 4 | 8),
-    ('Imperial Outpost', mo.MOVES['imperial']['new'], 200, 2 | 4),
-    ('Rebel Outpost', mo.MOVES['rebel']['new'], 200, 2 | 8),
+    ('Imperial Forward Base', mo.MOVES['imperial']['new'], 200, 2 | 4),
+    ('Rebel Forward Base', mo.MOVES['rebel']['new'], 200, 2 | 8),
 ]
 PER_CITY = 12
 

@@ -29,5 +29,14 @@ def add(t, key, text):
     i = t['next']; t['next'] += 1
     t['vals'][i] = (0xFFFFFFFF, text); t['keys'].append((i, key))
 
+def set(t, key, text):
+    """Add key, or replace its text if it exists."""
+    for i, k in t['keys']:
+        if k == key:
+            crc, _ = t['vals'][i]
+            t['vals'][i] = (crc, text)
+            return
+    add(t, key, text)
+
 def as_dict(t):
     return {k: t['vals'][i][1] for i, k in t['keys']}

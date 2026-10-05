@@ -12,17 +12,27 @@ import gen_hoth_mobiles as g
 MAP = ' + MAPPOI'
 POIS = [  # key, display name, x, y, radius, server flags
     ('ice_caves', 'Wampa Ice Caves', -400, 2600, 450, 'NAMEDREGION + NOBUILDZONEAREA'),
-    # one map entry per cave (snapshot cave buildings; bosses from hoth_ice_caves.lua)
-    ('frostfang_hollow', "Frostfang's Hollow", -623, 2292, 40, 'NAMEDREGION' + MAP),
+    # one map entry per cave boss (names chosen 2026-10-05; cave entrances from the snapshot, Deep Freeze Den at the
+    # patriarch's chamber inside cave_03 projected to the surface)
+    ('frostfang_hollow', 'Frostfang Cavern', -623, 2292, 40, 'NAMEDREGION' + MAP),
     ('icemaw_den', "Icemaw's Den", -385, 2436, 40, 'NAMEDREGION' + MAP),
-    ('snowblind_lair', "Snowblind's Lair", -543, 2674, 40, 'NAMEDREGION' + MAP),
-    ('great_wampa_cavern', 'Great Wampa Cavern', -75, 2969, 60, 'NAMEDREGION' + MAP),
-    ('northern_ice_cavern', 'Northern Ice Cavern', -5819, 6093, 150, 'NAMEDREGION + NOBUILDZONEAREA' + MAP),
+    ('snowblind_lair', 'Snowblind the Ravager', -543, 2674, 40, 'NAMEDREGION' + MAP),
+    ('great_wampa_cavern', "Wampa Matriarch's Ice Cavern", -75, 2969, 60, 'NAMEDREGION' + MAP),
+    ('deep_freeze_den', 'Deep Freeze Den', -145, 2839, 30, 'NAMEDREGION' + MAP),
+    ('northern_ice_cavern', "Broodmother's Nest", -5819, 6093, 150, 'NAMEDREGION + NOBUILDZONEAREA' + MAP),
+    # fortified shuttleports on the old Imperial / Rebel outpost sites (also listed under Shuttleports)
+    ('eastern_ice_fields', 'Eastern Ice Fields', 5928, -406, 90, 'NAMEDREGION' + MAP),
+    ('generator_ridge', 'Generator Ridge', 4525, 1164, 90, 'NAMEDREGION' + MAP),
     ('shield_generator_battlefield', 'Shield Generator Battlefield', 5420, 780, 450, 'NAMEDREGION + NOBUILDZONEAREA' + MAP),
     ('raider_camp', 'Generator Raider Camp', 5068, 1300, 80, 'NAMEDREGION + NOSPAWNAREA + NOBUILDZONEAREA' + MAP),
     ('lucky_despot_wreck', 'Lucky Despot Wreck', -4130, -2128, 60, 'NAMEDREGION' + MAP),  # moved with the Scavenger Outpost
     ('glacial_rancor_grounds', 'Glacial Rancor Hunting Grounds', 600, -4600, 200, 'NAMEDREGION + NOBUILDZONEAREA' + MAP),  # world boss
 ]
+OUTPOST_NAMES = {  # city region display names (the moved Imperial / Rebel outposts were renamed 2026-10-05)
+    'scavenger_outpost': 'Scavenger Outpost',
+    'imperial_outpost': 'Imperial Forward Base',
+    'rebel_outpost': 'Rebel Forward Base',
+}
 EXTRA = [  # server-only regions kept in the same block
     '\t{"hoth_eastern_ice_fields_shuttleport_nobuild", 5928, -406, {CIRCLE, 100}, NOBUILDZONEAREA + NOSPAWNAREA},',
     '\t{"hoth_generator_ridge_shuttleport_nobuild", 4525, 1164, {CIRCLE, 100}, NOBUILDZONEAREA + NOSPAWNAREA},',
@@ -55,10 +65,10 @@ def server_regions():
 def client_files():
     sp = 'build/hoth/string/en/hoth_region_names.stf'
     t = stf_tool.read(sp)
-    have = stf_tool.as_dict(t)
     for k, name, *_ in POIS:
-        if k not in have:
-            stf_tool.add(t, k, name)
+        stf_tool.set(t, k, name)
+    for k, name in OUTPOST_NAMES.items():
+        stf_tool.set(t, k, name)
     stf_tool.write(t, sp)
     cp = 'build/hoth/datatables/clientregion/hoth.iff'
     r = dt_tool.read(cp)

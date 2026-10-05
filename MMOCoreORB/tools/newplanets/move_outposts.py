@@ -41,9 +41,25 @@ REBEL_FLAT = dict(radius=240.0, feather=0.2)  # new flatten layer around the Reb
 # centre, arrival point 19 m west (stock convention, cf. Naboo "Village"). height: Imperial = the original flatten
 # height there; Rebel = probed ground under the old starport. Each gets a small flatten circle.
 SHUTTLEPORTS = [
-    dict(key='eastern_ice_fields', name='Eastern Ice Fields Shuttleport', x=5927.6, y=-406.5, height=3.0, radius=60.0),
-    dict(key='generator_ridge', name='Generator Ridge Shuttleport', x=4525.0, y=1164.0, height=None, radius=60.0),
+    dict(key='eastern_ice_fields', name='Eastern Ice Fields Shuttleport', x=5927.6, y=-406.5, height=3.0, radius=80.0,
+         style='imperial'),
+    dict(key='generator_ridge', name='Generator Ridge Shuttleport', x=4525.0, y=1164.0, height=None, radius=80.0,
+         style='rebel'),
 ]
+# Walls + corner columns + decorative turrets around each shuttleport (snapshot statics cloned from the outposts'
+# own nodes, so template/radius data match). A wall model's length runs along its local x axis: yaw 180 = east-west.
+# Gap on the west side, where the arrival point is. New snapshot OIDs live in a band no other snapshot uses.
+DEFENSE = {
+    'imperial': dict(wall='object/static/structure/military/shared_military_wall_strong_imperial_style_01.iff', seg=8.0,
+                     column='object/static/structure/military/shared_military_column_strong_imperial_style_01.iff',
+                     half=36.0, gap=2),
+    'rebel': dict(wall='object/static/structure/military/shared_military_wall_strong_rebl_16_style_01.iff', seg=16.0,
+                  column='object/static/structure/military/shared_military_column_strong_rebel_style_01.iff',
+                  half=40.0, gap=1),
+}
+TURRET = 'object/static/item/shared_item_hoth_turret_round.iff'
+TURRET_SINK = 2.0  # the outposts bury these turrets' bases ~2 m
+DEFENSE_OID_BASE = 0x5E480000
 SHUTTLEPORT_TEMPLATE = 'object/building/corellia/shuttleport_corellia.iff'
 
 
@@ -181,7 +197,7 @@ def build_terrain(state):
     for n, sp in enumerate(SHUTTLEPORTS):
         c2 = copy.deepcopy(parent[i])
         (r2,) = direct(c2[4], 'BCIR')
-        set_chunk(r2, struct.pack('<3fif', sp['x'], sp['y'], sp['radius'], ftype, 0.3))
+        set_chunk(r2, struct.pack('<3fif', sp['x'], sp['y'], sp['radius'], ftype, 0.15))  # flat core ~68 m: walls + turrets
         for r in direct(c2[4], 'AHCN'):
             op, h = struct.unpack_from('<if', r[0][r[1]][4])
             set_chunk(r, struct.pack('<if', op, shuttleport_height(sp)))
@@ -260,8 +276,80 @@ def build_snapshot(state, ground_file=None):
         struct.pack_into('<3f', d, 32, n['x'] + dx, ground + above, n['y'] + dy)
         set_chunk(n['ref'], bytes(d))
         count[site] = count.get(site, 0) + 1
+    added = add_defenses(root, nodes)
     open(OUT_WS, 'wb').write(serialize(root))
-    print(f'snapshot: moved {count} ({"probed ground" if g_new else "flat-height estimate"}) -> {OUT_WS}')
+    print(f'snapshot: moved {count} ({"probed ground" if g_new else "flat-height estimate"}), '
+          f'{added} shuttleport defense pieces added -> {OUT_WS}')
+
+
+def defense_layout(sp):
+    """[(template, x, y, height offset, yaw degrees)] for one shuttleport."""
+    d = DEFENSE[sp['style']]
+    cx, cy, half, seg = sp['x'], sp['y'], d['half'], d['seg']
+    n = int(round(2 * half / seg))
+    gap = set(range((n - d['gap']) // 2, (n - d['gap']) // 2 + d['gap']))
+    out = []
+    for i in range(n):
+        t = -half + seg * (i + 0.5)
+        out.append((d['wall'], cx + t, cy + half, 0.0, 180))   # north side, east-west
+        out.append((d['wall'], cx + t, cy - half, 0.0, 180))   # south side
+        out.append((d['wall'], cx + half, cy + t, 0.0, 90))    # east side, north-south
+        if i not in gap:
+            out.append((d['wall'], cx - half, cy + t, 0.0, 90))  # west side, gap = entrance
+    for sx, sy, yaw in ((1, 1, 45), (1, -1, 135), (-1, -1, 225), (-1, 1, 315)):
+        out.append((d['column'], cx + sx * half, cy + sy * half, 0.0, yaw))
+        out.append((TURRET, cx + sx * (half + 7), cy + sy * (half + 7), -TURRET_SINK, yaw))
+    return out
+
+
+def add_defenses(root, nodes):
+    """Append cloned top-level snapshot nodes for every SHUTTLEPORTS defense piece."""
+    exemplar = {}
+    for n in nodes:
+        if n['pid'] == 0 and n['tmpl'] not in exemplar:
+            exemplar[n['tmpl']] = n
+    # the NODS list that holds the top-level NODE forms
+    holder = None
+
+    def find(ns):
+        nonlocal holder
+        for tag, ft, off, size, kids in ns:
+            if tag == 'FORM' and ft == 'NODS':
+                holder = kids
+                return
+            if tag == 'FORM':
+                find(kids)
+                if holder is not None:
+                    return
+    find(root)
+    assert holder is not None
+    top = {n['oid'] for n in nodes}
+    oid = DEFENSE_OID_BASE
+    added = 0
+    for sp in SHUTTLEPORTS:
+        h0 = shuttleport_height(sp)
+        for tmpl, x, y, dh, yaw in defense_layout(sp):
+            ex = exemplar[tmpl]
+            # the exemplar's NODE form = the form whose 0000/DATA chunk list is ex['ref'][0]
+            node = next(f for f in holder if f[0] == 'FORM' and f[1] == 'NODE' and
+                        any(c[0] == 'FORM' and c[1] == '0000' and c[4] is ex['ref'][0] for c in f[4]))
+            clone = copy.deepcopy(node)
+            ver = next(c for c in clone[4] if c[0] == 'FORM' and c[1] == '0000')
+            j = next(k for k, ch in enumerate(ver[4]) if ch[0] == 'DATA')
+            d = bytearray(ver[4][j][4])
+            while oid in top:
+                oid += 1
+            r = math.radians(yaw)
+            struct.pack_into('<ii', d, 0, oid, 0)
+            struct.pack_into('<4f', d, 16, math.cos(r / 2), 0.0, math.sin(r / 2), 0.0)
+            struct.pack_into('<3f', d, 32, x, h0 + dh, y)
+            ver[4][j] = (ver[4][j][0], ver[4][j][1], ver[4][j][2], ver[4][j][3], bytes(d))
+            # drop any child nodes (statics have none; cells must not be cloned)
+            clone[4][:] = [c for c in clone[4] if not (c[0] == 'FORM' and c[1] == 'NODS')]
+            holder.append(clone)
+            oid += 1
+            added += 1
+    return added
 
 
 def build_regions(state):
@@ -328,7 +416,8 @@ def server(state):
     ])
     tp = {'scavenger': (20.34, -1982.24), 'imperial': (5947.9, -388.71), 'rebel': (4528.65, 1190.75)}
     tpz = {'scavenger': '0', 'imperial': '3', 'rebel': '87.8'}
-    label = {'scavenger': 'Scavenger Outpost', 'imperial': 'Imperial Outpost', 'rebel': 'Rebel Outpost'}
+    label = {'scavenger': 'Scavenger Outpost', 'imperial': 'Imperial Outpost', 'rebel': 'Rebel Outpost'}  # pre-rename
+    # (travel points were renamed to Imperial / Rebel Forward Base afterwards: rename_travel_points())
     pairs = []
     for k in MOVES:
         x, y = tp[k]
@@ -394,10 +483,26 @@ def shuttleports():
     open(p, 'w', encoding='utf-8', newline='').write(s)
 
 
+TRAVEL_RENAMES = {'Imperial Outpost': 'Imperial Forward Base', 'Rebel Outpost': 'Rebel Forward Base'}
+
+
+def rename_travel_points():
+    p = os.path.join(WT, 'managers', 'planet', 'planet_manager.lua')
+    s = open(p, encoding='utf-8', newline='').read()
+    a = s.index('\nhoth = {')
+    b = s.index('\n}', a)
+    block = s[a:b]
+    for old, new in TRAVEL_RENAMES.items():
+        block = block.replace(f'name = "{old}"', f'name = "{new}"')
+    open(p, 'w', encoding='utf-8', newline='').write(s[:a] + block + s[b:])
+    print('travel points:', [l.strip()[:60] for l in block.splitlines() if 'name = "' in l])
+
+
 if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     if cmd == 'shuttleports':
         shuttleports()
+        rename_travel_points()
         sys.exit(0)
     if cmd == 'client':
         st = compute_state()
