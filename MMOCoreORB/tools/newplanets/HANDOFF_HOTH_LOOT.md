@@ -61,7 +61,8 @@ Build with `python build_tre.py <base> <out> build/hoth build/hoth_loot` from `C
 - `gen_boss_loot.py`: Hoth loot on 58 corpse-loot bosses + per-player bonus roll on world/scripted bosses; `giveHothBossRewards` (per-player cave-boss rewards).
 - `gen_hoth_rancor.py`: Rimeclaw, the Glacial Rancor (Infinity exotic_rancor), world boss at (600, -4600).
 - `gen_hoth_mobiles.py`: lairs carry customName/missionBuilding/faction; `hoth_destroy_missions` + 3 Hoth factional groups; two new camps (scavenger raiders, Imperial salvage team).
-- Not done: deliver missions on Hoth (needs mission_cities + NPC spawn points), hunting-mission target names (Hoth mobiles have objectName "").
+- `gen_hoth_missions.py`: deliver missions (outposts as mission cities + 12 NPC spawn points each). Hunting missions use customName when objectName is empty (C++).
+- Deploy note: the first boot after the outpost move relocates stored objects; restart once more after a save, or the in-starport ticket terminal is "too far" (stale close-object state).
 
 `bg_custom1_7_plus_hoth.tre` and `bg_custom1_hoth_plus_download.tre` in `dist\` were made by Brandon, not by the tools; leave them.
 

@@ -1803,7 +1803,13 @@ void MissionManagerImplementation::randomizeGenericHuntingMission(CreatureObject
 
 	mission->setStartPosition(player->getPositionX(), player->getPositionY(), playerZone->getZoneName());
 
-	mission->setMissionTargetName(creatureTemplate->getObjectName());
+	// Bellum Gero: custom mobiles (e.g. Hoth) leave objectName empty and only set customName
+	String huntTargetName = creatureTemplate->getObjectName();
+
+	if (huntTargetName.isEmpty())
+		huntTargetName = creatureTemplate->getCustomName();
+
+	mission->setMissionTargetName(huntTargetName);
 	mission->setTargetTemplate(sharedTemplate);
 
 	//50% easy missions, 33% medium missions, 17% hard missions.
