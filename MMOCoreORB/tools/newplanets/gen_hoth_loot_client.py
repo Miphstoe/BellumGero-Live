@@ -311,6 +311,8 @@ if __name__ == '__main__':
     decor()
     gen_hoth_art.client()
     vehicle_tables()
+    import gen_hoth_rancor
+    gen_hoth_rancor.client()
     strings()
     fix_bump_effect()
     crc()

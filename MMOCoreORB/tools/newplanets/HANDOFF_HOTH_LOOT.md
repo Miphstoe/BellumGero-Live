@@ -49,8 +49,19 @@ Build with `python build_tre.py <base> <out> build/hoth build/hoth_loot` from `C
 | File in `dist\` | Base | Content | md5 |
 |---|---|---|---|
 | `bg_custom1_hoth_only.tre` | live Sep 12 | Hoth only, matches PR #795. **This is what TC should run.** Replaces the broken `0006e3f6…`/`98f8ef11…` builds. | `3f788419438111fe37d1f05aa964ae80` |
-| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch | `d0c96ca01a9e5a3707556d2b09fb891c` |
-| `devbg\bg_custom1.tre` | Dev-BG Aug 5 | same loot content, installed in `C:\Dev-BG` and `/trefiles` | `8f814d8e8948da74bee7bcb8a9076713` |
+| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch (glow fix, moved outposts, shuttleports, closed terrain holes, Glacial Rancor) | `6bc29b5936185c4631da4aa06a1d2a29` |
+| `devbg\bg_custom1.tre` | Dev-BG Aug 5 | same content, installed in `C:\Dev-BG` and `/trefiles` | `cad9f6f13fc5b513747ffbb630862ab5` |
+
+`bg_custom1_hoth_only.tre` keeps the ORIGINAL outpost positions (it matches PR #795's server scripts); rebuild it only with `python build_hoth_only_original.py`, never with build_tre.py on build/hoth.
+
+### 2026-10-04 late additions (see bellumgero_change_log.md)
+- `move_outposts.py client <ground.json> | probe | server | shuttleports`: moves the 3 outposts (snapshot + terrain flatten layers + radar regions + server registration), adds the Eastern Ice Fields / Generator Ridge shuttleports on the old Imperial/Rebel sites, closes 3 orphan terrain holes (Miph's tear at -5270,5707). Always rebuilds from the pristine Infinity trn/ws. Heights come from `height_probe.py` (temporary server screenplay; `wsl/height_probe.sh [remove]`).
+- C++ (PlanetManagerImplementation): stored snapshot objects are moved to the .ws position on boot (else the server keeps them at their first-boot spot); `MAPPOI` region flag (0x020000) puts a region on the planetary map.
+- C++ (MissionManager/MissionTerminal): `<planet>_factional_<faction>_destroy_missions` groups are tried before the global factional ones.
+- `gen_boss_loot.py`: Hoth loot on 58 corpse-loot bosses + per-player bonus roll on world/scripted bosses; `giveHothBossRewards` (per-player cave-boss rewards).
+- `gen_hoth_rancor.py`: Rimeclaw, the Glacial Rancor (Infinity exotic_rancor), world boss at (600, -4600).
+- `gen_hoth_mobiles.py`: lairs carry customName/missionBuilding/faction; `hoth_destroy_missions` + 3 Hoth factional groups; two new camps (scavenger raiders, Imperial salvage team).
+- Not done: deliver missions on Hoth (needs mission_cities + NPC spawn points), hunting-mission target names (Hoth mobiles have objectName "").
 
 `bg_custom1_7_plus_hoth.tre` and `bg_custom1_hoth_plus_download.tre` in `dist\` were made by Brandon, not by the tools; leave them.
 

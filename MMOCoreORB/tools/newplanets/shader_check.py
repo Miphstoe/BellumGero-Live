@@ -47,7 +47,7 @@ while queue:
 
 def shader_info(rel):
     d = data(rel)
-    effect = [m.decode('latin-1') for m in re.findall(rb'effect/[a-z0-9_\-\.]+\.eft', d, re.I)]
+    effect = [m.decode('latin-1').replace('\\', '/') for m in re.findall(rb'effect[/\\][a-z0-9_\-\.]+\.eft', d, re.I)]
     # TXM chunks: tag (4 chars) + texture name
     texs = []
     def walk(n):
