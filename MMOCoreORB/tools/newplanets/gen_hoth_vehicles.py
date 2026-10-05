@@ -83,7 +83,8 @@ VEHICLES = [
 ]
 MOUNT_TABLES = ['logical_saddle_name_map', 'rider_pose_map', 'saddle_appearance_map', 'valid_scale_range']
 EXT = r'(?:iff|apt|sat|lmg|mgn|msh|lod|skt|lat|ans|sht|dds|cdf|prt|eft|snd|wav|cmp|flr|pob|cef)'
-PATH_RE = re.compile(rb'(?:appearance|shader|texture|clientdata|sound|sample|effect|clienteffect|object|datatables)/[a-z0-9_/\-\.]+\.' + EXT.encode(), re.I)
+# shaders reference effects with a backslash (effect\a_simple.eft), everything else uses forward slashes
+PATH_RE = re.compile(rb'(?:appearance|shader|texture|clientdata|sound|sample|effect|clienteffect|object|datatables)[\\/][a-z0-9_/\\\-\.]+\.' + EXT.encode(), re.I)
 
 _c = None
 
@@ -166,7 +167,7 @@ def stage_recursive(c, rels, inf_paths, bg_paths):
             continue
         data = open(local, 'rb').read()
         for m in PATH_RE.findall(data):
-            queue.append(m.decode('latin-1'))
+            queue.append(m.decode('latin-1').replace('\\', '/'))
         if rel.endswith('.snd'):
             for w in re.findall(rb'[a-z0-9_\-\.]+\.wav', data, re.I):
                 queue.append('sample/' + w.decode('latin-1'))
