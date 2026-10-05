@@ -276,21 +276,13 @@ def strings():
         stf_tool.write(t, out(f'string/en/{name}.stf'))
 
 
-def flatten_bump_effect():
-    """Ported shaders on a_envmask_specmap_cbmp render as a full-body bloom glow in the BG client (A/B tested on
-    gunship, RIC-920, XJ-6, pod car). Point them at the stock non-bump a_envmask_specmap; same texture slots, the
-    CNRM normal map is just ignored. Only touches overlay shaders, never BG's own (AT-AT house, C-3PO backpack)."""
-    n = 0
-    for d in ('hoth', 'hoth_loot'):
-        sd = os.path.join(HERE, 'build', d, 'shader')
-        if not os.path.isdir(sd):
-            continue
-        for f in sorted(os.listdir(sd)):
-            p = os.path.join(sd, f)
-            if f.endswith('.sht') and b'a_envmask_specmap_cbmp.eft' in open(p, 'rb').read():
-                iff_clone.clone_raw(p, p, {'effect\\a_envmask_specmap_cbmp.eft': 'effect\\a_envmask_specmap.eft'})
-                n += 1; print('flattened bump effect:', f)
-    print(f'{n} shaders moved off a_envmask_specmap_cbmp')
+def fix_bump_effect():
+    """effect/a_envmask_specmap_cbmp.eft renders as a full-body bloom glow in the BG client: BG's own AT-AT house and
+    every ported user (gunship, RIC-920, XJ-6, pod car, ...). A/B tested: the stock non-bump a_envmask_specmap
+    renders correctly with the same shaders (same MAIN/SPEC/ENVM slots; CNRM is ignored). Ship its content under the
+    cbmp name so every shader on the effect is fixed and the ported shaders stay byte-identical to Infinity."""
+    shutil.copyfile(bg_file('effect/a_envmask_specmap.eft'), out('effect/a_envmask_specmap_cbmp.eft'))
+    print('effect/a_envmask_specmap_cbmp.eft <- effect/a_envmask_specmap.eft')
 
 
 def crc():
@@ -310,6 +302,6 @@ if __name__ == '__main__':
     gen_hoth_art.client()
     vehicle_tables()
     strings()
-    flatten_bump_effect()
+    fix_bump_effect()
     crc()
     print(f'{len(NEW_OBJECTS)} cloned object templates; {len(list(ported_objects()))} object templates total in overlay')

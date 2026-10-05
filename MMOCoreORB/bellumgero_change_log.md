@@ -14,11 +14,11 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
-### 2026-10-04 — Ported vehicles no longer glow: drop the bump-mapped envmask effect
+### 2026-10-04 — Fix glowing envmask bump effect (AT-AT house, ported vehicles)
 
-- **Summary:** Infinity shaders on `a_envmask_specmap_cbmp` rendered as a full-body bloom glow in the BG client (Republic gunship, RIC-920, XJ-6, single-pod airspeeder; mechno-chair and Yoda's levitator use the same effect). The client generator now points every overlay shader on that effect at the stock non-bump `a_envmask_specmap` (same texture slots, normal map ignored). A/B tested in game: glow gone. BG's own users of the effect (AT-AT house, C-3PO backpack) are untouched.
+- **Summary:** `effect/a_envmask_specmap_cbmp.eft` renders as a full-body bloom glow in the BG client. This was already true of BG's own AT-AT house (and C-3PO backpack) before Hoth, and of every ported user (Republic gunship, RIC-920, XJ-6, single-pod airspeeder, mechno-chair, Yoda's levitator). The client TRE now ships the stock non-bump `a_envmask_specmap` effect under the cbmp name (same MAIN/SPEC/ENVM slots; the normal map is ignored). A/B tested in game: glow gone. Ported shaders stay byte-identical to Infinity.
 - **Files:** `tools/newplanets/gen_hoth_loot_client.py`
-- **Notes:** Client TRE only (shaders); rebuild `bg_custom1.tre` with `build_tre.py`. No server restart needed.
+- **Notes:** Client TRE only; rebuild `bg_custom1.tre` with `build_tre.py`. No server restart. Live has the AT-AT house glow until this TRE ships. Likely root cause: the cbmp ps20 program (newer compiler, hemispheric lighting) reads constants this client never sets; a recompiled pixel program could restore bump detail later.
 
 ### 2026-10-04 — Mount range 20m for long vehicles; AT-AT house placeable on Hoth
 
