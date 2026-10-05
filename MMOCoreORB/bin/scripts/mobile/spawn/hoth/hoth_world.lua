@@ -3,7 +3,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_tauntaun_herd_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 60,
+			minDifficulty = 65,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 60,
@@ -12,7 +12,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_tauntaun_lair_neutral_medium",
 			spawnLimit = -1,
-			minDifficulty = 60,
+			minDifficulty = 65,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 40,
@@ -21,7 +21,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_ice_mynock_pack_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 62,
+			minDifficulty = 67,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 45,
@@ -30,7 +30,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_ice_mynock_lair_neutral_medium",
 			spawnLimit = -1,
-			minDifficulty = 62,
+			minDifficulty = 67,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 35,
@@ -48,7 +48,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_wampa_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 80,
+			minDifficulty = 90,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 30,
@@ -57,7 +57,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_wampa_lair_neutral_large",
 			spawnLimit = -1,
-			minDifficulty = 80,
+			minDifficulty = 90,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 25,

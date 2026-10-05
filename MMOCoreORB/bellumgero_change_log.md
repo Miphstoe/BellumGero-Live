@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-05 — Hoth creatures tougher (wampas on par with the top rancors)
+
+- **Summary:** Player feedback: wampas were too easy. Wampa 80 -> 90 (16-20k HAM), elder wampa 88 -> 98 (22-27k HAM, armor 2), matching the enraged / ancient bull rancors. Tauntauns and ice mynocks +5-6 levels (~10 %). Cave bosses raised to 100-115 (40-64k HAM) so they stay above the elder wampas guarding them. Spawn and mission difficulties follow.
+- **Files:** `bin/scripts/mobile/hoth/*`, `bin/scripts/mobile/spawn/hoth/hoth_world.lua`, `bin/scripts/mobile/spawn/destroy_mission/hoth_*`
+- **Notes:** Tuning table `TUNE` in `tools/newplanets/gen_hoth_mobiles.py`.
+
 ### 2026-10-05 — Hoth forward bases, fortified shuttleports, cave boss POIs
 
 - **Summary:** The moved Imperial and Rebel outposts are now "Imperial Forward Base" and "Rebel Forward Base" (map, radar, travel points, mission cities). Eastern Ice Fields (Imperial style) and Generator Ridge (Rebel style) shuttleports get walls, corner columns and decorative turrets, on flattened ground, and are listed as map POIs. Cave POIs: Frostfang Cavern, Icemaw's Den, Snowblind the Ravager, Wampa Matriarch's Ice Cavern, Deep Freeze Den (patriarch's chamber), Broodmother's Nest.

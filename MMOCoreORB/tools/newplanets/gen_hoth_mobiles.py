@@ -228,6 +228,28 @@ for _c in CREATURES:
     if _c.get('lootstr') is None:  # non-boss creatures: trickle chance at the custom paintings
         _c['extra'] = _c.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
 
+# 2026-10-05 player feedback (Dek, via Miph): wampas should be about as strong as the highest-level rancors
+# (enraged bull rancor 89, ancient bull rancor 98: hit .85/.95, dmg 570-850/620-950, HAM 13-16k/20-25k, armor 1/2).
+# Other creatures up ~10 %, cave bosses kept well above the elder wampas that guard their caves.
+TUNE = {
+    'hoth_tauntaun': dict(level=65, hit=0.6, dmg=(470, 610), ham=(12500, 14500), xp=6290),
+    'hoth_tauntaun_bull': dict(level=72, hit=0.68, dmg=(510, 690), ham=(13000, 15500), xp=6930),
+    'hoth_ice_mynock': dict(level=67, hit=0.63, dmg=(480, 640), ham=(11500, 13500), xp=6470),
+    'hoth_greater_ice_mynock': dict(level=76, hit=0.73, dmg=(545, 760), ham=(13000, 15500), xp=7300),
+    'hoth_wampa': dict(level=90, hit=0.86, dmg=(590, 880), ham=(16000, 20000), xp=8600,
+                       res='{150,165,35,200,35,200,35,35,-1}'),
+    'hoth_elder_wampa': dict(level=98, hit=0.95, dmg=(640, 980), ham=(22000, 27000), armor=2, xp=9400,
+                             res='{155,170,40,210,40,210,40,40,-1}'),
+    'hoth_wampa_matriarch': dict(level=110, hit=1.05, dmg=(740, 1130), ham=(54000, 60000), xp=10560),
+    'hoth_wampa_frostfang': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
+    'hoth_wampa_icemaw': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
+    'hoth_wampa_snowblind': dict(level=107, hit=1.02, dmg=(725, 1100), ham=(48000, 53000), xp=10270),
+    'hoth_wampa_patriarch': dict(level=115, hit=1.1, dmg=(800, 1250), ham=(58000, 64000), xp=11040),
+    'hoth_mynock_broodmother': dict(level=100, hit=0.97, dmg=(680, 1040), ham=(40000, 45000), xp=9600),
+}
+for _c in CREATURES + BOSSES:
+    _c.update(TUNE.get(_c['key'], {}))
+
 
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
@@ -573,13 +595,13 @@ addLairTemplate("{key}", {key})
 
 
 SPAWN = [  # (lair, minDifficulty, weighting)
-    ('hoth_tauntaun_herd_neutral_none', 60, 60),
-    ('hoth_tauntaun_lair_neutral_medium', 60, 40),
-    ('hoth_ice_mynock_pack_neutral_none', 62, 45),
-    ('hoth_ice_mynock_lair_neutral_medium', 62, 35),
+    ('hoth_tauntaun_herd_neutral_none', 65, 60),
+    ('hoth_tauntaun_lair_neutral_medium', 65, 40),
+    ('hoth_ice_mynock_pack_neutral_none', 67, 45),
+    ('hoth_ice_mynock_lair_neutral_medium', 67, 35),
     ('hoth_probe_droid_neutral_none', 68, 25),
-    ('hoth_wampa_neutral_none', 80, 30),
-    ('hoth_wampa_lair_neutral_large', 80, 25),
+    ('hoth_wampa_neutral_none', 90, 30),
+    ('hoth_wampa_lair_neutral_large', 90, 25),
     ('hoth_snowtrooper_patrol_imperial_none', 70, 12),
     ('hoth_rebel_snow_patrol_rebel_none', 70, 12),
     ('hoth_scavenger_raider_camp_neutral_none', 68, 10),
@@ -591,12 +613,12 @@ SPAWN = [  # (lair, minDifficulty, weighting)
 # the faction terminals offer the enemy faction's Hoth groups (zone + "_factional_<faction>_destroy_missions", Bellum
 # C++ change, falling back to the global factional groups).
 DESTROY = [
-    ('hoth_tauntaun_herd_neutral_none', 60), ('hoth_tauntaun_lair_neutral_medium', 60),
-    ('hoth_ice_mynock_pack_neutral_none', 62), ('hoth_ice_mynock_lair_neutral_medium', 62),
+    ('hoth_tauntaun_herd_neutral_none', 65), ('hoth_tauntaun_lair_neutral_medium', 65),
+    ('hoth_ice_mynock_pack_neutral_none', 67), ('hoth_ice_mynock_lair_neutral_medium', 67),
     ('hoth_probe_droid_neutral_none', 68), ('hoth_scavenger_raider_camp_neutral_none', 68),
     ('hoth_imperial_salvage_team_imperial_none', 66),
     ('hoth_snowtrooper_patrol_imperial_none', 70), ('hoth_rebel_snow_patrol_rebel_none', 70),
-    ('hoth_wampa_neutral_none', 80), ('hoth_wampa_lair_neutral_large', 80),
+    ('hoth_wampa_neutral_none', 90), ('hoth_wampa_lair_neutral_large', 90),
 ]
 FACTIONAL = {  # terminal faction -> enemy Hoth groups (imperial terminal hunts rebels and vice versa)
     'imperial': ['hoth_rebel_snow_patrol_rebel_none'],
