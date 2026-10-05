@@ -53,6 +53,9 @@ def parse_val(data):
 
 
 def build_val(pairs):
+    """The client binary-searches VAL by the SOE CRC-32 of the pose name, so entries must be sorted by that hash."""
+    from tre_pack import soe_crc
+    pairs = sorted(pairs, key=lambda p: soe_crc(p[1]))
     return struct.pack('<H', len(pairs)) + b''.join(n.encode('latin-1') + b'\x00' + struct.pack('<H', i) for i, n in pairs)
 
 

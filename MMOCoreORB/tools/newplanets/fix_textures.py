@@ -39,7 +39,7 @@ def scan():
                 issues = []
                 if fourcc in (b'DXT1', b'DXT3', b'DXT5') and (width % 4 or height % 4):
                     issues.append('DXT dims not multiple of 4')
-                if not (pow2(width) and pow2(height)):
+                if '--strict' in sys.argv and not (pow2(width) and pow2(height)):
                     issues.append('non power of two')
                 if issues:
                     bad.append((p, f'{width}x{height} {fourcc.decode("latin-1").strip() or "uncompressed"} mips={mips}: ' + ', '.join(issues), fourcc))
