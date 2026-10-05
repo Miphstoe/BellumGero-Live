@@ -116,6 +116,14 @@ def descs():
             for v in VEHICLES}
 
 
+def appearance_of(local_iff):
+    s = [m.decode('latin-1') for m in re.findall(rb'[\x20-\x7e]{3,}', open(local_iff, 'rb').read())]
+    for i, x in enumerate(s):
+        if x.endswith('appearanceFilename') and i + 1 < len(s) and s[i + 1].lstrip('\x01').startswith('appearance/'):
+            return s[i + 1].lstrip('\x01')
+    return None
+
+
 def object_name(local_iff):
     s = [m.decode('latin-1') for m in re.findall(rb'[\x20-\x7e]{3,}', open(local_iff, 'rb').read())]
     for i, x in enumerate(s):
@@ -171,7 +179,12 @@ def stage_recursive(c, rels, inf_paths, bg_paths):
 def client():
     c = _client_mod()
     inf_paths = {l.split('\t')[1].lower() for l in open(os.path.join(HERE, 'infinity_all.txt'), encoding='utf-8', errors='replace') if '\t' in l}
+    # "already in BG" = present in the live client AND in the Dev-BG test client, so files that only the newer live
+    # bg_custom1.tre carries still get staged (Dev-BG runs an older base).
     bg_paths = {l.split('\t')[1].lower() for l in open(os.path.join(HERE, 'bg_all.txt'), encoding='utf-8', errors='replace') if '\t' in l}
+    dev_list = os.path.join(HERE, 'devbg_all.txt')
+    if os.path.exists(dev_list):
+        bg_paths &= {l.split('\t')[1].lower() for l in open(dev_list, encoding='utf-8', errors='replace') if '\t' in l}
     tmp = os.path.join(HERE, 'extract', 'inf')
     roots, poses_needed = [], set()
     mount = {name: dt_tool.read(c.inf_file(f'datatables/mount/{name}.iff', tmp)) for name in MOUNT_TABLES}
@@ -194,6 +207,10 @@ def client():
             roots.append(mob_client(v))
         mob_local = c.out(mob_client(v)) if isinstance(mob, tuple) else c.inf_file(mob_client(v), tmp)
         oname = object_name(mob_local) or f'monster_name:{key}'
+        # the vehicle's real appearance (usually pv_<x>.sat) differs from the saddle appearance (<x>.apt) in the tables;
+        # Infinity keys logical_saddle_name_map and valid_scale_range by the real one, so match both
+        real_app = appearance_of(mob_local) or app
+        keys = {app, real_app} | set(saddles)
         if deed:
             roots.append(deed_client(v))
         else:
@@ -221,7 +238,7 @@ def client():
         for tname, t in mount.items():
             bg = bgmount[tname]; have = {tuple(r) for r in bg['rows']}
             for row in t['rows']:
-                if row[0] == app or row[0] in saddles:
+                if row[0] in keys:
                     if tname == 'rider_pose_map':
                         poses_needed.add(row[2])
                         bg['rows'] = [r for r in bg['rows'] if r[0] != row[0]]
