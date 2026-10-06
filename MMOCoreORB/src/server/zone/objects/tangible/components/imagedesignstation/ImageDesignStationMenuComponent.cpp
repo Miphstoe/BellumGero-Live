@@ -691,6 +691,14 @@ void ImageDesignStationMenuComponent::refreshOwnerSkills(
 		return;
 	}
 
+	if (!player->getLuaStringData(
+			"fmidstation_temp_id_skills").isEmpty()) {
+		player->sendSystemMessage(
+			"You cannot refresh this station while an "
+			"Image Designer Station session is active.");
+		return;
+	}
+
 	if (!player->hasSkill(kMasterImageDesignerSkill)) {
 		player->sendSystemMessage(
 			"You must currently be a Master Image Designer "

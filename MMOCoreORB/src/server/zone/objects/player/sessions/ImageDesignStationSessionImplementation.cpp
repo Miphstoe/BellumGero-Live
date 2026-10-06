@@ -204,13 +204,6 @@ void ImageDesignStationSessionImplementation::startStationImageDesign(
 	if (ghost == nullptr)
 		return;
 
-	originalSkillPoints =
-		ghost->getSkillPoints();
-
-	customer->setLuaStringData(
-		"fmidstation_original_skill_points",
-		String::valueOf(originalSkillPoints));
-
 	if (!isStationSessionValid(true))
 		return;
 
@@ -230,11 +223,15 @@ void ImageDesignStationSessionImplementation::startStationImageDesign(
 
 	temporarySkillList = addedSkills.toString();
 
-	if (!temporarySkillList.isEmpty())
+	if (!temporarySkillList.isEmpty()) {
+		originalSkillPoints = ghost->getSkillPoints();
+
+		customer->setLuaStringData(
+			"fmidstation_original_skill_points",
+			String::valueOf(originalSkillPoints));
+
 		customer->setLuaStringData(
 			kTemporarySkillMarker, temporarySkillList);
-
-	if (!temporarySkillList.isEmpty()) {
 		StringTokenizer tokenizer(temporarySkillList);
 		tokenizer.setDelimeter(",");
 
