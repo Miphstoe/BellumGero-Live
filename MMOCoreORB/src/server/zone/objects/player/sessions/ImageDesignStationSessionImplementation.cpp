@@ -340,7 +340,7 @@ bool ImageDesignStationSessionImplementation::doStationPayment() {
 	}
 
 	CreditManager::addBankCredits(
-		stationOwnerId, paymentAmount, false);
+		stationOwnerId, paymentAmount, true);
 
 	TransactionLog trx(
 		customer, TrxCode::IMAGEDESIGN,

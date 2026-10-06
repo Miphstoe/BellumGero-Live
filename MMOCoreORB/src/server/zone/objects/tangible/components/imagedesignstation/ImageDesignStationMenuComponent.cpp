@@ -413,7 +413,7 @@ bool ImageDesignStationMenuComponent::chargeStationService(
 		player->subtractBankCredits(price - cash);
 	}
 
-	CreditManager::addBankCredits(ownerId, price, false);
+	CreditManager::addBankCredits(ownerId, price, true);
 
 	TransactionLog trx(
 		player, TrxCode::IMAGEDESIGN,

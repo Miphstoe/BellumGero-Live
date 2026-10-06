@@ -48,6 +48,18 @@ int ImageDesignStationDeedMenuComponent::handleObjectMenuSelect(
 		return 0;
 	}
 
+	// FMIDStation grants temporary Image Designer skill boxes while a customer
+	// is using a station so the stock client UI can function. Those temporary
+	// boxes must never satisfy the permanent Master Image Designer requirement
+	// for deploying another station.
+	if (!player->getLuaStringData(
+			"fmidstation_temp_id_skills").isEmpty()) {
+		player->sendSystemMessage(
+			"You cannot deploy an Image Designer Station while an "
+			"Image Designer Station session is active.");
+		return 0;
+	}
+
 	if (!player->hasSkill(kMasterImageDesignerSkill)) {
 		player->sendSystemMessage("You must be a Master Image Designer to deploy an Image Designer Station.");
 		return 0;

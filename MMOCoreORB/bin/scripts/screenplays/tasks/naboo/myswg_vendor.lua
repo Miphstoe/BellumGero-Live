@@ -1426,6 +1426,28 @@ local MySwgTravelDestinations = {
                     --createLoot(pInventory, "junk", 300, false)
                     
 --ARCHITECT
+                elseif (optionLink == "option302") then
+                    local PRICE = 100000
+                    local TEMPLATE = "object/tangible/deed/image_design_station_deed.iff"
+
+                    if not canAfford(PRICE) then
+                        nextConversationScreen = conversation:getScreen("insufficient_funds")
+                        creature:sendSystemMessage("You need 100,000 credits to purchase an Image Designer Station Deed.")
+                        return nextConversationScreen
+                    end
+
+                    local pItem = giveItem(pInventory, TEMPLATE, -1)
+                    if pItem == nil then
+                        nextConversationScreen = conversation:getScreen("insufficient_space")
+                        creature:sendSystemMessage("The Image Designer Station Deed could not be delivered. You were not charged.")
+                        return nextConversationScreen
+                    end
+
+                    charge(PRICE)
+                    creature:sendSystemMessage("Purchased: Image Designer Station Deed for 100,000 credits.")
+                    nextConversationScreen = conversation:getScreen("first_screen")
+                    return nextConversationScreen
+
                 elseif (optionLink == "option34" and not canAfford(200000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.
