@@ -123,6 +123,16 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 		}
 	}
 
+	// Bellum Gero: a non-city region (MAPPOI point of interest) is named "@<stf>:<key>". The server does not load every
+	// client string file, so getDisplayedName() comes back empty and the client drops the entry. Send the raw string
+	// reference instead (as cities do) and let the client translate it.
+	if (newName.isEmpty() && object->isRegion()) {
+		Region* region = object.castTo<Region*>();
+
+		if (region != nullptr)
+			newName = region->getAreaName();
+	}
+
 	// Add faction alignment to city region markers themselves
 	if (object->isRegion()) {
 		ManagedReference<CityRegion*> cityRegion = object.castTo<CityRegion*>();

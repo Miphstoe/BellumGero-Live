@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-06 — Planetary map: Points of Interest entries show their names
+
+- **Summary:** POI regions (MAPPOI) were listed under "Points of Interest" with no entries: their map name came from the server-side translation of "@hoth_region_names:...", which the server does not load, so it was empty and the client dropped them. Regions with an empty translated name now send the raw string reference (like cities), which the client translates.
+- **Files:** `src/server/zone/managers/planet/MapLocationEntry.cpp`
+- **Notes:** C++ change: rebuild. Plane LIVE-18. `tools/newplanets/poi_audit.py` lists every special spot on Hoth and the POI covering it.
+
 ### 2026-10-06 — World boss loot manager: corpse and loot-box events
 
 - **Summary:** The loot manager scheduled an early corpse destruction that never ran (the event handler read a nil boss ID: Core3 calls event handlers as play:key(object, args)). Running it would have deleted world bosses from the database and stopped their engine respawn, so the early destruction is removed; the emptied, non-interactive corpse despawns on the normal timer. The loot-box despawn event handler had the same argument mistake and is fixed.
