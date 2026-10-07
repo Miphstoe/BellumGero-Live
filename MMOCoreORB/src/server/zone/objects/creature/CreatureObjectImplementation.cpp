@@ -103,6 +103,11 @@ float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376f;
 void CreatureObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
+	auctionWaypointResults.removeAll();
+	auctionWaypointSearchTime = 0;
+	auctionWaypointSelectedItem = 0;
+	auctionWaypointSelectedTime = 0;
+
 	groupInviterID = 0;
 	groupInviteCounter = 0;
 	currentWeather = 0;
@@ -131,6 +136,10 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 }
 
 void CreatureObjectImplementation::initializeMembers() {
+	auctionWaypointSearchTime = 0;
+	auctionWaypointSelectedItem = 0;
+	auctionWaypointSelectedTime = 0;
+
 	linkedCreature = nullptr;
 	controlDevice = nullptr;
 
