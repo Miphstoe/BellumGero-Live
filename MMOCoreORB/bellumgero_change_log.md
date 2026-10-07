@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-07 — Hoth: tickets to Rebel Forward Base work again
+
+- **Summary:** Buying a ticket to the Rebel Forward Base did nothing from every other travel point, because that starport had no shuttle (the stored one was deleted when the outposts moved). A new screenplay spawns a shuttle at the Rebel starport on every boot. Ticket purchase failures that used to be silent (no shuttle at the destination, travel or return trip not permitted) now log the reason and tell the player, and the boot log lists which travel point each shuttle registers to.
+- **Files:** `bin/scripts/screenplays/static_spawns/hoth_rebel_shuttle.lua`, `bin/scripts/screenplays/screenplays.lua`, `src/server/zone/objects/creature/commands/PurchaseTicketCommand.h`, `src/server/zone/objects/building/tasks/ScheduleShuttleTask.h`
+- **Notes:** C++ change: rebuild. The shuttle registers about 5 minutes after boot. Verified in the boot log on local dev (Rebel Forward Base linked to a shuttle); in-game purchase still to be retested. Plane LIVE-4.
+
 ### 2026-10-06 — Hoth: faction turrets at the fortified shuttleports
 
 - **Summary:** The decorative turrets at Eastern Ice Fields and Generator Ridge are replaced by working faction turrets (small towers, 4 per site): Imperial turrets at Eastern Ice Fields attack overt Rebels, Rebel turrets at Generator Ridge attack overt Imperials. Neutral and covert players are not targeted. Turrets can be destroyed and respawn after 30 minutes.

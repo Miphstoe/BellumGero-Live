@@ -841,6 +841,7 @@ includeFile("vendors/artisan_procurement_vendor.lua")
 includeFile("static_spawns/master_bounty_guild.lua")
 includeFile("static_spawns/hoth_static_spawns.lua")
 includeFile("static_spawns/hoth_shuttleport_turrets.lua")
+includeFile("static_spawns/hoth_rebel_shuttle.lua")
 
 -- Painting Exchange Vendor
 includeFile("bellum/painting_exchange_vendor.lua")
