@@ -1274,11 +1274,18 @@ void PlanetManagerImplementation::readRegionObject(LuaObject& regionObject) {
 		static constexpr int MAPPOI = 0x020000;
 
 		if (type & MAPPOI) {
-			Reference<const PlanetMapCategory*> poiCat = TemplateManager::instance()->getPlanetMapCategoryByName("poi");
+			// The client's datatable lists "poi" (54) but its map never shows entries for it (newer category); "themepark"
+			// is a category the client lists and draws.
+			Reference<const PlanetMapCategory*> poiCat = TemplateManager::instance()->getPlanetMapCategoryByName("themepark");
 
 			if (poiCat != nullptr) {
 				region->setPlanetMapCategory(poiCat);
 				zone->registerObjectWithPlanetaryMap(region);
+
+				info(true) << "Map POI registered: " << name << " (" << region->getObjectID() << ") displayed='"
+						   << region->getDisplayedName() << "' onMap=" << zone->isObjectRegisteredWithPlanetaryMap(region);
+			} else {
+				error() << "Map POI " << name << ": planet map category 'poi' not found";
 			}
 		}
 	}

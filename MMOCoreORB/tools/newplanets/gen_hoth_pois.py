@@ -2,8 +2,8 @@
 """gen_hoth_pois.py — named Hoth points of interest: server regions + client strings/radar regions. Idempotent.
 
 Owns the '-- Points of interest' block of hoth_regions.lua (rewritten on every run). MAPPOI (0x020000, Bellum Gero
-PlanetManager change) puts a region on the planetary map under "Points of Interest"; outposts are on the map as
-cities, shuttleports register themselves."""
+PlanetManager change) puts a region on the planetary map under "Theme Park" (the client lists the newer "Points of
+Interest" category but never shows its entries); outposts are on the map as cities, shuttleports register themselves."""
 import os
 import dt_tool
 import stf_tool

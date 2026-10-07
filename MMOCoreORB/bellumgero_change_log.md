@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-06 — Planetary map: Hoth POIs listed under Theme Park
+
+- **Summary:** The client lists the "Points of Interest" map category but never shows entries for it (it is a newer category than the client's map code). MAPPOI regions now register under "Theme Park", where the caves, shuttleports, battlefield, raider camp, Lucky Despot Wreck and Glacial Rancor grounds show with their names. POI regions also keep their own name when they lie inside a city (the Lucky Despot Wreck was listed as "Scavenger Outpost"). The boot log lists every registered POI ("Map POI registered").
+- **Files:** `src/server/zone/managers/planet/PlanetManagerImplementation.cpp`, `src/server/zone/managers/planet/MapLocationEntry.cpp`
+- **Notes:** C++ change: rebuild. Verified in game on local dev. Plane LIVE-18.
+
 ### 2026-10-06 — Hoth TRE: furniture name strings no longer collide
 
 - **Summary:** BG's `string/en/frn_n.stf` has a stale next-id counter (293 while ids run to 310). The Hoth generator added decor names at ids 293-297, duplicating existing ids: the server could not parse the file (boot error) and five existing furniture names were replaced on the client. New strings now always get ids above the highest existing one; frn_n/frn_d rebuilt from BG's originals with no original name changed.
