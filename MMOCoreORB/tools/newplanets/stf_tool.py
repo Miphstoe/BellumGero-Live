@@ -26,7 +26,9 @@ def write(t, path):
 def add(t, key, text):
     if any(k == key for _, k in t['keys']):
         raise KeyError('exists: ' + key)
-    i = t['next']; t['next'] += 1
+    # Some shipped tables carry a stale 'next' counter (BG's frn_n.stf: next=293 but ids up to 310); never reuse an id.
+    i = max([t['next']] + [j + 1 for j, _ in t['keys']])
+    t['next'] = i + 1
     t['vals'][i] = (0xFFFFFFFF, text); t['keys'].append((i, key))
 
 def set(t, key, text):

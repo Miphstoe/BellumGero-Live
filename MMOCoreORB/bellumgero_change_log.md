@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-06 — Hoth TRE: furniture name strings no longer collide
+
+- **Summary:** BG's `string/en/frn_n.stf` has a stale next-id counter (293 while ids run to 310). The Hoth generator added decor names at ids 293-297, duplicating existing ids: the server could not parse the file (boot error) and five existing furniture names were replaced on the client. New strings now always get ids above the highest existing one; frn_n/frn_d rebuilt from BG's originals with no original name changed.
+- **Files:** `tools/newplanets/stf_tool.py` (client TRE content: `string/en/frn_n.stf`, `frn_d.stf`)
+- **Notes:** Needs the rebuilt `bg_custom1.tre` (dist md5 432a085a…, dev 5ec02fca…). Boot error baseline drops from 303 to 301.
+
 ### 2026-10-06 — Planetary map: Points of Interest entries show their names
 
 - **Summary:** POI regions (MAPPOI) were listed under "Points of Interest" with no entries: their map name came from the server-side translation of "@hoth_region_names:...", which the server does not load, so it was empty and the client dropped them. Regions with an empty translated name now send the raw string reference (like cities), which the client translates.
