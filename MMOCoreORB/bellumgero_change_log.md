@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-06 — World boss loot manager: corpse and loot-box events
+
+- **Summary:** The loot manager scheduled an early corpse destruction that never ran (the event handler read a nil boss ID: Core3 calls event handlers as play:key(object, args)). Running it would have deleted world bosses from the database and stopped their engine respawn, so the early destruction is removed; the emptied, non-interactive corpse despawns on the normal timer. The loot-box despawn event handler had the same argument mistake and is fixed.
+- **Files:** `bin/scripts/screenplays/managers/world_boss_loot_manager.lua`
+- **Notes:** Affects every world boss using WorldBossLootManager (Acklay, Searing Broodwarden, Infernomaw, Torgas, Grak, Glacial Rancor). Script change only.
+
 ### 2026-10-05 — Glacial Rancor tougher
 
 - **Summary:** Rimeclaw, the Glacial Rancor: level 350 -> 400, HAM 1.0-1.5M -> 1.4-2.0M, damage 935-1580 -> 1050-1800, accuracy 92.5 -> 95, resists +5 to +10. Between Acklay (350) and Grak (525).

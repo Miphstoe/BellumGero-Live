@@ -712,25 +712,11 @@ function WorldBossLootManager:onBossDeath(pBoss, lootGroups, bossName)
       corpse:setOptionsBitmask(0)
     end)
 
-    -- Method 3: Destroy the corpse completely after a short delay
-    -- Store the OID to safely retrieve the object later
-    local corpseOID = corpse:getObjectID()
-    if corpseOID and corpseOID > 0 and safeBossOID and safeBossOID > 0 then
-      local bossOIDStr = tostring(safeBossOID)
-      local corpseOIDValue = tonumber(corpseOID)
-
-      log("Preparing to schedule corpse destruction - boss OID: %s, corpse OID: %s", bossOIDStr, tostring(corpseOIDValue))
-
-      writeData("WBLootMgr:corpseToDestroy:" .. bossOIDStr, corpseOIDValue)
-      createEvent(5000, "WorldBossLootManager", "destroyCorpse", nil, bossOIDStr)
-
-      log("Scheduled corpse destruction for boss OID %s (corpse OID: %s)", bossOIDStr, tostring(corpseOIDValue))
-    else
-      log("Failed to schedule corpse destruction - bossOID: %s, corpseOID: %s",
-          tostring(safeBossOID), tostring(corpseOID))
-    end
-
-    log("Boss corpse cleared and marked for destruction - no traditional looting available")
+    -- Method 3 (early corpse destruction) removed 2026-10-06. The corpse is the boss object itself; world bosses
+    -- are spawned with an engine respawn timer that reuses it, so destroying it from world + database would end the
+    -- boss for good. The event never fired anyway (destroyCorpse received a nil OID). The corpse is already emptied
+    -- and non-interactive above and despawns on the normal corpse timer.
+    log("Boss corpse cleared - no traditional looting available; it despawns on the normal timer")
   end)
 
   _G.__WB_DAMAGE_TRACKING[bossOID] = nil
@@ -812,11 +798,13 @@ local function destroyCorpse(bossOIDStr)
 end
 
 -- ===== Events =====
-function WorldBossLootManager.despawnLootBox(pBox, _)
+-- Core3 runs createEvent callbacks as methods: play:key(pObject, args) (DirectorManager::activateEvent),
+-- so the arguments after self are (event object, args string).
+function WorldBossLootManager.despawnLootBox(_, pBox, _args)
   despawnLootBox(pBox)
 end
 
-function WorldBossLootManager.destroyCorpse(_, bossOIDStr)
+function WorldBossLootManager.destroyCorpse(_, _pObject, bossOIDStr)
   destroyCorpse(bossOIDStr)
 end
 
