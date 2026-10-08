@@ -1,0 +1,93 @@
+package server.zone.objects.player.sessions;
+
+import engine.log.Logger;
+import engine.util.Facade;
+import server.zone.objects.creature.CreatureObject;
+import server.zone.objects.tangible.TangibleObject;
+import server.zone.objects.player.sessions.ImageDesignStationObserver;
+include server.zone.objects.player.sessions.ImageDesignData;
+import system.lang.Time;
+
+class ImageDesignStationSession extends Facade {
+	@weakReference
+	protected CreatureObject customerCreature;
+
+	@dereferenced
+	protected ImageDesignData imageDesignData;
+
+	protected TangibleObject hairObject;
+
+	protected transient unsigned long stationObjectId;
+	protected transient unsigned long stationOwnerId;
+	protected transient int servicePrice;
+	protected transient int originalSkillPoints;
+	protected transient string temporarySkillList;
+
+	protected ImageDesignStationObserver stationObserver;
+	protected transient unsigned long stationVenueId;
+
+	@dereferenced
+	protected transient Time sessionStartTime;
+
+	public ImageDesignStationSession(CreatureObject parent) {
+		Logger.setLoggingName("ImageDesignStationSession");
+		Logger.setLogging(true);
+		initializeSession();
+	}
+
+	public native void initializeTransientMembers();
+
+	@local
+	public native void startStationImageDesign(
+		CreatureObject customer,
+		unsigned long stationId,
+		unsigned long ownerId,
+		int price);
+
+	@local
+	public native void updateStationImageDesign(
+		CreatureObject updater,
+		unsigned long designer,
+		unsigned long targetPlayer,
+		unsigned long tent,
+		int type,
+		@dereferenced final ImageDesignData data);
+
+	@local
+	public native void cancelStationImageDesign(
+		unsigned long designer,
+		unsigned long targetPlayer,
+		unsigned long tent,
+		int type,
+		@dereferenced final ImageDesignData data);
+
+	@local
+	public native boolean isStationSessionValid(boolean notifyPlayer);
+
+	@local
+	public native void forceCloseStationSession(boolean notifyPlayer);
+
+	@local
+	public native void cleanupTemporarySkills();
+
+	@local
+	public native boolean doStationPayment();
+
+	public int initializeSession() {
+		customerCreature = null;
+		stationObjectId = 0;
+		stationOwnerId = 0;
+		servicePrice = 10000;
+		originalSkillPoints = -1;
+		stationObserver = null;
+		stationVenueId = 0;
+		temporarySkillList = "";
+		return 0;
+	}
+
+	public native int cancelSession();
+
+	public int clearSession() {
+		return 0;
+	}
+}

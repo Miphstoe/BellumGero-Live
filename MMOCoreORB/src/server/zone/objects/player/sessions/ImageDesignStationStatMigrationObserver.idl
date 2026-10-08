@@ -1,0 +1,32 @@
+package server.zone.objects.player.sessions;
+
+import engine.core.ManagedObject;
+import engine.util.Observer;
+import engine.util.Observable;
+include server.zone.objects.scene.ObserverType;
+import server.zone.objects.creature.CreatureObject;
+
+class ImageDesignStationStatMigrationObserver extends Observer {
+	@weakReference
+	CreatureObject player;
+
+	protected transient unsigned long stationObjectId;
+	protected transient string migrationToken;
+
+	public ImageDesignStationStatMigrationObserver(
+		CreatureObject creature,
+		unsigned long stationId,
+		string token) {
+
+		player = creature;
+		stationObjectId = stationId;
+		migrationToken = token;
+		setObserverType(ObserverType.IMAGEDESIGNPOSITION);
+	}
+
+	public native int notifyObserverEvent(
+		unsigned int eventType,
+		Observable observable,
+		ManagedObject arg1,
+		long arg2);
+}

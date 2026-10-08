@@ -146,6 +146,7 @@ arch1 = ConvoScreen:new {
         --{"25 effectiveness Structure Crafting Station - 50k", "option75"},
       	--{"25 effectiveness Clothing Crafting Station - 50k", "option72"},
         --{"25 effectiveness Food Crafting Station - 50k", "option73"},
+        {"Image Designer Station Deed - 100k", "option302"},
       	{"Small Generic House - 200k", "option34"},
        -- {"Medium Generic House - 100k", "option35"},
        -- {"Clothing Factory Deed - 100k", "option36"},

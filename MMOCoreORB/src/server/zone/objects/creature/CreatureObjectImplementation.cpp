@@ -103,6 +103,84 @@ float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376f;
 void CreatureObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
+	// FMIDStation: station-managed Stat Migration is intentionally transient.
+	// If the server restarted while one was pending, clear its persisted
+	// markers instead of carrying an Apply state into the new process.
+	if (!getLuaStringData(
+			"fmidstation_stat_migration_station_id").isEmpty()) {
+		deleteLuaStringData(
+			"fmidstation_stat_migration_station_id");
+		deleteLuaStringData(
+			"fmidstation_stat_migration_ready");
+		deleteLuaStringData(
+			"fmidstation_stat_migration_token");
+	}
+
+	// FMIDStation: recover exact temporary ID skill-box state after an
+	// abnormal shutdown using the same isolated SkillManager removal path.
+	String fmidTempSkills =
+		getLuaStringData("fmidstation_temp_id_skills");
+
+	if (!fmidTempSkills.isEmpty()) {
+		setLuaStringData(
+			"fmidstation_force_close_ui",
+			"1");
+
+		Vector<String> skills;
+		StringTokenizer tokenizer(fmidTempSkills);
+		tokenizer.setDelimeter(",");
+
+		while (tokenizer.hasMoreTokens()) {
+			String skill;
+			tokenizer.getStringToken(skill);
+
+			if (!skill.isEmpty())
+				skills.add(skill);
+		}
+
+		for (int i = skills.size() - 1; i >= 0; --i) {
+			SkillManager::instance()->removeTemporarySkillState(
+				skills.get(i),
+				this->asCreatureObject(),
+				false);
+		}
+
+		deleteLuaStringData("fmidstation_temp_id_skills");
+	}
+
+	String originalSkillPointsString =
+		getLuaStringData(
+			"fmidstation_original_skill_points");
+
+	if (!originalSkillPointsString.isEmpty()) {
+		ManagedReference<PlayerObject*> ghost =
+			getPlayerObject();
+
+		if (ghost != nullptr) {
+			int originalSkillPoints =
+				Integer::valueOf(
+					originalSkillPointsString);
+
+			if (originalSkillPoints >= 0)
+				ghost->setSkillPoints(
+					originalSkillPoints);
+		}
+
+		deleteLuaStringData(
+			"fmidstation_original_skill_points");
+	}
+
+	// Compatibility cleanup for earlier FMIDStation test builds.
+	if (getLuaStringData("fmidstation_temp_entertainer") == "1") {
+		removeSkill("social_entertainer_novice", false);
+		deleteLuaStringData("fmidstation_temp_entertainer");
+	}
+
+	if (getLuaStringData("fmidstation_temp_imagedesigner_novice") == "1") {
+		removeSkill("social_imagedesigner_novice", false);
+		deleteLuaStringData("fmidstation_temp_imagedesigner_novice");
+	}
+
 	groupInviterID = 0;
 	groupInviteCounter = 0;
 	currentWeather = 0;

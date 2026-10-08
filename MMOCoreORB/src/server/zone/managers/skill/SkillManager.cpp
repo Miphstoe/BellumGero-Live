@@ -52,6 +52,29 @@ String localizedSkillName(const String& skillName) {
 	return localized;
 }
 
+
+bool hasImageDesignStationTemporarySkillState(CreatureObject* creature) {
+	return creature != nullptr &&
+		!creature->getLuaStringData(
+			"fmidstation_temp_id_skills").isEmpty();
+}
+
+bool rejectImageDesignStationPermanentSkillChange(
+	CreatureObject* creature,
+	bool notifyPlayer = true) {
+
+	if (!hasImageDesignStationTemporarySkillState(creature))
+		return false;
+
+	if (notifyPlayer) {
+		creature->sendSystemMessage(
+			"You cannot train or surrender skills while an "
+			"Image Designer Station session is active.");
+	}
+
+	return true;
+}
+
 bool learnedSkillListsRequirement(const Skill* learned, const String& requiredName) {
 	if (learned == nullptr || requiredName.isEmpty())
 		return false;
@@ -653,7 +676,175 @@ void SkillManager::removeDroidCommands(PlayerObject* ghost) {
 	return true;
 }*/
 
+bool SkillManager::grantTemporarySkillState(
+	const String& skillName,
+	CreatureObject* creature,
+	bool notifyClient) {
+
+	if (creature == nullptr)
+		return false;
+
+	auto skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr)
+		return false;
+
+	Locker locker(creature);
+
+	if (creature->hasSkill(skill->getSkillName()))
+		return true;
+
+	ManagedReference<PlayerObject*> ghost =
+		creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return false;
+
+	creature->addSkill(skill, notifyClient);
+
+	auto skillModifiers = skill->getSkillModifiers();
+
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+
+			creature->addSkillMod(
+				SkillModManager::SKILLBOX,
+				entry->getKey(),
+				entry->getValue(),
+				notifyClient);
+		}
+	}
+
+	auto abilityNames = skill->getAbilities();
+
+	if (abilityNames != nullptr && abilityNames->size() > 0)
+		addAbilities(ghost, *abilityNames, notifyClient);
+
+	auto schematicsGranted = skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr && schematicsGranted->size() > 0)
+		SchematicMap::instance()->addSchematics(
+			ghost, *schematicsGranted, notifyClient);
+
+	updateXpLimits(ghost);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+
+	return true;
+}
+
+bool SkillManager::removeTemporarySkillState(
+	const String& skillName,
+	CreatureObject* creature,
+	bool notifyClient) {
+
+	if (creature == nullptr)
+		return false;
+
+	auto skill = skillMap.get(skillName.hashCode());
+
+	if (skill == nullptr)
+		return false;
+
+	Locker locker(creature);
+
+	if (!creature->hasSkill(skill->getSkillName()))
+		return true;
+
+	ManagedReference<PlayerObject*> ghost =
+		creature->getPlayerObject();
+
+	if (ghost == nullptr)
+		return false;
+
+	creature->removeSkill(skill, notifyClient);
+
+	auto skillModifiers = skill->getSkillModifiers();
+
+	if (skillModifiers != nullptr) {
+		for (int i = 0; i < skillModifiers->size(); ++i) {
+			auto entry = &skillModifiers->elementAt(i);
+
+			creature->removeSkillMod(
+				SkillModManager::SKILLBOX,
+				entry->getKey(),
+				entry->getValue(),
+				notifyClient);
+		}
+	}
+
+	auto skillAbilities = skill->getAbilities();
+
+	if (skillAbilities != nullptr && skillAbilities->size() > 0) {
+		SortedVector<String> abilitiesLost;
+
+		for (int i = 0; i < skillAbilities->size(); ++i)
+			abilitiesLost.put(skillAbilities->get(i));
+
+		const SkillList* remainingSkills =
+			creature->getSkillList();
+
+		if (remainingSkills != nullptr) {
+			for (int i = 0;
+					i < remainingSkills->size() &&
+					abilitiesLost.size() > 0;
+					++i) {
+
+				Skill* remainingSkill =
+					remainingSkills->get(i);
+
+				if (remainingSkill == nullptr)
+					continue;
+
+				auto remainingAbilities =
+					remainingSkill->getAbilities();
+
+				if (remainingAbilities == nullptr)
+					continue;
+
+				for (int j = 0;
+						j < remainingAbilities->size();
+						++j) {
+
+					if (abilitiesLost.contains(
+							remainingAbilities->get(j))) {
+						abilitiesLost.drop(
+							remainingAbilities->get(j));
+					}
+				}
+			}
+		}
+
+		if (abilitiesLost.size() > 0)
+			removeAbilities(
+				ghost,
+				abilitiesLost,
+				notifyClient);
+	}
+
+	auto schematicsGranted =
+		skill->getSchematicsGranted();
+
+	if (schematicsGranted != nullptr &&
+			schematicsGranted->size() > 0) {
+		SchematicMap::instance()->removeSchematics(
+			ghost,
+			*schematicsGranted,
+			notifyClient);
+	}
+
+	updateXpLimits(ghost);
+
+	SkillModManager::instance()->verifySkillBoxSkillMods(creature);
+
+	return true;
+}
+
 bool SkillManager::awardSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired) {
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return false;
+
 	auto skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr)
@@ -900,6 +1091,9 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	if (creature == nullptr)
 		return false;
 
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return false;
+
 	String resolvedName = normalizeSurrenderSkillName(skillName);
 	Skill* skill = skillMap.get(resolvedName.hashCode());
 
@@ -1141,6 +1335,12 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 }
 
 void SkillManager::surrenderAllSkills(CreatureObject* creature, bool notifyClient, bool removeForceProgression, bool removePilot) {
+	if (creature == nullptr)
+		return;
+
+	if (rejectImageDesignStationPermanentSkillChange(creature))
+		return;
+
 	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	const SkillList* skillList = creature->getSkillList();
@@ -1297,6 +1497,9 @@ void SkillManager::updateXpLimits(PlayerObject* ghost) {
 }
 
 bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired, bool regrant) {
+	if (rejectImageDesignStationPermanentSkillChange(creature, false))
+		return false;
+
 	auto skill = skillMap.get(skillName.hashCode());
 
 	if (skill == nullptr)
@@ -1469,6 +1672,9 @@ bool SkillManager::awardSkillWithRegrant(const String& skillName, CreatureObject
 
 bool SkillManager::surrenderSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool checkFrs, bool allowPilot, bool regrant) {
 	if (creature == nullptr)
+		return false;
+
+	if (rejectImageDesignStationPermanentSkillChange(creature, false))
 		return false;
 
 	String resolvedName = normalizeSurrenderSkillName(skillName);

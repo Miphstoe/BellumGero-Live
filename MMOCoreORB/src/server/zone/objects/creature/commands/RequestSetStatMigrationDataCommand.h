@@ -76,6 +76,17 @@ public:
 			for (int i = 0; i < 9; ++i) {
 				session->setAttributeToModify(i, targetAttributes[i]);
 			}
+
+			if (!creature->getLuaStringData(
+					"fmidstation_stat_migration_station_id").isEmpty()) {
+				creature->setLuaStringData(
+					"fmidstation_stat_migration_ready",
+					"1");
+
+				creature->sendSystemMessage(
+					"Stat Migration targets saved. Return to the "
+					"Image Designer Station and choose Apply Stat Migration.");
+			}
 		} else {
 			creature->error("targetPointsTotal = " + String::valueOf(targetPointsTotal));
 			creature->error("totalAttribPoints = " + String::valueOf(getTotalAttribPoints(creature)));
@@ -84,13 +95,23 @@ public:
 		}
 
 		// Player is in the tutorial zone and is allowed to migrate stats.
+		// Station-managed migration waits for the station Apply radial so
+		// payment and commit remain together, even for privileged TC users.
 		auto zone = creature->getZone();
 
-		if ((zone != nullptr && zone->getZoneName() == "tutorial") || privilegedPlayer) {
+		bool stationManagedMigration =
+			!creature->getLuaStringData(
+				"fmidstation_stat_migration_station_id").isEmpty();
+
+		if (!stationManagedMigration &&
+				((zone != nullptr &&
+				  zone->getZoneName() == "tutorial") ||
+				 privilegedPlayer)) {
 			session->migrateStats();
 
 			if (privilegedPlayer) {
-				creature->sendSystemMessage("Stat Migration Permitted due to Staff Privileges.");
+				creature->sendSystemMessage(
+					"Stat Migration Permitted due to Staff Privileges.");
 			}
 		}
 
