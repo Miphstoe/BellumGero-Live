@@ -28,6 +28,9 @@
 #include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitDeedMenuComponent.h"
 #include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitContainerComponent.h"
 #include "server/zone/objects/tangible/components/doctorservice/DoctorServiceHopperContainerComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationDataComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationMenuComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationDeedMenuComponent.h"
 #include "server/zone/objects/tangible/components/LytusFamilyArtefactMenuComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
@@ -284,6 +287,9 @@ ComponentManager::ComponentManager() {
 	components.put("DoctorServiceUnitDeedMenuComponent", new DoctorServiceUnitDeedMenuComponent());
 	components.put("DoctorServiceUnitContainerComponent", new DoctorServiceUnitContainerComponent());
 	components.put("DoctorServiceHopperContainerComponent", new DoctorServiceHopperContainerComponent());
+	components.put("ImageDesignStationMenuComponent", new ImageDesignStationMenuComponent());
+	components.put("ImageDesignStationDeedMenuComponent", new ImageDesignStationDeedMenuComponent());
+	dataObjectFactory.registerObject<ImageDesignStationDataComponent>("ImageDesignStationDataComponent");
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());

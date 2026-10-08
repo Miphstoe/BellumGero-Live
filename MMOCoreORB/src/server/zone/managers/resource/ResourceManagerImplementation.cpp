@@ -10,6 +10,10 @@
 #include "server/zone/packets/resource/ResourceContainerObjectDeltaMessage3.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "conf/ConfigManager.h"
+#include "resourcesnapshot/ResourceSnapshotExporter.h"
+
+#include <exception>
 
 void ResourceManagerImplementation::initialize() {
 	if (!loadConfigData()) {
@@ -23,6 +27,7 @@ void ResourceManagerImplementation::initialize() {
 
 	startResourceSpawner();
 	loadSurveyData();
+	startResourceSnapshotExporter();
 }
 
 void ResourceManagerImplementation::loadSurveyData() {
@@ -163,9 +168,100 @@ void ResourceManagerImplementation::loadDefaultConfig() {
 }
 
 void ResourceManagerImplementation::stop() {
+	stopResourceSnapshotExporter(); // Wait outside the manager lock.
+	Locker locker(_this.getReferenceUnsafeStaticCast());
 	processor = nullptr;
 	zoneServer = nullptr;
 	resourceSpawner = nullptr;
+	resourceSnapshotExporter = nullptr;
+}
+
+void ResourceManagerImplementation::startResourceSnapshotExporter() {
+	auto config = ConfigManager::instance();
+	if (!config->getBool("Core3.ResourceSnapshot.Enabled", false))
+		return;
+
+	ResourceSnapshotSettings settings;
+	settings.outputPath = config->getString("Core3.ResourceSnapshot.OutputPath", "log/resource-snapshot.json").toCharArray();
+	settings.sourceInstance = config->getString("Core3.ResourceSnapshot.SourceInstance", "bellum-gero-development:default").toCharArray();
+	settings.revision = config->getRevision().toCharArray();
+	const int interval = config->getInt("Core3.ResourceSnapshot.IntervalSeconds", 300);
+	if (interval <= 0 || settings.outputPath.empty() || settings.sourceInstance.empty()) {
+		error("ResourceSnapshot requires a positive interval, output path and persistent source instance; disabled");
+		return;
+	}
+	settings.intervalMilliseconds = static_cast<std::uint64_t>(interval) * 1000;
+
+	// Copy optional server metadata once at initialization. Exports themselves
+	// never query a zone/server service and never execute Git for provenance.
+	ManagedReference<ZoneServer*> server;
+	{
+		ReadLocker locker(_this.getReferenceUnsafeStaticCast());
+		if (resourceSnapshotStopping)
+			return;
+		server = zoneServer;
+	}
+	if (server == nullptr)
+		return;
+	{
+		ReadLocker locker(server.get());
+		settings.galaxyID = server->getGalaxyID();
+		settings.galaxyName = server->getGalaxyName().toCharArray();
+	}
+	server = nullptr;
+
+	Reference<ResourceSnapshotExporter*> exporter;
+	{
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+		if (resourceSnapshotStopping || resourceSpawner == nullptr || resourceSnapshotExporter != nullptr)
+			return;
+		// The initialized spawner is pinned while holding the same manager lock
+		// used for detachment. That pin survives every registry-reference copy.
+		exporter = new ResourceSnapshotExporter(settings, resourceSpawner.get());
+		resourceSnapshotExporter = exporter;
+	}
+	try {
+		exporter->start(); // Queue creation/scheduling occurs after manager unlock.
+	} catch (const Exception& e) {
+		error("ResourceSnapshot startup failed: " + e.getMessage());
+	} catch (const std::exception& e) {
+		error(String("ResourceSnapshot startup failed: ") + e.what());
+	}
+}
+
+void ResourceManagerImplementation::stopResourceSnapshotExporter() {
+	Reference<ResourceSnapshotExporter*> exporter;
+	{
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+		resourceSnapshotStopping = true;
+		exporter = resourceSnapshotExporter;
+	}
+	if (exporter != nullptr)
+		exporter->stopAndWait("resource manager/server shutdown");
+}
+
+String ResourceManagerImplementation::requestResourceSnapshotExport() {
+	Reference<ResourceSnapshotExporter*> exporter;
+	{
+		ReadLocker locker(_this.getReferenceUnsafeStaticCast());
+		if (resourceSnapshotStopping)
+			return "Resource snapshot exporter is stopping.";
+		exporter = resourceSnapshotExporter;
+	}
+	if (exporter == nullptr)
+		return "Resource snapshot exporter is disabled or unavailable.";
+
+	switch (exporter->requestExport()) {
+	case ResourceSnapshotRequest::Accepted:
+		return "Resource snapshot export accepted; capture/publication will run asynchronously.";
+	case ResourceSnapshotRequest::AlreadyRunning:
+		return "Resource snapshot export already queued/running; request skipped.";
+	case ResourceSnapshotRequest::Stopped:
+		return "Resource snapshot exporter is stopped or unavailable.";
+	case ResourceSnapshotRequest::Failed:
+		return "Resource snapshot request failed; no publication was scheduled.";
+	}
+	return "Resource snapshot request failed.";
 }
 
 void ResourceManagerImplementation::startResourceSpawner() {
@@ -248,9 +344,9 @@ ResourceSpawn* ResourceManagerImplementation::getResourceSpawn(const String& spa
 
 	ReadLocker locker(_this.getReferenceUnsafeStaticCast());
 
-	ResourceMap* resourceMap = resourceSpawner->getResourceMap();
+	const ResourceMap* resourceMap = resourceSpawner->getResourceMap();
 
-	spawn = resourceMap->get(spawnName.toLowerCase());
+	spawn = resourceMap->findByName(spawnName);
 
 	return spawn;
 }
@@ -267,13 +363,14 @@ void ResourceManagerImplementation::getResourceListByType(Vector<ManagedReferenc
 	ManagedReference<ResourceSpawn*> resourceSpawn;
 
 	try {
-		ResourceMap* resourceMap = resourceSpawner->getResourceMap();
+		const ResourceMap* resourceMap = resourceSpawner->getResourceMap();
 
-		ZoneResourceMap* zoneMap = resourceMap->getZoneResourceList(zoneName);
+		bool zoneFound = false;
+		const auto resources = resourceMap->copyZoneReferences(zoneName, &zoneFound);
 
-		if (zoneMap != nullptr) {
-			for (int i = 0; i < zoneMap->size(); ++i) {
-				resourceSpawn = zoneMap->get(i);
+		if (zoneFound) {
+			for (int i = 0; i < resources.size(); ++i) {
+				resourceSpawn = resources.get(i);
 
 				if (!resourceSpawn->inShift())
 					continue;
