@@ -30,6 +30,54 @@
 #include "server/zone/Zone.h"
 #include "server/zone/objects/scene/SceneObjectType.h"
 
+namespace {
+
+/**
+ * Converts Upgrade Kit Tool Effectiveness (-15 through +15) into a modest
+ * increase to the minimum slice roll while preserving the existing maximum.
+ *
+ * The maximum-quality target is intentionally conservative:
+ *   Master Armor Effectiveness: 21-35 -> 25-35
+ *
+ * Other slice ranges scale from the same ratio, so wider ranges receive a
+ * somewhat larger floor increase while already-tight ranges receive less.
+ * Values outside the normal crafted -15..+15 range are clamped.
+ */
+uint8 calculateUpgradeKitMinBonus(uint8 min, uint8 max, float effectiveness) {
+	if (max <= min)
+		return 0;
+
+	float clampedEffectiveness = effectiveness;
+
+	if (clampedEffectiveness < -15.0f)
+		clampedEffectiveness = -15.0f;
+	else if (clampedEffectiveness > 15.0f)
+		clampedEffectiveness = 15.0f;
+
+	const int rangeWidth = max - min;
+
+	// A 14-point range receives a maximum +4 floor increase.
+	int maxBonus = static_cast<int>(((rangeWidth * 4.0f) / 14.0f) + 0.5f);
+
+	if (maxBonus < 1)
+		maxBonus = 1;
+
+	if (maxBonus >= rangeWidth)
+		maxBonus = rangeWidth - 1;
+
+	const float qualityScale = (clampedEffectiveness + 15.0f) / 30.0f;
+	int bonus = static_cast<int>((maxBonus * qualityScale) + 0.5f);
+
+	if (bonus < 0)
+		bonus = 0;
+	else if (bonus > maxBonus)
+		bonus = maxBonus;
+
+	return static_cast<uint8>(bonus);
+}
+
+} // namespace
+
 int SlicingSessionImplementation::initializeSession() {
 	firstCable = System::random(1);
 	nodeCable = 0;
@@ -50,6 +98,9 @@ int SlicingSessionImplementation::initializeSession() {
 	selectedSlice = false;
 	firstRun = true;
 	sliceOption = 0;
+
+	// -15 preserves the existing slice ranges if no better quality is present.
+	upgradeKitEffectiveness = -15.0f;
 
 	return 0;
 }
@@ -386,6 +437,13 @@ bool SlicingSessionImplementation::hasWeaponUpgradeKit() {
 		uint32 objType = sceno->getGameObjectType();
 
 		if (objType == SceneObjectType::WEAPONUPGRADEKIT) {
+			SlicingTool* kit = sceno.castTo<SlicingTool*>();
+
+			if (kit != nullptr)
+				upgradeKitEffectiveness = kit->getEffectiveness();
+			else
+				upgradeKitEffectiveness = -15.0f;
+
 			Locker locker(sceno);
 			sceno->destroyObjectFromWorld(true);
 			sceno->destroyObjectFromDatabase(true);
@@ -413,6 +471,13 @@ bool SlicingSessionImplementation::hasArmorUpgradeKit() {
 		uint32 objType = sceno->getGameObjectType();
 
 		if (objType == SceneObjectType::ARMORUPGRADEKIT) {
+			SlicingTool* kit = sceno.castTo<SlicingTool*>();
+
+			if (kit != nullptr)
+				upgradeKitEffectiveness = kit->getEffectiveness();
+			else
+				upgradeKitEffectiveness = -15.0f;
+
 			Locker locker(sceno);
 			sceno->destroyObjectFromWorld(true);
 			sceno->destroyObjectFromDatabase(true);
@@ -648,6 +713,7 @@ void SlicingSessionImplementation::handleWeaponSlice() {
         return;
 	}
 
+    min += calculateUpgradeKitMinBonus(min, max, upgradeKitEffectiveness);
     uint8 percentage = System::random(max - min) + min;
 	
     //Selectable slicing
@@ -795,6 +861,7 @@ void SlicingSessionImplementation::handleArmorSlice() {
             return;
 	}
 
+	min += calculateUpgradeKitMinBonus(min, max, upgradeKitEffectiveness);
 	uint8 percent = System::random(max - min) + min;
 
 	if (!selectedSlice){
