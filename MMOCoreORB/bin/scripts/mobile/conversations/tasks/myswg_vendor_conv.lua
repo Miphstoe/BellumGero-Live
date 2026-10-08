@@ -25,6 +25,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Languages", "languages1"},
         {"Special NPC Status", "special_npc1"},
         {"Advertisement Space", "ad_menu"},
+        {"Character Name Change - 1,000k", "namechange1"},
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
@@ -53,6 +54,29 @@ petbuff_select = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(petbuff_select);
+
+namechange1 = ConvoScreen:new {
+    id = "namechange1",
+    leftDialog = "",
+    customDialogText = "Would you like to change your character's name? This service costs 1,000,000 credits. Your new name must be available and comply with the server's naming rules. Credits will only be deducted after your name change has been successfully completed.",
+    stopConversation = "false",
+    options = {
+        {"Change my name - 1,000k", "namechange_start"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(namechange1);
+
+namechange_start = ConvoScreen:new {
+    id = "namechange_start",
+    leftDialog = "",
+    customDialogText = "Enter your new name in the window that opened. You will be asked for your first name, then your last name, and then to confirm the change.",
+    stopConversation = "false",
+    options = {
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(namechange_start);
 
 weaps1 = ConvoScreen:new {    
     id = "weaps1",
