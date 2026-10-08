@@ -1622,6 +1622,57 @@ void PlayerObjectImplementation::removeAllReverseFriends(const String& oldName) 
 	}
 }
 
+void PlayerObjectImplementation::transferReverseFriends(const String& oldName, const String& newName) {
+	PlayerManager* playerManager = server->getPlayerManager();
+	ZoneServer* zoneServer = server->getZoneServer();
+
+	while (friendList.reversePlayerCount() > 0) {
+		String name = friendList.getReversePlayer(0).toLowerCase();
+		uint64 objID = playerManager->getObjectID(name);
+
+		ManagedReference<CreatureObject*> reverseFriend = zoneServer->getObject(objID).castTo<CreatureObject*>();
+
+		if (reverseFriend != nullptr && reverseFriend->isPlayerCreature()) {
+			Core::getTaskManager()->executeTask([=] () {
+				Locker locker(reverseFriend);
+
+				PlayerObject* ghost = reverseFriend->getPlayerObject();
+
+				if (ghost == nullptr || !ghost->hasFriend(oldName.toLowerCase()))
+					return;
+
+				// addFriend re-registers the reverse entry on the renamed character
+				ghost->removeFriend(oldName, false);
+				ghost->addFriend(newName, reverseFriend->isOnline());
+			}, "TransferFriendLambda");
+		}
+
+		removeReverseFriend(name);
+	}
+
+	// Players on this character's own friends list track it by name in their reverse
+	// list (used for online notifications); repoint those entries as well.
+	for (int i = 0; i < friendList.size(); ++i) {
+		uint64 objID = playerManager->getObjectID(friendList.get(i));
+
+		ManagedReference<CreatureObject*> friendCreo = zoneServer->getObject(objID).castTo<CreatureObject*>();
+
+		if (friendCreo == nullptr || !friendCreo->isPlayerCreature())
+			continue;
+
+		Core::getTaskManager()->executeTask([=] () {
+			Locker locker(friendCreo);
+
+			PlayerObject* ghost = friendCreo->getPlayerObject();
+
+			if (ghost != nullptr) {
+				ghost->removeReverseFriend(oldName);
+				ghost->addReverseFriend(newName);
+			}
+		}, "TransferReverseFriendLambda");
+	}
+}
+
 void PlayerObjectImplementation::addIgnore(const String& name, bool notifyClient) {
 	String nameLower = name.toLowerCase();
 	ManagedReference<SceneObject*> parent = getParent().get();

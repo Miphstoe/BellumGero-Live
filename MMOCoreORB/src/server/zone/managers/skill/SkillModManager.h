@@ -44,6 +44,7 @@ public:
 	const static int PERMANENTMOD = 0x100;
 	const static int TEMPLATE = 0x101; /// From LUA templates
 	const static int SKILLBOX = 0x103; /// From Skills learned
+	const static int VENDORIMAGEDESIGN = 0x104; /// Transient ID mods held only during a Design Vendor session; wiped on load
 
 	///Bonus Mods
 	const static int BONUSMOD = 0x1000;

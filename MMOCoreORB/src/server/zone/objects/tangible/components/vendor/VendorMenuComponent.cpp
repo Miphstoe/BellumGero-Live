@@ -15,6 +15,7 @@
 #include "server/zone/managers/vendor/VendorManager.h"
 #include "server/zone/ZoneProcessServer.h"
 #include "server/zone/managers/auction/AuctionManager.h"
+#include "server/zone/objects/player/sessions/VendorImageDesignSession.h"
 
 
 void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
@@ -100,6 +101,12 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 		// NEW: Relist expired at previous price (owner only, initialized vendors)
 		menuResponse->addRadialMenuItemToRadialID(70, 80, 3, "Relist expired (previous price)");
 		menuResponse->addRadialMenuItemToRadialID(70, 81, 3, "Guild Discounts");
+	}
+
+	// Design Vendor (owner only, creature vendors, before or after initialization)
+	if (sceneObject->isCreatureObject()) {
+		menuResponse->addRadialMenuItemToRadialID(70, 82, 3, "Design Vendor");
+		menuResponse->addRadialMenuItemToRadialID(70, 83, 3, "Change Vendor Hair");
 	}
 
 	menuResponse->addRadialMenuItemToRadialID(70, 78, 3, "@player_structure:remove_vendor");
@@ -222,6 +229,29 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 	}
 	case 81: {
 		VendorManager::instance()->sendGuildDiscountManagementTo(player, vendor);
+		return 0;
+	}
+	case 82: {
+		if (!vendor->isCreatureObject()) {
+			player->sendSystemMessage("This vendor cannot be customized.");
+			return 0;
+		}
+
+		if (player->containsActiveSession(SessionFacadeType::IMAGEDESIGN)) {
+			player->sendSystemMessage("@image_designer:already_image_designing");
+			return 0;
+		}
+
+		ManagedReference<VendorImageDesignSession*> session = new VendorImageDesignSession(player);
+		session->deploy();
+
+		if (!session->startVendorImageDesign(player, vendor->asCreatureObject()))
+			session->cancelSession();
+
+		return 0;
+	}
+	case 83: {
+		VendorManager::instance()->sendVendorHairStyleListTo(player, vendor);
 		return 0;
 	}
 
