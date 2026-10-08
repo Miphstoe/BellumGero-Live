@@ -103,6 +103,10 @@ float CreatureObjectImplementation::DEFAULTRUNSPEED = 5.376f;
 void CreatureObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
 
+	auctionWaypointResults.removeAll();
+	auctionWaypointSearchTime = 0;
+	auctionWaypointSelectedItem = 0;
+	auctionWaypointSelectedTime = 0;
 	// FMIDStation: station-managed Stat Migration is intentionally transient.
 	// If the server restarted while one was pending, clear its persisted
 	// markers instead of carrying an Apply state into the new process.
@@ -209,6 +213,10 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 }
 
 void CreatureObjectImplementation::initializeMembers() {
+	auctionWaypointSearchTime = 0;
+	auctionWaypointSelectedItem = 0;
+	auctionWaypointSelectedTime = 0;
+
 	linkedCreature = nullptr;
 	controlDevice = nullptr;
 

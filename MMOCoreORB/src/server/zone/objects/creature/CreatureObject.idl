@@ -14,6 +14,7 @@ import server.zone.objects.scene.SceneObject;
 include server.zone.objects.intangible.ControlDevice;
 import server.zone.objects.area.CampSiteActiveArea;
 import system.util.VectorMap;
+include system.util.Vector;
 import system.lang.Time;
 import server.zone.objects.creature.events.DizzyFallDownEvent;
 include templates.SharedObjectTemplate;
@@ -92,6 +93,11 @@ class CreatureObject extends TangibleObject {
 
 	@weakReference
 	protected transient AuctionSearchTask auctionSearch;
+	@dereferenced
+	protected transient Vector<unsigned long> auctionWaypointResults;
+	protected transient unsigned int auctionWaypointSearchTime;
+	protected transient unsigned long auctionWaypointSelectedItem;
+	protected transient unsigned int auctionWaypointSelectedTime;
 
 	protected float accelerationMultiplierBase;
 	protected float accelerationMultiplierMod;
@@ -2401,6 +2407,56 @@ class CreatureObject extends TangibleObject {
 	@dirty
 	public void setAuctionSearchTask(AuctionSearchTask task) {
 		auctionSearch = task;
+	}
+
+	@preLocked
+	@local
+	public void clearAuctionWaypointResults(unsigned int searchTime) {
+		auctionWaypointResults.removeAll();
+		auctionWaypointSearchTime = searchTime;
+	}
+
+	@preLocked
+	@local
+	public void addAuctionWaypointResult(unsigned long itemID) {
+		auctionWaypointResults.add(itemID);
+	}
+
+	@read
+	@local
+	public int getAuctionWaypointResultCount() {
+		return auctionWaypointResults.size();
+	}
+
+	@read
+	@local
+	public unsigned long getAuctionWaypointResult(int index) {
+		return auctionWaypointResults.get(index);
+	}
+
+	@read
+	@local
+	public unsigned int getAuctionWaypointSearchTime() {
+		return auctionWaypointSearchTime;
+	}
+
+	@preLocked
+	@local
+	public void setAuctionWaypointSelectedItem(unsigned long itemID, unsigned int selectedTime) {
+		auctionWaypointSelectedItem = itemID;
+		auctionWaypointSelectedTime = selectedTime;
+	}
+
+	@read
+	@local
+	public unsigned long getAuctionWaypointSelectedItem() {
+		return auctionWaypointSelectedItem;
+	}
+
+	@read
+	@local
+	public unsigned int getAuctionWaypointSelectedTime() {
+		return auctionWaypointSelectedTime;
 	}
 
 	@local
