@@ -15,6 +15,7 @@ import engine.util.Observable;
 import server.zone.objects.player.sui.listbox.SuiListBox;
 
 include server.zone.managers.resource.resourcespawner.ResourceSpawner;
+include server.zone.managers.resource.resourcesnapshot.ResourceSnapshotExporter;
 include server.zone.objects.resource.ResourceSpawn;
 include server.zone.objects.transaction.TransactionLog;
 include system.util.Vector;
@@ -28,6 +29,8 @@ class ResourceManager extends Observer implements Logger {
 	private transient ZoneProcessServer processor;
 	private transient ZoneServer zoneServer;
 	private transient ResourceSpawner resourceSpawner;
+	private transient ResourceSnapshotExporter resourceSnapshotExporter;
+	private transient boolean resourceSnapshotStopping = false;
 	private transient int shiftInterval;
 	
 	public static final int RESOURCE_DEED_QUANTITY = 30000;
@@ -50,6 +53,11 @@ class ResourceManager extends Observer implements Logger {
 	
 	public native void stop();
 	public native void initialize();
+	@local
+	public native void stopResourceSnapshotExporter();
+	@local
+	public native string requestResourceSnapshotExport();
+	private native void startResourceSnapshotExporter();
 	public native void shiftResources();
 	
 	public native int notifyObserverEvent(unsigned int eventType, Observable observable, ManagedObject arg1, long arg2);

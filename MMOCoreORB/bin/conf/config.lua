@@ -91,6 +91,14 @@ Core3 = {
 	ZoneAllowedConnections = 30000,
 	ZoneGalaxyID = 2, --The actual zone server's galaxyID. Should coordinate with your login server.
 
+	------Read-only live resource snapshots------
+	ResourceSnapshot = {
+		Enabled = false,
+		OutputPath = "log/resource-snapshot.json", -- Relative to runtime working directory (normally MMOCoreORB/bin), or absolute.
+		IntervalSeconds = 300, -- Fixed delay after each export completes.
+		SourceInstance = "bellum-gero-live", -- Replace with a persistent database-lineage ID before production use.
+	},
+
 	-------- GROUND ZONES -------
 	ZonesEnabled = {
 
