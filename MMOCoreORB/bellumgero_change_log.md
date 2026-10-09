@@ -14,11 +14,11 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
-### 2026-10-08 — Hoth: no player housing (harvesters stay allowed)
+### 2026-10-08 — Hoth: harvesters allowed, player housing not
 
-- **Summary:** Decision: player housing is not allowed on Hoth, harvesters are. The AT-AT house was the only house given `hoth` in its `allowedZones` (2026-10-04); that entry is removed, so every house deed now refuses on Hoth ("wrong planet"), like on the other planets without housing.
-- **Files:** `bin/scripts/object/building/player/atat_house.lua`
-- **Notes:** Harvester templates carry no `allowedZones`, so this change does not touch them; harvesters on Hoth still need an in-game check. Server restart (Lua only). The earlier entry below, "AT-AT house placeable on Hoth", is superseded.
+- **Summary:** Decision: harvesters can be placed on Hoth, player housing cannot. Harvesters (installations) take their zone list from `SharedInstallationObjectTemplate.lua`, which had no `hoth`, so every harvester deed refused ("cannot be placed on this planet"); `hoth` is added there. The AT-AT house was the only house given `hoth` in its `allowedZones` (2026-10-04); that entry is removed, so every house deed refuses on Hoth ("wrong planet").
+- **Files:** `bin/scripts/object/SharedInstallationObjectTemplate.lua`, `bin/scripts/object/building/player/atat_house.lua`
+- **Notes:** Server restart (Lua only). The shared installation list also covers other installation types that inherit it (e.g. factories), so those become placeable on Hoth too. The 2026-10-04 entry below, "AT-AT house placeable on Hoth", is superseded.
 
 ### 2026-10-07 — Hoth: tickets to Rebel Forward Base work again
 
