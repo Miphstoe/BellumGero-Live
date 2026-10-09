@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-08 — Hoth: Rebel Forward Base terminals in a row, facing the starport, plus mission terminals
+
+- **Summary:** The Rebel Forward Base terminals sat in a line facing the wall and clipped into it, and only one mission terminal existed. They are now five terminals in a row (3 m apart) centred on the starport-side spot (-406, 586), all turned to face the starport: general mission, Rebel mission, scout mission, bank, bazaar.
+- **Files:** `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py` (keeps the hand-placed Rebel rows when `server` is re-run)
+- **Notes:** Server restart only (planetObjects are re-created each boot; no TRE). Facing is computed from the starport centre (-420, 600): heading -45 degrees. Check the orientation in game and adjust `oy`/`ow` if they turn out mirrored. Plane LIVE-25.
+
 ### 2026-10-08 — Hoth: harvesters allowed, player housing not
 
 - **Summary:** Decision: harvesters can be placed on Hoth, player housing cannot. Harvesters (installations) take their zone list from `SharedInstallationObjectTemplate.lua`, which had no `hoth`, so every harvester deed refused ("cannot be placed on this planet"); `hoth` is added there. The AT-AT house was the only house given `hoth` in its `allowedZones` (2026-10-04); that entry is removed, so every house deed refuses on Hoth ("wrong planet").

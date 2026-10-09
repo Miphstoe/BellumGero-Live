@@ -549,6 +549,9 @@ def server(state):
     rows = []
     for k in MOVES:
         cx, cy = centre[k][0] + o[k][0], centre[k][1] + o[k][1]
+        if k == 'rebel':  # hand-placed row (LIVE-25): at the /waypoint spot, facing the starport, plus general + scout mission
+            rows.extend(REBEL_TERMINAL_ROWS)
+            continue
         for i, t in enumerate(kinds[k]):
             rows.append(f'\t\t{{templateFile = "object/tangible/terminal/{t}.iff", ox = 0, oy = 0, oz = 0, ow = 1, '
                         f'x = {r1(cx - 16.0 + i * 3.0)}, z = {H[k]}, y = {r1(cy - 14.0)}, parentid = 0}},')
@@ -591,6 +594,14 @@ def shuttleports():
             s = s[:a] + block + nl + row + s[end:]
         print(f'{sp["name"]}: building ({sp["x"]}, {h}, {sp["y"]}), arrival ({r1(sp["x"] - 19.0)}, {sp["y"]})')
     open(p, 'w', encoding='utf-8', newline='').write(s)
+
+
+# Rebel Forward Base terminals (LIVE-25, 2026-10-08): 5 in a row of 3 m spacing centred on (-406, 586), turned to face the
+# starport at (-420, 600) (heading -45 degrees: oy = -0.383, ow = 0.924). Kept here so `server` does not overwrite them.
+REBEL_TERMINAL_ROWS = [
+    '		{templateFile = "object/tangible/terminal/%s.iff", ox = 0, oy = -0.383, oz = 0, ow = 0.924, x = %s, z = 27.8, y = %s, parentid = 0},' % r
+    for r in (('terminal_mission', -410.2, 581.8), ('terminal_mission_rebel', -408.1, 583.9), ('terminal_mission_scout', -406.0, 586.0),
+              ('terminal_bank', -403.9, 588.1), ('terminal_bazaar', -401.8, 590.2))]
 
 
 TRAVEL_RENAMES = {'Imperial Outpost': 'Imperial Forward Base', 'Rebel Outpost': 'Rebel Forward Base'}
