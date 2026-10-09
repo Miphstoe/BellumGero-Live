@@ -4,13 +4,13 @@ hoth_wampa_frostfang = Creature:new {
 	socialGroup = "wampa",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 90,
-	chanceHit = 0.91,
-	damageMin = 620,
-	damageMax = 950,
-	baseXp = 8640,
-	baseHAM = 30000,
-	baseHAMmax = 34000,
+	level = 105,
+	chanceHit = 1.0,
+	damageMin = 710,
+	damageMax = 1080,
+	baseXp = 10080,
+	baseHAM = 46000,
+	baseHAMmax = 51000,
 	armor = 2,
 	resists = {160,180,45,220,45,220,45,45,-1},
 	meatType = "meat_carnivore",
@@ -28,36 +28,7 @@ hoth_wampa_frostfang = Creature:new {
 	diet = CARNIVORE,
 	templates = {"object/mobile/wampa.iff"},
 	scale = 1.3,
-	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
-		{
-			groups = {
-				{group = "endgame_weapon_schematics", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 2500000
-		}
-	},
+	lootGroups = {},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

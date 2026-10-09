@@ -6,13 +6,13 @@ hoth_rebel_snow_soldier = Creature:new {
 	mobType = MOB_NPC,
 	socialGroup = "rebel",
 	faction = "rebel",
-	level = 70,
-	chanceHit = 0.7,
-	damageMin = 500,
-	damageMax = 700,
-	baseXp = 6747,
-	baseHAM = 12000,
-	baseHAMmax = 14500,
+	level = 76,
+	chanceHit = 0.76,
+	damageMin = 540,
+	damageMax = 760,
+	baseXp = 7300,
+	baseHAM = 13500,
+	baseHAMmax = 16500,
 	armor = 1,
 	resists = {40,40,60,40,80,40,40,-1,-1},
 	meatType = "",
@@ -43,6 +43,24 @@ hoth_rebel_snow_soldier = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_rebel_snow_schematics", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 200000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	primaryWeapon = "rebel_carbine",

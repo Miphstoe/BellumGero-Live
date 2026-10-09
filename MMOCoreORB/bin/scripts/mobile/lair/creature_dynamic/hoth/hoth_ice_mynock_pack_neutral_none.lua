@@ -6,6 +6,8 @@ hoth_ice_mynock_pack_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Ice Mynock Swarm",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_nest_small.iff",
 	buildingType = "none"
 }
 

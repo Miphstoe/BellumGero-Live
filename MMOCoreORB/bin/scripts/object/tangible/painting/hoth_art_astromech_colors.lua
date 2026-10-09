@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_astromech_colors = object_tangible_painting_shared_hoth_art_astromech_colors:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_astromech_colors, "object/tangible/painting/hoth_art_astromech_colors.iff")

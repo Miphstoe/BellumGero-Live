@@ -4,13 +4,13 @@ hoth_tauntaun_bull = Creature:new {
 	socialGroup = "tauntaun",
 	faction = "",
 	mobType = MOB_HERBIVORE,
-	level = 66,
-	chanceHit = 0.62,
-	damageMin = 460,
-	damageMax = 630,
-	baseXp = 6380,
-	baseHAM = 11500,
-	baseHAMmax = 14000,
+	level = 72,
+	chanceHit = 0.68,
+	damageMin = 510,
+	damageMax = 690,
+	baseXp = 6930,
+	baseHAM = 13000,
+	baseHAMmax = 15500,
 	armor = 1,
 	resists = {130,130,25,160,25,160,25,25,-1},
 	meatType = "meat_herbivore",
@@ -29,7 +29,14 @@ hoth_tauntaun_bull = Creature:new {
 	templates = {"object/mobile/tauntaun_hue.iff"},
 	hues = { 24, 25, 26, 27, 28, 29, 30, 31 },
 	scale = 1.15,
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
+		}
+	},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

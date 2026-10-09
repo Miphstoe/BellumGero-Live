@@ -4,13 +4,13 @@ hoth_probe_droid = Creature:new {
 	socialGroup = "imperial",
 	faction = "",
 	mobType = MOB_DROID,
-	level = 68,
-	chanceHit = 0.65,
-	damageMin = 480,
-	damageMax = 660,
-	baseXp = 6563,
-	baseHAM = 10500,
-	baseHAMmax = 12500,
+	level = 74,
+	chanceHit = 0.72,
+	damageMin = 520,
+	damageMax = 720,
+	baseXp = 7100,
+	baseHAM = 12500,
+	baseHAMmax = 15000,
 	armor = 1,
 	resists = {140,140,140,30,30,30,30,-1,-1},
 	meatType = "",
@@ -35,6 +35,12 @@ hoth_probe_droid = Creature:new {
 				{group = "wearables_all", chance = 3500000}
 			},
 			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	defaultAttack = "attack",

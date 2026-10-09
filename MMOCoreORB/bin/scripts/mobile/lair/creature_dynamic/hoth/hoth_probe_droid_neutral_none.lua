@@ -6,6 +6,8 @@ hoth_probe_droid_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Imperial Probe Droid",
+	missionBuilding = "object/tangible/lair/base/objective_power_node.iff",
 	buildingType = "none"
 }
 

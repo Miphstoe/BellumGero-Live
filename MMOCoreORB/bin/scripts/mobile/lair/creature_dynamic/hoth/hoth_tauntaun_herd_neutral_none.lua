@@ -6,6 +6,8 @@ hoth_tauntaun_herd_neutral_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Tauntaun Herd",
+	missionBuilding = "object/tangible/lair/base/poi_all_lair_mound_large.iff",
 	buildingType = "none"
 }
 

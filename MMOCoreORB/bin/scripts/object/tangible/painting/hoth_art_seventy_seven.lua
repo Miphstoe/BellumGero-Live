@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_seventy_seven = object_tangible_painting_shared_hoth_art_seventy_seven:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_seventy_seven, "object/tangible/painting/hoth_art_seventy_seven.iff")

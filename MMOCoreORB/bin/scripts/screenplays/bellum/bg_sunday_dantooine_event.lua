@@ -1075,6 +1075,7 @@ function BgSundayDantooineEvent:grantRewardToPlayer(pPlayer, bossLevel)
 	end
 
 	local itemOid = createLoot(pInventory, rewardGroup, bossLevel or 1, true)
+	if giveHothBossBonusLoot then giveHothBossBonusLoot(pPlayer, pInventory, bossLevel or 1) end -- Hoth boss loot (gen_boss_loot.py)
 	local itemName = rewardGroup
 
 	if (itemOid ~= nil and tonumber(itemOid) ~= nil and tonumber(itemOid) > 0) then

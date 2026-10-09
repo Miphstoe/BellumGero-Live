@@ -19,6 +19,7 @@ OVERTAREA           = 0x002000
 REBELAREA           = 0x004000
 IMPERIALAREA        = 0x008000
 NOPETAREA           = 0x010000
+MAPPOI              = 0x020000 -- Bellum Gero: show on the planetary map (PlanetManager)
 
 CIRCLE = 1
 RECTANGLE = 2

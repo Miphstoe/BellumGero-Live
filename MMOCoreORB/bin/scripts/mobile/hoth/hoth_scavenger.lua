@@ -34,7 +34,14 @@ hoth_scavenger = Creature:new {
 		"object/mobile/dressed_goon_twk_male_01.iff",
 		"object/mobile/dressed_robber_human_female_01.iff"
 	},
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
+		}
+	},
 	primaryWeapon = "pirate_weapons_heavy",
 	secondaryWeapon = "unarmed",
 	conversationTemplate = "",

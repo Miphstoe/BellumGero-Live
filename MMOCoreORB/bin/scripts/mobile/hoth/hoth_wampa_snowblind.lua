@@ -4,13 +4,13 @@ hoth_wampa_snowblind = Creature:new {
 	socialGroup = "wampa",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 92,
-	chanceHit = 0.93,
-	damageMin = 640,
-	damageMax = 980,
-	baseXp = 8832,
-	baseHAM = 32000,
-	baseHAMmax = 36000,
+	level = 107,
+	chanceHit = 1.02,
+	damageMin = 725,
+	damageMax = 1100,
+	baseXp = 10270,
+	baseHAM = 48000,
+	baseHAMmax = 53000,
 	armor = 2,
 	resists = {160,180,45,220,45,220,45,45,-1},
 	meatType = "meat_carnivore",
@@ -28,36 +28,7 @@ hoth_wampa_snowblind = Creature:new {
 	diet = CARNIVORE,
 	templates = {"object/mobile/wampa.iff"},
 	scale = 1.35,
-	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
-		{
-			groups = {
-				{group = "endgame_weapon_schematics", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 2500000
-		}
-	},
+	lootGroups = {},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

@@ -6,13 +6,13 @@ hoth_scavenger_raider = Creature:new {
 	mobType = MOB_NPC,
 	socialGroup = "thug",
 	faction = "thug",
-	level = 68,
-	chanceHit = 0.58,
-	damageMin = 440,
-	damageMax = 590,
-	baseXp = 6010,
-	baseHAM = 10000,
-	baseHAMmax = 12000,
+	level = 74,
+	chanceHit = 0.7,
+	damageMin = 520,
+	damageMax = 720,
+	baseXp = 7100,
+	baseHAM = 13000,
+	baseHAMmax = 15500,
 	armor = 1,
 	resists = {30,30,30,30,60,30,30,-1,-1},
 	meatType = "",
@@ -48,6 +48,24 @@ hoth_scavenger_raider = Creature:new {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_common", chance = 10000000}
+			},
+			lootChance = 1000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
 		}
 	},
 	primaryWeapon = "pirate_weapons_heavy",

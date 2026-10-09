@@ -599,8 +599,50 @@ Reference<SceneObject*> PlanetManagerImplementation::loadSnapshotObject(WorldSna
 	// Builder structures use a reserved stable-OID band and may already have
 	// been deserialized from clientobjects without a runtime Zone association.
 	const bool isWorldBuilderObject = objectID >= 0x60000000ULL && objectID <= 0x6FFFFFFFULL;
-	if (object != nullptr && !isWorldBuilderObject)
+	if (object != nullptr && !isWorldBuilderObject) {
+		// Bellum Gero: snapshot objects persist in clientobjects.db with the position of their first boot. When a
+		// snapshot moves a top-level object (the Hoth outposts, 2026-10-04), bring the stored object and its child
+		// objects (terminals, ticket collectors, shuttles) along; cells and their contents are relative and follow.
+		if (node->getParentID() == 0) {
+			Vector3 snapPos = node->getPosition();
+			float dx = snapPos.getX() - object->getPositionX();
+			float dy = snapPos.getY() - object->getPositionY();
+			float dz = snapPos.getZ() - object->getPositionZ();
+
+			if (fabs(dx) > 0.5f || fabs(dy) > 0.5f || fabs(dz) > 0.5f) {
+				Locker locker(object);
+
+				info(true) << "Moving stored snapshot object " << objectID << " by (" << dx << ", " << dy << ", " << dz << ")";
+
+				if (object->getZone() != nullptr)
+					object->teleport(snapPos.getX(), snapPos.getZ(), snapPos.getY(), 0);
+				else
+					object->initializePosition(snapPos.getX(), snapPos.getZ(), snapPos.getY());
+
+				object->setDirection(node->getDirection());
+
+				auto children = object->getChildObjects();
+
+				for (int i = 0; children != nullptr && i < children->size(); ++i) {
+					ManagedReference<SceneObject*> child = children->get(i);
+
+					if (child == nullptr || child->getParent().get() != nullptr)
+						continue;
+
+					Locker clocker(child, object);
+
+					float cx = child->getPositionX() + dx, cy = child->getPositionY() + dy, cz = child->getPositionZ() + dz;
+
+					if (child->getZone() != nullptr)
+						child->teleport(cx, cz, cy, 0);
+					else
+						child->initializePosition(cx, cz, cy);
+				}
+			}
+		}
+
 		return nullptr;
+	}
 
 	Reference<SceneObject*> parentObject = zoneServer->getObject(node->getParentID());
 	Vector3 position = node->getPosition();
@@ -1226,6 +1268,26 @@ void PlanetManagerImplementation::readRegionObject(LuaObject& regionObject) {
 	} else {
 		// Add Region to map
 		regionMap.addRegion(region);
+
+		// Bellum Gero: MAPPOI regions (regions.lua, 0x020000) show on the planetary map as points of interest.
+		// Kept local to this file so ActiveArea.idl (and everything including it) does not need regenerating.
+		static constexpr int MAPPOI = 0x020000;
+
+		if (type & MAPPOI) {
+			// The client's datatable lists "poi" (54) but its map never shows entries for it (newer category); "themepark"
+			// is a category the client lists and draws.
+			Reference<const PlanetMapCategory*> poiCat = TemplateManager::instance()->getPlanetMapCategoryByName("themepark");
+
+			if (poiCat != nullptr) {
+				region->setPlanetMapCategory(poiCat);
+				zone->registerObjectWithPlanetaryMap(region);
+
+				info(true) << "Map POI registered: " << name << " (" << region->getObjectID() << ") displayed='"
+						   << region->getDisplayedName() << "' onMap=" << zone->isObjectRegisteredWithPlanetaryMap(region);
+			} else {
+				error() << "Map POI " << name << ": planet map category 'poi' not found";
+			}
+		}
 	}
 
 #ifdef DEBUG_REGIONS

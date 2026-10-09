@@ -4,13 +4,13 @@ hoth_ice_mynock = Creature:new {
 	socialGroup = "mynock",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 62,
-	chanceHit = 0.58,
-	damageMin = 440,
-	damageMax = 590,
-	baseXp = 6010,
-	baseHAM = 10000,
-	baseHAMmax = 12000,
+	level = 67,
+	chanceHit = 0.63,
+	damageMin = 480,
+	damageMax = 640,
+	baseXp = 6470,
+	baseHAM = 11500,
+	baseHAMmax = 13500,
 	armor = 1,
 	resists = {110,110,20,20,170,110,20,20,-1},
 	meatType = "meat_carnivore",
@@ -29,7 +29,14 @@ hoth_ice_mynock = Creature:new {
 	templates = {"object/mobile/salt_mynock_hue.iff"},
 	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
 	scale = 1.1,
-	lootGroups = {},
+	lootGroups = {
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 50000
+		}
+	},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

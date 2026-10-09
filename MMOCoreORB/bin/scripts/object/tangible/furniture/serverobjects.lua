@@ -61,3 +61,4 @@ includeFile("tangible/furniture/technical/serverobjects.lua")
 -- Server Objects
 includeFile("tangible/furniture/furniture_base.lua")
 includeFile("tangible/furniture/furniture_tatooine_cantina_seat_01.lua")
+includeFile("tangible/furniture/hoth/serverobjects.lua")

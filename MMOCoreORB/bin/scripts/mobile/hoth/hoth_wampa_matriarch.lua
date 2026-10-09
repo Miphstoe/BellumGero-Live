@@ -4,13 +4,13 @@ hoth_wampa_matriarch = Creature:new {
 	socialGroup = "wampa",
 	faction = "",
 	mobType = MOB_CARNIVORE,
-	level = 95,
-	chanceHit = 0.92,
-	damageMin = 650,
-	damageMax = 1000,
-	baseXp = 9057,
-	baseHAM = 36000,
-	baseHAMmax = 40000,
+	level = 110,
+	chanceHit = 1.05,
+	damageMin = 740,
+	damageMax = 1130,
+	baseXp = 10560,
+	baseHAM = 54000,
+	baseHAMmax = 60000,
 	armor = 2,
 	resists = {160,180,45,220,45,220,45,45,-1},
 	meatType = "meat_carnivore",
@@ -28,36 +28,7 @@ hoth_wampa_matriarch = Creature:new {
 	diet = CARNIVORE,
 	templates = {"object/mobile/wampa.iff"},
 	scale = 1.45,
-	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
-		{
-			groups = {
-				{group = "endgame_weapon_schematics", chance = 10000000}
-			},
-			lootChance = 1000000
-		},
-		{
-			groups = {
-				{group = "bg_token_group", chance = 10000000}
-			},
-			lootChance = 2500000
-		}
-	},
+	lootGroups = {},
 	primaryWeapon = "unarmed",
 	secondaryWeapon = "none",
 	conversationTemplate = "",

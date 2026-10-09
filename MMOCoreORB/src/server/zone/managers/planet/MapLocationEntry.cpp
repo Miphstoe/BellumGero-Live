@@ -104,7 +104,10 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 			}
 		}
 	// Everything else except faction bases, terminals and trainers are just named by the city it's in
-	} else if (!object->isGCWBase() && (category->getIndex() != MapLocationType::TERMINAL) && !object->isCreatureObject()) {
+	// (Bellum Gero: named point-of-interest regions keep their own name, e.g. the Lucky Despot Wreck inside the
+	// Scavenger Outpost; city regions still take the city name)
+	} else if (!object->isGCWBase() && (category->getIndex() != MapLocationType::TERMINAL) && !object->isCreatureObject() &&
+			   !(object->isRegion() && category->getIndex() != MapLocationType::CITY)) {
 		ManagedReference<PlanetManager*> planetManager = zone->getPlanetManager();
 
 		ManagedReference<CityRegion*> cityRegion = planetManager->getCityRegionAt(object->getWorldPositionX(), object->getWorldPositionY());
@@ -121,6 +124,16 @@ void MapLocationEntry::setObject(SceneObject* obj) {
 				}
 			}
 		}
+	}
+
+	// Bellum Gero: a non-city region (MAPPOI point of interest) is named "@<stf>:<key>". The server does not load every
+	// client string file, so getDisplayedName() comes back empty and the client drops the entry. Send the raw string
+	// reference instead (as cities do) and let the client translate it.
+	if (newName.isEmpty() && object->isRegion()) {
+		Region* region = object.castTo<Region*>();
+
+		if (region != nullptr)
+			newName = region->getAreaName();
 	}
 
 	// Add faction alignment to city region markers themselves

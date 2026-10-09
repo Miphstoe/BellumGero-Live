@@ -66,6 +66,7 @@ local function _giveNightBossLoot(pPlayer, lootGroups, bossName, bossLevel)
 
 	local item1 = _rollOneNightLoot(pInventory, lootGroups, bossLevel)
 	local item2 = _rollOneNightLoot(pInventory, lootGroups, bossLevel)
+	if giveHothBossBonusLoot then giveHothBossBonusLoot(pPlayer, pInventory, bossLevel) end -- Hoth boss loot (gen_boss_loot.py)
 
 	pcall(function()
 		CreatureObject(pPlayer):sendSystemMessage(

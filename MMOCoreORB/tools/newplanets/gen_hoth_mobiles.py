@@ -6,6 +6,7 @@ only appended when missing. Edit the tables below and re-run to rebalance.
 """
 import math
 import os
+import re
 
 ROOT = r'\\wsl.localhost\Debian\home\EnderWookie\workspace\BellumGero-Hoth\MMOCoreORB\bin\scripts'
 MOB = os.path.join(ROOT, 'mobile')
@@ -57,6 +58,18 @@ LOOT_BEAST = """{
 		}
 	}"""
 
+
+def HOOK(group, chance):
+    """Extra lootGroups entry (with leading comma), rolled independently of the other entries. Groups come from gen_hoth_loot.py."""
+    return f''',
+		{{
+			groups = {{
+				{{group = "{group}", chance = 10000000}}
+			}},
+			lootChance = {chance}
+		}}'''
+
+
 CREATURES = [
     dict(key='hoth_tauntaun', name='a Hoth tauntaun', social='tauntaun', mob='MOB_HERBIVORE', level=60,
          hit=0.55, dmg=(430, 560), xp=5830, ham=(11000, 13000), armor=1, res='{120,120,20,150,20,150,20,20,-1}',
@@ -86,13 +99,13 @@ CREATURES = [
          hit=0.78, dmg=(570, 850), xp=7668, ham=(12000, 15000), armor=1, res='{140,160,30,200,30,200,30,30,-1}',
          meat=('meat_carnivore', 900), hide=('hide_wooly', 900), bone=('bone_mammal', 750), milk=0,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='KILLER + STALKER', diet='CARNIVORE', tmpl='object/mobile/wampa.iff',
-         hues=None, scale=1.0, loot=2300000,
+         hues=None, scale=1.0, loot=2300000, extra=HOOK('hoth_ice_decor', 500000) + HOOK('hoth_decor_common', 300000),
          attacks='{ {"intimidationattack",""}, {"knockdownattack",""} }'),
     dict(key='hoth_elder_wampa', name='an elder wampa', social='wampa', mob='MOB_CARNIVORE', level=88,
          hit=0.85, dmg=(600, 900), xp=8408, ham=(13000, 16000), armor=1, res='{150,170,40,210,40,210,40,40,-1}',
          meat=('meat_carnivore', 1000), hide=('hide_wooly', 1000), bone=('bone_mammal', 850), milk=0,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='KILLER + STALKER', diet='CARNIVORE', tmpl='object/mobile/wampa.iff',
-         hues=None, scale=1.15, loot=2780000,
+         hues=None, scale=1.15, loot=2780000, extra=HOOK('hoth_ice_decor', 700000) + HOOK('hoth_decor_common', 400000),
          attacks='{ {"stunattack",""}, {"creatureareaknockdown",""} }'),
     dict(key='hoth_wampa_matriarch', name='the wampa matriarch', social='wampa', mob='MOB_CARNIVORE', level=95,
          hit=0.92, dmg=(650, 1000), xp=9057, ham=(36000, 40000), armor=2, res='{160,180,45,220,45,220,45,45,-1}',
@@ -131,8 +144,60 @@ LOOT_BOSS = """{
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_snowtrooper_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_rebel_snow_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_rare", chance = 10000000}
+			},
+			lootChance = 1500000
+		},
+		{
+			groups = {
+				{group = "hoth_ice_decor", chance = 10000000}
+			},
+			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 1000000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 200000
 		}
 	}"""
+
+# Custom boss paintings (gen_hoth_art.py): bosses roll hoth_art_rare at 10% (LOOT_BOSS above); every other Hoth
+# mobile gets this trickle chance.
+ART_TRICKLE = 50000  # 0.5%
 
 
 def _boss(key, name, level, ham, dmg, scale, social='wampa', tmpl='object/mobile/wampa.iff', attacks=None, hues=None,
@@ -141,7 +206,7 @@ def _boss(key, name, level, ham, dmg, scale, social='wampa', tmpl='object/mobile
                 hit=round(0.85 + (level - 85) * 0.012, 2), dmg=dmg, xp=int(level * 96), ham=ham, armor=2,
                 res='{160,180,45,220,45,220,45,45,-1}', meat=meat, hide=hide, bone=bone, milk=0,
                 pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='KILLER', diet='CARNIVORE', tmpl=tmpl, hues=hues,
-                scale=scale, loot=0, lootstr=LOOT_BOSS,
+                scale=scale, loot=0, lootstr='{}',  # per-player rewards: HothIceCavesScreenPlay rolls LOOT_BOSS
                 attacks=attacks or '{ {"stunattack",""}, {"creatureareaknockdown",""}, {"intimidationattack",""} }')
 
 
@@ -158,13 +223,40 @@ BOSSES = [
           attacks='{ {"blindattack",""}, {"creatureareaknockdown",""} }',
           meat=('meat_carnivore', 150), hide=('hide_leathery', 200), bone=('bone_mammal', 80)),
 ]
-# The matriarch moved from a random world lair to a fixed cave boss: give her boss loot too.
-next(c for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')['lootstr'] = LOOT_BOSS
+# The matriarch moved from a random world lair to a fixed cave boss: boss loot too (per player, see cave_lua).
+next(c for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')['lootstr'] = '{}'
+for _c in CREATURES:
+    if _c.get('lootstr') is None:  # non-boss creatures: trickle chance at the custom paintings
+        _c['extra'] = _c.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
+
+# 2026-10-05 player feedback (Dek, via Miph): wampas should be about as strong as the highest-level rancors
+# (enraged bull rancor 89, ancient bull rancor 98: hit .85/.95, dmg 570-850/620-950, HAM 13-16k/20-25k, armor 1/2).
+# Other creatures up ~10 %, cave bosses kept well above the elder wampas that guard their caves.
+TUNE = {
+    'hoth_tauntaun': dict(level=65, hit=0.6, dmg=(470, 610), ham=(12500, 14500), xp=6290),
+    'hoth_tauntaun_bull': dict(level=72, hit=0.68, dmg=(510, 690), ham=(13000, 15500), xp=6930),
+    'hoth_ice_mynock': dict(level=67, hit=0.63, dmg=(480, 640), ham=(11500, 13500), xp=6470),
+    'hoth_greater_ice_mynock': dict(level=76, hit=0.73, dmg=(545, 760), ham=(13000, 15500), xp=7300),
+    'hoth_wampa': dict(level=90, hit=0.86, dmg=(590, 880), ham=(16000, 20000), xp=8600,
+                       res='{150,165,35,200,35,200,35,35,-1}'),
+    'hoth_elder_wampa': dict(level=98, hit=0.95, dmg=(640, 980), ham=(22000, 27000), armor=2, xp=9400,
+                             res='{155,170,40,210,40,210,40,40,-1}'),
+    'hoth_wampa_matriarch': dict(level=110, hit=1.05, dmg=(740, 1130), ham=(54000, 60000), xp=10560),
+    'hoth_wampa_frostfang': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
+    'hoth_wampa_icemaw': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
+    'hoth_wampa_snowblind': dict(level=107, hit=1.02, dmg=(725, 1100), ham=(48000, 53000), xp=10270),
+    'hoth_wampa_patriarch': dict(level=115, hit=1.1, dmg=(800, 1250), ham=(58000, 64000), xp=11040),
+    'hoth_mynock_broodmother': dict(level=100, hit=0.97, dmg=(680, 1040), ham=(40000, 45000), xp=9600),
+}
+for _c in CREATURES + BOSSES:
+    _c.update(TUNE.get(_c['key'], {}))
 
 
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
     loot = c.get('lootstr') or (LOOT_BEAST % c['loot'] if c['loot'] else '{}')
+    if c.get('extra'):
+        loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
     return f'''{c['key']} = Creature:new {{
 	objectName = "",
 	customName = "{c['name']}",
@@ -244,7 +336,7 @@ PROBE = '''hoth_probe_droid = Creature:new {
 				{group = "wearables_all", chance = 3500000}
 			},
 			lootChance = 2000000
-		}
+		}''' + HOOK('hoth_art_rare', ART_TRICKLE) + '''
 	},
 	defaultAttack = "attack",
 	primaryWeapon = "droid_probot_ranged",
@@ -262,24 +354,55 @@ NPCS = [
     dict(key='hoth_snowtrooper', name='a snowtrooper', rname='NAME_STORMTROOPER', social='imperial', faction='imperial',
          level=70, hit=0.7, dmg=(500, 700), xp=6747, ham=(12000, 14500), armor=1, res='{40,40,60,40,80,40,40,-1,-1}',
          tmpls=['object/mobile/snowtrooper_s01.iff'], loot='imperial_tier_3', pw='stormtrooper_rifle', sw='stormtrooper_pistol',
+         extra=HOOK('hoth_snowtrooper_schematics', 150000) + HOOK('hoth_decor_common', 200000),
          pa='merge(riflemanmaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/stormtrooper', pers='@hireling/hireling_stormtrooper'),
     dict(key='hoth_snowtrooper_sergeant', name='a snowtrooper sergeant', rname='NAME_STORMTROOPER', social='imperial', faction='imperial',
          level=78, hit=0.78, dmg=(560, 800), xp=7484, ham=(13500, 16000), armor=1, res='{50,50,70,50,90,50,50,-1,-1}',
          tmpls=['object/mobile/snowtrooper_s01.iff'], loot='imperial_tier_4', pw='stormtrooper_rifle', sw='stormtrooper_pistol',
+         extra=HOOK('hoth_snowtrooper_schematics', 400000) + HOOK('hoth_decor_common', 300000),
          pa='merge(riflemanmaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/stormtrooper', pers='@hireling/hireling_stormtrooper'),
     dict(key='hoth_rebel_snow_soldier', name='a Rebel snow soldier', rname='NAME_GENERIC', social='rebel', faction='rebel',
          level=70, hit=0.7, dmg=(500, 700), xp=6747, ham=(12000, 14500), armor=1, res='{40,40,60,40,80,40,40,-1,-1}',
          tmpls=['object/mobile/rebel_snow_m_01.iff', 'object/mobile/rebel_snow_f_01.iff'], loot='rebel_tier_3',
+         extra=HOOK('hoth_rebel_snow_schematics', 150000) + HOOK('hoth_decor_common', 200000),
          pw='rebel_carbine', sw='rebel_pistol', pa='merge(carbineermaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/military', pers='@hireling/hireling_military'),
     dict(key='hoth_rebel_snow_sergeant', name='a Rebel snow sergeant', rname='NAME_GENERIC', social='rebel', faction='rebel',
          level=78, hit=0.78, dmg=(560, 800), xp=7484, ham=(13500, 16000), armor=1, res='{50,50,70,50,90,50,50,-1,-1}',
          tmpls=['object/mobile/rebel_snow_m_01.iff', 'object/mobile/rebel_snow_f_01.iff'], loot='rebel_tier_4',
+         extra=HOOK('hoth_rebel_snow_schematics', 400000) + HOOK('hoth_decor_common', 300000),
          pw='rebel_carbine', sw='rebel_pistol', pa='merge(carbineermaster,marksmanmaster)', sa='merge(pistoleermaster,marksmanmaster)',
          react='@npc_reaction/military', pers='@hireling/hireling_military'),
 ]
+for _n in NPCS:
+    _n['extra'] = _n.get('extra', '') + HOOK('hoth_art_rare', ART_TRICKLE)
+
+# 2026-10-05: NPCs up a bit too (~+6-7 levels, ~+15 % HAM/damage), following the creature pass in TUNE.
+NPC_TUNE = {
+    'hoth_snowtrooper': dict(level=76, hit=0.76, dmg=(540, 760), ham=(13500, 16500), xp=7300),
+    'hoth_snowtrooper_sergeant': dict(level=85, hit=0.84, dmg=(610, 870), ham=(15500, 18500), xp=8160),
+    'hoth_rebel_snow_soldier': dict(level=76, hit=0.76, dmg=(540, 760), ham=(13500, 16500), xp=7300),
+    'hoth_rebel_snow_sergeant': dict(level=85, hit=0.84, dmg=(610, 870), ham=(15500, 18500), xp=8160),
+    # text templates (restat() below)
+    'hoth_probe_droid': dict(level=74, hit=0.72, dmg=(520, 720), ham=(12500, 15000), xp=7100),
+    'hoth_scavenger_raider': dict(level=74, hit=0.7, dmg=(520, 720), ham=(13000, 15500), xp=7100),
+    'hoth_imperial_salvage_tech': dict(level=72, hit=0.66, dmg=(500, 690), ham=(12500, 15000), xp=6900),
+}
+for _n in NPCS:
+    _n.update(NPC_TUNE.get(_n['key'], {}))
+
+
+def restat(text, key):
+    """Rewrite the stat lines of a text mobile template from NPC_TUNE."""
+    t = NPC_TUNE[key]
+    for field, value in (('level', t['level']), ('chanceHit', t['hit']), ('damageMin', t['dmg'][0]),
+                         ('damageMax', t['dmg'][1]), ('baseXp', t['xp']), ('baseHAM', t['ham'][0]),
+                         ('baseHAMmax', t['ham'][1])):
+        text, n = re.subn(rf'(\n\t{field} = )[0-9.]+,', rf'\g<1>{value},', text, count=1)
+        assert n == 1, (key, field)
+    return text
 
 
 def npc_lua(n):
@@ -328,7 +451,7 @@ def npc_lua(n):
 				{{group = "bg_token_group", chance = 10000000}}
 			}},
 			lootChance = 250000
-		}}
+		}}{n.get('extra', '')}
 	}},
 	primaryWeapon = "{n['pw']}",
 	secondaryWeapon = "{n['sw']}",
@@ -413,7 +536,7 @@ RAIDER = SCAVENGER.replace('hoth_scavenger', 'hoth_scavenger_raider') \
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
-		}
+		}''' + HOOK('hoth_paintings', 500000) + HOOK('hoth_decor_common', 1000000) + HOOK('hoth_art_rare', ART_TRICKLE) + '''
 	},''')
 
 SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
@@ -429,35 +552,66 @@ SALVAGE = SCAVENGER.replace('hoth_scavenger', 'hoth_imperial_salvage_tech') \
 		"object/mobile/dressed_goon_twk_male_01.iff",
 		"object/mobile/dressed_robber_human_female_01.iff"''', '		"object/mobile/dressed_imperial_atat_pilot_m.iff"') \
     .replace('primaryWeapon = "pirate_weapons_heavy"', 'primaryWeapon = "imperial_weapons_light"') \
-    .replace('reactionStf = "@npc_reaction/slang"', 'reactionStf = "@npc_reaction/military"')
+    .replace('reactionStf = "@npc_reaction/slang"', 'reactionStf = "@npc_reaction/military"') \
+    .replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_decor_common', 1500000)[1:] + HOOK('hoth_art_rare', ART_TRICKLE) + '\n\t},')
+
+# Plain scavengers (derived templates above already replaced their own lootGroups block).
+SCAVENGER = SCAVENGER.replace('lootGroups = {},', 'lootGroups = {' + HOOK('hoth_art_rare', ART_TRICKLE)[1:] + '\n\t},')
+RAIDER = restat(RAIDER, 'hoth_scavenger_raider')
+SALVAGE = restat(SALVAGE, 'hoth_imperial_salvage_tech')
+PROBE = restat(PROBE, 'hoth_probe_droid')
 
 # --------------------------------------------------------------------------
 # Lairs: (key, folder, mobiles, buildingType/lair building, extra)
 # --------------------------------------------------------------------------
 BONES = 'object/tangible/lair/base/poi_all_lair_bones_large.iff'
 MOUND = 'object/tangible/lair/base/poi_all_lair_mound_large.iff'
+NEST = 'object/tangible/lair/base/poi_all_lair_nest_small.iff'
+OBJ = 'object/tangible/lair/base/'
+# key, folder, mobiles, building ('npc' = NPC camp), spawnLimit, mission target name, missionBuilding, faction.
+# customName + missionBuilding make every lair usable by the mission terminals (hoth_destroy_missions below);
+# a _none lair without missionBuilding is silently skipped by MissionManager.
 LAIRS = [
-    ('hoth_tauntaun_herd_neutral_none', 'creature_dynamic', [('hoth_tauntaun', 4), ('hoth_tauntaun_bull', 1)], None, 15),
-    ('hoth_tauntaun_lair_neutral_medium', 'creature_lair', [('hoth_tauntaun', 2), ('hoth_tauntaun_bull', 1)], MOUND, 15),
-    ('hoth_ice_mynock_pack_neutral_none', 'creature_dynamic', [('hoth_ice_mynock', 3), ('hoth_greater_ice_mynock', 1)], None, 15),
-    ('hoth_ice_mynock_lair_neutral_medium', 'creature_lair', [('hoth_ice_mynock', 2), ('hoth_greater_ice_mynock', 1)], MOUND, 15),
-    ('hoth_probe_droid_neutral_none', 'creature_dynamic', [('hoth_probe_droid', 1)], None, 6),
-    ('hoth_wampa_neutral_none', 'creature_dynamic', [('hoth_wampa', 1)], None, 6),
-    ('hoth_wampa_lair_neutral_large', 'creature_lair', [('hoth_wampa', 2), ('hoth_elder_wampa', 1)], BONES, 15),
-    ('hoth_snowtrooper_patrol_imperial_none', 'npc_dynamic', [('hoth_snowtrooper', 3), ('hoth_snowtrooper_sergeant', 1)], 'npc', 9),
-    ('hoth_rebel_snow_patrol_rebel_none', 'npc_dynamic', [('hoth_rebel_snow_soldier', 3), ('hoth_rebel_snow_sergeant', 1)], 'npc', 9),
+    ('hoth_tauntaun_herd_neutral_none', 'creature_dynamic', [('hoth_tauntaun', 4), ('hoth_tauntaun_bull', 1)], None, 15,
+     'Tauntaun Herd', MOUND, ''),
+    ('hoth_tauntaun_lair_neutral_medium', 'creature_lair', [('hoth_tauntaun', 2), ('hoth_tauntaun_bull', 1)], MOUND, 15,
+     'Tauntaun Lair', None, ''),
+    ('hoth_ice_mynock_pack_neutral_none', 'creature_dynamic', [('hoth_ice_mynock', 3), ('hoth_greater_ice_mynock', 1)], None, 15,
+     'Ice Mynock Swarm', NEST, ''),
+    ('hoth_ice_mynock_lair_neutral_medium', 'creature_lair', [('hoth_ice_mynock', 2), ('hoth_greater_ice_mynock', 1)], MOUND, 15,
+     'Ice Mynock Roost', None, ''),
+    ('hoth_probe_droid_neutral_none', 'creature_dynamic', [('hoth_probe_droid', 1)], None, 6,
+     'Imperial Probe Droid', OBJ + 'objective_power_node.iff', ''),
+    ('hoth_wampa_neutral_none', 'creature_dynamic', [('hoth_wampa', 1)], None, 6,
+     'Wampa', BONES, ''),
+    ('hoth_wampa_lair_neutral_large', 'creature_lair', [('hoth_wampa', 2), ('hoth_elder_wampa', 1)], BONES, 15,
+     'Wampa Den', None, ''),
+    ('hoth_snowtrooper_patrol_imperial_none', 'npc_dynamic', [('hoth_snowtrooper', 3), ('hoth_snowtrooper_sergeant', 1)], 'npc', 9,
+     'Snowtrooper Patrol', OBJ + 'objective_banner_imperial.iff', 'imperial'),
+    ('hoth_rebel_snow_patrol_rebel_none', 'npc_dynamic', [('hoth_rebel_snow_soldier', 3), ('hoth_rebel_snow_sergeant', 1)], 'npc', 9,
+     'Rebel Snow Patrol', OBJ + 'objective_banner_rebel.iff', 'rebel'),
+    ('hoth_scavenger_raider_camp_neutral_none', 'npc_dynamic', [('hoth_scavenger_raider', 4)], 'npc', 9,
+     'Scavenger Raider Camp', OBJ + 'objective_banner_generic_2.iff', ''),
+    ('hoth_imperial_salvage_team_imperial_none', 'npc_dynamic', [('hoth_imperial_salvage_tech', 3), ('hoth_snowtrooper', 1)], 'npc', 9,
+     'Imperial Salvage Team', OBJ + 'objective_power_generator.iff', 'imperial'),
 ]
 
 
-def lair_lua(key, kind, mobs, building, limit):
+def lair_lua(key, kind, mobs, building, limit, name, mission_building, faction):
     m = ', '.join('{"%s", %d}' % x for x in mobs)
+    extra = [f'\tcustomName = "{name}",']
+    if faction:
+        extra.append(f'\tfaction = "{faction}",')
     if kind == 'creature_lair':
         b = '{"%s"}' % building
         body = '\n'.join(f'\tbuildings{t} = {b},' for t in ['VeryEasy', 'Easy', 'Medium', 'Hard', 'VeryHard'])
-        tail = ''
     else:
         body = '\n'.join(f'\tbuildings{t} = {{}},' for t in ['VeryEasy', 'Easy', 'Medium', 'Hard', 'VeryHard'])
-        tail = '\tmobType = "npc",\n\tbuildingType = "none"' if building == 'npc' else '\tbuildingType = "none"'
+        if building == 'npc':
+            extra.append('\tmobType = "npc",')
+        extra.append(f'\tmissionBuilding = "{mission_building}",')
+        extra.append('\tbuildingType = "none",')
+    tail = '\n'.join(extra).rstrip(',')
     return f'''{key} = Lair:new {{
 	mobiles = {{{m}}},
 	spawnLimit = {limit},
@@ -466,20 +620,48 @@ def lair_lua(key, kind, mobs, building, limit):
 }}
 
 addLairTemplate("{key}", {key})
-'''.replace('\n\n}', '\n}')
+'''
 
 
 SPAWN = [  # (lair, minDifficulty, weighting)
-    ('hoth_tauntaun_herd_neutral_none', 60, 60),
-    ('hoth_tauntaun_lair_neutral_medium', 60, 40),
-    ('hoth_ice_mynock_pack_neutral_none', 62, 45),
-    ('hoth_ice_mynock_lair_neutral_medium', 62, 35),
-    ('hoth_probe_droid_neutral_none', 68, 25),
-    ('hoth_wampa_neutral_none', 80, 30),
-    ('hoth_wampa_lair_neutral_large', 80, 25),
-    ('hoth_snowtrooper_patrol_imperial_none', 70, 12),
-    ('hoth_rebel_snow_patrol_rebel_none', 70, 12),
+    ('hoth_tauntaun_herd_neutral_none', 65, 60),
+    ('hoth_tauntaun_lair_neutral_medium', 65, 40),
+    ('hoth_ice_mynock_pack_neutral_none', 67, 45),
+    ('hoth_ice_mynock_lair_neutral_medium', 67, 35),
+    ('hoth_probe_droid_neutral_none', 74, 25),
+    ('hoth_wampa_neutral_none', 90, 30),
+    ('hoth_wampa_lair_neutral_large', 90, 25),
+    ('hoth_snowtrooper_patrol_imperial_none', 76, 12),
+    ('hoth_rebel_snow_patrol_rebel_none', 76, 12),
+    ('hoth_scavenger_raider_camp_neutral_none', 74, 10),
+    ('hoth_imperial_salvage_team_imperial_none', 72, 8),
 ]
+
+# Mission terminals: (lair, difficulty = level of its weakest mobile). Every non-boss Hoth creature and attackable NPC
+# is in at least one lair below. The generic terminal offers all of them (MissionManager: zone + "_destroy_missions");
+# the faction terminals offer the enemy faction's Hoth groups (zone + "_factional_<faction>_destroy_missions", Bellum
+# C++ change, falling back to the global factional groups).
+DESTROY = [
+    ('hoth_tauntaun_herd_neutral_none', 65), ('hoth_tauntaun_lair_neutral_medium', 65),
+    ('hoth_ice_mynock_pack_neutral_none', 67), ('hoth_ice_mynock_lair_neutral_medium', 67),
+    ('hoth_probe_droid_neutral_none', 74), ('hoth_scavenger_raider_camp_neutral_none', 74),
+    ('hoth_imperial_salvage_team_imperial_none', 72),
+    ('hoth_snowtrooper_patrol_imperial_none', 76), ('hoth_rebel_snow_patrol_rebel_none', 76),
+    ('hoth_wampa_neutral_none', 90), ('hoth_wampa_lair_neutral_large', 90),
+]
+FACTIONAL = {  # terminal faction -> enemy Hoth groups (imperial terminal hunts rebels and vice versa)
+    'imperial': ['hoth_rebel_snow_patrol_rebel_none'],
+    'rebel': ['hoth_snowtrooper_patrol_imperial_none', 'hoth_imperial_salvage_team_imperial_none', 'hoth_probe_droid_neutral_none'],
+    'neutral': ['hoth_scavenger_raider_camp_neutral_none', 'hoth_snowtrooper_patrol_imperial_none', 'hoth_rebel_snow_patrol_rebel_none'],
+}
+
+
+def destroy_lua(group, lairs):
+    diff = dict(DESTROY)
+    rows = ',\n'.join(f'\t\t{{ lairTemplateName = "{l}", minDifficulty = {diff[l]}, maxDifficulty = {diff[l] + 4}, size = 25 }}'
+                      for l in lairs)
+    return (f'-- Generated by NewPlanets/gen_hoth_mobiles.py\n{group} = {{\n\tminLevelCeiling = 70,\n\tlairSpawns = {{\n'
+            f'{rows}\n\t}}\n}}\n\naddDestroyMissionGroup("{group}", {group});\n')
 
 
 def spawn_lua():
@@ -500,10 +682,10 @@ def spawn_lua():
 # --------------------------------------------------------------------------
 # Static spawns at the outposts
 # --------------------------------------------------------------------------
-OUTPOSTS = {  # starport centre x, height, y
-    'scavenger': (0.0, 0.0, -2000.0),
-    'imperial': (5927.6, 3.0, -406.5),
-    'rebel': (4525.0, 87.8, 1164.0),
+OUTPOSTS = {  # starport centre x, height, y (moved by move_outposts.py; Infinity had 0,-2000 / 5927.6,-406.5 / 4525,1164)
+    'scavenger': (-4030.0, 23.3, -2080.0),
+    'imperial': (3820.0, 29.0, -3080.0),
+    'rebel': (-420.0, 27.8, 600.0),
 }
 
 
@@ -531,12 +713,12 @@ def static_lua():
     add('hoth_rebel_snow_soldier', 300, ring(reb, 40, 6, 30))
     add('hoth_rebel_snow_sergeant', 300, ring(reb, 28, 2, 0))
     add('rebel_recruiter', 60, [(reb[0] - 12.0, reb[1], reb[2] + 14.0, 180)])
-    # Scavenger camp at the Lucky Despot wreck (tents + campfire at -95, -2047)
-    camp = (-95.0, 0.0, -2047.0)
+    # Scavenger camp at the Lucky Despot wreck (tents + campfire)
+    camp = (-4125.0, 23.3, -2127.0)
     add('hoth_scavenger', 300, ring(camp, 9, 5, 15))
     add('junk_dealer', 60, [(camp[0] + 6.0, camp[1], camp[2] + 4.0, -120)])
     # Imperial salvage team on the AT-ST wreck inside the Imperial Outpost
-    add('hoth_imperial_salvage_tech', 300, ring((5893.5, 3.2, -401.0), 6, 3, 60))
+    add('hoth_imperial_salvage_tech', 300, ring((3785.9, 29.2, -3074.5), 6, 3, 60))
     # Shield-generator battlefield east of the Rebel Outpost: squads facing each other
     for gx, gh, gy in [(5654.0, -2.0, 1029.0), (5190.0, -2.0, 534.0)]:
         add('hoth_snowtrooper', 300, [(gx - 18.0 + i * 3.0, gh, gy - 14.0, 0) for i in range(4)])
@@ -607,8 +789,22 @@ def cave_lua():
             for (tmpl, resp), (x, h, y) in zip(plan, pts):
                 heading = (idx * 47 + int(abs(x) * 7)) % 360 - 180
                 rows.append(f'\t\t{{"{tmpl}", {resp}, {x}, {h}, {y}, {heading}, {cell["cellId"]}}},')
+    names = {b['key']: b['name'] for b in BOSSES}
+    names['hoth_wampa_matriarch'] = next(c['name'] for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')
+    boss_names = '\n'.join(f'\t{k} = "{v}",' for k, v in sorted(names.items()))
     return '''-- Generated by NewPlanets/gen_hoth_mobiles.py from server_prep/hoth_cave_points.json.
 -- {template, respawn, cell-local x, height, y, heading, cell object id from snapshot/hoth.ws}
+-- Cave bosses reward every qualifying player separately (like the world bosses): damagers within
+-- HOTH_BOSS_LOOT_RANGE when the boss dies (or the killer's group if nothing was tracked) each roll
+-- HOTH_CAVE_BOSS_LOOT into their own inventory. The boss corpses carry no loot.
+local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
+
+HOTH_BOSS_LOOT_RANGE = 64
+HOTH_CAVE_BOSS_LOOT = ''' + LOOT_BOSS.replace('\n\t', '\n') + '''
+HOTH_CAVE_BOSS_NAMES = {
+''' + boss_names + '''
+}
+
 HothIceCavesScreenPlay = ScreenPlay:new {
 	screenplayName = "HothIceCavesScreenPlay",
 	planet = "hoth",
@@ -630,8 +826,28 @@ function HothIceCavesScreenPlay:spawnMobiles()
 
 	for i = 1, #mobiles do
 		local mobile = mobiles[i]
-		spawnMobile(self.planet, mobile[1], mobile[2], mobile[3], mobile[4], mobile[5], mobile[6], mobile[7])
+		local pMobile = spawnMobile(self.planet, mobile[1], mobile[2], mobile[3], mobile[4], mobile[5], mobile[6], mobile[7])
+
+		if pMobile ~= nil and HOTH_CAVE_BOSS_NAMES[mobile[1]] ~= nil then
+			-- observers return 0, so they survive the boss's respawns (same object)
+			createObserver(DAMAGERECEIVED, "HothIceCavesScreenPlay", "onBossDamage", pMobile)
+			createObserver(OBJECTDESTRUCTION, "HothIceCavesScreenPlay", "onBossDied", pMobile)
+		end
 	end
+end
+
+function HothIceCavesScreenPlay:onBossDamage(pBoss, pAttacker, damage)
+	WorldBossLootManager:trackDamage(pBoss, pAttacker)
+	return 0
+end
+
+function HothIceCavesScreenPlay:onBossDied(pBoss, pKiller)
+	if pBoss == nil then
+		return 0
+	end
+
+	giveHothBossRewards(pBoss, pKiller, HOTH_CAVE_BOSS_LOOT, HOTH_BOSS_LOOT_RANGE)
+	return 0
 end
 '''
 
@@ -675,13 +891,24 @@ def main():
     for b in BOSSES:
         made.append(write(f'mobile/hoth/{b["key"]}.lua', creature_lua(b)))
     keys = ([c['key'] for c in CREATURES] + [b['key'] for b in BOSSES] + ['hoth_probe_droid'] + [n['key'] for n in NPCS] +
-            ['hoth_scavenger', 'hoth_scavenger_raider', 'hoth_imperial_salvage_tech'])
+            ['hoth_scavenger', 'hoth_scavenger_raider', 'hoth_imperial_salvage_tech'] +
+            ['hoth_glacial_rancor'])  # world boss mobile, written by gen_hoth_rancor.py
     made.append(write('mobile/hoth/serverobjects.lua', ''.join(f'includeFile("hoth/{k}.lua")\n' for k in keys)))
     register('mobile/serverobjects.lua', 'includeFile("hoth/serverobjects.lua")', after_prefix='includeFile("endor/')
 
-    for key, kind, mobs, building, limit in LAIRS:
-        made.append(write(f'mobile/lair/{kind}/hoth/{key}.lua', lair_lua(key, kind, mobs, building, limit)))
+    for key, kind, *rest in LAIRS:
+        made.append(write(f'mobile/lair/{kind}/hoth/{key}.lua', lair_lua(key, kind, *rest)))
         register(f'mobile/lair/{kind}/serverobjects.lua', f'includeFile("lair/{kind}/hoth/{key}.lua")')
+
+    made.append(write('mobile/spawn/destroy_mission/hoth_destroy_missions.lua',
+                      destroy_lua('hoth_destroy_missions', [l for l, _ in DESTROY])))
+    register('mobile/spawn/serverobjects.lua', 'includeFile("spawn/destroy_mission/hoth_destroy_missions.lua")',
+             after_prefix='includeFile("spawn/destroy_mission/')
+    for fac, lairs in FACTIONAL.items():
+        grp = f'hoth_factional_{fac}_destroy_missions'
+        made.append(write(f'mobile/spawn/destroy_mission/{grp}.lua', destroy_lua(grp, lairs)))
+        register('mobile/spawn/serverobjects.lua', f'includeFile("spawn/destroy_mission/{grp}.lua")',
+                 after_prefix='includeFile("spawn/destroy_mission/')
 
     # The matriarch boss lair was retired in favour of a fixed cave boss.
     old = 'lair/creature_lair/hoth/hoth_wampa_lair_neutral_boss_01.lua'

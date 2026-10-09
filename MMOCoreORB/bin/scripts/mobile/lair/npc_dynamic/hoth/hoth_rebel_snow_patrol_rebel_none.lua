@@ -6,7 +6,10 @@ hoth_rebel_snow_patrol_rebel_none = Lair:new {
 	buildingsMedium = {},
 	buildingsHard = {},
 	buildingsVeryHard = {},
+	customName = "Rebel Snow Patrol",
+	faction = "rebel",
 	mobType = "npc",
+	missionBuilding = "object/tangible/lair/base/objective_banner_rebel.iff",
 	buildingType = "none"
 }
 

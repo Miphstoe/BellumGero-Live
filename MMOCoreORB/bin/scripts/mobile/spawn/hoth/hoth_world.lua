@@ -3,7 +3,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_tauntaun_herd_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 60,
+			minDifficulty = 65,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 60,
@@ -12,7 +12,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_tauntaun_lair_neutral_medium",
 			spawnLimit = -1,
-			minDifficulty = 60,
+			minDifficulty = 65,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 40,
@@ -21,7 +21,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_ice_mynock_pack_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 62,
+			minDifficulty = 67,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 45,
@@ -30,7 +30,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_ice_mynock_lair_neutral_medium",
 			spawnLimit = -1,
-			minDifficulty = 62,
+			minDifficulty = 67,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 35,
@@ -39,7 +39,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_probe_droid_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 68,
+			minDifficulty = 74,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 25,
@@ -48,7 +48,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_wampa_neutral_none",
 			spawnLimit = -1,
-			minDifficulty = 80,
+			minDifficulty = 90,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 30,
@@ -57,7 +57,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_wampa_lair_neutral_large",
 			spawnLimit = -1,
-			minDifficulty = 80,
+			minDifficulty = 90,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 25,
@@ -66,7 +66,7 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_snowtrooper_patrol_imperial_none",
 			spawnLimit = -1,
-			minDifficulty = 70,
+			minDifficulty = 76,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 12,
@@ -75,10 +75,28 @@ hoth_world = {
 		{
 			lairTemplateName = "hoth_rebel_snow_patrol_rebel_none",
 			spawnLimit = -1,
-			minDifficulty = 70,
+			minDifficulty = 76,
 			maxDifficulty = 500,
 			numberToSpawn = 15,
 			weighting = 12,
+			size = 25,
+		},
+		{
+			lairTemplateName = "hoth_scavenger_raider_camp_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 74,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 10,
+			size = 25,
+		},
+		{
+			lairTemplateName = "hoth_imperial_salvage_team_imperial_none",
+			spawnLimit = -1,
+			minDifficulty = 72,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 8,
 			size = 25,
 		}
 	}
