@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-08 — Hoth: no player housing (harvesters stay allowed)
+
+- **Summary:** Decision: player housing is not allowed on Hoth, harvesters are. The AT-AT house was the only house given `hoth` in its `allowedZones` (2026-10-04); that entry is removed, so every house deed now refuses on Hoth ("wrong planet"), like on the other planets without housing.
+- **Files:** `bin/scripts/object/building/player/atat_house.lua`
+- **Notes:** Harvester templates carry no `allowedZones`, so this change does not touch them; harvesters on Hoth still need an in-game check. Server restart (Lua only). The earlier entry below, "AT-AT house placeable on Hoth", is superseded.
+
 ### 2026-10-07 — Hoth: tickets to Rebel Forward Base work again
 
 - **Summary:** Buying a ticket to the Rebel Forward Base did nothing from every other travel point, because that starport had no shuttle (the stored one was deleted when the outposts moved). A new screenplay spawns a shuttle at the Rebel starport on every boot. Ticket purchase failures that used to be silent (no shuttle at the destination, travel or return trip not permitted) now log the reason and tell the player, and the boot log lists which travel point each shuttle registers to.
