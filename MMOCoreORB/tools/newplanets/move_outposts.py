@@ -549,6 +549,9 @@ def server(state):
     rows = []
     for k in MOVES:
         cx, cy = centre[k][0] + o[k][0], centre[k][1] + o[k][1]
+        if k == 'imperial':  # all mission terminal types (general, Imperial, scout) + bank + bazaar, 3 m apart
+            rows.extend(IMPERIAL_TERMINAL_ROWS)
+            continue
         if k == 'rebel':  # hand-placed row (LIVE-25): at the /waypoint spot, facing the starport, plus general + scout mission
             rows.extend(REBEL_TERMINAL_ROWS)
             continue
@@ -602,6 +605,12 @@ REBEL_TERMINAL_ROWS = [
     '		{templateFile = "object/tangible/terminal/%s.iff", ox = 0, oy = -0.383, oz = 0, ow = 0.924, x = %s, z = 27.8, y = %s, parentid = 0},' % r
     for r in (('terminal_mission', -410.2, 581.8), ('terminal_mission_rebel', -408.1, 583.9), ('terminal_mission_scout', -406.0, 586.0),
               ('terminal_bank', -403.9, 588.1), ('terminal_bazaar', -401.8, 590.2))]
+
+
+IMPERIAL_TERMINAL_ROWS = [
+    '		{templateFile = "object/tangible/terminal/%s.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = %s, z = 29.0, y = -3094.0, parentid = 0},' % r
+    for r in (('terminal_mission', 3798.0), ('terminal_mission_imperial', 3801.0), ('terminal_mission_scout', 3804.0),
+              ('terminal_bank', 3807.0), ('terminal_bazaar', 3810.0))]
 
 
 TRAVEL_RENAMES = {'Imperial Outpost': 'Imperial Forward Base', 'Rebel Outpost': 'Rebel Forward Base'}
