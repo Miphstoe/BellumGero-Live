@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-11 — Hoth: BG Hub NPC at every outpost, scout mission terminal at the Scavenger Outpost
+
+- **Summary:** The BG Hub vendor (`myswg_vendor`) now stands next to the terminal row at the Scavenger Outpost, the Imperial Forward Base and the Rebel Forward Base. The Scavenger Outpost also gets the scout mission terminal it was missing, so every outpost has general mission, its faction mission (Imperial / Rebel), scout mission, bank and bazaar (Scavenger: general, scout, bank, bazaar).
+- **Files:** `bin/scripts/screenplays/static_spawns/hoth_bg_hub.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py`
+- **Notes:** Server restart only, no TRE. The NPC uses the existing hub bark loop and menus. Check in game that none of the NPCs stands inside a wall.
+
 ### 2026-10-09 — Hoth: Imperial Forward Base gets every terminal type
 
 - **Summary:** The Imperial Forward Base had one mission terminal (Imperial), bank and bazaar. It now has all three mission terminal types (general, Imperial, scout) plus bank and bazaar, in one row 3 m apart (x 3798-3810, y -3094), same set as the Rebel Forward Base.
