@@ -89,6 +89,7 @@
 #include "server/ServerCore.h"
 #include "server/zone/managers/gcw/GCWManager.h"
 #include "server/zone/objects/ship/ShipObject.h"
+#include "server/zone/objects/creature/commands/TotalHealOtherCommand.h"
 
 #ifdef WITH_SESSION_API
 #include "server/login/SessionAPIClient.h"
@@ -2029,6 +2030,9 @@ void PlayerObjectImplementation::notifyOffline() {
 
 	//Logout from jedi manager
 	JediManager::instance()->onPlayerLoggedOut(playerCreature);
+
+	// Automatic Total Heal by Tell is session-only
+	TotalHealOtherCommand::clearAutoHeal(playerCreature->getObjectID());
 
 	// Screenplay logout triggers
 	Lua* lua = DirectorManager::instance()->getLuaInstance();
