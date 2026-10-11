@@ -145,5 +145,14 @@ Works: resources; item creation for armor, schematics, paintings, decor; STAP ca
 1. Relaunch the client on `8f814d8e…`, check gunship/RIC rendering, podracer mount, XJ-2 after Store/Call. Fix what fails.
 2. Walk the remaining 28 vehicles with the GM sheet (deed → call → mount → ride → store).
 3. Craft one armor piece end to end on a Master Armorsmith; equip on male and female.
-4. Decide Hoth structure placement with Miph (all buildings vs houses/harvesters only).
-5. Open the loot PR (base `Main` after #795 lands) with the `dist\bg_custom1.tre` checksum of that moment.
+4. ~~Decide Hoth structure placement with Miph~~ Decided 2026-10-08: harvesters yes, player housing no (see section 9).
+5. ~~Open the loot PR~~ Done: everything Hoth is PR #806 (`Ender_Hoth_to_Main` into `Main`). Add the TRE checksum of the shipped build to it.
+
+## 9. Update 2026-10-11 (after Test Center)
+
+- **PRs:** #796, #803, #804 and #805 are merged into `Test-Center` (first Hoth drop, the loot/vehicles/turrets/POI work, Rebel terminals, Imperial terminals). **#806 (`Ender_Hoth_to_Main` into `Main`) is the single Hoth PR for production**: all Hoth commits, `Main` merged in (clean). The TRE was handed to Miph and tested on Test Center.
+- **Structures on Hoth:** harvesters are allowed, player housing is not. Installations take their zone list from `object/SharedInstallationObjectTemplate.lua`, which now carries `hoth` (so factories and other installations place too); the AT-AT house no longer lists `hoth`; every house deed refuses on Hoth.
+- **Terminals** (`planetObjects` rows in `managers/planet/planet_manager.lua`; non-persistent, re-created every boot): Rebel Forward Base = general, Rebel and scout mission, bank, bazaar in a row centred on (-406, 586), turned to face the starport (heading -45); Imperial Forward Base = general, Imperial and scout mission, bank, bazaar at x 3798-3810, y -3094; Scavenger Outpost = general and scout mission, bank, bazaar at x -4046 to -4037, y -2094. `move_outposts.py server` keeps these hand-placed rows (`REBEL_TERMINAL_ROWS`, `IMPERIAL_TERMINAL_ROWS`, the Scavenger kinds list).
+- **BG Hub NPC:** `myswg_vendor` is spawned at each outpost by `screenplays/static_spawns/hoth_bg_hub.lua` (east end of each terminal row; Rebel one turned toward the starport).
+- **Glacial Rancor:** Rimeclaw at (600, -4600), leash 120 m, respawn 24 h (`respawnSeconds = 86400`).
+- **Still open:** Rebel terminal facing, the Imperial terminals and the hub NPCs not yet checked in game for wall clipping; most of the 28 ported vehicles untested; permission/credit for the Infinity, MTG and Takhomasak assets before Live; Hoth loading screen not ported.
