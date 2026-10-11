@@ -49,3 +49,9 @@ build.out
 build.out.prev
 bin/screenlog*
 compile_commands.json
+
+# Keep the registry source test visible without unignoring other test artifacts.
+!src/tests/
+src/tests/*
+!src/tests/ResourceMapTest.cpp
+!src/tests/ResourceSnapshotTest.cpp

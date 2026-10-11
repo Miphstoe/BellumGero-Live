@@ -53,6 +53,7 @@ includeFile("tangible/deed/generator_deed/serverobjects.lua")
 includeFile("tangible/deed/guild_deed/serverobjects.lua")
 includeFile("tangible/deed/harvester_deed/serverobjects.lua")
 includeFile("tangible/deed/mannequin/serverobjects.lua")
+includeFile("tangible/deed/doctor_service/serverobjects.lua")
 includeFile("tangible/deed/naboo/serverobjects.lua")
 includeFile("tangible/deed/pet_deed/serverobjects.lua")
 includeFile("tangible/deed/player_house_deed/serverobjects.lua")
@@ -61,3 +62,4 @@ includeFile("tangible/deed/vehicle_deed/serverobjects.lua")
 
 -- Server Objects
 includeFile("tangible/deed/test_deed.lua")
+includeFile("tangible/deed/image_design_station_deed.lua")

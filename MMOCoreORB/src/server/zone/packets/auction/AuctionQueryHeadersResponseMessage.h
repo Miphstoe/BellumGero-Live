@@ -155,6 +155,10 @@ public:
 		return itemList.size();
 	}
 
+	inline uint64 getItemIDAt(int index) {
+		return itemList.get(index)->getAuctionedItemObjectID();
+	}
+
 };
 
 #endif /*AUCTIONQUERYHEADERSRESPONSEMESSAGE_H_*/

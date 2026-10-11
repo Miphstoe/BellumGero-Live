@@ -710,9 +710,10 @@ TangibleObject* LootManagerImplementation::createLootResource(const String& reso
 		return nullptr;
 	}
 
-	auto resourceList = resourceMap->getZoneResourceList(resourceZoneName);
+	bool zoneFound = false;
+	const auto resourceList = resourceMap->copyZoneReferences(resourceZoneName, &zoneFound);
 
-	if (resourceList == nullptr) {
+	if (!zoneFound) {
 		return nullptr;
 	}
 
@@ -724,8 +725,8 @@ TangibleObject* LootManagerImplementation::createLootResource(const String& reso
 
 	Vector<ManagedReference<ResourceSpawn*>> resourceIndex;
 
-	for (int i = 0; i < resourceList->size(); ++i) {
-		ManagedReference<ResourceSpawn*> resourceEntry = resourceList->elementAt(i).getValue();
+	for (int i = 0; i < resourceList.size(); ++i) {
+		ManagedReference<ResourceSpawn*> resourceEntry = resourceList.get(i);
 
 		if (resourceEntry != nullptr && resourceEntry->isType(resourceTypeName)) {
 			resourceIndex.add(resourceEntry);

@@ -1,3 +1,5 @@
+require("sui.SuiListBox")
+
 myswg_vendor = ScreenPlay:new {
     numberOfActs = 1,
     questString = "myswg_vendor_task",
@@ -5,6 +7,153 @@ myswg_vendor = ScreenPlay:new {
     BARK_INTERVAL = 30000  -- 30 seconds between barks
 }
 registerScreenPlay("myswg_vendor", true)
+
+-- BG Hub targeted pet enhancement selector
+myswg_vendor.PET_BUFF_COST = 10000
+
+function myswg_vendor:formatPetBuffTime(seconds)
+    if seconds == nil or seconds <= 0 then
+        return nil
+    end
+
+    local totalMinutes = math.floor(seconds / 60)
+    local hours = math.floor(totalMinutes / 60)
+    local minutes = totalMinutes % 60
+
+    if hours > 0 then
+        return string.format("%dh %02dm remaining", hours, minutes)
+    end
+
+    if minutes > 0 then
+        return string.format("%dm remaining", minutes)
+    end
+
+    return "<1m remaining"
+end
+
+function myswg_vendor:openPetBuffSelector(pPlayer)
+    if pPlayer == nil then return end
+
+    local player = CreatureObject(pPlayer)
+    local pGhost = player:getPlayerObject()
+    if pGhost == nil then
+        player:sendSystemMessage("You do not have any active pets to enhance.")
+        return
+    end
+
+    local ghost = PlayerObject(pGhost)
+    local count = ghost:getActivePetsSize()
+    if count <= 0 then
+        player:sendSystemMessage("You do not have any active pets to enhance.")
+        return
+    end
+
+    local sui = SuiListBox.new("myswg_vendor", "petBuffSelectCallback")
+    sui.setTargetNetworkId(SceneObject(pPlayer):getObjectID())
+    sui.setTitle("Bellum Gero Hub - Pet Enhancement")
+    sui.setPrompt(
+        "Select the active pet to enhance for 10,000 credits.\n\n" ..
+        "The selected pet receives +2500 to Health, Action, Mind, Strength, Constitution, Quickness, Stamina, Focus and Willpower for 3 hours.\n\n" ..
+        "You are charged only after the selected pet is revalidated and successfully enhanced."
+    )
+
+    -- Each row is tied to the exact pet object already returned by PlayerObject.
+    -- Timer reads are performed directly on that pet, avoiding a second lookup
+    -- through the active-pet index. The pet object ID is stored with the SUI row
+    -- and is revalidated against the active-pet list at purchase time.
+    for i = 0, count - 1 do
+        local pPet = ghost:getActivePet(i)
+        local label = "[Unavailable pet]"
+        local petObjectID = ""
+
+        if pPet ~= nil then
+            local petScene = SceneObject(pPet)
+            local pet = CreatureObject(pPet)
+
+            label = petScene:getDisplayedName()
+            petObjectID = tostring(petScene:getObjectID())
+
+            local buffSeconds = pet:getPetEnhancementTime()
+            if buffSeconds > 0 then
+                local formatted = self:formatPetBuffTime(buffSeconds)
+                if formatted ~= nil then
+                    label = label .. " - Enhanced - " .. formatted
+                end
+            elseif buffSeconds == -2 then
+                label = label .. " - Partial enhancement"
+            else
+                label = label .. " - No active enhancement"
+            end
+
+            if pet:isDead() or pet:isIncapacitated() then
+                label = label .. " [UNAVAILABLE]"
+            elseif pet:isInCombat() then
+                label = label .. " [IN COMBAT]"
+            end
+        end
+
+        sui.add(label, petObjectID)
+    end
+
+    sui.sendTo(pPlayer)
+end
+
+function myswg_vendor:petBuffSelectCallback(pPlayer, pSui, eventIndex, args)
+    if pPlayer == nil then return end
+    if eventIndex == 1 or args == nil or args == "-1" then return end
+
+    local selectedIndex = tonumber(args)
+    if selectedIndex == nil or selectedIndex < 0 then return end
+
+    local player = CreatureObject(pPlayer)
+
+    local pPageData = LuaSuiBoxPage(pSui):getSuiPageData()
+    if pPageData == nil then
+        player:sendSystemMessage("Pet selection data is no longer available. You were not charged.")
+        return
+    end
+
+    local suiPageData = LuaSuiPageData(pPageData)
+    local selectedPetID = suiPageData:getStoredData(tostring(selectedIndex))
+    if selectedPetID == nil or selectedPetID == "" then
+        player:sendSystemMessage("That pet is no longer available. You were not charged.")
+        return
+    end
+
+    local petObjectID = tonumber(selectedPetID)
+    if petObjectID == nil or petObjectID <= 0 then
+        player:sendSystemMessage("That pet selection is invalid. You were not charged.")
+        return
+    end
+
+    local cash = player:getCashCredits()
+    local bank = player:getBankCredits()
+    local cost = self.PET_BUFF_COST
+
+    if (cash + bank) < cost then
+        player:sendSystemMessage("You need 10,000 credits for BG Hub Pet Enhancement.")
+        return
+    end
+
+    -- C++ revalidates that this exact object ID is still one of the player's
+    -- active pets, then checks living/incapacitated/combat state before buffing.
+    local success = player:enhancePetByObjectID(petObjectID)
+    if not success then
+        return
+    end
+
+    -- Charge only after a successful enhancement. Cash first, then bank.
+    if cash >= cost then
+        player:subtractCashCredits(cost)
+    else
+        if cash > 0 then
+            player:subtractCashCredits(cash)
+        end
+        player:subtractBankCredits(cost - cash)
+    end
+
+    player:sendSystemMessage("BG Hub Pet Enhancement purchased for 10,000 credits.")
+end
 
 -- Barking function integrated into screenplay (avoids Lua context issues)
 function myswg_vendor:performBark(pNpc)
@@ -667,6 +816,12 @@ local MySwgTravelDestinations = {
                     return nextConversationScreen
                 end
 
+                if optionLink == "petbuff_select" then
+                    myswg_vendor:openPetBuffSelector(conversingPlayer)
+                    nextConversationScreen = conversation:getScreen("first_screen")
+                    return nextConversationScreen
+                end
+
                 -- Take action when the player makes a purchase.
                 --if (inventory:hasFullContainerObjects() == true) then -- removed, does not work
                 if (SceneObject(pInventory):isContainerFullRecursive()) then
@@ -1271,6 +1426,28 @@ local MySwgTravelDestinations = {
                     --createLoot(pInventory, "junk", 300, false)
                     
 --ARCHITECT
+                elseif (optionLink == "option302") then
+                    local PRICE = 100000
+                    local TEMPLATE = "object/tangible/deed/image_design_station_deed.iff"
+
+                    if not canAfford(PRICE) then
+                        nextConversationScreen = conversation:getScreen("insufficient_funds")
+                        creature:sendSystemMessage("You need 100,000 credits to purchase an Image Designer Station Deed.")
+                        return nextConversationScreen
+                    end
+
+                    local pItem = giveItem(pInventory, TEMPLATE, -1)
+                    if pItem == nil then
+                        nextConversationScreen = conversation:getScreen("insufficient_space")
+                        creature:sendSystemMessage("The Image Designer Station Deed could not be delivered. You were not charged.")
+                        return nextConversationScreen
+                    end
+
+                    charge(PRICE)
+                    creature:sendSystemMessage("Purchased: Image Designer Station Deed for 100,000 credits.")
+                    nextConversationScreen = conversation:getScreen("first_screen")
+                    return nextConversationScreen
+
                 elseif (optionLink == "option34" and not canAfford(200000)) then
                     -- Bail if the player doesn’t have enough cash on hand.  
                     -- Plays a chat box message from the NPC as well as a system message.

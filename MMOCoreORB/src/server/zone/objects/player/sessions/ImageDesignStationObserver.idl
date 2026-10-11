@@ -1,0 +1,23 @@
+package server.zone.objects.player.sessions;
+
+import engine.core.ManagedObject;
+import engine.util.Observer;
+import engine.util.Observable;
+include server.zone.objects.scene.ObserverType;
+import server.zone.objects.player.sessions.ImageDesignStationSession;
+
+class ImageDesignStationObserver extends Observer {
+	@weakReference
+	ImageDesignStationSession session;
+
+	public ImageDesignStationObserver(ImageDesignStationSession stationSession) {
+		session = stationSession;
+		setObserverType(ObserverType.IMAGEDESIGNPOSITION);
+	}
+
+	public native int notifyObserverEvent(
+		unsigned int eventType,
+		Observable observable,
+		ManagedObject arg1,
+		long arg2);
+}
