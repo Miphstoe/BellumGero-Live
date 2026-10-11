@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-09 — Hoth: Imperial Forward Base gets every terminal type
+
+- **Summary:** The Imperial Forward Base had one mission terminal (Imperial), bank and bazaar. It now has all three mission terminal types (general, Imperial, scout) plus bank and bazaar, in one row 3 m apart (x 3798-3810, y -3094), same set as the Rebel Forward Base.
+- **Files:** `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py`
+- **Notes:** Server restart only. Orientation unchanged (not rotated); check in game that none clip a wall. The Scavenger Outpost still has general mission, bank and bazaar only.
+
 ### 2026-10-08 — Hoth: Rebel Forward Base terminals in a row, facing the starport, plus mission terminals
 
 - **Summary:** The Rebel Forward Base terminals sat in a line facing the wall and clipped into it, and only one mission terminal existed. They are now five terminals in a row (3 m apart) centred on the starport-side spot (-406, 586), all turned to face the starport: general mission, Rebel mission, scout mission, bank, bazaar.
