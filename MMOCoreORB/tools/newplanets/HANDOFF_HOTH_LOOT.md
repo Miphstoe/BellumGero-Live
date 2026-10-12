@@ -48,8 +48,8 @@ Build with `python build_tre.py <base> <out> build/hoth build/hoth_loot` from `C
 
 | File in `dist\` | Base | Content | md5 |
 |---|---|---|---|
-| `bg_custom1_hoth_only.tre` | live Sep 12 | Hoth only, matches PR #795. **This is what TC should run.** Replaces the broken `0006e3f6…`/`98f8ef11…` builds. | `3f788419438111fe37d1f05aa964ae80` |
-| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch (glow fix, moved outposts, shuttleports, closed terrain holes, Glacial Rancor) | `6bc29b5936185c4631da4aa06a1d2a29` |
+| `bg_custom1_hoth_only.tre` | live Sep 12 | Hoth only, matches PR #795. Superseded: TC and Live should run the 2026-10-12 `bg_custom1.tre` above. Replaces the broken `0006e3f6…`/`98f8ef11…` builds. | `3f788419438111fe37d1f05aa964ae80` |
+| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch (glow fix, moved outposts, shuttleports, closed terrain holes, Glacial Rancor) | `d62267adef8c9fecc8141b66f6227917 (rebuilt 2026-10-12: + snow globe assets, coin size, XP-38 mount fix; previous 6bc29b59 build backed up as dist/bg_custom1.tre.bak-20261006-pre-fixes)` |
 | `devbg\bg_custom1.tre` | Dev-BG Aug 5 | same content, installed in `C:\Dev-BG` and `/trefiles` | `cad9f6f13fc5b513747ffbb630862ab5` |
 
 `bg_custom1_hoth_only.tre` keeps the ORIGINAL outpost positions (it matches PR #795's server scripts); rebuild it only with `python build_hoth_only_original.py`, never with build_tre.py on build/hoth.
