@@ -20,6 +20,10 @@
 #include "server/zone/objects/guild/GuildObject.h"
 #include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/ZoneProcessServer.h"
+#include "server/zone/managers/vendor/sui/VendorHairStyleSuiCallback.h"
+#include "server/zone/managers/skill/imagedesign/ImageDesignManager.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "templates/customization/CustomizationIdManager.h"
 
 VendorManager::VendorManager() {
 	setLoggingName("VendorManager");
@@ -829,4 +833,201 @@ void VendorManager::randomizeVendorHeight(CreatureObject* vendor, VendorCreature
 
 	float height = (minScale + heightMod) / 100.0;
 	vendor->setHeight(height, false);
+}
+
+bool VendorManager::getVendorHairStyles(CreatureObject* vendor, Vector<String>& hairStyles) {
+	if (vendor == nullptr || vendor->isPlayerCreature() || dynamic_cast<VendorCreatureTemplate*>(vendor->getObjectTemplate()) == nullptr)
+		return false;
+
+	if (vendor->getSpeciesName().isEmpty())
+		return false;
+
+	String speciesGender = ImageDesignManager::instance()->getSpeciesGenderString(vendor);
+
+	if (speciesGender == "unknown")
+		return false;
+
+	SortedVector<String> hairTemplates;
+	CustomizationIdManager::instance()->getHairTemplatesForPlayerTemplate("object/creature/player/" + speciesGender + ".iff", hairTemplates);
+
+	// Empty template = bald, offered first where the species allows it.
+	if (CustomizationIdManager::instance()->canBeBald(speciesGender))
+		hairStyles.add("");
+
+	for (int i = 0; i < hairTemplates.size(); ++i)
+		hairStyles.add(hairTemplates.get(i));
+
+	return hairStyles.size() > 0;
+}
+
+bool VendorManager::canChangeVendorHair(CreatureObject* player, TangibleObject* vendor, bool notify) {
+	if (player == nullptr || vendor == nullptr || !vendor->isVendor())
+		return false;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+	VendorDataComponent* vendorData = (data != nullptr && data->get() != nullptr && data->get()->isVendorData()) ? cast<VendorDataComponent*>(data->get()) : nullptr;
+
+	if (vendorData == nullptr || !vendor->isCreatureObject()) {
+		if (notify)
+			player->sendSystemMessage("This vendor cannot be customized.");
+		return false;
+	}
+
+	if (vendorData->getOwnerId() != player->getObjectID()) {
+		if (notify)
+			player->sendSystemMessage("You do not have permission to customize this vendor.");
+		return false;
+	}
+
+	if (vendor->getZone() == nullptr || vendor->getZone() != player->getZone() ||
+			vendor->getRootParent() != player->getRootParent() || vendor->getDistanceTo(player) > 16.f) {
+		if (notify)
+			player->sendSystemMessage("You are too far away from the vendor to customize it.");
+		return false;
+	}
+
+	// Don't swap hair underneath an open Image Designer window.
+	if (player->containsActiveSession(SessionFacadeType::IMAGEDESIGN)) {
+		if (notify)
+			player->sendSystemMessage("Finish or cancel your current Image Designer session first.");
+		return false;
+	}
+
+	return true;
+}
+
+void VendorManager::sendVendorHairStyleListTo(CreatureObject* player, TangibleObject* vendor) {
+	if (!canChangeVendorHair(player, vendor, true))
+		return;
+
+	CreatureObject* vendorCreo = vendor->asCreatureObject();
+	Vector<String> hairStyles;
+
+	if (!getVendorHairStyles(vendorCreo, hairStyles)) {
+		player->sendSystemMessage("This vendor cannot be customized.");
+		return;
+	}
+
+	String currentHair;
+	ManagedReference<SceneObject*> hair = vendorCreo->getSlottedObject("hair");
+
+	if (hair != nullptr && hair->getObjectTemplate() != nullptr)
+		currentHair = hair->getObjectTemplate()->getFullTemplateString();
+
+	ManagedReference<SuiListBox*> box = new SuiListBox(player, SuiWindowType::VENDOR_HAIR_STYLE);
+	box->setUsingObject(vendor);
+	box->setCallback(new VendorHairStyleSuiCallback(player->getZoneServer()));
+	box->setPromptTitle("Vendor Hair Style");
+	box->setPromptText("Select a hair style for your vendor. Hair color and all other features can be changed with Design Vendor.");
+	box->setCancelButton(true, "@cancel");
+
+	for (int i = 0; i < hairStyles.size(); ++i) {
+		const String& hairTemplate = hairStyles.get(i);
+		String label;
+
+		if (hairTemplate.isEmpty()) {
+			label = "Bald";
+		} else {
+			// object/tangible/hair/human/hair_human_male_s01.iff -> "Style 01"
+			String baseName = hairTemplate.subString(hairTemplate.lastIndexOf('/') + 1);
+			int extIdx = baseName.lastIndexOf('.');
+
+			if (extIdx > 0)
+				baseName = baseName.subString(0, extIdx);
+
+			int styleIdx = baseName.lastIndexOf("_s");
+			label = styleIdx >= 0 ? "Style " + baseName.subString(styleIdx + 2) : baseName;
+		}
+
+		if (hairTemplate == currentHair)
+			label = label + " (current)";
+
+		box->addMenuItem(label, i);
+	}
+
+	player->getPlayerObject()->addSuiBox(box);
+	player->sendMessage(box->generateMessage());
+}
+
+void VendorManager::handleVendorHairStyleSelection(CreatureObject* player, TangibleObject* vendor, int index) {
+	if (player == nullptr || vendor == nullptr)
+		return;
+
+	Locker clocker(vendor, player);
+
+	if (!canChangeVendorHair(player, vendor, true))
+		return;
+
+	CreatureObject* vendorCreo = vendor->asCreatureObject();
+	Vector<String> hairStyles;
+
+	if (!getVendorHairStyles(vendorCreo, hairStyles) || index < 0 || index >= hairStyles.size()) {
+		player->sendSystemMessage("The selected appearance options are not valid for this vendor.");
+		return;
+	}
+
+	String hairTemplate = hairStyles.get(index);
+	ManagedReference<TangibleObject*> oldHair = vendorCreo->getSlottedObject("hair").castTo<TangibleObject*>();
+
+	if (oldHair != nullptr && oldHair->getObjectTemplate() != nullptr && oldHair->getObjectTemplate()->getFullTemplateString() == hairTemplate) {
+		player->sendSystemMessage("Your vendor already has that hair style.");
+		return;
+	}
+
+	if (oldHair == nullptr && hairTemplate.isEmpty()) {
+		player->sendSystemMessage("Your vendor already has that hair style.");
+		return;
+	}
+
+	// Create the new hair before removing the old one so a failure never
+	// leaves the vendor changed.
+	ManagedReference<TangibleObject*> newHair;
+
+	if (!hairTemplate.isEmpty()) {
+		ManagedReference<SceneObject*> hairObj = player->getZoneServer()->createObject(hairTemplate.hashCode(), 1);
+
+		if (hairObj == nullptr || !hairObj->isTangibleObject()) {
+			if (hairObj != nullptr) {
+				Locker hlocker(hairObj);
+				hairObj->destroyObjectFromDatabase(true);
+			}
+
+			error() << "Design Vendor: failed to create hair " << hairTemplate << " for vendor " << vendor->getObjectID();
+			player->sendSystemMessage("The selected appearance options are not valid for this vendor.");
+			return;
+		}
+
+		newHair = hairObj.castTo<TangibleObject*>();
+	}
+
+	String oldCustomization;
+
+	if (oldHair != nullptr) {
+		Locker hlocker(oldHair, vendor);
+		oldHair->getCustomizationString(oldCustomization);
+		oldHair->destroyObjectFromWorld(true);
+		oldHair->destroyObjectFromDatabase(true);
+	}
+
+	if (newHair != nullptr) {
+		Locker hlocker(newHair, vendor);
+
+		newHair->setContainerDenyPermission("owner", ContainerPermissions::MOVECONTAINER);
+		newHair->setContainerDefaultDenyPermission(ContainerPermissions::MOVECONTAINER);
+
+		// Carry the old hair color over, as the Image Designer does.
+		if (!oldCustomization.isEmpty()) {
+			CustomizationVariables customVars;
+			customVars.parseFromClientString(oldCustomization);
+
+			if (ImageDesignManager::validateCustomizationString(&customVars, newHair->getObjectTemplate()->getAppearanceFilename()))
+				newHair->setCustomizationString(oldCustomization);
+		}
+
+		ImageDesignManager::instance()->updateHairObject(vendorCreo, newHair);
+	}
+
+	info(true) << "Design Vendor: vendor " << vendor->getObjectID() << " hair set to '" << hairTemplate << "' by owner " << player->getObjectID();
+
+	player->sendSystemMessage("Your vendor's appearance has been updated successfully.");
 }

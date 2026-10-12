@@ -424,8 +424,15 @@ TangibleObject* ImageDesignManager::createHairObject(CreatureObject* imageDesign
 	if (imageDesigner->getSkillMod("hair") < skillMod)
 		return oldHair;
 
-	if (hairAssetData->getServerPlayerTemplate() != targetObject->getObjectTemplate()->getFullTemplateString()) {
-		error("hair " + hairTemplate + " is not compatible with this creature player " + targetObject->getObjectTemplate()->getFullTemplateString());
+	String targetTemplate = targetObject->getObjectTemplate()->getFullTemplateString();
+
+	// Design Vendor: NPC vendors use object/mobile/vendor templates that share the
+	// player species models, so match hair against the equivalent player template.
+	if (!targetObject->isPlayerCreature())
+		targetTemplate = "object/creature/player/" + getSpeciesGenderString(targetObject) + ".iff";
+
+	if (hairAssetData->getServerPlayerTemplate() != targetTemplate) {
+		error("hair " + hairTemplate + " is not compatible with this creature player " + targetTemplate);
 		return oldHair;
 	}
 

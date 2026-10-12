@@ -47,6 +47,19 @@ public:
 	bool canBeBald(const String& speciesSubString) {
 		return allowBald.get(speciesSubString);
 	}
+
+	// Design Vendor: every hair server template valid for a player species
+	// template (e.g. object/creature/player/human_male.iff), sorted by name.
+	void getHairTemplatesForPlayerTemplate(const String& serverPlayerTemplate, SortedVector<String>& hairTemplates) {
+		HashTableIterator<String, Reference<HairAssetData*> > iter = hairAssetSkillMods.iterator();
+
+		while (iter.hasNext()) {
+			Reference<HairAssetData*> data = iter.next();
+
+			if (data != nullptr && data->getServerPlayerTemplate() == serverPlayerTemplate)
+				hairTemplates.put(data->getServerTemplate());
+		}
+	}
 };
 
 #endif /* CUSTOMIZATIONIDMANAGER_H_ */

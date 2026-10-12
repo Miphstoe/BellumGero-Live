@@ -21,6 +21,7 @@
 #include "server/zone/objects/player/events/DisconnectClientEvent.h"
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "templates/params/creature/PlayerArrangement.h"
+#include "server/zone/managers/player/CharacterRenameManager.h"
 
 #ifdef WITH_SESSION_API
 #include "server/login/SessionAPIClient.h"
@@ -301,6 +302,9 @@ public:
 		if (playerParent == nullptr) {
 			ghost->setSavedParentID(0);
 		}
+
+		// Bellum Gero: repair the name index/MySQL if a crash interrupted a paid name change
+		CharacterRenameManager::instance()->reconcileNameIndex(player);
 
 		// Set the player online & notify
 		ghost->setOnline();

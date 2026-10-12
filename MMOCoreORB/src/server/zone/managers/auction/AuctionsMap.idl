@@ -83,6 +83,9 @@ class AuctionsMap extends ManagedObject {
 
 	public native void updateVendorSearch(SceneObject vendor, boolean enabled);
 
+	// Bellum Gero: repoint owner/bidder names after a paid character name change. Returns items updated.
+	public native int updatePlayerName(unsigned long playerID, final string oldFirstName, final string newFirstName);
+
 	public native void addToCommodityLimit(AuctionItem item);
 
 	public native void removeFromCommodityLimit(AuctionItem item);

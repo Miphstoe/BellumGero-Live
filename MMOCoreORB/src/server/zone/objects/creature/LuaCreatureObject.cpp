@@ -24,6 +24,7 @@
 #include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
+#include "server/zone/managers/player/CharacterRenameManager.h"
 
 const char LuaCreatureObject::className[] = "LuaCreatureObject";
 
@@ -184,6 +185,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "enhancePetByObjectID", &LuaCreatureObject::enhancePetByObjectID },
 		{ "getPetEnhancementTime", &LuaCreatureObject::getPetEnhancementTime },
 		{ "enhanceCharacterVendor", &LuaCreatureObject::enhanceCharacterVendor },
+		{ "checkCharacterRename", &LuaCreatureObject::checkCharacterRename },
+		{ "purchaseCharacterRename", &LuaCreatureObject::purchaseCharacterRename },
 
 		// JTL
 		{ "isRebelPilot", &LuaCreatureObject::isRebelPilot },
@@ -1958,4 +1961,33 @@ int LuaCreatureObject::subtractApprenticeshipXp(lua_State* L) {
 
 	ghost->subtractApprenticeshipXp(amount);
 	return 0;
+}
+// Bellum Gero Hub - Character Name Change Service
+// creature:checkCharacterRename(firstName, lastName) -> resultCode, message, fullName
+// Read-only validation; never charges or reserves a name.
+int LuaCreatureObject::checkCharacterRename(lua_State* L) {
+	String lastName = lua_tostring(L, -1) != nullptr ? lua_tostring(L, -1) : "";
+	String firstName = lua_tostring(L, -2) != nullptr ? lua_tostring(L, -2) : "";
+
+	auto result = CharacterRenameManager::instance()->checkRename(realObject, firstName, lastName);
+
+	lua_pushinteger(L, result.code);
+	lua_pushstring(L, result.message.toCharArray());
+	lua_pushstring(L, result.fullName.toCharArray());
+
+	return 3;
+}
+
+// creature:purchaseCharacterRename(firstName, lastName) -> resultCode, message
+// Revalidates server-side, renames, then charges the bank fee exactly once.
+int LuaCreatureObject::purchaseCharacterRename(lua_State* L) {
+	String lastName = lua_tostring(L, -1) != nullptr ? lua_tostring(L, -1) : "";
+	String firstName = lua_tostring(L, -2) != nullptr ? lua_tostring(L, -2) : "";
+
+	auto result = CharacterRenameManager::instance()->purchaseRename(realObject, firstName, lastName);
+
+	lua_pushinteger(L, result.code);
+	lua_pushstring(L, result.message.toCharArray());
+
+	return 2;
 }

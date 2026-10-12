@@ -150,6 +150,8 @@ namespace creature {
 		int enhancePetByObjectID(lua_State* L);
 		int getPetEnhancementTime(lua_State* L);
 		int enhanceCharacterVendor(lua_State* L);
+		int checkCharacterRename(lua_State* L);
+		int purchaseCharacterRename(lua_State* L);
 
 		// JTL
 		int isRebelPilot(lua_State* L);

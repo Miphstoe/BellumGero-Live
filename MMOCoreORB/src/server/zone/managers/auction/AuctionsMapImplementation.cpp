@@ -323,3 +323,48 @@ void AuctionsMapImplementation::removeFromCommodityLimit(AuctionItem* item) {
 		commoditiesLimit.drop(item->getOwnerID());
 }
 
+
+int AuctionsMapImplementation::updatePlayerName(uint64 playerID, const String& oldFirstName, const String& newFirstName) {
+	Vector<ManagedReference<AuctionItem*> > snapshot;
+
+	{
+		// Snapshot under the map lock, then release it before locking individual items
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+
+		for (int i = 0; i < allItems.size(); ++i) {
+			ManagedReference<AuctionItem*> item = allItems.elementAt(i).getValue();
+
+			if (item != nullptr)
+				snapshot.add(item);
+		}
+	}
+
+	String oldLower = oldFirstName.toLowerCase();
+	String newLower = newFirstName.toLowerCase();
+	int updated = 0;
+
+	for (int i = 0; i < snapshot.size(); ++i) {
+		AuctionItem* item = snapshot.get(i);
+
+		Locker itemLocker(item);
+
+		bool changed = false;
+
+		// Owner is tracked by object ID; the stored name is used for mail and search
+		if (item->getOwnerID() == playerID && item->getOwnerName() != newFirstName) {
+			item->setOwnerName(newFirstName);
+			changed = true;
+		}
+
+		// Active bids are tracked by (lowercase) name only
+		if (!oldLower.isEmpty() && item->getBidderName().toLowerCase() == oldLower) {
+			item->setBidderName(newLower);
+			changed = true;
+		}
+
+		if (changed)
+			updated++;
+	}
+
+	return updated;
+}
