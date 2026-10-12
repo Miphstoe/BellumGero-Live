@@ -21,6 +21,42 @@ HOTH_CAVE_BOSS_LOOT = {
 	},
 	{
 		groups = {
+			{group = "armor_attachments", chance = 10000000}
+		},
+		lootChance = 3000000
+	},
+	{
+		groups = {
+			{group = "clothing_attachments", chance = 10000000}
+		},
+		lootChance = 3000000
+	},
+	{
+		groups = {
+			{group = "color_crystals", chance = 10000000}
+		},
+		lootChance = 2000000
+	},
+	{
+		groups = {
+			{group = "power_crystals", chance = 10000000}
+		},
+		lootChance = 2000000
+	},
+	{
+		groups = {
+			{group = "krayt_pearls", chance = 10000000}
+		},
+		lootChance = 1500000
+	},
+	{
+		groups = {
+			{group = "jedi_robe", chance = 10000000}
+		},
+		lootChance = 500000
+	},
+	{
+		groups = {
 			{group = "hoth_snowtrooper_schematics", chance = 10000000}
 		},
 		lootChance = 500000

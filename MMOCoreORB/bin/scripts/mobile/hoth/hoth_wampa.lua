@@ -37,6 +37,42 @@ hoth_wampa = Creature:new {
 		},
 		{
 			groups = {
+				{group = "armor_attachments", chance = 10000000}
+			},
+			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "clothing_attachments", chance = 10000000}
+			},
+			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "color_crystals", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "power_crystals", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "krayt_pearls", chance = 10000000}
+			},
+			lootChance = 50000
+		},
+		{
+			groups = {
+				{group = "jedi_robe", chance = 10000000}
+			},
+			lootChance = 20000
+		},
+		{
+			groups = {
 				{group = "hoth_ice_decor", chance = 10000000}
 			},
 			lootChance = 500000

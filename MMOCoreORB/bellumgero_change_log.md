@@ -14,11 +14,11 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
-### 2026-10-11 — Hoth caves: no more random junk loot
+### 2026-10-11 — Hoth caves: no random junk loot, real loot instead
 
-- **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa (cave regulars) and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother). What drops now: BG tokens, Hoth ice and common decor, rare Hoth art, and for the bosses also endgame weapon schematics, the Snowtrooper and Alliance cold weather armor schematics, Hoth paintings, rare decor, vehicle schematics and deeds.
+- **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother), and replaced with loot worth having. Wampas and elder wampas: BG tokens 2.5%, armor attachments 2.5%, clothing attachments 2.5%, color crystals 1.5%, power crystals 1.5%, krayt pearls 0.5%, Jedi robes 0.2%, plus the Hoth decor and rare art they already had. Cave bosses (rolled per player, on top of their schematics, paintings, decor and vehicles): armor attachments 30%, clothing attachments 30%, color crystals 20%, power crystals 20%, krayt pearls 15%, Jedi robes 5%.
 - **Files:** `bin/scripts/mobile/hoth/hoth_wampa.lua`, `bin/scripts/mobile/hoth/hoth_elder_wampa.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua`, `tools/newplanets/gen_hoth_mobiles.py` (so regenerating keeps it)
-- **Notes:** Server restart only. The Hoth probe droid and the scavenger raider (outside the caves) still roll the generic groups.
+- **Notes:** Server restart only. All chances are `lootChance` values out of 10,000,000 and easy to tune. The Hoth probe droid and the scavenger raider (outside the caves) still roll the generic groups.
 
 ### 2026-10-11 — Hoth: BG Hub NPC at every outpost, scout mission terminal at the Scavenger Outpost
 
