@@ -83,6 +83,18 @@ LOOT_BEAST = """{
 				{group = "jedi_robe", chance = 10000000}
 			},
 			lootChance = 20000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 10000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 20000
 		}
 	}"""
 
@@ -233,13 +245,13 @@ LOOT_BOSS = """{
 			groups = {
 				{group = "hoth_vehicle_schematics", chance = 10000000}
 			},
-			lootChance = 500000
+			lootChance = 1500000
 		},
 		{
 			groups = {
 				{group = "hoth_vehicle_deeds", chance = 10000000}
 			},
-			lootChance = 200000
+			lootChance = 1000000
 		}
 	}"""
 

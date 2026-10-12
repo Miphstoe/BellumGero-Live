@@ -95,13 +95,13 @@ HOTH_CAVE_BOSS_LOOT = {
 		groups = {
 			{group = "hoth_vehicle_schematics", chance = 10000000}
 		},
-		lootChance = 500000
+		lootChance = 1500000
 	},
 	{
 		groups = {
 			{group = "hoth_vehicle_deeds", chance = 10000000}
 		},
-		lootChance = 200000
+		lootChance = 1000000
 	}
 }
 HOTH_CAVE_BOSS_NAMES = {

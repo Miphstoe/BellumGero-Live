@@ -73,6 +73,18 @@ hoth_wampa = Creature:new {
 		},
 		{
 			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 10000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 20000
+		},
+		{
+			groups = {
 				{group = "hoth_ice_decor", chance = 10000000}
 			},
 			lootChance = 500000
