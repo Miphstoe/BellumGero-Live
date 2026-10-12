@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_this_is_the_way = object_tangible_painting_shared_hoth_art_this_is_the_way:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_this_is_the_way, "object/tangible/painting/hoth_art_this_is_the_way.iff")

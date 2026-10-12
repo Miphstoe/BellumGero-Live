@@ -105,6 +105,7 @@ public:
 		ManagedReference<Zone*> arrivalZone = zoneServer->getZone(arrivalPlanet);
 
 		if (departureZone == nullptr || arrivalZone == nullptr) {
+			creature->error() << "PurchaseTicket: unknown zone '" << departurePlanet << "' / '" << arrivalPlanet << "'";
 			return GENERALERROR;
 		}
 
@@ -124,12 +125,16 @@ public:
 		Reference<PlanetTravelPoint*>  destPoint = pmArrival->getPlanetTravelPoint(arrivalPoint);
 
 		if (destPoint == nullptr) {
+			creature->sendSystemMessage("@travel:no_location_found"); //No location was found for your destination.
 			return GENERALERROR;
 		}
 
 		ManagedReference<CreatureObject*> arrivalShuttle = destPoint->getShuttle();
 
 		if (arrivalShuttle == nullptr) {
+			// Bellum Gero: this used to fail silently, which hid unregistered shuttles (Hoth Rebel Forward Base).
+			creature->error() << "PurchaseTicket: no shuttle registered at arrival point '" << arrivalPoint << "' on " << arrivalPlanet;
+			creature->sendSystemMessage("The shuttle at that destination is not available.");
 			return GENERALERROR;
 		}
 
@@ -143,11 +148,17 @@ public:
 		}
 
 		//Check to see if this point can be reached from this location.
-		if (!pmDeparture->isTravelToLocationPermitted(departurePoint, arrivalPlanet, arrivalPoint))
+		if (!pmDeparture->isTravelToLocationPermitted(departurePoint, arrivalPlanet, arrivalPoint)) {
+			creature->error() << "PurchaseTicket: travel not permitted '" << departurePoint << "' -> '" << arrivalPoint << "'";
+			creature->sendSystemMessage("You cannot travel to that destination from here.");
 			return GENERALERROR;
+		}
 
-		if (roundTrip && !pmArrival->isTravelToLocationPermitted(arrivalPoint, departurePlanet, departurePoint))
+		if (roundTrip && !pmArrival->isTravelToLocationPermitted(arrivalPoint, departurePlanet, departurePoint)) {
+			creature->error() << "PurchaseTicket: return trip not permitted '" << arrivalPoint << "' -> '" << departurePoint << "'";
+			creature->sendSystemMessage("You cannot travel back from that destination, so a round trip is not available.");
 			return GENERALERROR; //If they are doing a round trip, make sure they can travel back.
+		}
 
 		int baseFare = pmDeparture->getTravelFare(departurePlanet, arrivalPlanet);
 

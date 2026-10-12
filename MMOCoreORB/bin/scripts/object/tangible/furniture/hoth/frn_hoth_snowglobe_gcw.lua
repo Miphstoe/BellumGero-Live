@@ -1,0 +1,4 @@
+object_tangible_furniture_hoth_frn_hoth_snowglobe_gcw = object_tangible_furniture_hoth_shared_frn_hoth_snowglobe_gcw:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_hoth_frn_hoth_snowglobe_gcw, "object/tangible/furniture/hoth/frn_hoth_snowglobe_gcw.iff")

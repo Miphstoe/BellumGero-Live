@@ -1,0 +1,4 @@
+object_intangible_vehicle_swamp_speeder_pcd = object_intangible_vehicle_shared_swamp_speeder_pcd:new {
+}
+
+ObjectTemplates:addTemplate(object_intangible_vehicle_swamp_speeder_pcd, "object/intangible/vehicle/swamp_speeder_pcd.iff")

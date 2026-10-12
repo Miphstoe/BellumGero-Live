@@ -1,0 +1,5 @@
+object_tangible_loot_themepark_item_ice_sculpture_tauntaun = object_tangible_loot_themepark_shared_item_ice_sculpture_tauntaun:new {
+	gameObjectType = 8203,
+}
+
+ObjectTemplates:addTemplate(object_tangible_loot_themepark_item_ice_sculpture_tauntaun, "object/tangible/loot/themepark/item_ice_sculpture_tauntaun.iff")

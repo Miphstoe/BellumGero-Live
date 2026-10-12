@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_reprogrammed = object_tangible_painting_shared_hoth_art_reprogrammed:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_reprogrammed, "object/tangible/painting/hoth_art_reprogrammed.iff")

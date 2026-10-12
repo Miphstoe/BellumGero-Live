@@ -1,0 +1,4 @@
+object_tangible_painting_hothbattle_01_f00_000000000000 = object_tangible_painting_shared_hothbattle_01_f00_000000000000:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hothbattle_01_f00_000000000000, "object/tangible/painting/hothbattle_01_f00_000000000000.iff")

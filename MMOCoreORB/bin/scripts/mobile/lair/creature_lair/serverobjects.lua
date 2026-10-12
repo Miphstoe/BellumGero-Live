@@ -616,3 +616,6 @@ includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_lair2_neutral_medium.
 includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/yavin4/yavin4_whisper_bird_male_neutral_medium_boss_01.lua")
 includeFile("lair/creature_lair/yavin4/yavin4_crazed_geonosian_guard_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/hoth/hoth_tauntaun_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/hoth/hoth_ice_mynock_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/hoth/hoth_wampa_lair_neutral_large.lua")

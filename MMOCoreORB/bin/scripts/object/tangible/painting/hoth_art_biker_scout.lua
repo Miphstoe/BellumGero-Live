@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_biker_scout = object_tangible_painting_shared_hoth_art_biker_scout:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_biker_scout, "object/tangible/painting/hoth_art_biker_scout.iff")

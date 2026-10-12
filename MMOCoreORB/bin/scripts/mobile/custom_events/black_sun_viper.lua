@@ -47,7 +47,57 @@ black_sun_viper = Creature:new {
 				{group = "jetpack_parts", chance = 10000000}
 			},
 			lootChance = 5000000, -- 50.00% total chance
+		},
+		-- BEGIN Hoth boss loot (gen_boss_loot.py)
+		{
+			groups = {
+				{group = "hoth_snowtrooper_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_rebel_snow_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_paintings", chance = 10000000}
+			},
+			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "hoth_decor_rare", chance = 10000000}
+			},
+			lootChance = 1500000
+		},
+		{
+			groups = {
+				{group = "hoth_ice_decor", chance = 10000000}
+			},
+			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 1000000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 500000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 200000
 		}
+		-- END Hoth boss loot
 	},
 
 	-- Primary and secondary weapon should be different types (rifle/carbine, carbine/pistol, rifle/unarmed, etc)
