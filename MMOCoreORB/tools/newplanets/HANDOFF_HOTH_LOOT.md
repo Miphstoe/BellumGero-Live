@@ -156,3 +156,10 @@ Works: resources; item creation for armor, schematics, paintings, decor; STAP ca
 - **BG Hub NPC:** `myswg_vendor` is spawned at each outpost by `screenplays/static_spawns/hoth_bg_hub.lua` (east end of each terminal row; Rebel one turned toward the starport).
 - **Glacial Rancor:** Rimeclaw at (600, -4600), leash 120 m, respawn 24 h (`respawnSeconds = 86400`).
 - **Still open:** Rebel terminal facing, the Imperial terminals and the hub NPCs not yet checked in game for wall clipping; most of the 28 ported vehicles untested; permission/credit for the Infinity, MTG and Takhomasak assets before Live; Hoth loading screen not ported.
+
+## 10. Update 2026-10-12 (client TRE fixes)
+
+- The TRE build now takes four overlays: `build/hoth build/hoth_loot build/hoth_snowglobe_fix build/hoth_xp38_fix`.
+- `chain_check.py` used to miss `component/` and `lod/` references (lookbehind); it is fixed. Run `all_hoth_chain.py <tre>` after every build: it chain-checks all 316 Hoth client objects. Paths with backslashes in its output are false positives (stock effects/textures that exist); everything else is real.
+- Mount-table rule learned the hard way (XP-38): the vehicle template's `appearanceFilename` must be the appearance that keys `logical_saddle_name_map` and `valid_scale_range` (the `pv_*.sat`), never the static saddle `.apt`. A cloned vehicle template must be given the `.sat`.
+- This client ignores the mesh-particle scale in `.prt` files; pre-scale the mesh instead (see `fix_globe_coins.py`).

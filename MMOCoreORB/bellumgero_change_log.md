@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-12 — Hoth client TRE: XP-38 mount crash, snow globes drawn, coins sized (new bg_custom1.tre)
+
+- **Summary:** Three client-side fixes, all in the rebuilt `bg_custom1.tre`. (1) The XP-38 landspeeder crashed the client to desktop on /mount: Infinity keys `logical_saddle_name_map` and `valid_scale_range` by the vehicle's real skeletal appearance (`pv_speeder_xp_38.sat`) but our cloned vehicle template pointed at the static saddle appearance (`speeder_xp_38.apt`), so the generator never copied those rows and the mount lookup found nothing. The template now uses the `.sat` (chain staged), the two rows are added, and the generator entry is corrected. (2) Both Hoth snow globes rendered as the black default box: their component lods, meshes, shaders and textures (17 files) were never staged because `chain_check.py` had a lookbehind that hid component/lod references; checker fixed, files staged. (3) The Battle of Hoth globe spawned the stock glowing Imperial/Rebel coins full size (0.7 m) because this client ignores the mesh-particle scale (0.15); pre-scaled coin copies (`pt_glowing_*_coin_sm`) are referenced instead at scale 1.0.
+- **Files:** client TRE only (overlays `build/hoth_snowglobe_fix`, `build/hoth_xp38_fix`); `tools/newplanets/gen_hoth_vehicles.py`, `chain_check.py`, `stage_missing.py` (stage a reference chain from Infinity), `all_hoth_chain.py` (chain-check every Hoth object), `fix_globe_coins.py`, `fix_xp38.py`
+- **Notes:** Build: `python build_tre.py <base> <out> build/hoth build/hoth_loot build/hoth_snowglobe_fix build/hoth_xp38_fix`. Verified by chain check and CRC audit; the XP-38 mount is not yet confirmed in game. Plane LIVE-29 (XP-38).
+
 ### 2026-10-12 — Hoth: every Hoth draft schematic registered (none could be learned or crafted)
 
 - **Summary:** The server only knows a draft schematic exists if it is listed in `managers/crafting/schematics.lua` (SchematicMap). None of the 64 Hoth drafts were: the 22 Snowtrooper and Alliance cold weather armor pieces, the 12 Hoth paintings and the 30 vehicle schematics. So the loot schematics that should grant them did nothing and nothing showed in the crafting tool. All 64 are now listed in one Bellum Gero Hoth block.
