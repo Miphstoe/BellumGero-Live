@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-11 — Hoth caves: no more random junk loot
+
+- **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa (cave regulars) and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother). What drops now: BG tokens, Hoth ice and common decor, rare Hoth art, and for the bosses also endgame weapon schematics, the Snowtrooper and Alliance cold weather armor schematics, Hoth paintings, rare decor, vehicle schematics and deeds.
+- **Files:** `bin/scripts/mobile/hoth/hoth_wampa.lua`, `bin/scripts/mobile/hoth/hoth_elder_wampa.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua`, `tools/newplanets/gen_hoth_mobiles.py` (so regenerating keeps it)
+- **Notes:** Server restart only. The Hoth probe droid and the scavenger raider (outside the caves) still roll the generic groups.
+
 ### 2026-10-11 — Hoth: BG Hub NPC at every outpost, scout mission terminal at the Scavenger Outpost
 
 - **Summary:** The BG Hub vendor (`myswg_vendor`) now stands next to the terminal row at the Scavenger Outpost, the Imperial Forward Base and the Rebel Forward Base. The Scavenger Outpost also gets the scout mission terminal it was missing, so every outpost has general mission, its faction mission (Imperial / Rebel), scout mission, bank and bazaar (Scavenger: general, scout, bank, bazaar).

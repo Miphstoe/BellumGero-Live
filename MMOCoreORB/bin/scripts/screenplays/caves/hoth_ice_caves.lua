@@ -9,22 +9,6 @@ HOTH_BOSS_LOOT_RANGE = 64
 HOTH_CAVE_BOSS_LOOT = {
 	{
 		groups = {
-			{group = "armor_all", chance = 3000000},
-			{group = "weapons_all", chance = 3500000},
-			{group = "wearables_all", chance = 3500000}
-		},
-		lootChance = 8000000
-	},
-	{
-		groups = {
-			{group = "armor_all", chance = 3000000},
-			{group = "weapons_all", chance = 3500000},
-			{group = "wearables_all", chance = 3500000}
-		},
-		lootChance = 6000000
-	},
-	{
-		groups = {
 			{group = "endgame_weapon_schematics", chance = 10000000}
 		},
 		lootChance = 1000000

@@ -31,14 +31,6 @@ hoth_elder_wampa = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 2780000
-		},
-		{
-			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000

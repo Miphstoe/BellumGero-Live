@@ -44,14 +44,6 @@ def register(rel_list_file, line, after_prefix=None):
 LOOT_BEAST = """{
 		{
 			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = %d
-		},
-		{
-			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
@@ -117,22 +109,6 @@ CREATURES = [
 
 
 LOOT_BOSS = """{
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
 		{
 			groups = {
 				{group = "endgame_weapon_schematics", chance = 10000000}
@@ -254,7 +230,7 @@ for _c in CREATURES + BOSSES:
 
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
-    loot = c.get('lootstr') or (LOOT_BEAST % c['loot'] if c['loot'] else '{}')
+    loot = c.get('lootstr') or (LOOT_BEAST if c['loot'] else '{}')  # no random armor_all/weapons_all/wearables_all (junk) since 2026-10-11
     if c.get('extra'):
         loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
     return f'''{c['key']} = Creature:new {{
