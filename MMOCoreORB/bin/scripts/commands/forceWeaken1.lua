@@ -45,7 +45,7 @@ ForceWeaken1Command = {
 	name = "forceweaken1",
 
 	damageMultiplier = 0,
-	speed = 4.0,
+	speed = 3.0,
 	forceCost = 400,
 	visMod = 25,
 	accuracySkillMod = "forceweaken_accuracy",
