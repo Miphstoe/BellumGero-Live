@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-14 — Rimeclaw, the Glacial Rancor: tougher again (90% of the 2026-10-05 step)
+
+- **Summary:** Rimeclaw, the Glacial Rancor: level 400 -> 445, accuracy 95 -> 97.25, damage 1050-1800 -> 1154-1998, base XP 17000 -> 18904, HAM 1.4-2.0M -> 1.76-2.45M, resists 175/175/160/200/160/200/80/80/25 -> 180/180/169/200/169/200/85/85/30. Each increase is 90% of the 2026-10-05 increase, applied on top of its current values. Loot and rewards unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only, no rebuild. Resist values are rounded to whole numbers. Not yet tested in game.
+
 ### 2026-10-13 — Hoth: regular mobs drop half as much loot and pay 3x the credits
 
 - **Summary:** Regular (non-boss) Hoth mobs dropped too much. Every `lootChance` on wampas, elder wampas, snowtroopers, Rebel snow soldiers and sergeants, scavengers, raiders, salvage techs, mynocks, probe droid and tauntauns is halved (e.g. wampa attachments 2.5% -> 1.25%, ice decor 5% -> 2.5%); the generic armor/weapon/clothing junk group is gone from the raider and probe droid. In exchange their kill credits are tripled: new creature template field `creditsMultiplier` (float, default 1) scales Core3's level-based credits in `CreatureManagerImplementation::notifyDestruction`; the Hoth mobs set 3 (a level-90 wampa pays about 1,400-1,700 credits instead of 460-560). Cave and world boss rewards are unchanged.
