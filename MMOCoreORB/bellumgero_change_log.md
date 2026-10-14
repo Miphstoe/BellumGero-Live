@@ -18,7 +18,7 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 - **Summary:** Regular (non-boss) Hoth mobs dropped too much. Every `lootChance` on wampas, elder wampas, snowtroopers, Rebel snow soldiers and sergeants, scavengers, raiders, salvage techs, mynocks, probe droid and tauntauns is halved (e.g. wampa attachments 2.5% -> 1.25%, ice decor 5% -> 2.5%); the generic armor/weapon/clothing junk group is gone from the raider and probe droid. In exchange their kill credits are tripled: new creature template field `creditsMultiplier` (float, default 1) scales Core3's level-based credits in `CreatureManagerImplementation::notifyDestruction`; the Hoth mobs set 3 (a level-90 wampa pays about 1,400-1,700 credits instead of 460-560). Cave and world boss rewards are unchanged.
 - **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/CreatureManagerImplementation.cpp`, `bin/scripts/mobile/hoth/*.lua` (15 mobiles), `tools/newplanets/tune_hoth_loot.py` (idempotent; run after gen_hoth_mobiles.py)
-- **Notes:** C++ change: rebuild. `creditsMultiplier` is available to any creature template. Not yet confirmed in game.
+- **Notes:** C++ change: rebuild. `creditsMultiplier` is available to any creature template. Confirmed on dev 2026-10-14 (wampa credits and drop rate judged right).
 
 ### 2026-10-11 — Hoth caves: no random junk loot, real loot instead
 
