@@ -77,6 +77,7 @@ protected:
 	float attackSpeed;
 
 	float scale;
+	float creditsMultiplier; // Bellum Gero: scales the level-based kill credits (default 1)
 
 	int baseXp;
 	int baseHAM;
@@ -323,6 +324,10 @@ public:
 
 	inline float getScale() const {
 		return scale;
+	}
+
+	inline float getCreditsMultiplier() const {
+		return creditsMultiplier;
 	}
 
 	inline int getDamageMin() const {

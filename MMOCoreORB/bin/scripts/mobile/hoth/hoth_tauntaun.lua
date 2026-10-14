@@ -5,6 +5,7 @@ hoth_tauntaun = Creature:new {
 	faction = "",
 	mobType = MOB_HERBIVORE,
 	level = 65,
+	creditsMultiplier = 3,
 	chanceHit = 0.6,
 	damageMin = 470,
 	damageMax = 610,
@@ -29,12 +30,13 @@ hoth_tauntaun = Creature:new {
 	templates = {"object/mobile/tauntaun_hue.iff"},
 	hues = { 16, 17, 18, 19, 20, 21, 22, 23 },
 	scale = 1.0,
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "unarmed",

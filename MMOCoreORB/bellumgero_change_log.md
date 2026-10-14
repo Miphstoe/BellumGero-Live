@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-13 — Hoth: regular mobs drop half as much loot and pay 3x the credits
+
+- **Summary:** Regular (non-boss) Hoth mobs dropped too much. Every `lootChance` on wampas, elder wampas, snowtroopers, Rebel snow soldiers and sergeants, scavengers, raiders, salvage techs, mynocks, probe droid and tauntauns is halved (e.g. wampa attachments 2.5% -> 1.25%, ice decor 5% -> 2.5%); the generic armor/weapon/clothing junk group is gone from the raider and probe droid. In exchange their kill credits are tripled: new creature template field `creditsMultiplier` (float, default 1) scales Core3's level-based credits in `CreatureManagerImplementation::notifyDestruction`; the Hoth mobs set 3 (a level-90 wampa pays about 1,400-1,700 credits instead of 460-560). Cave and world boss rewards are unchanged.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/CreatureManagerImplementation.cpp`, `bin/scripts/mobile/hoth/*.lua` (15 mobiles), `tools/newplanets/tune_hoth_loot.py` (idempotent; run after gen_hoth_mobiles.py)
+- **Notes:** C++ change: rebuild. `creditsMultiplier` is available to any creature template. Not yet confirmed in game.
+
 ### 2026-10-11 — Hoth caves: no random junk loot, real loot instead
 
 - **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother), and replaced with loot worth having. Wampas and elder wampas: BG tokens 2.5%, armor attachments 2.5%, clothing attachments 2.5%, color crystals 1.5%, power crystals 1.5%, krayt pearls 0.5%, Jedi robes 0.2%, plus the Hoth decor and rare art they already had. Vehicles (the 30 ported speeders, swoops and podracers; uniform pick): wampas 0.1% deed and 0.2% schematic per kill. Cave bosses (rolled per player, on top of their schematics, paintings and decor): armor attachments 30%, clothing attachments 30%, color crystals 20%, power crystals 20%, krayt pearls 15%, Jedi robes 5%, vehicle schematic 15% (was 5%), vehicle deed 10% (was 2%).
