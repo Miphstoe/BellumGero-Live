@@ -388,18 +388,19 @@ bool ResourceSpawner::ghDumpAll() {
 	/* This is custom code written to export resources in a way that an additional script can easily push them to Galaxy Harvester -c0pp3r */
 	if(!scriptLoading)
 		return false;
-	planets =  new Vector<String> ();
-	planets->add("corellia");
-	planets->add("dantooine");
-	planets->add("dathomir");
-	planets->add("endor");
-	planets->add("lok");
-	planets->add("naboo");
-	planets->add("rori");
-	planets->add("talus");
-	planets->add("tatooine");
-	planets->add("yavin4");
-	//String planets = "corellia";
+	Vector<String> planets;
+	planets.add("corellia");
+	planets.add("dantooine");
+	planets.add("dathomir");
+	planets.add("endor");
+	planets.add("hoth");
+	planets.add("lok");
+	planets.add("naboo");
+	planets.add("rori");
+	planets.add("talus");
+	planets.add("tatooine");
+	planets.add("yavin4");
+	Vector<String> missingZones;
 
 	try {
 		File* ghfile = new File("scripts/managers/ghoutput.xml");
@@ -427,11 +428,17 @@ bool ResourceSpawner::ghDumpAll() {
 				inPhase = 1;
 			}
 			if(String::valueOf(inPhase) == "1") {
-				for(int j = 0; j < planets->size(); ++j){
+				for(int j = 0; j < planets.size(); ++j){
+					if (missingZones.contains(planets.get(j)))
+						continue;
+
 					bool zoneFound = false;
-					const auto zoneResources = resourceMap->copyZoneReferences(planets->get(j), &zoneFound);
-					// The existing GH dump requires an index for each listed planet.
-					assert(zoneFound);
+					const auto zoneResources = resourceMap->copyZoneReferences(planets.get(j), &zoneFound);
+					if (!zoneFound) {
+						warning("Galaxy Harvester export: no resource index for zone " + planets.get(j));
+						missingZones.add(planets.get(j));
+						continue;
+					}
 					ManagedReference<ResourceSpawn*> resourceSpawn;
 
 					for (int b = 0; b< zoneResources.size(); ++b) {
@@ -462,7 +469,7 @@ bool ResourceSpawner::ghDumpAll() {
 							}
 							//ghwriter->writeLine("</attributes>");
 							ghwriter->write("<planet>");
-							ghwriter->write(planets->get(j));
+						ghwriter->write(planets.get(j));
 							ghwriter->writeLine("</planet>");
 							ghwriter->writeLine("</resource>");
 							ghwriter->writeLine("");

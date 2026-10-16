@@ -8,7 +8,7 @@ paintingExchangeCuratorConvoTemplate = ConvoTemplate:new {
 pec_hub = ConvoScreen:new {
 	id = "pec_hub",
 	leftDialog = "",
-	customDialogText = "Greetings, collector. I offer two exchange programs. For 10 paintings I will give you a rare painting of your choice. For 50 paintings I can offer something far more extraordinary — a Holocron of Destiny or a Resource Deed. Only paintings carried in your main inventory are eligible.",
+	customDialogText = "Greetings, collector. I offer two exchange programs. For 10 paintings I will give you a rare painting of your choice. For 50 paintings you may choose a Holocron of Destiny, a Resource Deed, or a rare furnishing. Only paintings carried in your main inventory are eligible.",
 	stopConversation = "false",
 	options = {
 		{"I would like to exchange 10 paintings for a painting.", "pec_start_exchange"},
@@ -46,7 +46,7 @@ paintingExchangeCuratorConvoTemplate:addScreen(pec_start_premium_exchange)
 pec_accepted_list = ConvoScreen:new {
 	id = "pec_accepted_list",
 	leftDialog = "",
-	customDialogText = "I accept any standard painting from your main inventory. This includes Bestine portraits, wanted posters, schematics, landscapes, species portraits, and similar works. Paintings stored in houses, banks, containers, or datapad slots are not counted — they must be in your carried inventory.\n\n10 paintings: choose one rare painting.\n50 paintings: choose a Holocron of Destiny or a Resource Deed.",
+	customDialogText = "I accept any standard painting from your main inventory. This includes Bestine portraits, wanted posters, schematics, landscapes, species portraits, and similar works. Paintings stored in houses, banks, containers, or datapad slots are not counted — they must be in your carried inventory.\n\n10 paintings: choose one rare painting.\n50 paintings: choose a Holocron of Destiny, Resource Deed, or rare furnishing.",
 	stopConversation = "false",
 	options = {
 		{"Back", "pec_hub"},
