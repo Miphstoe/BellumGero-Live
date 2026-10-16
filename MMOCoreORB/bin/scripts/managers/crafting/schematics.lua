@@ -1966,4 +1966,9 @@ schematics = {
 	{path="object/draft_schematic/droid/component/chassis_droid_battle_droid_foundry.iff"},
 	{path="object/draft_schematic/droid/component/chassis_droid_super_battle_droid_foundry.iff"},
 	{path="object/draft_schematic/droid/component/chassis_droid_droideka_foundry.iff"},
+	{path="object/draft_schematic/clothing/clothing_armor_ris_suit.iff"}, -- BG full-suit
+	{path="object/draft_schematic/clothing/clothing_armor_zam_suit.iff"}, -- BG full-suit
+	{path="object/draft_schematic/clothing/clothing_armor_tantel_suit.iff"}, -- BG full-suit
+	{path="object/draft_schematic/clothing/clothing_armor_snowtrooper_suit.iff"}, -- BG Snow full-suit
+	{path="object/draft_schematic/clothing/clothing_armor_rebel_snow_suit.iff"}, -- BG Snow full-suit
 };

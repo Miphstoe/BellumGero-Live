@@ -8,3 +8,4 @@ includeFile("tangible/wearables/armor/rebel_snow/armor_rebel_snow_chest_plate.lu
 includeFile("tangible/wearables/armor/rebel_snow/armor_rebel_snow_gloves.lua")
 includeFile("tangible/wearables/armor/rebel_snow/armor_rebel_snow_helmet.lua")
 includeFile("tangible/wearables/armor/rebel_snow/armor_rebel_snow_leggings.lua")
+includeFile("tangible/wearables/armor/rebel_snow/armor_rebel_snow_suit_package.lua")

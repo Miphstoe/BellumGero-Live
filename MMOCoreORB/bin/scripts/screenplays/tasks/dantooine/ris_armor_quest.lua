@@ -16,6 +16,9 @@ risArmorQuest = ScreenPlay:new {
 		},
 
 
+		-- RIS full-suit schematic is a quest reward, not an unconditional Master award.
+		fullSuitReward = { template = "object/draft_schematic/clothing/clothing_armor_ris_suit.iff", displayName = "RIS Armor Suit Package" },
+
 		finalRewardSchematics = {
 			{ template = "object/draft_schematic/clothing/clothing_armor_ris_bicep_l.iff", displayName = "@wearables_name:armor_ris_bicep_l" },
 			{ template = "object/draft_schematic/clothing/clothing_armor_ris_bicep_r.iff", displayName = "@wearables_name:armor_ris_bicep_r" },
@@ -54,6 +57,11 @@ function risArmorQuestConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate
 	if (not CreatureObject(pPlayer):hasSkill("crafting_armorsmith_master")) then
 		return convoTemplate:getScreen("not_master_armorsmith")
 	elseif (CreatureObject(pPlayer):hasScreenPlayState(64, "ris_armor_quest")) then -- All quests completed
+		-- One-time retroactive reward for players who completed RIS before full suits existed.
+		if (not CreatureObject(pPlayer):hasScreenPlayState(128, "ris_armor_quest")) then
+			self:teachSchematic(pPlayer, risArmorQuest.fullSuitReward)
+			CreatureObject(pPlayer):setScreenPlayState(128, "ris_armor_quest")
+		end
 		return convoTemplate:getScreen("completed_all_quests")
 	elseif (CreatureObject(pPlayer):hasScreenPlayState(32, "ris_armor_quest")) then -- On quest 6
 		return convoTemplate:getScreen("quest_6_query")
@@ -132,6 +140,8 @@ function risArmorQuestConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNp
 		CreatureObject(pPlayer):setScreenPlayState(64, "ris_armor_quest")
 		self:removeQuestItem(pPlayer, risArmorQuest.questItems.quest6.template)
 		self:rewardSchematics(pPlayer)
+		self:teachSchematic(pPlayer, risArmorQuest.fullSuitReward)
+		CreatureObject(pPlayer):setScreenPlayState(128, "ris_armor_quest")
 	end
 	return pConvScreen
 end
@@ -144,9 +154,13 @@ function risArmorQuestConvoHandler:teachSchematic(pPlayer, templateTable)
 	end
 
 	PlayerObject(pGhost):addRewardedSchematic(templateTable.template, 2, -1, true)
-	local messageString = LuaStringIdChatParameter("@loot_schematic:skill_granted")
-	messageString:setTO(getStringId(templateTable.displayName))
-	CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	if (templateTable.template == risArmorQuest.fullSuitReward.template) then
+		CreatureObject(pPlayer):sendSystemMessage("You learned the RIS Armor Suit Package schematic.")
+	else
+		local messageString = LuaStringIdChatParameter("@loot_schematic:skill_granted")
+		messageString:setTO(getStringId(templateTable.displayName))
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+	end
 end
 
 function risArmorQuestConvoHandler:rewardSchematics(pPlayer)
