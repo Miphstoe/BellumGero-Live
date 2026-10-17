@@ -119,7 +119,7 @@ CREATURES = [
          attacks='{ {"knockdownattack",""}, {"dizzyattack",""} }'),
     dict(key='hoth_tauntaun_bull', name='a tauntaun bull', social='tauntaun', mob='MOB_HERBIVORE', level=66,
          hit=0.62, dmg=(460, 630), xp=6380, ham=(11500, 14000), armor=1, res='{130,130,25,160,25,160,25,25,-1}',
-         meat=('meat_herbivore', 850), hide=('hide_wooly', 750), bone=('bone_mammal', 600), milk=0,
+         meat=('meat_herbivore', 850), hide=('hide_wooly', 750), bone=('bone_mammal', 600), milk=350,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='PACK + HERD', diet='HERBIVORE', tmpl='object/mobile/tauntaun_hue.iff',
          hues='{ 24, 25, 26, 27, 28, 29, 30, 31 }', scale=1.15, loot=0,
          attacks='{ {"knockdownattack",""}, {"creatureareaknockdown",""} }'),
@@ -314,6 +314,8 @@ for _c in CREATURES + BOSSES:
 
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
+    # milk without milkType gives droids/players "cannot locate a current spawn of " (2026-10-17)
+    milk_type = '\n\tmilkType = "%s",' % c.get('milk_type', 'milk_wild') if c['milk'] else ''
     loot = c.get('lootstr') or (LOOT_BEAST if c['loot'] else '{}')  # no random armor_all/weapons_all/wearables_all (junk) since 2026-10-11
     if c.get('extra'):
         loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
@@ -337,7 +339,7 @@ def creature_lua(c):
 	hideType = "{c['hide'][0]}",
 	hideAmount = {c['hide'][1]},
 	boneType = "{c['bone'][0]}",
-	boneAmount = {c['bone'][1]},
+	boneAmount = {c['bone'][1]},{milk_type}
 	milk = {c['milk']},
 	tamingChance = 0,
 	ferocity = 0,

@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Hoth: every tauntaun can be milked
+
+- **Summary:** Player bug report: a harvest droid set to Milk got nothing from Hoth tauntauns. The Hoth tauntaun had `milk = 300` but no `milkType` (the only creature on Main like that), so milking found no resource spawn; the tauntaun bull had `milk = 0`. Both now give `milk_wild` (Hothian Wild Milk on Hoth): tauntaun 300, bull 350.
+- **Files:** `bin/scripts/mobile/hoth/hoth_tauntaun.lua`, `bin/scripts/mobile/hoth/hoth_tauntaun_bull.lua`, `tools/newplanets/gen_hoth_mobiles.py` (writes `milkType` for any mob with milk, so regenerating keeps it)
+- **Notes:** Server restart only. The bull is aggressive, so droid milking only works while it is out of combat. Milk goes to the owner's inventory (`harvestResourceToPlayer`), not the droid's.
+
 ### 2026-10-17 — Rimeclaw, the Glacial Rancor: stats back to the 2026-10-05 values
 
 - **Summary:** Reverts the 2026-10-14 stat step. Level 445 -> 400, accuracy 97.25 -> 95, damage 1154-1998 -> 1050-1800, base XP 18904 -> 17000, HAM 1.76-2.45M -> 1.4-2.0M, resists back to 175/175/160/200/160/200/80/80/25. The 2026-10-14 entry below no longer describes live values.

@@ -20,6 +20,7 @@ hoth_tauntaun = Creature:new {
 	hideAmount = 600,
 	boneType = "bone_mammal",
 	boneAmount = 500,
+	milkType = "milk_wild",
 	milk = 300,
 	tamingChance = 0,
 	ferocity = 0,
