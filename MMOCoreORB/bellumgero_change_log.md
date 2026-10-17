@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Hoth: Imperial walker toys drop far less often
+
+- **Summary:** The Imperial walker (AT-AT) toy dropped too often: the 10 colour variants plus the veteran AT-AT toy were 11 of the 18 equally weighted items in `hoth_decor_common`, so 61% of common decor drops were a walker toy. The 10 variants now share one item's weight (about 1.1% each), which cuts the walker toy share to 22% of the group. Other common decor items go from 5.6% to 11.1% each. Per kill: snowtrooper and Rebel snow soldier 0.61% -> 0.22%, wampa 0.92% -> 0.33%, elder wampa 1.2% -> 0.44%, scavenger raider 3.1% -> 1.1%, Imperial salvage tech 4.6% -> 1.7%.
+- **Files:** `bin/scripts/loot/groups/bellum/hoth/hoth_decor_common.lua`, `tools/newplanets/gen_hoth_loot.py` (weights the group the same way when regenerated)
+- **Notes:** Server restart only. Mob `lootChance` values unchanged.
+
 ### 2026-10-17 — Hoth: every tauntaun can be milked
 
 - **Summary:** Player bug report: a harvest droid set to Milk got nothing from Hoth tauntauns. The Hoth tauntaun had `milk = 300` but no `milkType` (the only creature on Main like that), so milking found no resource spawn; the tauntaun bull had `milk = 0`. Both now give `milk_wild` (Hothian Wild Milk on Hoth): tauntaun 300, bull 350.
