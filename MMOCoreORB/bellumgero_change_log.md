@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: respawn 24 h -> 3 h
+
+- **Summary:** After being killed, Rimeclaw respawns after 3 hours instead of 24 hours (`respawnSeconds` 86400 -> 10800). Stats unchanged.
+- **Files:** `bin/scripts/screenplays/bellum/hoth_glacial_rancor_worldboss.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only. The boss-up broadcast interval was already 3 hours.
+
 ### 2026-10-14 — Rimeclaw, the Glacial Rancor: tougher again (90% of the 2026-10-05 step)
 
 - **Summary:** Rimeclaw, the Glacial Rancor: level 400 -> 445, accuracy 95 -> 97.25, damage 1050-1800 -> 1154-1998, base XP 17000 -> 18904, HAM 1.4-2.0M -> 1.76-2.45M, resists 175/175/160/200/160/200/80/80/25 -> 180/180/169/200/169/200/85/85/30. Each increase is 90% of the 2026-10-05 increase, applied on top of its current values. Loot and rewards unchanged.
