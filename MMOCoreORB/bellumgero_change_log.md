@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: stats back to the 2026-10-05 values
+
+- **Summary:** Reverts the 2026-10-14 stat step. Level 445 -> 400, accuracy 97.25 -> 95, damage 1154-1998 -> 1050-1800, base XP 18904 -> 17000, HAM 1.76-2.45M -> 1.4-2.0M, resists back to 175/175/160/200/160/200/80/80/25. The 2026-10-14 entry below no longer describes live values.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only.
+
 ### 2026-10-17 — Rimeclaw, the Glacial Rancor: respawn 24 h -> 3 h
 
 - **Summary:** After being killed, Rimeclaw respawns after 3 hours instead of 24 hours (`respawnSeconds` 86400 -> 10800). Stats unchanged.
