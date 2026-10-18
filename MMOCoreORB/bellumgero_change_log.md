@@ -14,6 +14,21 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Hoth wampa caves: each cave harder than the last, with better drops
+
+- **Summary:** The four wampa caves all used the same wampas and loot. Frostfang's cave (cave_01, -622 2292) is unchanged as the baseline; the other three escalate. Each harder cave has its own wampa and elder wampa templates (`hoth_wampa_t2/_t3/_t4`, `hoth_elder_wampa_t2/_t3/_t4`, named "savage", "ferocious", "ravenous") and a tougher boss, and drops more: every regular-mob `lootChance` is multiplied, and the cave boss's per-player rewards are multiplied (capped at 100%).
+
+  | Cave | Boss | Mobs vs base | Regular loot | Boss rewards |
+  |---|---|---|---|---|
+  | cave_01 (-622, 2292) | Frostfang 105 | base | x1 | x1 |
+  | cave_04 (-385, 2436) | Icemaw 105 -> 109 | level +4, hit +0.03, dmg x1.1, HAM x1.15 | x1.5 | x1.25 |
+  | cave_02 (-543, 2674) | Snowblind 107 -> 113 | level +8, hit +0.06, dmg x1.2, HAM x1.3 | x2 | x1.5 |
+  | cave_03 (-75, 2969) | Matriarch 110 -> 117, Patriarch 115 -> 120 | level +12, hit +0.09, dmg x1.3, HAM x1.5 | x3 | x2 |
+
+  Bosses are Frostfang scaled by their cave's tier (the patriarch a step above the matriarch). World wampas outside the caves and the mynock cave are unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_wampa_t2.lua` … `hoth_elder_wampa_t4.lua` (6 new), `bin/scripts/mobile/hoth/hoth_wampa_icemaw.lua`, `hoth_wampa_snowblind.lua`, `hoth_wampa_matriarch.lua`, `hoth_wampa_patriarch.lua`, `bin/scripts/mobile/hoth/serverobjects.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua` (`HOTH_CAVE_BOSS_LOOT_PCT`, `hothCaveBossLoot`), `tools/newplanets/gen_hoth_mobiles.py` (`CAVE_TIERS`; run `tune_hoth_loot.py` after it as before)
+- **Notes:** Server restart only. All multipliers live in `CAVE_TIERS` and are easy to tune. The generator was checked to reproduce the previous files exactly before the change. Not yet tested in game.
+
 ### 2026-10-17 — Hoth: Imperial walker toys drop far less often
 
 - **Summary:** The Imperial walker (AT-AT) toy dropped too often: the 10 colour variants plus the veteran AT-AT toy were 11 of the 18 equally weighted items in `hoth_decor_common`, so 61% of common decor drops were a walker toy. The 10 variants now share one item's weight (about 1.1% each), which cuts the walker toy share to 22% of the group. Other common decor items go from 5.6% to 11.1% each. Per kill: snowtrooper and Rebel snow soldier 0.61% -> 0.22%, wampa 0.92% -> 0.33%, elder wampa 1.2% -> 0.44%, scavenger raider 3.1% -> 1.1%, Imperial salvage tech 4.6% -> 1.7%.
