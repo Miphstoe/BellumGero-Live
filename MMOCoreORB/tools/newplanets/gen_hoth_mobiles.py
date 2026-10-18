@@ -297,10 +297,11 @@ TUNE = {
     'hoth_tauntaun_bull': dict(level=72, hit=0.68, dmg=(510, 690), ham=(13000, 15500), xp=6930),
     'hoth_ice_mynock': dict(level=67, hit=0.63, dmg=(480, 640), ham=(11500, 13500), xp=6470),
     'hoth_greater_ice_mynock': dict(level=76, hit=0.73, dmg=(545, 760), ham=(13000, 15500), xp=7300),
+    # dna: percent chance of a lootable DNA sample on kill (LIVE-33, 2026-10-17; cave tiers multiply it like loot)
     'hoth_wampa': dict(level=90, hit=0.86, dmg=(590, 880), ham=(16000, 20000), xp=8600,
-                       res='{150,165,35,200,35,200,35,35,-1}'),
+                       res='{150,165,35,200,35,200,35,35,-1}', dna=10),
     'hoth_elder_wampa': dict(level=98, hit=0.95, dmg=(640, 980), ham=(22000, 27000), armor=2, xp=9400,
-                             res='{155,170,40,210,40,210,40,40,-1}'),
+                             res='{155,170,40,210,40,210,40,40,-1}', dna=15),
     # Cave bosses follow the cave tiers below (2026-10-17): Frostfang is the baseline, the others are Frostfang
     # scaled by their cave's tier (level +, hit +, dmg x, HAM x); the patriarch sits a step above the matriarch.
     'hoth_wampa_frostfang': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
@@ -346,6 +347,9 @@ def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
     # milk without milkType gives droids/players "cannot locate a current spawn of " (2026-10-17)
     milk_type = '\n\tmilkType = "%s",' % c.get('milk_type', 'milk_wild') if c['milk'] else ''
+    # percent chance of a lootable DNA sample on kill (CreatureTemplate dnaDropChance; unset = global 5 %), 2026-10-17
+    dna_chance = min(100, c['dna'] * c.get('loot_mult', 1)) if c.get('dna') else 0
+    dna = '\n\tdnaDropChance = %g,' % dna_chance if dna_chance else ''
     loot = c.get('lootstr') or (LOOT_BEAST if c['loot'] else '{}')  # no random armor_all/weapons_all/wearables_all (junk) since 2026-10-11
     if c.get('extra'):
         loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
@@ -372,7 +376,7 @@ def creature_lua(c):
 	hideAmount = {c['hide'][1]},
 	boneType = "{c['bone'][0]}",
 	boneAmount = {c['bone'][1]},{milk_type}
-	milk = {c['milk']},
+	milk = {c['milk']},{dna}
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = {c['pvp']},

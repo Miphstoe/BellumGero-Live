@@ -21,6 +21,7 @@ hoth_elder_wampa = Creature:new {
 	boneType = "bone_mammal",
 	boneAmount = 850,
 	milk = 0,
+	dnaDropChance = 15,
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,

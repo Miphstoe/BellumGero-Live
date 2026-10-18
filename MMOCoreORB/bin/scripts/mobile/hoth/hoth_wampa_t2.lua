@@ -21,6 +21,7 @@ hoth_wampa_t2 = Creature:new {
 	boneType = "bone_mammal",
 	boneAmount = 750,
 	milk = 0,
+	dnaDropChance = 15,
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,

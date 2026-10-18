@@ -78,6 +78,7 @@ protected:
 
 	float scale;
 	float creditsMultiplier; // Bellum Gero: scales the level-based kill credits (default 1)
+	float dnaDropChance; // Bellum Gero: percent chance of a lootable DNA sample on kill (0 = DnaManager's global chance)
 
 	int baseXp;
 	int baseHAM;
@@ -328,6 +329,10 @@ public:
 
 	inline float getCreditsMultiplier() const {
 		return creditsMultiplier;
+	}
+
+	inline float getDnaDropChance() const {
+		return dnaDropChance;
 	}
 
 	inline int getDamageMin() const {

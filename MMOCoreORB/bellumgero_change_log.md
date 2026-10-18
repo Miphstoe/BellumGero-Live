@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Wampas drop DNA more often (new dnaDropChance template field)
+
+- **Summary:** Player suggestion (LIVE-33): more DNA from wampas, including for non-Bio-Engineers. Every creature kill already had a flat 5% chance to leave a lootable DNA sample, with quality capped by the looter's DNA harvesting skill (non-Bio-Engineers always get Very Low Quality; that cap is kept). New creature template field `dnaDropChance` (percent) overrides the 5% per creature. Wampas 10%, elder wampas 15%; the harder caves multiply it like their loot: Icemaw's cave 15% / 22.5%, Snowblind's 20% / 30%, Patriarch and Matriarch's 30% / 45%. World wampas use the base 10% / 15%.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/DnaManager.cpp`, `bin/scripts/mobile/hoth/hoth_wampa.lua`, `hoth_elder_wampa.lua`, `hoth_wampa_t2/_t3/_t4.lua`, `hoth_elder_wampa_t2/_t3/_t4.lua`, `tools/newplanets/gen_hoth_mobiles.py` (`dna` per creature)
+- **Notes:** C++ change: rebuild (same deploy as `creditsMultiplier`). `dnaDropChance` is available to any creature template; missing or 0 keeps the global 5%. Cave bosses don't roll it (their corpses carry no loot). Compile-checked, not yet tested in game.
+
 ### 2026-10-17 — Hoth wampa caves: each cave harder than the last, with better drops
 
 - **Summary:** The four wampa caves all used the same wampas and loot. Frostfang's cave (cave_01, -622 2292) is unchanged as the baseline; the other three escalate. Each harder cave has its own wampa and elder wampa templates (`hoth_wampa_t2/_t3/_t4`, `hoth_elder_wampa_t2/_t3/_t4`, named "savage", "ferocious", "ravenous") and a tougher boss, and drops more: every regular-mob `lootChance` is multiplied, and the cave boss's per-player rewards are multiplied (capped at 100%).
