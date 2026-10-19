@@ -7,6 +7,7 @@ hoth_scavenger = Creature:new {
 	socialGroup = "townsperson",
 	faction = "",
 	level = 62,
+	creditsMultiplier = 3,
 	chanceHit = 0.58,
 	damageMin = 440,
 	damageMax = 590,
@@ -34,12 +35,13 @@ hoth_scavenger = Creature:new {
 		"object/mobile/dressed_goon_twk_male_01.iff",
 		"object/mobile/dressed_robber_human_female_01.iff"
 	},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "pirate_weapons_heavy",

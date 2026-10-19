@@ -14,6 +14,75 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Wampas drop DNA more often (new dnaDropChance template field)
+
+- **Summary:** Player suggestion (LIVE-33): more DNA from wampas, including for non-Bio-Engineers. Every creature kill already had a flat 5% chance to leave a lootable DNA sample, with quality capped by the looter's DNA harvesting skill (non-Bio-Engineers always get Very Low Quality; that cap is kept). New creature template field `dnaDropChance` (percent) overrides the 5% per creature. Wampas 10%, elder wampas 15%; the harder caves multiply it like their loot: Icemaw's cave 15% / 22.5%, Snowblind's 20% / 30%, Patriarch and Matriarch's 30% / 45%. World wampas use the base 10% / 15%.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/DnaManager.cpp`, `bin/scripts/mobile/hoth/hoth_wampa.lua`, `hoth_elder_wampa.lua`, `hoth_wampa_t2/_t3/_t4.lua`, `hoth_elder_wampa_t2/_t3/_t4.lua`, `tools/newplanets/gen_hoth_mobiles.py` (`dna` per creature)
+- **Notes:** C++ change: rebuild (same deploy as `creditsMultiplier`). `dnaDropChance` is available to any creature template; missing or 0 keeps the global 5%. Cave bosses don't roll it (their corpses carry no loot). Compile-checked, not yet tested in game.
+
+### 2026-10-17 — Hoth wampa caves: each cave harder than the last, with better drops
+
+- **Summary:** The four wampa caves all used the same wampas and loot. Frostfang's cave (cave_01, -622 2292) is unchanged as the baseline; the other three escalate. Each harder cave has its own wampa and elder wampa templates (`hoth_wampa_t2/_t3/_t4`, `hoth_elder_wampa_t2/_t3/_t4`, named "savage", "ferocious", "ravenous") and a tougher boss, and drops more: every regular-mob `lootChance` is multiplied, and the cave boss's per-player rewards are multiplied (capped at 100%).
+
+  | Cave | Boss | Mobs vs base | Regular loot | Boss rewards |
+  |---|---|---|---|---|
+  | cave_01 (-622, 2292) | Frostfang 105 | base | x1 | x1 |
+  | cave_04 (-385, 2436) | Icemaw 105 -> 109 | level +4, hit +0.03, dmg x1.1, HAM x1.15 | x1.5 | x1.25 |
+  | cave_02 (-543, 2674) | Snowblind 107 -> 113 | level +8, hit +0.06, dmg x1.2, HAM x1.3 | x2 | x1.5 |
+  | cave_03 (-75, 2969) | Matriarch 110 -> 117, Patriarch 115 -> 120 | level +12, hit +0.09, dmg x1.3, HAM x1.5 | x3 | x2 |
+
+  Bosses are Frostfang scaled by their cave's tier (the patriarch a step above the matriarch). World wampas outside the caves and the mynock cave are unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_wampa_t2.lua` … `hoth_elder_wampa_t4.lua` (6 new), `bin/scripts/mobile/hoth/hoth_wampa_icemaw.lua`, `hoth_wampa_snowblind.lua`, `hoth_wampa_matriarch.lua`, `hoth_wampa_patriarch.lua`, `bin/scripts/mobile/hoth/serverobjects.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua` (`HOTH_CAVE_BOSS_LOOT_PCT`, `hothCaveBossLoot`), `tools/newplanets/gen_hoth_mobiles.py` (`CAVE_TIERS`; run `tune_hoth_loot.py` after it as before)
+- **Notes:** Server restart only. All multipliers live in `CAVE_TIERS` and are easy to tune. The generator was checked to reproduce the previous files exactly before the change. Not yet tested in game.
+
+### 2026-10-17 — Hoth: Imperial walker toys drop far less often
+
+- **Summary:** The Imperial walker (AT-AT) toy dropped too often: the 10 colour variants plus the veteran AT-AT toy were 11 of the 18 equally weighted items in `hoth_decor_common`, so 61% of common decor drops were a walker toy. The 10 variants now share one item's weight (about 1.1% each), which cuts the walker toy share to 22% of the group. Other common decor items go from 5.6% to 11.1% each. Per kill: snowtrooper and Rebel snow soldier 0.61% -> 0.22%, wampa 0.92% -> 0.33%, elder wampa 1.2% -> 0.44%, scavenger raider 3.1% -> 1.1%, Imperial salvage tech 4.6% -> 1.7%.
+- **Files:** `bin/scripts/loot/groups/bellum/hoth/hoth_decor_common.lua`, `tools/newplanets/gen_hoth_loot.py` (weights the group the same way when regenerated)
+- **Notes:** Server restart only. Mob `lootChance` values unchanged.
+
+### 2026-10-17 — Hoth: every tauntaun can be milked
+
+- **Summary:** Player bug report: a harvest droid set to Milk got nothing from Hoth tauntauns. The Hoth tauntaun had `milk = 300` but no `milkType` (the only creature on Main like that), so milking found no resource spawn; the tauntaun bull had `milk = 0`. Both now give `milk_wild` (Hothian Wild Milk on Hoth): tauntaun 300, bull 350.
+- **Files:** `bin/scripts/mobile/hoth/hoth_tauntaun.lua`, `bin/scripts/mobile/hoth/hoth_tauntaun_bull.lua`, `tools/newplanets/gen_hoth_mobiles.py` (writes `milkType` for any mob with milk, so regenerating keeps it)
+- **Notes:** Server restart only. The bull is aggressive, so droid milking only works while it is out of combat. Milk goes to the owner's inventory (`harvestResourceToPlayer`), not the droid's.
+
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: stats back to the 2026-10-05 values
+
+- **Summary:** Reverts the 2026-10-14 stat step. Level 445 -> 400, accuracy 97.25 -> 95, damage 1154-1998 -> 1050-1800, base XP 18904 -> 17000, HAM 1.76-2.45M -> 1.4-2.0M, resists back to 175/175/160/200/160/200/80/80/25. The 2026-10-14 entry below no longer describes live values.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only.
+
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: respawn 24 h -> 3 h
+
+- **Summary:** After being killed, Rimeclaw respawns after 3 hours instead of 24 hours (`respawnSeconds` 86400 -> 10800). Stats unchanged.
+- **Files:** `bin/scripts/screenplays/bellum/hoth_glacial_rancor_worldboss.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only. The boss-up broadcast interval was already 3 hours.
+
+### 2026-10-14 — Rimeclaw, the Glacial Rancor: tougher again (90% of the 2026-10-05 step)
+
+- **Summary:** Rimeclaw, the Glacial Rancor: level 400 -> 445, accuracy 95 -> 97.25, damage 1050-1800 -> 1154-1998, base XP 17000 -> 18904, HAM 1.4-2.0M -> 1.76-2.45M, resists 175/175/160/200/160/200/80/80/25 -> 180/180/169/200/169/200/85/85/30. Each increase is 90% of the 2026-10-05 increase, applied on top of its current values. Loot and rewards unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only, no rebuild. Resist values are rounded to whole numbers. Not yet tested in game.
+
+### 2026-10-13 — Hoth: regular mobs drop half as much loot and pay 3x the credits
+
+- **Summary:** Regular (non-boss) Hoth mobs dropped too much. Every `lootChance` on wampas, elder wampas, snowtroopers, Rebel snow soldiers and sergeants, scavengers, raiders, salvage techs, mynocks, probe droid and tauntauns is halved (e.g. wampa attachments 2.5% -> 1.25%, ice decor 5% -> 2.5%); the generic armor/weapon/clothing junk group is gone from the raider and probe droid. In exchange their kill credits are tripled: new creature template field `creditsMultiplier` (float, default 1) scales Core3's level-based credits in `CreatureManagerImplementation::notifyDestruction`; the Hoth mobs set 3 (a level-90 wampa pays about 1,400-1,700 credits instead of 460-560). Cave and world boss rewards are unchanged.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/CreatureManagerImplementation.cpp`, `bin/scripts/mobile/hoth/*.lua` (15 mobiles), `tools/newplanets/tune_hoth_loot.py` (idempotent; run after gen_hoth_mobiles.py)
+- **Notes:** C++ change: rebuild. `creditsMultiplier` is available to any creature template. Confirmed on dev 2026-10-14 (wampa credits and drop rate judged right).
+
+### 2026-10-12 — Hoth client TRE: XP-38 mount crash, snow globes drawn, coins sized (new bg_custom1.tre)
+
+- **Summary:** Three client-side fixes, all in the rebuilt `bg_custom1.tre`. (1) The XP-38 landspeeder crashed the client to desktop on /mount: Infinity keys `logical_saddle_name_map` and `valid_scale_range` by the vehicle's real skeletal appearance (`pv_speeder_xp_38.sat`) but our cloned vehicle template pointed at the static saddle appearance (`speeder_xp_38.apt`), so the generator never copied those rows and the mount lookup found nothing. The template now uses the `.sat` (chain staged), the two rows are added, and the generator entry is corrected. (2) Both Hoth snow globes rendered as the black default box: their component lods, meshes, shaders and textures (17 files) were never staged because `chain_check.py` had a lookbehind that hid component/lod references; checker fixed, files staged. (3) The Battle of Hoth globe spawned the stock glowing Imperial/Rebel coins full size (0.7 m) because this client ignores the mesh-particle scale (0.15); pre-scaled coin copies (`pt_glowing_*_coin_sm`) are referenced instead at scale 1.0.
+- **Files:** client TRE only (overlays `build/hoth_snowglobe_fix`, `build/hoth_xp38_fix`); `tools/newplanets/gen_hoth_vehicles.py`, `chain_check.py`, `stage_missing.py` (stage a reference chain from Infinity), `all_hoth_chain.py` (chain-check every Hoth object), `fix_globe_coins.py`, `fix_xp38.py`
+- **Notes:** Build: `python build_tre.py <base> <out> build/hoth build/hoth_loot build/hoth_snowglobe_fix build/hoth_xp38_fix`. Verified by chain check and CRC audit; the XP-38 mount is not yet confirmed in game. Plane LIVE-29 (XP-38).
+>
+### 2026-10-12 — Hoth: every Hoth draft schematic registered (none could be learned or crafted)
+
+- **Summary:** The server only knows a draft schematic exists if it is listed in `managers/crafting/schematics.lua` (SchematicMap). None of the 64 Hoth drafts were: the 22 Snowtrooper and Alliance cold weather armor pieces, the 12 Hoth paintings and the 30 vehicle schematics. So the loot schematics that should grant them did nothing and nothing showed in the crafting tool. All 64 are now listed in one Bellum Gero Hoth block.
+- **Files:** `bin/scripts/managers/crafting/schematics.lua`, `tools/newplanets/register_schematics.py` (idempotent: appends whatever Hoth draft is missing, run it after regenerating), `tools/newplanets/audit_schematics.py` (CRC table coverage, draft templates, schematics.lua listing, loot schematic targets, client iffs)
+- **Notes:** Server restart only, no TRE. Audit result on the current TRE: 1038/1038 object iffs in the CRC table; all 64 drafts have server templates; all 205 loot schematic items point at existing drafts.
+>
 ### 2026-10-11 — Hoth caves: no random junk loot, real loot instead
 
 - **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother), and replaced with loot worth having. Wampas and elder wampas: BG tokens 2.5%, armor attachments 2.5%, clothing attachments 2.5%, color crystals 1.5%, power crystals 1.5%, krayt pearls 0.5%, Jedi robes 0.2%, plus the Hoth decor and rare art they already had. Vehicles (the 30 ported speeders, swoops and podracers; uniform pick): wampas 0.1% deed and 0.2% schematic per kill. Cave bosses (rolled per player, on top of their schematics, paintings and decor): armor attachments 30%, clothing attachments 30%, color crystals 20%, power crystals 20%, krayt pearls 15%, Jedi robes 5%, vehicle schematic 15% (was 5%), vehicle deed 10% (was 2%).

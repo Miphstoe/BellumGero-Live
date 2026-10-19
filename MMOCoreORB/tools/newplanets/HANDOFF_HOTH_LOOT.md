@@ -48,8 +48,8 @@ Build with `python build_tre.py <base> <out> build/hoth build/hoth_loot` from `C
 
 | File in `dist\` | Base | Content | md5 |
 |---|---|---|---|
-| `bg_custom1_hoth_only.tre` | live Sep 12 | Hoth only, matches PR #795. **This is what TC should run.** Replaces the broken `0006e3f6…`/`98f8ef11…` builds. | `3f788419438111fe37d1f05aa964ae80` |
-| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch (glow fix, moved outposts, shuttleports, closed terrain holes, Glacial Rancor) | `6bc29b5936185c4631da4aa06a1d2a29` |
+| `bg_custom1_hoth_only.tre` | live Sep 12 | Hoth only, matches PR #795. Superseded: TC and Live should run the 2026-10-12 `bg_custom1.tre` above. Replaces the broken `0006e3f6…`/`98f8ef11…` builds. | `3f788419438111fe37d1f05aa964ae80` |
+| `bg_custom1.tre` | live Sep 12 | Hoth + everything on the loot branch (glow fix, moved outposts, shuttleports, closed terrain holes, Glacial Rancor) | `d62267adef8c9fecc8141b66f6227917 (rebuilt 2026-10-12: + snow globe assets, coin size, XP-38 mount fix; previous 6bc29b59 build backed up as dist/bg_custom1.tre.bak-20261006-pre-fixes)` |
 | `devbg\bg_custom1.tre` | Dev-BG Aug 5 | same content, installed in `C:\Dev-BG` and `/trefiles` | `cad9f6f13fc5b513747ffbb630862ab5` |
 
 `bg_custom1_hoth_only.tre` keeps the ORIGINAL outpost positions (it matches PR #795's server scripts); rebuild it only with `python build_hoth_only_original.py`, never with build_tre.py on build/hoth.
@@ -156,3 +156,10 @@ Works: resources; item creation for armor, schematics, paintings, decor; STAP ca
 - **BG Hub NPC:** `myswg_vendor` is spawned at each outpost by `screenplays/static_spawns/hoth_bg_hub.lua` (east end of each terminal row; Rebel one turned toward the starport).
 - **Glacial Rancor:** Rimeclaw at (600, -4600), leash 120 m, respawn 24 h (`respawnSeconds = 86400`).
 - **Still open:** Rebel terminal facing, the Imperial terminals and the hub NPCs not yet checked in game for wall clipping; most of the 28 ported vehicles untested; permission/credit for the Infinity, MTG and Takhomasak assets before Live; Hoth loading screen not ported.
+
+## 10. Update 2026-10-12 (client TRE fixes)
+
+- The TRE build now takes four overlays: `build/hoth build/hoth_loot build/hoth_snowglobe_fix build/hoth_xp38_fix`.
+- `chain_check.py` used to miss `component/` and `lod/` references (lookbehind); it is fixed. Run `all_hoth_chain.py <tre>` after every build: it chain-checks all 316 Hoth client objects. Paths with backslashes in its output are false positives (stock effects/textures that exist); everything else is real.
+- Mount-table rule learned the hard way (XP-38): the vehicle template's `appearanceFilename` must be the appearance that keys `logical_saddle_name_map` and `valid_scale_range` (the `pv_*.sat`), never the static saddle `.apt`. A cloned vehicle template must be given the `.sat`.
+- This client ignores the mesh-particle scale in `.prt` files; pre-scale the mesh instead (see `fix_globe_coins.py`).
