@@ -141,6 +141,30 @@ yavin4_destroy_missions = {
 			size = 25,
 		},
 		{
+			lairTemplateName = "yavin4_kai_tok_bloodreaver_lair_neutral_medium",
+			minDifficulty = 35,
+			maxDifficulty = 39,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_kai_tok_prowler_lair_neutral_medium",
+			minDifficulty = 35,
+			maxDifficulty = 39,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_kai_tok_scavenger_lair_neutral_medium",
+			minDifficulty = 35,
+			maxDifficulty = 39,
+			size = 25,
+		},
+		{
+			lairTemplateName = "yavin4_kai_tok_slayer_lair_neutral_medium",
+			minDifficulty = 35,
+			maxDifficulty = 39,
+			size = 25,
+		},
+		{
 			lairTemplateName = "yavin4_monstrous_tanc_mite_lair_neutral_medium",
 			minDifficulty = 46,
 			maxDifficulty = 50,
