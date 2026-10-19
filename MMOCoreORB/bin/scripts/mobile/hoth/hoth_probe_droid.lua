@@ -5,6 +5,7 @@ hoth_probe_droid = Creature:new {
 	faction = "",
 	mobType = MOB_DROID,
 	level = 74,
+	creditsMultiplier = 3,
 	chanceHit = 0.72,
 	damageMin = 520,
 	damageMax = 720,
@@ -27,20 +28,13 @@ hoth_probe_droid = Creature:new {
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 	templates = {"object/mobile/probot.iff"},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 2000000
-		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	defaultAttack = "attack",

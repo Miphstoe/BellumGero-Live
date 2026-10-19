@@ -2642,6 +2642,12 @@ bool AiAgentImplementation::findNextPosition(float maxDistance, bool walk) {
 	if ((walk && movementState != AiAgent::FLEEING) || posture == CreaturePosture::PRONE)
 		newSpeed = walkSpeed;
 
+	// Bellum Gero: player pets and droids move faster than their template speed
+	if (isPet()) {
+		static const float petSpeedMultiplier = ConfigManager::instance()->getFloat("Core3.AiAgent.PetSpeedMultiplier", 2.0f);
+		newSpeed *= petSpeedMultiplier;
+	}
+
 	if (hasState(CreatureState::IMMOBILIZED))
 		newSpeed = newSpeed / 2.f;
 

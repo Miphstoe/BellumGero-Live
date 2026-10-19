@@ -60,7 +60,6 @@ private:
 
 	Vector<String> jtlResources;
 	Vector<String> activeResourceZones;
-	Vector<String>* planets;
 
 	MinimumPool* minimumPool;
 	FixedPool* fixedPool;
