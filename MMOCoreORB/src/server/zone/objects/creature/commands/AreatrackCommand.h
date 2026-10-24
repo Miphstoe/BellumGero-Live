@@ -6,6 +6,7 @@
 #define AREATRACKCOMMAND_H_
 
 #include "server/zone/objects/player/sui/callbacks/AreaTrackSuiCallback.h"
+#include "templates/params/creature/CreatureLocomotion.h"
 
 class AreatrackCommand : public QueueCommand {
 public:
@@ -17,10 +18,15 @@ public:
 
 	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
 
-		if (!checkStateMask(creature))
+		// Rangers may track from a mount or vehicle; every other prohibited state and locomotion still applies.
+		bool mounted = creature->isRidingMount();
+
+		if ((creature->getStateBitmask() & stateMask & ~((uint64)CreatureState::RIDINGMOUNT)) != 0)
 			return INVALIDSTATE;
 
-		if (!checkInvalidLocomotions(creature))
+		int locomotion = creature->getLocomotion();
+
+		if (!(mounted && (locomotion == CreatureLocomotion::DRIVINGVEHICLE || locomotion == CreatureLocomotion::RIDINGCREATURE)) && !checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
 		if(!creature->isPlayerCreature())

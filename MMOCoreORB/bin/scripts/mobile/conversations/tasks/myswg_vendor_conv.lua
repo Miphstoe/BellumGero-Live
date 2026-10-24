@@ -302,6 +302,7 @@ special_npc1 = ConvoScreen:new {
         {"Check Torgas the Enslaver - 1k", "special_npc_torgas"},
         {"Check Bird of Prey - 1k", "special_npc_bird_of_prey"},
         {"Check Primordial Warlord Grak - 1k", "special_npc_grak"},
+        {"Check Rimeclaw, the Glacial Rancor - 1k", "special_npc_rimeclaw"},
         {"Main menu.", "first_screen"},
     }
 }
@@ -1030,6 +1031,30 @@ myswg_vendor_special_npc_grak = ConvoScreen:new {
     options = { }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_special_npc_grak);
+-- Rimeclaw: confirm first, charge only after a successful lookup (handled in myswg_vendor.lua)
+myswg_vendor_special_npc_rimeclaw = ConvoScreen:new {
+    id = "special_npc_rimeclaw",
+    leftDialog = "",
+    customDialogText = "Rimeclaw - The Glacial Rancor\n\nObtain the current status and location of Rimeclaw on Hoth for 1,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Confirm - Pay 1,000 Credits", "special_npc_rimeclaw_confirm"},
+        {"Cancel", "special_npc1"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_rimeclaw);
+-- Report text is replaced at runtime with the live status
+myswg_vendor_special_npc_rimeclaw_report = ConvoScreen:new {
+    id = "special_npc_rimeclaw_report",
+    leftDialog = "",
+    customDialogText = "Rimeclaw - The Glacial Rancor",
+    stopConversation = "false",
+    options = {
+        {"Create Waypoint to Rimeclaw", "special_npc_rimeclaw_waypoint"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_rimeclaw_report);
 myswg_vendor_conv:addScreen(myswg_vendor_accept_quest);
 myswg_vendor_deny_quest = ConvoScreen:new {
     id = "deny_quest",
