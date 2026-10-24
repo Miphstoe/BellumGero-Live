@@ -680,6 +680,143 @@ function myswg_vendor_convo_handler:getSpecialNpcStatusMessage(optionLink)
     return "Unknown Special NPC tracker request."
 end
 
+--========================================================
+-- Rimeclaw, the Glacial Rancor (Hoth world boss) status inquiry
+-- HothGlacialRancorWorldBoss writes the boss OID at spawn. The engine respawns the same
+-- object at its home location, so the OID stays valid; "alive" means in the Hoth zone
+-- and not dead, anything else on a live object means defeated / awaiting respawn.
+--========================================================
+local RIMECLAW_OID_KEY = "HothGlacialRancorWorldBoss:bossOID"
+local RIMECLAW_COST = 1000
+local RIMECLAW_DUPLICATE_GUARD_SECONDS = 3
+local RIMECLAW_WAYPOINT_TTL = 300
+
+-- Same cash-then-bank wallet rules as the Hub's canAfford/charge helpers
+local function rimeclawCanAfford(creature, cost)
+    return (creature:getCashCredits() + creature:getBankCredits()) >= cost
+end
+
+local function rimeclawCharge(creature, cost)
+    local cash = creature:getCashCredits()
+    if cash >= cost then
+        creature:subtractCashCredits(cost)
+    else
+        if cash > 0 then creature:subtractCashCredits(cash) end
+        creature:subtractBankCredits(cost - cash)
+    end
+end
+
+-- Returns "alive", x, y | "defeated" | "unavailable"
+local function getRimeclawStatus()
+    local ok, status, x, y = pcall(function()
+        local bossOID = tonumber(readData(RIMECLAW_OID_KEY) or 0) or 0
+        if bossOID <= 0 then
+            return "unavailable"
+        end
+
+        local pBoss = getSceneObject(bossOID)
+        if pBoss == nil or not SceneObject(pBoss):isCreatureObject() then
+            return "unavailable"
+        end
+
+        if SceneObject(pBoss):getZoneName() == "hoth" and not CreatureObject(pBoss):isDead() then
+            return "alive", SceneObject(pBoss):getWorldPositionX(), SceneObject(pBoss):getWorldPositionY()
+        end
+
+        return "defeated"
+    end)
+
+    if not ok then
+        print("[RimeclawStatus] lookup error: " .. tostring(status))
+        return "unavailable"
+    end
+
+    return status, x, y
+end
+
+function myswg_vendor_convo_handler:handleRimeclawInquiry(creature, conversation)
+    local playerID = creature:getObjectID()
+    local guardKey = "RimeclawStatus:" .. playerID .. ":lastPaidAt"
+    local wpKey = "RimeclawStatus:" .. playerID .. ":report"
+
+    -- Swallow rapid duplicate confirmations so one click can't be billed twice
+    local lastPaidAt = tonumber(readData(guardKey) or 0) or 0
+    if os.time() - lastPaidAt < RIMECLAW_DUPLICATE_GUARD_SECONDS then
+        creature:sendSystemMessage("Your Rimeclaw inquiry was already processed. No additional credits were charged.")
+        return conversation:getScreen("special_npc1")
+    end
+
+    if not rimeclawCanAfford(creature, RIMECLAW_COST) then
+        creature:sendSystemMessage("You need 1,000 credits to use the Special NPC tracker.")
+        return conversation:getScreen("insufficient_funds")
+    end
+
+    local status, x, y = getRimeclawStatus()
+
+    if status == "unavailable" then
+        deleteStringData(wpKey)
+        creature:sendSystemMessage("Rimeclaw's current status is temporarily unavailable. No credits have been deducted.")
+        return conversation:getScreen("special_npc1")
+    end
+
+    writeData(guardKey, os.time())
+    rimeclawCharge(creature, RIMECLAW_COST)
+
+    local report
+    if status == "alive" then
+        report = string.format("Rimeclaw - The Glacial Rancor\nPlanet: Hoth\nStatus: ALIVE - Currently Spawned\nCoordinates: X: %.0f, Y: %.0f\n\nRimeclaw has been located on Hoth. Prepare for a dangerous encounter!", x, y)
+        -- One free waypoint per paid report, valid for a few minutes
+        writeStringData(wpKey, string.format("%.1f,%.1f,%d", x, y, os.time()))
+    else
+        report = "Rimeclaw - The Glacial Rancor\nPlanet: Hoth\nStatus: DEFEATED - Awaiting Respawn\n\nRimeclaw has been defeated and is awaiting his next appearance."
+        deleteStringData(wpKey)
+    end
+
+    creature:sendSystemMessage(report)
+
+    local pScreen = LuaConversationScreen(conversation:getScreen("special_npc_rimeclaw_report")):cloneScreen()
+    local screen = LuaConversationScreen(pScreen)
+    screen:setCustomDialogText(report)
+
+    if status ~= "alive" then
+        screen:removeAllOptions()
+        screen:addOption("Main menu.", "first_screen")
+    end
+
+    return pScreen
+end
+
+function myswg_vendor_convo_handler:createRimeclawWaypoint(creature, conversingPlayer)
+    local wpKey = "RimeclawStatus:" .. creature:getObjectID() .. ":report"
+    local data = readStringData(wpKey) or ""
+    deleteStringData(wpKey)
+
+    local x, y, reportedAt = string.match(data, "^([%-%d%.]+),([%-%d%.]+),(%d+)$")
+    x, y, reportedAt = tonumber(x), tonumber(y), tonumber(reportedAt)
+
+    if x == nil or y == nil or reportedAt == nil or os.time() - reportedAt > RIMECLAW_WAYPOINT_TTL then
+        creature:sendSystemMessage("That Rimeclaw report has expired. Purchase a new status check for a waypoint.")
+        return
+    end
+
+    local pGhost = creature:getPlayerObject()
+    if pGhost == nil then
+        return
+    end
+
+    local ghost = PlayerObject(pGhost)
+
+    -- Replace only the waypoint this service created last time
+    local oldID = tonumber(readScreenPlayData(conversingPlayer, "RimeclawStatus", "waypointID") or 0) or 0
+    if oldID > 0 then
+        ghost:removeWaypoint(oldID, true)
+    end
+
+    local waypointID = ghost:addWaypoint("hoth", "Rimeclaw, the Glacial Rancor", "Last reported location of Rimeclaw", x, 0, y, WAYPOINT_ORANGE, true, true, 0)
+    writeScreenPlayData(conversingPlayer, "RimeclawStatus", "waypointID", tostring(waypointID))
+    creature:sendSystemMessage("Waypoint to Rimeclaw's reported location created on Hoth.")
+end
+
 function myswg_vendor_convo_handler:getNextConversationScreen(conversationTemplate, conversingPlayer, selectedOption)            
         -- Assign the player to variable creature for use inside this function.
         local creature = LuaCreatureObject(conversingPlayer)
@@ -803,6 +940,19 @@ local MySwgTravelDestinations = {
 --========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
+                if optionLink == "special_npc_rimeclaw" then
+                    return nextConversationScreen
+                end
+
+                if optionLink == "special_npc_rimeclaw_confirm" then
+                    return self:handleRimeclawInquiry(creature, conversation)
+                end
+
+                if optionLink == "special_npc_rimeclaw_waypoint" then
+                    self:createRimeclawWaypoint(creature, conversingPlayer)
+                    return conversation:getScreen("first_screen")
+                end
+
                 if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" or optionLink == "special_npc_grak" then
                     if not canAfford(1000) then
                         nextConversationScreen = conversation:getScreen("insufficient_funds")
