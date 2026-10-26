@@ -1198,6 +1198,12 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 		float minDmg = data.getMinDamage();
 		float maxDmg = data.getMaxDamage();
 
+		// Generic per-defender command hook. Default is a no-op; Powers overrides it.
+		// Run before FRS so Bellum Gero Powers scales base command damage only.
+		const CombatQueueCommand* command = data.getCommand();
+		if (command != nullptr)
+			command->adjustCommandDamageForDefender(attacker, defender, minDmg, maxDmg);
+
 		if (data.isForceAttack() && attacker->isPlayerCreature())
 			getFrsModifiedForceAttackDamage(attacker, minDmg, maxDmg, data);
 
