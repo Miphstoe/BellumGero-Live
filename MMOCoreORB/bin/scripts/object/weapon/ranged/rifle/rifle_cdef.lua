@@ -81,7 +81,8 @@ object_weapon_ranged_rifle_rifle_cdef = object_weapon_ranged_rifle_shared_rifle_
 	xpType = "combat_rangedspecialize_rifle",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	certificationsRequired = { "cert_rifle_cdef" },
+	-- BG: CDEF Rifle is a no-cert starter weapon -- anyone can use it.
+	certificationsRequired = { },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
 

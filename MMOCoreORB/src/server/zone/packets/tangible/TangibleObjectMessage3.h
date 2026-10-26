@@ -42,6 +42,7 @@ public:
 
 		String app;
 		tano->getCustomizationString(app);
+
 		insertAscii(app);
 
 		auto visibleComponents = tano->getVisibleComponents();
