@@ -265,6 +265,10 @@ public:
 		return SUCCESS;
 	}
 
+	// Generic per-defender command-damage hook. Existing commands inherit a no-op.
+	virtual void adjustCommandDamageForDefender(CreatureObject* attacker, CreatureObject* defender, float& minDmg, float& maxDmg) const {
+	}
+
 	float getCommandDuration(CreatureObject *object, const UnicodeString& arguments) const {
 		return CombatManager::instance()->calculateWeaponAttackSpeed(object, object->getWeapon(), speedMultiplier);
 	}
