@@ -84,7 +84,7 @@ crackdownPlayerScanCooldown = 48 * 60 * 60  -- In seconds, 48 hour cooldown
 crackdownScannerCooldown = 3 * 60 * 60 -- In seconds, 3 hour cooldown
 crackdownContrabandFineCredits = 2000
 crackdownContrabandFineFactionPoints = 100
-crackdownPlanetsWithWildScans = { "corellia", "dantooine", "dathomir", "endor", "lok", "naboo", "rori", "talus", "tatooine", "yavin4"}
+crackdownPlanetsWithWildScans = { "corellia", "dantooine", "dathomir", "endor", "lok", "naboo", "rori", "talus", "taanab", "tatooine", "yavin4"}
 
 -- discount percentage for side losing&winning the gcw.  negative value of increase in price (penality).  positive for a decrease (Bonus)
 

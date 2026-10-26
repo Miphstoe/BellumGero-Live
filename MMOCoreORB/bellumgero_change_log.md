@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-25 — Taanab: housing, cities, faction HQs, harvesters and GCW lists (zone not enabled yet)
+
+- **Summary:** First Taanab drop (LIVE-40/41/42/44). Decisions with Miph: Taanab allows every house type (custom BG houses and merchant tents included), player cities with Corellia's caps (20/20/15/10/10/5, so at most 5 Cosmopolis), faction HQs, harvesters/factories, and is a GCW planet. `taanab` is added to the `allowedZones` of every player house, merchant tent and civic city structure (128 templates), the 16 player faction HQ templates and the shared installation list; to `CitiesAllowed`; to resource `activeZones`; to the Galaxy Harvester export; to `/gcwstatus all`; and to the Imperial crackdown scan planets.
+- **Files:** `bin/scripts/object/SharedBuildingObjectTemplate.lua`, `bin/scripts/object/building/base/base_building.lua`, `bin/scripts/object/building/player/**` (houses, tents, `city/`), `bin/scripts/object/building/faction_perk/hq/hq_s0[1-4]_{imp,rebel}[_pvp].lua`, `bin/scripts/object/SharedInstallationObjectTemplate.lua`, `bin/scripts/managers/city_manager.lua`, `bin/scripts/managers/resource_manager.lua`, `bin/scripts/managers/gcw_manager.lua`, `src/server/zone/managers/resource/resourcespawner/ResourceSpawner.cpp`, `src/server/zone/objects/creature/commands/GcwStatusCommand.h`
+- **Notes:** C++ change: rebuild. Harmless until the zone exists: `taanab` is not in `ZonesEnabled` yet, because the server needs the Taanab terrain/snapshot (ported from SWG Infinity, LIVE-36/37) in the TRE first. Hoth is unchanged (still no housing). The 13 HQ templates with numeric `allowedZones` are not used by any deed and were left alone. Not yet tested in game.
+
 ### 2026-10-17 — Wampas drop DNA more often (new dnaDropChance template field)
 
 - **Summary:** Player suggestion (LIVE-33): more DNA from wampas, including for non-Bio-Engineers. Every creature kill already had a flat 5% chance to leave a lootable DNA sample, with quality capped by the looter's DNA harvesting skill (non-Bio-Engineers always get Very Low Quality; that cap is kept). New creature template field `dnaDropChance` (percent) overrides the 5% per creature. Wampas 10%, elder wampas 15%; the harder caves multiply it like their loot: Icemaw's cave 15% / 22.5%, Snowblind's 20% / 30%, Patriarch and Matriarch's 30% / 45%. World wampas use the base 10% / 15%.
