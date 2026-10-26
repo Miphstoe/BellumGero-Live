@@ -3,6 +3,8 @@
 
 #include "server/zone/objects/tangible/components/TangibleObjectMenuComponent.h"
 #include "DoctorBuffDroidDataComponent.h"
+#include "server/zone/objects/creature/ai/AiAgent.h"
+
 
 class DoctorBuffDroidMenuComponent : public TangibleObjectMenuComponent {
 public:
@@ -54,6 +56,7 @@ public:
 	static bool performWoundHealing(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	static bool performResistance(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, DoctorBuffDroidDataComponent::ServiceType type);
 	static bool performPetBuff(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, bool useJanta = false);
+	static bool performPetBuffForTarget(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, AiAgent* targetPet, bool useJanta = false);
 	static void promptAdTextInput(SceneObject* sceneObject, CreatureObject* player);
 	static void openDroidInventory(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
 	// Returns the withdrawable quantity of the real loaded item with this object ID, or 0 if it's
@@ -61,6 +64,20 @@ public:
 	static int getLoadedItemQuantity(SceneObject* sceneObject, uint64 itemObjectId);
 	static void promptWithdrawQuantity(SceneObject* sceneObject, CreatureObject* player, uint64 itemObjectId, int maxQty);
 	static void withdrawBuffStock(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data, uint64 itemObjectId, int quantity);
+
+	// Bellum Gero FMDoctorBot shared service hooks.
+	// Legacy Doctor Buff Droids continue to use themselves as the supply container.
+	// The stationary Automated Medical Station resolves its dedicated persistent child hopper.
+	static bool isDoctorServiceUnit(SceneObject* sceneObject);
+	static SceneObject* getSupplyContainer(SceneObject* sceneObject);
+	static bool isDoctorServiceSupply(SceneObject* item);
+	static bool refreshOwnerHealingMod(SceneObject* sceneObject, CreatureObject* player, DoctorBuffDroidDataComponent* data);
+
+	// FMDoctorBot Phase 2 stock/readiness helpers for the stationary service.
+	static int getDoctorServiceSupplyAmount(SceneObject* sceneObject, DoctorBuffDroidDataComponent::ServiceType service, byte attr);
+	static int getDoctorServiceCompleteSessions(SceneObject* sceneObject, DoctorBuffDroidDataComponent::ServiceType service);
+	static String getDoctorServiceMissingAttributes(SceneObject* sceneObject, DoctorBuffDroidDataComponent::ServiceType service);
+	static int getDoctorServiceBivoliReserve(SceneObject* sceneObject);
 
 	void fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const override;
 	int handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const override;

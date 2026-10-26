@@ -39,6 +39,8 @@
 #include "server/zone/packets/chat/ChatFriendsListUpdate.h"
 #include "server/zone/packets/scene/ServerTimeMessage.h"
 #include "server/zone/packets/zone/CmdSceneReady.h"
+#include "server/zone/packets/object/ImageDesignMessage.h"
+#include "server/zone/objects/player/sessions/ImageDesignData.h"
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/chat/StringIdChatParameter.h"
@@ -613,6 +615,26 @@ void PlayerObjectImplementation::notifySceneReady() {
 		}
 
 		// Starter helper droid auto-spawn disabled.
+	}
+
+	if (creature->getLuaStringData(
+			"fmidstation_force_close_ui") == "1") {
+
+		ImageDesignRejectMessage* reject =
+			new ImageDesignRejectMessage(
+				creature->getObjectID(),
+				creature->getObjectID(),
+				creature->getObjectID(),
+				0,
+				0);
+
+		ImageDesignData emptyData;
+		emptyData.insertToMessage(reject);
+
+		creature->sendMessage(reject);
+
+		creature->deleteLuaStringData(
+			"fmidstation_force_close_ui");
 	}
 
 	// Refresh guild title display after scene is ready to prevent titles from disappearing during zone transfers

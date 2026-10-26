@@ -8,6 +8,8 @@
 #include "server/zone/managers/stringid/StringIdManager.h"
 
 class ResourceCommand : public QueueCommand {
+	using ResourceSearchMap = VectorMap<String, ManagedReference<ResourceSpawn*>>;
+
 public:
 
 	ResourceCommand(const String& name, ZoneProcessServer* server)
@@ -25,8 +27,6 @@ public:
 
 		ResourceManager* resMan = creature->getZoneServer()->getResourceManager();
 
-		Locker locker(resMan);
-
 		StringTokenizer args(arguments.toString());
 
 		try {
@@ -34,6 +34,16 @@ public:
 
 			if(args.hasMoreTokens())
 				args.getStringToken(command);
+
+			if (command == "export") {
+				if (args.hasMoreTokens())
+					throw Exception();
+				// Enqueue only. No capture, disk I/O or waiting on this player thread.
+				creature->sendSystemMessage(resMan->requestResourceSnapshotExport());
+				return SUCCESS;
+			}
+
+			Locker locker(resMan);
 
 			if(command == "list") {
 				listResources(creature, &args);
@@ -65,6 +75,7 @@ public:
 			creature->sendSystemMessage("		list <planet> : Lists resources on specified planet");
 			creature->sendSystemMessage("		health : Lists resource pool health stats");
 			creature->sendSystemMessage("		dump : Performs manual dump of all resources to resource_manager_spawns.lua");
+			creature->sendSystemMessage("		export : Requests an asynchronous current live-resource JSON snapshot");
 			creature->sendSystemMessage("		despawn <resource name> : Despawns a specific resource");
 			creature->sendSystemMessage("		info <resource name> : Lists Info about a specific resource");
 			creature->sendSystemMessage("		find <class> <attribute> <gt|lt> <value> [<and|or> <attribute> <gt|lt> <value> [...]]");
@@ -190,12 +201,14 @@ public:
 		if (resSpawner == nullptr)
 			throw Exception();
 
-		ResourceMap* map = resSpawner->getResourceMap();
+		const ResourceMap* map = resSpawner->getResourceMap();
 		if (map == nullptr)
 			throw Exception();
 
-		Reference<ResourceMap*> resultsMap = new ResourceMap();
-		map->getTypeSubset(*resultsMap, resourceType);
+		Reference<ResourceSearchMap*> resultsMap = new ResourceSearchMap();
+		resultsMap->setNoDuplicateInsertPlan();
+		resultsMap->setNullValue(nullptr);
+		getTypeSubset(map->copyAllReferences(), *resultsMap, resourceType);
 
 		if (resultsMap->isEmpty()) {
 			creature->sendSystemMessage("No results from resource type.");
@@ -218,12 +231,14 @@ public:
 
 			int value = args->getIntToken();
 
-			Reference<ResourceMap*> tempMap = new ResourceMap();
+			Reference<ResourceSearchMap*> tempMap = new ResourceSearchMap();
+			tempMap->setNoDuplicateInsertPlan();
+			tempMap->setNullValue(nullptr);
 
 			if (andFlag) //and means only get results from that which we have already eliminated
-				resultsMap->getAttributeSubset(*tempMap, attribute);
+				getAttributeSubset(*resultsMap, *tempMap, attribute);
 			else //or means look at everything and concat the vectors
-				map->getAttributeSubset(*tempMap, attribute);
+				getAttributeSubset(map->copyAllReferences(), *tempMap, attribute);
 
 			for (int i = tempMap->size() - 1; i >= 0 && tempMap->size() > 0; i--) {
 				ResourceSpawn* spawn = tempMap->get(i);
@@ -266,6 +281,7 @@ public:
 			if (andFlag)
 				resultsMap = tempMap;
 			else
+				// Preserve the existing append merge, including order and duplicates.
 				resultsMap->addAll(*tempMap);
 
 			// no grab the trailing conjunction so we know what to do with the next argument
@@ -328,6 +344,39 @@ public:
 			quantity = args->getIntToken();
 
 		resMan->givePlayerResource(creature, resName.toLowerCase(), quantity);
+	}
+
+private:
+	void getTypeSubset(const ResourceMap::ResourceReferences& resources,
+			ResourceSearchMap& results, const String& typeName) const {
+		for (int i = 0; i < resources.size(); ++i) {
+			auto spawn = resources.get(i);
+			if (spawn == nullptr)
+				continue;
+
+			for (int j = 0; j < 8; ++j) {
+				String className = spawn->getStfClass(j);
+				if (!className.isEmpty() && className == typeName)
+					results.put(spawn->getName().toLowerCase(), spawn);
+			}
+		}
+	}
+
+	template<class ResourceList>
+	void getAttributeSubset(const ResourceList& resources,
+			ResourceSearchMap& results, const String& attributeName) const {
+		for (int i = 0; i < resources.size(); ++i) {
+			ManagedReference<ResourceSpawn*> spawn = resources.get(i);
+			if (spawn == nullptr)
+				continue;
+
+			for (int j = 0; j < 12; ++j) {
+				String name;
+				spawn->getAttributeAndValue(name, j);
+				if (!name.isEmpty() && name == attributeName)
+					results.put(spawn->getName().toLowerCase(), spawn);
+			}
+		}
 	}
 
 };

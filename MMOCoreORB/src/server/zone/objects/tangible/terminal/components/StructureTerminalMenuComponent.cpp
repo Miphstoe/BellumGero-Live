@@ -206,7 +206,8 @@ void StructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* sceneOb
 					// a stale menu still shows this option (double click, lag, duplicate packet).
 					if (building->getHousePackState() == 0
 						&& !HousePackupManager::instance()->hasVendorsInside(building)
-						&& !HousePackupManager::instance()->hasMannequinsInside(building)) {
+						&& !HousePackupManager::instance()->hasMannequinsInside(building)
+						&& !HousePackupManager::instance()->hasDoctorServiceUnitsInside(building)) {
 						menuResponse->addRadialMenuItemToRadialID(RADIAL_ROOT_MANAGEMENT, RADIAL_PACK_UP_HOUSE, 3, "Pack Up Structure");
 					}
 				}
@@ -494,6 +495,14 @@ int StructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObj
 						// exist; this guards stale menus / races. packUpHouse() re-checks too.
 						if (HousePackupManager::instance()->hasMannequinsInside(building)) {
 							creature->sendSystemMessage("This structure cannot be packed up while mannequins are inside. Remove all mannequins before packing up the structure.");
+							break;
+						}
+
+						// Check 2c (BG FMDoctorBot): stale-menu/race defense.
+						if (HousePackupManager::instance()->hasDoctorServiceUnitsInside(building)) {
+							creature->sendSystemMessage(
+								"This structure cannot be packed up while an Automated Medical Station is inside. "
+								"Decommission the station first. (Nothing was changed.)");
 							break;
 						}
 

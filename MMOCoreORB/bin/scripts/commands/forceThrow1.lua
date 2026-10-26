@@ -46,7 +46,7 @@ ForceThrow1Command = {
 
 	minDamage = 150,
 	maxDamage = 300,
-	speed = 4.0,
+	speed = 3.0,
 	forceCost = 28,
 	visMod = 25,
 	accuracySkillMod = "forcethrow_accuracy",

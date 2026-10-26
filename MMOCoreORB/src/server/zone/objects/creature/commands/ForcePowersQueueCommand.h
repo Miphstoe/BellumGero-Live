@@ -17,6 +17,140 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 
 class ForcePowersQueueCommand : public CombatQueueCommand {
+private:
+	// Bellum Gero Force Powers Revamp - Phase 1A
+	int getRevampBranchTier(CreatureObject* creature, uint32 commandCRC) const {
+		if (creature == nullptr || !creature->isPlayerCreature() ||
+				!creature->hasSkill("force_discipline_powers_novice")) {
+			return 0;
+		}
+
+		bool lightningCommand =
+			commandCRC == STRING_HASHCODE("forcelightningsingle1") ||
+			commandCRC == STRING_HASHCODE("forcelightningsingle2") ||
+			commandCRC == STRING_HASHCODE("forcelightningcone1") ||
+			commandCRC == STRING_HASHCODE("forcelightningcone2");
+
+		bool mentalCommand =
+			commandCRC == STRING_HASHCODE("mindblast1") ||
+			commandCRC == STRING_HASHCODE("mindblast2");
+
+		bool pushCommand =
+			commandCRC == STRING_HASHCODE("forcethrow1") ||
+			commandCRC == STRING_HASHCODE("forcethrow2");
+
+		if (lightningCommand) {
+			if (creature->hasSkill("force_discipline_powers_lightning_04")) return 4;
+			if (creature->hasSkill("force_discipline_powers_lightning_03")) return 3;
+			if (creature->hasSkill("force_discipline_powers_lightning_02")) return 2;
+			if (creature->hasSkill("force_discipline_powers_lightning_01")) return 1;
+		}
+
+		if (mentalCommand) {
+			if (creature->hasSkill("force_discipline_powers_mental_04")) return 4;
+			if (creature->hasSkill("force_discipline_powers_mental_03")) return 3;
+			if (creature->hasSkill("force_discipline_powers_mental_02")) return 2;
+			if (creature->hasSkill("force_discipline_powers_mental_01")) return 1;
+		}
+
+		if (pushCommand) {
+			if (creature->hasSkill("force_discipline_powers_push_04")) return 4;
+			if (creature->hasSkill("force_discipline_powers_push_03")) return 3;
+			if (creature->hasSkill("force_discipline_powers_push_02")) return 2;
+			if (creature->hasSkill("force_discipline_powers_push_01")) return 1;
+		}
+
+		if (commandCRC == STRING_HASHCODE("forcechoke") &&
+				creature->hasSkill("force_discipline_powers_master")) {
+			return 4;
+		}
+
+		return 0;
+	}
+
+	bool isRevampSingleTargetDamagePower(uint32 commandCRC) const {
+		return commandCRC == STRING_HASHCODE("forcelightningsingle1") ||
+			commandCRC == STRING_HASHCODE("forcelightningsingle2") ||
+			commandCRC == STRING_HASHCODE("mindblast1") ||
+			commandCRC == STRING_HASHCODE("forcethrow1") ||
+			commandCRC == STRING_HASHCODE("forcethrow2") ||
+			commandCRC == STRING_HASHCODE("forcechoke");
+	}
+
+	bool isRevampAreaDamagePower(uint32 commandCRC) const {
+		return commandCRC == STRING_HASHCODE("forcelightningcone1") ||
+			commandCRC == STRING_HASHCODE("forcelightningcone2") ||
+			commandCRC == STRING_HASHCODE("mindblast2");
+	}
+
+	float getRevampTierMultiplier(int tier, bool usePvpTable) const {
+		if (usePvpTable) {
+			if (tier == 2) return 1.05f;
+			if (tier == 3) return 1.10f;
+			if (tier >= 4) return 1.15f;
+			return 1.0f;
+		}
+
+		if (tier == 2) return 1.10f;
+		if (tier == 3) return 1.25f;
+		if (tier >= 4) return 1.40f;
+		return 1.0f;
+	}
+
+	void applyRevampDamage(
+			CreatureObject* creature,
+			CreatureObject* targetCreature,
+			CreatureAttackData& attackData) const {
+
+		if (creature == nullptr || targetCreature == nullptr ||
+				!creature->isPlayerCreature() || !attackData.isForceAttack()) {
+			return;
+		}
+
+		float baseMinDamage = attackData.getMinDamage();
+		float baseMaxDamage = attackData.getMaxDamage();
+
+		if (baseMinDamage <= 0.f || baseMaxDamage <= 0.f)
+			return;
+
+		uint32 commandCRC = getNameCRC();
+		bool singleTargetPower = isRevampSingleTargetDamagePower(commandCRC);
+		bool areaPower = isRevampAreaDamagePower(commandCRC);
+
+		if (!singleTargetPower && !areaPower)
+			return;
+
+		int tier = getRevampBranchTier(creature, commandCRC);
+
+		if (tier <= 0)
+			return;
+
+		bool pvpTarget = targetCreature->isPlayerCreature();
+
+		// Area/cone attacks use the conservative PvP table in Phase 1A because
+		// CreatureAttackData is shared across all area targets.
+		bool usePvpTable = pvpTarget || areaPower;
+		float multiplier = getRevampTierMultiplier(tier, usePvpTable);
+
+		if (creature->hasSkill("force_discipline_powers_master"))
+			multiplier *= usePvpTable ? 1.10f : 1.15f;
+
+		// Force Weaken vulnerability is restricted to supported single-target
+		// attacks until per-defender area scaling is implemented safely.
+		if (singleTargetPower) {
+			if (targetCreature->hasBuff(STRING_HASHCODE("forceweaken2")))
+				multiplier *= pvpTarget ? 1.08f : 1.15f;
+			else if (targetCreature->hasBuff(STRING_HASHCODE("forceweaken1")))
+				multiplier *= pvpTarget ? 1.04f : 1.08f;
+		}
+
+		int scaledMinDamage = (int)((baseMinDamage * multiplier) + 0.5f);
+		int scaledMaxDamage = (int)((baseMaxDamage * multiplier) + 0.5f);
+
+		attackData.setVariable("minDamage", String::valueOf(scaledMinDamage));
+		attackData.setVariable("maxDamage", String::valueOf(scaledMaxDamage));
+	}
+
 public:
 
 	ForcePowersQueueCommand(const String& name, ZoneProcessServer* server) : CombatQueueCommand(name, server) {
@@ -56,7 +190,16 @@ public:
 		CombatManager* combatManager = CombatManager::instance();
 
 		try {
-			int res = combatManager->doCombatAction(creature, creature->getWeapon(), cast<TangibleObject*>(targetObject.get()), CreatureAttackData(arguments, this, target));
+			CreatureAttackData attackData(arguments, this, target);
+			CreatureObject* targetCreature = targetObject->isCreatureObject() ? targetObject->asCreatureObject() : nullptr;
+
+			applyRevampDamage(creature, targetCreature, attackData);
+
+			int res = combatManager->doCombatAction(
+				creature,
+				creature->getWeapon(),
+				cast<TangibleObject*>(targetObject.get()),
+				attackData);
 
 			switch (res) {
 			case -1:

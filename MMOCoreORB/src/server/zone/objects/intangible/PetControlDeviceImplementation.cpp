@@ -53,7 +53,9 @@ namespace {
 			|| player->hasSkill("science_doctor_master")
 			|| player->hasSkill("social_dancer_master")
 			|| player->hasSkill("social_musician_master")
-			|| player->hasSkill("social_imagedesigner_master");
+			|| (player->hasSkill("social_imagedesigner_master") &&
+				player->getLuaStringData(
+					"fmidstation_temp_id_skills").isEmpty());
 	}
 
 	bool usesCombatDroidSlot(AiAgent* pet) {
