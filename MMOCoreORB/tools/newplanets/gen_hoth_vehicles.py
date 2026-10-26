@@ -24,7 +24,8 @@ VEHICLES = [
     ('landspeeder_ab1', 'AB-1 Landspeeder', 'shared_landspeeder_ab1_pcd.iff', 'shared_landspeeder_ab1.iff', 'shared_landspeeder_ab1_deed.iff',
      ['lookup/speeder_ab1'], 'appearance/speeder_ab1.apt'),
     ('landspeeder_xp38', 'XP-38 Landspeeder', 'shared_landspeeder_xp38_pcd.iff',
-     ('clone', 'shared_landspeeder_ab1.iff', 'appearance/pv_speeder_xp_38.sat')  # real appearance: the mount tables are keyed by it (LIVE-29), 'shared_landspeeder_xp38_deed.iff',
+     ('clone', 'shared_landspeeder_ab1.iff', 'appearance/pv_speeder_xp_38.sat'),  # real appearance: the mount tables are keyed by it (LIVE-29)
+     'shared_landspeeder_xp38_deed.iff',
      ['lookup/speeder_xp_38'], 'appearance/speeder_xp_38.apt'),
     ('landspeeder_organa', 'Organa Speeder', 'shared_landspeeder_organa_pcd.iff', 'shared_landspeeder_organa.iff', 'shared_vehicle_deed_organa_speeder.iff',
      ['lookup/bail_organa_speeder'], 'appearance/bail_organa_speeder.apt'),
