@@ -24,6 +24,13 @@
 #include "server/zone/objects/tangible/components/DoctorBuffDroidDataComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidZoneComponent.h"
 #include "server/zone/objects/tangible/components/DoctorBuffDroidContainerComponent.h"
+#include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitMenuComponent.h"
+#include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitDeedMenuComponent.h"
+#include "server/zone/objects/tangible/components/doctorservice/DoctorServiceUnitContainerComponent.h"
+#include "server/zone/objects/tangible/components/doctorservice/DoctorServiceHopperContainerComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationDataComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationMenuComponent.h"
+#include "server/zone/objects/tangible/components/imagedesignstation/ImageDesignStationDeedMenuComponent.h"
 #include "server/zone/objects/tangible/components/LytusFamilyArtefactMenuComponent.h"
 #include "server/zone/objects/tangible/terminal/components/SecurityTerminalDataComponent.h"
 #include "server/zone/objects/tangible/terminal/components/GamblingTerminalDataComponent.h"
@@ -276,6 +283,13 @@ ComponentManager::ComponentManager() {
 	components.put("DoctorBuffDroidMenuComponent", new DoctorBuffDroidMenuComponent());
 	components.put("DoctorBuffDroidZoneComponent", new DoctorBuffDroidZoneComponent());
 	components.put("DoctorBuffDroidContainerComponent", new DoctorBuffDroidContainerComponent());
+	components.put("DoctorServiceUnitMenuComponent", new DoctorServiceUnitMenuComponent());
+	components.put("DoctorServiceUnitDeedMenuComponent", new DoctorServiceUnitDeedMenuComponent());
+	components.put("DoctorServiceUnitContainerComponent", new DoctorServiceUnitContainerComponent());
+	components.put("DoctorServiceHopperContainerComponent", new DoctorServiceHopperContainerComponent());
+	components.put("ImageDesignStationMenuComponent", new ImageDesignStationMenuComponent());
+	components.put("ImageDesignStationDeedMenuComponent", new ImageDesignStationDeedMenuComponent());
+	dataObjectFactory.registerObject<ImageDesignStationDataComponent>("ImageDesignStationDataComponent");
 	components.put("VendorZoneComponent", new VendorZoneComponent());
 	components.put("TurretZoneComponent", new TurretZoneComponent());
 	components.put("TurretContainerComponent", new TurretContainerComponent());

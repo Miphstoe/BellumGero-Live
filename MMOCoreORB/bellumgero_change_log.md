@@ -14,6 +14,237 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-17 — Wampas drop DNA more often (new dnaDropChance template field)
+
+- **Summary:** Player suggestion (LIVE-33): more DNA from wampas, including for non-Bio-Engineers. Every creature kill already had a flat 5% chance to leave a lootable DNA sample, with quality capped by the looter's DNA harvesting skill (non-Bio-Engineers always get Very Low Quality; that cap is kept). New creature template field `dnaDropChance` (percent) overrides the 5% per creature. Wampas 10%, elder wampas 15%; the harder caves multiply it like their loot: Icemaw's cave 15% / 22.5%, Snowblind's 20% / 30%, Patriarch and Matriarch's 30% / 45%. World wampas use the base 10% / 15%.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/DnaManager.cpp`, `bin/scripts/mobile/hoth/hoth_wampa.lua`, `hoth_elder_wampa.lua`, `hoth_wampa_t2/_t3/_t4.lua`, `hoth_elder_wampa_t2/_t3/_t4.lua`, `tools/newplanets/gen_hoth_mobiles.py` (`dna` per creature)
+- **Notes:** C++ change: rebuild (same deploy as `creditsMultiplier`). `dnaDropChance` is available to any creature template; missing or 0 keeps the global 5%. Cave bosses don't roll it (their corpses carry no loot). Compile-checked, not yet tested in game.
+
+### 2026-10-17 — Hoth wampa caves: each cave harder than the last, with better drops
+
+- **Summary:** The four wampa caves all used the same wampas and loot. Frostfang's cave (cave_01, -622 2292) is unchanged as the baseline; the other three escalate. Each harder cave has its own wampa and elder wampa templates (`hoth_wampa_t2/_t3/_t4`, `hoth_elder_wampa_t2/_t3/_t4`, named "savage", "ferocious", "ravenous") and a tougher boss, and drops more: every regular-mob `lootChance` is multiplied, and the cave boss's per-player rewards are multiplied (capped at 100%).
+
+  | Cave | Boss | Mobs vs base | Regular loot | Boss rewards |
+  |---|---|---|---|---|
+  | cave_01 (-622, 2292) | Frostfang 105 | base | x1 | x1 |
+  | cave_04 (-385, 2436) | Icemaw 105 -> 109 | level +4, hit +0.03, dmg x1.1, HAM x1.15 | x1.5 | x1.25 |
+  | cave_02 (-543, 2674) | Snowblind 107 -> 113 | level +8, hit +0.06, dmg x1.2, HAM x1.3 | x2 | x1.5 |
+  | cave_03 (-75, 2969) | Matriarch 110 -> 117, Patriarch 115 -> 120 | level +12, hit +0.09, dmg x1.3, HAM x1.5 | x3 | x2 |
+
+  Bosses are Frostfang scaled by their cave's tier (the patriarch a step above the matriarch). World wampas outside the caves and the mynock cave are unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_wampa_t2.lua` … `hoth_elder_wampa_t4.lua` (6 new), `bin/scripts/mobile/hoth/hoth_wampa_icemaw.lua`, `hoth_wampa_snowblind.lua`, `hoth_wampa_matriarch.lua`, `hoth_wampa_patriarch.lua`, `bin/scripts/mobile/hoth/serverobjects.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua` (`HOTH_CAVE_BOSS_LOOT_PCT`, `hothCaveBossLoot`), `tools/newplanets/gen_hoth_mobiles.py` (`CAVE_TIERS`; run `tune_hoth_loot.py` after it as before)
+- **Notes:** Server restart only. All multipliers live in `CAVE_TIERS` and are easy to tune. The generator was checked to reproduce the previous files exactly before the change. Not yet tested in game.
+
+### 2026-10-17 — Hoth: Imperial walker toys drop far less often
+
+- **Summary:** The Imperial walker (AT-AT) toy dropped too often: the 10 colour variants plus the veteran AT-AT toy were 11 of the 18 equally weighted items in `hoth_decor_common`, so 61% of common decor drops were a walker toy. The 10 variants now share one item's weight (about 1.1% each), which cuts the walker toy share to 22% of the group. Other common decor items go from 5.6% to 11.1% each. Per kill: snowtrooper and Rebel snow soldier 0.61% -> 0.22%, wampa 0.92% -> 0.33%, elder wampa 1.2% -> 0.44%, scavenger raider 3.1% -> 1.1%, Imperial salvage tech 4.6% -> 1.7%.
+- **Files:** `bin/scripts/loot/groups/bellum/hoth/hoth_decor_common.lua`, `tools/newplanets/gen_hoth_loot.py` (weights the group the same way when regenerated)
+- **Notes:** Server restart only. Mob `lootChance` values unchanged.
+
+### 2026-10-17 — Hoth: every tauntaun can be milked
+
+- **Summary:** Player bug report: a harvest droid set to Milk got nothing from Hoth tauntauns. The Hoth tauntaun had `milk = 300` but no `milkType` (the only creature on Main like that), so milking found no resource spawn; the tauntaun bull had `milk = 0`. Both now give `milk_wild` (Hothian Wild Milk on Hoth): tauntaun 300, bull 350.
+- **Files:** `bin/scripts/mobile/hoth/hoth_tauntaun.lua`, `bin/scripts/mobile/hoth/hoth_tauntaun_bull.lua`, `tools/newplanets/gen_hoth_mobiles.py` (writes `milkType` for any mob with milk, so regenerating keeps it)
+- **Notes:** Server restart only. The bull is aggressive, so droid milking only works while it is out of combat. Milk goes to the owner's inventory (`harvestResourceToPlayer`), not the droid's.
+
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: stats back to the 2026-10-05 values
+
+- **Summary:** Reverts the 2026-10-14 stat step. Level 445 -> 400, accuracy 97.25 -> 95, damage 1154-1998 -> 1050-1800, base XP 18904 -> 17000, HAM 1.76-2.45M -> 1.4-2.0M, resists back to 175/175/160/200/160/200/80/80/25. The 2026-10-14 entry below no longer describes live values.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only.
+
+### 2026-10-17 — Rimeclaw, the Glacial Rancor: respawn 24 h -> 3 h
+
+- **Summary:** After being killed, Rimeclaw respawns after 3 hours instead of 24 hours (`respawnSeconds` 86400 -> 10800). Stats unchanged.
+- **Files:** `bin/scripts/screenplays/bellum/hoth_glacial_rancor_worldboss.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only. The boss-up broadcast interval was already 3 hours.
+
+### 2026-10-14 — Rimeclaw, the Glacial Rancor: tougher again (90% of the 2026-10-05 step)
+
+- **Summary:** Rimeclaw, the Glacial Rancor: level 400 -> 445, accuracy 95 -> 97.25, damage 1050-1800 -> 1154-1998, base XP 17000 -> 18904, HAM 1.4-2.0M -> 1.76-2.45M, resists 175/175/160/200/160/200/80/80/25 -> 180/180/169/200/169/200/85/85/30. Each increase is 90% of the 2026-10-05 increase, applied on top of its current values. Loot and rewards unchanged.
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`, `tools/newplanets/gen_hoth_rancor.py`
+- **Notes:** Server-side Lua only, no rebuild. Resist values are rounded to whole numbers. Not yet tested in game.
+
+### 2026-10-13 — Hoth: regular mobs drop half as much loot and pay 3x the credits
+
+- **Summary:** Regular (non-boss) Hoth mobs dropped too much. Every `lootChance` on wampas, elder wampas, snowtroopers, Rebel snow soldiers and sergeants, scavengers, raiders, salvage techs, mynocks, probe droid and tauntauns is halved (e.g. wampa attachments 2.5% -> 1.25%, ice decor 5% -> 2.5%); the generic armor/weapon/clothing junk group is gone from the raider and probe droid. In exchange their kill credits are tripled: new creature template field `creditsMultiplier` (float, default 1) scales Core3's level-based credits in `CreatureManagerImplementation::notifyDestruction`; the Hoth mobs set 3 (a level-90 wampa pays about 1,400-1,700 credits instead of 460-560). Cave and world boss rewards are unchanged.
+- **Files:** `src/server/zone/objects/creature/ai/CreatureTemplate.h/.cpp`, `src/server/zone/managers/creature/CreatureManagerImplementation.cpp`, `bin/scripts/mobile/hoth/*.lua` (15 mobiles), `tools/newplanets/tune_hoth_loot.py` (idempotent; run after gen_hoth_mobiles.py)
+- **Notes:** C++ change: rebuild. `creditsMultiplier` is available to any creature template. Confirmed on dev 2026-10-14 (wampa credits and drop rate judged right).
+
+### 2026-10-12 — Hoth client TRE: XP-38 mount crash, snow globes drawn, coins sized (new bg_custom1.tre)
+
+- **Summary:** Three client-side fixes, all in the rebuilt `bg_custom1.tre`. (1) The XP-38 landspeeder crashed the client to desktop on /mount: Infinity keys `logical_saddle_name_map` and `valid_scale_range` by the vehicle's real skeletal appearance (`pv_speeder_xp_38.sat`) but our cloned vehicle template pointed at the static saddle appearance (`speeder_xp_38.apt`), so the generator never copied those rows and the mount lookup found nothing. The template now uses the `.sat` (chain staged), the two rows are added, and the generator entry is corrected. (2) Both Hoth snow globes rendered as the black default box: their component lods, meshes, shaders and textures (17 files) were never staged because `chain_check.py` had a lookbehind that hid component/lod references; checker fixed, files staged. (3) The Battle of Hoth globe spawned the stock glowing Imperial/Rebel coins full size (0.7 m) because this client ignores the mesh-particle scale (0.15); pre-scaled coin copies (`pt_glowing_*_coin_sm`) are referenced instead at scale 1.0.
+- **Files:** client TRE only (overlays `build/hoth_snowglobe_fix`, `build/hoth_xp38_fix`); `tools/newplanets/gen_hoth_vehicles.py`, `chain_check.py`, `stage_missing.py` (stage a reference chain from Infinity), `all_hoth_chain.py` (chain-check every Hoth object), `fix_globe_coins.py`, `fix_xp38.py`
+- **Notes:** Build: `python build_tre.py <base> <out> build/hoth build/hoth_loot build/hoth_snowglobe_fix build/hoth_xp38_fix`. Verified by chain check and CRC audit; the XP-38 mount is not yet confirmed in game. Plane LIVE-29 (XP-38).
+>
+### 2026-10-12 — Hoth: every Hoth draft schematic registered (none could be learned or crafted)
+
+- **Summary:** The server only knows a draft schematic exists if it is listed in `managers/crafting/schematics.lua` (SchematicMap). None of the 64 Hoth drafts were: the 22 Snowtrooper and Alliance cold weather armor pieces, the 12 Hoth paintings and the 30 vehicle schematics. So the loot schematics that should grant them did nothing and nothing showed in the crafting tool. All 64 are now listed in one Bellum Gero Hoth block.
+- **Files:** `bin/scripts/managers/crafting/schematics.lua`, `tools/newplanets/register_schematics.py` (idempotent: appends whatever Hoth draft is missing, run it after regenerating), `tools/newplanets/audit_schematics.py` (CRC table coverage, draft templates, schematics.lua listing, loot schematic targets, client iffs)
+- **Notes:** Server restart only, no TRE. Audit result on the current TRE: 1038/1038 object iffs in the CRC table; all 64 drafts have server templates; all 205 loot schematic items point at existing drafts.
+>
+### 2026-10-11 — Hoth caves: no random junk loot, real loot instead
+
+- **Summary:** Hoth cave mobs rolled the generic `armor_all`, `weapons_all` and `wearables_all` groups (random armor, weapon and clothing pieces from every set), which is where the junk came from. Removed from the wampa and elder wampa and from the per-player cave boss rewards (Frostfang, Icemaw, Snowblind, matriarch, patriarch, broodmother), and replaced with loot worth having. Wampas and elder wampas: BG tokens 2.5%, armor attachments 2.5%, clothing attachments 2.5%, color crystals 1.5%, power crystals 1.5%, krayt pearls 0.5%, Jedi robes 0.2%, plus the Hoth decor and rare art they already had. Vehicles (the 30 ported speeders, swoops and podracers; uniform pick): wampas 0.1% deed and 0.2% schematic per kill. Cave bosses (rolled per player, on top of their schematics, paintings and decor): armor attachments 30%, clothing attachments 30%, color crystals 20%, power crystals 20%, krayt pearls 15%, Jedi robes 5%, vehicle schematic 15% (was 5%), vehicle deed 10% (was 2%).
+- **Files:** `bin/scripts/mobile/hoth/hoth_wampa.lua`, `bin/scripts/mobile/hoth/hoth_elder_wampa.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua`, `tools/newplanets/gen_hoth_mobiles.py` (so regenerating keeps it)
+- **Notes:** Server restart only. All chances are `lootChance` values out of 10,000,000 and easy to tune. The Hoth probe droid and the scavenger raider (outside the caves) still roll the generic groups.
+
+### 2026-10-11 — Hoth: BG Hub NPC at every outpost, scout mission terminal at the Scavenger Outpost
+
+- **Summary:** The BG Hub vendor (`myswg_vendor`) now stands next to the terminal row at the Scavenger Outpost, the Imperial Forward Base and the Rebel Forward Base. The Scavenger Outpost also gets the scout mission terminal it was missing, so every outpost has general mission, its faction mission (Imperial / Rebel), scout mission, bank and bazaar (Scavenger: general, scout, bank, bazaar).
+- **Files:** `bin/scripts/screenplays/static_spawns/hoth_bg_hub.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py`
+- **Notes:** Server restart only, no TRE. The NPC uses the existing hub bark loop and menus. Check in game that none of the NPCs stands inside a wall.
+
+### 2026-10-09 — Hoth: Imperial Forward Base gets every terminal type
+
+- **Summary:** The Imperial Forward Base had one mission terminal (Imperial), bank and bazaar. It now has all three mission terminal types (general, Imperial, scout) plus bank and bazaar, in one row 3 m apart (x 3798-3810, y -3094), same set as the Rebel Forward Base.
+- **Files:** `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py`
+- **Notes:** Server restart only. Orientation unchanged (not rotated); check in game that none clip a wall. The Scavenger Outpost still has general mission, bank and bazaar only.
+
+### 2026-10-08 — Hoth: Rebel Forward Base terminals in a row, facing the starport, plus mission terminals
+
+- **Summary:** The Rebel Forward Base terminals sat in a line facing the wall and clipped into it, and only one mission terminal existed. They are now five terminals in a row (3 m apart) centred on the starport-side spot (-406, 586), all turned to face the starport: general mission, Rebel mission, scout mission, bank, bazaar.
+- **Files:** `bin/scripts/managers/planet/planet_manager.lua`, `tools/newplanets/move_outposts.py` (keeps the hand-placed Rebel rows when `server` is re-run)
+- **Notes:** Server restart only (planetObjects are re-created each boot; no TRE). Facing is computed from the starport centre (-420, 600): heading -45 degrees. Check the orientation in game and adjust `oy`/`ow` if they turn out mirrored. Plane LIVE-25.
+
+### 2026-10-08 — Hoth: harvesters allowed, player housing not
+
+- **Summary:** Decision: harvesters can be placed on Hoth, player housing cannot. Harvesters (installations) take their zone list from `SharedInstallationObjectTemplate.lua`, which had no `hoth`, so every harvester deed refused ("cannot be placed on this planet"); `hoth` is added there. The AT-AT house was the only house given `hoth` in its `allowedZones` (2026-10-04); that entry is removed, so every house deed refuses on Hoth ("wrong planet").
+- **Files:** `bin/scripts/object/SharedInstallationObjectTemplate.lua`, `bin/scripts/object/building/player/atat_house.lua`
+- **Notes:** Server restart (Lua only). The shared installation list also covers other installation types that inherit it (e.g. factories), so those become placeable on Hoth too. The 2026-10-04 entry below, "AT-AT house placeable on Hoth", is superseded.
+
+### 2026-10-07 — Hoth: tickets to Rebel Forward Base work again
+
+- **Summary:** Buying a ticket to the Rebel Forward Base did nothing from every other travel point, because that starport had no shuttle (the stored one was deleted when the outposts moved). A new screenplay spawns a shuttle at the Rebel starport on every boot. Ticket purchase failures that used to be silent (no shuttle at the destination, travel or return trip not permitted) now log the reason and tell the player, and the boot log lists which travel point each shuttle registers to.
+- **Files:** `bin/scripts/screenplays/static_spawns/hoth_rebel_shuttle.lua`, `bin/scripts/screenplays/screenplays.lua`, `src/server/zone/objects/creature/commands/PurchaseTicketCommand.h`, `src/server/zone/objects/building/tasks/ScheduleShuttleTask.h`
+- **Notes:** C++ change: rebuild. The shuttle registers about 5 minutes after boot. Verified in the boot log on local dev (Rebel Forward Base linked to a shuttle); in-game purchase still to be retested. Plane LIVE-4.
+
+### 2026-10-06 — Hoth: faction turrets at the fortified shuttleports
+
+- **Summary:** The decorative turrets at Eastern Ice Fields and Generator Ridge are replaced by working faction turrets (small towers, 4 per site): Imperial turrets at Eastern Ice Fields attack overt Rebels, Rebel turrets at Generator Ridge attack overt Imperials. Neutral and covert players are not targeted. Turrets can be destroyed and respawn after 30 minutes.
+- **Files:** `bin/scripts/screenplays/static_spawns/hoth_shuttleport_turrets.lua`, `bin/scripts/screenplays/screenplays.lua`
+- **Notes:** Needs the new `bg_custom1.tre` (decorative turrets removed from the snapshot; 335 Hoth snapshot objects). Generated by `tools/newplanets/move_outposts.py shuttleports`. Plane LIVE-21.
+
+### 2026-10-06 — Planetary map: Hoth POIs listed under Theme Park
+
+- **Summary:** The client lists the "Points of Interest" map category but never shows entries for it (it is a newer category than the client's map code). MAPPOI regions now register under "Theme Park", where the caves, shuttleports, battlefield, raider camp, Lucky Despot Wreck and Glacial Rancor grounds show with their names. POI regions also keep their own name when they lie inside a city (the Lucky Despot Wreck was listed as "Scavenger Outpost"). The boot log lists every registered POI ("Map POI registered").
+- **Files:** `src/server/zone/managers/planet/PlanetManagerImplementation.cpp`, `src/server/zone/managers/planet/MapLocationEntry.cpp`
+- **Notes:** C++ change: rebuild. Verified in game on local dev. Plane LIVE-18.
+
+### 2026-10-06 — Hoth TRE: furniture name strings no longer collide
+
+- **Summary:** BG's `string/en/frn_n.stf` has a stale next-id counter (293 while ids run to 310). The Hoth generator added decor names at ids 293-297, duplicating existing ids: the server could not parse the file (boot error) and five existing furniture names were replaced on the client. New strings now always get ids above the highest existing one; frn_n/frn_d rebuilt from BG's originals with no original name changed.
+- **Files:** `tools/newplanets/stf_tool.py` (client TRE content: `string/en/frn_n.stf`, `frn_d.stf`)
+- **Notes:** Needs the rebuilt `bg_custom1.tre` (dist md5 432a085a…, dev 5ec02fca…). Boot error baseline drops from 303 to 301.
+
+### 2026-10-06 — Planetary map: Points of Interest entries show their names
+
+- **Summary:** POI regions (MAPPOI) were listed under "Points of Interest" with no entries: their map name came from the server-side translation of "@hoth_region_names:...", which the server does not load, so it was empty and the client dropped them. Regions with an empty translated name now send the raw string reference (like cities), which the client translates.
+- **Files:** `src/server/zone/managers/planet/MapLocationEntry.cpp`
+- **Notes:** C++ change: rebuild. Plane LIVE-18. `tools/newplanets/poi_audit.py` lists every special spot on Hoth and the POI covering it.
+
+### 2026-10-06 — World boss loot manager: corpse and loot-box events
+
+- **Summary:** The loot manager scheduled an early corpse destruction that never ran (the event handler read a nil boss ID: Core3 calls event handlers as play:key(object, args)). Running it would have deleted world bosses from the database and stopped their engine respawn, so the early destruction is removed; the emptied, non-interactive corpse despawns on the normal timer. The loot-box despawn event handler had the same argument mistake and is fixed.
+- **Files:** `bin/scripts/screenplays/managers/world_boss_loot_manager.lua`
+- **Notes:** Affects every world boss using WorldBossLootManager (Acklay, Searing Broodwarden, Infernomaw, Torgas, Grak, Glacial Rancor). Script change only.
+
+### 2026-10-05 — Glacial Rancor tougher
+
+- **Summary:** Rimeclaw, the Glacial Rancor: level 350 -> 400, HAM 1.0-1.5M -> 1.4-2.0M, damage 935-1580 -> 1050-1800, accuracy 92.5 -> 95, resists +5 to +10. Between Acklay (350) and Grak (525).
+- **Files:** `bin/scripts/mobile/hoth/hoth_glacial_rancor.lua`
+- **Notes:** `tools/newplanets/gen_hoth_rancor.py`.
+
+### 2026-10-05 — Hoth NPCs tougher
+
+- **Summary:** Snowtroopers / Rebel snow soldiers 70 -> 76 (13.5-16.5k HAM), sergeants 78 -> 85 (15.5-18.5k HAM), scavenger raiders 68 -> 74, Imperial salvage techs 66 -> 72, probe droid 68 -> 74, damage and accuracy ~+15 %. Friendly scavengers unchanged. Spawn and mission difficulties follow.
+- **Files:** `bin/scripts/mobile/hoth/*`, `bin/scripts/mobile/spawn/hoth/hoth_world.lua`, `bin/scripts/mobile/spawn/destroy_mission/hoth_*`
+- **Notes:** `NPC_TUNE` in `tools/newplanets/gen_hoth_mobiles.py`.
+
+### 2026-10-05 — Hoth creatures tougher (wampas on par with the top rancors)
+
+- **Summary:** Player feedback: wampas were too easy. Wampa 80 -> 90 (16-20k HAM), elder wampa 88 -> 98 (22-27k HAM, armor 2), matching the enraged / ancient bull rancors. Tauntauns and ice mynocks +5-6 levels (~10 %). Cave bosses raised to 100-115 (40-64k HAM) so they stay above the elder wampas guarding them. Spawn and mission difficulties follow.
+- **Files:** `bin/scripts/mobile/hoth/*`, `bin/scripts/mobile/spawn/hoth/hoth_world.lua`, `bin/scripts/mobile/spawn/destroy_mission/hoth_*`
+- **Notes:** Tuning table `TUNE` in `tools/newplanets/gen_hoth_mobiles.py`.
+
+### 2026-10-05 — Hoth forward bases, fortified shuttleports, cave boss POIs
+
+- **Summary:** The moved Imperial and Rebel outposts are now "Imperial Forward Base" and "Rebel Forward Base" (map, radar, travel points, mission cities). Eastern Ice Fields (Imperial style) and Generator Ridge (Rebel style) shuttleports get walls, corner columns and decorative turrets, on flattened ground, and are listed as map POIs. Cave POIs: Frostfang Cavern, Icemaw's Den, Snowblind the Ravager, Wampa Matriarch's Ice Cavern, Deep Freeze Den (patriarch's chamber), Broodmother's Nest.
+- **Files:** `bin/scripts/managers/planet/{hoth_regions,planet_manager}.lua`, `bin/scripts/managers/mission/{mission_cities,mission_npc_spawn_points}.lua`
+- **Notes:** Walls/turrets are snapshot statics (69 nodes, OIDs from 0x5E480000) and need the new `bg_custom1.tre`; names live in `string/en/hoth_region_names.stf` in the TRE. Generated by `tools/newplanets/move_outposts.py` and `gen_hoth_pois.py`.
+
+### 2026-10-04 — Hoth deliver missions; hunting mission target names
+
+- **Summary:** The three Hoth outposts are mission cities with 12 NPC spawn points each (Scavenger: all factions, Imperial: neutral+imperial, Rebel: neutral+rebel), so terminals on Hoth offer deliver missions. Hunting missions for mobiles that only set customName (all Hoth creatures) now show that name instead of a blank target.
+- **Files:** `bin/scripts/managers/mission/mission_cities.lua`, `bin/scripts/managers/mission/mission_npc_spawn_points.lua`, `src/server/zone/managers/mission/MissionManagerImplementation.cpp`
+- **Notes:** C++ change: rebuild. Spawn points generated by `tools/newplanets/gen_hoth_missions.py`. Deploying the outpost move: the first boot relocates the stored outpost objects ("Moving stored snapshot object"); restart once more after the next save so terminals inside the starports (ticket terminal) register at the new spot.
+
+### 2026-10-04 — Hoth mission terminal missions
+
+- **Summary:** Every non-boss Hoth creature and NPC group can be a destroy mission: tauntaun herd/lair, ice mynock swarm/roost, probe droid, wampa, wampa den, snowtrooper and rebel snow patrols, plus two new camps (scavenger raiders, Imperial salvage team). Faction terminals on Hoth offer the enemy faction's Hoth groups.
+- **Files:** `bin/scripts/mobile/lair/*/hoth/*`, `bin/scripts/mobile/spawn/destroy_mission/hoth_*`, `src/server/zone/managers/mission/MissionManagerImplementation.cpp`, `src/server/zone/objects/tangible/terminal/mission/MissionTerminalImplementation.cpp`
+- **Notes:** C++ change: rebuild. `<planet>_factional_<faction>_destroy_missions` overrides the global factional groups on that planet. Deliver missions on Hoth still need mission cities + NPC spawn points.
+
+### 2026-10-04 — Hoth loot on every boss; Glacial Rancor world boss
+
+- **Summary:** 58 corpse-loot bosses roll the Hoth boss loot at the cave-boss rates; world bosses and scripted bosses give every rewarded player an extra Hoth roll. Hoth cave bosses now reward each qualifying player separately. New Hoth world boss Rimeclaw, the Glacial Rancor (600, -4600).
+- **Files:** boss mobiles under `bin/scripts/mobile/`, `screenplays/bellum/hoth_boss_bonus_loot.lua`, `screenplays/bellum/hoth_glacial_rancor_worldboss.lua`, `screenplays/caves/hoth_ice_caves.lua`, world boss / cave reward screenplays
+- **Notes:** Generated by `tools/newplanets/gen_boss_loot.py`, `gen_hoth_mobiles.py`, `gen_hoth_rancor.py`. Rancor model needs the new `bg_custom1.tre`.
+
+### 2026-10-04 — Hoth outposts moved, shuttleports, map POIs, terrain holes closed
+
+- **Summary:** Outposts moved to (-4030,-2080) / (3820,-3080) / (-420,600); shuttleports on the old Imperial/Rebel sites; caves and POIs on the planetary map; three orphan terrain holes closed (the tear Miph reported at -5270,5707). Stored snapshot objects now follow snapshot moves on boot.
+- **Files:** `bin/scripts/managers/planet/{hoth_regions,planet_manager,regions}.lua`, `bin/scripts/screenplays/static_spawns/hoth_static_spawns.lua`, `src/server/zone/managers/planet/PlanetManagerImplementation.cpp`
+- **Notes:** C++ change: rebuild. Needs the new `bg_custom1.tre` (terrain + snapshot) on server and client. First boot logs "Moving stored snapshot object" for 264 objects.
+
+### 2026-10-04 — Fix full-model glow on bump-mapped shaders (AT-AT house, ported vehicles)
+
+- **Summary:** Two ps20 pixel programs in BG's `bg_custom1.tre` call `calculateHemisphericLighting`, which this client never feeds, so every model on them renders as a full-body bloom glow: BG's own AT-AT house (already broken before Hoth) and C-3PO backpack, plus the ported Republic gunship, RIC-920, XJ-6, single-pod airspeeder, mechno-chair and Yoda's levitator. Fixes in the client TRE: `pixel_program/a_specmap_cbmp_detail_ps20.psh` is BG's override of a stock program, so the stock `patch_11_00` copy is shipped back (bump mapping kept); `a_envmask_specmap_cbmp_ps20` has no stock copy, so `effect/a_envmask_specmap_cbmp.eft` ships the stock non-bump `a_envmask_specmap` effect (normal map ignored). Verified in game: glow gone on the house and the vehicles.
+- **Files:** `tools/newplanets/gen_hoth_loot_client.py`
+- **Notes:** Client TRE only; no server restart. Live keeps the AT-AT house glow until this TRE ships. A recompiled envmask program without hemispheric lighting would restore bump detail on the envmask users.
+
+### 2026-10-04 — Mount range 20m for long vehicles; AT-AT house placeable on Hoth
+
+- **Summary:** `/mount` refused silently when the rider stood more than 7m from the vehicle object's origin. Infinity's podracers (Balta, IPG Longtail, Anakin's) model the pod 2-14m behind the origin, so they could never be mounted. The range check is now 20m (line of sight is still required). The AT-AT player house gets `hoth` in its allowed zones.
+- **Files:** `src/server/zone/objects/creature/commands/MountCommand.h`, `bin/scripts/object/building/player/atat_house.lua`
+- **Notes:** C++ change: rebuild and restart. Other player structures still exclude Hoth.
+
+### 2026-10-04 — Hoth boss vehicles: 30 Infinity vehicles as deeds and schematics
+
+- **Summary:** Ports Infinity's rideable vehicles as Hoth cave-boss loot: AB-1, XP-38, Organa, Sith, STAP, swamp speeder, RIC-920, Koro-2, Geonosian, A-1 floater, XJ-6, single-pod airspeeder, Air-2 swoop, Flare-S swoop, hoverlifter; Anakin's, Balta, IPG Longtail and FG 8T8 podracers; basilisk war droid, Grievous' wheel bike, Mustafar panning droid, enclosed military transport, Republic gunship (ground vehicle), HK-47 jetpack, hover chair, mechno-chair, senate pod and hover bird, plus the T-47 snowspeeder moved out of the decor group. Each has a control device, vehicle, deed, Artisan draft schematic (Engineering IV) and loot schematic; vehicles without an Infinity deed (gunship, HK-47 jetpack, senate pod, IPG, Balta, FG 8T8, Air-2) get a cloned deed, and the XP-38 a cloned vehicle template. Two boss-only loot groups: `hoth_vehicle_schematics` (5% per boss kill) and `hoth_vehicle_deeds` (2%), equal weights inside.
+- **Files:** `bin/scripts/object/intangible/vehicle/*`, `bin/scripts/object/mobile/vehicle/*`, `bin/scripts/object/tangible/deed/vehicle_deed/*`, `bin/scripts/object/draft_schematic/vehicle/civilian/*`, `bin/scripts/object/tangible/loot/loot_schematic/loot_schem_*.lua`, their `objects.lua`/`serverobjects.lua`, `bin/scripts/loot/items/bellum/hoth/*`, `bin/scripts/loot/groups/bellum/hoth/hoth_vehicle_*.lua`, `bin/scripts/mobile/hoth/*`, `tools/newplanets/gen_hoth_vehicles.py`
+- **Notes:** Client side in the rebuilt `bg_custom1.tre`: full asset closures (meshes, skeletons, animation tables and animations, shaders, textures, vehicle client data, effects, sounds, samples), the four `datatables/mount` tables with every vehicle's rows, `all_m.lat` with 16 Infinity rider poses added, and `monster_name`/`monster_detail` keys BG lacked. Three Infinity references exist nowhere (one STAP shader, two panning-droid sounds) and are left as-is. Vehicle speeds come from the client templates. Untested in game beyond the snowspeeder.
+
+### 2026-10-03 — Hoth boss paintings: ten custom artworks in the hoth_art_rare group
+
+- **Summary:** Ten new paintings made from reference artwork (Astromech in Primary Colors, Reprogrammed, The Hunter's Patience, Red Sun Over the Empire, Biker Scout at Rest, Seventy-Seven, Blue Unit, Utinni!, This Is the Way, Kessel Run, Age Six). Each is a 512x512 DXT1 texture on a clone of the square Hoth painting frame (own shader, mesh, appearance and object template; names/descriptions in `art_n`/`art_d`). They drop finished only, from the new loot group `hoth_art_rare` (equal weights): cave bosses roll it at 10%, every other Hoth mobile (creatures, troopers, scavengers, raiders, salvage techs, probe droids) at 0.5%.
+- **Files:** `bin/scripts/object/tangible/painting/hoth_art_*.lua`, `bin/scripts/object/tangible/painting/{objects,serverobjects}.lua`, `bin/scripts/loot/items/bellum/hoth/hoth_art_*.lua`, `bin/scripts/loot/groups/bellum/hoth/hoth_art_rare.lua`, `bin/scripts/loot/{items,groups}.lua`, `bin/scripts/mobile/hoth/*.lua`, `tools/newplanets/gen_hoth_art.py`, `tools/newplanets/iff_clone.py`
+- **Notes:** Client files (10 textures, shaders, meshes, appearances, templates, string entries) are in the rebuilt `bg_custom1.tre`; CRC entries are generated at build time by `tools/newplanets/build_tre.py`. The source images are kept outside the repo in `C:/SWG-Dev/NewPlanets/art/`; re-run `gen_hoth_loot_client.py` to regenerate. Lua only on the server: zone restart.
+
+### 2026-10-03 — Hoth loot: Snowtrooper and Alliance Cold Weather armor, Hoth paintings, decor, T-47 snowspeeder
+
+- **Summary:** First loot pass for Hoth. Two wearable armor sets with no faction lock and stormtrooper stats (Snowtrooper and Alliance Cold Weather: 10 pieces plus a backpack each), each piece as a Master Armorsmith loot schematic (3 uses) cloned from the stormtrooper recipes. Twelve Hoth paintings (6 battle scenes, 6 ESB prints) as finished drops and as Architect painting schematics (2 uses). Placeable decor: tauntaun/wampa plush and stuffed animals, mounted tauntaun head, ice sculptures, severed wampa arm, AT-AT toys/statuette/chair, Echo Base diorama, armored tauntaun statue, Hoth travel poster, snow globes, wampa pelt rug, snowspeeder hologram, 3 commemorative paintings, and 16 ice-cave pieces (wall segment, stalagmites, stalactites) for ice-house interiors. A T-47 snowspeeder vehicle (control device, vehicle, deed, Artisan draft schematic, loot schematic learnable at Engineering IV). Six loot groups under `loot/groups/bellum/hoth/` (weights total 10,000,000) hooked into the Hoth mobiles: snowtroopers 1.5%/sergeants 4% for the Imperial set, Rebel snow soldiers/sergeants likewise for the Alliance set, cave bosses 25% paintings / 15% rare decor / 20% ice decor, wampas 5–7% ice decor, scavenger raiders 5% paintings, salvage techs and most NPCs 2–15% common decor. The snowspeeder schematic sits in the rare decor group (bosses only).
+- **Files:** `bin/scripts/object/tangible/wearables/armor/{snowtrooper,rebel_snow}/*`, `bin/scripts/object/tangible/wearables/backpack/backpack_{snowtrooper,rebel_snow_soldier}.lua`, `bin/scripts/object/draft_schematic/clothing/clothing_armor_{snowtrooper,rebel_snow}_*.lua`, `bin/scripts/object/tangible/loot/loot_schematic/{snowtrooper,rebel_snow}_*_crafted_schematic.lua`, `bin/scripts/object/tangible/painting/*hoth*|*esb*.lua`, `bin/scripts/object/draft_schematic/furniture/hoth/*`, `bin/scripts/object/tangible/loot/hoth/*`, `bin/scripts/object/tangible/furniture/hoth/*`, `bin/scripts/object/{intangible,mobile}/vehicle/snowspeeder.lua`, `bin/scripts/object/tangible/deed/vehicle_deed/snowspeeder_deed.lua`, `bin/scripts/object/draft_schematic/vehicle/civilian/snowspeeder.lua`, `bin/scripts/object/tangible/loot/loot_schematic/loot_schem_snowspeeder.lua`, `bin/scripts/loot/items/bellum/hoth/*`, `bin/scripts/loot/groups/bellum/hoth/*`, `bin/scripts/mobile/hoth/*`, registration lists (`allobjects.lua`, `*/objects.lua`, `*/serverobjects.lua`, `loot/items.lua`, `loot/groups.lua`), `tools/newplanets/gen_hoth_loot*.py`, `tools/newplanets/iff_clone.py`
+- **Notes:** Requires the rebuilt `bg_custom1.tre` (Hoth + loot overlays; 459 new client files: Infinity/MTG snowtrooper and Rebel snow armor meshes incl. female variants, paintings, decor appearances, snowspeeder model, cloned draft/loot schematic iffs, new `art_n/art_d/dt_n/dt_d` string tables, extended `frn_n/frn_d`, CRC table with 152 new object paths). Lua only on the server: zone restart. Decor that derives from the generic tangible base gets `gameObjectType = 8203` (FURNITURE) so it can be placed and moved in structures. Everything is generated by `tools/newplanets/gen_hoth_loot.py` (server) and `gen_hoth_loot_client.py` (client); edit the tables and re-run. Not yet tested in game: equip on female characters, crafting the schematics, snowspeeder handling.
+
+### 2026-10-01 — Hoth resources: planet-specific resource classes and native spawns
+
+- **Summary:** Creature harvesting and surveying on Hoth failed ("Server cannot locate a current spawn of meat_carnivore") because Hoth was not an active resource zone and the shared resource tree had no `*_hoth` classes. Adds `hoth` to `activeZones` in the resource manager, and ships a `datatables/resource/resource_tree.iff` in `bg_custom1.tre` that is the stock BG tree plus the 55 Hoth resource classes (Hothian meats, hides, bones, milk, flora, wood, fiberplast, water vapor, ores, metals, gas, fuels, radioactive and renewable energy) inserted after their stock siblings, taken from the MTG/Infinity tree. On boot the native pool spawned 42 Hoth resources.
+- **Files:** `bin/scripts/managers/resource_manager.lua`; client/server TRE: `datatables/resource/resource_tree.iff`
+- **Notes:** Requires the rebuilt `bg_custom1.tre` on `/trefiles` and clients (the tree is read from the TRE by both). Only the Hoth rows were taken from the MTG tree; its rebalanced pool counts and attribute ranges for existing classes were deliberately not imported. Resource names come from the tree's class name column, so no `resource_names.stf` is needed.
+
+### 2026-10-01 — Hoth creatures, NPCs, wampa caves and points of interest
+
+- **Summary:** Populates Hoth (CL 60–98). World spawner `hoth_world` with tauntaun herds/bulls, ice mynocks, Imperial probe droids, wampas/elder wampas and snowtrooper vs Rebel snow-soldier patrols. Ice caves filled cell-by-cell from the cave floor meshes (152 spawns) with fixed bosses on a 30-minute respawn: Frostfang (90), Icemaw (90), Snowblind the Ravager (92), the wampa matriarch (95) and the wampa patriarch (98), plus the mynock broodmother (85) in the northern cavern; the matriarch's random world lair is retired. Outposts get snowtrooper / Rebel snow garrisons, recruiters, mission/bank/bazaar terminals, a scavenger camp with junk dealer at the Lucky Despot wreck and an Imperial salvage team at the AT-ST wreck. Adds a Shield Generator Battlefield skirmish, a hostile Generator Raider Camp and five named POI regions. New mobile object templates for the ported wampa, snowtrooper and Rebel snow soldier models. Adds `tools/newplanets` (TRE/IFF tooling and the Hoth generators).
+- **Files:** `bin/scripts/mobile/hoth/*`, `bin/scripts/mobile/lair/{creature_dynamic,creature_lair,npc_dynamic}/hoth/*` and their `serverobjects.lua`, `bin/scripts/mobile/spawn/hoth/hoth_world.lua`, `bin/scripts/mobile/spawn/serverobjects.lua`, `bin/scripts/mobile/serverobjects.lua`, `bin/scripts/screenplays/caves/hoth_ice_caves.lua`, `bin/scripts/screenplays/static_spawns/hoth_static_spawns.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `bin/scripts/managers/planet/hoth_regions.lua`, `bin/scripts/object/mobile/{objects,serverobjects,wampa,snowtrooper_s01,rebel_snow_m_01,rebel_snow_f_01}.lua`, `tools/newplanets/*`
+- **Notes:** Lua only — cold restart, no rebuild. Requires the updated `bg_custom1.tre` (now 355 Hoth files: wampa/snowtrooper/Rebel snow models, region names, radar regions, object CRC entries). Spawn positions at outposts and battle sites use snapshot prop heights and may need nudging in game; lair `minDifficulty` matches creature level, so the planet is sparse for low-level characters.
+
+### 2026-09-27 — Add Hoth as a ground zone (WIP)
+
+- **Summary:** Registers `hoth` as a playable ground zone using terrain + snapshot ported into `bg_custom1.tre` (terrain/hoth.trn, snapshot/hoth.ws, terrain shaders/textures, datatables/environment/hoth.iff sky/weather, planet map page, region names, planet + object template CRC table entries, waypoint planet row, travel.iff with a 4000cr Hoth route from every planet, planet_n "Hoth", ticket UI galaxy-map entry; 99 files added, travel.iff and object_template_crc_string_table.iff replaced). Three snapshot starports become travel points (Scavenger, Imperial, Rebel outposts), all accepting incoming travel. New planet_manager flag `allowAllDepartures` (set on hoth) lets any travel point, shuttleports included, buy interplanetary tickets to that planet; adds server templates for 4 Hoth props/cave referenced by the snapshot.
+- **Files:** `src/server/zone/managers/planet/PlanetManager.idl`, `src/server/zone/managers/planet/PlanetManagerImplementation.cpp`, `bin/conf/config.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `bin/scripts/managers/planet/hoth_regions.lua`, `bin/scripts/managers/weather_manager.lua`, `bin/scripts/object/allobjects.lua`, `bin/scripts/object/building/serverobjects.lua`, `bin/scripts/object/building/heroic/*`, `bin/scripts/object/static/item/objects.lua`, `bin/scripts/object/static/item/serverobjects.lua`, `bin/scripts/object/static/item/item_hoth_*.lua`
+- **Notes:** Requires the updated `bg_custom1.tre` (Hoth files merged in with NewPlanets `tre_pack.py --merge`) on server `/trefiles` and client. Needs a server rebuild (PlanetManager idl/cpp) and cold restart. Round-trip tickets back to a shuttleport are still refused (shuttleports stay non-interplanetary as arrivals). No creature spawns yet (no world spawner). Assets sourced from SWG Infinity/MTG — confirm permission/credit before live.
+
 ### 2026-09-07 — Assemble Mandalorian production fixes on current Main
 
 - **Summary:** Restore the quest and NPC spawns; bring in daily loot progression, guaranteed chapter trophies, repaired armor/jetpack recipes, invalid-schematic diagnostics and quarantine, Mandalorian GM tools, and the existing Beskar melee/rare-loot corrections. Preserve Main's null-player and draft-slot guards when integrating diagnostics. Ensure invalid newly created schematics reach the orphan cleanup path.

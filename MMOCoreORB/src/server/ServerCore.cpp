@@ -27,6 +27,7 @@
 #include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/managers/collision/NavMeshManager.h"
 #include "server/zone/managers/name/NameManager.h"
+#include "server/zone/managers/resource/ResourceManager.h"
 #include "server/zone/managers/frs/FrsManager.h"
 
 #include "server/zone/QuadTree.h"
@@ -871,6 +872,12 @@ void ServerCore::shutdown() {
 
 	if (zoneServer != nullptr) {
 		zoneServer->setServerStateShuttingDown();
+
+		// Drain live-resource observation before any zone/service teardown or
+		// task-manager shutdown. No player, manager or zone lock is held here.
+		ManagedReference<ResourceManager*> resourceManager = zoneServer->getResourceManager();
+		if (resourceManager != nullptr)
+			resourceManager->stopResourceSnapshotExporter();
 
 		Thread::sleep(2000);
 

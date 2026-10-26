@@ -124,7 +124,42 @@ class FactoryObject extends InstallationObject {
 	public native void sendInsertManuSui(CreatureObject player);
 
 	@dirty
+	public native void sendManufacturingBatchAmountSui(CreatureObject player, ManufactureSchematic schematic, int defaultAmount);
+
+	@dirty
+	public native void sendManufacturingBatchConfirmSui(CreatureObject player, ManufactureSchematic schematic, int requestedAmount);
+
+	@dirty
+	public native void sendManufacturingBatchEditAmountSui(CreatureObject player, int queueIndex);
+
+	@dirty
+	public native void sendManufacturingBatchEditConfirmSui(CreatureObject player, int queueIndex, int requestedAmount);
+
+	@preLocked
+	public native boolean updateQueuedSchematicBatchAmount(CreatureObject player, int queueIndex, int requestedAmount);
+
+	@dirty
 	public native void sendManufacturingQueueSui(CreatureObject player);
+
+	@dirty
+	public native void sendManufacturingQueueEntrySui(CreatureObject player, int queueIndex);
+
+	@dirty
+	public native void sendQueuedSchematicIngredientsSui(CreatureObject player, int queueIndex);
+
+	@dirty
+	public native void sendLoadBatchIngredientsSui(CreatureObject player, int queueIndex);
+
+	@preLocked
+	public native void loadBatchIngredientsFromInventory(CreatureObject player, int queueIndex);
+
+	@dirty
+	public native void sendFactoryIngredientHopperManagerSui(CreatureObject player, int queueIndex);
+
+	@preLocked
+	public native boolean returnFactoryIngredientToInventory(CreatureObject player, unsigned long objectID);
+
+	public native int getManufacturingQueueIndex(unsigned long schematicID);
 
 	@dirty
 	public native void sendIngredientsNeededSui(CreatureObject player);
@@ -150,6 +185,9 @@ class FactoryObject extends InstallationObject {
 
 	@preLocked
 	public native boolean addQueuedSchematic(CreatureObject player, ManufactureSchematic schematic);
+
+	@preLocked
+	public native boolean addQueuedSchematicBatch(CreatureObject player, ManufactureSchematic schematic, int requestedAmount);
 
 	@preLocked
 	public native boolean removeQueuedSchematic(CreatureObject player, int queueIndex);
@@ -211,7 +249,15 @@ class FactoryObject extends InstallationObject {
 
 	private native void collectMatchesInInputHopper(BlueprintEntry entry, SceneObject inputHopper);
 
+	private native boolean factoryQueueInventoryObjectMatches(BlueprintEntry entry, TangibleObject object);
+	private native int getFactoryQueueInventoryObjectQuantity(TangibleObject object);
+	private native int getFactoryQueueInventoryMatchQuantity(CreatureObject player, BlueprintEntry entry);
+	private native int getFactoryQueueInventoryLoadableQuantity(CreatureObject player, BlueprintEntry entry, int amountNeeded);
+	private native int loadFactoryQueueIngredientFromInventory(CreatureObject player, BlueprintEntry entry, int amountNeeded, unsigned long schematicID, int queueIndex);
+
 	private native void restoreQueueMetadata();
+
+	private native boolean refreshQueuedSchematicReadiness(int queueIndex);
 
 	private native ManufactureSchematic getActiveQueuedSchematic();
 

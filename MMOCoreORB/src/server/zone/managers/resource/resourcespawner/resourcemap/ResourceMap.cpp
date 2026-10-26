@@ -2,18 +2,13 @@
 				Copyright <SWGEmu>
 		See file COPYING for copying conditions.*/
 
-/**
- * \file ResourceMap.cpp
- * \author Kyle Burkhardt
- * \date 5-03-10
- */
-
 #include "ResourceMap.h"
-#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "system/thread/Locker.h"
+#include "system/thread/ReadLocker.h"
 
-ResourceMap::ResourceMap() {
-	setNoDuplicateInsertPlan();
-	setNullValue(nullptr);
+ResourceMap::ResourceMap() : guard("ResourceMap") {
+	resourceNames.setNoDuplicateInsertPlan();
+	resourceNames.setNullValue(nullptr);
 
 	zoneResourceMap.setNoDuplicateInsertPlan();
 	zoneResourceMap.setNullValue(nullptr);
@@ -22,135 +17,128 @@ ResourceMap::ResourceMap() {
 }
 
 ResourceMap::~ResourceMap() {
-	removeAll();
+	// The owner must exclude callers before destruction. A registry guard cannot
+	// make an already-destroyed ResourceSpawner safe to access.
+	resourceNames.removeAll();
 
 	while (typeResourceMap.size() > 0) {
-		TypeResourceMap* map = typeResourceMap.get(0);
-		delete map;
+		delete typeResourceMap.get(0);
 		typeResourceMap.remove(0);
 	}
 
 	while (zoneResourceMap.size() > 0) {
-		ZoneResourceMap* map = zoneResourceMap.get(0);
-		delete map;
+		delete zoneResourceMap.get(0);
 		zoneResourceMap.remove(0);
 	}
 }
 
-float ResourceMap::getDensityAt(const String& resourcename, String zoneName, float x, float y) const {
-	const auto& resourceSpawn = get(resourcename.toLowerCase());
+void ResourceMap::add(const Registration& registration) {
+	const String registryKey = registration.registryName.toLowerCase();
+	const String zoneKey = registration.spawnName.toLowerCase();
+
+	Locker locker(&guard);
+
+	resourceNames.put(registryKey, registration.spawn);
+
+	// Preserve duplicate behavior: type entries append even if the global name
+	// is rejected, while global and zone names reject duplicate inserts.
+	auto typeMap = typeResourceMap.get(registration.finalClass);
+	if (typeMap == nullptr) {
+		typeMap = new ResourceReferences();
+		typeResourceMap.put(registration.finalClass, typeMap);
+	}
+	typeMap->add(registration.spawn);
+
+	for (int i = 0; i < registration.zones.size(); ++i) {
+		const String& zoneName = registration.zones.get(i);
+		if (zoneName == "")
+			continue;
+
+		auto zoneMap = zoneResourceMap.get(zoneName);
+		if (zoneMap == nullptr) {
+			zoneMap = new NameMap();
+			zoneMap->setNoDuplicateInsertPlan();
+			zoneMap->setNullValue(nullptr);
+			zoneResourceMap.put(zoneName, zoneMap);
+		}
+		zoneMap->put(zoneKey, registration.spawn);
+	}
+}
+
+void ResourceMap::detachFromZones(const String& spawnName, const Vector<String>& zones) {
+	const String key = spawnName.toLowerCase();
+
+	Locker locker(&guard);
+
+	for (int i = 0; i < zones.size(); ++i) {
+		auto zoneMap = zoneResourceMap.get(zones.get(i));
+		if (zoneMap != nullptr)
+			zoneMap->drop(key);
+	}
+}
+
+ManagedReference<ResourceSpawn*> ResourceMap::findByName(const String& name) const {
+	const String key = name.toLowerCase();
+	ReadLocker locker(&guard);
+	return resourceNames.get(key);
+}
+
+ResourceMap::ResourceReferences ResourceMap::copyAllReferences() const {
+	ReadLocker locker(&guard);
+	ResourceReferences resources;
+
+	for (int i = 0; i < resourceNames.size(); ++i)
+		resources.add(resourceNames.get(i));
+
+	return resources;
+}
+
+ResourceMap::ResourceReferences ResourceMap::copyZoneReferences(const String& zoneName, bool* found) const {
+	ReadLocker locker(&guard);
+	ResourceReferences resources;
+	const auto zoneMap = zoneResourceMap.get(zoneName);
+
+	if (found != nullptr)
+		*found = zoneMap != nullptr;
+
+	if (zoneMap != nullptr) {
+		for (int i = 0; i < zoneMap->size(); ++i)
+			resources.add(zoneMap->get(i));
+	}
+
+	return resources;
+}
+
+ResourceMap::ResourceReferences ResourceMap::copyTypeReferences(const String& typeName, bool* found) const {
+	ReadLocker locker(&guard);
+	const auto typeMap = typeResourceMap.get(typeName);
+
+	if (found != nullptr)
+		*found = typeMap != nullptr;
+
+	if (typeMap == nullptr)
+		return ResourceReferences();
+
+	return *typeMap;
+}
+
+bool ResourceMap::containsName(const String& name) const {
+	const String key = name.toLowerCase();
+	ReadLocker locker(&guard);
+	return resourceNames.contains(key);
+}
+
+bool ResourceMap::containsType(const String& typeName) const {
+	ReadLocker locker(&guard);
+	return typeResourceMap.contains(typeName);
+}
+
+int ResourceMap::resourceCount() const {
+	ReadLocker locker(&guard);
+	return resourceNames.size();
+}
+
+float ResourceMap::getDensityAt(const String& resourceName, String zoneName, float x, float y) const {
+	auto resourceSpawn = findByName(resourceName);
 	return resourceSpawn->getDensityAt(zoneName, x, y);
-}
-
-void ResourceMap::add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn) {
-	put(resname.toLowerCase(), resourceSpawn);
-
-	/// Index the resources by type, for resource deeds
-	TypeResourceMap* typemap = typeResourceMap.get(resourceSpawn->getFinalClass());
-	if(typemap == nullptr) {
-		typemap = new TypeResourceMap();
-		typeResourceMap.put(resourceSpawn->getFinalClass(), typemap);
-	}
-	typemap->add(resourceSpawn);
-
-	for(int i = 0; i < resourceSpawn->getSpawnMapSize(); ++i) {
-		String zoneName = resourceSpawn->getSpawnMapZone(i);
-
-		if (zoneName != "") {
-			ZoneResourceMap* map = dynamic_cast<ZoneResourceMap*>(zoneResourceMap.get(zoneName));
-
-			if(map == nullptr) {
-				map = new ZoneResourceMap();
-				zoneResourceMap.put(zoneName, map);
-			}
-
-			map->put(resourceSpawn->getName().toLowerCase(), resourceSpawn);
-		}
-	}
-}
-/**
- * Even though we want to drop items from the
- * Zone maps, we need to keep all spawns in the
- * ResourceMap for lookup.
- */
-void ResourceMap::remove(ManagedReference<ResourceSpawn* > resourceSpawn) {
-
-	for(int i = 0; i < resourceSpawn->getSpawnMapSize(); ++i) {
-		String zoneName = resourceSpawn->getSpawnMapZone(i);
-
-		if (zoneName != "") {
-			ZoneResourceMap* map = dynamic_cast<ZoneResourceMap*>(zoneResourceMap.get(zoneName));
-
-			if (map != nullptr)
-				map->drop(resourceSpawn->getName().toLowerCase());
-		}
-	}
-}
-
-void ResourceMap::remove(ManagedReference<ResourceSpawn* > resourceSpawn, String zoneName) {
-	ZoneResourceMap* map = dynamic_cast<ZoneResourceMap*>(zoneResourceMap.get(zoneName));
-
-	if (map != nullptr)
-		map->drop(resourceSpawn->getName().toLowerCase());
-}
-
-void ResourceMap::addToSuiListBox(SuiListBox* suil, const String& name) {
-
-	TypeResourceMap* typemap = typeResourceMap.get(name);
-
-	if(typemap == nullptr) {
-		suil->addMenuItem("No resources to display");
-		return;
-	}
-
-	SortedVector<ManagedReference<ResourceSpawn*>> spawns;
-
-	for(int i = 0; i < typemap->size(); ++i) {
-		ManagedReference<ResourceSpawn*> spawn = typemap->get(i);
-
-		if(spawn == nullptr)
-			continue;
-
-		spawns.put(spawn);
-	}
-
-	for(int i = 0; i < spawns.size(); ++i){
-		suil->addMenuItem(spawns.get(i)->getName(), spawns.get(i)->getObjectID());
-	}
-
-}
-
-void ResourceMap::getTypeSubset(ResourceMap& subMap, const String& typeName) {
-	for (int i = 0; i < size(); i++) {
-		ManagedReference<ResourceSpawn*> spawn = get(i);
-		if (spawn == nullptr)
-			continue;
-
-		for (int j = 0; j < 8; j++) {
-			String thisClassName = spawn->getStfClass(j);
-			if (thisClassName.isEmpty())
-				continue;
-
-			if (thisClassName == typeName)
-				subMap.add(spawn->getName().toLowerCase(), spawn);
-		}
-	}
-}
-
-void ResourceMap::getAttributeSubset(ResourceMap& subMap, const String& attributeName) {
-	for (int i = 0; i < size(); i++) {
-		ManagedReference<ResourceSpawn*> spawn = get(i);
-		if (spawn == nullptr)
-			continue;
-
-		for (int j = 0; j < 12; j++) {
-			String thisAttributeName = "";
-			int value = spawn->getAttributeAndValue(thisAttributeName, j);
-			if (thisAttributeName.isEmpty())
-				continue;
-
-			if (thisAttributeName == attributeName)
-				subMap.add(spawn->getName().toLowerCase(), spawn);
-		}
-	}
 }

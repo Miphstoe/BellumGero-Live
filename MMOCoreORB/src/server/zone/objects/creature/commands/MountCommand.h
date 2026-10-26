@@ -69,7 +69,8 @@ public:
 		if (vehicle->getCreatureLinkID() != creature->getObjectID())
 			return GENERALERROR;
 
-		if (!vehicle->isInRange(creature, 7.f) || !CollisionManager::checkLineOfSight(vehicle, creature)) {
+		// Bellum Gero: 20m instead of 7m. Long vehicles (podracers) keep their rider position far from the object origin.
+		if (!vehicle->isInRange(creature, 20.f) || !CollisionManager::checkLineOfSight(vehicle, creature)) {
 			return GENERALERROR;
 		}
 

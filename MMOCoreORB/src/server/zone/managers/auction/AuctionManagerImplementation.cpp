@@ -2090,6 +2090,13 @@ void AuctionManagerImplementation::getAuctionData(CreatureObject* player, SceneO
 	AuctionQueryHeadersResponseMessage* msg = fillAuctionQueryHeadersResponseMessage(player, usedVendor, &terminalList, searchType, itemCategory, filterText, minPrice, maxPrice, includeEntranceFee, clientCounter, offset);
 
 	if (msg != nullptr) {
+		player->clearAuctionWaypointResults(time(0));
+
+		if (searchType == ST_ALL || searchType == ST_VENDOR_SELLING) {
+			for (int i = 0; i < msg->getListSize(); ++i)
+				player->addAuctionWaypointResult(msg->getItemIDAt(i));
+		}
+
 		player->sendMessage(msg);
 	}
 }
@@ -2099,6 +2106,12 @@ void AuctionManagerImplementation::getItemAttributes(CreatureObject* player, uin
 
 	if (auctionItem == nullptr)
 		return;
+
+	// Remember the listing the player clicked so "Waypoint to Vendor" can be named after it.
+	{
+		Locker playerLocker(player);
+		player->setAuctionWaypointSelectedItem(objectid, time(0));
+	}
 
 	Reference<SceneObject*> object = zoneServer->getObject(auctionItem->getAuctionedItemObjectID());
 

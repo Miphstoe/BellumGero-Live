@@ -16455,3 +16455,24 @@ object_static_item_shared_wp_rifle_tusken_combined = SharedStaticObjectTemplate:
 }
 
 ObjectTemplates:addClientTemplate(object_static_item_shared_wp_rifle_tusken_combined, "object/static/item/shared_wp_rifle_tusken_combined.iff")
+
+object_static_item_shared_item_hoth_generator_01 = SharedStaticObjectTemplate:new {
+	clientTemplateFileName = "object/static/item/shared_item_hoth_generator_01.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth prop)
+}
+
+ObjectTemplates:addClientTemplate(object_static_item_shared_item_hoth_generator_01, "object/static/item/shared_item_hoth_generator_01.iff")
+
+object_static_item_shared_item_hoth_generator_destroyed_01 = SharedStaticObjectTemplate:new {
+	clientTemplateFileName = "object/static/item/shared_item_hoth_generator_destroyed_01.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth prop)
+}
+
+ObjectTemplates:addClientTemplate(object_static_item_shared_item_hoth_generator_destroyed_01, "object/static/item/shared_item_hoth_generator_destroyed_01.iff")
+
+object_static_item_shared_item_hoth_turret_round = SharedStaticObjectTemplate:new {
+	clientTemplateFileName = "object/static/item/shared_item_hoth_turret_round.iff"
+	--Data below here is deprecated and loaded from the tres (Hoth prop)
+}
+
+ObjectTemplates:addClientTemplate(object_static_item_shared_item_hoth_turret_round, "object/static/item/shared_item_hoth_turret_round.iff")

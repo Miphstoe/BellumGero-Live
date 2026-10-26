@@ -1,0 +1,4 @@
+object_tangible_furniture_hoth_frn_hoth_painting_esb_neutral = object_tangible_furniture_hoth_shared_frn_hoth_painting_esb_neutral:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_hoth_frn_hoth_painting_esb_neutral, "object/tangible/furniture/hoth/frn_hoth_painting_esb_neutral.iff")

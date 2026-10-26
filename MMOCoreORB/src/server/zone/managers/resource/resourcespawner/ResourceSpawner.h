@@ -60,7 +60,6 @@ private:
 
 	Vector<String> jtlResources;
 	Vector<String> activeResourceZones;
-	Vector<String>* planets;
 
 	MinimumPool* minimumPool;
 	FixedPool* fixedPool;
@@ -133,10 +132,7 @@ public:
 
 	String addParentNodeToListBox(SuiListBox* sui, const String& currentNode) const;
 
-	inline ResourceMap* getResourceMap() {
-		return resourceMap;
-	}
-
+	// Read-only registry facade; its APIs return owning copies, never child maps.
 	inline const ResourceMap* getResourceMap() const {
 		return resourceMap;
 	}
@@ -156,6 +152,8 @@ public:
 private:
 
 	void loadResourceSpawns();
+	void registerResourceSpawn(const String& registryName, ResourceSpawn* spawn) const;
+	void addResourceTypeToSuiListBox(SuiListBox* sui, const String& typeName) const;
 	String makeResourceName(const String& randomNameClass);
 	int randomizeValue(int min, int max);
 	long getRandomExpirationTime(const ResourceTreeEntry* resourceEntry);

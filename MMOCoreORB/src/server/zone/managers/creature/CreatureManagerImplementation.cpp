@@ -741,6 +741,12 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 			if (destructedObject->isNonPlayerCreatureObject() && !destructedObject->isEventMob()) {
 				destructedObject->clearCashCredits();
 				int credits = lootManager->calculateLootCredits(destructedObject->getLevel());
+
+				// Bellum Gero: per-template credit multiplier (creditsMultiplier in the creature lua)
+				auto creditTemplate = destructedObject->getCreatureTemplate();
+
+				if (creditTemplate != nullptr && creditTemplate->getCreditsMultiplier() != 1.f)
+					credits = (int) round(credits * creditTemplate->getCreditsMultiplier());
 				TransactionLog trx(TrxCode::NPCLOOT, destructedObject, credits, true);
 				trx.addState("destructor", destructorObjectID);
 				destructedObject->addCashCredits(credits);

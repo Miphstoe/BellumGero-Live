@@ -79,6 +79,20 @@ public:
 	void removeDroidCommands(PlayerObject* ghost);
 
 	bool awardSkill(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired);
+
+	// FMIDStation: apply the client-visible state of an already-learned skill
+	// without spending skill points/XP or running permanent profession events.
+	bool grantTemporarySkillState(
+		const String& skillName,
+		CreatureObject* creature,
+		bool notifyClient = true);
+
+	// FMIDStation: reverse grantTemporarySkillState() without refunding
+	// skill points/XP.
+	bool removeTemporarySkillState(
+		const String& skillName,
+		CreatureObject* creature,
+		bool notifyClient = true);
 	bool awardSkillWithRegrant(const String& skillName, CreatureObject* creature, bool notifyClient, bool awardRequiredSkills, bool noXpRequired, bool regrant);
 	void awardDraftSchematics(Skill* skill, PlayerObject* ghost, bool notifyClient = true);
 
@@ -147,6 +161,10 @@ public:
 	}
 
 	void getPlayerDroidCommands(PlayerObject* ghost, Vector<String>& playerDroidCommands);
+
+private:
+	// Removes hidden certification skills while the caller already holds the creature lock.
+	void surrenderCertificationGrants(CreatureObject* creature, PlayerObject* ghost, const Vector<String>& certSkillNames, bool notifyClient);
 };
 
 }

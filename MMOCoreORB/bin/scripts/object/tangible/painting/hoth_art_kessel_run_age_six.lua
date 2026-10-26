@@ -1,0 +1,4 @@
+object_tangible_painting_hoth_art_kessel_run_age_six = object_tangible_painting_shared_hoth_art_kessel_run_age_six:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_hoth_art_kessel_run_age_six, "object/tangible/painting/hoth_art_kessel_run_age_six.iff")

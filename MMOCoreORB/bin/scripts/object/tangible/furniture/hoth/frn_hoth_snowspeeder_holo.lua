@@ -1,0 +1,4 @@
+object_tangible_furniture_hoth_frn_hoth_snowspeeder_holo = object_tangible_furniture_hoth_shared_frn_hoth_snowspeeder_holo:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_furniture_hoth_frn_hoth_snowspeeder_holo, "object/tangible/furniture/hoth/frn_hoth_snowspeeder_holo.iff")

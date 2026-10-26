@@ -22,24 +22,27 @@ void FactoryObjectMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject
 
 	InstallationObjectMenuComponent::fillObjectMenuResponse(sceneObject, menuResponse, player);
 
-	menuResponse->addRadialMenuItem(29, 3, "@manf_station:options"); //Options
+	menuResponse->addRadialMenuItem(29, 3, "@manf_station:options"); // Options
 	menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::MANAGE_MANUFACTURING_QUEUE, 3, "Manage Manufacturing Queue");
 
 	if (factory->getContainerObjectsSize() > 0) {
-		if(!factory->isManufacturingQueueEnabled()) {
-			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU2, 3, "@manf_station:activate"); //Start manufacturing objects.
-			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU1, 3, "@manf_station:ingredients"); //List ingredients needed for station
-		} else {
-			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU2, 3, "@manf_station:deactivate"); //Stop manufacturing objects.
-		}
+		if (!factory->isManufacturingQueueEnabled())
+			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU2, 3, "@manf_station:activate");
+		else
+			menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU2, 3, "@manf_station:deactivate");
+
+		// Keep ingredient visibility available even while the queue is enabled but
+		// paused on resources/components/power/maintenance.
+		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MENU1, 3, "@manf_station:ingredients");
 	}
 
 	if (!factory->isActive()) {
-		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_STATION_SCHEMATIC, 3, "@manf_station:schematic"); //Access schematic slot.
-		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_HOPPER_INPUT, 3, "@manf_station:input_hopper"); //Access station ingredient hopper
-		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_HOPPER_OUTPUT, 3, "@manf_station:output_hopper"); //Access station output hopper
+		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_STATION_SCHEMATIC, 3, "@manf_station:schematic");
+		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_HOPPER_INPUT, 3, "@manf_station:input_hopper");
+		menuResponse->addRadialMenuItemToRadialID(RadialOptions::CRAFT_OPTIONS, RadialOptions::SERVER_MANF_HOPPER_OUTPUT, 3, "@manf_station:output_hopper");
 	}
 }
+
 
 int FactoryObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* player, byte selectedID) const {
 	if (!sceneObject->isFactory())
@@ -52,22 +55,22 @@ int FactoryObjectMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 
 	switch (selectedID) {
 	case RadialOptions::MANAGE_MANUFACTURING_QUEUE:
-		factory->sendInsertManuSui(player);
+		factory->sendManufacturingQueueSui(player);
 		break;
-	case RadialOptions::SERVER_MANF_HOPPER_INPUT: /// Send ingredient Hopper
+	case RadialOptions::SERVER_MANF_HOPPER_INPUT:
 		factory->sendIngredientHopper(player);
 		break;
 	case 29:
-	case RadialOptions::SERVER_MANF_HOPPER_OUTPUT: /// Send output Hopper
+	case RadialOptions::SERVER_MANF_HOPPER_OUTPUT:
 		factory->sendOutputHopper(player);
 		break;
-	case RadialOptions::SERVER_MANF_STATION_SCHEMATIC: /// Schematic Slot
+	case RadialOptions::SERVER_MANF_STATION_SCHEMATIC:
 		factory->sendInsertManuSui(player);
 		break;
-	case RadialOptions::SERVER_MENU1: /// Send ingredients list
+	case RadialOptions::SERVER_MENU1:
 		factory->sendIngredientsNeededSui(player);
 		break;
-	case RadialOptions::SERVER_MENU2: /// Send schematic requirements
+	case RadialOptions::SERVER_MENU2:
 		factory->handleOperateToggle(player);
 		break;
 	default:

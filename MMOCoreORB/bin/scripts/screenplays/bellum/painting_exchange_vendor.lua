@@ -1,3 +1,6 @@
+-- Core3 provides the screenplay APIs and constants as Lua globals at runtime.
+---@diagnostic disable: undefined-global
+
 PaintingExchangeVendor = ScreenPlay:new {
 	screenplayName = "PaintingExchangeVendor",
 	numberOfActs = 1,
@@ -114,34 +117,55 @@ PaintingExchangeVendor.acceptedPaintings = {
 -- by appending to this table. The name field is shown in the SUI selection list.
 -- ──────────────────────────────────────────────────────────────────────────────
 PaintingExchangeVendor.rewardPaintings = {
-	{ name = "Vader's Victory",            template = "object/tangible/painting/painting_vader_victory.iff" },
-	{ name = "Stormtrooper (Black & White)", template = "object/tangible/painting/painting_bw_stormtrooper.iff" },
-	{ name = "Han Solo - Wanted Poster",   template = "object/tangible/painting/painting_han_wanted.iff" },
-	{ name = "Princess Leia - Wanted Poster", template = "object/tangible/painting/painting_leia_wanted.iff" },
-	{ name = "Luke Skywalker - Wanted Poster", template = "object/tangible/painting/painting_luke_wanted.iff" },
+	--{ name = "Vader's Victory",            template = "object/tangible/painting/painting_vader_victory.iff" },
+	--{ name = "Stormtrooper (Black & White)", template = "object/tangible/painting/painting_bw_stormtrooper.iff" },
+	--{ name = "Han Solo - Wanted Poster",   template = "object/tangible/painting/painting_han_wanted.iff" },
+	--{ name = "Princess Leia - Wanted Poster", template = "object/tangible/painting/painting_leia_wanted.iff" },
+	--{ name = "Luke Skywalker - Wanted Poster", template = "object/tangible/painting/painting_luke_wanted.iff" },
 	{ name = "Victorious Reign",           template = "object/tangible/painting/painting_victorious_reign.iff" },
-	{ name = "Freedom",                    template = "object/tangible/painting/painting_freedom.iff" },
-	{ name = "Teras Kasi Master",          template = "object/tangible/painting/painting_teras_kasi.iff" },
-	{ name = "Teras Kasi II",              template = "object/tangible/painting/painting_teras_kasi_2.iff" },
-	{ name = "Valley View",                template = "object/tangible/painting/painting_valley_view.iff" },
+	--{ name = "Freedom",                    template = "object/tangible/painting/painting_freedom.iff" },
+	--{ name = "Teras Kasi Master",          template = "object/tangible/painting/painting_teras_kasi.iff" },
+	--{ name = "Teras Kasi II",              template = "object/tangible/painting/painting_teras_kasi_2.iff" },
+	--{ name = "Valley View",                template = "object/tangible/painting/painting_valley_view.iff" },
 	{ name = "Starmap",                    template = "object/tangible/painting/painting_starmap.iff" },
-	{ name = "Nebula Flower",              template = "object/tangible/painting/painting_nebula_flower.iff" },
+	--{ name = "Nebula Flower",              template = "object/tangible/painting/painting_nebula_flower.iff" },
 	{ name = "Krayt Dragon Skeleton",      template = "object/tangible/painting/painting_bestine_krayt_skeleton.iff" },
-	{ name = "Lucky Despot Painting",      template = "object/tangible/painting/painting_bestine_lucky_despot.iff" },
+	--{ name = "Lucky Despot Painting",      template = "object/tangible/painting/painting_bestine_lucky_despot.iff" },
 	{ name = "Agrilat Landscape",          template = "object/tangible/painting/painting_agrilat_s01.iff" },
 	{ name = "Double Helix",               template = "object/tangible/painting/painting_double_helix.iff" },
-	{ name = "Bioengineer Orange",         template = "object/tangible/painting/painting_bioengineer_orange.iff" },
+	--{ name = "Bioengineer Orange",         template = "object/tangible/painting/painting_bioengineer_orange.iff" },
 	{ name = "Droid (Bright)",             template = "object/tangible/painting/painting_droid_bright.iff" },
-	{ name = "Fighter Pilot Portrait",     template = "object/tangible/painting/painting_fighter_pilot_human_01.iff" },
+	--{ name = "Fighter Pilot Portrait",     template = "object/tangible/painting/painting_fighter_pilot_human_01.iff" },
 	{ name = "Waterfall",                  template = "object/tangible/painting/painting_waterfall.iff" },
-	{ name = "Planet Landscape",           template = "object/tangible/painting/painting_planet_s01.iff" },
+	--{ name = "Planet Landscape",           template = "object/tangible/painting/painting_planet_s01.iff" },
 	{ name = "Endor Style",                template = "object/tangible/painting/painting_endor_style_01.iff" },
 	{ name = "Schematic - Droid",          template = "object/tangible/painting/painting_schematic_droid.iff" },
 	{ name = "Schematic - Transport Ship", template = "object/tangible/painting/painting_schematic_transport_ship.iff" },
-	{ name = "Armor Blueprint",            template = "object/tangible/painting/painting_armor_blueprint.iff" },
-	{ name = "Dance Party",                template = "object/tangible/painting/painting_dance_party.iff" },
+	--{ name = "Armor Blueprint",            template = "object/tangible/painting/painting_armor_blueprint.iff" },
+	--{ name = "Dance Party",                template = "object/tangible/painting/painting_dance_party.iff" },
 	{ name = "Cargoport",                  template = "object/tangible/painting/painting_cargoport.iff" },
 	{ name = "Skyscraper",                 template = "object/tangible/painting/painting_skyscraper.iff" },
+	{ name = "Despair Lady",            template = "object/tangible/painting/painting_human_f.iff" },
+	{ name = "Bothan (Female)",           template = "object/tangible/painting/painting_bothan_f.iff" },
+	{ name = "Bothan (Male)",             template = "object/tangible/painting/painting_bothan_m.iff" },
+	{ name = "Zabrak (Female)",           template = "object/tangible/painting/painting_zabrak_f.iff" },
+	{ name = "Wookiee (Female)",          template = "object/tangible/painting/painting_wookiee_f.iff" },
+	{ name = "Wookiee (Male)",            template = "object/tangible/painting/painting_wookiee_m.iff" },
+	{ name = "Twi'lek (Male)",            template = "object/tangible/painting/painting_twilek_m.iff" },
+	{ name = "Palowick Ad 1",             template = "object/tangible/painting/painting_palowick_ad_s01.iff" },
+	{ name = "Palowick Ad 2",             template = "object/tangible/painting/painting_palowick_ad_s02.iff" },
+	{ name = "Palowick Ad 3",             template = "object/tangible/painting/painting_palowick_ad_s03.iff" },
+	{ name = "Palowick Ad 4",             template = "object/tangible/painting/painting_palowick_ad_s04.iff" },
+	{ name = "Food Baking 1",             template = "object/tangible/painting/painting_food_baking_s01.iff" },
+	{ name = "Food Baking 2",             template = "object/tangible/painting/painting_food_baking_s02.iff" },
+	{ name = "Trandoshan (Male)",         template = "object/tangible/painting/painting_trandoshan_m.iff" },
+	{ name = "Trandoshan (Male Style 1)", template = "object/tangible/painting/painting_trandoshan_m_01.iff" },
+	{ name = "Smoking Ad",               template = "object/tangible/painting/painting_smoking_ad.iff" },
+	{ name = "Rodian (Female)",           template = "object/tangible/painting/painting_rodian_f.iff" },
+	{ name = "Rodian (Male)",             template = "object/tangible/painting/painting_rodian_m.iff" },
+	{ name = "Rodian Ad 1 (Female)",      template = "object/tangible/painting/painting_rodian_f_ad_01.iff" },
+	{ name = "Kite Plant",                template = "object/tangible/painting/painting_kite_plant.iff" },
+	{ name = "Trees (Style 1)",           template = "object/tangible/painting/painting_trees_s01.iff" },
 }
 
 -- ──────────────────────────────────────────────────────────────────────────────
@@ -150,6 +174,21 @@ PaintingExchangeVendor.rewardPaintings = {
 PaintingExchangeVendor.premiumRewards = {
 	{ name = "Holocron of Destiny",   template = "object/tangible/loot/misc/holocron_of_destiny.iff" },
 	{ name = "30k Stack Resource Deed", template = "object/tangible/veteran_reward/resource.iff" },
+	{ name = "Giant Bunker Table", template = "object/tangible/furniture/imperial/bunker_table_giant_style_01.iff" },
+	{ name = "Large Bed (Style 2)", template = "object/tangible/furniture/all/frn_all_bed_lg_s2.iff" },
+	{ name = "Small Bed (Style 2) Blue", template = "object/tangible/furniture/all/frn_all_bed_sm_s2.iff" },
+	{ name = "Chair (Style 1)", template = "object/tangible/camp/camp_chair_s1.iff" },
+	{ name = "Chair (Style 2)", template = "object/tangible/camp/camp_chair_s2.iff" },
+	{ name = "Chair (Style 3)", template = "object/tangible/camp/camp_chair_s3.iff" },
+	{ name = "Meat Skewer", template = "object/tangible/camp/camp_spit_s1.iff" },
+	{ name = "Potted Tree (Style 2)", template = "object/tangible/furniture/all/frn_all_tree_potted_s2.iff" },
+	{ name = "Small Potted Plant (Style 4)", template = "object/tangible/furniture/all/frn_all_potted_plants_sml_s04.iff" },
+	{ name = "Wooden Chair (Style 2) Orange", template = "object/tangible/furniture/all/frn_all_chair_wooden_s2.iff" },
+	{ name = "Modern Couch (Style 2)", template = "object/tangible/furniture/modern/couch_modern_style_02.iff" },
+	{ name = "Camp Fire Ashes", template = "object/tangible/camp/campfire_logs_ash.iff" },
+	{ name = "Logs (Burnt)", template = "object/tangible/camp/campfire_logs_burnt.iff" },
+	{ name = "Logs (Fresh)", template = "object/tangible/camp/campfire_logs_fresh.iff" },
+	{ name = "Logs (Smoldering)", template = "object/tangible/camp/campfire_logs_smoldering.iff" },
 }
 
 -- ──────────────────────────────────────────────────────────────────────────────
@@ -273,7 +312,7 @@ function PaintingExchangeVendor:showRewardSelection(pPlayer)
 end
 
 -- SUI callback: player selected a reward. Store the choice and open confirmation.
-function PaintingExchangeVendor:rewardSelectionCallback(pPlayer, pSui, eventIndex, args)
+function PaintingExchangeVendor:rewardSelectionCallback(pPlayer, _, eventIndex, args)
 	if (pPlayer == nil) then
 		return
 	end
@@ -321,7 +360,7 @@ function PaintingExchangeVendor:showConfirmation(pPlayer, rewardName)
 end
 
 -- SUI callback: player confirmed or cancelled the exchange.
-function PaintingExchangeVendor:confirmExchangeCallback(pPlayer, pSui, eventIndex, args)
+function PaintingExchangeVendor:confirmExchangeCallback(pPlayer, _, eventIndex, _)
 	if (pPlayer == nil) then
 		return
 	end
@@ -473,7 +512,7 @@ function PaintingExchangeVendor:giveRewardPainting(pPlayer, template, name)
 end
 
 -- ──────────────────────────────────────────────────────────────────────────────
--- PREMIUM EXCHANGE FLOW (50 paintings → Holocron of Destiny or Resource Deed)
+-- PREMIUM EXCHANGE FLOW (50 paintings for one selected reward)
 -- ──────────────────────────────────────────────────────────────────────────────
 
 function PaintingExchangeVendor:showPremiumRewardSelection(pPlayer)
@@ -494,7 +533,7 @@ function PaintingExchangeVendor:showPremiumRewardSelection(pPlayer)
 	print("[PaintingExchangeVendor] Opened premium reward selection SUI for player " .. tostring(SceneObject(pPlayer):getObjectID()))
 end
 
-function PaintingExchangeVendor:premiumRewardSelectionCallback(pPlayer, pSui, eventIndex, args)
+function PaintingExchangeVendor:premiumRewardSelectionCallback(pPlayer, _, eventIndex, args)
 	if (pPlayer == nil) then
 		return
 	end
@@ -536,7 +575,7 @@ function PaintingExchangeVendor:showPremiumConfirmation(pPlayer, rewardName)
 	sui.sendTo(pPlayer)
 end
 
-function PaintingExchangeVendor:confirmPremiumExchangeCallback(pPlayer, pSui, eventIndex, args)
+function PaintingExchangeVendor:confirmPremiumExchangeCallback(pPlayer, _, eventIndex, _)
 	if (pPlayer == nil) then
 		return
 	end

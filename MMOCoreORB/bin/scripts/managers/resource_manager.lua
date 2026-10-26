@@ -44,7 +44,7 @@ buildInitialResourcesFromScript = 1 -- Use a script to build resource database w
   -- So that during wipes crafters can mantain spreadsheets with calculations
 
 --  These indicate zone names where resources spawn
-activeZones = "corellia,tatooine,lok,naboo,rori,endor,talus,yavin4,dathomir,dantooine"
+activeZones = "corellia,tatooine,lok,naboo,rori,endor,talus,yavin4,dathomir,dantooine,hoth"
 
 averageShiftTime = 7200000 -- In milliseconds
   --  This is the time between each time the Resource Manager schedules

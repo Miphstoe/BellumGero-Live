@@ -64,6 +64,11 @@ public:
 	// BELLUM_GERO_STRUCTURE_RECOVERY_BUILD1
 	// Queue is read-only; startup apply returns number of staged DB repairs.
 	bool queueHighConfidencePlayerStructureRecovery(String& result);
+
+	// BELLUM_GERO_STRUCTURE_RECOVERY_OID_BUILD1
+	bool queuePlayerStructureRecoveryByOID(uint64 objectID, String& result);
+	String listPendingPlayerStructureRecovery();
+
 	int applyPendingHighConfidencePlayerStructureRecovery();
 
 	// Account-wide structure lots are centralized here so placement, transfers,

@@ -635,3 +635,183 @@ object_tangible_deed_vehicle_deed_shared_vehicular_prototype_deed = SharedTangib
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_vehicular_prototype_deed, "object/tangible/deed/vehicle_deed/shared_vehicular_prototype_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_snowspeeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_snowspeeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_snowspeeder_deed, "object/tangible/deed/vehicle_deed/shared_snowspeeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_landspeeder_ab1_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_landspeeder_ab1_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_landspeeder_ab1_deed, "object/tangible/deed/vehicle_deed/shared_landspeeder_ab1_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_landspeeder_xp38_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_landspeeder_xp38_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_landspeeder_xp38_deed, "object/tangible/deed/vehicle_deed/shared_landspeeder_xp38_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_vehicle_deed_organa_speeder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_vehicle_deed_organa_speeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_vehicle_deed_organa_speeder, "object/tangible/deed/vehicle_deed/shared_vehicle_deed_organa_speeder.iff")
+
+object_tangible_deed_vehicle_deed_shared_vehicle_deed_sith_speeder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_vehicle_deed_sith_speeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_vehicle_deed_sith_speeder, "object/tangible/deed/vehicle_deed/shared_vehicle_deed_sith_speeder.iff")
+
+object_tangible_deed_vehicle_deed_shared_basilisk_war_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_basilisk_war_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_basilisk_war_droid, "object/tangible/deed/vehicle_deed/shared_basilisk_war_droid.iff")
+
+object_tangible_deed_vehicle_deed_shared_speeder_stap_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_speeder_stap_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_speeder_stap_deed, "object/tangible/deed/vehicle_deed/shared_speeder_stap_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_swamp_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_swamp_speeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_swamp_speeder_deed, "object/tangible/deed/vehicle_deed/shared_swamp_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_tcg_republic_gunship_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_tcg_republic_gunship_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_tcg_republic_gunship_deed, "object/tangible/deed/vehicle_deed/shared_tcg_republic_gunship_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_military_transport_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_military_transport_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_military_transport_deed, "object/tangible/deed/vehicle_deed/shared_military_transport_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_tcg_hk47_jetpack_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_tcg_hk47_jetpack_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_tcg_hk47_jetpack_deed, "object/tangible/deed/vehicle_deed/shared_tcg_hk47_jetpack_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_tcg_8_air_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_tcg_8_air_speeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_tcg_8_air_speeder_deed, "object/tangible/deed/vehicle_deed/shared_tcg_8_air_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_senate_pod_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_senate_pod_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_senate_pod_deed, "object/tangible/deed/vehicle_deed/shared_senate_pod_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_speeder_ric_920_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_speeder_ric_920_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_speeder_ric_920_deed, "object/tangible/deed/vehicle_deed/shared_speeder_ric_920_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_pod_racer_ipg_longtail_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_pod_racer_ipg_longtail_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_pod_racer_ipg_longtail_deed, "object/tangible/deed/vehicle_deed/shared_pod_racer_ipg_longtail_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_pod_racer_balta_podracer_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_pod_racer_balta_podracer_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_pod_racer_balta_podracer_deed, "object/tangible/deed/vehicle_deed/shared_pod_racer_balta_podracer_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_podracer_anakin_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_podracer_anakin_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_podracer_anakin_deed, "object/tangible/deed/vehicle_deed/shared_podracer_anakin_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_vehicle_deed_mechno_chair = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_vehicle_deed_mechno_chair.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_vehicle_deed_mechno_chair, "object/tangible/deed/vehicle_deed/shared_vehicle_deed_mechno_chair.iff")
+
+object_tangible_deed_vehicle_deed_shared_koro2_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_koro2_speeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_koro2_speeder_deed, "object/tangible/deed/vehicle_deed/shared_koro2_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_hover_chair_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_hover_chair_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_hover_chair_deed, "object/tangible/deed/vehicle_deed/shared_hover_chair_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_geo_speeder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_geo_speeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_geo_speeder, "object/tangible/deed/vehicle_deed/shared_geo_speeder.iff")
+
+object_tangible_deed_vehicle_deed_shared_a1_deluxe_floater_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_a1_deluxe_floater_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_a1_deluxe_floater_deed, "object/tangible/deed/vehicle_deed/shared_a1_deluxe_floater_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_fg_8t8_podracer_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_fg_8t8_podracer_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_fg_8t8_podracer_deed, "object/tangible/deed/vehicle_deed/shared_fg_8t8_podracer_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_air2_swoop_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_air2_swoop_speeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_air2_swoop_speeder_deed, "object/tangible/deed/vehicle_deed/shared_air2_swoop_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_xj6_air_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_xj6_air_speeder_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_xj6_air_speeder_deed, "object/tangible/deed/vehicle_deed/shared_xj6_air_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_mustafar_panning_droid = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_mustafar_panning_droid.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_mustafar_panning_droid, "object/tangible/deed/vehicle_deed/shared_mustafar_panning_droid.iff")
+
+object_tangible_deed_vehicle_deed_shared_hoverlifter_speeder = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_hoverlifter_speeder.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_hoverlifter_speeder, "object/tangible/deed/vehicle_deed/shared_hoverlifter_speeder.iff")
+
+object_tangible_deed_vehicle_deed_shared_flare_s_swoop = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_flare_s_swoop.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_flare_s_swoop, "object/tangible/deed/vehicle_deed/shared_flare_s_swoop.iff")
+
+object_tangible_deed_vehicle_deed_shared_grievous_wheel_bike_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_grievous_wheel_bike_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_grievous_wheel_bike_deed, "object/tangible/deed/vehicle_deed/shared_grievous_wheel_bike_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_hover_bird_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_hover_bird_deed.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_hover_bird_deed, "object/tangible/deed/vehicle_deed/shared_hover_bird_deed.iff")

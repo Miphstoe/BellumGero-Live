@@ -2,152 +2,73 @@
 				Copyright <SWGEmu>
 		See file COPYING for copying conditions.*/
 
-/**
- * \file ResourceMap.h
- * \author Kyle Burkhardt
- * \date 5-03-10
- */
-
 #ifndef RESOURCEMAP_H_
 #define RESOURCEMAP_H_
 
 #include "server/zone/objects/resource/ResourceSpawn.h"
-
-namespace server {
-namespace zone {
-namespace objects {
-namespace player {
-namespace sui {
-namespace listbox {
-	class SuiListBox;
-}
-}
-}
-}
-}
-}
-
-using namespace server::zone::objects::player::sui::listbox;
+#include "system/thread/ReadWriteLock.h"
 
 /**
- * TypeResourceMap is a container class for VectorMap<String, ManagedReference<ResourceSpawn* > >
- * It indexes
+ * Registry of all resource spawns, including historical and recycled resources.
+ * The same guard protects the name registry and its type and zone indexes.
+ * Callers must keep the owning ResourceSpawner alive while accessing this registry.
  */
-class TypeResourceMap : public Vector<ManagedReference<ResourceSpawn* > > {
+class ResourceMap {
 public:
-	TypeResourceMap() {
+	using ResourceReferences = Vector<ManagedReference<ResourceSpawn*>>;
 
-	}
-	~TypeResourceMap() {
+	/**
+	 * Prepare these values under the ResourceSpawn lock before calling add().
+	 * registryName and spawnName remain separate to preserve the original global
+	 * and zone key semantics. ResourceMap never inspects the resource under guard.
+	 */
+	struct Registration {
+		String registryName;
+		String spawnName;
+		String finalClass;
+		Vector<String> zones;
+		ManagedReference<ResourceSpawn*> spawn;
+	};
 
-	}
-};
-
-/**
- * ZoneResourceMap is a container class for VectorMap<String, ManagedReference<ResourceSpawn* > >
- */
-class ZoneResourceMap : public VectorMap<String, ManagedReference<ResourceSpawn* > > {
-public:
-	ZoneResourceMap() {
-		setNoDuplicateInsertPlan();
-		setNullValue(nullptr);
-	}
-	~ZoneResourceMap() {
-
-	}
-};
-
-/**
- * ResourceMap contains all resources ever spawned indexed
- * by unique spawn name.  Also contains a map of active
- * resources separated by a zone id
- */
-class ResourceMap : public VectorMap<String, ManagedReference<ResourceSpawn* > > {
 private:
+	using NameMap = VectorMap<String, ManagedReference<ResourceSpawn*>>;
 
-	VectorMap<String, ZoneResourceMap*> zoneResourceMap;
-	VectorMap<String, TypeResourceMap*> typeResourceMap;
+	NameMap resourceNames;
+	VectorMap<String, NameMap*> zoneResourceMap;
+	VectorMap<String, ResourceReferences*> typeResourceMap;
+
+	// Final lock in every scope: no gameplay locks, resource inspection,
+	// callbacks, UI construction or I/O while this guard is held.
+	mutable ReadWriteLock guard;
 
 public:
 	ResourceMap();
 	~ResourceMap();
 
-	/**
-	 * Adds the resource spawn to the global spawn map
-	 * and if spawned, it add it to the individual region
-	 * map for surveying and sampling/.
-	 * \param resname The unique name of the resource spawn
-	 * \param resourceSpawn The ResourceSpawn object to be added
-	*/
-	void add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn);
+	ResourceMap(const ResourceMap&) = delete;
+	ResourceMap& operator=(const ResourceMap&) = delete;
 
-	/**
-	 * Removes resource from  global spawn map
-	 * \param resourceSpawn The ResourceSpawn object to be removed
-	*/
-	void remove(ManagedReference<ResourceSpawn* > resourceSpawn);
+	void add(const Registration& registration);
 
-	/**
-	 * Removes resource from the zone spawn map
-	 * \param resourceSpawn The ResourceSpawn object to be removed
-	 * \param zoneid The zone that is despawning resource
-	*/
-	void remove(ManagedReference<ResourceSpawn* > resourceSpawn, String zoneName);
+	// Inputs are copied under the ResourceSpawn lock. The historical name entry
+	// and type index are deliberately retained, including empty zone indexes.
+	void detachFromZones(const String& spawnName, const Vector<String>& zones);
 
-	/**
-	 * Get's the density value of resource at given point
-	 * \param resourcename The name of the resource
-	 * \param zoneid The zone map id
-	 * \param x The value of the x coordinate
-	 * \param y The value of the y coordinate
-	 * \return Value between -1 and 1 indicating density
-	*/
-	float getDensityAt(const String& resourcename, String zoneName, float x, float y) const;
+	ManagedReference<ResourceSpawn*> findByName(const String& name) const;
+	ResourceReferences copyAllReferences() const;
 
-	/**
-	 * Get's the density value of resource at given point
-	 * \param zoneid ID of zone being requesting
-	 * \return ZoneResourceMap* value of the zoneid requested
-	*/
-	inline ZoneResourceMap* getZoneResourceList(String zoneName) {
-		if(zoneResourceMap.contains(zoneName))
-			return zoneResourceMap.get(zoneName);
-		else
-			return nullptr;
-	}
+	// Copies follow the existing name-key order (zones) and append order (types).
+	// found distinguishes a missing index from an existing but empty index.
+	ResourceReferences copyZoneReferences(const String& zoneName, bool* found = nullptr) const;
+	ResourceReferences copyTypeReferences(const String& typeName, bool* found = nullptr) const;
 
-	/**
-	 * Checks to see if the type resource map contains the specified type or not.
-	 * @param typeName The type to check. For example, "aluminum_phrik".
-	 * @return Returns true if the map contains the type.
-	 */
-	bool containsType(const String& typeName) {
-		return typeResourceMap.contains(typeName);
-	}
+	bool containsName(const String& name) const;
+	bool containsType(const String& typeName) const;
+	int resourceCount() const;
 
-	bool containsSpawn(const String& spawnName) {
-		return contains(spawnName.toLowerCase());
-	}
-	/**
-	 * Adds the resources in particular map to SUI for resource deed
-	 * @param sui Listbox
-	 * @param nodeName name of resource
-	*/
-	void addToSuiListBox(SuiListBox* sui, const String& nodeName);
-
-	/**
-	 * This is very slow, only meant to be used sparingly as a way to search everything
-	 * @param subMap map to write into
-	 * @param typeName string that represents the type, like "aluminum_phrik"
-	 */
-	void getTypeSubset(ResourceMap& subMap, const String& typeName);
-
-	/**
-	 * This is very slow, only meant to be used sparingly as a way to search everything
-	 * @param subMap map to write into
-	 * @param attributeName string that represents the type, like "res_conductivity"
-	 */
-	void getAttributeSubset(ResourceMap& subMap, const String& attributeName);
+	// Copy the owning reference and release the registry guard before querying
+	// density. Retains the existing caller precondition: the name exists.
+	float getDensityAt(const String& resourceName, String zoneName, float x, float y) const;
 };
 
 #endif /* RESOURCEMAP_H_ */

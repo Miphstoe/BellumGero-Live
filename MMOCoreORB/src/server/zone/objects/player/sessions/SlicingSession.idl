@@ -45,6 +45,10 @@ class SlicingSession extends Facade {
 	protected boolean selectedSlice;
 	protected boolean firstRun;
 
+	// Effectiveness of the Armor/Weapon Upgrade Kit consumed for this slice.
+	// Stock/current slicing treats -15 as the baseline quality.
+	protected float upgradeKitEffectiveness;
+
 	public SlicingSession(CreatureObject parent) {
 		Logger.setLoggingName("SlicingSession");
 		Logger.setLogging(true);

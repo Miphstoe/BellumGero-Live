@@ -1,0 +1,50 @@
+hoth_tauntaun_bull = Creature:new {
+	objectName = "",
+	customName = "a tauntaun bull",
+	socialGroup = "tauntaun",
+	faction = "",
+	mobType = MOB_HERBIVORE,
+	level = 72,
+	creditsMultiplier = 3,
+	chanceHit = 0.68,
+	damageMin = 510,
+	damageMax = 690,
+	baseXp = 6930,
+	baseHAM = 13000,
+	baseHAMmax = 15500,
+	armor = 1,
+	resists = {130,130,25,160,25,160,25,25,-1},
+	meatType = "meat_herbivore",
+	meatAmount = 850,
+	hideType = "hide_wooly",
+	hideAmount = 750,
+	boneType = "bone_mammal",
+	boneAmount = 600,
+	milkType = "milk_wild",
+	milk = 350,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + HERD,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+	templates = {"object/mobile/tauntaun_hue.iff"},
+	hues = { 24, 25, 26, 27, 28, 29, 30, 31 },
+	scale = 1.15,
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
+	lootGroups = {
+		{
+			groups = {
+				{group = "hoth_art_rare", chance = 10000000}
+			},
+			lootChance = 25000
+		}
+	},
+	primaryWeapon = "unarmed",
+	secondaryWeapon = "none",
+	conversationTemplate = "",
+	primaryAttacks = { {"knockdownattack",""}, {"creatureareaknockdown",""} },
+	secondaryAttacks = { }
+}
+
+CreatureTemplates:addCreatureTemplate(hoth_tauntaun_bull, "hoth_tauntaun_bull")

@@ -3923,6 +3923,22 @@ function MandoWayOfLife:isMandoTribesman(pPlayer)
 	return (self:readInt(pPlayer, "chapter5Complete") == 1) or self:isAccountMandoWayComplete(pPlayer)
 end
 
+-- Daily contracts are character-earned; account-wide armor/title unlocks do not qualify.
+-- Reuse the quest helmet rule: any equipped Mandalorian Way custom helmet tier.
+function MandoWayOfLife:checkDailyBountyEligibility(pPlayer)
+	if (pPlayer == nil) then return false, "No player." end
+	if (self:readInt(pPlayer, "chapter5Complete") ~= 1) then
+		return false, "Complete the Mandalorian Way questline through Chapter 5 on this character to use daily bounty missions."
+	end
+	if (not CreatureObject(pPlayer):hasSkill("combat_bountyhunter_novice")) then
+		return false, "Only Bounty Hunters may use Mandalorian daily bounty missions."
+	end
+	if (not self:hasFoundlingHelmet(pPlayer)) then
+		return false, "Equip your Mandalorian Way helmet to use daily bounty missions."
+	end
+	return true
+end
+
 -- Get today's date string for daily reset tracking (YYYYMMDD format)
 function MandoWayOfLife:getTodayDateString()
 	local t = os.date("*t")
@@ -4046,9 +4062,8 @@ end
 function MandoWayOfLife:tryAcceptDailyBountyMission(pPlayer, source)
 	if (pPlayer == nil) then return false, "No player." end
 
-	if (not self:isMandoTribesman(pPlayer)) then
-		return false, "Only Mandalorian Tribesmen may accept daily bounty missions."
-	end
+	local eligible, message = self:checkDailyBountyEligibility(pPlayer)
+	if (not eligible) then return false, message end
 
 	local count = self:getDailyBountyCount(pPlayer)
 	if (count >= self.DAILY_BOUNTY_MAX_MISSIONS) then
@@ -4132,9 +4147,8 @@ end
 function MandoWayOfLife:resyncDailyBountyWaypoint(pPlayer)
 	if (pPlayer == nil) then return false, "No player." end
 
-	if (not self:isMandoTribesman(pPlayer)) then
-		return false, "Only Mandalorian Tribesmen run daily contracts."
-	end
+	local eligible, message = self:checkDailyBountyEligibility(pPlayer)
+	if (not eligible) then return false, message end
 
 	local count = self:getDailyBountyCount(pPlayer)
 	if (count == 0) then
@@ -4207,9 +4221,8 @@ end
 function MandoWayOfLife:tryGrantDailyBountyFob(pPlayer)
 	if (pPlayer == nil) then return false, "No player." end
 
-	if (not self:isMandoTribesman(pPlayer)) then
-		return false, "Only Mandalorian Tribesmen may receive a Daily Bounty Mission Fob."
-	end
+	local eligible, message = self:checkDailyBountyEligibility(pPlayer)
+	if (not eligible) then return false, message end
 
 	-- Check if player already has a fob
 	local pInventory = SceneObject(pPlayer):getSlottedObject("inventory")

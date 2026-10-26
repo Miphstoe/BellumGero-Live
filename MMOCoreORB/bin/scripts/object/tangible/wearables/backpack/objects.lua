@@ -512,3 +512,15 @@ object_tangible_wearables_backpack_shared_singing_mountain_clan_backpack = Share
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_backpack_shared_singing_mountain_clan_backpack, "object/tangible/wearables/backpack/shared_singing_mountain_clan_backpack.iff")
+
+object_tangible_wearables_backpack_shared_backpack_snowtrooper = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/backpack/shared_backpack_snowtrooper.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_backpack_shared_backpack_snowtrooper, "object/tangible/wearables/backpack/shared_backpack_snowtrooper.iff")
+
+object_tangible_wearables_backpack_shared_backpack_rebel_snow_soldier = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/backpack/shared_backpack_rebel_snow_soldier.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_wearables_backpack_shared_backpack_rebel_snow_soldier, "object/tangible/wearables/backpack/shared_backpack_rebel_snow_soldier.iff")

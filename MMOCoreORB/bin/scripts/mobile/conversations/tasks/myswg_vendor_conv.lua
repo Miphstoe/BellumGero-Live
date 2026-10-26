@@ -11,6 +11,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     stopConversation = "false",
     options = {
         {"Reset Buffs / Empty Stomach - 2k", "reset_buffs"},
+        {"Pet Enhancement - 10k", "petbuff1"},
         {"Weapons", "weaps1"},
         {"Armor", "armor1"},
         {"Loot", "loot1"},
@@ -24,11 +25,58 @@ myswg_vendor_first_screen = ConvoScreen:new {
         {"Languages", "languages1"},
         {"Special NPC Status", "special_npc1"},
         {"Advertisement Space", "ad_menu"},
+        {"Character Name Change - 1,000k", "namechange1"},
       --  {"Grant Master Politician 50000", "option300"},
 			--	{"No thank you.", "deny_quest"},--not needed
     }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_first_screen);
+
+petbuff1 = ConvoScreen:new {
+    id = "petbuff1",
+    leftDialog = "",
+    customDialogText = "I can apply the original BG Hub pet enhancement: 2500 points to Health, Action, Mind and all six secondary HAM attributes for 3 hours. The pet selector also shows the remaining enhancement time.",
+    stopConversation = "false",
+    options = {
+        {"Select an active pet - 10k", "petbuff_select"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(petbuff1);
+
+petbuff_select = ConvoScreen:new {
+    id = "petbuff_select",
+    leftDialog = "",
+    customDialogText = "Choose the active pet you want enhanced from the selector window.",
+    stopConversation = "false",
+    options = {
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(petbuff_select);
+
+namechange1 = ConvoScreen:new {
+    id = "namechange1",
+    leftDialog = "",
+    customDialogText = "Would you like to change your character's name? This service costs 1,000,000 credits. Your new name must be available and comply with the server's naming rules. Credits will only be deducted after your name change has been successfully completed.",
+    stopConversation = "false",
+    options = {
+        {"Change my name - 1,000k", "namechange_start"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(namechange1);
+
+namechange_start = ConvoScreen:new {
+    id = "namechange_start",
+    leftDialog = "",
+    customDialogText = "Enter your new name in the window that opened. You will be asked for your first name, then your last name, and then to confirm the change.",
+    stopConversation = "false",
+    options = {
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(namechange_start);
 
 weaps1 = ConvoScreen:new {    
     id = "weaps1",
@@ -122,6 +170,7 @@ arch1 = ConvoScreen:new {
         --{"25 effectiveness Structure Crafting Station - 50k", "option75"},
       	--{"25 effectiveness Clothing Crafting Station - 50k", "option72"},
         --{"25 effectiveness Food Crafting Station - 50k", "option73"},
+        {"Image Designer Station Deed - 100k", "option302"},
       	{"Small Generic House - 200k", "option34"},
        -- {"Medium Generic House - 100k", "option35"},
        -- {"Clothing Factory Deed - 100k", "option36"},
