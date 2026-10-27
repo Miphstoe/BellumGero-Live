@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-26 — Taanab: enable the zone (travel points, regions, no-build zones)
+
+- **Summary:** Turns Taanab on (LIVE-38/39/43). `taanab` is added to `ZonesEnabled`, with a `planet_manager.lua` block: GCW on, weather off like the other green planets, and two interplanetary starports from the snapshot, Pandath Starport and Starhunter Station. The new `taanab_regions.lua` has map-edge no-build strips, city regions and no-build circles for both towns, and named, no-build map POIs at the mining outfit, hex farms, shipwreck and Norulac raider cave, plus a no-build circle on the herder camp.
+- **Files:** `bin/conf/config.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `bin/scripts/managers/planet/taanab_regions.lua`, `tools/newplanets/stage_taanab.py`
+- **Notes:** Needs the Taanab `bg_custom1.tre` (LIVE-37) on the server and clients, or the zone fails to load. Snapshot fixes in that TRE: 6 object IDs that collided with Corellia's snapshot are renumbered, and 7 moisture harvester installations are swapped for the static mockup so they don't load as ownerless player harvesters. No creatures, missions or world spawner yet (LIVE-46/47). Great Herds and Painted Hills regions are left out until their locations are picked. Not yet tested in game.
+
 ### 2026-10-25 — Taanab: housing, cities, faction HQs, harvesters and GCW lists (zone not enabled yet)
 
 - **Summary:** First Taanab drop (LIVE-40/41/42/44). Decisions with Miph: Taanab allows every house type (custom BG houses and merchant tents included), player cities with Corellia's caps (20/20/15/10/10/5, so at most 5 Cosmopolis), faction HQs, harvesters/factories, and is a GCW planet. `taanab` is added to the `allowedZones` of every player house, merchant tent and civic city structure (128 templates), the 16 player faction HQ templates and the shared installation list; to `CitiesAllowed`; to resource `activeZones`; to the Galaxy Harvester export; to `/gcwstatus all`; and to the Imperial crackdown scan planets.

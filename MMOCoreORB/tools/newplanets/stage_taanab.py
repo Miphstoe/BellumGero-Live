@@ -140,8 +140,33 @@ for n in nodes:
     if oid in remap or pid in remap:
         struct.pack_into('<ii', d, 0, remap.get(oid, oid), remap.get(pid, pid))
         mo.set_chunk(n['ref'], bytes(d))
+# Snapshot installations would load as ownerless player harvesters (no other BG snapshot has any): use the static mockup.
+SWAP = {'object/installation/mining_liquid/shared_mining_liquid_moisture_harvester_heavy.iff':
+        'object/static/installation/shared_mockup_mining_liquid_moisture_harvester.iff'}
+def find_chunk(kids, tag):
+    for i, k in enumerate(kids):
+        if k[0] == tag: return kids, i
+        if k[0] == 'FORM':
+            r = find_chunk(k[4], tag)
+            if r: return r
+otl, oti = find_chunk(root, 'OTNL')
+otnl = otl[oti][4]
+cnt = struct.unpack_from('<I', otnl)[0]
+names = [x.decode('latin-1') for x in otnl[4:].split(b'\0')[:cnt]]
+swapped = 0
+for old, new in SWAP.items():
+    if new not in names: names.append(new)
+    for n in nodes:
+        if n['tmpl'] == old:
+            lst, j = n['ref']; d = bytearray(lst[j][4])
+            struct.pack_into('<i', d, 8, names.index(new)); mo.set_chunk(n['ref'], bytes(d)); swapped += 1
+mo.set_chunk((otl, oti), struct.pack('<I', len(names)) + b''.join(x.encode('latin-1') + b'\0' for x in names))
+print('swapped', swapped, 'snapshot installations to static mockups')
 open(WS, 'wb').write(serialize(root))
 print('renumbered', remap)
-ids = {n['oid'] for n in mo.ws_nodes(open(WS, 'rb').read())[1]}
+_, chk = mo.ws_nodes(open(WS, 'rb').read())
+ids = {n['oid'] for n in chk}
 assert not ids & other and len(ids) == len(nodes)
+assert not [n for n in chk if n['tmpl'].startswith('object/installation/')]
+miss = sorted({n['tmpl'] for n in chk if n['tmpl'].lower() not in {k.lower() for k in ot}}); assert not miss, miss
 print('taanab ids', min(ids), '-', max(ids), '; no clashes with', len(other), 'ids in other BG snapshots')

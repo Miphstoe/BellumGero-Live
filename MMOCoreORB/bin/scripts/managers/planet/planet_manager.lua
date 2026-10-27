@@ -659,6 +659,34 @@ hoth = {
 	}
 }
 
+taanab = {
+	weatherEnabled = 0,
+	gcwEnabled = 1,
+
+	-- Starports come from snapshot/taanab.ws (outpost_starport childObjects spawn the terminal,
+	-- ticket collector and shuttle). Arrival points use the Yavin IV outpost starport offset,
+	-- rotated to each starport's facing.
+	planetTravelPoints = {
+		{name = "Pandath Starport", x = 2117.8, z = 45.0, y = 5379.6, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Starhunter Station", x = 3592.2, z = 31.7, y = -5404.6, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+	},
+
+	badgeAreas = {
+	},
+
+	navAreas = {
+		{"taanab_pandath", 2011, 5400, 250},
+		{"taanab_starhunter_station", 3648, -5431, 150},
+		{"taanab_mining_outfit", -2559, -1270, 200},
+		{"taanab_hex_farms", -2970, -150, 300},
+		{"taanab_shipwreck", 3318, -1306, 60},
+		{"taanab_herder_camp", 5536, -4957, 40},
+	},
+
+	planetObjects = {
+	}
+}
+
 tutorial = {
 	weatherEnabled = 0,
 	gcwEnabled = 0,
