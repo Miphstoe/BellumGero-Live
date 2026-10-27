@@ -14,6 +14,16 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-10-26 — Taanab: Varn Kessic raid world boss, Norulac Raider Cave, Old Thunderhorn and the Great Herds
+
+- **Summary:** Taanab's own bosses (LIVE-52/53/54).
+  - **Varn Kessic, the Scourge of Taanab** (level 400): a Norulac raid on the Arcon hex farms. It opens with a galaxy warning and two raider waves, then Kessic lands with 4 honor guards and can't be attacked until they fall. He calls reinforcements at 75/50/25% health and throws telegraphed thermal detonators below 25%. The raid retreats after 45 minutes; the first comes 30 minutes after boot and the next 3 hours after a kill or retreat. Rewards are per player via WorldBossLootManager.
+  - **Norulac Raider Cave:** Norulac raiders on the stock Afarathu cave layout, with the quartermaster Sela Drux (level 105) as a per-player-reward group boss.
+  - **Old Thunderhorn** (level 130 roaming elite): a giant bull bantha with a herd of 10 in the new Great Herds region, a named map POI with a no-build core. Hurting any member pulls the rest of the herd into the fight.
+  - **New loot (existing models, renamed):** Kessic's Scourge pistol, Norulac Raider Captain's Coat, The Battle of Taanab painting, Norulac War Banner, Thunderhorn Hide Rug, Skull of Old Thunderhorn and the Little Thunderhorn plush.
+- **Files:** `bin/scripts/mobile/taanab/*`, `bin/scripts/mobile/serverobjects.lua`, `bin/scripts/loot/items/bellum/taanab/*`, `bin/scripts/loot/groups/bellum/taanab/*`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `bin/scripts/screenplays/bellum/taanab_thunderhorn.lua`, `bin/scripts/screenplays/caves/taanab_norulac_raider_cave.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/managers/planet/taanab_regions.lua`, `tools/newplanets/TAANAB_TC_NOTES.md`
+- **Notes:** Server Lua only; no client changes. Taanab items drop only from Taanab bosses (no galaxy-wide bonus roll). Not yet tested in game; the Great Herds spot (4900, -4500) was picked from the map.
+
 ### 2026-10-26 — Taanab: enable the zone (travel points, regions, no-build zones)
 
 - **Summary:** Turns Taanab on (LIVE-38/39/43). `taanab` is added to `ZonesEnabled`, with a `planet_manager.lua` block: GCW on, weather off like the other green planets, and two interplanetary starports from the snapshot, Pandath Starport and Starhunter Station. The new `taanab_regions.lua` has map-edge no-build strips, city regions and no-build circles for both towns, and named, no-build map POIs at the mining outfit, hex farms, shipwreck and Norulac raider cave, plus a no-build circle on the herder camp.

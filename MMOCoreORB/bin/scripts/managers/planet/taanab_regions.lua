@@ -20,4 +20,8 @@ taanab_regions = {
 	{"@taanab_region_names:downedship", 3318, -1306, {CIRCLE, 100}, NAMEDREGION + NOBUILDZONEAREA + MAPPOI},
 	{"@taanab_region_names:taanabcave", -861, 7206, {CIRCLE, 100}, NAMEDREGION + NOBUILDZONEAREA + MAPPOI},
 	{"taanab_herder_camp_nobuild", 5536, -4957, {CIRCLE, 75}, NOBUILDZONEAREA},
+
+	-- Great Herds: Old Thunderhorn and his herd roam here (screenplays/bellum/taanab_thunderhorn.lua)
+	{"@taanab_region_names:taanabgreatherd", 4900, -4500, {CIRCLE, 700}, NAMEDREGION + MAPPOI},
+	{"@taanab_region_names:taanabgreatherdnbz", 4900, -4500, {CIRCLE, 400}, NOBUILDZONEAREA + NOSPAWNAREA},
 }

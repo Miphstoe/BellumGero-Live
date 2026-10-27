@@ -1,0 +1,8 @@
+includeFile("taanab/norulac_raider.lua")
+includeFile("taanab/norulac_cutthroat.lua")
+includeFile("taanab/norulac_enforcer.lua")
+includeFile("taanab/norulac_honor_guard.lua")
+includeFile("taanab/taanab_sela_drux.lua")
+includeFile("taanab/taanab_varn_kessic.lua")
+includeFile("taanab/taanab_herd_bantha.lua")
+includeFile("taanab/taanab_old_thunderhorn.lua")

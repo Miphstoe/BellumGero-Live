@@ -649,6 +649,7 @@ includeFile("caves/conversations/gcw_cave_daily_conv_handler.lua")
 includeFile("caves/conversations/bsv_gate_convo_handler.lua")
 includeFile("caves/conversations/bsv_quiz_convo_handler.lua")
 includeFile("caves/hoth_ice_caves.lua")
+includeFile("caves/taanab_norulac_raider_cave.lua")
 
 -- Cantinas
 includeFile("cities/cantinas/bartenders.lua")
@@ -859,3 +860,5 @@ includeFile("bellum/convos/mando_spynet_operative_conv_handler.lua")
 --includeFile("bellum/mando_way_of_life.lua")
 includeFile("bellum/mando_spynet_contract_waypoint_disk_menu.lua")
 includeFile("bellum/hoth_glacial_rancor_worldboss.lua")
+includeFile("bellum/taanab_norulac_raid_worldboss.lua")
+includeFile("bellum/taanab_thunderhorn.lua")

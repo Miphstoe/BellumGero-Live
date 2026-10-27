@@ -1,0 +1,46 @@
+-- Varn Kessic's honor guard: he cannot be attacked while any of them stands.
+norulac_honor_guard = Creature:new {
+	objectName = "",
+	customName = "a Norulac honor guard",
+	randomNameType = NAME_GENERIC,
+	randomNameTag = true,
+	mobType = MOB_NPC,
+	socialGroup = "pirate",
+	faction = "",
+	level = 150,
+	creditsMultiplier = 5,
+	chanceHit = 0.9,
+	damageMin = 850,
+	damageMax = 1200,
+	baseXp = 12000,
+	baseHAM = 80000,
+	baseHAMmax = 90000,
+	armor = 2,
+	resists = {60,60,50,50,70,50,50,30,-1},
+	meatType = "",
+	meatAmount = 0,
+	hideType = "",
+	hideAmount = 0,
+	boneType = "",
+	boneAmount = 0,
+	milk = 0,
+	tamingChance = 0,
+	ferocity = 0,
+	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
+	creatureBitmask = PACK + KILLER,
+	optionsBitmask = AIENABLED,
+	diet = HERBIVORE,
+	templates = {
+		"object/mobile/dressed_mercenary_warlord_hum_m.iff",
+		"object/mobile/dressed_mercenary_warlord_nikto_m.iff"
+	},
+	lootGroups = {},
+	primaryWeapon = "pirate_weapons_heavy",
+	secondaryWeapon = "unarmed",
+	conversationTemplate = "",
+	reactionStf = "@npc_reaction/slang",
+	primaryAttacks = merge(commandomaster,marksmanmaster),
+	secondaryAttacks = brawlermid
+}
+
+CreatureTemplates:addCreatureTemplate(norulac_honor_guard, "norulac_honor_guard")
