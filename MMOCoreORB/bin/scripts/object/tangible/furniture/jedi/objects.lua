@@ -807,3 +807,21 @@ object_tangible_furniture_jedi_shared_frn_all_table_light_02 = SharedTangibleObj
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_furniture_jedi_shared_frn_all_table_light_02, "object/tangible/furniture/jedi/shared_frn_all_table_light_02.iff")
+
+object_tangible_furniture_jedi_shared_frn_jedi_power_shrine_green = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/jedi/shared_frn_jedi_power_shrine_green.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_jedi_shared_frn_jedi_power_shrine_green, "object/tangible/furniture/jedi/shared_frn_jedi_power_shrine_green.iff")
+
+object_tangible_furniture_jedi_shared_frn_jedi_power_shrine_red = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/jedi/shared_frn_jedi_power_shrine_red.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_jedi_shared_frn_jedi_power_shrine_red, "object/tangible/furniture/jedi/shared_frn_jedi_power_shrine_red.iff")
+
+object_tangible_furniture_jedi_shared_frn_jedi_force_shrine = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/jedi/shared_frn_jedi_force_shrine.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_jedi_shared_frn_jedi_force_shrine, "object/tangible/furniture/jedi/shared_frn_jedi_force_shrine.iff")
