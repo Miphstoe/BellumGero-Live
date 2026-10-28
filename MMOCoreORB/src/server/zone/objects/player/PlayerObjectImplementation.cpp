@@ -2620,9 +2620,11 @@ void PlayerObjectImplementation::activateForcePowerRegen() {
 	float scheduledTime = 10 / timer;
 	uint64 miliTime = static_cast<uint64>(scheduledTime * 1000.f);
 
-	// Cancel any already-running event so the new interval takes effect immediately.
+	// Bellum Gero Force Powers Revamp - Phase 2
+	// Ordinary Force spending must not postpone an already scheduled regen tick.
+	// The next interval is recalculated when the active tick schedules its successor.
 	if (forceRegenerationEvent->isScheduled())
-		forceRegenerationEvent->cancel();
+		return;
 
 	forceRegenerationEvent->schedule(miliTime);
 }

@@ -124,6 +124,13 @@ public:
 		return splashDamage;
 	}
 
+	// Bellum Gero Force Powers Phase 2:
+	// Choke uses a per-execution empty state list for NPC casters so the
+	// new player-only capstone control package does not alter NPC behavior.
+	void setStateEffects(const VectorMap<uint8, StateEffect>* effects) {
+		stateEffects = effects;
+	}
+
 	bool getHitIncapTarget() const {
 		return hitIncapTarget;
 	}
