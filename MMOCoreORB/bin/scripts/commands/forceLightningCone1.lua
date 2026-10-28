@@ -49,8 +49,9 @@ ForceLightningCone1Command = {
 	speed = 4.0,
 	forceCost = 125,
 	accuracySkillMod = "forcelightning_accuracy",
-	coneAngle = 40,
-	coneAction = true,
+	areaRange = 8,
+	areaAction = true,
+	splashDamage = true,
 	visMod = 25,
 
 	animation = "force_lightning_1_arc_particle_level_1",

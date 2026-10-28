@@ -62,6 +62,29 @@ ForceChokeCommand = {
 
 	range = 32,
 
+	-- Bellum Gero Force Powers Revamp - Phase 2
+	-- Player-only capstone suppression/setup package.
+	stateEffects = {
+		StateEffect(
+			STUN_EFFECT,
+			{},
+			{ "stun_defense" },
+			{ "jedi_state_defense", "resistance_states" },
+			100,
+			0,
+			8
+		),
+		StateEffect(
+			POSTUREDOWN_EFFECT,
+			{ "postureDownRecovery" },
+			{ "posture_change_down_defense" },
+			{},
+			100,
+			0,
+			0
+		)
+	},
+
 	dotEffects = {
 		DotEffect(
 			FORCECHOKE,

@@ -19,7 +19,7 @@
 
 class ForcePowersQueueCommand : public CombatQueueCommand {
 private:
-	// Bellum Gero Force Powers Revamp - Phase 1
+	// Bellum Gero Force Powers Revamp - Phase 2
 	int getRevampBranchTier(CreatureObject* creature, uint32 crc) const {
 		if (creature == nullptr || !creature->isPlayerCreature() || !creature->hasSkill("force_discipline_powers_novice")) return 0;
 		bool lightning = crc == STRING_HASHCODE("forcelightningsingle1") || crc == STRING_HASHCODE("forcelightningsingle2") || crc == STRING_HASHCODE("forcelightningcone1") || crc == STRING_HASHCODE("forcelightningcone2");
@@ -55,8 +55,40 @@ private:
 
 	bool isRevampResponsivePower(uint32 crc) const {
 		return crc == STRING_HASHCODE("forcethrow1") || crc == STRING_HASHCODE("forcethrow2") ||
-			crc == STRING_HASHCODE("forceknockdown1") || crc == STRING_HASHCODE("forceknockdown2") || crc == STRING_HASHCODE("forceknockdown3") ||
+			crc == STRING_HASHCODE("forceknockdown1") || crc == STRING_HASHCODE("forceknockdown2") ||
 			crc == STRING_HASHCODE("forceweaken1") || crc == STRING_HASHCODE("forceweaken2");
+	}
+
+	int getPhase2BaseForceCost(CreatureObject* creature) const {
+		if (creature == nullptr || !creature->isPlayerCreature()) return (int)forceCost;
+		uint32 crc = getNameCRC();
+		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 90 : 100;
+		if (crc == STRING_HASHCODE("forcelightningcone2")) return 180;
+		if (crc == STRING_HASHCODE("forcechoke")) return 300;
+		return (int)forceCost;
+	}
+
+	float getPhase2BaseDuration(CreatureObject* creature) const {
+		if (creature == nullptr || !creature->isPlayerCreature()) return speed;
+		uint32 crc = getNameCRC();
+		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 2.25f : 2.50f;
+		if (crc == STRING_HASHCODE("forcelightningcone2")) return 3.0f;
+		if (crc == STRING_HASHCODE("forcechoke")) return 2.0f;
+		if (crc == STRING_HASHCODE("forceknockdown3")) return creature->hasSkill("force_discipline_powers_master") ? 1.50f : 2.0f;
+		if (isRevampResponsivePower(crc)) return 3.0f;
+		return speed;
+	}
+
+	int getPhase2CooldownMs(CreatureObject* creature) const {
+		if (creature == nullptr || !creature->isPlayerCreature()) return 0;
+		uint32 crc = getNameCRC();
+		if (crc == STRING_HASHCODE("forcechoke")) return 30000;
+		if (crc == STRING_HASHCODE("forceknockdown3")) return 12000;
+		return 0;
+	}
+
+	String getPhase2CooldownKey() const {
+		return "fm_phase2_" + getQueueCommandName();
 	}
 
 	float getRevampTierMultiplier(int tier, bool conservative) const {
@@ -117,20 +149,35 @@ public:
 		}
 
 		ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+		int modifiedForceCost = getFrsModifiedForceCost(creature);
 
-		if (ghost != nullptr && ghost->getForcePower() < getFrsModifiedForceCost(creature)) {
+		if (ghost != nullptr && ghost->getForcePower() < modifiedForceCost) {
 			creature->sendSystemMessage("@jedi_spam:no_force_power"); //"You do not have enough Force Power to peform that action.
+			return GENERALERROR;
+		}
+
+		int phase2CooldownMs = getPhase2CooldownMs(creature);
+		String phase2CooldownKey = getPhase2CooldownKey();
+		if (phase2CooldownMs > 0 && !creature->checkCooldownRecovery(phase2CooldownKey)) {
+			creature->sendSystemMessage("That Force Power is still recovering.");
 			return GENERALERROR;
 		}
 
 		CombatManager* combatManager = CombatManager::instance();
 
 		try {
+			CreatureAttackData attackData(arguments, this, target);
+			VectorMap<uint8, StateEffect> emptyNpcChokeStates;
+
+			// Choke's Phase 2 control package is player-only.
+			if (!creature->isPlayerCreature() && getNameCRC() == STRING_HASHCODE("forcechoke"))
+				attackData.setStateEffects(&emptyNpcChokeStates);
+
 			int res = combatManager->doCombatAction(
 				creature,
 				creature->getWeapon(),
 				cast<TangibleObject*>(targetObject.get()),
-				CreatureAttackData(arguments, this, target));
+				attackData);
 
 			switch (res) {
 			case -1:
@@ -139,8 +186,11 @@ public:
 				return GENERALERROR;
 			}
 
+			if (phase2CooldownMs > 0)
+				creature->addCooldown(phase2CooldownKey, phase2CooldownMs);
+
 			if (ghost != nullptr)
-				ghost->setForcePower(ghost->getForcePower() - getFrsModifiedForceCost(creature));
+				ghost->setForcePower(ghost->getForcePower() - modifiedForceCost);
 
 		} catch (Exception& e) {
 			error("unreported exception caught in ForcePowersQueueCommand::doCombatAction");
@@ -157,9 +207,10 @@ public:
 
 	int getFrsModifiedForceCost(CreatureObject* creature) const {
 		ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+		int baseForceCost = getPhase2BaseForceCost(creature);
 
 		if (ghost == nullptr)
-			return forceCost;
+			return baseForceCost;
 
 		Locker locker(creature);
 
@@ -180,18 +231,13 @@ public:
 		}
 
 		if (manipulationMod == 0 || frsModifier == 0)
-			return forceCost;
+			return baseForceCost;
 
-		return forceCost + (int)((manipulationMod * frsModifier) + .5);
+		return baseForceCost + (int)((manipulationMod * frsModifier) + .5);
 	}
 
 	float getCommandDuration(CreatureObject *object, const UnicodeString& arguments) const override {
-		float baseSpeed = speed;
-
-		// Phase 1 responsiveness is player-only; NPCs stay on the Live Lua cadence.
-		if (object != nullptr && object->isPlayerCreature() && isRevampResponsivePower(getNameCRC()))
-			baseSpeed = 3.0f;
-
+		float baseSpeed = getPhase2BaseDuration(object);
 		float combatHaste = object->getSkillMod("combat_haste");
 
 		if (combatHaste > 0)
