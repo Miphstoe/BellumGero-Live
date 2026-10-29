@@ -62,7 +62,7 @@ private:
 	int getPhase2BaseForceCost(CreatureObject* creature) const {
 		if (creature == nullptr || !creature->isPlayerCreature()) return (int)forceCost;
 		uint32 crc = getNameCRC();
-		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 90 : 100;
+		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 60 : 100;
 		if (crc == STRING_HASHCODE("forcelightningcone2")) return 180;
 		if (crc == STRING_HASHCODE("forcechoke")) return 300;
 		return (int)forceCost;
@@ -114,7 +114,18 @@ public:
 		bool genuinePve = JediSeclusionManager::isValidOvertJediPveDamageTarget(attacker, defender);
 		bool conservative = !genuinePve;
 		float mult = getRevampTierMultiplier(tier, conservative);
-		if (attacker->hasSkill("force_discipline_powers_master")) mult *= conservative ? 1.10f : 1.15f;
+		bool masterPowers = attacker->hasSkill("force_discipline_powers_master");
+		if (masterPowers) mult *= conservative ? 1.10f : 1.15f;
+
+		// Bellum Gero Force Powers Revamp - Phase 3
+		// Mike's matched 60-second TC benchmark put Master Lightning 2 at ~43%
+		// of Master Lightsaber sustained DPS. Master Powers is intended to have
+		// slightly higher ACTIVE PvE output, balanced by higher Force use and
+		// deliberate Force Renewal downtime. Keep conservative/PvP damage at the
+		// existing Phase 2 values until we have dedicated PvP Lightning data.
+		if (masterPowers && genuinePve && crc == STRING_HASHCODE("forcelightningsingle2"))
+			mult *= 2.40f;
+
 		if (defender->hasBuff(STRING_HASHCODE("forceweaken2"))) mult *= genuinePve ? 1.15f : 1.08f;
 		else if (defender->hasBuff(STRING_HASHCODE("forceweaken1"))) mult *= genuinePve ? 1.08f : 1.04f;
 		minDmg *= mult;

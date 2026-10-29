@@ -51,6 +51,7 @@
 #include "server/zone/objects/player/events/ForceMeditateTask.h"
 #include "server/zone/objects/player/events/MeditateTask.h"
 #include "server/zone/objects/player/events/ForceFocusTask.h"
+#include "server/zone/objects/player/events/ForceRenewalTask.h"
 #include "server/zone/objects/player/events/LogoutTask.h"
 #include "server/zone/objects/player/sessions/EntertainingSession.h"
 #include "templates/building/CloneSpawnPoint.h"
@@ -3407,11 +3408,37 @@ void PlayerManagerImplementation::handleVerifyTradeMessage(CreatureObject* playe
 
 int PlayerManagerImplementation::notifyObserverEvent(uint32 eventType, Observable* observable, ManagedObject* arg1, int64 arg2) {
 
+	// Bellum Gero Force Powers Revamp - Phase 3
+	// Force Renewal is intentionally interruptible in combat. It has its own
+	// task/observer path and does not alter Force Focus, Force Meditate, or TKA
+	// meditation behavior.
+	if (eventType == ObserverEventType::DAMAGERECEIVED) {
+		CreatureObject* creature = cast<CreatureObject*>(observable);
+
+		if (creature == nullptr)
+			return 1;
+
+		Reference<ForceRenewalTask*> renewalTask = creature->getPendingTask("forcerenewal").castTo<ForceRenewalTask*>();
+
+		if (renewalTask != nullptr && arg2 > 0) {
+			renewalTask->interrupt("Your Force Renewal was interrupted by damage.");
+			return 1;
+		}
+
+		return 0;
+	}
+
 	if (eventType == ObserverEventType::POSTURECHANGED) {
 		CreatureObject* creature = cast<CreatureObject*>(observable);
 
 		if (creature == nullptr)
 			return 1;
+
+		Reference<ForceRenewalTask*> renewalTask = creature->getPendingTask("forcerenewal").castTo<ForceRenewalTask*>();
+		if (renewalTask != nullptr) {
+			renewalTask->interrupt("Your Force Renewal was interrupted.");
+			return 1;
+		}
 
 		if (creature->hasState(CreatureState::ALERT)) { // This can apply to TKA AND Jedi meditate since they share the same sysmsgs / moods.
 			creature->sendSystemMessage("@teraskasi:med_end");
