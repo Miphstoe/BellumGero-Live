@@ -1414,6 +1414,14 @@ void ResourceSpawner::addPlanetsToListBox(SuiListBox* sui) const {
 	for(int i=0;i<activeResourceZones.size();i++) {
 		String lname = activeResourceZones.get(i);
 		String planetName = stringIdManager->getStringId(String("@planet_n:" + lname).hashCode()).toString();
+
+		// Bellum Gero: custom planets (e.g. hoth) may have no @planet_n entry in the client string tables,
+		// which produced a blank row in the planet list. Fall back to the capitalized zone name.
+		if (planetName.isEmpty()) {
+			planetName = lname;
+			planetName[0] = toupper(planetName[0]);
+		}
+
 		sui->addMenuItem(planetName,i);
 	}
 }
