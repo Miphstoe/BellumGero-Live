@@ -448,6 +448,14 @@ uint32 DamageOverTime::doForceChokeTick(CreatureObject* victim, CreatureObject* 
 
 		uint32 chokeDam = strength;
 
+		// Bellum Gero Force Powers Revamp - Phase 3
+		// Force Choke stores its periodic strength from the unmitigated hit basis.
+		// Preserve the existing PvE Choke, but reduce periodic damage to 25% when
+		// the original attacker and victim are both players. The direct hit remains
+		// on the normal combat path and is unchanged here.
+		if (attackerRef != victimRef && attackerRef->isPlayerCreature() && victimRef->isPlayerCreature())
+			chokeDam = Math::max(1, (int)(chokeDam * 0.25f));
+
 		float jediBuffDamage = 0;
 		float rawDamage = chokeDam;
 
