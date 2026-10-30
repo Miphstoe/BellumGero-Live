@@ -48,7 +48,8 @@ At the Pandath terminals (mission 2100, 5363; bounty 2095, 5356; entertainer 212
 - [ ] **Entertainer** terminal gives dancer and musician missions that resolve in Pandath.
 - [ ] **Imperial and Rebel** terminals (faction toon) offer missions.
 - [ ] *(If you have one)* a player-city mission terminal on Taanab works.
-- [ ] Missing for now: the BG Hub NPC at Pandath (carried over from LIVE-47).
+- [ ] **BG Hub NPC** at Pandath (2105, 5356), beside the mission terminals: barks, and its menu (including pet
+      enhancement) works the same as on the other planets.
 
 ## 5. Wildlife and world spawns (LIVE-58)
 World lairs only spawn around players, so ride across the plains for a few minutes in several areas:
