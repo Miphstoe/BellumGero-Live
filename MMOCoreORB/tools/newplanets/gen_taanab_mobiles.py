@@ -4,7 +4,8 @@ mission NPC spawn points into the Ender_Taanab worktree (LIVE-58).
 
 Modelled on gen_hoth_mobiles.py. Re-runnable: every generated file is fully rewritten, and registration lines are
 only added when missing. Infinity ships no Taanab creature assets, so every mobile uses an appearance that is
-already in the base client (nerf, kaadu, bantha, graul, ...). The Norulac raiders and the bosses (Thunderhorn,
+already in the base client (nerf, kaadu, bantha, graul, ...). The Ambrian staga, named on the Taanab loading screen,
+has no model of its own and borrows the gualama's. The Norulac raiders and the bosses (Thunderhorn,
 Sela Drux, Varn Kessic) are hand-written in mobile/taanab/ and are only referenced here.
 """
 import math
@@ -117,9 +118,17 @@ CREATURES = [
          meat=('meat_carnivore', 60), hide=('hide_bristley', 40), bone=('bone_mammal', 30), milk=0,
          pvp=HOSTILE, cbits='PACK', diet='CARNIVORE', tmpl='object/mobile/zucca_boar.iff', scale=1.1, loot=False,
          attacks='{ {"knockdownattack",""}, {"intimidationattack",""} }'),
+    dict(key='taanab_roba', name='a Taanab roba', social='roba', mob='MOB_CARNIVORE', level=53, res=RES_LOW,
+         meat=('meat_carnivore', 100), hide=('hide_leathery', 90), bone=('bone_mammal', 80), milk=0,
+         pvp=PASSIVE, cbits='PACK + HERD', diet='CARNIVORE', tmpl='object/mobile/roba.iff', scale=1.1, loot=False,
+         attacks='{ {"intimidationattack",""}, {"knockdownattack",""} }'),
     dict(key='taanab_plains_bantha', name='a plains bantha', social='bantha', mob='MOB_HERBIVORE', level=55, res=RES_HERD,
          meat=('meat_herbivore', 480), hide=('hide_wooly', 380), bone=('bone_mammal', 350), milk=250,
          pvp=PASSIVE, cbits='HERD', diet='HERBIVORE', tmpl='object/mobile/bantha.iff', scale=1.0, loot=False,
+         attacks='{ {"knockdownattack",""}, {"dizzyattack",""} }'),
+    dict(key='taanab_ambrian_staga', name='an Ambrian staga', social='staga', mob='MOB_HERBIVORE', level=56, res=RES_HERD,
+         meat=('meat_herbivore', 420), hide=('hide_wooly', 350), bone=('bone_mammal', 300), milk=220,
+         pvp=PASSIVE, cbits='HERD', diet='HERBIVORE', tmpl='object/mobile/gualama.iff', scale=1.3, loot=False,
          attacks='{ {"knockdownattack",""}, {"dizzyattack",""} }'),
     dict(key='taanab_crop_quenker', name='a crop-raiding quenker', social='quenker', mob='MOB_CARNIVORE', level=58, res=RES_HERD,
          meat=('meat_reptilian', 30), hide=('hide_scaley', 30), bone=('bone_mammal', 20), milk=0,
@@ -254,6 +263,10 @@ LAIRS = [
     ('taanab_falumpaset_herd_neutral_none', 'creature_dynamic', [('taanab_falumpaset', 4)], None, 15, 'Falumpaset Herd', MOUND),
     ('taanab_falumpaset_lair_neutral_medium', 'creature_lair', [('taanab_falumpaset', 3)], MOUND, 15, 'Falumpaset Wallow', None),
     ('taanab_zucca_boar_pack_neutral_none', 'creature_dynamic', [('taanab_zucca_boar', 3)], None, 15, 'Zucca Boar Sounder', NEST),
+    ('taanab_roba_pack_neutral_none', 'creature_dynamic', [('taanab_roba', 4)], None, 15, 'Taanab Roba Pack', MOUND),
+    ('taanab_roba_lair_neutral_medium', 'creature_lair', [('taanab_roba', 3)], MOUND, 15, 'Roba Den', None),
+    ('taanab_ambrian_staga_herd_neutral_none', 'creature_dynamic', [('taanab_ambrian_staga', 5)], None, 15,
+     'Ambrian Staga Herd', MOUND),
     ('taanab_bantha_herd_neutral_none', 'creature_dynamic', [('taanab_plains_bantha', 4), ('taanab_bantha_bull', 1)], None, 15,
      'Plains Bantha Herd', MOUND),
     ('taanab_crop_quenker_pack_neutral_none', 'creature_dynamic', [('taanab_crop_quenker', 3)], None, 15, 'Crop-Raiding Quenkers', NEST),
@@ -304,6 +317,7 @@ SPAWN_WEIGHT = {  # world spawner weighting: herds common, predators rarer, Noru
     'taanab_nerf_herd_neutral_none': 60, 'taanab_vir_vur_flock_neutral_none': 40, 'taanab_kaadu_flock_neutral_none': 50,
     'taanab_falumpaset_herd_neutral_none': 45, 'taanab_falumpaset_lair_neutral_medium': 30,
     'taanab_zucca_boar_pack_neutral_none': 35, 'taanab_bantha_herd_neutral_none': 50,
+    'taanab_roba_pack_neutral_none': 40, 'taanab_roba_lair_neutral_medium': 25, 'taanab_ambrian_staga_herd_neutral_none': 45,
     'taanab_crop_quenker_pack_neutral_none': 35, 'taanab_plains_kusak_pack_neutral_none': 30,
     'taanab_plains_kusak_lair_neutral_medium': 25, 'taanab_sharnaff_lair_neutral_medium': 25,
     'taanab_hill_graul_neutral_none': 15, 'taanab_hill_graul_lair_neutral_large': 12,

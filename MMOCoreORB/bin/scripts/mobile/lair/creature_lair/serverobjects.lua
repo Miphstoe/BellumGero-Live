@@ -627,3 +627,4 @@ includeFile("lair/creature_lair/taanab/taanab_falumpaset_lair_neutral_medium.lua
 includeFile("lair/creature_lair/taanab/taanab_plains_kusak_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/taanab/taanab_sharnaff_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/taanab/taanab_hill_graul_lair_neutral_large.lua")
+includeFile("lair/creature_lair/taanab/taanab_roba_lair_neutral_medium.lua")
