@@ -190,6 +190,17 @@ assert not [n for n in chk if n['tmpl'].startswith('object/installation/')]
 miss = sorted({n['tmpl'] for n in chk if n['tmpl'].lower() not in {k.lower() for k in ot}}); assert not miss, miss
 print('taanab ids', min(ids), '-', max(ids), '; no clashes with', len(other), 'ids in other BG snapshots')
 
+# planet map: MAPPOI regions (Taanab's and Hoth's sites) use the 'themepark' category, because the client never
+# draws entries under its own 'poi' one; relabel 'themepark' as "Points of Interest" (applies on every planet).
+MLC = 'string/en/map_loc_cat_n.stf'
+src_mlc = next(((BASE, e) for e in read_tre(BASE) if e['name'].lower() == MLC), None) or bgw[MLC]
+extract_entry(*src_mlc, BGX)
+mlc = stf_tool.read(bg(MLC))
+assert stf_tool.as_dict(mlc)['themepark'] == 'Theme Park', stf_tool.as_dict(mlc)['themepark']
+stf_tool.set(mlc, 'themepark', 'Points of Interest')
+stf_tool.write(mlc, out(MLC))
+print('map category label: themepark -> Points of Interest (from %s)' % os.path.basename(src_mlc[0]))
+
 # object CRC table: every object template the server sends for Taanab (snapshot, Taanab mobiles and the mobiles the
 # Taanab spawns/lairs use, loot items, lair buildings) must be in the client's table, or the client can't resolve it.
 # bg_custom1's table is the one both sides load (no higher-priority TRE carries one); add whatever is missing.

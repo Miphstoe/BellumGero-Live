@@ -6,11 +6,11 @@ Branch: `Ender_Taanab` on Miphstoe/BellumGero-Live (Plane module "Taanab: Planet
 
 | File | Size | MD5 |
 |---|---|---|
-| `bg_custom1_taanab_20261030.tre` (`C:\SWG-Dev\NewPlanets\dist\`) — rename to `bg_custom1.tre` when installing | 220,129,095 bytes | `d8c6285c5aef6c0c09727691e7a65f39` |
+| `bg_custom1_taanab_20261030b.tre` (`C:\SWG-Dev\NewPlanets\dist\`) — rename to `bg_custom1.tre` when installing | 220,131,198 bytes | `3926f895fc8cfee05026d6ea93a616b2` |
 
-This is the 2026-10-29 `bg_custom1.tre` (md5 `a59d97894d06b8958adb26b8f113d854`: the 2026-10-25 live file plus the new `forceRenewal` command, its strings and the Force Discipline Powers master skill) with the Taanab files merged in: 22 files added and 7 replaced. Nothing from the live copy was removed.
+This is the 2026-10-29 `bg_custom1.tre` (md5 `a59d97894d06b8958adb26b8f113d854`: the 2026-10-25 live file plus the new `forceRenewal` command, its strings and the Force Discipline Powers master skill) with the Taanab files merged in: 23 files added and 7 replaced. Nothing from the live copy was removed.
 
-**Replaced:** `travel.iff`, `planet_n.stf`, `misc/planet_crc_string_table.iff`, `datatables/player/waypoint_planets.iff`, `ui/ui_ticketpurchase.inc`, `ui/ui_planet_map.inc` and `datatables/resource/resource_tree.iff`. Each one has Taanab added. `misc/object_template_crc_string_table.iff` already lists all 278 object templates Taanab uses, so it is unchanged (`stage_taanab.py` adds any that go missing in a future base). The resource tree gets 55 `*_taanab` native classes cloned from Hoth's, so Taanab resources spawn and creatures can be harvested.
+**Replaced:** `travel.iff`, `planet_n.stf`, `misc/planet_crc_string_table.iff`, `datatables/player/waypoint_planets.iff`, `ui/ui_ticketpurchase.inc`, `ui/ui_planet_map.inc` and `datatables/resource/resource_tree.iff`. Each one has Taanab added. `misc/object_template_crc_string_table.iff` already lists all 278 object templates Taanab uses, so it is unchanged (`stage_taanab.py` adds any that go missing in a future base). **Added from the base client:** `string/en/map_loc_cat_n.stf` (from `patch_14_00.tre`) with the `themepark` planet-map category relabelled "Points of Interest", since BG's MAPPOI sites (Taanab's and Hoth's) are listed under it; real theme parks on every planet now show under that name too. The resource tree gets 55 `*_taanab` native classes cloned from Hoth's, so Taanab resources spawn and creatures can be harvested.
 
 1. **Server:** back up `/trefiles/bg_custom1.tre`, then copy this file over it. The file name is the same, so `config.lua` doesn't change.
 2. **TC client:** this same file replaces `bg_custom1.tre` in the client folder.

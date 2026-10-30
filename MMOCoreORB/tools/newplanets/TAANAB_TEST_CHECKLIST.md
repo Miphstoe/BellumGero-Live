@@ -5,7 +5,7 @@ note what went wrong next to any ❌. Every ❌ becomes a fix or a new ticket in
 
 **Setup**
 - Server: local core3 on `Ender_Taanab`. The server and `C:\Dev-BG` both run `bg_custom1_taanab_20261030.tre`
-  (md5 `d8c6285c…`).
+  (md5 `3926f895…`).
 - Start `C:\Dev-BG` directly, **not** through the launcher (the launcher puts the live `bg_custom1.tre` back).
 - Admin toon: `/setGodMode self on`, `/invuln`. Combat toon for anything that tests loot, harvesting or missions.
 - Teleport is `/teleport <x> <y> <planet>`, for example `/teleport 2000 5400 taanab`.
@@ -77,7 +77,8 @@ World lairs only spawn around players, so ride across the plains for a few minut
 
 ## 8. Points of interest and planet map (LIVE-57, LIVE-48)
 - [ ] The map lists the 5 sites: Taanab Mining Outfit, Arcon Multinode Hybrid Plantings, Shipwreck, Norulac Raider
-      Cave, Great Herds of Taanab. *(They show under "Theme Park". See the open question on LIVE-57.)*
+      Cave, Great Herds of Taanab, under **Points of Interest** (the category formerly labelled "Theme Park", on
+      every planet).
 - [ ] Each marker sits on the real site; walking in shows "You have entered …".
 - [ ] **Mining Outfit** `/teleport -2610 -1300 taanab`: contractors, scientists and an artisan among the machinery.
 - [ ] **Hex farms** `/teleport -3000 -100 taanab`: farmers, agriculturalists and ranchers.
