@@ -189,3 +189,36 @@ assert not ids & other and len(ids) == len(nodes)
 assert not [n for n in chk if n['tmpl'].startswith('object/installation/')]
 miss = sorted({n['tmpl'] for n in chk if n['tmpl'].lower() not in {k.lower() for k in ot}}); assert not miss, miss
 print('taanab ids', min(ids), '-', max(ids), '; no clashes with', len(other), 'ids in other BG snapshots')
+
+# object CRC table: every object template the server sends for Taanab (snapshot, Taanab mobiles and the mobiles the
+# Taanab spawns/lairs use, loot items, lair buildings) must be in the client's table, or the client can't resolve it.
+# bg_custom1's table is the one both sides load (no higher-priority TRE carries one); add whatever is missing.
+import glob
+SCRIPTS = r'\\wsl.localhost\Debian\home\EnderWookie\workspace\BellumGero-Taanab\MMOCoreORB\bin\scripts'
+def shared(p):
+    d, b = p.rsplit('/', 1)
+    return p if b.startswith('shared_') else d + '/shared_' + b
+lairs = glob.glob(os.path.join(SCRIPTS, 'mobile', 'lair', '*', 'taanab', '*.lua'))
+srcs = (glob.glob(os.path.join(SCRIPTS, 'mobile', 'taanab', '*.lua')) + lairs +
+        glob.glob(os.path.join(SCRIPTS, 'loot', 'items', 'bellum', 'taanab', '*.lua')))
+mob_names = set()
+for f in lairs + [os.path.join(SCRIPTS, 'screenplays', 'static_spawns', 'taanab_static_spawns.lua')]:
+    mob_names |= set(re.findall(r'\{"([a-z0-9_]+)",', open(f).read()))
+where = {}
+for f in glob.glob(os.path.join(SCRIPTS, 'mobile', '**', '*.lua'), recursive=True):
+    for m in re.finditer(r'addCreatureTemplate\(\s*\w+\s*,\s*"([a-z0-9_]+)"', open(f, errors='ignore').read()):
+        where[m.group(1)] = f
+assert mob_names <= set(where), sorted(mob_names - set(where))
+srcs += [where[n] for n in mob_names]
+need = {n['tmpl'] for n in chk}
+for f in set(srcs):
+    need |= {shared(x) for x in re.findall(r'"(object/[a-z0-9_/]+\.iff)"', open(f, errors='ignore').read())}
+have = {k.lower() for k in ot}
+added = sorted(t for t in need if t.lower() not in have)
+for t in added:
+    cstb_tool.add(ot, t)
+if added:
+    cstb_tool.write(ot, out('misc/object_template_crc_string_table.iff'))
+elif os.path.exists(out('misc/object_template_crc_string_table.iff')):
+    os.remove(out('misc/object_template_crc_string_table.iff'))  # stale copy from an earlier run
+print('object CRC table: %d Taanab templates checked, %d added %s' % (len(need), len(added), added))

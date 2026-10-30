@@ -6,11 +6,11 @@ Branch: `Ender_Taanab` on Miphstoe/BellumGero-Live (Plane module "Taanab: Planet
 
 | File | Size | MD5 |
 |---|---|---|
-| `bg_custom1_taanab_20261029.tre` (`C:\SWG-Dev\NewPlanets\dist\`) — rename to `bg_custom1.tre` when installing | 220,133,305 bytes | `e73c019bb1cf56e1e88699a103763c3e` |
+| `bg_custom1_taanab_20261030.tre` (`C:\SWG-Dev\NewPlanets\dist\`) — rename to `bg_custom1.tre` when installing | 220,129,095 bytes | `d8c6285c5aef6c0c09727691e7a65f39` |
 
-This is the live `bg_custom1.tre` from 2026-10-25 (md5 `d3eafff1aab3a148fe59a9a1a7c95a87`, Hoth included) with the Taanab files merged in: 22 files added and 7 replaced. Nothing from the live copy was removed.
+This is the 2026-10-29 `bg_custom1.tre` (md5 `a59d97894d06b8958adb26b8f113d854`: the 2026-10-25 live file plus the new `forceRenewal` command, its strings and the Force Discipline Powers master skill) with the Taanab files merged in: 22 files added and 7 replaced. Nothing from the live copy was removed.
 
-**Replaced:** `travel.iff`, `planet_n.stf`, `misc/planet_crc_string_table.iff`, `datatables/player/waypoint_planets.iff`, `ui/ui_ticketpurchase.inc`, `ui/ui_planet_map.inc` and `datatables/resource/resource_tree.iff`. Each one has Taanab added. The resource tree gets 55 `*_taanab` native classes cloned from Hoth's, so Taanab resources spawn and creatures can be harvested.
+**Replaced:** `travel.iff`, `planet_n.stf`, `misc/planet_crc_string_table.iff`, `datatables/player/waypoint_planets.iff`, `ui/ui_ticketpurchase.inc`, `ui/ui_planet_map.inc` and `datatables/resource/resource_tree.iff`. Each one has Taanab added. `misc/object_template_crc_string_table.iff` already lists all 278 object templates Taanab uses, so it is unchanged (`stage_taanab.py` adds any that go missing in a future base). The resource tree gets 55 `*_taanab` native classes cloned from Hoth's, so Taanab resources spawn and creatures can be harvested.
 
 1. **Server:** back up `/trefiles/bg_custom1.tre`, then copy this file over it. The file name is the same, so `config.lua` doesn't change.
 2. **TC client:** this same file replaces `bg_custom1.tre` in the client folder.
