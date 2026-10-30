@@ -6,7 +6,7 @@ Branch: `Ender_Taanab` on Miphstoe/BellumGero-Live (Plane module "Taanab: Planet
 
 | File | Size | MD5 |
 |---|---|---|
-| `bg_custom1_taanab_20261030b.tre` (`C:\SWG-Dev\NewPlanets\dist\`) — rename to `bg_custom1.tre` when installing | 220,131,198 bytes | `3926f895fc8cfee05026d6ea93a616b2` |
+| `2026-10-29-bg_custom1.tre` (`C:\Users\Mobile-Wookie\Downloads\2026-10-29\`; built as `bg_custom1_taanab_20261030b.tre`) — rename to `bg_custom1.tre` when installing | 220,131,198 bytes | `3926f895fc8cfee05026d6ea93a616b2` |
 
 This is the 2026-10-29 `bg_custom1.tre` (md5 `a59d97894d06b8958adb26b8f113d854`: the 2026-10-25 live file plus the new `forceRenewal` command, its strings and the Force Discipline Powers master skill) with the Taanab files merged in: 23 files added and 7 replaced. Nothing from the live copy was removed.
 
