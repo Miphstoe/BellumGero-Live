@@ -180,6 +180,11 @@ veteranRewards = {
 
 	-- 545 Day Reward
 	{templateFile = "object/tangible/harvesting/instant_travel_vehicle_transponder.iff", milestone=545, oneTime=true, description="Instant Travel Vehicle Transponder", jtlReward = false},
+
+	-- 440 Day Reward
+	-- oneTime=false: repeatable claim (not account-wide-once) -- players may claim as many Species
+	-- Change Tokens as they want once eligible, same as the repeatable decorative rewards above.
+	{templateFile = "object/tangible/item/species_change_token.iff", milestone=440, oneTime=false, description="Species Change Token", jtlReward = false},
 }
 
 -- { "stringId", "songFilePath" }

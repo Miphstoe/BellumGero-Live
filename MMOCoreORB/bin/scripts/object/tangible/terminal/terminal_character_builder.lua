@@ -3100,7 +3100,8 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 			"Jedi Items",
 			{
 				"Color Crystal", "color_crystals",
-				"Krayt Pearl", "krayt_pearls"
+				"Krayt Pearl", "krayt_pearls",
+				"Holocron of Destiny", "object/tangible/loot/misc/holocron_of_destiny.iff"
 			},
 			--"Attachments",
 			--{
@@ -3825,6 +3826,8 @@ object_tangible_terminal_terminal_character_builder = object_tangible_terminal_s
 				"Painting: Smuggler's Run","object/tangible/veteran_reward/one_year_anniversary/painting_07.iff",
 				"Painting: Imperial Oppression (TIE Oppressor)","object/tangible/veteran_reward/one_year_anniversary/painting_08.iff",
 				"Painting: Emperor's Eyes (TIE Sentinel)","object/tangible/veteran_reward/one_year_anniversary/painting_09.iff",
+				--440 Day Reward
+				"Species Change Token","object/tangible/item/species_change_token.iff",
 			},
 			"Furniture",
 			{

@@ -17,7 +17,18 @@ class CustomizationIdManager : public Object, public Logger, public Singleton<Cu
 	HashTable<String, int> customizationIds;
 	HashTable<int, String> reverseIds;
 	HashTable<String, Reference<PaletteData*> > paletteColumns;
-	HashTable<String, Reference<HairAssetData*> > hairAssetSkillMods;
+
+	// BG: datatables/customization/hair_assets_skill_mods.iff now legitimately contains MULTIPLE
+	// rows for the same hair item's serverTemplate -- bg_species1.tre's custom species reuse many
+	// stock hairstyles, adding one row per compatible species that shares that hairstyle. Storing a
+	// single HairAssetData per serverTemplate (as originally written) meant loadHairAssetsSkillMods()
+	// silently overwrote every row but the last one loaded for ~300 of 554 hairstyles -- whichever
+	// species happened to be listed last for that hairstyle "won", and every other species (Human
+	// included) got a mismatched HairAssetData whose getServerPlayerTemplate() didn't match the
+	// character being created, causing addHair()/createHairObject() to reject the hair and leave the
+	// character bald. See getHairAssetData() below.
+	HashTable<String, Vector<Reference<HairAssetData*> > > hairAssetSkillMods;
+
 	HashTable<String, bool> allowBald;
 
 public:
@@ -40,8 +51,22 @@ public:
 		return paletteColumns.get(palette);
 	}
 
-	HairAssetData* getHairAssetData(const String& hairServerTemplate) {
-		return hairAssetSkillMods.get(hairServerTemplate);
+	// BG: playerTemplate (the target creature's complete/CC template path, e.g.
+	// "object/creature/player/human_female.iff") disambiguates between the multiple species that
+	// can now share a single hairServerTemplate. Returns nullptr if hairServerTemplate has no row
+	// at all, or if it has rows but none of them are valid for playerTemplate specifically.
+	HairAssetData* getHairAssetData(const String& hairServerTemplate, const String& playerTemplate) {
+		if (!hairAssetSkillMods.containsKey(hairServerTemplate))
+			return nullptr;
+
+		Vector<Reference<HairAssetData*> >& candidates = hairAssetSkillMods.get(hairServerTemplate);
+
+		for (int i = 0; i < candidates.size(); ++i) {
+			if (candidates.get(i)->getServerPlayerTemplate() == playerTemplate)
+				return candidates.get(i);
+		}
+
+		return nullptr;
 	}
 
 	bool canBeBald(const String& speciesSubString) {
