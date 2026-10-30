@@ -623,3 +623,7 @@ includeFile("lair/creature_lair/yavin4/yavin4_crazed_geonosian_guard_lair_neutra
 includeFile("lair/creature_lair/hoth/hoth_tauntaun_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/hoth/hoth_ice_mynock_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/hoth/hoth_wampa_lair_neutral_large.lua")
+includeFile("lair/creature_lair/taanab/taanab_falumpaset_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/taanab/taanab_plains_kusak_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/taanab/taanab_sharnaff_lair_neutral_medium.lua")
+includeFile("lair/creature_lair/taanab/taanab_hill_graul_lair_neutral_large.lua")

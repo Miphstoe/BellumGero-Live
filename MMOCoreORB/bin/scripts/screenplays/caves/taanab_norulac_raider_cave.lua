@@ -58,8 +58,12 @@ function TaanabNorulacRaiderCaveScreenPlay:start()
 end
 
 function TaanabNorulacRaiderCaveScreenPlay:spawnMobiles()
+	local spawned = 0
 	for _, m in ipairs(self.mobiles) do
 		local pMobile = spawnMobile(self.planet, m[1], m[2], m[3], m[4], m[5], m[6], m[7])
+		if pMobile ~= nil then
+			spawned = spawned + 1
+		end
 
 		if pMobile ~= nil and m[1] == self.bossTemplate then
 			-- observers return 0, so they survive the boss's respawns (same object)
@@ -67,6 +71,8 @@ function TaanabNorulacRaiderCaveScreenPlay:spawnMobiles()
 			createObserver(OBJECTDESTRUCTION, "TaanabNorulacRaiderCaveScreenPlay", "onBossDied", pMobile)
 		end
 	end
+
+	print(string.format("[TAANAB-CAVE] spawned %d of %d Norulac Raider Cave mobiles", spawned, #self.mobiles))
 end
 
 function TaanabNorulacRaiderCaveScreenPlay:onBossDamage(pBoss, pAttacker, damage)
