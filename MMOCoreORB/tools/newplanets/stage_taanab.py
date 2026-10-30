@@ -43,7 +43,7 @@ print('infinity files:', len(want))
 BGX = 'extract/bg_taanab'
 bgt = ['datatables/travel/travel.iff', 'string/en/planet_n.stf', 'misc/planet_crc_string_table.iff',
        'datatables/player/waypoint_planets.iff', 'ui/ui_ticketpurchase.inc', 'ui/ui_planet_map.inc',
-       'misc/object_template_crc_string_table.iff']
+       'misc/object_template_crc_string_table.iff', 'datatables/resource/resource_tree.iff']
 got = set()
 for e in read_tre(BASE):
     if e['name'].lower() in bgt:
@@ -71,6 +71,25 @@ w = dt_tool.read(bg('datatables/player/waypoint_planets.iff'))
 if not any(r[0] == 'taanab' for r in w['rows']):
     w['rows'].append(['taanab', 'ui_planet_sel_taanab.apt'])
 dt_tool.write(w, out('datatables/player/waypoint_planets.iff'))
+
+# resource tree: clone every Hoth native class as a Taanab one, right after it (row order is the tree), with new
+# INDEX values above the current maximum. The server's NativePool spawns <class>_taanab for each included class.
+rt = dt_tool.read(bg('datatables/resource/resource_tree.iff'))
+assert not any(r[1].endswith('_taanab') for r in rt['rows'])
+nxt = max(r[0] for r in rt['rows']) + 1
+rows = []
+for r in rt['rows']:
+    rows.append(r)
+    if r[1].endswith('_hoth'):
+        c = list(r)
+        c[0], nxt = nxt, nxt + 1
+        c[1] = r[1][:-len('_hoth')] + '_taanab'
+        c = [x.replace('Hothian ', 'Taanab ') if isinstance(x, str) and i > 1 else x for i, x in enumerate(c)]
+        assert not any(isinstance(x, str) and 'hoth' in x.lower() for x in c), c
+        rows.append(c)
+rt['rows'] = rows
+print('resource tree: +%d taanab classes' % sum(r[1].endswith('_taanab') for r in rows))
+dt_tool.write(rt, out('datatables/resource/resource_tree.iff'))
 
 # planet map: BG already has a 'taanab' page that points at Talus' map
 m = open(bg('ui/ui_planet_map.inc'), 'rb').read().decode('latin-1')
