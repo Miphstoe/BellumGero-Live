@@ -53,8 +53,8 @@ At the Pandath terminals (mission 2100, 5363; bounty 2095, 5356; entertainer 212
 
 ## 5. Wildlife and world spawns (LIVE-58)
 World lairs only spawn around players, so ride across the plains for a few minutes in several areas:
-- [ ] Passive herds show up: Taanab nerf (45), vir vur (46), plains kaadu (48), field falumpaset (50), plains bantha
-      (55) with a bantha bull (62).
+- [ ] Passive herds show up: Taanab nerf (45), vir vur (46), plains kaadu (48), field falumpaset (50), Taanab roba
+      (53), plains bantha (55) with a bantha bull (62), Ambrian staga (56, gualama model).
 - [ ] Hostiles show up: zucca boar (52), crop-raiding quenker (58), plains kusak (66), sharnaff (72), Taanab hill
       graul (84).
 - [ ] Norulac raider camps (70–74) and strike teams (74–82) show up.
