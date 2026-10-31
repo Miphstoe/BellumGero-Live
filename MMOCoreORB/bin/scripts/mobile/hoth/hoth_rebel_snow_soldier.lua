@@ -7,6 +7,7 @@ hoth_rebel_snow_soldier = Creature:new {
 	socialGroup = "rebel",
 	faction = "rebel",
 	level = 76,
+	creditsMultiplier = 3,
 	chanceHit = 0.76,
 	damageMin = 540,
 	damageMax = 760,
@@ -32,6 +33,7 @@ hoth_rebel_snow_soldier = Creature:new {
 		"object/mobile/rebel_snow_m_01.iff",
 		"object/mobile/rebel_snow_f_01.iff"
 	},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
@@ -42,25 +44,25 @@ hoth_rebel_snow_soldier = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 250000
+			lootChance = 125000
 		},
 		{
 			groups = {
 				{group = "hoth_rebel_snow_schematics", chance = 10000000}
 			},
-			lootChance = 150000
+			lootChance = 75000
 		},
 		{
 			groups = {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
-			lootChance = 200000
+			lootChance = 100000
 		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "rebel_carbine",

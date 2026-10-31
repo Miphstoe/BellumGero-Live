@@ -822,6 +822,16 @@ local MySwgTravelDestinations = {
                     return nextConversationScreen
                 end
 
+                -- Character Name Change Service: info screen, then the SUI flow; nothing is charged here
+                if optionLink == "namechange1" then
+                    return nextConversationScreen
+                end
+
+                if optionLink == "namechange_start" then
+                    BgCharacterRename:start(conversingPlayer)
+                    return conversation:getScreen("namechange_start")
+                end
+
                 -- Take action when the player makes a purchase.
                 --if (inventory:hasFullContainerObjects() == true) then -- removed, does not work
                 if (SceneObject(pInventory):isContainerFullRecursive()) then

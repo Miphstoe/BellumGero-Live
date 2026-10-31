@@ -54,6 +54,7 @@
 
 // Include Discord manager for integration
 #include "server/zone/managers/discord/DiscordManager.h"
+#include "server/zone/objects/creature/commands/TotalHealOtherCommand.h"
 
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
@@ -1758,6 +1759,9 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
 	sender->sendMessage(amsg);
+
+	// Bellum Gero: Automatic Total Heal by Tell (no-op unless the receiver enabled it)
+	TotalHealOtherCommand::handleIncomingTell(receiver, sender, message->getMessage());
 }
 
 Reference<ChatRoom*> ChatManagerImplementation::createGroupRoom(uint64 groupID, CreatureObject* creator) {

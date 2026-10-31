@@ -58,3 +58,9 @@ object_tangible_wearables_armor_snowtrooper_shared_armor_snowtrooper_leggings = 
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_snowtrooper_shared_armor_snowtrooper_leggings, "object/tangible/wearables/armor/snowtrooper/shared_armor_snowtrooper_leggings.iff")
+
+-- Bellum Gero full armor suit shared template
+object_tangible_wearables_armor_snowtrooper_shared_armor_snowtrooper_suit_package = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/snowtrooper/shared_armor_snowtrooper_suit_package.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_snowtrooper_shared_armor_snowtrooper_suit_package, "object/tangible/wearables/armor/snowtrooper/shared_armor_snowtrooper_suit_package.iff")

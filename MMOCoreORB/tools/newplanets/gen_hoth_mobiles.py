@@ -44,17 +44,57 @@ def register(rel_list_file, line, after_prefix=None):
 LOOT_BEAST = """{
 		{
 			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = %d
-		},
-		{
-			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "armor_attachments", chance = 10000000}
+			},
+			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "clothing_attachments", chance = 10000000}
+			},
+			lootChance = 250000
+		},
+		{
+			groups = {
+				{group = "color_crystals", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "power_crystals", chance = 10000000}
+			},
+			lootChance = 150000
+		},
+		{
+			groups = {
+				{group = "krayt_pearls", chance = 10000000}
+			},
+			lootChance = 50000
+		},
+		{
+			groups = {
+				{group = "jedi_robe", chance = 10000000}
+			},
+			lootChance = 20000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 10000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 20000
 		}
 	}"""
 
@@ -79,7 +119,7 @@ CREATURES = [
          attacks='{ {"knockdownattack",""}, {"dizzyattack",""} }'),
     dict(key='hoth_tauntaun_bull', name='a tauntaun bull', social='tauntaun', mob='MOB_HERBIVORE', level=66,
          hit=0.62, dmg=(460, 630), xp=6380, ham=(11500, 14000), armor=1, res='{130,130,25,160,25,160,25,25,-1}',
-         meat=('meat_herbivore', 850), hide=('hide_wooly', 750), bone=('bone_mammal', 600), milk=0,
+         meat=('meat_herbivore', 850), hide=('hide_wooly', 750), bone=('bone_mammal', 600), milk=350,
          pvp='AGGRESSIVE + ATTACKABLE + ENEMY', cbits='PACK + HERD', diet='HERBIVORE', tmpl='object/mobile/tauntaun_hue.iff',
          hues='{ 24, 25, 26, 27, 28, 29, 30, 31 }', scale=1.15, loot=0,
          attacks='{ {"knockdownattack",""}, {"creatureareaknockdown",""} }'),
@@ -119,22 +159,6 @@ CREATURES = [
 LOOT_BOSS = """{
 		{
 			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 8000000
-		},
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 6000000
-		},
-		{
-			groups = {
 				{group = "endgame_weapon_schematics", chance = 10000000}
 			},
 			lootChance = 1000000
@@ -144,6 +168,42 @@ LOOT_BOSS = """{
 				{group = "bg_token_group", chance = 10000000}
 			},
 			lootChance = 2500000
+		},
+		{
+			groups = {
+				{group = "armor_attachments", chance = 10000000}
+			},
+			lootChance = 3000000
+		},
+		{
+			groups = {
+				{group = "clothing_attachments", chance = 10000000}
+			},
+			lootChance = 3000000
+		},
+		{
+			groups = {
+				{group = "color_crystals", chance = 10000000}
+			},
+			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "power_crystals", chance = 10000000}
+			},
+			lootChance = 2000000
+		},
+		{
+			groups = {
+				{group = "krayt_pearls", chance = 10000000}
+			},
+			lootChance = 1500000
+		},
+		{
+			groups = {
+				{group = "jedi_robe", chance = 10000000}
+			},
+			lootChance = 500000
 		},
 		{
 			groups = {
@@ -185,13 +245,13 @@ LOOT_BOSS = """{
 			groups = {
 				{group = "hoth_vehicle_schematics", chance = 10000000}
 			},
-			lootChance = 500000
+			lootChance = 1500000
 		},
 		{
 			groups = {
 				{group = "hoth_vehicle_deeds", chance = 10000000}
 			},
-			lootChance = 200000
+			lootChance = 1000000
 		}
 	}"""
 
@@ -237,26 +297,64 @@ TUNE = {
     'hoth_tauntaun_bull': dict(level=72, hit=0.68, dmg=(510, 690), ham=(13000, 15500), xp=6930),
     'hoth_ice_mynock': dict(level=67, hit=0.63, dmg=(480, 640), ham=(11500, 13500), xp=6470),
     'hoth_greater_ice_mynock': dict(level=76, hit=0.73, dmg=(545, 760), ham=(13000, 15500), xp=7300),
+    # dna: percent chance of a lootable DNA sample on kill (LIVE-33, 2026-10-17; cave tiers multiply it like loot)
     'hoth_wampa': dict(level=90, hit=0.86, dmg=(590, 880), ham=(16000, 20000), xp=8600,
-                       res='{150,165,35,200,35,200,35,35,-1}'),
+                       res='{150,165,35,200,35,200,35,35,-1}', dna=10),
     'hoth_elder_wampa': dict(level=98, hit=0.95, dmg=(640, 980), ham=(22000, 27000), armor=2, xp=9400,
-                             res='{155,170,40,210,40,210,40,40,-1}'),
-    'hoth_wampa_matriarch': dict(level=110, hit=1.05, dmg=(740, 1130), ham=(54000, 60000), xp=10560),
+                             res='{155,170,40,210,40,210,40,40,-1}', dna=15),
+    # Cave bosses follow the cave tiers below (2026-10-17): Frostfang is the baseline, the others are Frostfang
+    # scaled by their cave's tier (level +, hit +, dmg x, HAM x); the patriarch sits a step above the matriarch.
     'hoth_wampa_frostfang': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
-    'hoth_wampa_icemaw': dict(level=105, hit=1.0, dmg=(710, 1080), ham=(46000, 51000), xp=10080),
-    'hoth_wampa_snowblind': dict(level=107, hit=1.02, dmg=(725, 1100), ham=(48000, 53000), xp=10270),
-    'hoth_wampa_patriarch': dict(level=115, hit=1.1, dmg=(800, 1250), ham=(58000, 64000), xp=11040),
+    'hoth_wampa_icemaw': dict(level=109, hit=1.03, dmg=(781, 1188), ham=(52900, 58650), xp=10464),
+    'hoth_wampa_snowblind': dict(level=113, hit=1.06, dmg=(852, 1296), ham=(59800, 66300), xp=10848),
+    'hoth_wampa_matriarch': dict(level=117, hit=1.09, dmg=(923, 1404), ham=(69000, 76500), xp=11232),
+    'hoth_wampa_patriarch': dict(level=120, hit=1.12, dmg=(960, 1460), ham=(75000, 82000), xp=11520),
     'hoth_mynock_broodmother': dict(level=100, hit=0.97, dmg=(680, 1040), ham=(40000, 45000), xp=9600),
 }
 for _c in CREATURES + BOSSES:
     _c.update(TUNE.get(_c['key'], {}))
 
+# 2026-10-17 (Ender): the wampa caves escalate. Frostfang's cave (cave_01_ice) keeps the base hoth_wampa /
+# hoth_elder_wampa; each harder cave gets its own copies with more level, accuracy, damage and HAM, and more loot:
+# regular drops x loot (lootChance, capped at 100 %), boss rewards x boss_loot (HOTH_CAVE_BOSS_LOOT_PCT in
+# hoth_ice_caves.lua). World wampas keep the base templates.
+CAVE_TIERS = [  # (suffix, name adjective, level +, hit +, dmg x, ham x, loot x, boss_loot x, boss)
+    ('t2', 'savage', 4, 0.03, 1.10, 1.15, 1.5, 1.25, ['hoth_wampa_icemaw']),
+    ('t3', 'ferocious', 8, 0.06, 1.20, 1.30, 2.0, 1.5, ['hoth_wampa_snowblind']),
+    ('t4', 'ravenous', 12, 0.09, 1.30, 1.50, 3.0, 2.0, ['hoth_wampa_matriarch', 'hoth_wampa_patriarch']),
+]
+
+
+def cave_tier(base, tier):
+    suffix, adj, lv, hit, dmg, ham, loot, _, _ = tier
+    c = dict(base)
+    c['key'] = f"{base['key']}_{suffix}"
+    c['name'] = f"a {adj} {base['name'].split(' ', 1)[1]}"
+    c['level'] = base['level'] + lv
+    c['hit'] = round(base['hit'] + hit, 2)
+    c['dmg'] = tuple(int(round(d * dmg)) for d in base['dmg'])
+    c['ham'] = tuple(int(round(h * ham)) for h in base['ham'])
+    c['xp'] = int(round(base['xp'] * c['level'] / base['level']))
+    c['loot_mult'] = loot
+    return c
+
+
+CAVE_TIER_MOBS = [cave_tier(c, t) for t in CAVE_TIERS for c in CREATURES if c['key'] in ('hoth_wampa', 'hoth_elder_wampa')]
+CAVE_BOSS_LOOT_PCT = {boss: int(round(t[7] * 100)) for t in CAVE_TIERS for boss in t[8]}
+
 
 def creature_lua(c):
     hues = '\n\thues = %s,' % c['hues'] if c['hues'] else ''
-    loot = c.get('lootstr') or (LOOT_BEAST % c['loot'] if c['loot'] else '{}')
+    # milk without milkType gives droids/players "cannot locate a current spawn of " (2026-10-17)
+    milk_type = '\n\tmilkType = "%s",' % c.get('milk_type', 'milk_wild') if c['milk'] else ''
+    # percent chance of a lootable DNA sample on kill (CreatureTemplate dnaDropChance; unset = global 5 %), 2026-10-17
+    dna_chance = min(100, c['dna'] * c.get('loot_mult', 1)) if c.get('dna') else 0
+    dna = '\n\tdnaDropChance = %g,' % dna_chance if dna_chance else ''
+    loot = c.get('lootstr') or (LOOT_BEAST if c['loot'] else '{}')  # no random armor_all/weapons_all/wearables_all (junk) since 2026-10-11
     if c.get('extra'):
         loot = ('{' + c['extra'][1:] if loot == '{}' else loot.rstrip()[:-1].rstrip() + c['extra']) + '\n\t}'
+    if c.get('loot_mult'):  # harder cave tiers drop more (CAVE_TIERS)
+        loot = re.sub(r'lootChance = (\d+)', lambda m: 'lootChance = %d' % min(10000000, round(int(m.group(1)) * c['loot_mult'])), loot)
     return f'''{c['key']} = Creature:new {{
 	objectName = "",
 	customName = "{c['name']}",
@@ -277,8 +375,8 @@ def creature_lua(c):
 	hideType = "{c['hide'][0]}",
 	hideAmount = {c['hide'][1]},
 	boneType = "{c['bone'][0]}",
-	boneAmount = {c['bone'][1]},
-	milk = {c['milk']},
+	boneAmount = {c['bone'][1]},{milk_type}
+	milk = {c['milk']},{dna}
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = {c['pvp']},
@@ -761,9 +859,9 @@ end
 
 CAVE_PLAN = {  # building -> (boss cells {index: boss}, regular mobiles, elite mobile)
     'cave_01_ice': ({11: 'hoth_wampa_frostfang'}, 'hoth_wampa', 'hoth_elder_wampa'),
-    'cave_04_ice_s01': ({11: 'hoth_wampa_icemaw'}, 'hoth_wampa', 'hoth_elder_wampa'),
-    'cave_02_ice': ({9: 'hoth_wampa_snowblind'}, 'hoth_wampa', 'hoth_elder_wampa'),
-    'cave_03_ice': ({29: 'hoth_wampa_matriarch', 9: 'hoth_wampa_patriarch'}, 'hoth_wampa', 'hoth_elder_wampa'),
+    'cave_04_ice_s01': ({11: 'hoth_wampa_icemaw'}, 'hoth_wampa_t2', 'hoth_elder_wampa_t2'),
+    'cave_02_ice': ({9: 'hoth_wampa_snowblind'}, 'hoth_wampa_t3', 'hoth_elder_wampa_t3'),
+    'cave_03_ice': ({29: 'hoth_wampa_matriarch', 9: 'hoth_wampa_patriarch'}, 'hoth_wampa_t4', 'hoth_elder_wampa_t4'),
     'cave_06_flatland_s01_ice': ({11: 'hoth_mynock_broodmother'}, 'hoth_ice_mynock', 'hoth_greater_ice_mynock'),
 }
 CAVE_RESPAWN, BOSS_RESPAWN = 420, 1800
@@ -792,11 +890,14 @@ def cave_lua():
     names = {b['key']: b['name'] for b in BOSSES}
     names['hoth_wampa_matriarch'] = next(c['name'] for c in CREATURES if c['key'] == 'hoth_wampa_matriarch')
     boss_names = '\n'.join(f'\t{k} = "{v}",' for k, v in sorted(names.items()))
+    boss_pct = '\n'.join(f'\t{k} = {v},' for k, v in sorted(CAVE_BOSS_LOOT_PCT.items()))
     return '''-- Generated by NewPlanets/gen_hoth_mobiles.py from server_prep/hoth_cave_points.json.
 -- {template, respawn, cell-local x, height, y, heading, cell object id from snapshot/hoth.ws}
 -- Cave bosses reward every qualifying player separately (like the world bosses): damagers within
 -- HOTH_BOSS_LOOT_RANGE when the boss dies (or the killer's group if nothing was tracked) each roll
 -- HOTH_CAVE_BOSS_LOOT into their own inventory. The boss corpses carry no loot.
+-- The caves escalate (CAVE_TIERS in the generator): Frostfang's cave is the baseline; the harder caves use
+-- tougher wampa templates (_t2/_t3/_t4) and their bosses roll every lootChance x HOTH_CAVE_BOSS_LOOT_PCT / 100.
 local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
 
 HOTH_BOSS_LOOT_RANGE = 64
@@ -804,6 +905,23 @@ HOTH_CAVE_BOSS_LOOT = ''' + LOOT_BOSS.replace('\n\t', '\n') + '''
 HOTH_CAVE_BOSS_NAMES = {
 ''' + boss_names + '''
 }
+HOTH_CAVE_BOSS_LOOT_PCT = {
+''' + boss_pct + '''
+}
+
+-- HOTH_CAVE_BOSS_LOOT with every lootChance scaled by pct / 100 (capped at 100 %).
+function hothCaveBossLoot(pct)
+	if pct == nil or pct <= 100 then
+		return HOTH_CAVE_BOSS_LOOT
+	end
+
+	local scaled = {}
+	for i = 1, #HOTH_CAVE_BOSS_LOOT do
+		local entry = HOTH_CAVE_BOSS_LOOT[i]
+		scaled[i] = { groups = entry.groups, lootChance = math.min(10000000, math.floor(entry.lootChance * pct / 100)) }
+	end
+	return scaled
+end
 
 HothIceCavesScreenPlay = ScreenPlay:new {
 	screenplayName = "HothIceCavesScreenPlay",
@@ -832,6 +950,7 @@ function HothIceCavesScreenPlay:spawnMobiles()
 			-- observers return 0, so they survive the boss's respawns (same object)
 			createObserver(DAMAGERECEIVED, "HothIceCavesScreenPlay", "onBossDamage", pMobile)
 			createObserver(OBJECTDESTRUCTION, "HothIceCavesScreenPlay", "onBossDied", pMobile)
+			writeData(SceneObject(pMobile):getObjectID() .. ":hothCaveBossLootPct", HOTH_CAVE_BOSS_LOOT_PCT[mobile[1]] or 100)
 		end
 	end
 end
@@ -846,7 +965,8 @@ function HothIceCavesScreenPlay:onBossDied(pBoss, pKiller)
 		return 0
 	end
 
-	giveHothBossRewards(pBoss, pKiller, HOTH_CAVE_BOSS_LOOT, HOTH_BOSS_LOOT_RANGE)
+	local pct = readData(SceneObject(pBoss):getObjectID() .. ":hothCaveBossLootPct")
+	giveHothBossRewards(pBoss, pKiller, hothCaveBossLoot(pct), HOTH_BOSS_LOOT_RANGE)
 	return 0
 end
 '''
@@ -890,7 +1010,10 @@ def main():
     made.append(write('mobile/hoth/hoth_imperial_salvage_tech.lua', SALVAGE))
     for b in BOSSES:
         made.append(write(f'mobile/hoth/{b["key"]}.lua', creature_lua(b)))
-    keys = ([c['key'] for c in CREATURES] + [b['key'] for b in BOSSES] + ['hoth_probe_droid'] + [n['key'] for n in NPCS] +
+    for c in CAVE_TIER_MOBS:
+        made.append(write(f'mobile/hoth/{c["key"]}.lua', creature_lua(c)))
+    keys = ([c['key'] for c in CREATURES] + [b['key'] for b in BOSSES] + [c['key'] for c in CAVE_TIER_MOBS] +
+            ['hoth_probe_droid'] + [n['key'] for n in NPCS] +
             ['hoth_scavenger', 'hoth_scavenger_raider', 'hoth_imperial_salvage_tech'] +
             ['hoth_glacial_rancor'])  # world boss mobile, written by gen_hoth_rancor.py
     made.append(write('mobile/hoth/serverobjects.lua', ''.join(f'includeFile("hoth/{k}.lua")\n' for k in keys)))

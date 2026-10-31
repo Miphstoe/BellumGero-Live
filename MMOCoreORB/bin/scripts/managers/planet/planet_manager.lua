@@ -641,8 +641,9 @@ hoth = {
 
 	planetObjects = {
 		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4046.0, z = 23.3, y = -2094.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4043.0, z = 23.3, y = -2094.0, parentid = 0},
-		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4040.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_mission_scout.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4043.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bank.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4040.0, z = 23.3, y = -2094.0, parentid = 0},
+		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = -4037.0, z = 23.3, y = -2094.0, parentid = 0},
 		{templateFile = "object/tangible/terminal/terminal_mission.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3798.0, z = 29.0, y = -3094.0, parentid = 0},
 		{templateFile = "object/tangible/terminal/terminal_mission_imperial.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3801.0, z = 29.0, y = -3094.0, parentid = 0},
 		{templateFile = "object/tangible/terminal/terminal_mission_scout.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 3804.0, z = 29.0, y = -3094.0, parentid = 0},
@@ -655,6 +656,34 @@ hoth = {
 		{templateFile = "object/tangible/terminal/terminal_bazaar.iff", ox = 0, oy = -0.383, oz = 0, ow = 0.924, x = -401.8, z = 27.8, y = 590.2, parentid = 0},
 		{templateFile = "object/building/corellia/shuttleport_corellia.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 5927.6, z = 3.0, y = -406.5, parentid = 0},
 		{templateFile = "object/building/corellia/shuttleport_corellia.iff", ox = 0, oy = 0, oz = 0, ow = 1, x = 4525.0, z = 87.8, y = 1164.0, parentid = 0},
+	}
+}
+
+taanab = {
+	weatherEnabled = 0,
+	gcwEnabled = 1,
+
+	-- Starports come from snapshot/taanab.ws (outpost_starport childObjects spawn the terminal,
+	-- ticket collector and shuttle). Arrival points use the Yavin IV outpost starport offset,
+	-- rotated to each starport's facing.
+	planetTravelPoints = {
+		{name = "Pandath Starport", x = 2117.8, z = 45.0, y = 5379.6, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+		{name = "Starhunter Station", x = 3592.2, z = 31.7, y = -5404.6, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+	},
+
+	badgeAreas = {
+	},
+
+	navAreas = {
+		{"taanab_pandath", 2011, 5400, 250},
+		{"taanab_starhunter_station", 3648, -5431, 150},
+		{"taanab_mining_outfit", -2559, -1270, 200},
+		{"taanab_hex_farms", -2970, -150, 300},
+		{"taanab_shipwreck", 3318, -1306, 60},
+		{"taanab_herder_camp", 5536, -4957, 40},
+	},
+
+	planetObjects = {
 	}
 }
 

@@ -5,7 +5,7 @@ object_building_player_bespin_house = object_building_player_shared_bespin_house
 	length = 5,
 	width = 7,
 	baseMaintenanceRate = 50,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

@@ -194,6 +194,9 @@ void SchematicMap::loadDraftSchematicFile(String file) {
 
 void SchematicMap::buildSchematicGroups() {
 
+	// BG suit learning: identify the same grant group as the existing Composite suit.
+	String bellumMasterArmorsmithSuitGroup;
+
 	while(iffGroupMap.size() > 0) {
 		VectorMapEntry<uint32, String> entry = iffGroupMap.remove(0);
 		const String& groupName = entry.getValue();
@@ -202,6 +205,10 @@ void SchematicMap::buildSchematicGroups() {
 
 		if(schematic != nullptr && schematic->isValidDraftSchematic()) {
 			Locker locker(schematic);
+
+			const auto* suitTemplate = schematic->getObjectTemplate();
+			if (suitTemplate != nullptr && suitTemplate->getFullTemplateString().endsWith("clothing_armor_composite_suit.iff"))
+				bellumMasterArmorsmithSuitGroup = groupName;
 
 			schematic->setGroupName(groupName);
 
@@ -214,6 +221,51 @@ void SchematicMap::buildSchematicGroups() {
 
 			if(!group->contains(schematic))
 				group->add(schematic);
+		}
+	}
+
+	// BG suit learning: register the additional master-level packages in the existing
+	// Composite Armor Suit schematic group, including for future skill grants.
+	// RIS is intentionally quest-awarded rather than put into this group.
+	if (!bellumMasterArmorsmithSuitGroup.isEmpty()) {
+		DraftSchematicGroup* masterSuits = groupMap.get(bellumMasterArmorsmithSuitGroup);
+		if (masterSuits != nullptr) {
+			{
+				String path = "object/draft_schematic/clothing/clothing_armor_snowtrooper_suit.iff";
+				DraftSchematic* candidate = schematicCrcMap.get(path.hashCode());
+				if (candidate != nullptr && candidate->isValidDraftSchematic() && !masterSuits->contains(candidate)) {
+					Locker locker(candidate);
+					candidate->setGroupName(bellumMasterArmorsmithSuitGroup);
+					masterSuits->add(candidate);
+				}
+			}
+			{
+				String path = "object/draft_schematic/clothing/clothing_armor_rebel_snow_suit.iff";
+				DraftSchematic* candidate = schematicCrcMap.get(path.hashCode());
+				if (candidate != nullptr && candidate->isValidDraftSchematic() && !masterSuits->contains(candidate)) {
+					Locker locker(candidate);
+					candidate->setGroupName(bellumMasterArmorsmithSuitGroup);
+					masterSuits->add(candidate);
+				}
+			}
+			{
+				String path = "object/draft_schematic/clothing/clothing_armor_zam_suit.iff";
+				DraftSchematic* candidate = schematicCrcMap.get(path.hashCode());
+				if (candidate != nullptr && candidate->isValidDraftSchematic() && !masterSuits->contains(candidate)) {
+					Locker locker(candidate);
+					candidate->setGroupName(bellumMasterArmorsmithSuitGroup);
+					masterSuits->add(candidate);
+				}
+			}
+			{
+				String path = "object/draft_schematic/clothing/clothing_armor_tantel_suit.iff";
+				DraftSchematic* candidate = schematicCrcMap.get(path.hashCode());
+				if (candidate != nullptr && candidate->isValidDraftSchematic() && !masterSuits->contains(candidate)) {
+					Locker locker(candidate);
+					candidate->setGroupName(bellumMasterArmorsmithSuitGroup);
+					masterSuits->add(candidate);
+				}
+			}
 		}
 	}
 }

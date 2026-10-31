@@ -542,7 +542,7 @@ def server(state):
     s = open(p, encoding='utf-8', newline='').read()
     start = s.index('planetObjects = {', s.index('\nhoth = {'))
     end = s.index('\n\t}', start)
-    kinds = {'scavenger': ['terminal_mission', 'terminal_bank', 'terminal_bazaar'],
+    kinds = {'scavenger': ['terminal_mission', 'terminal_mission_scout', 'terminal_bank', 'terminal_bazaar'],
              'imperial': ['terminal_mission_imperial', 'terminal_bank', 'terminal_bazaar'],
              'rebel': ['terminal_mission_rebel', 'terminal_bank', 'terminal_bazaar']}
     centre = {'scavenger': (0.0, -2000.0), 'imperial': (5927.6, -406.5), 'rebel': (4525.0, 1164.0)}

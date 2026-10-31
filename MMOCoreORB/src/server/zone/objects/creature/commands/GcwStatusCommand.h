@@ -85,7 +85,8 @@ public:
     		if (args == "all") {
         		static const char* PLANETS[] = {
             		"tatooine","naboo","corellia","rori","talus",
-            		"dantooine","lok","endor","dathomir","yavin4"
+            		"dantooine","lok","endor","dathomir","yavin4",
+            		"taanab"
         		};
         		StringBuffer header;
         		header << "GCW Planet Control:";

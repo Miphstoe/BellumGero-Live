@@ -84,6 +84,16 @@ public:
 
 	String getGuildDiscountDisplayName(uint64 guildID);
 
+	// Design Vendor hair picker. The stock Image Designer cannot list hair for
+	// vendors (client hair_assets_skill_mods rows are keyed to player templates).
+	bool getVendorHairStyles(CreatureObject* vendor, Vector<String>& hairStyles);
+
+	bool canChangeVendorHair(CreatureObject* player, TangibleObject* vendor, bool notify);
+
+	void sendVendorHairStyleListTo(CreatureObject* player, TangibleObject* vendor);
+
+	void handleVendorHairStyleSelection(CreatureObject* player, TangibleObject* vendor, int index);
+
 	// Vendor is locked coming in
 	void randomizeVendorLooks(CreatureObject* vendor);
 

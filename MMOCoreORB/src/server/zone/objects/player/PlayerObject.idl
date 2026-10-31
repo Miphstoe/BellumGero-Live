@@ -765,6 +765,9 @@ class PlayerObject extends IntangibleObject {
 	//Used when a character is renamed
 	public native void removeAllReverseFriends(final string oldName);
 
+	//Bellum Gero: used by the paid name change - repoints other players' friend entries to the new name
+	public native void transferReverseFriends(final string oldName, final string newName);
+
 	/**
 	 * Adds a player to the ignore list
 	 * @pre { this is locked}

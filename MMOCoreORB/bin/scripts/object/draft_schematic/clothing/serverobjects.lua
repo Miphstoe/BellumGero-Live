@@ -663,3 +663,10 @@ includeFile("draft_schematic/clothing/clothing_armor_rebel_snow_gloves.lua")
 includeFile("draft_schematic/clothing/clothing_armor_rebel_snow_helmet.lua")
 includeFile("draft_schematic/clothing/clothing_armor_rebel_snow_leggings.lua")
 includeFile("draft_schematic/clothing/clothing_armor_rebel_snow_backpack.lua")
+
+includeFile("draft_schematic/clothing/clothing_armor_ris_suit.lua")
+includeFile("draft_schematic/clothing/clothing_armor_zam_suit.lua")
+includeFile("draft_schematic/clothing/clothing_armor_tantel_suit.lua")
+
+includeFile("draft_schematic/clothing/clothing_armor_snowtrooper_suit.lua")
+includeFile("draft_schematic/clothing/clothing_armor_rebel_snow_suit.lua")
