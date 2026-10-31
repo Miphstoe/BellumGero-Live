@@ -76,13 +76,17 @@ public:
 	// Design Vendor: every hair server template valid for a player species
 	// template (e.g. object/creature/player/human_male.iff), sorted by name.
 	void getHairTemplatesForPlayerTemplate(const String& serverPlayerTemplate, SortedVector<String>& hairTemplates) {
-		HashTableIterator<String, Reference<HairAssetData*> > iter = hairAssetSkillMods.iterator();
+		HashTableIterator<String, Vector<Reference<HairAssetData*> > > iter = hairAssetSkillMods.iterator();
 
 		while (iter.hasNext()) {
-			Reference<HairAssetData*> data = iter.next();
+			Vector<Reference<HairAssetData*> >& candidates = iter.next();
 
-			if (data != nullptr && data->getServerPlayerTemplate() == serverPlayerTemplate)
-				hairTemplates.put(data->getServerTemplate());
+			for (int i = 0; i < candidates.size(); ++i) {
+				HairAssetData* data = candidates.get(i);
+
+				if (data != nullptr && data->getServerPlayerTemplate() == serverPlayerTemplate)
+					hairTemplates.put(data->getServerTemplate());
+			}
 		}
 	}
 };

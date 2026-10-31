@@ -459,10 +459,8 @@ void VendorImageDesignSessionImplementation::updateVendorImageDesign(CreatureObj
 		if (hairTemplate.isEmpty()) {
 			validRequest = CustomizationIdManager::instance()->canBeBald(speciesGender);
 		} else {
-			HairAssetData* hairAssetData = CustomizationIdManager::instance()->getHairAssetData(hairTemplate);
-
-			validRequest = hairAssetData != nullptr &&
-				hairAssetData->getServerPlayerTemplate() == "object/creature/player/" + speciesGender + ".iff";
+			// getHairAssetData only returns the row for this species' player template.
+			validRequest = CustomizationIdManager::instance()->getHairAssetData(hairTemplate, "object/creature/player/" + speciesGender + ".iff") != nullptr;
 		}
 
 		if (!validRequest)
