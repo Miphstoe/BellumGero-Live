@@ -2657,6 +2657,15 @@ int CombatManager::getArmorReduction(TangibleObject* attacker, WeaponObject* wea
 			armorPiercing = 0;
 	} else {
 		damageType = data.getDamageType();
+
+		// Bellum Gero Force Powers Revamp - Phase 3.1
+		// Force attacks default to AP1 via CombatQueueCommand; specialized
+		// commands may opt into a different Force AP for their caster.
+		const CombatQueueCommand* command = data.getCommand();
+		CreatureObject* creatureAttacker = cast<CreatureObject*>(attacker);
+
+		if (command != nullptr && creatureAttacker != nullptr)
+			armorPiercing = command->getForceArmorPiercing(creatureAttacker);
 	}
 
 	if (defender->isAiAgent()) {
