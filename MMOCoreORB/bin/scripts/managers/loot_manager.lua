@@ -300,7 +300,8 @@ lootableClothingAttachmentStatMods = {
   	"forceintimidate_accuracy",
   	"forceknockdown_accuracy",
   	"forcelightning_accuracy",
-  	"forceweaken_accuracy"
+	"forceweaken_accuracy",
+	"force_deflection"
 }
 
 lootableArmorStatMods = {
@@ -548,7 +549,8 @@ lootableClothingStatMods = {
   	"forceintimidate_accuracy",
   	"forceknockdown_accuracy",
   	"forcelightning_accuracy",
-  	"forceweaken_accuracy"
+	"forceweaken_accuracy",
+	"force_deflection"
 }
 
 lootableOneHandedMeleeStatMods = {

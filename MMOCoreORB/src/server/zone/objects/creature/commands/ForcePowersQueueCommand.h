@@ -71,7 +71,7 @@ private:
 	float getPhase2BaseDuration(CreatureObject* creature) const {
 		if (creature == nullptr || !creature->isPlayerCreature()) return speed;
 		uint32 crc = getNameCRC();
-		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 2.25f : 2.50f;
+		if (crc == STRING_HASHCODE("forcelightningsingle2")) return creature->hasSkill("force_discipline_powers_master") ? 1.75f : 2.50f;
 		if (crc == STRING_HASHCODE("forcelightningcone2")) return 3.0f;
 		if (crc == STRING_HASHCODE("forcechoke")) return 2.0f;
 		if (crc == STRING_HASHCODE("forceknockdown3")) return creature->hasSkill("force_discipline_powers_master") ? 1.50f : 2.0f;
