@@ -97,6 +97,7 @@ end
 function TaanabNorulacRaidWorldBoss:scheduleRaid(seconds)
 	local id = getN("raidId") + 1
 	setN("raidId", id)
+	setN("nextRaidAt", os.time() + seconds) -- read by the BG Hub NPC's Special NPC tracker
 	createEvent(seconds * 1000, "TaanabNorulacRaidWorldBoss", "beginRaid", nil, tostring(id))
 	logf("raid %d scheduled in %d s", id, seconds)
 end

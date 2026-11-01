@@ -14,6 +14,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-11-01 — Taanab: Varn Kessic on the BG Hub Special NPC tracker
+
+- **Summary:** The BG Hub NPC's Special NPC tracker (1,000 cr) has a "Check Varn Kessic (Taanab)" option. It reports that Kessic is up at the Arcon hex farms (-2970, -150), that a raid is under way, or how long until the next raid. The raid now records its next start time in shared memory (`TaanabKessic:nextRaidAt`).
+- **Files:** `bin/scripts/mobile/conversations/tasks/myswg_vendor_conv.lua`, `bin/scripts/screenplays/tasks/naboo/myswg_vendor.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`
+- **Notes:** Server restart only. The timer resets on a restart (first raid 30 min after boot), so the tracker follows that.
+
+### 2026-10-29 — Taanab: roba and Ambrian staga
+
+- **Summary:** Taanab roba (53, passive pack: Taanab Roba Pack, Roba Den) and Ambrian staga (56, passive herd using the gualama model: Ambrian Staga Herd), as named on the Taanab loading screen. All three lairs are in the world spawner and the destroy mission group.
+- **Files:** `bin/scripts/mobile/taanab/`, `bin/scripts/mobile/lair/creature_dynamic/`, `bin/scripts/mobile/lair/creature_lair/`, `bin/scripts/mobile/spawn/`, `tools/newplanets/gen_taanab_mobiles.py`
+- **Notes:** Server restart only; no client change (both models are in the base client).
+
 ### 2026-10-29 — Taanab: BG Hub NPC at Pandath
 
 - **Summary:** The BG Hub vendor (`myswg_vendor`) stands beside the Pandath mission terminals (2105, 5356), as at the Hoth outposts.
