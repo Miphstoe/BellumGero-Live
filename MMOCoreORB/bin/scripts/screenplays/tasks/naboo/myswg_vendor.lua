@@ -937,6 +937,21 @@ local MySwgTravelDestinations = {
 		cell   = 0
 	}
 }
+
+-- Hoth caves and points of interest, keyed by the teleport option link (travel_hoth1 submenu).
+-- Coordinates match the MAPPOI regions in managers/planet/hoth_regions.lua; z = 0 snaps to terrain height.
+local MySwgHothTravel = {
+	travel_hoth_frostfang_teleport   = { name = "Frostfang Cavern",                x = -623,  y = 2292 },
+	travel_hoth_icemaw_teleport      = { name = "Icemaw's Den",                    x = -385,  y = 2436 },
+	travel_hoth_snowblind_teleport   = { name = "Snowblind the Ravager's Lair",    x = -543,  y = 2674 },
+	travel_hoth_matriarch_teleport   = { name = "Wampa Matriarch's Ice Cavern",    x = -75,   y = 2969 },
+	travel_hoth_broodmother_teleport = { name = "Broodmother's Nest",              x = -5819, y = 6093 },
+	travel_hoth_shield_gen_teleport  = { name = "Shield Generator Battlefield",    x = 5420,  y = 780 },
+	travel_hoth_raider_camp_teleport = { name = "Generator Raider Camp",           x = 5068,  y = 1300 },
+	travel_hoth_lucky_despot_teleport = { name = "Lucky Despot Wreck",             x = -4130, y = -2128 },
+	travel_hoth_rancor_teleport      = { name = "Glacial Rancor Hunting Grounds",  x = 600,   y = -4600 },
+}
+MySwgHothTravel.PRICE = 25000
 --========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
@@ -980,6 +995,25 @@ local MySwgTravelDestinations = {
                 if optionLink == "namechange_start" then
                     BgCharacterRename:start(conversingPlayer)
                     return conversation:getScreen("namechange_start")
+                end
+
+                -- Teleport: Hoth caves and points of interest (no inventory space needed)
+                local hothDest = MySwgHothTravel[optionLink]
+                if hothDest ~= nil then
+                    if not canAfford(MySwgHothTravel.PRICE) then
+                        creature:sendSystemMessage("You have insufficient funds")
+                        return conversation:getScreen("insufficient_funds")
+                    end
+
+                    local player = CreatureObject(conversingPlayer)
+                    if player:isRidingMount() then
+                        player:dismount()
+                    end
+
+                    charge(MySwgHothTravel.PRICE)
+                    SceneObject(conversingPlayer):switchZone("hoth", hothDest.x, 0, hothDest.y, 0)
+                    creature:sendSystemMessage("Travelling to " .. hothDest.name .. " on Hoth...")
+                    return conversation:getScreen("travel_complete")
                 end
 
                 -- Take action when the player makes a purchase.
