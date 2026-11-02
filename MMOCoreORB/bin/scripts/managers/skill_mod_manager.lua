@@ -73,6 +73,9 @@ skillModLimits = {
 --   Example: two +25 SEAs = +25; one +25 SEA + robe +10 = +35; two +25 SEAs + robe +10 = +35.
 skillModNameLimits = {
 	{"jedi_force_power_regen", 4097, -25, 25},
+	-- Bellum Gero Force Powers Revamp - Phase 4:
+	-- Force Deflection can gain at most +25 total from wearable/SEA sources.
+	{"force_deflection", 4097, -25, 25},
 }
 
 disabledWearableSkillMods = {
