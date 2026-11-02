@@ -280,3 +280,9 @@ object_tangible_furniture_hoth_shared_frn_hoth_stalactite_06 = SharedTangibleObj
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_furniture_hoth_shared_frn_hoth_stalactite_06, "object/tangible/furniture/hoth/shared_frn_hoth_stalactite_06.iff")
+
+object_tangible_furniture_hoth_shared_frn_hoth_ice_fog = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/furniture/hoth/shared_frn_hoth_ice_fog.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_furniture_hoth_shared_frn_hoth_ice_fog, "object/tangible/furniture/hoth/shared_frn_hoth_ice_fog.iff")
