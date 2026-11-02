@@ -2107,8 +2107,7 @@ LairSpawn* MissionManagerImplementation::getRandomLairSpawn(CreatureObject* play
 	}
 
 	// --- BEGIN: Mission Target Lock (Bellum Gero) ---
-// Robust version: trims/normalizes, uses saved list to reconstruct,
-// searches filtered list first, then full groups, and never clears on a miss.
+// Resolve a selected target only within the destroy mission group for this terminal.
 if (type == MissionTypes::DESTROY && player != nullptr) {
     PlayerObject* ghost = player->getPlayerObject();
     if (ghost != nullptr) {
@@ -2161,7 +2160,8 @@ if (type == MissionTypes::DESTROY && player != nullptr) {
         }
 
         if (desiredExact != 0) {
-            // PASS 1: try filtered list (respects difficulty)
+            // Search the active mission group only, so a saved choice cannot
+            // select a target from another planet or terminal faction.
             if (availableLairList != nullptr && availableLairList->size() > 0) {
                 for (int i = 0; i < availableLairList->size(); ++i) {
                     LairSpawn* ls = availableLairList->get(i);
@@ -2182,47 +2182,9 @@ if (type == MissionTypes::DESTROY && player != nullptr) {
                 }
             }
 
-            // PASS 2: try full groups (override difficulty if needed)
-            Zone* zone = player->getZone();
-            String planet = zone ? zone->getZoneName() : "";
-
-            Vector<String> groups;
-            if (!planet.isEmpty()) {
-                groups.add(planet + "_destroy_missions");
-                groups.add(planet + "_factional_neutral_destroy_missions");
-                groups.add(planet + "_factional_imperial_destroy_missions");
-                groups.add(planet + "_factional_rebel_destroy_missions");
-            }
-            groups.add("factional_neutral_destroy_missions");
-            groups.add("factional_imperial_destroy_missions");
-            groups.add("factional_rebel_destroy_missions");
-
-            for (int gi = 0; gi < groups.size(); ++gi) {
-                SpawnGroup* g = CreatureTemplateManager::instance()->getDestroyMissionGroup(groups.get(gi).hashCode());
-                if (g == nullptr) continue;
-
-                const Vector<Reference<LairSpawn*>>& all = g->getSpawnList();
-                for (int i = 0; i < all.size(); ++i) {
-                    LairSpawn* ls = all.get(i);
-                    if (ls == nullptr) continue;
-
-                    const String& nm = ls->getLairTemplateName();
-                    if (nm.hashCode() == desiredExact) return ls;
-
-                    if (desiredNorm != 0) {
-                        String nmNorm = nm;
-                        int p2 = nmNorm.indexOf("_neutral_"); if (p2 >= 0) nmNorm = nmNorm.subString(0, p2);
-                        nmNorm = nmNorm.replaceAll("_large_boss_01", "");
-                        nmNorm = nmNorm.replaceAll("_medium_boss_01", "");
-                        nmNorm = nmNorm.replaceAll("_boss_01", "");
-                        nmNorm = nmNorm.trim();
-                        if (!nmNorm.isEmpty() && nmNorm.hashCode() == desiredNorm) return ls;
-                    }
-                }
-            }
-
-            // Do NOT clear the saved choice on a miss; just fall back silently.
-            // Keeping the choice means it will be honored on the next roll without re-selecting.
+            // Keep the choice for later refreshes, but leave this slot empty
+            // when the selected target is unavailable in the active group.
+            return nullptr;
         }
     }
 }

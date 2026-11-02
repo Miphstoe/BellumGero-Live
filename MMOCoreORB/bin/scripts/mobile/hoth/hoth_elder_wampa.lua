@@ -5,6 +5,7 @@ hoth_elder_wampa = Creature:new {
 	faction = "",
 	mobType = MOB_CARNIVORE,
 	level = 98,
+	creditsMultiplier = 3,
 	chanceHit = 0.95,
 	damageMin = 640,
 	damageMax = 980,
@@ -20,6 +21,7 @@ hoth_elder_wampa = Creature:new {
 	boneType = "bone_mammal",
 	boneAmount = 850,
 	milk = 0,
+	dnaDropChance = 15,
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
@@ -28,38 +30,79 @@ hoth_elder_wampa = Creature:new {
 	diet = CARNIVORE,
 	templates = {"object/mobile/wampa.iff"},
 	scale = 1.15,
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 2780000
-		},
 		{
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 250000
+			lootChance = 125000
+		},
+		{
+			groups = {
+				{group = "armor_attachments", chance = 10000000}
+			},
+			lootChance = 125000
+		},
+		{
+			groups = {
+				{group = "clothing_attachments", chance = 10000000}
+			},
+			lootChance = 125000
+		},
+		{
+			groups = {
+				{group = "color_crystals", chance = 10000000}
+			},
+			lootChance = 75000
+		},
+		{
+			groups = {
+				{group = "power_crystals", chance = 10000000}
+			},
+			lootChance = 75000
+		},
+		{
+			groups = {
+				{group = "krayt_pearls", chance = 10000000}
+			},
+			lootChance = 25000
+		},
+		{
+			groups = {
+				{group = "jedi_robe", chance = 10000000}
+			},
+			lootChance = 10000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_deeds", chance = 10000000}
+			},
+			lootChance = 5000
+		},
+		{
+			groups = {
+				{group = "hoth_vehicle_schematics", chance = 10000000}
+			},
+			lootChance = 10000
 		},
 		{
 			groups = {
 				{group = "hoth_ice_decor", chance = 10000000}
 			},
-			lootChance = 700000
+			lootChance = 350000
 		},
 		{
 			groups = {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
-			lootChance = 400000
+			lootChance = 200000
 		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "unarmed",

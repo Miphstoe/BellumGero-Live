@@ -3483,7 +3483,9 @@ int FactoryObjectImplementation::getFactoryQueueInventoryLoadableQuantity(
 					underIndex = i;
 					underQuantity = quantity;
 				}
-			} else if ((object->isResourceContainer() || object->isFactoryCrate()) &&
+			} else if ((object->isResourceContainer() || object->isFactoryCrate() ||
+					// Stackable tangible components can be split by use count.
+					(!object->isContainerObject() && object->getUseCount() > 1)) &&
 					(overIndex < 0 || quantity < overQuantity)) {
 				overIndex = i;
 				overQuantity = quantity;
@@ -3519,7 +3521,8 @@ int FactoryObjectImplementation::getFactoryQueueInventoryLoadableQuantity(
 
 		int amount = quantity < remaining ? quantity : remaining;
 
-		if (!(object->isResourceContainer() || object->isFactoryCrate()) && quantity > remaining)
+		if (!(object->isResourceContainer() || object->isFactoryCrate() ||
+				(!object->isContainerObject() && object->getUseCount() > 1)) && quantity > remaining)
 			continue;
 
 		loadable += amount;
@@ -3588,7 +3591,9 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 					underIndex = i;
 					underQuantity = quantity;
 				}
-			} else if ((object->isResourceContainer() || object->isFactoryCrate()) &&
+			} else if ((object->isResourceContainer() || object->isFactoryCrate() ||
+					// Stackable tangible components can be split by use count.
+					(!object->isContainerObject() && object->getUseCount() > 1)) &&
 					(overIndex < 0 || quantity < overQuantity)) {
 				overIndex = i;
 				overQuantity = quantity;
@@ -3663,6 +3668,61 @@ int FactoryObjectImplementation::loadFactoryQueueIngredientFromInventory(
 				trx.abort() << "Factory queue automatic ingredient transfer failed.";
 			}
 
+			continue;
+		}
+
+		// Bellum Gero: unlike resource containers, stackable tangible loot
+		// components have no native split() function. Clone only the needed
+		// uses and reduce the source *after* the hopper accepts the clone.
+		// This avoids moving excess inventory or duplicating uses on failure.
+		if (!source->isResourceContainer() && !source->isFactoryCrate() &&
+				!source->isContainerObject() && source->getUseCount() > amountToMove &&
+				amountToMove > 0) {
+			ObjectManager* objectManager = ObjectManager::instance();
+			if (objectManager == nullptr)
+				continue;
+
+			Locker sourceLocker(source, player);
+			int originalUses = source->getUseCount();
+			if (originalUses <= amountToMove)
+				continue;
+
+			ManagedReference<TangibleObject*> splitComponent =
+				cast<TangibleObject*>(objectManager->cloneObject(source.get()));
+			if (splitComponent == nullptr)
+				continue;
+
+			Locker splitLocker(splitComponent, source);
+			splitComponent->setParent(nullptr);
+			splitComponent->setUseCount(amountToMove, false);
+
+			TransactionLog trx(inventory.get(), inputHopper.get(), splitComponent.get(), TrxCode::FACTORYOPERATION);
+			trx.setType("factory_queue_auto_load");
+			trx.addRelatedObject(asSceneObject());
+			trx.addRelatedObject(source->getObjectID());
+			trx.addState("factoryId", (uint64)getObjectID());
+			trx.addState("playerId", (uint64)player->getObjectID());
+			trx.addState("schematicId", schematicID);
+			trx.addState("queuePosition", queueIndex + 1);
+			trx.addState("ingredientType", entry->getType());
+			trx.addState("ingredientKey", entry->getKey());
+			trx.addState("ingredientSerial", entry->getSerial());
+			trx.addState("sourceObjectId", source->getObjectID());
+			trx.addState("sourceQuantityBefore", originalUses);
+			trx.addState("splitObjectId", splitComponent->getObjectID());
+			trx.addState("quantity", amountToMove);
+			trx.addState("splitTransfer", true);
+
+			if (inputHopper->transferObject(splitComponent, -1, true)) {
+				source->setUseCount(originalUses - amountToMove, true);
+				inputHopper->broadcastObject(splitComponent, true);
+				loaded += amountToMove;
+				trx.commit();
+			} else {
+				trx.abort() << "Factory queue tangible component split transfer failed.";
+				splitComponent->destroyObjectFromWorld(true);
+				splitComponent->destroyObjectFromDatabase(true);
+			}
 			continue;
 		}
 

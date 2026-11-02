@@ -43,6 +43,27 @@ public:
 		return true;
 	}
 
+	// Bellum Gero: atomically move oid from oldName to newName. Fails (and changes
+	// nothing) if newName already belongs to a different oid, so two concurrent
+	// renames can never both claim the same name.
+	bool rename(uint64 oid, const String& oldName, const String& newName) {
+		Locker locker(&guard);
+
+		auto oldLower = oldName.toLowerCase();
+		auto newLower = newName.toLowerCase();
+
+		if (names.containsKey(newLower) && names.get(newLower) != oid)
+			return false;
+
+		if (oldLower != newLower && names.containsKey(oldLower) && names.get(oldLower) == oid)
+			names.remove(oldLower);
+
+		names.put(newLower, oid);
+		reverseTable.put(oid, newLower);
+
+		return true;
+	}
+
 	void remove(const String& name) {
 		Locker locker(&guard);
 

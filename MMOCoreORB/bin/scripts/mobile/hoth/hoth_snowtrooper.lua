@@ -7,6 +7,7 @@ hoth_snowtrooper = Creature:new {
 	socialGroup = "imperial",
 	faction = "imperial",
 	level = 76,
+	creditsMultiplier = 3,
 	chanceHit = 0.76,
 	damageMin = 540,
 	damageMax = 760,
@@ -31,6 +32,7 @@ hoth_snowtrooper = Creature:new {
 	templates = {
 		"object/mobile/snowtrooper_s01.iff"
 	},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
@@ -41,25 +43,25 @@ hoth_snowtrooper = Creature:new {
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 250000
+			lootChance = 125000
 		},
 		{
 			groups = {
 				{group = "hoth_snowtrooper_schematics", chance = 10000000}
 			},
-			lootChance = 150000
+			lootChance = 75000
 		},
 		{
 			groups = {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
-			lootChance = 200000
+			lootChance = 100000
 		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "stormtrooper_rifle",

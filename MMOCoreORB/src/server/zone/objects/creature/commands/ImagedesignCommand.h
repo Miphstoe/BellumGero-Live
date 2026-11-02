@@ -98,16 +98,15 @@ public:
 			return GENERALERROR;
 		}
 
-		ManagedReference<Facade*> facade = designer->getActiveSession(SessionFacadeType::IMAGEDESIGN);
-		ManagedReference<ImageDesignSession*> session = dynamic_cast<ImageDesignSession*>(facade.get());
-
-		if (session != nullptr) {
+		// Any ID session (player, station or vendor) occupies the slot; starting a
+		// new one would orphan the existing session and its cleanup.
+		if (designer->containsActiveSession(SessionFacadeType::IMAGEDESIGN)) {
 			designer->sendSystemMessage("@image_designer:already_image_designing");
 			return GENERALERROR;
 		}
 
 		//Create Session
-		session = new ImageDesignSession(designer);
+		ManagedReference<ImageDesignSession*> session = new ImageDesignSession(designer);
 		session->deploy();
 		session->startImageDesign(designer, playerTarget);
 

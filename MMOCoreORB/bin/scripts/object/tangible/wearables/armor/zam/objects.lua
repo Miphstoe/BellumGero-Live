@@ -571,3 +571,9 @@ object_tangible_wearables_armor_zam_shared_armor_zam_wesell_pants_quest = Shared
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_zam_shared_armor_zam_wesell_pants_quest, "object/tangible/wearables/armor/zam/shared_armor_zam_wesell_pants_quest.iff")
+
+-- Bellum Gero full armor suit shared template
+object_tangible_wearables_armor_zam_shared_armor_zam_suit_package = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/zam/shared_armor_zam_suit_package.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_zam_shared_armor_zam_suit_package, "object/tangible/wearables/armor/zam/shared_armor_zam_suit_package.iff")

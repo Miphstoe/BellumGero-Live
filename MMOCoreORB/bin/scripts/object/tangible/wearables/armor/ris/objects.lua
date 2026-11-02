@@ -571,3 +571,9 @@ object_tangible_wearables_armor_ris_shared_armor_ris_leggings = SharedTangibleOb
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_ris_shared_armor_ris_leggings, "object/tangible/wearables/armor/ris/shared_armor_ris_leggings.iff")
+
+-- Bellum Gero full armor suit shared template
+object_tangible_wearables_armor_ris_shared_armor_ris_suit_package = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/ris/shared_armor_ris_suit_package.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_ris_shared_armor_ris_suit_package, "object/tangible/wearables/armor/ris/shared_armor_ris_suit_package.iff")

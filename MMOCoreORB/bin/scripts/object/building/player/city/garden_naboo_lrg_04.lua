@@ -45,7 +45,7 @@ object_building_player_city_garden_naboo_lrg_04 = object_building_player_city_sh
 
 	lotSize = 0,
 	baseMaintenanceRate = 0,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	length = 7,
 	width = 7,
 	cityRankRequired = 3,

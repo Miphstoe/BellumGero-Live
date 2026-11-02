@@ -462,6 +462,11 @@ class PlayerManager extends Observer implements Logger {
 	}
 
 	@dirty
+	public boolean renamePlayerIndex(unsigned long playerID, final string oldName, final string newName) {
+		return nameMap.rename(playerID, oldName, newName);
+	}
+
+	@dirty
 	public boolean containsPlayer(final string playerName) {
 		return nameMap.containsKey(playerName);
 	}

@@ -26194,3 +26194,33 @@ object_draft_schematic_clothing_shared_clothing_armor_rebel_snow_backpack = Shar
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_rebel_snow_backpack, "object/draft_schematic/clothing/shared_clothing_armor_rebel_snow_backpack.iff")
+
+-- Bellum Gero full armor suit shared template
+object_draft_schematic_clothing_shared_clothing_armor_ris_suit = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_ris_suit.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_ris_suit, "object/draft_schematic/clothing/shared_clothing_armor_ris_suit.iff")
+
+-- Bellum Gero full armor suit shared template
+object_draft_schematic_clothing_shared_clothing_armor_zam_suit = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_zam_suit.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_zam_suit, "object/draft_schematic/clothing/shared_clothing_armor_zam_suit.iff")
+
+-- Bellum Gero full armor suit shared template
+object_draft_schematic_clothing_shared_clothing_armor_tantel_suit = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_tantel_suit.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_tantel_suit, "object/draft_schematic/clothing/shared_clothing_armor_tantel_suit.iff")
+
+-- Bellum Gero full armor suit shared template
+object_draft_schematic_clothing_shared_clothing_armor_snowtrooper_suit = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_snowtrooper_suit.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_snowtrooper_suit, "object/draft_schematic/clothing/shared_clothing_armor_snowtrooper_suit.iff")
+
+-- Bellum Gero full armor suit shared template
+object_draft_schematic_clothing_shared_clothing_armor_rebel_snow_suit = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/clothing/shared_clothing_armor_rebel_snow_suit.iff"
+}
+ObjectTemplates:addClientTemplate(object_draft_schematic_clothing_shared_clothing_armor_rebel_snow_suit, "object/draft_schematic/clothing/shared_clothing_armor_rebel_snow_suit.iff")

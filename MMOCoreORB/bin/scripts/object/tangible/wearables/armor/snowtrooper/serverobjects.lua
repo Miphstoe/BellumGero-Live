@@ -8,3 +8,4 @@ includeFile("tangible/wearables/armor/snowtrooper/armor_snowtrooper_chest_plate.
 includeFile("tangible/wearables/armor/snowtrooper/armor_snowtrooper_gloves.lua")
 includeFile("tangible/wearables/armor/snowtrooper/armor_snowtrooper_helmet.lua")
 includeFile("tangible/wearables/armor/snowtrooper/armor_snowtrooper_leggings.lua")
+includeFile("tangible/wearables/armor/snowtrooper/armor_snowtrooper_suit_package.lua")

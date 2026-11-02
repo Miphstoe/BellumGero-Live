@@ -5,6 +5,7 @@ hoth_ice_mynock = Creature:new {
 	faction = "",
 	mobType = MOB_CARNIVORE,
 	level = 67,
+	creditsMultiplier = 3,
 	chanceHit = 0.63,
 	damageMin = 480,
 	damageMax = 640,
@@ -29,12 +30,13 @@ hoth_ice_mynock = Creature:new {
 	templates = {"object/mobile/salt_mynock_hue.iff"},
 	hues = { 0, 1, 2, 3, 4, 5, 6, 7 },
 	scale = 1.1,
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "unarmed",

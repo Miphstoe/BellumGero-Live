@@ -106,7 +106,7 @@ HothGlacialRancorWorldBoss = ScreenPlay:new {{
 	bossTemplate = "{KEY}",
 	bossName = "{NAME}",
 	leashRadius = 120,
-	respawnSeconds = 86400, -- 24 hours, like the other world bosses
+	respawnSeconds = 10800, -- 3 hours
 
 	bootGuardKey = "HothGlacialRancorWorldBoss:booted:v1",
 	FIRST_BROADCAST_DELAY = 240,

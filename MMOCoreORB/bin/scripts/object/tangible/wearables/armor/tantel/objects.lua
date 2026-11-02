@@ -394,3 +394,9 @@ object_tangible_wearables_armor_tantel_shared_armor_tantel_skreej_helmet_quest =
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_tantel_shared_armor_tantel_skreej_helmet_quest, "object/tangible/wearables/armor/tantel/shared_armor_tantel_skreej_helmet_quest.iff")
+
+-- Bellum Gero full armor suit shared template
+object_tangible_wearables_armor_tantel_shared_armor_tantel_suit_package = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/tantel/shared_armor_tantel_suit_package.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_tantel_shared_armor_tantel_suit_package, "object/tangible/wearables/armor/tantel/shared_armor_tantel_suit_package.iff")

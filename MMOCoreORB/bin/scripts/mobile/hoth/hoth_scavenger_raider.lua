@@ -7,6 +7,7 @@ hoth_scavenger_raider = Creature:new {
 	socialGroup = "thug",
 	faction = "thug",
 	level = 74,
+	creditsMultiplier = 3,
 	chanceHit = 0.7,
 	damageMin = 520,
 	damageMax = 720,
@@ -34,38 +35,31 @@ hoth_scavenger_raider = Creature:new {
 		"object/mobile/dressed_goon_twk_male_01.iff",
 		"object/mobile/dressed_robber_human_female_01.iff"
 	},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
-		{
-			groups = {
-				{group = "armor_all", chance = 3000000},
-				{group = "weapons_all", chance = 3500000},
-				{group = "wearables_all", chance = 3500000}
-			},
-			lootChance = 2500000
-		},
 		{
 			groups = {
 				{group = "bg_token_group", chance = 10000000}
 			},
-			lootChance = 250000
+			lootChance = 125000
 		},
 		{
 			groups = {
 				{group = "hoth_paintings", chance = 10000000}
 			},
-			lootChance = 500000
+			lootChance = 250000
 		},
 		{
 			groups = {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
-			lootChance = 1000000
+			lootChance = 500000
 		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "pirate_weapons_heavy",

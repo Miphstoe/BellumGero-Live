@@ -60,7 +60,7 @@ object_draft_schematic_clothing_clothing_armor_padded_suit =
 		"object/tangible/component/clothing/shared_synthetic_cloth.iff",
 		"object/tangible/component/clothing/shared_reinforced_fiber_panels.iff"
 	},
-	resourceQuantities = {525, 525, 265, 305, 223, 212, 22, 11, 10},
+	resourceQuantities = {525, 525, 265, 305, 223, 212, 21, 11, 10},
 	contribution = {100, 100, 100, 100, 100, 100, 100, 100, 100},
 
 	targetTemplate = "object/tangible/wearables/armor/padded/armor_padded_suit_package.iff",

@@ -11,6 +11,7 @@
 #include "ObjectControllerMessageCallback.h"
 #include "server/zone/objects/player/sessions/ImageDesignSession.h"
 #include "server/zone/objects/player/sessions/ImageDesignStationSession.h"
+#include "server/zone/objects/player/sessions/VendorImageDesignSession.h"
 #include "server/zone/objects/player/sessions/ImageDesignData.h"
 
 class ImageDesignChangeMessageCallback : public MessageCallback {
@@ -52,6 +53,15 @@ public:
 
 		ManagedReference<Facade*> facade =
 			player->getActiveSession(SessionFacadeType::IMAGEDESIGN);
+
+		ManagedReference<VendorImageDesignSession*> vendorSession =
+			dynamic_cast<VendorImageDesignSession*>(facade.get());
+
+		if (vendorSession != nullptr) {
+			vendorSession->updateVendorImageDesign(
+				player, designerID, targetID, tentID, type, imageDesignData);
+			return;
+		}
 
 		ManagedReference<ImageDesignStationSession*> stationSession =
 			dynamic_cast<ImageDesignStationSession*>(facade.get());

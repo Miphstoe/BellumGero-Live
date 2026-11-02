@@ -11,6 +11,10 @@ local SORT_MODE = "fileOrder"
 
 -- Target name overrides for special/global entries.
 local OVERRIDES_TARGET = {
+  ["yavin4_kai_tok_bloodreaver_lair_neutral_medium"] = "Kai Tok Bloodreaver",
+  ["yavin4_kai_tok_prowler_lair_neutral_medium"] = "Kai Tok Prowler",
+  ["yavin4_kai_tok_scavenger_lair_neutral_medium"] = "Kai Tok Scavenger",
+  ["yavin4_kai_tok_slayer_lair_neutral_medium"] = "Kai Tok Slayer",
   ["corellia_forest_murra_lair_neutral_medium"] = "Forest Murra",
   ["corellia_vrelt_pack_neutral_none"] = "Vrelt Mother (Mixed Vrelt Pack)",
   ["corellia_dalyrake_nest_neutral_medium"] = "Dalyrake Harvester (Mixed Nest)",

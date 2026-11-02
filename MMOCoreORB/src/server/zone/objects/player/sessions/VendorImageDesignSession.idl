@@ -1,0 +1,92 @@
+package server.zone.objects.player.sessions;
+
+import engine.log.Logger;
+import engine.util.Facade;
+import server.zone.objects.creature.CreatureObject;
+import server.zone.objects.player.sessions.VendorImageDesignObserver;
+include server.zone.objects.player.sessions.ImageDesignData;
+import system.lang.Time;
+
+/**
+ * Owner-only Image Designer session whose target is one of the owner's
+ * NPC vendors. Uses the stock Image Designer UI. No skills, XP, payment,
+ * holo-emote or stat migration; the designer is given transient
+ * VENDORIMAGEDESIGN skill mods for the life of the session only.
+ */
+class VendorImageDesignSession extends Facade {
+	@weakReference
+	protected CreatureObject designerCreature;
+
+	@weakReference
+	protected CreatureObject vendorCreature;
+
+	protected transient unsigned long vendorObjectId;
+	protected transient unsigned long vendorOwnerId;
+	protected transient boolean sessionActive;
+
+	@dereferenced
+	protected ImageDesignData imageDesignData;
+
+	protected VendorImageDesignObserver sessionObserver;
+
+	@dereferenced
+	protected transient Time sessionStartTime;
+
+	public VendorImageDesignSession(CreatureObject parent) {
+		Logger.setLoggingName("VendorImageDesignSession");
+		Logger.setLogging(true);
+		initializeSession();
+	}
+
+	public native void initializeTransientMembers();
+
+	/**
+	 * Validates ownership/target and opens the stock Image Designer UI.
+	 * @pre designer and vendor are locked
+	 * @return true if the session was started
+	 */
+	@local
+	public native boolean startVendorImageDesign(CreatureObject designer, CreatureObject vendor);
+
+	@local
+	public native void updateVendorImageDesign(
+		CreatureObject updater,
+		unsigned long designer,
+		unsigned long targetPlayer,
+		unsigned long tent,
+		int type,
+		@dereferenced final ImageDesignData data);
+
+	@local
+	public native void cancelVendorImageDesign(
+		unsigned long designer,
+		unsigned long targetPlayer,
+		unsigned long tent,
+		int type,
+		@dereferenced final ImageDesignData data);
+
+	@local
+	public native boolean isVendorSessionValid(boolean notifyPlayer);
+
+	@local
+	public native void forceCloseVendorSession(final string reason);
+
+	@local
+	public native void checkSessionTimeout(unsigned long startTimestamp);
+
+	public int initializeSession() {
+		designerCreature = null;
+		vendorCreature = null;
+		vendorObjectId = 0;
+		vendorOwnerId = 0;
+		sessionActive = false;
+		sessionObserver = null;
+		return 0;
+	}
+
+	public native int cancelSession();
+
+	public int clearSession() {
+		return 0;
+	}
+}

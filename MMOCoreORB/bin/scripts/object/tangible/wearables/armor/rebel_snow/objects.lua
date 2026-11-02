@@ -58,3 +58,9 @@ object_tangible_wearables_armor_rebel_snow_shared_armor_rebel_snow_leggings = Sh
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_rebel_snow_shared_armor_rebel_snow_leggings, "object/tangible/wearables/armor/rebel_snow/shared_armor_rebel_snow_leggings.iff")
+
+-- Bellum Gero full armor suit shared template
+object_tangible_wearables_armor_rebel_snow_shared_armor_rebel_snow_suit_package = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/wearables/armor/rebel_snow/shared_armor_rebel_snow_suit_package.iff"
+}
+ObjectTemplates:addClientTemplate(object_tangible_wearables_armor_rebel_snow_shared_armor_rebel_snow_suit_package, "object/tangible/wearables/armor/rebel_snow/shared_armor_rebel_snow_suit_package.iff")

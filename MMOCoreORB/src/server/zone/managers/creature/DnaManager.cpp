@@ -545,8 +545,22 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 	if (!creature->hasDNA() || creature->isBaby() || creature->isPet())
 		return false;
 
-	if (!forceDrop && System::random(39) >= DNA_DROP_CHANCE_PCT)
+	const CreatureTemplate* creatureTemplate = dynamic_cast<const CreatureTemplate*>(creature->getCreatureTemplate());
+
+	if (creatureTemplate == nullptr)
 		return false;
+
+	if (!forceDrop) {
+		// Bellum Gero: dnaDropChance (percent) in the creature lua overrides the global 5%
+		float dropChance = creatureTemplate->getDnaDropChance();
+
+		if (dropChance > 0.f) {
+			if (System::random(9999) >= (int) round(dropChance * 100.f))
+				return false;
+		} else if (System::random(39) >= DNA_DROP_CHANCE_PCT) {
+			return false;
+		}
+	}
 
 	auto zoneServer = creature->getZoneServer();
 
@@ -556,11 +570,6 @@ bool DnaManager::tryGenerateLootableSample(Creature* creature, SceneObject* cont
 	auto craftingManager = zoneServer->getCraftingManager();
 
 	if (craftingManager == nullptr)
-		return false;
-
-	const CreatureTemplate* creatureTemplate = dynamic_cast<const CreatureTemplate*>(creature->getCreatureTemplate());
-
-	if (creatureTemplate == nullptr)
 		return false;
 
 	int creatureLevel = creature->getLevel();

@@ -44,7 +44,7 @@ while queue:
         for w in re.findall(rb'[a-z0-9_\-\.]+\.wav', d, re.I):
             queue.append('sample/' + w.decode('latin-1').lower())
     if rel.endswith(('.lmg', '.lod', '.apt', '.sat', '.cmp')):
-        for m in re.findall(rb'(?<![a-z0-9_/])(?:mesh|lod|skeleton|collision|component)/[a-z0-9_/\-\.]+\.(?:msh|mgn|lmg|lod|skt|cmp|apt|flr)', d, re.I):
+        for m in re.findall(rb'(?:mesh|lod|skeleton|collision|component)/[a-z0-9_/\-\.]+\.(?:msh|mgn|lmg|lod|skt|cmp|apt|flr)', d, re.I):
             queue.append('appearance/' + m.decode('latin-1').lower())
 print(f'{len(seen)} files reached from {len(roots)} roots; {len(missing)} missing')
 for m in sorted(missing):

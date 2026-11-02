@@ -165,6 +165,31 @@ namespace {
 		"object/draft_schematic/clothing/clothing_armor_marine_leggings.iff",
 	};
 
+	const char* const SNOWTROOPER_SUIT_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_belt.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_bicep_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_bicep_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_boots.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_bracer_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_bracer_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_chest_plate.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_gloves.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_helmet.iff",
+		"object/draft_schematic/clothing/clothing_armor_snowtrooper_leggings.iff",
+	};
+	const char* const REBEL_SNOW_SUIT_REQUIRED_DRAFTS[] = {
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_belt.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_bicep_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_bicep_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_boots.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_bracer_l.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_bracer_r.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_chest_plate.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_gloves.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_helmet.iff",
+		"object/draft_schematic/clothing/clothing_armor_rebel_snow_leggings.iff",
+	};
+
 	const LimitedUseSuitDefinition LIMITED_USE_SUIT_DEFINITIONS[] = {
 		{
 			"object/draft_schematic/clothing/clothing_armor_clonetrooper_suit.iff",
@@ -201,6 +226,18 @@ namespace {
 			"Marine Armor",
 			MARINE_REQUIRED_DRAFTS,
 			static_cast<int>(sizeof(MARINE_REQUIRED_DRAFTS) / sizeof(MARINE_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_snowtrooper_suit.iff",
+			"Imperial Snowtrooper Armor",
+			SNOWTROOPER_SUIT_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(SNOWTROOPER_SUIT_REQUIRED_DRAFTS) / sizeof(SNOWTROOPER_SUIT_REQUIRED_DRAFTS[0]))
+		},
+		{
+			"object/draft_schematic/clothing/clothing_armor_rebel_snow_suit.iff",
+			"Alliance Cold Weather Armor",
+			REBEL_SNOW_SUIT_REQUIRED_DRAFTS,
+			static_cast<int>(sizeof(REBEL_SNOW_SUIT_REQUIRED_DRAFTS) / sizeof(REBEL_SNOW_SUIT_REQUIRED_DRAFTS[0]))
 		},
 	};
 

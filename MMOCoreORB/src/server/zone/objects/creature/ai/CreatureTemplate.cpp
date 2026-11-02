@@ -21,6 +21,8 @@ CreatureTemplate::CreatureTemplate() {
 	lightSaber = 0;
 
 	scale = 1.f;
+	creditsMultiplier = 1.f;
+	dnaDropChance = 0.f;
 
 	objectName = "";
 	randomNameType = 0;
@@ -147,6 +149,20 @@ void CreatureTemplate::readObject(LuaObject* templateData) {
 		customAiMap = templateData->getStringField("customAiMap").hashCode();
 
 	scale = templateData->getFloatField("scale");
+
+	// Bellum Gero: optional multiplier on the level-based kill credits (missing or <= 0 means 1)
+	creditsMultiplier = templateData->getFloatField("creditsMultiplier");
+
+	if (creditsMultiplier <= 0.f)
+		creditsMultiplier = 1.f;
+
+	// Bellum Gero: optional percent chance of a lootable DNA sample on kill (missing or <= 0 means the global chance)
+	dnaDropChance = templateData->getFloatField("dnaDropChance");
+
+	if (dnaDropChance < 0.f)
+		dnaDropChance = 0.f;
+	else if (dnaDropChance > 100.f)
+		dnaDropChance = 100.f;
 
 	if (!templateData->getStringField("milkType").isEmpty()) {
 		milkType = templateData->getStringField("milkType").trim();

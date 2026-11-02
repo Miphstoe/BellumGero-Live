@@ -506,6 +506,13 @@ includeFile("items/bellum/hoth/grievous_wheel_bike_schematic.lua")
 includeFile("items/bellum/hoth/hoth_vehicle_grievous_wheel_bike_deed.lua")
 includeFile("items/bellum/hoth/hover_bird_schematic.lua")
 includeFile("items/bellum/hoth/hoth_vehicle_hover_bird_deed.lua")
+includeFile("items/bellum/taanab/taanab_norulac_captains_coat.lua")
+includeFile("items/bellum/taanab/taanab_kessics_scourge.lua")
+includeFile("items/bellum/taanab/taanab_battle_of_taanab_painting.lua")
+includeFile("items/bellum/taanab/taanab_norulac_war_banner.lua")
+includeFile("items/bellum/taanab/taanab_thunderhorn_hide_rug.lua")
+includeFile("items/bellum/taanab/taanab_thunderhorn_skull.lua")
+includeFile("items/bellum/taanab/taanab_thunderhorn_plush.lua")
 
 -- death_watch_bunker sub-folder
 includeFile("items/death_watch_bunker/alum_gel_packet.lua")

@@ -239,7 +239,8 @@ def decor():
         files.append(f'{stem}.lua'); shared.append(client)
         loot_item(f'hoth_decor_{stem}', sp)
     new_dir('object/tangible/furniture/hoth', 'includeFile("tangible/furniture/', 'object/tangible/furniture/serverobjects.lua', shared, files)
-    GROUPS['hoth_decor_common'] = [f'hoth_decor_{s}' for s in COMMON]
+    # the 10 AT-AT toy variants share one item's weight; equal weights made 11/18 drops a walker toy (2026-10-17)
+    GROUPS['hoth_decor_common'] = [(f'hoth_decor_{s}', 1 if s.startswith('hoth_atat_toy_') else 10) for s in COMMON]
     GROUPS['hoth_decor_rare'] = [f'hoth_decor_{s}' for s in RARE]  # vehicles moved to hoth_vehicle_* groups
     GROUPS['hoth_ice_decor'] = [f'hoth_decor_{s}' for s in ICE]
     known = {f'hoth_decor_{server_path(p).rsplit("/", 1)[1][:-4]}' for p, _ in PORTED_DECOR} | {f'hoth_decor_{r[0] if r[0].startswith("frn_hoth") else "frn_hoth_" + r[0]}' for r in c.DECOR}

@@ -2,7 +2,7 @@ object_building_player_emperors_house = object_building_player_shared_emperors_h
 	lotSize = 3,
     storageLimit = 600,
 	baseMaintenanceRate = 16,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

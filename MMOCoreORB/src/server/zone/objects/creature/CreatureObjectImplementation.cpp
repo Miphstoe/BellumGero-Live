@@ -12,6 +12,7 @@
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/zone/managers/skill/SkillManager.h"
+#include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/combat/CombatManager.h"
 #include "server/zone/managers/combat/DpsSessionManager.h"
@@ -173,6 +174,11 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 		deleteLuaStringData(
 			"fmidstation_original_skill_points");
 	}
+
+	// Design Vendor: the Image Designer skill mods granted for a vendor design
+	// session never outlive the session; drop any left by an abnormal shutdown.
+	if (isPlayerCreature())
+		removeAllSkillModsOfType(SkillModManager::VENDORIMAGEDESIGN, false);
 
 	// Compatibility cleanup for earlier FMIDStation test builds.
 	if (getLuaStringData("fmidstation_temp_entertainer") == "1") {

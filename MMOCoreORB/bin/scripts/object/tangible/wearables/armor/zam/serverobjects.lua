@@ -54,3 +54,5 @@ includeFile("tangible/wearables/armor/zam/armor_zam_wesell_helmet.lua")
 includeFile("tangible/wearables/armor/zam/armor_zam_wesell_helmet_quest.lua")
 includeFile("tangible/wearables/armor/zam/armor_zam_wesell_pants.lua")
 includeFile("tangible/wearables/armor/zam/armor_zam_wesell_pants_quest.lua")
+
+includeFile("tangible/wearables/armor/zam/armor_zam_suit_package.lua")

@@ -54,3 +54,5 @@ includeFile("tangible/wearables/armor/ris/armor_ris_chest_plate.lua")
 includeFile("tangible/wearables/armor/ris/armor_ris_gloves.lua")
 includeFile("tangible/wearables/armor/ris/armor_ris_helmet.lua")
 includeFile("tangible/wearables/armor/ris/armor_ris_leggings.lua")
+
+includeFile("tangible/wearables/armor/ris/armor_ris_suit_package.lua")

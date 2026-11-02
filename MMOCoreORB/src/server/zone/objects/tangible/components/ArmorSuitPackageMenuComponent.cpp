@@ -235,6 +235,61 @@ namespace {
 		{"object/tangible/wearables/armor/marine/armor_marine_leggings.iff", true, 75, 45, 175, 105, 25, 15},
 	};
 
+
+	const ArmorSuitPieceDefinition RIS_SUIT_PIECES[] = {
+		{"object/tangible/wearables/armor/ris/armor_ris_boots.iff", true, 22, 13, 44, 26, 16, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_gloves.iff", true, 22, 13, 44, 26, 16, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_helmet.iff", true, 22, 13, 22, 13, 188, 113},
+		{"object/tangible/wearables/armor/ris/armor_ris_bicep_r.iff", true, 22, 13, 22, 13, 13, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_bicep_l.iff", true, 22, 13, 22, 13, 13, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_leggings.iff", true, 66, 39, 175, 105, 16, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_bracer_r.iff", true, 22, 13, 22, 13, 13, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_bracer_l.iff", true, 22, 13, 22, 13, 13, 9},
+		{"object/tangible/wearables/armor/ris/armor_ris_chest_plate.iff", true, 219, 131, 66, 39, 16, 9},
+	};
+
+	const ArmorSuitPieceDefinition ZAM_SUIT_PIECES[] = {
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_belt.iff", false, 0, 0, 0, 0, 0, 0},
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_chest_plate.iff", true, 250, 150, 66, 39, 25, 15},
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_pants.iff", true, 75, 45, 175, 105, 25, 15},
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_boots.iff", true, 25, 15, 44, 26, 25, 15},
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_gloves.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/zam/armor_zam_wesell_helmet.iff", true, 25, 15, 22, 13, 300, 180},
+	};
+
+	const ArmorSuitPieceDefinition TANTEL_SUIT_PIECES[] = {
+		{"object/tangible/wearables/armor/tantel/armor_tantel_skreej_boots.iff", true, 8, 5, 18, 11, 7, 4},
+		{"object/tangible/wearables/armor/tantel/armor_tantel_skreej_chest_plate.iff", true, 75, 45, 25, 15, 7, 4},
+		{"object/tangible/wearables/armor/tantel/armor_tantel_skreej_helmet.iff", true, 8, 5, 9, 5, 80, 48},
+	};
+
+
+	const ArmorSuitPieceDefinition SNOWTROOPER_PIECES[] = {
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_belt.iff", false, 0, 0, 0, 0, 0, 0},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_bicep_l.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_bicep_r.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_boots.iff", true, 25, 15, 44, 26, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_bracer_l.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_bracer_r.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_chest_plate.iff", true, 250, 150, 66, 39, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_gloves.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_helmet.iff", true, 25, 15, 22, 13, 300, 180},
+		{"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_leggings.iff", true, 75, 45, 175, 105, 25, 15},
+	};
+
+	const ArmorSuitPieceDefinition REBEL_SNOW_PIECES[] = {
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_belt.iff", false, 0, 0, 0, 0, 0, 0},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_bicep_l.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_bicep_r.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_boots.iff", true, 25, 15, 44, 26, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_bracer_l.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_bracer_r.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_chest_plate.iff", true, 250, 150, 66, 39, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_gloves.iff", true, 25, 15, 22, 13, 25, 15},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_helmet.iff", true, 25, 15, 22, 13, 300, 180},
+		{"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_leggings.iff", true, 75, 45, 175, 105, 25, 15},
+	};
+
 	const ArmorSuitDefinition SUIT_DEFINITIONS[] = {
 		{
 			"object/tangible/wearables/armor/composite/armor_composite_suit_package.iff",
@@ -389,6 +444,25 @@ namespace {
 			351, 209,
 			425, 255
 		},
+
+		{"object/tangible/wearables/armor/ris/armor_ris_suit_package.iff", "RIS Armor Suit", RIS_SUIT_PIECES, sizeof(RIS_SUIT_PIECES) / sizeof(RIS_SUIT_PIECES[0]), 439, 261, 439, 261, 304, 185},
+		{"object/tangible/wearables/armor/zam/armor_zam_suit_package.iff", "Mabari Armorweave Suit", ZAM_SUIT_PIECES, sizeof(ZAM_SUIT_PIECES) / sizeof(ZAM_SUIT_PIECES[0]), 400, 240, 329, 196, 400, 240},
+		{"object/tangible/wearables/armor/tantel/armor_tantel_suit_package.iff", "Tantel Armor Suit", TANTEL_SUIT_PIECES, sizeof(TANTEL_SUIT_PIECES) / sizeof(TANTEL_SUIT_PIECES[0]), 91, 55, 52, 31, 94, 56},
+
+		{
+			"object/tangible/wearables/armor/snowtrooper/armor_snowtrooper_suit_package.iff",
+			"Snowtrooper Armor Suit",
+			SNOWTROOPER_PIECES,
+			sizeof(SNOWTROOPER_PIECES) / sizeof(SNOWTROOPER_PIECES[0]),
+			500, 300, 417, 248, 500, 300
+		},
+		{
+			"object/tangible/wearables/armor/rebel_snow/armor_rebel_snow_suit_package.iff",
+			"Alliance Cold Weather Armor Suit",
+			REBEL_SNOW_PIECES,
+			sizeof(REBEL_SNOW_PIECES) / sizeof(REBEL_SNOW_PIECES[0]),
+			500, 300, 417, 248, 500, 300
+		},
 	};
 
 	const int SUIT_DEFINITION_COUNT =
@@ -460,6 +534,55 @@ namespace {
 		}
 
 		return true;
+	}
+
+
+	// RIS can legitimately craft below the normal template best-case encumbrance
+	// (e.g. an unlayered suit). Allocate the actual raw package total using
+	// the individual Tangible experimental worst values as relative weights.
+	// Largest-remainder rounding preserves the exact whole-number total.
+	void distributeBellumRisEncumbrance(const ArmorSuitDefinition& definition,
+			int rawTotal, int worstOffset, int* result) {
+		const int count = definition.pieceCount;
+		long long weightTotal = 0;
+		for (int i = 0; i < count; ++i) {
+			const ArmorSuitPieceDefinition& p = definition.pieces[i];
+			const int weight = !p.mitigatingArmor ? 0 :
+				(worstOffset == 0 ? p.healthWorst :
+				 (worstOffset == 2 ? p.actionWorst : p.mindWorst));
+			weightTotal += weight > 0 ? weight : 0;
+			result[i] = 0;
+		}
+		if (rawTotal <= 0 || weightTotal <= 0)
+			return;
+
+		// Normal suit sizes are much smaller than this guard.
+		if (count > 32)
+			return;
+		long long remainder[32] = {};
+		int assigned = 0;
+		for (int i = 0; i < count; ++i) {
+			const ArmorSuitPieceDefinition& p = definition.pieces[i];
+			const int weight = !p.mitigatingArmor ? 0 :
+				(worstOffset == 0 ? p.healthWorst :
+				 (worstOffset == 2 ? p.actionWorst : p.mindWorst));
+			const long long scaled = static_cast<long long>(rawTotal) *
+				(weight > 0 ? weight : 0);
+			result[i] = static_cast<int>(scaled / weightTotal);
+			remainder[i] = scaled % weightTotal;
+			assigned += result[i];
+		}
+		for (int left = rawTotal - assigned; left > 0; --left) {
+			int chosen = -1;
+			for (int i = 0; i < count; ++i) {
+				if (chosen < 0 || remainder[i] > remainder[chosen])
+					chosen = i;
+			}
+			if (chosen < 0)
+				break;
+			++result[chosen];
+			remainder[chosen] = -1;
+		}
 	}
 
 	void destroyGenerated(Vector<ManagedReference<ArmorObject*> >& generated) {
@@ -576,6 +699,22 @@ int ArmorSuitPackageMenuComponent::handleObjectMenuSelect(
 			definition->mindWorst,
 			definition->mindBest);
 
+	// RIS only: use raw crafted package totals, even below ordinary ranges.
+	const bool isRisSuit = String(definition->packageTemplatePath) ==
+		"object/tangible/wearables/armor/ris/armor_ris_suit_package.iff";
+	int risHealth[32] = {};
+	int risAction[32] = {};
+	int risMind[32] = {};
+	if (isRisSuit) {
+		if (definition->pieceCount > 32) {
+			player->sendSystemMessage("RIS suit piece count exceeds assembly safety limit.");
+			return 0;
+		}
+		distributeBellumRisEncumbrance(*definition, rawHealth, 0, risHealth);
+		distributeBellumRisEncumbrance(*definition, rawAction, 2, risAction);
+		distributeBellumRisEncumbrance(*definition, rawMind, 4, risMind);
+	}
+
 	Vector<ManagedReference<ArmorObject*> > generated;
 
 	for (int i = 0; i < definition->pieceCount; ++i) {
@@ -600,19 +739,19 @@ int ArmorSuitPackageMenuComponent::handleObjectMenuSelect(
 			Locker pieceLocker(piece);
 
 			if (pieceDefinition.mitigatingArmor) {
-				const int health =
+				const int health = isRisSuit ? risHealth[i] :
 					mapPieceEncumbrance(
 						healthQuality,
 						pieceDefinition.healthWorst,
 						pieceDefinition.healthBest);
 
-				const int action =
+				const int action = isRisSuit ? risAction[i] :
 					mapPieceEncumbrance(
 						actionQuality,
 						pieceDefinition.actionWorst,
 						pieceDefinition.actionBest);
 
-				const int mind =
+				const int mind = isRisSuit ? risMind[i] :
 					mapPieceEncumbrance(
 						mindQuality,
 						pieceDefinition.mindWorst,

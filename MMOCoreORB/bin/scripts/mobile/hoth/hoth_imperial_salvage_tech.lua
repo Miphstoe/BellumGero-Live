@@ -7,6 +7,7 @@ hoth_imperial_salvage_tech = Creature:new {
 	socialGroup = "imperial",
 	faction = "imperial",
 	level = 72,
+	creditsMultiplier = 3,
 	chanceHit = 0.66,
 	damageMin = 500,
 	damageMax = 690,
@@ -31,18 +32,19 @@ hoth_imperial_salvage_tech = Creature:new {
 	templates = {
 		"object/mobile/dressed_imperial_atat_pilot_m.iff"
 	},
+	-- loot tuned (tune_hoth_loot.py): lootChance x0.5, creditsMultiplier 3
 	lootGroups = {
 		{
 			groups = {
 				{group = "hoth_decor_common", chance = 10000000}
 			},
-			lootChance = 1500000
+			lootChance = 750000
 		},
 		{
 			groups = {
 				{group = "hoth_art_rare", chance = 10000000}
 			},
-			lootChance = 50000
+			lootChance = 25000
 		}
 	},
 	primaryWeapon = "imperial_weapons_light",

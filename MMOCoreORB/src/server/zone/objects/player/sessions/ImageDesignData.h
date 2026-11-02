@@ -213,6 +213,10 @@ public:
 		return (bool) targetAccepted;
 	}
 
+	inline void setAcceptedByTarget(bool accepted) {
+		targetAccepted = accepted ? 1 : 0;
+	}
+
 	inline bool isStatMigrationRequested() {
 		return (bool) statMigrationRequested;
 	}
