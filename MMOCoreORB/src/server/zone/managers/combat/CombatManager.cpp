@@ -2382,9 +2382,14 @@ int CombatManager::getHitChance(TangibleObject* attacker, CreatureObject* creoDe
 			if (evadeTotal > 0 && System::random(100) <= evadeTotal) {
 				hitResult = HitStatus::RICOCHET;
 			}
-		} else if (forceDeflectionChance > 0) {
-			// Melee Force Deflection deliberately replaces the ordinary secondary
-			// defense check for this hit instead of adding another stacked roll.
+		} else if (forceDeflectionChance > 0 && defendResult == HitStatus::RICOCHET) {
+			// Melee Force Deflection fills the saber/RICOCHET gap only. Before
+			// Phase 4, a saber's secondary RICOCHET defense applied to ranged
+			// attacks but supplied no equivalent melee secondary-defense roll.
+			//
+			// Do NOT replace normal dodge/block/counter behavior for non-saber
+			// weapons; those continue through Core3's existing secondary-defense
+			// calculation below.
 			evadeTotal = evadeSkill = forceDeflectionChance;
 
 			if (System::random(100) <= forceDeflectionChance) {
