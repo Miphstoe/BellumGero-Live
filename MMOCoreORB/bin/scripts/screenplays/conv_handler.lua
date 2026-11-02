@@ -576,12 +576,14 @@ end
 
 -- ============================= BG TOKEN VENDOR 3 HANDLER (75 tokens - Veteran Rewards) =============================
 
+-- Standard Veteran Rewards price; individual rewards may override with a "price" field
+BG_TOKEN_VENDOR3_DEFAULT_PRICE = 75
+
 function conv_handler:handleBGTokenTrade3(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen, screenId)
     print("[BG-TOKEN-3] === ENTERED handleBGTokenTrade3 ===")
     print("[BG-TOKEN-3] screenId: " .. tostring(screenId))
 
     local screen = LuaConversationScreen(pConvScreen)
-    local requiredTokens = 75
 
     -- Get reward info for this item
     local rewardInfo = self:getBGTokenReward3(screenId)
@@ -591,6 +593,9 @@ function conv_handler:handleBGTokenTrade3(pConvTemplate, pPlayer, pNpc, selected
         screen:setCustomDialogText("Error: Invalid item selection.")
         return pConvScreen
     end
+
+    -- Per-item price; falls back to the standard 75-token price
+    local requiredTokens = rewardInfo.price or BG_TOKEN_VENDOR3_DEFAULT_PRICE
 
     print("[BG-TOKEN-3] === STARTING " .. rewardInfo.name .. " TRADE ===")
     print("[BG-TOKEN-3] Required tokens: " .. requiredTokens)
@@ -611,6 +616,19 @@ function conv_handler:handleBGTokenTrade3(pConvTemplate, pPlayer, pNpc, selected
 
     if tokenCount < requiredTokens then
         screen:setCustomDialogText("You only have " .. tokenCount .. " Bellum Gero Tokens, but need " .. requiredTokens .. ". Please collect more!")
+        return pConvScreen
+    end
+
+    -- Make sure the reward can be delivered before any tokens are consumed
+    local pCreo = LuaCreatureObject(pPlayer)
+    local pInv = pCreo and pCreo:getSlottedObject("inventory") or nil
+    if pInv == nil then
+        screen:setCustomDialogText("Error reading your inventory. Trade cancelled, no tokens were taken.")
+        return pConvScreen
+    end
+    local inv = LuaSceneObject(pInv)
+    if inv:getContainerObjectsSize() >= inv:getContainerVolumeLimit() then
+        screen:setCustomDialogText("Your inventory is full. Please make room and try again. No tokens were taken.")
         return pConvScreen
     end
 
@@ -723,6 +741,8 @@ function conv_handler:getBGTokenReward3(screenId)
         ["give_item_3_79"] = {name = "Fine Woven Rug (Style 3)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_03.iff"},
         ["give_item_3_80"] = {name = "Fine Woven Rug (Style 4)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_04.iff"},
         ["give_item_3_81"] = {name = "Fine Woven Rug (Style 5)", template = "object/tangible/furniture/all/frn_all_rug_rectangle_large_style_05.iff"},
+        -- Premium Veteran Rewards (150 tokens). Same template as the 440-day veteran reward in player_manager.lua.
+        ["give_item_3_82"] = {name = "Species Change Token", template = "object/tangible/item/species_change_token.iff", price = 150},
     }
     return rewards[screenId]
 end
