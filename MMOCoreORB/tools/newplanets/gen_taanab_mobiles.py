@@ -246,7 +246,7 @@ CreatureTemplates:addCreatureTemplate(taanab_pandath_militia, "taanab_pandath_mi
 
 # Hand-written mobiles in mobile/taanab/ (kept in the include list).
 HANDWRITTEN = ['norulac_raider', 'norulac_cutthroat', 'norulac_enforcer', 'norulac_honor_guard', 'taanab_sela_drux',
-               'taanab_varn_kessic', 'taanab_herd_bantha', 'taanab_old_thunderhorn']
+               'taanab_varn_kessic', 'taanab_herd_bantha', 'taanab_old_thunderhorn', 'taanab_arcon_overseer']
 
 # --------------------------------------------------------------------------
 # Lairs. Every lair has a customName and a mission building so the terminals can use it.
@@ -399,15 +399,17 @@ class Placer:
 
 PANDATH = (2000.0, 5400.0)  # Naboo-style town; starport (2100, 5400), cantina (2120, 5320)
 STARHUNTER = (3610.0, -5425.0)  # outpost starport
-CANTINA_CELL0 = 6036257  # Pandath cantina (object 6036224), cells 6036257..6036271 in Naboo-cantina order
-CANTINA = [  # cell index 2 = main room, 10 = back room (positions from the Naboo cantinas in Moenia/Kaadara)
-    ('bartender', 60, 6.4, -0.9, 6.1, 180, 2),
-    ('patron_ithorian', 60, -2.2, -0.9, 5.9, 90, 2),
-    ('patron_devaronian', 60, 1.5, -0.9, 9.5, -150, 2),
-    ('entertainer', 60, 24.0, -0.9, 9.5, 90, 2),
-    ('patron_nikto', 60, 26.0, -0.9, 13.0, -120, 2),
-    ('trainer_musician', 1, -29.0, -0.89, -1.2, 74, 10),
-    ('trainer_dancer', 1, -27.0, -0.89, 2.5, 120, 10),
+CANTINA_CELL0 = 6036257  # Pandath cantina (object 6036224, cantina_naboo): cells 1..15 = 6036257..6036271
+CANTINA = [  # (template, respawn, x, z, y, heading, cell index); cell index = room number - 1 in thm_nboo_cantina.pob
+    # Spots checked against the room floor meshes (flr_spots.py): on the floor and clear of walls and the bar.
+    ('bartender', 60, 0.0, -0.89, 3.2, 0, 2),               # r3 cantina, behind the bar counter
+    ('patron_devaronian', 60, 0.0, -0.89, 6.8, 180, 2),     # r3, at the bar (north side)
+    ('patron_ithorian', 60, -4.0, -0.89, -5.8, 0, 2),       # r3, at the bar (south side)
+    ('patron_chiss', 60, 19.1, -0.89, 2.1, -90, 2),         # r3, east end of the room
+    ('patron_nikto', 60, 16.8, -0.89, 18.3, 180, 4),        # r5 alcove 2
+    ('entertainer', 60, -9.9, -0.89, -19.2, 0, 7),          # r8 stage
+    ('trainer_dancer', 1, -5.4, -0.89, -17.2, -30, 7),      # r8 stage
+    ('trainer_musician', 1, -25.9, -0.89, 0.4, 90, 10),     # r11 office
 ]
 
 
@@ -454,6 +456,37 @@ def statics(tops):
     add('taanab_nerf', 300, p.spots(5536.0, -4957.0, 4, 14, 40))
     add('norulac_raider', 300, p.spots(3318.0, -1306.0, 4, 20, 70))  # salvagers on the Lucky Despot wreck
     add('norulac_cutthroat', 300, p.spots(3318.0, -1306.0, 2, 20, 70))
+
+    # LIVE-62: the sites are 150-200 m across, so spread workers over them next to their equipment, and give each
+    # site something to fight at its edge. Added after the rows above so their spots don't move.
+    def by_anchor(cx, cy, radius, keys, templates, resp=60):
+        anchors = [n for n in tops if math.hypot(n['x'] - cx, n['y'] - cy) <= radius and any(k in n['tmpl'] for k in keys)]
+        anchors.sort(key=lambda n: math.atan2(n['y'] - cy, n['x'] - cx))
+        step = max(1, len(anchors) // len(templates))
+        for tmpl, n in zip(templates, anchors[::step]):
+            add(tmpl, resp, p.spots(n['x'], n['y'], 1, 3, 15))
+
+    def ring(cx, cy, r, groups):  # hostile groups evenly around a site, each group bunched
+        for i, group in enumerate(groups):
+            a = 2 * math.pi * i / len(groups)
+            gx, gy = cx + r * math.cos(a), cy + r * math.sin(a)
+            for tmpl, count in group:
+                add(tmpl, 300, p.spots(gx, gy, count, 0, 20))
+
+    by_anchor(-2610.0, -1300.0, 190, ('mining_ore_harvester', 'mine_support', 'stone_pile'),  # Taanab Mining Outfit
+              ['contractor', 'scientist', 'contractor', 'artisan', 'contractor', 'scientist', 'commoner',
+               'contractor', 'scientist', 'commoner'])
+    ring(-2610.0, -1300.0, 200, [[('norulac_raider', 3), ('norulac_cutthroat', 1)],
+                                 [('norulac_raider', 2), ('norulac_cutthroat', 2)],
+                                 [('norulac_raider', 3), ('norulac_enforcer', 1)]])
+    by_anchor(-3000.0, -100.0, 170, ('droids_dz70', 'streetlamp', 'bantha_nosaddle', 'powerdown'),  # Arcon hex farms
+              ['farmer', 'agriculturalist', 'farmer_rancher', 'farmer', 'agriculturalist', 'farmer', 'farmer_rancher',
+               'commoner_naboo'])
+    ring(-3000.0, -100.0, 230, [[('taanab_crop_quenker', 3)], [('taanab_crop_quenker', 3)], [('taanab_crop_quenker', 3)],
+                                [('taanab_crop_quenker', 3)]])
+    ring(3318.0, -1306.0, 55, [[('norulac_enforcer', 1), ('norulac_cutthroat', 1)],  # Lucky Despot wreck: more salvagers
+                               [('norulac_enforcer', 1), ('norulac_raider', 1)],
+                               [('norulac_cutthroat', 1), ('norulac_raider', 1)]])
 
     for tmpl, resp, x, z, y, hd, idx in CANTINA:
         rows.append((tmpl, resp, x, (z, y), hd, CANTINA_CELL0 + idx))

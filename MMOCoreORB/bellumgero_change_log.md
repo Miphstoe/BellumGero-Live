@@ -14,6 +14,18 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-11-06 — Taanab: fixes from the Test Center pass (LIVE-53, 54, 60–63)
+
+- **Summary:** Fixes and additions from Dek's and Miph's TC testing.
+  - Pandath cantina NPCs moved out of the walls, onto floor spots taken from the building's floor meshes (LIVE-60).
+  - A second BG Hub NPC at Starhunter Station, and a boot log line for both hubs (LIVE-61).
+  - The Mining Outfit, Arcon hex farms and shipwreck get NPCs spread across the whole site plus hostiles at their edges (LIVE-62).
+  - 20 more Norulac in the Raider Cave, in the chambers that were empty (LIVE-53).
+  - Thunderhorn's herd gets 8 nerfs and walks a slow loop around the Great Herds together (LIVE-54).
+  - An Arcon Farm Overseer at the hex farms shows the raid status and lets players light a beacon to start the Kessic raid, 1 h after the last raid ends (LIVE-63).
+- **Files:** `bin/scripts/screenplays/static_spawns/taanab_static_spawns.lua`, `bin/scripts/screenplays/static_spawns/taanab_bg_hub.lua`, `bin/scripts/screenplays/caves/taanab_norulac_raider_cave.lua`, `bin/scripts/screenplays/bellum/taanab_thunderhorn.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `bin/scripts/screenplays/bellum/convos/taanab_arcon_overseer_conv_handler.lua`, `bin/scripts/mobile/conversations/taanab/taanab_arcon_overseer_conv.lua`, `bin/scripts/mobile/taanab/taanab_arcon_overseer.lua`, `bin/scripts/mobile/conversations.lua`, `bin/scripts/screenplays/screenplays.lua`, `tools/newplanets/gen_taanab_mobiles.py`, `tools/newplanets/flr_spots.py`
+- **Notes:** Server restart only; no client change.
+
 ### 2026-11-01 — Taanab: Varn Kessic on the BG Hub Special NPC tracker
 
 - **Summary:** The BG Hub NPC's Special NPC tracker (1,000 cr) has a "Check Varn Kessic (Taanab)" option. It reports that Kessic is up at the Arcon hex farms (-2970, -150), that a raid is under way, or how long until the next raid. The raid now records its next start time in shared memory (`TaanabKessic:nextRaidAt`).
