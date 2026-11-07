@@ -8,7 +8,6 @@ object_tangible_item_species_change_token =
 	gameObjectType = 8211, -- GENERICITEM; createObject needs a registered object type.
 	objectMenuComponent = "SpeciesChangeTokenMenuComponent",
 	customName = "Species Change Token",
-	noTrade = 1,
   }
 
 ObjectTemplates:addTemplate(object_tangible_item_species_change_token,
