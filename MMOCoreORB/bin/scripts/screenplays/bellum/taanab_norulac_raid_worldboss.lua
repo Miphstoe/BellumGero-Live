@@ -46,7 +46,8 @@ TaanabNorulacRaidWorldBoss = ScreenPlay:new {
 
 	-- WorldBossLootManager: 3 items per player, each from a randomly chosen collection (lootChance is ignored)
 	lootGroups = {
-		{ groups = { {group = "taanab_norulac_loot", chance = 10000000} }, lootChance = 10000000 },
+		-- Taanab set: Norulac gear or one of the 22 Taanab paintings (LIVE-64), half and half
+		{ groups = { {group = "taanab_norulac_loot", chance = 5000000}, {group = "taanab_art", chance = 5000000} }, lootChance = 10000000 },
 		{
 			groups = {
 				{group = "krayt_tissue_rare", chance = 3000000},

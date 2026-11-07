@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_painted_hills_1 = object_tangible_painting_shared_taanab_art_painted_hills_1:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_painted_hills_1, "object/tangible/painting/taanab_art_painted_hills_1.iff")

@@ -14,6 +14,12 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-11-06 — Taanab: the real Taanab paintings in Kessic's raid loot (LIVE-64)
+
+- **Summary:** 22 Taanab paintings replace the renamed "Battle of Taanab" painting in the Norulac raid loot: Pandath, Starhunter Station, the Great Herds, the Painted Hills (2), the Mining Facility, the shipwreck, the Vista Plateau, the roba cave, the hydro station, the Defense Force outpost, the surveyors' camp, Islands of Taanab, Wildlife of Taanab, See Taanab, Invasive Species Warning, the abandoned research facility and Vos storehouse, plus Death Troopers, Galactic Gathering, ARC-170 in Flight and Fly for Freedom. Each is cut from the screenshots Miph shared and sits in a stock gold or silver frame (wide, tall or square). Kessic's Taanab loot roll is now half Norulac gear, half paintings (new group `taanab_art`, all 22 equally likely).
+- **Files:** `bin/scripts/object/tangible/painting/taanab_art_*.lua`, `bin/scripts/object/tangible/painting/objects.lua`, `bin/scripts/object/tangible/painting/serverobjects.lua`, `bin/scripts/loot/items/bellum/taanab/taanab_art_*.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_art.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_norulac_loot.lua`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `tools/newplanets/gen_taanab_art.py`; removed `loot/items/bellum/taanab/taanab_battle_of_taanab_painting.lua`
+- **Notes:** **Client TRE update required** (`bg_custom1.tre`, 2026-11-06 build: textures, shaders, meshes, object templates, `string/en/taanab_art_n.stf`/`taanab_art_d.stf`, CRC table). Built on Miph's latest TRE, so it keeps the skills update. The server needs the same TRE. Battle of Taanab paintings already dropped on TC stay as they are.
+
 ### 2026-11-06 — Taanab: fixes from the Test Center pass (LIVE-53, 54, 60–63)
 
 - **Summary:** Fixes and additions from Dek's and Miph's TC testing.

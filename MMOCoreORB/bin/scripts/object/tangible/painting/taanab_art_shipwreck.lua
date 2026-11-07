@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_shipwreck = object_tangible_painting_shared_taanab_art_shipwreck:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_shipwreck, "object/tangible/painting/taanab_art_shipwreck.iff")
