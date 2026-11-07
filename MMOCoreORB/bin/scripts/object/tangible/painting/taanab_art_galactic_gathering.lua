@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_galactic_gathering = object_tangible_painting_shared_taanab_art_galactic_gathering:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_galactic_gathering, "object/tangible/painting/taanab_art_galactic_gathering.iff")

@@ -14,6 +14,36 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-11-06 — Taanab: the real Taanab paintings in Kessic's raid loot (LIVE-64)
+
+- **Summary:** 22 Taanab paintings replace the renamed "Battle of Taanab" painting in the Norulac raid loot: Pandath, Starhunter Station, the Great Herds, the Painted Hills (2), the Mining Facility, the shipwreck, the Vista Plateau, the roba cave, the hydro station, the Defense Force outpost, the surveyors' camp, Islands of Taanab, Wildlife of Taanab, See Taanab, Invasive Species Warning, the abandoned research facility and Vos storehouse, plus Death Troopers, Galactic Gathering, ARC-170 in Flight and Fly for Freedom. Each is cut from the screenshots Miph shared and sits in a stock gold or silver frame (wide, tall or square). Kessic's Taanab loot roll is now half Norulac gear, half paintings (new group `taanab_art`, all 22 equally likely).
+- **Files:** `bin/scripts/object/tangible/painting/taanab_art_*.lua`, `bin/scripts/object/tangible/painting/objects.lua`, `bin/scripts/object/tangible/painting/serverobjects.lua`, `bin/scripts/loot/items/bellum/taanab/taanab_art_*.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_art.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_norulac_loot.lua`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `tools/newplanets/gen_taanab_art.py`; removed `loot/items/bellum/taanab/taanab_battle_of_taanab_painting.lua`
+- **Notes:** **Client TRE update required** (`bg_custom1.tre`, 2026-11-06 build: textures, shaders, meshes, object templates, `string/en/taanab_art_n.stf`/`taanab_art_d.stf`, CRC table). Built on Miph's latest TRE, so it keeps the skills update. The server needs the same TRE. Battle of Taanab paintings already dropped on TC stay as they are.
+
+### 2026-11-06 — Taanab: fixes from the Test Center pass (LIVE-53, 54, 60–63)
+
+- **Summary:** Fixes and additions from Dek's and Miph's TC testing.
+  - Pandath cantina NPCs moved out of the walls, onto floor spots taken from the building's floor meshes (LIVE-60).
+  - A second BG Hub NPC at Starhunter Station, and a boot log line for both hubs (LIVE-61).
+  - The Mining Outfit, Arcon hex farms and shipwreck get NPCs spread across the whole site plus hostiles at their edges (LIVE-62).
+  - 20 more Norulac in the Raider Cave, in the chambers that were empty (LIVE-53).
+  - Thunderhorn's herd gets 8 nerfs and walks a slow loop around the Great Herds together (LIVE-54).
+  - An Arcon Farm Overseer at the hex farms shows the raid status and lets players light a beacon to start the Kessic raid, 1 h after the last raid ends (LIVE-63).
+- **Files:** `bin/scripts/screenplays/static_spawns/taanab_static_spawns.lua`, `bin/scripts/screenplays/static_spawns/taanab_bg_hub.lua`, `bin/scripts/screenplays/caves/taanab_norulac_raider_cave.lua`, `bin/scripts/screenplays/bellum/taanab_thunderhorn.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `bin/scripts/screenplays/bellum/convos/taanab_arcon_overseer_conv_handler.lua`, `bin/scripts/mobile/conversations/taanab/taanab_arcon_overseer_conv.lua`, `bin/scripts/mobile/taanab/taanab_arcon_overseer.lua`, `bin/scripts/mobile/conversations.lua`, `bin/scripts/screenplays/screenplays.lua`, `tools/newplanets/gen_taanab_mobiles.py`, `tools/newplanets/flr_spots.py`
+- **Notes:** Server restart only; no client change.
+
+### 2026-11-01 — Taanab: Varn Kessic on the BG Hub Special NPC tracker
+
+- **Summary:** The BG Hub NPC's Special NPC tracker (1,000 cr) has a "Check Varn Kessic (Taanab)" option. It reports that Kessic is up at the Arcon hex farms (-2970, -150), that a raid is under way, or how long until the next raid. The raid now records its next start time in shared memory (`TaanabKessic:nextRaidAt`).
+- **Files:** `bin/scripts/mobile/conversations/tasks/myswg_vendor_conv.lua`, `bin/scripts/screenplays/tasks/naboo/myswg_vendor.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`
+- **Notes:** Server restart only. The timer resets on a restart (first raid 30 min after boot), so the tracker follows that.
+
+### 2026-10-29 — Taanab: roba and Ambrian staga
+
+- **Summary:** Taanab roba (53, passive pack: Taanab Roba Pack, Roba Den) and Ambrian staga (56, passive herd using the gualama model: Ambrian Staga Herd), as named on the Taanab loading screen. All three lairs are in the world spawner and the destroy mission group.
+- **Files:** `bin/scripts/mobile/taanab/`, `bin/scripts/mobile/lair/creature_dynamic/`, `bin/scripts/mobile/lair/creature_lair/`, `bin/scripts/mobile/spawn/`, `tools/newplanets/gen_taanab_mobiles.py`
+- **Notes:** Server restart only; no client change (both models are in the base client).
+
 ### 2026-10-29 — Taanab: BG Hub NPC at Pandath
 
 - **Summary:** The BG Hub vendor (`myswg_vendor`) stands beside the Pandath mission terminals (2105, 5356), as at the Hoth outposts.

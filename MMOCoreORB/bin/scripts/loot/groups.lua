@@ -130,6 +130,7 @@ includeFile("groups/bellum/hoth/hoth_vehicle_schematics.lua")
 includeFile("groups/bellum/hoth/hoth_vehicle_deeds.lua")
 includeFile("groups/bellum/taanab/taanab_norulac_loot.lua")
 includeFile("groups/bellum/taanab/taanab_thunderhorn_trophies.lua")
+includeFile("groups/bellum/taanab/taanab_art.lua")
 
 -- death_watch_bunker sub-folder
 includeFile("groups/death_watch_bunker/death_watch_bunker_art.lua")
