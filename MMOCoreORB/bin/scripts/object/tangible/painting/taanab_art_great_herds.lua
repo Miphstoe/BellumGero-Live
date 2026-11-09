@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_great_herds = object_tangible_painting_shared_taanab_art_great_herds:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_great_herds, "object/tangible/painting/taanab_art_great_herds.iff")

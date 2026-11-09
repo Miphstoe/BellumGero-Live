@@ -1,6 +1,7 @@
 -- Norulac Raider Cave, Taanab (-861, 7206): Corellia's Afarathu cave building. Spawn points are the stock Afarathu
--- cave layout (caves/corellia_afarathu_cave.lua) on Taanab's cell IDs (6036722-6036732). The back chamber holds
--- Sela Drux, Kessic's quartermaster; her rewards are per player like the Hoth cave bosses, so her corpse carries none.
+-- cave layout (caves/corellia_afarathu_cave.lua) on Taanab's cell IDs (6036722-6036732), plus 20 more in the chambers
+-- it leaves empty. The back chamber holds Sela Drux, Kessic's quartermaster; her rewards are per player like the Hoth
+-- cave bosses, so her corpse carries none.
 local WorldBossLootManager = require("screenplays.managers.world_boss_loot_manager")
 
 TAANAB_CAVE_BOSS_LOOT = {
@@ -45,6 +46,27 @@ TaanabNorulacRaiderCaveScreenPlay = ScreenPlay:new {
 		{"norulac_enforcer", 300, -111.7, -69.4, -170.6, 0, 6036729},
 		{"norulac_enforcer", 300, -85.4, -101.5, -111.2, 0, 6036732},
 		{"norulac_enforcer", 300, -92.8, -101.1, -111.9, 0, 6036732},
+		-- 20 more (LIVE-53): open floor spots from the cave's floor meshes (NewPlanets/flr_spots.py), 6 m from other mobs
+		{"norulac_raider", 300, 5.7, -14.8, -8.0, 0, 6036722},
+		{"norulac_raider", 300, 9.9, -22.5, -21.3, 0, 6036723},
+		{"norulac_raider", 300, 9.8, -40.8, -71.0, 0, 6036724},
+		{"norulac_cutthroat", 300, -4.2, -40.3, -68.0, 0, 6036724},
+		{"norulac_raider", 300, 43.5, -46.7, -56.1, 0, 6036725},
+		{"norulac_cutthroat", 300, 57.5, -57.0, -77.1, 0, 6036725},
+		{"norulac_cutthroat", 300, 51.1, -52.2, -141.8, 0, 6036726},
+		{"norulac_raider", 300, 53.1, -55.2, -149.8, 0, 6036726},
+		{"norulac_cutthroat", 300, 53.1, -56.0, -155.8, 0, 6036726},
+		{"norulac_cutthroat", 300, -25.5, -64.6, -180.3, 0, 6036727},
+		{"norulac_raider", 300, -11.5, -64.0, -182.3, 0, 6036727},
+		{"norulac_cutthroat", 300, -14.5, -65.7, -216.5, 0, 6036728},
+		{"norulac_enforcer", 300, -59.0, -71.0, -183.8, 0, 6036729},
+		{"norulac_cutthroat", 300, -61.0, -70.8, -177.8, 0, 6036729},
+		{"norulac_cutthroat", 300, -51.5, -68.9, -97.3, 0, 6036730},
+		{"norulac_enforcer", 300, -57.5, -68.7, -97.3, 0, 6036730},
+		{"norulac_raider", 300, -45.5, -69.6, -97.3, 0, 6036730},
+		{"norulac_cutthroat", 300, -39.5, -70.0, -96.3, 0, 6036730},
+		{"norulac_enforcer", 300, -28.8, -79.9, -143.7, 0, 6036731},
+		{"norulac_cutthroat", 300, -24.8, -78.9, -137.7, 0, 6036731},
 		{"taanab_sela_drux", 1800, -90.7, -101.1, -104.8, 0, 6036732},
 	}
 }

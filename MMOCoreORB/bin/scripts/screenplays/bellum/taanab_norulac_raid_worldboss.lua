@@ -2,6 +2,8 @@
 -- A galaxy warning, two raider waves, then Kessic lands with his honor guard. He cannot be attacked while any guard
 -- stands, calls reinforcements at 75/50/25% health and throws thermal detonators below 25%. Unkilled raids retreat
 -- after RAID_TIMEOUT. Rewards are per player via WorldBossLootManager (like Rimeclaw).
+-- Raids start on a timer, or earlier when a player lights the beacon at the Arcon Farm Overseer (OVERSEER_COOLDOWN after
+-- the last raid ended).
 local TAG = "[TAANAB-KESSIC-WB]"
 local function logf(fmt, ...)
 	local s = string.format(TAG .. " " .. fmt, ...)
@@ -26,6 +28,8 @@ TaanabNorulacRaidWorldBoss = ScreenPlay:new {
 	RAID_INTERVAL = 10800, -- after a kill or a retreat
 	WARNING_LEAD = 300, -- warning -> Kessic lands
 	RAID_TIMEOUT = 2700, -- Kessic retreats if still alive
+	OVERSEER_COOLDOWN = 3600, -- after a raid ends, before the overseer can start the next one
+	overseer = {x = -3005.0, y = -115.0, heading = 135}, -- ~50 m from the raid centre, facing the fields
 	DETONATOR_EVERY = 15,
 	DETONATOR_RADIUS = 8,
 	DETONATOR_DAMAGE = 4000,
@@ -42,7 +46,8 @@ TaanabNorulacRaidWorldBoss = ScreenPlay:new {
 
 	-- WorldBossLootManager: 3 items per player, each from a randomly chosen collection (lootChance is ignored)
 	lootGroups = {
-		{ groups = { {group = "taanab_norulac_loot", chance = 10000000} }, lootChance = 10000000 },
+		-- Taanab set: Norulac gear or one of the 22 Taanab paintings (LIVE-64), half and half
+		{ groups = { {group = "taanab_norulac_loot", chance = 5000000}, {group = "taanab_art", chance = 5000000} }, lootChance = 10000000 },
 		{
 			groups = {
 				{group = "krayt_tissue_rare", chance = 3000000},
@@ -91,12 +96,76 @@ end
 function TaanabNorulacRaidWorldBoss:start()
 	if not isZoneEnabled(self.planet) then return end
 	setN("active", 0)
+	setN("lastRaidEndAt", 0)
 	self:scheduleRaid(self.FIRST_RAID_DELAY)
+
+	local o = self.overseer
+	if spawnMobile(self.planet, "taanab_arcon_overseer", 60, o.x, floorZ(self.planet, o.x, o.y), o.y, o.heading, 0) == nil then
+		logf("could not spawn the Arcon Farm Overseer")
+	end
+end
+
+-- Arcon Farm Overseer conversation (convos/taanab_arcon_overseer_conv_handler.lua)
+function TaanabNorulacRaidWorldBoss:getOverseerStatus()
+	if getN("active") == 1 then
+		if getN("bossOID") ~= 0 then
+			return "Varn Kessic is on the ground at the edge of the fields! Break his honor guard and drive him off."
+		end
+		return "Raiders are landing now. Kessic won't be far behind them. Get ready!"
+	end
+
+	local now = os.time()
+	local nextRaid = getN("nextRaidAt") - now
+	local ready = getN("lastRaidEndAt") + self.OVERSEER_COOLDOWN - now
+	if nextRaid > 0 and nextRaid <= 60 then
+		return "The Norulac ships are already inbound. Brace yourself."
+	end
+
+	local text = "Norulac raiders hit these fields every few hours."
+	if nextRaid > 0 then
+		text = text .. string.format(" Our scouts expect the next raid in about %s.", self:formatWait(nextRaid))
+	end
+	if ready > 0 then
+		return text .. string.format(" The beacon is still cooling from the last fight. I can light it again in about %s.", self:formatWait(ready))
+	end
+	return text .. " If you're ready for them, I can light the signal beacon and draw them in now."
+end
+
+-- returns ok, message
+function TaanabNorulacRaidWorldBoss:startFromOverseer(pPlayer)
+	if getN("active") == 1 then
+		return false, "A raid is already under way!"
+	end
+	local now = os.time()
+	local nextRaid = getN("nextRaidAt") - now
+	if nextRaid > 0 and nextRaid <= 60 then
+		return false, "No need. Their ships are already inbound!"
+	end
+	local ready = getN("lastRaidEndAt") + self.OVERSEER_COOLDOWN - now
+	if ready > 0 then
+		return false, string.format("Not yet. The beacon needs another %s before I can light it again.", self:formatWait(ready))
+	end
+
+	local name = CreatureObject(pPlayer):getFirstName()
+	self:scheduleRaid(10)
+	galaxyBroadcast(string.format("[NOTICE] %s has lit the Arcon signal beacon on Taanab. The Norulac are coming for the hex farms (%.0f, %.0f)!", name, self.x, self.y))
+	logf("raid %d started early by %s at the overseer", getN("raidId"), name)
+	return true, "There! The beacon is lit. The first raiders will land within a couple of minutes, then Kessic himself. Good hunting."
+end
+
+function TaanabNorulacRaidWorldBoss:formatWait(seconds)
+	local m = math.max(1, math.ceil(seconds / 60))
+	if m < 60 then
+		return m .. (m == 1 and " minute" or " minutes")
+	end
+	local h, rest = math.floor(m / 60), m % 60
+	return h .. (h == 1 and " hour" or " hours") .. (rest > 0 and (" " .. rest .. " minutes") or "")
 end
 
 function TaanabNorulacRaidWorldBoss:scheduleRaid(seconds)
 	local id = getN("raidId") + 1
 	setN("raidId", id)
+	setN("nextRaidAt", os.time() + seconds) -- read by the BG Hub NPC's Special NPC tracker
 	createEvent(seconds * 1000, "TaanabNorulacRaidWorldBoss", "beginRaid", nil, tostring(id))
 	logf("raid %d scheduled in %d s", id, seconds)
 end
@@ -291,6 +360,7 @@ end
 -- leftover raiders leave after a short delay; on a retreat the boss leaves with them
 function TaanabNorulacRaidWorldBoss:endRaid(killed)
 	setN("active", 0)
+	setN("lastRaidEndAt", os.time())
 	setN("detonating", 0)
 	local oids = getS("adds")
 	if not killed and getN("bossOID") ~= 0 then oids = oids .. "," .. getN("bossOID") end

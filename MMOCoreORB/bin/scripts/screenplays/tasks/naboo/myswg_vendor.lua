@@ -677,6 +677,26 @@ function myswg_vendor_convo_handler:getSpecialNpcStatusMessage(optionLink)
         return "Primordial Warlord Grak on Endor: " .. getVendorRespawnMessage("GRAK.nextSpawnAt")
     end
 
+    -- Taanab Norulac raid (screenplays/bellum/taanab_norulac_raid_worldboss.lua): Kessic only exists during a raid.
+    if optionLink == "special_npc_kessic" then
+        local where = "the Arcon hex farms on Taanab at approximately -2970, -150"
+        if isVendorTrackedBossAlive("TaanabKessic:bossOID") then
+            return "Varn Kessic is AVAILABLE at " .. where .. "."
+        end
+        if (tonumber(readData("TaanabKessic:active")) or 0) == 1 then
+            return "A Norulac raid is under way at " .. where .. ". Varn Kessic lands within minutes."
+        end
+        local raidAt = tonumber(readData("TaanabKessic:nextRaidAt")) or 0
+        if raidAt <= 0 then
+            return "Varn Kessic on Taanab: the tracker reports it as unavailable."
+        end
+        local secondsRemaining = raidAt - os.time()
+        if secondsRemaining <= 0 then
+            return "Varn Kessic on Taanab: the next Norulac raid is due any moment at " .. where .. "."
+        end
+        return "Varn Kessic on Taanab: next Norulac raid in about " .. formatVendorDuration(secondsRemaining) .. " at " .. where .. "."
+    end
+
     return "Unknown Special NPC tracker request."
 end
 
@@ -803,7 +823,7 @@ local MySwgTravelDestinations = {
 --========================================================
                 local pInventory = creature:getSlottedObject("inventory")
                 local inventory = LuaSceneObject(pInventory)
-                if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" or optionLink == "special_npc_grak" then
+                if optionLink == "special_npc_hand" or optionLink == "special_npc_acklay" or optionLink == "special_npc_fire_spider" or optionLink == "special_npc_wb_acklay" or optionLink == "special_npc_wb_fire_spider" or optionLink == "special_npc_torgas" or optionLink == "special_npc_bird_of_prey" or optionLink == "special_npc_grak" or optionLink == "special_npc_kessic" then
                     if not canAfford(1000) then
                         nextConversationScreen = conversation:getScreen("insufficient_funds")
                         creature:sendSystemMessage("You need 1,000 credits to use the Special NPC tracker.")

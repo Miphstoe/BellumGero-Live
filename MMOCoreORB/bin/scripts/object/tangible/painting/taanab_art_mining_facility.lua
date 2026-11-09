@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_mining_facility = object_tangible_painting_shared_taanab_art_mining_facility:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_mining_facility, "object/tangible/painting/taanab_art_mining_facility.iff")
