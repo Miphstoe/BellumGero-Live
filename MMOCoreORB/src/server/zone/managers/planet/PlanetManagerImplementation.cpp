@@ -641,6 +641,17 @@ Reference<SceneObject*> PlanetManagerImplementation::loadSnapshotObject(WorldSna
 			}
 		}
 
+		// Bellum Gero: a top-level snapshot object (e.g. the Geonosian lab building 1627780) can load from
+		// clientobjects.db without a Zone. Its cells and everything spawned inside them then have no zone either,
+		// so the client never receives them. Insert it the same way a first-boot snapshot object is inserted.
+		if (node->getParentID() == 0 && object->getZone() == nullptr) {
+			Locker locker(object);
+
+			zone->transferObject(object, -1, true);
+
+			info(true) << "Recovered snapshot object " << objectID << " (" << templateName << ") into zone " << zone->getZoneName();
+		}
+
 		return nullptr;
 	}
 
