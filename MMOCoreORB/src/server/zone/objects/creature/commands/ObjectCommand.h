@@ -505,7 +505,7 @@ public:
 						statName == "force_experimentation" || statName == "force_choke" || statName == "forcethrow_accuracy" ||
 						statName == "force_failure_reduction" || statName == "force_repair_bonus" || statName == "lightsaber_toughness" ||
 						statName == "jedi_state_defense" || statName == "forceintimidate_accuracy" || statName == "forceknockdown_accuracy" ||
-						statName == "forcelightning_accuracy" || statName == "forceweaken_accuracy") {
+						statName == "forcelightning_accuracy" || statName == "forceweaken_accuracy" || statName == "force_deflection") {
 						isValidStat = true;
 					}
 				} else {

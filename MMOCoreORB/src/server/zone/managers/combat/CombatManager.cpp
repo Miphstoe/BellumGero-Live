@@ -1198,6 +1198,12 @@ float CombatManager::calculateDamage(CreatureObject* attacker, WeaponObject* wea
 		float minDmg = data.getMinDamage();
 		float maxDmg = data.getMaxDamage();
 
+		// Generic per-defender command hook. Default is a no-op; Powers overrides it.
+		// Run before FRS so Bellum Gero Powers scales base command damage only.
+		const CombatQueueCommand* command = data.getCommand();
+		if (command != nullptr)
+			command->adjustCommandDamageForDefender(attacker, defender, minDmg, maxDmg);
+
 		if (data.isForceAttack() && attacker->isPlayerCreature())
 			getFrsModifiedForceAttackDamage(attacker, minDmg, maxDmg, data);
 
@@ -2308,36 +2314,88 @@ int CombatManager::getHitChance(TangibleObject* attacker, CreatureObject* creoDe
 		}
 
 		int defendResult = getWeaponDefendResult(defendMask);
+		int attackMask = weapon->getWeaponBitmask();
+		int attackType = weapon->getAttackType();
 
-		if (defendResult == HitStatus::RICOCHET) {
-			int attackMask = weapon->getWeaponBitmask();
-			int attackType = weapon->getAttackType();
+		bool rangedDeflectable = (attackMask != WeaponType::GRENADEWEAPON) &&
+			(attackType == SharedWeaponObjectTemplate::RANGEDATTACK || attackMask == WeaponType::HEAVYWEAPON);
 
-			if ((attackMask != WeaponType::GRENADEWEAPON) && (attackType == SharedWeaponObjectTemplate::RANGEDATTACK || attackMask == WeaponType::HEAVYWEAPON)) {
-				evadeTotal = evadeSkill = creoDefender->getSkillMod("saber_block");
+		// Bellum Gero Force Powers Revamp - Phase 4: Force Deflection
+		//
+		// Master Powers receives a separate defensive layer intended to be strongest
+		// against conventional ranged pressure while still providing a smaller escape
+		// buffer when kiting fails. The skill box grants 65; wearable/SEA sources may
+		// add up to +25, and combat clamps the effective value at 90.
+		//
+		// Ranged: full Force Deflection value (max 90).
+		// Normal melee: one-third of the value (max 30).
+		// Lightsaber melee: one-quarter of the value (max 22 at value 90).
+		// Force attacks, state-only attacks, grenades, and DOTs do not use this roll.
+		//
+		// PvP scales Force Deflection to 80%, matching Bellum Gero's Saber Block
+		// philosophy. Against ranged attacks, Saber Block and Force Deflection use
+		// one higher-of-the-two roll rather than stacking as two independent checks.
+		int forceDeflectionChance = 0;
 
-				// PvP-only saber block tuning:
-				// Saber block can sit extremely high on Jedi, resulting in near-guaranteed ricochets in PvP.
-				// To preserve Jedi PvE performance while improving PvP balance, scale and cap this check
-				// only when BOTH attacker and defender are player creatures.
+		if (creoDefender->hasSkill("force_discipline_powers_master")) {
+			int forceDeflection = creoDefender->getSkillMod("force_deflection");
+
+			if (forceDeflection < 0)
+				forceDeflection = 0;
+			else if (forceDeflection > 90)
+				forceDeflection = 90;
+
+			if (rangedDeflectable) {
+				forceDeflectionChance = forceDeflection;
+			} else if (attackType == SharedWeaponObjectTemplate::MELEEATTACK) {
+				forceDeflectionChance = weapon->isJediWeapon() ? forceDeflection / 4 : forceDeflection / 3;
+			}
+
+			if (forceDeflectionChance > 0 && attacker->isPlayerCreature() && creoDefender->isPlayerCreature()) {
+				forceDeflectionChance = (forceDeflectionChance * 80) / 100;
+			}
+		}
+
+		if (rangedDeflectable && (defendResult == HitStatus::RICOCHET || forceDeflectionChance > 0)) {
+			int saberBlockChance = 0;
+
+			if (defendResult == HitStatus::RICOCHET) {
+				saberBlockChance = creoDefender->getSkillMod("saber_block");
+
 				if (attacker->isPlayerCreature() && creoDefender->isPlayerCreature()) {
-					// Tuning knobs (adjust as needed):
-					// - Scale effectiveness to 80% in PvP
-					// - Cap absolute ricochet chance to 80%
-					int scaled = (evadeTotal * 80) / 100; // 80% effectiveness
+					int scaled = (saberBlockChance * 80) / 100;
+
 					if (scaled > 80)
 						scaled = 80;
 					else if (scaled < 0)
 						scaled = 0;
 
-					evadeTotal = evadeSkill = scaled;
-				}
-
-				if (evadeTotal > 0 && System::random(100) <= evadeTotal) {
-					hitResult = HitStatus::RICOCHET;
+					saberBlockChance = scaled;
 				}
 			}
-		} else { // HitStatus::BLOCK, HitStatus::COUNTER, HitStatus::DODGE
+
+			// Do not allow a Powers/LS hybrid to receive two independent ranged
+			// avoidance rolls. Whichever specialization provides the stronger
+			// applicable chance owns this single deflection check.
+			evadeTotal = evadeSkill = Math::max(saberBlockChance, forceDeflectionChance);
+
+			if (evadeTotal > 0 && System::random(100) <= evadeTotal) {
+				hitResult = HitStatus::RICOCHET;
+			}
+		} else if (forceDeflectionChance > 0 && defendResult == HitStatus::RICOCHET) {
+			// Melee Force Deflection fills the saber/RICOCHET gap only. Before
+			// Phase 4, a saber's secondary RICOCHET defense applied to ranged
+			// attacks but supplied no equivalent melee secondary-defense roll.
+			//
+			// Do NOT replace normal dodge/block/counter behavior for non-saber
+			// weapons; those continue through Core3's existing secondary-defense
+			// calculation below.
+			evadeTotal = evadeSkill = forceDeflectionChance;
+
+			if (System::random(100) <= forceDeflectionChance) {
+				hitResult = HitStatus::DODGE;
+			}
+		} else if (defendResult != HitStatus::RICOCHET) { // HitStatus::BLOCK, HitStatus::COUNTER, HitStatus::DODGE
 			evadeSkill = getDefenderSecondaryDefenseModifier(creoDefender);
 
 			if (evadeSkill != 0) {
@@ -2651,6 +2709,15 @@ int CombatManager::getArmorReduction(TangibleObject* attacker, WeaponObject* wea
 			armorPiercing = 0;
 	} else {
 		damageType = data.getDamageType();
+
+		// Bellum Gero Force Powers Revamp - Phase 3.1
+		// Force attacks default to AP1 via CombatQueueCommand; specialized
+		// commands may opt into a different Force AP for their caster.
+		const CombatQueueCommand* command = data.getCommand();
+		CreatureObject* creatureAttacker = cast<CreatureObject*>(attacker);
+
+		if (command != nullptr && creatureAttacker != nullptr)
+			armorPiercing = command->getForceArmorPiercing(creatureAttacker);
 	}
 
 	if (defender->isAiAgent()) {

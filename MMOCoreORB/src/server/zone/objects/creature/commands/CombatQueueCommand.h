@@ -265,6 +265,17 @@ public:
 		return SUCCESS;
 	}
 
+	// Generic per-defender command-damage hook. Existing commands inherit a no-op.
+	virtual void adjustCommandDamageForDefender(CreatureObject* attacker, CreatureObject* defender, float& minDmg, float& maxDmg) const {
+	}
+
+	// Bellum Gero Force Powers Revamp - Phase 3.1
+	// Keep Core3's historical AP1 as the default for Force attacks while
+	// allowing individual Force commands to opt into a different AP.
+	virtual int getForceArmorPiercing(CreatureObject* attacker) const {
+		return SharedWeaponObjectTemplate::LIGHT;
+	}
+
 	float getCommandDuration(CreatureObject *object, const UnicodeString& arguments) const {
 		return CombatManager::instance()->calculateWeaponAttackSpeed(object, object->getWeapon(), speedMultiplier);
 	}
