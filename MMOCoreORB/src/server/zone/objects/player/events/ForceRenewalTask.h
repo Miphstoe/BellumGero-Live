@@ -99,6 +99,12 @@ public:
 			reschedule(1000);
 		} catch (Exception& e) {
 			strongPlayer->error("unreported exception caught in ForceRenewalTask::run");
+			strongPlayer->error(e.getMessage());
+
+			// Bellum Gero Force Powers Revamp - pre-merge lifecycle hardening.
+			// Do not leave the player in a pending Renewal / ALERT / sitting state
+			// if an unexpected task exception occurs.
+			endChannel(false, "Your Force Renewal was interrupted.");
 		}
 	}
 };

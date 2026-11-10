@@ -69,6 +69,13 @@ public:
 		creature->addPendingTask("forcerenewal", renewalTask, 1000);
 
 		PlayerManager* playermgr = server->getZoneServer()->getPlayerManager();
+
+		// Bellum Gero Force Powers Revamp - pre-merge lifecycle hardening.
+		// PlayerManager's DAMAGERECEIVED observer is unique to Force Renewal.
+		// Remove any stale registration from a previous channel before adding
+		// the new one so repeated successful channels cannot accumulate it.
+		creature->dropObserver(ObserverEventType::DAMAGERECEIVED, playermgr);
+
 		creature->registerObserver(ObserverEventType::POSTURECHANGED, playermgr);
 		creature->registerObserver(ObserverEventType::DAMAGERECEIVED, playermgr);
 

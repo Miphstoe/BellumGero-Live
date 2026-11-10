@@ -3420,7 +3420,14 @@ int PlayerManagerImplementation::notifyObserverEvent(uint32 eventType, Observabl
 
 		Reference<ForceRenewalTask*> renewalTask = creature->getPendingTask("forcerenewal").castTo<ForceRenewalTask*>();
 
-		if (renewalTask != nullptr && arg2 > 0) {
+		// Bellum Gero Force Powers Revamp - pre-merge lifecycle hardening.
+		// PlayerManager's DAMAGERECEIVED observer is registered by Force Renewal.
+		// If the task no longer exists, this is a stale observer registration;
+		// return 1 so Observable removes it immediately.
+		if (renewalTask == nullptr)
+			return 1;
+
+		if (arg2 > 0) {
 			renewalTask->interrupt("Your Force Renewal was interrupted by damage.");
 			return 1;
 		}
