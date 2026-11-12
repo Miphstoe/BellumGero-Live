@@ -182,8 +182,36 @@ int AuctionsMapImplementation::getVendorItemCount(SceneObject* vendor, bool forS
 
 	Reference<TerminalItemList*> vendorItems = vendorItemsForSale.get(vendor->getObjectID());
 
-	if(vendorItems == nullptr)
-		return 0;
+	if(vendorItems == nullptr) {
+		// Vendor Packup: a packed vendor's listings are hidden from the terminal index but must still
+		// count toward the owner's item limit (prevents using packup to bypass vendor_item_limit).
+		if (!VendorDataComponent::isVendorFrozen(vendor))
+			return 0;
+
+		int frozenSize = 0;
+		uint64 frozenVendorID = vendor->getObjectID();
+
+		for (int i = 0; i < allItems.size(); ++i) {
+			AuctionItem* item = allItems.get(i);
+
+			if (item == nullptr || item->getVendorID() != frozenVendorID)
+				continue;
+
+			if (forSaleOnly && item->getStatus() != AuctionItem::FORSALE)
+				continue;
+
+			int itemSize = item->getSize();
+
+			if (itemSize > 50)
+				frozenSize += 50;
+			else if (itemSize > 0)
+				frozenSize += itemSize;
+			else
+				frozenSize++;
+		}
+
+		return frozenSize;
+	}
 
 	int size = 0;
 
@@ -367,4 +395,197 @@ int AuctionsMapImplementation::updatePlayerName(uint64 playerID, const String& o
 	}
 
 	return updated;
+}
+
+// ============================================================================
+// Bellum Gero Vendor Packup
+// ============================================================================
+
+int AuctionsMapImplementation::freezeVendorListings(SceneObject* vendor) {
+	if (vendor == nullptr || vendor->isBazaarTerminal())
+		return 0;
+
+	// 1) Snapshot the vendor's listings under the map lock.
+	Vector<Reference<AuctionItem*> > snapshot;
+
+	{
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+
+		Reference<TerminalItemList*> vendorItems = vendorItemsForSale.get(vendor->getObjectID());
+
+		if (vendorItems != nullptr) {
+			ReadLocker rlocker(vendorItems);
+
+			for (int i = 0; i < vendorItems->size(); ++i) {
+				Reference<AuctionItem*> item = vendorItems->get(i);
+
+				if (item != nullptr)
+					snapshot.add(item);
+			}
+		}
+	}
+
+	// 2) Take each item lock once (barrier against in-flight purchases; the vendor is
+	//    already flagged PACKING so every entry point refuses new work) and record the
+	//    remaining listing time so it can be resumed on redeploy.
+	uint32 now = (uint32)time(0);
+
+	for (int i = 0; i < snapshot.size(); ++i) {
+		Reference<AuctionItem*>& item = snapshot.get(i);
+
+		Locker ilocker(item);
+
+		uint32 expire = item->getExpireTime();
+		uint32 remaining = (expire > now) ? (expire - now) : 1;
+
+		item->setPausedRemaining(remaining);
+	}
+
+	// 3) Hide the listing from search and from periodic maintenance. Items stay in allItems
+	//    so they cannot be listed twice and the DB records are untouched.
+	{
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+		vendorItemsForSale.dropTerminalListing(vendor);
+	}
+
+	return snapshot.size();
+}
+
+int AuctionsMapImplementation::thawVendorListings(SceneObject* vendor, bool searchable) {
+	if (vendor == nullptr || vendor->getZone() == nullptr || vendor->isBazaarTerminal())
+		return 0;
+
+	String uid = "";
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+
+	if (data != nullptr && data->get() != nullptr && data->get()->isAuctionTerminalData()) {
+		AuctionTerminalDataComponent* terminalData = cast<AuctionTerminalDataComponent*>(data->get());
+
+		if (terminalData != nullptr)
+			uid = terminalData->getUID();
+	}
+
+	String planet = vendor->getZone()->getZoneName();
+	String region = "@planet_n:" + planet;
+
+	ManagedReference<CityRegion*> cityRegion = vendor->getCityRegion().get();
+
+	if (cityRegion != nullptr)
+		region = cityRegion->getCityRegionName();
+
+	uint64 vendorID = vendor->getObjectID();
+
+	// Collect this vendor's listings from the master index.
+	Vector<Reference<AuctionItem*> > items;
+
+	{
+		Locker locker(_this.getReferenceUnsafeStaticCast());
+
+		for (int i = 0; i < allItems.size(); ++i) {
+			Reference<AuctionItem*> item = allItems.get(i);
+
+			if (item != nullptr && item->getVendorID() == vendorID)
+				items.add(item);
+		}
+	}
+
+	uint32 now = (uint32)time(0);
+
+	for (int i = 0; i < items.size(); ++i) {
+		Reference<AuctionItem*>& item = items.get(i);
+
+		Locker ilocker(item);
+
+		uint32 paused = item->getPausedRemaining();
+
+		if (paused > 0) {
+			item->setExpireTime(now + paused);
+			item->setPausedRemaining(0);
+		}
+
+		if (!uid.isEmpty())
+			item->setVendorUID(uid);
+	}
+
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+
+	if (!vendorItemsForSale.createTerminalListing(planet, region, vendor)) {
+		logger.error("thawVendorListings: unable to create terminal listing for vendor " + String::valueOf(vendorID));
+		return -1;
+	}
+
+	Reference<TerminalItemList*> vendorItems = vendorItemsForSale.get(vendorID);
+
+	if (vendorItems == nullptr)
+		return -1;
+
+	vendorItems->setSearchable(searchable);
+
+	int added = 0;
+
+	for (int i = 0; i < items.size(); ++i) {
+		if (vendorItems->put(items.get(i)) != -1)
+			added++;
+	}
+
+	return added;
+}
+
+int AuctionsMapImplementation::addFrozenItem(AuctionItem* item) {
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+
+	if (allItems.contains(item->getAuctionedItemObjectID()))
+		return ItemSoldMessage::ALREADYFORSALE;
+
+	allItems.put(item->getAuctionedItemObjectID(), item);
+
+	return ItemSoldMessage::SUCCESS;
+}
+
+int AuctionsMapImplementation::countPackBlockingItems(SceneObject* vendor) {
+	if (vendor == nullptr)
+		return 0;
+
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+
+	Reference<TerminalItemList*> vendorItems = vendorItemsForSale.get(vendor->getObjectID());
+
+	if (vendorItems == nullptr)
+		return 0;
+
+	int blocking = 0;
+
+	ReadLocker rlocker(vendorItems);
+
+	for (int i = 0; i < vendorItems->size(); ++i) {
+		AuctionItem* item = vendorItems->get(i);
+
+		if (item == nullptr)
+			continue;
+
+		if (item->getStatus() == AuctionItem::OFFERED || item->isAuction())
+			blocking++;
+	}
+
+	return blocking;
+}
+
+int AuctionsMapImplementation::countAllVendorItems(SceneObject* vendor) {
+	if (vendor == nullptr)
+		return 0;
+
+	uint64 vendorID = vendor->getObjectID();
+	int count = 0;
+
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+
+	for (int i = 0; i < allItems.size(); ++i) {
+		AuctionItem* item = allItems.get(i);
+
+		if (item != nullptr && item->getVendorID() == vendorID)
+			count++;
+	}
+
+	return count;
 }

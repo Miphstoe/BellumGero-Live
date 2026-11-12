@@ -227,6 +227,12 @@ void VendorManager::promptDestroyVendor(CreatureObject* player, TangibleObject* 
 	if (vendorData->getOwnerId() != player->getObjectID())
 		return;
 
+	// Vendor Packup: a packed/transitional vendor cannot be destroyed (would erase its listings). Redeploy first.
+	if (!vendorData->isPackActive()) {
+		player->sendSystemMessage("This vendor is packed up. Redeploy it before removing it.");
+		return;
+	}
+
 	SuiMessageBox* destroyBox = new SuiMessageBox(player, SuiWindowType::STRUCTURE_DESTROY_VENDOR_CONFIRM);
 	destroyBox->setCallback(new DestroyVendorSuiCallback(player->getZoneServer()));
 	destroyBox->setUsingObject(vendor);

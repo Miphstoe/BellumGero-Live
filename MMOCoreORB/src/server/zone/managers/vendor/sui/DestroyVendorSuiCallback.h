@@ -10,6 +10,7 @@
 
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/managers/vendor/VendorManager.h"
+#include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
 class DestroyVendorSuiCallback : public SuiCallback {
@@ -38,6 +39,12 @@ public:
 			return;
 
 		Locker clocker(vendor, player);
+
+		// Vendor Packup: never destroy a packed/transitional vendor through the player dialog.
+		if (VendorDataComponent::isVendorFrozen(vendor)) {
+			player->sendSystemMessage("This vendor is packed up. Redeploy it before removing it.");
+			return;
+		}
 
 		TransactionLog trx(player, vendor, TrxCode::VENDORLIFECYCLE);
 
