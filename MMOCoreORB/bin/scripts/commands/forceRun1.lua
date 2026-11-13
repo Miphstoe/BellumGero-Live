@@ -44,7 +44,7 @@
 ForceRun1Command = {
         name = "forcerun1",
         forceCost = 200,
-        duration = 120,
+        duration = 2000000000, -- effectively no timer; ends only when toggled off
         --animationCRC = hashCode()
         clientEffect = "clienteffect/pl_force_run_self.cef",
         toggle = true,
