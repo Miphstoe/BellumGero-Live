@@ -623,3 +623,4 @@ includeFile("lair/creature_lair/yavin4/yavin4_crazed_geonosian_guard_lair_neutra
 includeFile("lair/creature_lair/hoth/hoth_tauntaun_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/hoth/hoth_ice_mynock_lair_neutral_medium.lua")
 includeFile("lair/creature_lair/hoth/hoth_wampa_lair_neutral_large.lua")
+includeFile("lair/creature_lair/hoth/arctic_peko_peko_lair.lua")
