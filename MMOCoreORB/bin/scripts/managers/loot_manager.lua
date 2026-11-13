@@ -48,12 +48,14 @@ baseChance = 100
 yellowChance = 1000
 exceptionalChance = 10000
 legendaryChance = 100000
+epicChance = 1000000
 
 --Multiplier values for bonus modifiers
 baseModifier = 1
 yellowModifier = 2
 exceptionalModifier = 3
 legendaryModifier = 4
+epicModifier = 5
 
 --The chance for random skill mods to be on looted weapons/wearables
 skillModChance = 500 -- 1 in 500

@@ -678,6 +678,7 @@ public:
 				if (lootManager == nullptr)
 					return INVALIDPARAMETERS;
 
+				creature->sendSystemMessage("Number of Epics Looted: " + String::valueOf(lootManager->getEpicLooted()));
 				creature->sendSystemMessage("Number of Legendaries Looted: " + String::valueOf(lootManager->getLegendaryLooted()));
 				creature->sendSystemMessage("Number of Exceptionals Looted: " + String::valueOf(lootManager->getExceptionalLooted()));
 				creature->sendSystemMessage("Number of Magical Looted: " + String::valueOf(lootManager->getYellowLooted()));
