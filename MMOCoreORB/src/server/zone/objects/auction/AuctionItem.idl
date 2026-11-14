@@ -50,6 +50,9 @@ class AuctionItem extends ManagedObject {
 
 	protected boolean updated;
 
+	// Bellum Gero Vendor Packup: seconds of listing time left when the vendor was packed (0 = not paused)
+	protected unsigned int pausedRemaining;
+
 	protected int auctionOptions;
 
 	public final static int OPTION_PREMIUM = 0x400;
@@ -85,6 +88,7 @@ class AuctionItem extends ManagedObject {
 		expireTime = 0;
 
 		updated = false;
+		pausedRemaining = 0;
 
 		auctionOptions = 0;
 		lastUpdateTime.updateToCurrentTime();
@@ -367,6 +371,17 @@ class AuctionItem extends ManagedObject {
 	public void setFactoryCrate(boolean crate) {
 		isCrate = crate;
 		lastUpdateTime.updateToCurrentTime();
+	}
+
+	@preLocked
+	public void setPausedRemaining(unsigned int val) {
+		pausedRemaining = val;
+		lastUpdateTime.updateToCurrentTime();
+	}
+
+	@read
+	public unsigned int getPausedRemaining() {
+		return pausedRemaining;
 	}
 
 	@preLocked

@@ -29,6 +29,12 @@ bool VendorContainerComponent::checkContainerPermission(SceneObject* sceneObject
 	}
 
 	if (vendorData->isInitialized()) {
+		// Vendor Packup: a legitimately PACKED vendor (owner only, checked above) may be picked up and
+		// dropped again. Only the "move this vendor" permission is opened; every other permission, and every
+		// other state (ACTIVE, PACKING, RESTORING), keeps the original refusal.
+		if (vendorData->isPacked() && permission == ContainerPermissions::MOVECONTAINER)
+			return true;
+
 		creature->sendSystemMessage("@player_structure:cant_move");
 		return false;
 	}

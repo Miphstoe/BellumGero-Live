@@ -424,6 +424,9 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	// Client command_table.iff already carries the /worldreset row; this makes
 	// sure the server-side CommandList has it even without a shared-iff row.
 	createCommand(String("worldreset").toLowerCase());
+
+	// Bellum Gero Vendor Packup admin support (client command_table.iff needs a "vendorpackup" row for typed use).
+	createCommand(String("vendorpackup").toLowerCase());
 }
 
 void CommandConfigManager::registerFunctions() {

@@ -314,6 +314,9 @@ public:
 		MANNEQUIN_RENAME					= 1203,
 		MANNEQUIN_POSE						= 1204,
 		MANNEQUIN_CREATE					= 1205,
+
+		// BG: Vendor Packup
+		VENDOR_PACKUP_CONFIRM				= 1210,
 	};
 };
 
