@@ -10,6 +10,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     customDialogText = "What can I help you with?",
     stopConversation = "false",
     options = {
+        {"3200 Health/Action, 1560 Mind Buffs 3hr - 10k", "buff1"},
         {"Reset Buffs / Empty Stomach - 2k", "reset_buffs"},
         {"Pet Enhancement - 10k", "petbuff1"},
         {"Weapons", "weaps1"},
@@ -1180,6 +1181,15 @@ myswg_vendor_ad_view_queue = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_ad_view_queue);
+
+buff1_screen = ConvoScreen:new {
+    id = "buff1",
+    leftDialog = "",
+    customDialogText = "Enjoy!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(buff1_screen);
 
 reset_buffs_screen = ConvoScreen:new {
     id = "reset_buffs",

@@ -56,13 +56,31 @@ ForceLightningCone2Command = {
 
 	stateEffects = {
 		StateEffect(
+			BLIND_EFFECT,
+			{},
+			{ "blind_defense" },
+			{ "jedi_state_defense", "resistance_states" },
+			85,
+			0,
+			60
+		),
+		StateEffect(
 			DIZZY_EFFECT,
 			{},
-			{},
-			{ "jedi_state_defense" },
-			30,
+			{ "dizzy_defense" },
+			{ "jedi_state_defense", "resistance_states" },
+			85,
 			0,
-			10
+			30
+		),
+		StateEffect(
+			STUN_EFFECT,
+			{},
+			{ "stun_defense" },
+			{ "jedi_state_defense", "resistance_states" },
+			85,
+			0,
+			60
 		)
 	},
 

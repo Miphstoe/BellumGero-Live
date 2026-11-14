@@ -6767,18 +6767,20 @@ void PlayerManagerImplementation::enhanceCharacterVendor(CreatureObject* player)
 	if (player == nullptr)
 		return;
 
+	const int vendorBuffDuration = 10800; // 3 hours, in seconds
+
 	bool message = true;
 
-	message = message && doEnhanceCharacter(0x98321369, player, 1500, medicalDuration, BuffType::MEDICAL, 0); // medical_enhance_health
-	message = message && doEnhanceCharacter(0x815D85C5, player, 1500, medicalDuration, BuffType::MEDICAL, 1); // medical_enhance_strength
-	message = message && doEnhanceCharacter(0x7F86D2C6, player, 1500, medicalDuration, BuffType::MEDICAL, 2); // medical_enhance_constitution
-	message = message && doEnhanceCharacter(0x4BF616E2, player, 1500, medicalDuration, BuffType::MEDICAL, 3); // medical_enhance_action
-	message = message && doEnhanceCharacter(0x71B5C842, player, 1500, medicalDuration, BuffType::MEDICAL, 4); // medical_enhance_quickness
-	message = message && doEnhanceCharacter(0xED0040D9, player, 1500, medicalDuration, BuffType::MEDICAL, 5); // medical_enhance_stamina
+	message = message && doEnhanceCharacter(0x98321369, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 0); // medical_enhance_health
+	message = message && doEnhanceCharacter(0x815D85C5, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 1); // medical_enhance_strength
+	message = message && doEnhanceCharacter(0x7F86D2C6, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 2); // medical_enhance_constitution
+	message = message && doEnhanceCharacter(0x4BF616E2, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 3); // medical_enhance_action
+	message = message && doEnhanceCharacter(0x71B5C842, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 4); // medical_enhance_quickness
+	message = message && doEnhanceCharacter(0xED0040D9, player, 3200, vendorBuffDuration, BuffType::MEDICAL, 5); // medical_enhance_stamina
 
-	message = message && doEnhanceCharacter(0x11C1772E, player, 750, performanceDuration, BuffType::PERFORMANCE, 6); // performance_enhance_dance_mind
-	message = message && doEnhanceCharacter(0x2E77F586, player, 750, performanceDuration, BuffType::PERFORMANCE, 7); // performance_enhance_music_focus
-	message = message && doEnhanceCharacter(0x3EC6FCB6, player, 750, performanceDuration, BuffType::PERFORMANCE, 8); // performance_enhance_music_willpower
+	message = message && doEnhanceCharacter(0x11C1772E, player, 1560, vendorBuffDuration, BuffType::PERFORMANCE, 6); // performance_enhance_dance_mind
+	message = message && doEnhanceCharacter(0x2E77F586, player, 1560, vendorBuffDuration, BuffType::PERFORMANCE, 7); // performance_enhance_music_focus
+	message = message && doEnhanceCharacter(0x3EC6FCB6, player, 1560, vendorBuffDuration, BuffType::PERFORMANCE, 8); // performance_enhance_music_willpower
 
 	if (message && player->isPlayerCreature())
 		player->sendSystemMessage("An unknown force strengthens you for battles yet to come.");

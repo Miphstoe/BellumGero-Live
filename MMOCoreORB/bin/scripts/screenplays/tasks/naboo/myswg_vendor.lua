@@ -987,6 +987,18 @@ MySwgHothTravel.PRICE = 25000
                     return nextConversationScreen
                 end
 
+                -- Hub buffs: 3200 Health/Action (+ stats), 1560 Mind, 3 hours. No inventory space needed.
+                if optionLink == "buff1" then
+                    if not canAfford(10000) then
+                        creature:sendSystemMessage("You have insufficient funds")
+                        return conversation:getScreen("insufficient_funds")
+                    end
+
+                    charge(10000)
+                    CreatureObject(conversingPlayer):enhanceCharacterVendor()
+                    return conversation:getScreen("buff1")
+                end
+
                 -- Character Name Change Service: info screen, then the SUI flow; nothing is charged here
                 if optionLink == "namechange1" then
                     return nextConversationScreen
