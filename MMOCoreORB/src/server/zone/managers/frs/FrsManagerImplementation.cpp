@@ -478,6 +478,24 @@ void FrsManagerImplementation::validatePlayerData(CreatureObject* player, bool v
 	if ((councilType == COUNCIL_LIGHT && !player->hasSkill("force_rank_light_novice")) || (councilType == COUNCIL_DARK && !player->hasSkill("force_rank_dark_novice")))
 		realPlayerRank = -1;
 
+	// A missing roster entry alone does not prove a demotion. Keep an already
+	// earned rank pending review when the saved rank and its skill still agree.
+	// Explicit FRS demotions update the rank and roster through setPlayerRank.
+	if (realPlayerRank == 0 && curPlayerRank > 0 && curPlayerRank <= 11) {
+		Reference<FrsRankingData*> expectedRankData = nullptr;
+		if (councilType == COUNCIL_LIGHT && player->hasSkill("force_rank_light_novice"))
+			expectedRankData = lightRankingData.get(curPlayerRank);
+		else if (councilType == COUNCIL_DARK && player->hasSkill("force_rank_dark_novice"))
+			expectedRankData = darkRankingData.get(curPlayerRank);
+
+		if (expectedRankData != nullptr && player->hasSkill(expectedRankData->getSkillName())) {
+			warning() << "FRS rank/roster mismatch; deferring automatic demotion for player ID " << playerID
+					<< " council " << councilType << " saved rank " << curPlayerRank
+					<< " skill " << expectedRankData->getSkillName();
+			return;
+		}
+	}
+
 	if (realPlayerRank != curPlayerRank) {
 		if (realPlayerRank == -1 && (councilType == COUNCIL_LIGHT || councilType == COUNCIL_DARK)) {
 			removeFromFrs(player);
@@ -1933,17 +1951,19 @@ void FrsManagerImplementation::runVotingUpdate(FrsRank* rankData) {
 			continue;
 		}
 
-		ManagedReference<CreatureObject*> player = zoneServer->getObject(rankList->get(j)).castTo<CreatureObject*>();
+		ManagedReference<CreatureObject*> player = zoneServer->getObject(playerID).castTo<CreatureObject*>();
 
 		if (player == nullptr) {
-			rankData->removeFromPlayerList(playerID);
+			warning() << "FRS roster validation deferred: character load failed for player ID " << playerID
+					<< " council " << councilType << " rank " << rank;
 			continue;
 		}
 
 		PlayerObject* ghost = player->getPlayerObject();
 
 		if (ghost == nullptr) {
-			rankData->removeFromPlayerList(playerID);
+			warning() << "FRS roster validation deferred: player object unavailable for player ID " << playerID
+					<< " council " << councilType << " rank " << rank;
 			continue;
 		}
 
