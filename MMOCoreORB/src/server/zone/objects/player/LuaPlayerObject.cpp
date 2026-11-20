@@ -14,6 +14,9 @@
 #include "server/zone/objects/tangible/eventperk/ShuttleBeacon.h"
 #include "server/zone/managers/skill/SkillManager.h"
 #include "server/zone/Zone.h"
+#include "server/zone/ZoneServer.h"
+#include "server/zone/objects/mission/MissionObject.h"
+#include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/player/sessions/SlicingSession.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
@@ -37,6 +40,7 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "removeWaypointBySpecialType", &LuaPlayerObject::removeWaypointBySpecialType },
 		{ "getWaypointAt", &LuaPlayerObject::getWaypointAt },
 		{ "updateWaypoint", &LuaPlayerObject::updateWaypoint },
+		{ "getWaypointOrganizerData", &LuaPlayerObject::getWaypointOrganizerData },
 		{ "addRewardedSchematic", &LuaPlayerObject::addRewardedSchematic },
 		{ "removeRewardedSchematic", &LuaPlayerObject::removeRewardedSchematic },
 		{ "hasSchematic", &LuaPlayerObject::hasSchematic },
@@ -290,6 +294,103 @@ int LuaPlayerObject::updateWaypoint(lua_State* L) {
 	realObject->updateWaypoint(waypointID);
 
 	return 0;
+}
+
+// Bellum Gero Waypoint Organizer: read-only snapshot of this player's own waypoint list.
+// Returns an array of tables { id, name, planet, planetCRC, x, y, active, special, mission, persistent }.
+// "mission" is true when the waypoint is the live waypoint of a mission in the player's datapad.
+int LuaPlayerObject::getWaypointOrganizerData(lua_State* L) {
+	ZoneServer* zoneServer = realObject->getZoneServer();
+
+	VectorMap<uint32, String> planetNames;
+
+	if (zoneServer != nullptr) {
+		for (int i = 0; i < zoneServer->getZoneCount(); ++i) {
+			Zone* zone = zoneServer->getZone(i);
+
+			if (zone == nullptr)
+				continue;
+
+			String zoneName = zone->getZoneName();
+			planetNames.put(zoneName.hashCode(), zoneName);
+		}
+	}
+
+	SortedVector<uint64> missionWaypoints;
+
+	ManagedReference<SceneObject*> creo = realObject->getParent().get();
+
+	if (creo != nullptr) {
+		ManagedReference<SceneObject*> datapad = creo->getSlottedObject("datapad");
+
+		if (datapad != nullptr) {
+			for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+				ManagedReference<SceneObject*> obj = datapad->getContainerObject(i);
+
+				if (obj == nullptr || !obj->isMissionObject())
+					continue;
+
+				MissionObject* mission = cast<MissionObject*>(obj.get());
+
+				if (mission == nullptr)
+					continue;
+
+				WaypointObject* mwp = mission->getWaypointToMission();
+
+				if (mwp != nullptr)
+					missionWaypoints.put(mwp->getObjectID());
+			}
+		}
+	}
+
+	lua_newtable(L);
+
+	int size = realObject->getWaypointListSize();
+
+	for (int i = 0; i < size; ++i) {
+		ManagedReference<WaypointObject*> wp = realObject->getWaypoint(i);
+
+		if (wp == nullptr)
+			continue;
+
+		lua_pushinteger(L, i + 1);
+		lua_newtable(L);
+
+		lua_pushinteger(L, wp->getObjectID());
+		lua_setfield(L, -2, "id");
+
+		lua_pushstring(L, wp->getCustomObjectName().toString().toCharArray());
+		lua_setfield(L, -2, "name");
+
+		uint32 crc = wp->getPlanetCRC();
+		int idx = planetNames.find(crc);
+		String planet = (idx != -1) ? planetNames.elementAt(idx).getValue() : String("unknown");
+
+		lua_pushstring(L, planet.toCharArray());
+		lua_setfield(L, -2, "planet");
+
+		lua_pushnumber(L, wp->getPositionX());
+		lua_setfield(L, -2, "x");
+
+		lua_pushnumber(L, wp->getPositionY());
+		lua_setfield(L, -2, "y");
+
+		lua_pushboolean(L, wp->isActive());
+		lua_setfield(L, -2, "active");
+
+		lua_pushinteger(L, wp->getSpecialTypeID());
+		lua_setfield(L, -2, "special");
+
+		lua_pushboolean(L, missionWaypoints.contains(wp->getObjectID()));
+		lua_setfield(L, -2, "mission");
+
+		lua_pushboolean(L, wp->isPersistent());
+		lua_setfield(L, -2, "persistent");
+
+		lua_settable(L, -3);
+	}
+
+	return 1;
 }
 
 int LuaPlayerObject::addRewardedSchematic(lua_State* L){
