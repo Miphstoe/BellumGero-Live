@@ -107,6 +107,7 @@ includeFile("groups/creature/sharnaff_common.lua")
 includeFile("groups/creature/voritor_lizard_common.lua")
 
 includeFile("groups/bellum/fish_tank_reward.lua")
+includeFile("groups/xeno.lua")
 -- bellum sub-folder (Mandalorian Way of Life)
 includeFile("groups/bellum/mando_contract_kill_reward.lua")
 includeFile("groups/bellum/mando_contract_rare_bonus.lua")
