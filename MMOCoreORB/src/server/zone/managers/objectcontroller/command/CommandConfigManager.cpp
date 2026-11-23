@@ -409,6 +409,7 @@ void CommandConfigManager::registerSpecialCommands(CommandList* sCommands) {
 	createCommand(String("mandoFoundlingAdmin").toLowerCase());
 	createCommand(String("mandoStatus").toLowerCase());
 	createCommand(String("accountcredits").toLowerCase());
+	createCommand(String("dropinventory").toLowerCase());
 	createCommand(String("housepackinfo").toLowerCase());
 	createCommand(String("mobilestatus").toLowerCase());
 

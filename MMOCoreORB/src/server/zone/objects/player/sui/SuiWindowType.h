@@ -318,6 +318,9 @@ public:
 
 		// BG: Vendor Packup
 		VENDOR_PACKUP_CONFIRM				= 1210,
+
+		// BG: /dropinventory
+		DROP_INVENTORY_CONFIRM				= 1212,
 	};
 };
 
