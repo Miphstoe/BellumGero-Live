@@ -19,6 +19,7 @@
 #include "server/zone/objects/player/sui/SuiWindowType.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/callbacks/ManageStructuresSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/ManageStructuresInstallationSuiCallback.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/structure/StructureObject.h"
 
@@ -79,6 +80,20 @@ public:
 		ManagedReference<ResourceManager*> resourceManager = zoneServer->getResourceManager();
 		if (resourceManager == nullptr)
 			return GENERALERROR;
+
+		// Optional subcommand: status | on | off (case-insensitive). No argument
+		// keeps the original maintenance/power list.
+		String subcommand = arguments.toString().trim().toLowerCase();
+
+		if (!subcommand.isEmpty()) {
+			if (subcommand == "status" || subcommand == "on" || subcommand == "off") {
+				ManageStructuresInstallationSuiCallback::openInstallationWindow(creature, zoneServer, subcommand);
+				return SUCCESS;
+			}
+
+			creature->sendSystemMessage("Usage:\n/managestructures\n/managestructures status\n/managestructures on\n/managestructures off");
+			return SUCCESS;
+		}
 
 		// The maintenance discovery list already contains the complete set of
 		// non-civic, non-GCW structures that the character owns or administers.
