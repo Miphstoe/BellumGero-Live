@@ -808,6 +808,12 @@ object_tangible_veteran_reward_shared_frn_vet_darth_vader_toy = SharedTangibleOb
 
 ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_darth_vader_toy, "object/tangible/veteran_reward/shared_frn_vet_darth_vader_toy.iff")
 
+object_tangible_veteran_reward_shared_frn_vet_fireplace = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_fireplace.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_veteran_reward_shared_frn_vet_fireplace, "object/tangible/veteran_reward/shared_frn_vet_fireplace.iff")
+
 object_tangible_veteran_reward_shared_frn_vet_jabba_toy = SharedTangibleObjectTemplate:new {
 	clientTemplateFileName = "object/tangible/veteran_reward/shared_frn_vet_jabba_toy.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
