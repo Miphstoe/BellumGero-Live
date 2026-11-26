@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_vista_plateau = object_tangible_painting_shared_taanab_art_vista_plateau:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_vista_plateau, "object/tangible/painting/taanab_art_vista_plateau.iff")

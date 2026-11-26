@@ -114,7 +114,8 @@ Core3 = {
 	"tatooine",
 	"tutorial",
 	"yavin4",
-	"hoth"
+	"hoth",
+	"taanab"
 	-------- TEST ZONES -------
 	--"09",
 	--"10",

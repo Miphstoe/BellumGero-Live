@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_defense_outpost = object_tangible_painting_shared_taanab_art_defense_outpost:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_defense_outpost, "object/tangible/painting/taanab_art_defense_outpost.iff")

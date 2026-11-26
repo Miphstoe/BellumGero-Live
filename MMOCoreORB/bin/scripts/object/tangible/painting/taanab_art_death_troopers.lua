@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_death_troopers = object_tangible_painting_shared_taanab_art_death_troopers:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_death_troopers, "object/tangible/painting/taanab_art_death_troopers.iff")

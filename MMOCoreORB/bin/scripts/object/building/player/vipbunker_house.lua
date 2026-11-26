@@ -2,7 +2,7 @@ object_building_player_vipbunker_house = object_building_player_shared_vipbunker
 	lotSize = 2,
     storageLimit = 400,
 	baseMaintenanceRate = 16,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

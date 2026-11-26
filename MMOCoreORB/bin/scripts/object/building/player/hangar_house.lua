@@ -2,7 +2,7 @@ object_building_player_hangar_house = object_building_player_shared_hangar_house
 	lotSize = 5,
 	storageLimit = 1000,
 	baseMaintenanceRate = 50,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

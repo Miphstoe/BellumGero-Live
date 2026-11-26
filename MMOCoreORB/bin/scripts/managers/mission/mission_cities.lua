@@ -15,6 +15,8 @@ cities = {
 	{ "hoth", "Scavenger Outpost", -4030, -2080, 200 },
 	{ "hoth", "Imperial Forward Base", 3820, -3080, 200 },
 	{ "hoth", "Rebel Forward Base", -420, 600, 200 },
+	{ "taanab", "Pandath", 2011, 5400, 350 },
+	{ "taanab", "Starhunter Station", 3648, -5431, 200 },
 	{ "lok", "Nym's Stronghold", 450, 5214, 501 },
 	{ "naboo", "Theed", -5262, 4252, 836 },
 	{ "naboo", "Keren", 1616, 2736, 822 },

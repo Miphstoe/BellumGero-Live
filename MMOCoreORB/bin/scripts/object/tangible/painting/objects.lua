@@ -4904,3 +4904,135 @@ object_tangible_painting_shared_hoth_art_kessel_run_age_six = SharedTangibleObje
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_painting_shared_hoth_art_kessel_run_age_six, "object/tangible/painting/shared_hoth_art_kessel_run_age_six.iff")
+
+object_tangible_painting_shared_taanab_art_pandath = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_pandath.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_pandath, "object/tangible/painting/shared_taanab_art_pandath.iff")
+
+object_tangible_painting_shared_taanab_art_starhunter = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_starhunter.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_starhunter, "object/tangible/painting/shared_taanab_art_starhunter.iff")
+
+object_tangible_painting_shared_taanab_art_invasive_species = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_invasive_species.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_invasive_species, "object/tangible/painting/shared_taanab_art_invasive_species.iff")
+
+object_tangible_painting_shared_taanab_art_death_troopers = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_death_troopers.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_death_troopers, "object/tangible/painting/shared_taanab_art_death_troopers.iff")
+
+object_tangible_painting_shared_taanab_art_see_taanab = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_see_taanab.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_see_taanab, "object/tangible/painting/shared_taanab_art_see_taanab.iff")
+
+object_tangible_painting_shared_taanab_art_arc170 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_arc170.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_arc170, "object/tangible/painting/shared_taanab_art_arc170.iff")
+
+object_tangible_painting_shared_taanab_art_galactic_gathering = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_galactic_gathering.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_galactic_gathering, "object/tangible/painting/shared_taanab_art_galactic_gathering.iff")
+
+object_tangible_painting_shared_taanab_art_islands = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_islands.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_islands, "object/tangible/painting/shared_taanab_art_islands.iff")
+
+object_tangible_painting_shared_taanab_art_research_facility = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_research_facility.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_research_facility, "object/tangible/painting/shared_taanab_art_research_facility.iff")
+
+object_tangible_painting_shared_taanab_art_vos_storehouse = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_vos_storehouse.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_vos_storehouse, "object/tangible/painting/shared_taanab_art_vos_storehouse.iff")
+
+object_tangible_painting_shared_taanab_art_fly_for_freedom = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_fly_for_freedom.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_fly_for_freedom, "object/tangible/painting/shared_taanab_art_fly_for_freedom.iff")
+
+object_tangible_painting_shared_taanab_art_painted_hills_1 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_painted_hills_1.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_painted_hills_1, "object/tangible/painting/shared_taanab_art_painted_hills_1.iff")
+
+object_tangible_painting_shared_taanab_art_painted_hills_2 = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_painted_hills_2.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_painted_hills_2, "object/tangible/painting/shared_taanab_art_painted_hills_2.iff")
+
+object_tangible_painting_shared_taanab_art_wildlife = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_wildlife.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_wildlife, "object/tangible/painting/shared_taanab_art_wildlife.iff")
+
+object_tangible_painting_shared_taanab_art_great_herds = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_great_herds.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_great_herds, "object/tangible/painting/shared_taanab_art_great_herds.iff")
+
+object_tangible_painting_shared_taanab_art_defense_outpost = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_defense_outpost.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_defense_outpost, "object/tangible/painting/shared_taanab_art_defense_outpost.iff")
+
+object_tangible_painting_shared_taanab_art_hydro_station = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_hydro_station.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_hydro_station, "object/tangible/painting/shared_taanab_art_hydro_station.iff")
+
+object_tangible_painting_shared_taanab_art_mining_facility = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_mining_facility.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_mining_facility, "object/tangible/painting/shared_taanab_art_mining_facility.iff")
+
+object_tangible_painting_shared_taanab_art_roba_cave = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_roba_cave.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_roba_cave, "object/tangible/painting/shared_taanab_art_roba_cave.iff")
+
+object_tangible_painting_shared_taanab_art_shipwreck = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_shipwreck.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_shipwreck, "object/tangible/painting/shared_taanab_art_shipwreck.iff")
+
+object_tangible_painting_shared_taanab_art_surveyors = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_surveyors.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_surveyors, "object/tangible/painting/shared_taanab_art_surveyors.iff")
+
+object_tangible_painting_shared_taanab_art_vista_plateau = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/painting/shared_taanab_art_vista_plateau.iff"
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_painting_shared_taanab_art_vista_plateau, "object/tangible/painting/shared_taanab_art_vista_plateau.iff")

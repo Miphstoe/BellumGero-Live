@@ -40,5 +40,9 @@ python tre_pack.py --merge <current bg_custom1.tre> build/hoth <new bg_custom1.t
 
 `build/hoth` holds the Hoth client files (ported from SWG Infinity / MTG, plus BG's own `travel.iff`,
 `planet_n.stf`, `ui_ticketpurchase.inc`, `ui_planet_map.inc`, CRC tables and waypoint table with Hoth added).
-Rebuild on top of the newest `bg_custom1.tre` whenever someone else changes it. Confirm permission/credit
+Rebuild on top of the newest `bg_custom1.tre` whenever someone else changes it.
+
+Taanab: `python stage_taanab.py [<current bg_custom1.tre>]` fills `build/taanab` (Infinity's terrain, snapshot,
+map, loading screens and planet globe, plus BG's travel/planet/UI tables with Taanab added, and renumbers the
+six snapshot object IDs that collide with Corellia's snapshot), then merge it the same way. Confirm permission/credit
 for the Infinity/MTG assets before shipping to live.

@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_arc170 = object_tangible_painting_shared_taanab_art_arc170:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_arc170, "object/tangible/painting/taanab_art_arc170.iff")

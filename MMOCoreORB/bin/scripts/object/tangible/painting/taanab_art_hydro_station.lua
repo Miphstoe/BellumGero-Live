@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_hydro_station = object_tangible_painting_shared_taanab_art_hydro_station:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_hydro_station, "object/tangible/painting/taanab_art_hydro_station.iff")

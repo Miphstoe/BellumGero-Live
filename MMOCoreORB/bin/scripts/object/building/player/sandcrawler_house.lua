@@ -2,7 +2,7 @@ object_building_player_sandcrawler_house = object_building_player_shared_sandcra
 	lotSize = 3,
 	storageLimit = 600,
 	baseMaintenanceRate = 34,
-	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir"},
+	allowedZones = {"corellia", "dantooine", "lok", "naboo", "rori", "talus", "tatooine", "endor", "yavin4", "dathomir", "taanab"},
 	publicStructure = 0,
 	skillMods = {
 		{"private_medical_rating", 100},

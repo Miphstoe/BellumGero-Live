@@ -14,6 +14,88 @@ User-confirmed changes only. Commit this file with the related code when you lan
 
 ---
 
+### 2026-11-06 — Taanab: the real Taanab paintings in Kessic's raid loot (LIVE-64)
+
+- **Summary:** 22 Taanab paintings replace the renamed "Battle of Taanab" painting in the Norulac raid loot: Pandath, Starhunter Station, the Great Herds, the Painted Hills (2), the Mining Facility, the shipwreck, the Vista Plateau, the roba cave, the hydro station, the Defense Force outpost, the surveyors' camp, Islands of Taanab, Wildlife of Taanab, See Taanab, Invasive Species Warning, the abandoned research facility and Vos storehouse, plus Death Troopers, Galactic Gathering, ARC-170 in Flight and Fly for Freedom. Each is cut from the screenshots Miph shared and sits in a stock gold or silver frame (wide, tall or square). Kessic's Taanab loot roll is now half Norulac gear, half paintings (new group `taanab_art`, all 22 equally likely).
+- **Files:** `bin/scripts/object/tangible/painting/taanab_art_*.lua`, `bin/scripts/object/tangible/painting/objects.lua`, `bin/scripts/object/tangible/painting/serverobjects.lua`, `bin/scripts/loot/items/bellum/taanab/taanab_art_*.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_art.lua`, `bin/scripts/loot/groups/bellum/taanab/taanab_norulac_loot.lua`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `tools/newplanets/gen_taanab_art.py`; removed `loot/items/bellum/taanab/taanab_battle_of_taanab_painting.lua`
+- **Notes:** **Client TRE update required** (`bg_custom1.tre`, 2026-11-06 build: textures, shaders, meshes, object templates, `string/en/taanab_art_n.stf`/`taanab_art_d.stf`, CRC table). Built on Miph's latest TRE, so it keeps the skills update. The server needs the same TRE. Battle of Taanab paintings already dropped on TC stay as they are.
+
+### 2026-11-06 — Taanab: fixes from the Test Center pass (LIVE-53, 54, 60–63)
+
+- **Summary:** Fixes and additions from Dek's and Miph's TC testing.
+  - Pandath cantina NPCs moved out of the walls, onto floor spots taken from the building's floor meshes (LIVE-60).
+  - A second BG Hub NPC at Starhunter Station, and a boot log line for both hubs (LIVE-61).
+  - The Mining Outfit, Arcon hex farms and shipwreck get NPCs spread across the whole site plus hostiles at their edges (LIVE-62).
+  - 20 more Norulac in the Raider Cave, in the chambers that were empty (LIVE-53).
+  - Thunderhorn's herd gets 8 nerfs and walks a slow loop around the Great Herds together (LIVE-54).
+  - An Arcon Farm Overseer at the hex farms shows the raid status and lets players light a beacon to start the Kessic raid, 1 h after the last raid ends (LIVE-63).
+- **Files:** `bin/scripts/screenplays/static_spawns/taanab_static_spawns.lua`, `bin/scripts/screenplays/static_spawns/taanab_bg_hub.lua`, `bin/scripts/screenplays/caves/taanab_norulac_raider_cave.lua`, `bin/scripts/screenplays/bellum/taanab_thunderhorn.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `bin/scripts/screenplays/bellum/convos/taanab_arcon_overseer_conv_handler.lua`, `bin/scripts/mobile/conversations/taanab/taanab_arcon_overseer_conv.lua`, `bin/scripts/mobile/taanab/taanab_arcon_overseer.lua`, `bin/scripts/mobile/conversations.lua`, `bin/scripts/screenplays/screenplays.lua`, `tools/newplanets/gen_taanab_mobiles.py`, `tools/newplanets/flr_spots.py`
+- **Notes:** Server restart only; no client change.
+
+### 2026-11-01 — Taanab: Varn Kessic on the BG Hub Special NPC tracker
+
+- **Summary:** The BG Hub NPC's Special NPC tracker (1,000 cr) has a "Check Varn Kessic (Taanab)" option. It reports that Kessic is up at the Arcon hex farms (-2970, -150), that a raid is under way, or how long until the next raid. The raid now records its next start time in shared memory (`TaanabKessic:nextRaidAt`).
+- **Files:** `bin/scripts/mobile/conversations/tasks/myswg_vendor_conv.lua`, `bin/scripts/screenplays/tasks/naboo/myswg_vendor.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`
+- **Notes:** Server restart only. The timer resets on a restart (first raid 30 min after boot), so the tracker follows that.
+
+### 2026-10-29 — Taanab: roba and Ambrian staga
+
+- **Summary:** Taanab roba (53, passive pack: Taanab Roba Pack, Roba Den) and Ambrian staga (56, passive herd using the gualama model: Ambrian Staga Herd), as named on the Taanab loading screen. All three lairs are in the world spawner and the destroy mission group.
+- **Files:** `bin/scripts/mobile/taanab/`, `bin/scripts/mobile/lair/creature_dynamic/`, `bin/scripts/mobile/lair/creature_lair/`, `bin/scripts/mobile/spawn/`, `tools/newplanets/gen_taanab_mobiles.py`
+- **Notes:** Server restart only; no client change (both models are in the base client).
+
+### 2026-10-29 — Taanab: BG Hub NPC at Pandath
+
+- **Summary:** The BG Hub vendor (`myswg_vendor`) stands beside the Pandath mission terminals (2105, 5356), as at the Hoth outposts.
+- **Files:** `bin/scripts/screenplays/static_spawns/taanab_bg_hub.lua`, `bin/scripts/screenplays/screenplays.lua`
+- **Notes:** Server restart only.
+
+### 2026-10-29 — Taanab: planet-map "Theme Park" category relabelled "Points of Interest"
+
+- **Summary:** BG's map POI sites (Taanab's five, Hoth's caves) use the client's `themepark` category, because the client never draws its own `poi` one. The Taanab `bg_custom1.tre` now ships `string/en/map_loc_cat_n.stf` with `themepark` = "Points of Interest" (LIVE-57). Real theme parks on every planet show under the new name too.
+- **Files:** `tools/newplanets/stage_taanab.py`
+- **Notes:** Client TRE only.
+
+### 2026-10-29 — Taanab: resource tree, so Taanab resources spawn and creatures can be harvested
+
+- **Summary:** `datatables/resource/resource_tree.iff` had no `*_taanab` classes, so the NativePool couldn't spawn any of Taanab's 42 natives and creature harvesting on Taanab failed. The Taanab TRE now clones each of the 55 `*_hoth` classes as a `*_taanab` one ("Taanab Wooly Hide", "Taanab Steel", ...) (LIVE-40).
+- **Files:** `tools/newplanets/stage_taanab.py`
+- **Notes:** Client and server TRE. Boot shows "NativePool updating: Spawned 42". `stage_taanab.py` also checks every object template Taanab uses against the object CRC table and adds any that are missing (all 278 present).
+
+### 2026-10-29 — Taanab: creatures, NPCs, world spawns and Destroy missions
+
+- **Summary:** Populates Taanab (LIVE-58). 11 creatures, levels 45–84: nerf, vir vur, kaadu, falumpaset, plains bantha and bull, zucca boar, crop-raiding quenker, plains kusak, sharnaff, hill graul. 15 lairs, Norulac raider camps and strike teams included, in a new `taanab_world` spawner and in `taanab_destroy_missions`. 80 static NPCs: Pandath (trainers, recruiters, dealers, townsfolk, militia guards, cantina crew), Starhunter Station, and workers or raiders at the Mining Outfit, hex farms, herder camp and Lucky Despot wreck. Pandath and Starhunter Station are mission cities with 36 mission NPC spawn points. The POIs are no-spawn areas.
+- **Files:** `bin/scripts/mobile/taanab/*`, `bin/scripts/mobile/lair/*/taanab/*`, `bin/scripts/mobile/spawn/taanab/taanab_world.lua`, `bin/scripts/mobile/spawn/destroy_mission/taanab_destroy_missions.lua`, `bin/scripts/screenplays/static_spawns/taanab_static_spawns.lua`, `bin/scripts/managers/planet/taanab_regions.lua`, `bin/scripts/managers/mission/mission_cities.lua`, `bin/scripts/managers/mission/mission_npc_spawn_points.lua`, serverobjects/screenplays includes, `tools/newplanets/gen_taanab_mobiles.py`
+- **Notes:** Server Lua only, generated by `gen_taanab_mobiles.py` (edit its tables and re-run). Every mobile uses a base-client appearance.
+
+### 2026-10-29 — Taanab loot fixes: Norulac drops, shared world boss damage tracking
+
+- **Summary:** Norulac raiders, cutthroats and enforcers now always roll `pirate_tier_1`; before, nearly every kill gave only credits (LIVE-59). `WorldBossLootManager` damage tracking moved from a Lua global to shared memory (`WBDamage:<bossOID>`). Observers run in several Lua instances, so the death handler only saw the hits recorded in its own instance. `_G.__WB_DAMAGE_TRACKING` stays as a proxy, so the scripts that read it are unchanged.
+- **Files:** `bin/scripts/mobile/taanab/norulac_*.lua`, `bin/scripts/screenplays/managers/world_boss_loot_manager.lua`
+- **Notes:** Server restart only. The tracking fix also covers the Hoth bosses, the Dathomir rancor and Dantooine crystal caves, and The Hand.
+
+### 2026-10-26 — Taanab: Varn Kessic raid world boss, Norulac Raider Cave, Old Thunderhorn and the Great Herds
+
+- **Summary:** Taanab's own bosses (LIVE-52/53/54).
+  - **Varn Kessic, the Scourge of Taanab** (level 400): a Norulac raid on the Arcon hex farms. It opens with a galaxy warning and two raider waves, then Kessic lands with 4 honor guards and can't be attacked until they fall. He calls reinforcements at 75/50/25% health and throws telegraphed thermal detonators below 25%. The raid retreats after 45 minutes; the first comes 30 minutes after boot and the next 3 hours after a kill or retreat. Rewards are per player via WorldBossLootManager.
+  - **Norulac Raider Cave:** Norulac raiders on the stock Afarathu cave layout, with the quartermaster Sela Drux (level 105) as a per-player-reward group boss.
+  - **Old Thunderhorn** (level 130 roaming elite): a giant bull bantha with a herd of 10 in the new Great Herds region, a named map POI with a no-build core. Hurting any member pulls the rest of the herd into the fight.
+  - **New loot (existing models, renamed):** Kessic's Scourge pistol, Norulac Raider Captain's Coat, The Battle of Taanab painting, Norulac War Banner, Thunderhorn Hide Rug, Skull of Old Thunderhorn and the Little Thunderhorn plush.
+- **Files:** `bin/scripts/mobile/taanab/*`, `bin/scripts/mobile/serverobjects.lua`, `bin/scripts/loot/items/bellum/taanab/*`, `bin/scripts/loot/groups/bellum/taanab/*`, `bin/scripts/loot/items.lua`, `bin/scripts/loot/groups.lua`, `bin/scripts/screenplays/bellum/taanab_norulac_raid_worldboss.lua`, `bin/scripts/screenplays/bellum/taanab_thunderhorn.lua`, `bin/scripts/screenplays/caves/taanab_norulac_raider_cave.lua`, `bin/scripts/screenplays/screenplays.lua`, `bin/scripts/managers/planet/taanab_regions.lua`, `tools/newplanets/TAANAB_TC_NOTES.md`
+- **Notes:** Server Lua only; no client changes. Taanab items drop only from Taanab bosses (no galaxy-wide bonus roll). Not yet tested in game; the Great Herds spot (4900, -4500) was picked from the map.
+
+### 2026-10-26 — Taanab: enable the zone (travel points, regions, no-build zones)
+
+- **Summary:** Turns Taanab on (LIVE-38/39/43). `taanab` is added to `ZonesEnabled`, with a `planet_manager.lua` block: GCW on, weather off like the other green planets, and two interplanetary starports from the snapshot, Pandath Starport and Starhunter Station. The new `taanab_regions.lua` has map-edge no-build strips, city regions and no-build circles for both towns, and named, no-build map POIs at the mining outfit, hex farms, shipwreck and Norulac raider cave, plus a no-build circle on the herder camp.
+- **Files:** `bin/conf/config.lua`, `bin/scripts/managers/planet/planet_manager.lua`, `bin/scripts/managers/planet/taanab_regions.lua`, `tools/newplanets/stage_taanab.py`
+- **Notes:** Needs the Taanab `bg_custom1.tre` (LIVE-37) on the server and clients, or the zone fails to load. Snapshot fixes in that TRE: 6 object IDs that collided with Corellia's snapshot are renumbered, and 7 moisture harvester installations are swapped for the static mockup so they don't load as ownerless player harvesters. No creatures, missions or world spawner yet (LIVE-46/47). Great Herds and Painted Hills regions are left out until their locations are picked. Not yet tested in game.
+
+### 2026-10-25 — Taanab: housing, cities, faction HQs, harvesters and GCW lists (zone not enabled yet)
+
+- **Summary:** First Taanab drop (LIVE-40/41/42/44). Decisions with Miph: Taanab allows every house type (custom BG houses and merchant tents included), player cities with Corellia's caps (20/20/15/10/10/5, so at most 5 Cosmopolis), faction HQs, harvesters/factories, and is a GCW planet. `taanab` is added to the `allowedZones` of every player house, merchant tent and civic city structure (128 templates), the 16 player faction HQ templates and the shared installation list; to `CitiesAllowed`; to resource `activeZones`; to the Galaxy Harvester export; to `/gcwstatus all`; and to the Imperial crackdown scan planets.
+- **Files:** `bin/scripts/object/SharedBuildingObjectTemplate.lua`, `bin/scripts/object/building/base/base_building.lua`, `bin/scripts/object/building/player/**` (houses, tents, `city/`), `bin/scripts/object/building/faction_perk/hq/hq_s0[1-4]_{imp,rebel}[_pvp].lua`, `bin/scripts/object/SharedInstallationObjectTemplate.lua`, `bin/scripts/managers/city_manager.lua`, `bin/scripts/managers/resource_manager.lua`, `bin/scripts/managers/gcw_manager.lua`, `src/server/zone/managers/resource/resourcespawner/ResourceSpawner.cpp`, `src/server/zone/objects/creature/commands/GcwStatusCommand.h`
+- **Notes:** C++ change: rebuild. Harmless until the zone exists: `taanab` is not in `ZonesEnabled` yet, because the server needs the Taanab terrain/snapshot (ported from SWG Infinity, LIVE-36/37) in the TRE first. Hoth is unchanged (still no housing). The 13 HQ templates with numeric `allowedZones` are not used by any deed and were left alone. Not yet tested in game.
+
 ### 2026-10-17 — Wampas drop DNA more often (new dnaDropChance template field)
 
 - **Summary:** Player suggestion (LIVE-33): more DNA from wampas, including for non-Bio-Engineers. Every creature kill already had a flat 5% chance to leave a lootable DNA sample, with quality capped by the looter's DNA harvesting skill (non-Bio-Engineers always get Very Low Quality; that cap is kept). New creature template field `dnaDropChance` (percent) overrides the 5% per creature. Wampas 10%, elder wampas 15%; the harder caves multiply it like their loot: Icemaw's cave 15% / 22.5%, Snowblind's 20% / 30%, Patriarch and Matriarch's 30% / 45%. World wampas use the base 10% / 15%.

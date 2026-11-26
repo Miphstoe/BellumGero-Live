@@ -17,7 +17,46 @@ local ITEMS_PER_PLAYER = 3  -- Number of random loot items each player receives
 
 -- ===== Globals for tracking =====
 _G.__WB_LOOT_BOXES = _G.__WB_LOOT_BOXES or {}  -- boxOID -> { bossOID, eligiblePlayers{[playerOID]=true}, lootedPlayers{[playerOID]=true}, lootGroups, spawnTime }
-_G.__WB_DAMAGE_TRACKING = _G.__WB_DAMAGE_TRACKING or {}  -- bossOID -> { [playerOID]=true }
+
+-- Damage tracking lives in shared memory ("WBDamage:<bossOID>" -> ",<playerOID>,<playerOID>,"). Core3 runs observers
+-- in several Lua instances, each with its own _G, so a plain table only held the hits that landed in the instance
+-- that later ran the death handler. _G.__WB_DAMAGE_TRACKING is kept as a proxy so the cave scripts and loot wrappers
+-- that read it are unchanged: [bossOID] returns a { [playerOID]=true } copy (nil if none), and "= nil" clears it.
+local DAMAGE_KEY = "WBDamage:"
+
+local function damageKey(bossOID)
+  return DAMAGE_KEY .. string.format("%d", bossOID)
+end
+
+local function readDamagers(bossOID)
+  local raw = readStringData(damageKey(bossOID)) or ""
+  local set, any = {}, false
+  for oid in string.gmatch(raw, "%d+") do
+    set[tonumber(oid)] = true
+    any = true
+  end
+  return any and set or nil
+end
+
+local function addDamager(bossOID, playerOID)
+  local key = damageKey(bossOID)
+  local raw = readStringData(key) or ""
+  local tag = string.format("%d", playerOID)
+  if string.find(raw, "," .. tag .. ",", 1, true) then return false end
+  if raw == "" then raw = "," end
+  writeStringData(key, raw .. tag .. ",")
+  return true
+end
+
+_G.__WB_DAMAGE_TRACKING = setmetatable({}, {
+  __index = function(_, bossOID)
+    if bossOID == nil then return nil end
+    return readDamagers(bossOID)
+  end,
+  __newindex = function(_, bossOID, value)
+    if bossOID ~= nil and value == nil then deleteStringData(damageKey(bossOID)) end
+  end,
+})
 
 -- ===== Utils =====
 local function log(fmt, ...)
@@ -195,17 +234,8 @@ local function trackDamager(pBoss, pAttacker)
     local playerOID = getPlayerOID(pOwner)
     if not playerOID then return end
 
-    local set = _G.__WB_DAMAGE_TRACKING[bossOID]
-    if set == nil then
-      set = {}
-      _G.__WB_DAMAGE_TRACKING[bossOID] = set
-    end
-
     -- Only log if this is the first time tracking this player
-    local wasNew = not set[playerOID]
-    set[playerOID] = true
-
-    if wasNew then
+    if addDamager(bossOID, playerOID) then
       log("Player OID %s is now eligible for loot from boss OID %s", tostring(playerOID), tostring(bossOID))
     end
   end)

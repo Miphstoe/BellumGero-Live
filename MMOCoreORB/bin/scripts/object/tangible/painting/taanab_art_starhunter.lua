@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_starhunter = object_tangible_painting_shared_taanab_art_starhunter:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_starhunter, "object/tangible/painting/taanab_art_starhunter.iff")

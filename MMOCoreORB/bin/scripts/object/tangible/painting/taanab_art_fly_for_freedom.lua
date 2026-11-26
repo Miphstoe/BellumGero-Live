@@ -1,0 +1,4 @@
+object_tangible_painting_taanab_art_fly_for_freedom = object_tangible_painting_shared_taanab_art_fly_for_freedom:new {
+}
+
+ObjectTemplates:addTemplate(object_tangible_painting_taanab_art_fly_for_freedom, "object/tangible/painting/taanab_art_fly_for_freedom.iff")

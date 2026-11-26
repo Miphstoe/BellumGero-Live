@@ -398,6 +398,7 @@ bool ResourceSpawner::ghDumpAll() {
 	planets.add("naboo");
 	planets.add("rori");
 	planets.add("talus");
+	planets.add("taanab");
 	planets.add("tatooine");
 	planets.add("yavin4");
 	Vector<String> missingZones;
