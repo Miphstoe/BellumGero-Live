@@ -1,6 +1,24 @@
 hoth_world = {
 	lairSpawns = {
 		{
+			lairTemplateName = "arctic_peko_peko_pair_neutral_none",
+			spawnLimit = -1,
+			minDifficulty = 20,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 25,
+			size = 25,
+		},
+		{
+			lairTemplateName = "arctic_peko_peko_lair",
+			spawnLimit = -1,
+			minDifficulty = 20,
+			maxDifficulty = 500,
+			numberToSpawn = 15,
+			weighting = 20,
+			size = 25,
+		},
+		{
 			lairTemplateName = "hoth_tauntaun_herd_neutral_none",
 			spawnLimit = -1,
 			minDifficulty = 65,

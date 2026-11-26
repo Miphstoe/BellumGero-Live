@@ -48,12 +48,14 @@ baseChance = 100
 yellowChance = 1000
 exceptionalChance = 10000
 legendaryChance = 100000
+epicChance = 1000000
 
 --Multiplier values for bonus modifiers
 baseModifier = 1
 yellowModifier = 2
 exceptionalModifier = 3
 legendaryModifier = 4
+epicModifier = 5
 
 --The chance for random skill mods to be on looted weapons/wearables
 skillModChance = 500 -- 1 in 500
@@ -112,6 +114,7 @@ lootableArmorAttachmentStatMods = {
 	"intimidate_defense",
 	"keep_creature",
 	"knockdown_defense",
+	"mask_scent",
 	"melee_defense",
 	"onehandmelee_accuracy",
 --	"onehandmelee_damage",
@@ -226,6 +229,7 @@ lootableClothingAttachmentStatMods = {
 	"intimidate_defense",
 --	"keep_creature",
 	"knockdown_defense",
+	"mask_scent",
 --	"medical_foraging",
 	"medicine_assembly",
 	"medicine_experimentation",
@@ -300,7 +304,8 @@ lootableClothingAttachmentStatMods = {
   	"forceintimidate_accuracy",
   	"forceknockdown_accuracy",
   	"forcelightning_accuracy",
-  	"forceweaken_accuracy"
+	"forceweaken_accuracy",
+	"force_deflection"
 }
 
 lootableArmorStatMods = {
@@ -548,7 +553,8 @@ lootableClothingStatMods = {
   	"forceintimidate_accuracy",
   	"forceknockdown_accuracy",
   	"forcelightning_accuracy",
-  	"forceweaken_accuracy"
+	"forceweaken_accuracy",
+	"force_deflection"
 }
 
 lootableOneHandedMeleeStatMods = {

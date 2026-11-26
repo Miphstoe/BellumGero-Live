@@ -375,7 +375,9 @@ int LightsaberCrystalComponentImplementation::handleObjectMenuSelect(CreatureObj
 			ownerID = 0;
 
 			String tuneName = StringIdManager::instance()->getStringId(objectName.getFullPath().hashCode()).toString();
-			if (getCustomObjectName().toString().contains("(Exceptional)"))
+			if (getCustomObjectName().toString().contains("(Epic)"))
+				tuneName = tuneName + " (Epic)\\#.";
+			else if (getCustomObjectName().toString().contains("(Exceptional)"))
 				tuneName = tuneName + " (Exceptional)\\#.";
 			else if (getCustomObjectName().toString().contains("(Legendary)"))
 				tuneName = tuneName + " (Legendary)\\#.";
@@ -441,7 +443,9 @@ void LightsaberCrystalComponentImplementation::tuneCrystal(CreatureObject* playe
 
 		// Color code is lime green.
 		String tuneName = StringIdManager::instance()->getStringId(objectName.getFullPath().hashCode()).toString();
-		if (getCustomObjectName().toString().contains("(Exceptional)"))
+		if (getCustomObjectName().toString().contains("(Epic)"))
+			tuneName = "\\#00FF00" + tuneName + " (Epic) (tuned)\\#.";
+		else if (getCustomObjectName().toString().contains("(Exceptional)"))
 			tuneName = "\\#00FF00" + tuneName + " (Exceptional) (tuned)\\#.";
 		else if (getCustomObjectName().toString().contains("(Legendary)"))
 			tuneName = "\\#00FF00" + tuneName + " (Legendary) (tuned)\\#.";

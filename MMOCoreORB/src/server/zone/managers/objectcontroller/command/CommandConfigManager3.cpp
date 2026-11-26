@@ -81,6 +81,7 @@
 #include "server/zone/objects/creature/commands/MandoFoundlingAdminCommand.h"
 #include "server/zone/objects/creature/commands/MandoStatusCommand.h"
 #include "server/zone/objects/creature/commands/AccountCreditsCommand.h"
+#include "server/zone/objects/creature/commands/DropInventoryCommand.h"
 #include "server/zone/objects/creature/commands/HousePackInfoCommand.h"
 #include "server/zone/objects/creature/commands/KtStatusCommand.h"
 #include "server/zone/objects/creature/commands/MobileStatusCommand.h"
@@ -89,6 +90,7 @@
 #include "server/zone/objects/creature/commands/EPBSSetupCommand.h"
 #include "server/zone/objects/creature/commands/ForceReviveCommand.h"
 #include "server/zone/objects/creature/commands/WorldResetCommand.h"
+#include "server/zone/objects/creature/commands/VendorPackupCommand.h"
 #include "server/zone/objects/creature/commands/MoneyCommand.h"
 #include "server/zone/objects/creature/commands/MountCommand.h"
 #include "server/zone/objects/creature/commands/MoveFurnitureCommand.h"
@@ -351,6 +353,7 @@
 #include "server/zone/objects/creature/commands/StructurestatusCommand.h"
 #include "server/zone/objects/creature/commands/StunAttackCommand.h"
 #include "server/zone/objects/creature/commands/ForceFocusCommand.h"
+#include "server/zone/objects/creature/commands/ForceRenewalCommand.h"
 
 using namespace server::zone::managers::objectcontroller::command;
 
@@ -399,6 +402,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<MandoFoundlingAdminCommand>(String("mandoFoundlingAdmin").toLowerCase());
 	commandFactory.registerCommand<MandoStatusCommand>(String("mandoStatus").toLowerCase());
 	commandFactory.registerCommand<AccountCreditsCommand>(String("accountcredits").toLowerCase());
+	commandFactory.registerCommand<DropInventoryCommand>(String("dropinventory").toLowerCase());
 	commandFactory.registerCommand<HousePackInfoCommand>(String("housepackinfo").toLowerCase());
 	commandFactory.registerCommand<KtStatusCommand>(String("ktStatus").toLowerCase());
 	commandFactory.registerCommand<MobileStatusCommand>(String("mobilestatus").toLowerCase());
@@ -407,6 +411,7 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<EPBSSetupCommand>(String("epbssetup").toLowerCase());
 	commandFactory.registerCommand<ForceReviveCommand>(String("forcerevive").toLowerCase());
 	commandFactory.registerCommand<WorldResetCommand>(String("worldreset").toLowerCase());
+	commandFactory.registerCommand<VendorPackupCommand>(String("vendorpackup").toLowerCase());
 	commandFactory.registerCommand<MoneyCommand>(String("money").toLowerCase());
 	commandFactory.registerCommand<MountCommand>(String("mount").toLowerCase());
 	commandFactory.registerCommand<MoveFurnitureCommand>(String("moveFurniture").toLowerCase());
@@ -668,4 +673,5 @@ void CommandConfigManager::registerCommands3() {
 	commandFactory.registerCommand<StructurestatusCommand>(String("structurestatus").toLowerCase());
 	commandFactory.registerCommand<StunAttackCommand>(String("stunAttack").toLowerCase());
 	commandFactory.registerCommand<ForceFocusCommand>(String("forceFocus").toLowerCase());
+	commandFactory.registerCommand<ForceRenewalCommand>(String("forceRenewal").toLowerCase());
 }

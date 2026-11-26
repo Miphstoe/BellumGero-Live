@@ -6,6 +6,7 @@
  */
 
 #include "server/zone/managers/auction/AuctionManager.h"
+#include "server/zone/managers/vendor/VendorPackupManager.h"
 #include "server/zone/managers/auction/AuctionsMap.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "templates/manager/TemplateManager.h"
@@ -206,6 +207,7 @@ void AuctionManagerImplementation::initialize() {
 
 	Vector<Reference<AuctionItem*> > itemsToDelete;
 	Vector<ManagedReference<AuctionItem*> > orphanedBazaarItems;
+	Vector<uint64> vendorsToRecover; // Vendor Packup: vendors found in a non-ACTIVE state
 	ManagedReference<SceneObject*> defaultBazaar = nullptr;
 	ManagedReference<PlayerManager*> playerManager = zoneServer->getPlayerManager();
 
@@ -233,6 +235,27 @@ void AuctionManagerImplementation::initialize() {
 		}
 
 		ManagedReference<SceneObject*> vendor = zoneServer->getObject(auctionItem->getVendorID());
+
+		// Bellum Gero Vendor Packup: a packed vendor is out of the world by design. Keep its listings
+		// (indexed but hidden) instead of deleting them and the vendor.
+		if (vendor != nullptr && vendor->getZone() == nullptr && !auctionItem->isOnBazaar() && VendorDataComponent::isVendorFrozen(vendor)) {
+			int frozenResult = auctionMap->addFrozenItem(auctionItem);
+
+			if (frozenResult != ItemSoldMessage::SUCCESS) {
+				error() << "Packed vendor listing not indexed (" << ItemSoldMessage::statusToString(frozenResult) << "), keeping DB record, auctionItem: " << *auctionItem;
+			}
+
+			if (!vendorsToRecover.contains(vendor->getObjectID()))
+				vendorsToRecover.add(vendor->getObjectID());
+
+			continue;
+		}
+
+		if (vendor != nullptr && vendor->getZone() != nullptr && !auctionItem->isOnBazaar() && VendorDataComponent::isVendorFrozen(vendor)) {
+			// Interrupted PACKING/RESTORING with the vendor still in the world: recovery decides after load.
+			if (!vendorsToRecover.contains(vendor->getObjectID()))
+				vendorsToRecover.add(vendor->getObjectID());
+		}
 
 		if(vendor == nullptr || vendor->getZone() == nullptr) {
 			if(auctionItem->isOnBazaar()) {
@@ -415,6 +438,16 @@ void AuctionManagerImplementation::initialize() {
 		checkVendorItems(true);
 	}, "StartupAuctionManagerCheck", "slowQueue");
 
+	// Vendor Packup: resolve interrupted pack/restore operations found during the load.
+	if (vendorsToRecover.size() > 0) {
+		Vector<uint64> recoverIds = vendorsToRecover;
+
+		Core::getTaskManager()->executeTask([=] () {
+			for (int i = 0; i < recoverIds.size(); ++i)
+				VendorPackupManager::instance()->recoverVendor(recoverIds.get(i), "startup");
+		}, "VendorPackupStartupRecovery", "slowQueue");
+	}
+
 	auto elapsed = startTime.miliDifference() / 1000.0;
 	int ps = elapsed > 0 ? countDatabaseItems / elapsed : countDatabaseItems;
 	int skipped = countDatabaseItems - auctionMap->getTotalItemCount();
@@ -511,6 +544,10 @@ void AuctionManagerImplementation::doAuctionMaint(TerminalListVector* items, con
 			ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
 			ManagedReference<PlayerManager*> playerManager = zoneServer->getPlayerManager();
 			String ownerName = playerManager->getPlayerName(item->getOwnerID());
+
+			// Vendor Packup: never expire, delete or reprice listings of a packed/transitional vendor
+			if (vendor != nullptr && VendorDataComponent::isVendorFrozen(vendor))
+				continue;
 
 			if(vendor == nullptr || vendor->getZone() == nullptr || ownerName.isEmpty()) {
 				StringBuffer errMsg;
@@ -665,6 +702,12 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 	if (player->isDead() || player->isIncapacitated()) {
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::UNKNOWNERROR);
 		if (soldMessage != nullptr) player->sendMessage(soldMessage);
+		return;
+	}
+
+	if (VendorDataComponent::isVendorFrozen(vendor)) {
+		ItemSoldMessage* frozenMessage = new ItemSoldMessage(objectid, ItemSoldMessage::VENDORNOTWORKING);
+		if (frozenMessage != nullptr) player->sendMessage(frozenMessage);
 		return;
 	}
 
@@ -880,6 +923,9 @@ String AuctionManagerImplementation::getVendorUID(SceneObject* vendor) {
 }
 int AuctionManagerImplementation::relistExpiredAtPreviousPrice(CreatureObject* player, SceneObject* vendorSo, int limit) {
 	if (player == nullptr || vendorSo == nullptr || !vendorSo->isVendor())
+		return 0;
+
+	if (VendorDataComponent::isVendorFrozen(vendorSo))
 		return 0;
 
 	// Determine sales tax rate for this vendor (0..100 -> 0.0..1.0)
@@ -1149,7 +1195,7 @@ int AuctionManagerImplementation::checkBidAuction(CreatureObject* player, Auctio
 
 void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionItem* item) {
     ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
-    if (vendor == nullptr) {
+    if (vendor == nullptr || VendorDataComponent::isVendorFrozen(vendor)) {
         // Stop the spinner on failure too.
         player->sendMessage(new BidAuctionResponseMessage(item->getAuctionedItemObjectID(),
                                                           BidAuctionResponseMessage::INVALIDITEM));
@@ -1191,7 +1237,9 @@ void AuctionManagerImplementation::doInstantBuy(CreatureObject* player, AuctionI
     {
         Locker locker(item);
 
-        if (item->getStatus() != AuctionItem::FORSALE && item->getStatus() != AuctionItem::OFFERED) {
+        // Vendor Packup: re-check under the item lock (pack takes this lock as a barrier)
+        if (VendorDataComponent::isVendorFrozen(vendor)
+                || (item->getStatus() != AuctionItem::FORSALE && item->getStatus() != AuctionItem::OFFERED)) {
             player->sendMessage(new BidAuctionResponseMessage(item->getAuctionedItemObjectID(),
                                                               BidAuctionResponseMessage::INVALIDITEM));
             return;
@@ -1505,7 +1553,7 @@ void AuctionManagerImplementation::buyItem(CreatureObject* player, uint64 object
     }
 
     ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
-    if (vendor == nullptr || item->getStatus() == AuctionItem::SOLD) {
+    if (vendor == nullptr || item->getStatus() == AuctionItem::SOLD || VendorDataComponent::isVendorFrozen(vendor)) {
         player->sendMessage(new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::INVALIDITEM));
         return;
     }
@@ -1700,6 +1748,12 @@ void AuctionManagerImplementation::retrieveItem(CreatureObject* player, uint64 o
 
 	// check for valid vendor terminal
 	if (vendor == nullptr || (!vendor->isVendor() && !vendor->isBazaarTerminal())) {
+		msg = new RetrieveAuctionItemResponseMessage(objectid, RetrieveAuctionItemResponseMessage::NOTALLOWED);
+		player->sendMessage(msg);
+		return;
+	}
+
+	if (VendorDataComponent::isVendorFrozen(vendor)) {
 		msg = new RetrieveAuctionItemResponseMessage(objectid, RetrieveAuctionItemResponseMessage::NOTALLOWED);
 		player->sendMessage(msg);
 		return;
@@ -1980,6 +2034,9 @@ void AuctionManagerImplementation::getData(CreatureObject* player, int locationT
 		return;
 	}
 
+	if (VendorDataComponent::isVendorFrozen(vendorInUse))
+		return;
+
 	ManagedReference<SceneObject*> parent = vendorInUse->getRootParent();
 
 	if (parent != nullptr && parent != player->getRootParent())
@@ -2190,6 +2247,16 @@ void AuctionManagerImplementation::cancelItem(CreatureObject* player, uint64 obj
 		BaseMessage* msg = new CancelLiveAuctionResponseMessage(objectID, CancelLiveAuctionResponseMessage::INVALIDITEM);
 		player->sendMessage(msg);
 		return;
+	}
+
+	{
+		ManagedReference<SceneObject*> frozenCheckVendor = zoneServer->getObject(item->getVendorID());
+
+		if (frozenCheckVendor != nullptr && VendorDataComponent::isVendorFrozen(frozenCheckVendor)) {
+			BaseMessage* msg = new CancelLiveAuctionResponseMessage(objectID, CancelLiveAuctionResponseMessage::INVALIDITEM);
+			player->sendMessage(msg);
+			return;
+		}
 	}
 
 	Time expireTime;

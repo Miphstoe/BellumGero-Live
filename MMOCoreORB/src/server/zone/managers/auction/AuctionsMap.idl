@@ -86,6 +86,18 @@ class AuctionsMap extends ManagedObject {
 	// Bellum Gero: repoint owner/bidder names after a paid character name change. Returns items updated.
 	public native int updatePlayerName(unsigned long playerID, final string oldFirstName, final string newFirstName);
 
+	// Bellum Gero Vendor Packup
+	// Hides every listing of a vendor (removed from search/maintenance, kept in allItems) and records remaining time. Returns listings frozen.
+	public native int freezeVendorListings(SceneObject vendor);
+	// Re-registers a frozen vendor's listings (vendor must be in a zone) and resumes their timers. Returns listings thawed.
+	public native int thawVendorListings(SceneObject vendor, boolean searchable);
+	// Startup: index a listing of a packed vendor without exposing it.
+	public native int addFrozenItem(AuctionItem item);
+	// Number of listings that prevent packing (offers from others, bid auctions).
+	public native int countPackBlockingItems(SceneObject vendor);
+	// Number of listings (any status) belonging to a vendor, frozen or not.
+	public native int countAllVendorItems(SceneObject vendor);
+
 	public native void addToCommodityLimit(AuctionItem item);
 
 	public native void removeFromCommodityLimit(AuctionItem item);

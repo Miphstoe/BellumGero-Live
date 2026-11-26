@@ -25,6 +25,7 @@
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/managers/player/CharacterRenameManager.h"
+#include "server/zone/managers/player/SpeciesChangeManager.h"
 
 const char LuaCreatureObject::className[] = "LuaCreatureObject";
 
@@ -197,6 +198,12 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "removeQuestMission", &LuaCreatureObject::removeQuestMission },
 		{ "addSpaceMissionObject", &LuaCreatureObject::addSpaceMissionObject },
 		{ "removeSpaceMissionObject", &LuaCreatureObject::removeSpaceMissionObject },
+
+		// BG: Species Change Token support
+		{ "speciesChangeIsNaked", &LuaCreatureObject::speciesChangeIsNaked },
+		{ "speciesChangeGetBlockedReason", &LuaCreatureObject::speciesChangeGetBlockedReason },
+		{ "speciesChangeGetEligibleSpecies", &LuaCreatureObject::speciesChangeGetEligibleSpecies },
+		{ "speciesChangeApply", &LuaCreatureObject::speciesChangeApply },
 		{ 0, 0 }
 };
 
@@ -1990,4 +1997,47 @@ int LuaCreatureObject::purchaseCharacterRename(lua_State* L) {
 	lua_pushstring(L, result.message.toCharArray());
 
 	return 2;
+}
+
+// BG: Species Change Token support -- thin delegates to SpeciesChangeManager, which owns all of the
+// actual validation/mutation logic (kept out of this Lua glue file so it stays reusable, e.g. from a
+// future GM command, without duplicating it). See SpeciesChangeManager.h for the full contract.
+
+int LuaCreatureObject::speciesChangeIsNaked(lua_State* L) {
+	bool naked = SpeciesChangeManager::instance()->isNaked(realObject);
+
+	lua_pushboolean(L, naked);
+
+	return 1;
+}
+
+int LuaCreatureObject::speciesChangeGetBlockedReason(lua_State* L) {
+	String reason = SpeciesChangeManager::instance()->getBlockedReason(realObject);
+
+	lua_pushstring(L, reason.toCharArray());
+
+	return 1;
+}
+
+int LuaCreatureObject::speciesChangeGetEligibleSpecies(lua_State* L) {
+	Vector<String> species = SpeciesChangeManager::instance()->getEligibleSpeciesNames(realObject);
+
+	lua_newtable(L);
+
+	for (int i = 0; i < species.size(); ++i) {
+		lua_pushstring(L, species.get(i).toCharArray());
+		lua_rawseti(L, -2, i + 1);
+	}
+
+	return 1;
+}
+
+int LuaCreatureObject::speciesChangeApply(lua_State* L) {
+	String newSpeciesName = lua_tostring(L, -1);
+
+	String failureReason = SpeciesChangeManager::instance()->applySpeciesChange(realObject, newSpeciesName);
+
+	lua_pushstring(L, failureReason.toCharArray());
+
+	return 1;
 }

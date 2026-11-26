@@ -617,16 +617,33 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	return true;
 }
 
+// BG: racialCreationData is keyed by the exact "<template>_male"/"<template>_female" strings
+// found in datatables/creation/attribute_limits.iff's own male_template/female_template columns
+// -- not simply "<species>_male"/"<species>_female". Every original species (and most bg_species1.tre
+// custom species) has a real male template, so "race + _male" has always happened to resolve
+// correctly. Nightsister, Togruta, and SMC are female-only: their row's male_template column has
+// no real male template to reference, so the TRE only ever registers a "<species>_female" key.
+// Blindly querying "<species>_male" for these three silently fell through to Human's attribute
+// range, which desynced from what the client (reading the same TRE data correctly) offered the
+// player -- causing legitimate stat migration submissions to be rejected as "hacking attempts".
+// Try "_male" first (preserves every existing species' behavior exactly), then "_female", before
+// falling back to Human.
+static Reference<RacialCreationData*> lookupRacialCreationData(const VectorMap<String, Reference<RacialCreationData*> >& racialCreationData, const String& race) {
+	Reference<RacialCreationData*> racialData = racialCreationData.get(race + "_male");
+
+	if (racialData == nullptr)
+		racialData = racialCreationData.get(race + "_female");
+
+	return racialData;
+}
+
 int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeMax(attributeNumber);
@@ -638,14 +655,11 @@ int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 
 int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeMin(attributeNumber);
@@ -656,16 +670,49 @@ int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 }
 
 int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
-	String maleRace = race + "_male";
-
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	Reference<RacialCreationData*> racialData = lookupRacialCreationData(racialCreationData, race);
 
 	if (racialData != nullptr) {
 		return racialData->getAttributeTotal();
 	} else {
 		return racialCreationData.get("human_male")->getAttributeTotal();
 	}
+}
+
+RacialCreationData* PlayerCreationManager::getRacialCreationData(const String& templateFileName) const {
+	Reference<RacialCreationData*> data = racialCreationData.get(templateFileName);
+
+	if (data == nullptr)
+		data = racialCreationData.get("human_male");
+
+	return data;
+}
+
+bool PlayerCreationManager::hasCuratedRacialCreationData(const String& templateFileName) const {
+	return racialCreationData.get(templateFileName) != nullptr;
+}
+
+int PlayerCreationManager::getProfessionAttributeMod(const String& profession, int attributeNumber) const {
+	if (attributeNumber < 0 || attributeNumber > 8)
+		attributeNumber = 0;
+
+	// Mirrors addProfessionStartingItems()'s own lookup/fallback exactly (see that method below): an
+	// unrecognized profession key falls back to the first-loaded entry rather than to a hardcoded
+	// value, so this never disagrees with what a brand-new character with the same (mis)configured
+	// profession would actually receive.
+	const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.get(profession);
+
+	if (professionData == nullptr)
+		professionData = professionDefaultsInfo.get(0);
+
+	if (professionData == nullptr)
+		return 0;
+
+	return professionData->getAttributeMod(attributeNumber);
+}
+
+bool PlayerCreationManager::hasProfessionAttributeData(const String& profession) const {
+	return professionDefaultsInfo.get(profession) != nullptr;
 }
 
 bool PlayerCreationManager::validateCharacterName(const String& characterName) const {
@@ -737,13 +784,29 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 	SkillManager::instance()->awardSkill(startingSkill->getSkillName(),
 			creature, false, true, true);
 
+	// BG DIAGNOSTIC (temporary, Species Change Token investigation -- remove once resolved; pairs
+	// with the existing "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM" block in addRacialMods()
+	// below, which logs the SAME creature's post-racial-mod final HAM immediately afterward but does
+	// not have the profession KEY available to log -- this block is what lets a fresh-creation log
+	// be correlated, attribute-by-attribute, against SpeciesChangeManager::resetSpeciesStats()'s own
+	// "starterProfession=..." diagnostic line for the same profession key. error() (not info()/debug())
+	// so it is never suppressed by this manager's setLogging(false)/setGlobalLogging(false)
+	// construction settings -- see the identical note on the addRacialMods() block below.
+	StringBuffer bgProfModLog;
+
 	//Set the hams.
 	for (int i = 0; i < 9; ++i) {
 		int mod = professionData->getAttributeMod(i);
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
 		creature->setMaxHAM(i, mod, false);
+
+		bgProfModLog << " attr" << i << "=" << mod;
 	}
+
+	error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION PROFESSION MOD | requestedProfession=\""
+			<< profession << "\" | resolvedFallbackToFirstEntry=" << (professionDefaultsInfo.get(profession) == nullptr)
+			<< " |" << bgProfModLog.toString();
 
 	auto itemTemplates = professionData->getProfessionItems(
 			clientTemplate);
@@ -807,24 +870,58 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 
 void PlayerCreationManager::addHair(CreatureObject* creature,
 		const String& hairTemplate, const String& hairCustomization) const {
-	if (hairTemplate.isEmpty())
+	// BG HAIR DEBUG (temporary, Test Center regression investigation -- remove once root cause of
+	// the character-creation baldness regression is confirmed fixed). Uses error() rather than
+	// info() so these lines are never suppressed by this manager's setLogging(false)/
+	// setGlobalLogging(true) construction settings (LogLevel::ERROR=1 always passes the
+	// logLevel(LOG=3) >= level check, unlike INFO=4/DEBUG=5) -- these are diagnostic markers, not
+	// genuine errors.
+	String bgPlayerTemplate = creature->getObjectTemplate() != nullptr ? creature->getObjectTemplate()->getFullTemplateString() : "<null template>";
+
+	error() << "[BG HAIR DEBUG] addHair() called | playerTemplate=" << bgPlayerTemplate
+			<< " | hairTemplate=" << (hairTemplate.isEmpty() ? "<empty>" : hairTemplate)
+			<< " | hairCustomizationLength=" << hairCustomization.length();
+
+	if (hairTemplate.isEmpty()) {
+		error() << "[BG HAIR DEBUG] addHair() aborting: hairTemplate is empty (client sent no hair selection) | playerTemplate=" << bgPlayerTemplate;
 		return;
+	}
 
 	HairStyleInfo* hairInfo = hairStyleInfo.get(hairTemplate);
 
 	if (hairInfo == nullptr)
 		hairInfo = hairStyleInfo.get(0);
 
+	// BG: hair_assets_skill_mods.iff can have multiple rows for the same hair item, one per
+	// compatible player species (this is how bg_species1.tre's custom species reuse stock
+	// hairstyles) -- pass this creature's own player template so the correct row for THIS species
+	// is selected, rather than whichever species' row happened to load last (see
+	// CustomizationIdManager::getHairAssetData()/hairAssetSkillMods for the full explanation; this
+	// was the root cause of the character-creation baldness regression).
 	HairAssetData* hairAssetData =
-			CustomizationIdManager::instance()->getHairAssetData(hairTemplate);
+			CustomizationIdManager::instance()->getHairAssetData(hairTemplate, bgPlayerTemplate);
 
 	if (hairAssetData == nullptr) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: no HairAssetData row found for hairTemplate="
+				<< hairTemplate << " matching playerTemplate=" << bgPlayerTemplate
+				<< " (either this hair template has no rows at all in hair_assets_skill_mods.iff, or"
+				<< " it has rows for other species but none for this one)";
 		error("no hair asset data detected for " + hairTemplate);
 		return;
 	}
 
+	error() << "[BG HAIR DEBUG] HairAssetData found for hairTemplate=" << hairTemplate
+			<< " | sharedTemplate=" << hairAssetData->getSharedTemplate()
+			<< " | serverTemplate=" << hairAssetData->getServerTemplate()
+			<< " | playerTemplate(col1)=" << hairAssetData->getPlayerTemplate()
+			<< " | serverPlayerTemplate=" << hairAssetData->getServerPlayerTemplate()
+			<< " | availableAtCreation=" << hairAssetData->isAvailableAtCreation();
+
 	if (hairAssetData->getServerPlayerTemplate()
 			!= creature->getObjectTemplate()->getFullTemplateString()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: serverPlayerTemplate mismatch | hairTemplate="
+				<< hairTemplate << " | hairAssetData.serverPlayerTemplate=" << hairAssetData->getServerPlayerTemplate()
+				<< " | creature.fullTemplateString=" << bgPlayerTemplate;
 		error(
 				"hair " + hairTemplate
 						+ " is not compatible with this creature player "
@@ -833,6 +930,8 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 	}
 
 	if (!hairAssetData->isAvailableAtCreation()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: hair not flagged availableAtCreation | hairTemplate="
+				<< hairTemplate << " | playerTemplate=" << bgPlayerTemplate;
 		error("hair " + hairTemplate + " not available at creation");
 		return;
 	}
@@ -842,12 +941,18 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 
 	//TODO: Validate hairCustomization
 	if (hair == nullptr) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: zoneServer->createObject(hairTemplate.hashCode(), 1)"
+				<< " returned nullptr -- hair template not registered server-side (no matching"
+				<< " ObjectTemplates:addTemplate registration for CRC of \"" << hairTemplate << "\")"
+				<< " | playerTemplate=" << bgPlayerTemplate;
 		return;
 	}
 
 	Locker locker(hair);
 
 	if (!hair->isTangibleObject()) {
+		error() << "[BG HAIR DEBUG] addHair() FAILED: created hair object OID=" << hair->getObjectID()
+				<< " is not a TangibleObject | hairTemplate=" << hairTemplate;
 		hair->destroyObjectFromDatabase(true);
 		return;
 	}
@@ -865,10 +970,21 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 
 	data.parseFromClientString(hairCustomization);
 
-	if (ImageDesignManager::validateCustomizationString(&data, appearanceFilename))
+	bool bgCustomizationValid = ImageDesignManager::validateCustomizationString(&data, appearanceFilename);
+
+	error() << "[BG HAIR DEBUG] hair object created | hairOID=" << hair->getObjectID()
+			<< " | appearanceFilename=" << appearanceFilename
+			<< " | customizationValid=" << bgCustomizationValid;
+
+	if (bgCustomizationValid)
 		tanoHair->setCustomizationString(hairCustomization);
 
-	creature->transferObject(tanoHair, 4);
+	bool bgTransferResult = creature->transferObject(tanoHair, 4);
+
+	error() << "[BG HAIR DEBUG] transferObject(hairOID=" << hair->getObjectID()
+			<< ", containmentType=4) result=" << bgTransferResult
+			<< " | hairParentAfterTransfer=" << (hair->getParent().get() != nullptr ? String::valueOf(hair->getParent().get()->getObjectID()) : "<null>")
+			<< " | playerTemplate=" << bgPlayerTemplate;
 }
 
 void PlayerCreationManager::addCustomization(CreatureObject* creature,
@@ -1055,12 +1171,42 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 	if (racialData == nullptr)
 		racialData = racialCreationData.get(0);
 
+	// BG DIAGNOSTIC (temporary, Species Change Token stat-migration investigation -- remove once
+	// resolved). Broadened from the original Togruta/Chiss-only gate to every species, and upgraded
+	// from info() to error() so it is never suppressed by this manager's setLogging(false)/
+	// setGlobalLogging(false) construction settings (see SpeciesChangeManager.cpp's identical note --
+	// LogLevel::ERROR=1 always passes the logLevel(LOG=3) >= level check, unlike INFO=4/DEBUG=5).
+	// Purely diagnostic; finalHAM is computed and applied exactly as before, unclamped, matching
+	// existing behavior -- these are markers, not genuine errors.
+	int bgSumFinalHAM = 0;
+
 	for (int i = 0; i < 9; ++i) {
-		int mod = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
-		creature->setBaseHAM(i, mod, false);
-		creature->setHAM(i, mod, false);
-		creature->setMaxHAM(i, mod, false);
+		int beforeRacial = creature->getBaseHAM(i);
+		int racialMod = racialData->getAttributeMod(i);
+		int finalHAM = beforeRacial + racialMod;
+
+		bgSumFinalHAM += finalHAM;
+
+		error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM"
+				<< " | Race: " << race
+				<< " | Attribute: " << i
+				<< " | Before Racial (template baseHAM): " << beforeRacial
+				<< " | Racial Mod: " << racialMod
+				<< " | Final: " << finalHAM
+				<< " | Racial Min: " << racialData->getAttributeMin(i)
+				<< " | Racial Max: " << racialData->getAttributeMax(i)
+				<< " | Racial Total: " << racialData->getAttributeTotal()
+				<< " | OUT_OF_RANGE=" << (finalHAM < racialData->getAttributeMin(i) || finalHAM > racialData->getAttributeMax(i));
+
+		creature->setBaseHAM(i, finalHAM, false);
+		creature->setHAM(i, finalHAM, false);
+		creature->setMaxHAM(i, finalHAM, false);
 	}
+
+	error() << "[BG STATMIGRATION DEBUG] CHARACTER CREATION HAM SUMMARY | Race: " << race
+			<< " | SumOfFinalHAM: " << bgSumFinalHAM
+			<< " | RacialTotal: " << racialData->getAttributeTotal()
+			<< " | SUM_MATCHES_TOTAL=" << (bgSumFinalHAM == racialData->getAttributeTotal());
 
 	if (startingSkills != nullptr) {
 		for (int i = 0; i < startingSkills->size(); ++i) {

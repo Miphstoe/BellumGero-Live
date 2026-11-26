@@ -502,6 +502,7 @@ public:
 
 		int agentLevel = agentTemplate->getLevel();
 
+		uint32 epicCount = lootManager->getEpicLooted();
 		uint32 legendaryCount = lootManager->getLegendaryLooted();
 		uint32 exceptionalCount = lootManager->getExceptionalLooted();
 		uint32 yellowCount = lootManager->getYellowLooted();
@@ -775,6 +776,7 @@ public:
 			}
 		}
 
+		epicCount = lootManager->getEpicLooted() - epicCount;
 		legendaryCount = lootManager->getLegendaryLooted() - legendaryCount;
 		exceptionalCount = lootManager->getExceptionalLooted() - exceptionalCount;
 		yellowCount = lootManager->getYellowLooted() - yellowCount;
@@ -792,6 +794,7 @@ public:
 		<< "Total Loot Collection Attempts: " << totalCollectionAttempts << endl
 		<< "Total Dropped Loot Items: " << totalLootItems << endl
 		<< endl
+		<< "Total Epics Dropped: " << epicCount << "    " << (((1.0f * epicCount) / totalLootItems) * 100.f) << " percent " << endl
 		<< "Total Legendaries Dropped: " << legendaryCount << "    " << (((1.0f * legendaryCount) / totalLootItems) * 100.f) << " percent " << endl
 		<< "Total Exceptionals Dropped: " << exceptionalCount << "    " << (((1.0f * exceptionalCount) / totalLootItems) * 100.f) << " percent" << endl
 		<< "Total Yellow Named Dropped: " << yellowCount << "    " << (((1.0f * yellowCount) / totalLootItems) * 100.f) << " percent" << endl << endl

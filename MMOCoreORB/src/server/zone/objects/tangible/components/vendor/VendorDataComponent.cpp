@@ -35,6 +35,10 @@ VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adB
 	lastBark = 0;
 	originalDirection = 1000;
 	guildDiscounts.setNoDuplicateInsertPlan();
+	packState = PACK_ACTIVE;
+	packOpId = 0;
+	packTime = 0;
+	packedFromStructureId = 0;
 	addSerializableVariables();
 }
 
@@ -56,6 +60,10 @@ void VendorDataComponent::addSerializableVariables() {
 	addSerializableVariable("barkAnimation", &barkAnimation);
 	addSerializableVariable("originalDirection", &originalDirection);
 	addSerializableVariable("guildDiscounts", &guildDiscounts);
+	addSerializableVariable("packState", &packState);
+	addSerializableVariable("packOpId", &packOpId);
+	addSerializableVariable("packTime", &packTime);
+	addSerializableVariable("packedFromStructureId", &packedFromStructureId);
 }
 
 void VendorDataComponent::writeJSON(nlohmann::json& j) const {
@@ -78,6 +86,10 @@ void VendorDataComponent::writeJSON(nlohmann::json& j) const {
 	SERIALIZE_JSON_MEMBER(barkAnimation);
 	SERIALIZE_JSON_MEMBER(originalDirection);
 	SERIALIZE_JSON_MEMBER(guildDiscounts);
+	SERIALIZE_JSON_MEMBER(packState);
+	SERIALIZE_JSON_MEMBER(packOpId);
+	SERIALIZE_JSON_MEMBER(packTime);
+	SERIALIZE_JSON_MEMBER(packedFromStructureId);
 }
 
 void VendorDataComponent::initializeTransientMembers() {
@@ -90,7 +102,9 @@ void VendorDataComponent::initializeTransientMembers() {
 	if(strongParent != nullptr) {
 
 		if (isInitialized()) {
-			scheduleVendorCheckTask(VENDORCHECKDELAY + System::random(VENDORCHECKINTERVAL));
+			// Vendor Packup: packed/transitional vendors are never charged or cleaned up
+			if (packState == PACK_ACTIVE)
+				scheduleVendorCheckTask(VENDORCHECKDELAY + System::random(VENDORCHECKINTERVAL));
 
 			if(originalDirection == 1000)
 				originalDirection = strongParent->getDirectionAngle();
@@ -121,6 +135,10 @@ void VendorDataComponent::runVendorUpdate() {
 	ManagedReference<SceneObject*> strongParent = parent.get();
 
 	if (strongParent == nullptr || strongParent->getZoneServer() == nullptr)
+		return;
+
+	// Vendor Packup: maintenance, XP and abandonment cleanup are all paused unless ACTIVE.
+	if (packState != PACK_ACTIVE)
 		return;
 
 	ManagedReference<CreatureObject*> owner = strongParent->getZoneServer()->getObject(getOwnerId()).castTo<CreatureObject*>();
@@ -514,4 +532,18 @@ void VendorDataComponent::scheduleVendorCheckTask(int delay) {
 void VendorDataComponent::cancelVendorCheckTask() {
 	if (vendorCheckTask != nullptr)
 		vendorCheckTask->cancel();
+}
+
+bool VendorDataComponent::isVendorFrozen(SceneObject* vendor) {
+	if (vendor == nullptr || !vendor->isVendor())
+		return false;
+
+	DataObjectComponentReference* data = vendor->getDataObjectComponent();
+
+	if (data == nullptr || data->get() == nullptr || !data->get()->isVendorData())
+		return false;
+
+	VendorDataComponent* vendorData = cast<VendorDataComponent*>(data->get());
+
+	return vendorData != nullptr && vendorData->getPackState() != PACK_ACTIVE;
 }

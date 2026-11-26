@@ -850,6 +850,7 @@ RunSlashCommandsFile("launchIntoSpace.lua")
 RunSlashCommandsFile("createVendor.lua")
 RunSlashCommandsFile("village.lua")
 RunSlashCommandsFile("forceFocus.lua")
+RunSlashCommandsFile("forceRenewal.lua")
 RunSlashCommandsFile("arealoot.lua")
 RunSlashCommandsFile("harvestArea.lua")
 RunSlashCommandsFile("updateSkills.lua")
@@ -864,3 +865,6 @@ RunSlashCommandsFile("wb.lua")
 
 -- Bellum Gero protected housing / player-city administrative reset (Admin Level 15 + secret)
 RunSlashCommandsFile("worldReset.lua")
+
+-- Bellum Gero Vendor Packup administrative support
+RunSlashCommandsFile("vendorPackup.lua")

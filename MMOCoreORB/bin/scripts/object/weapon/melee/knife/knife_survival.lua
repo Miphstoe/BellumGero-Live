@@ -62,7 +62,15 @@ object_weapon_melee_knife_knife_survival = object_weapon_melee_knife_shared_knif
 		"object/creature/player/wookiee_male.iff",
 		"object/creature/player/wookiee_female.iff",
 		"object/creature/player/zabrak_male.iff",
-		"object/creature/player/zabrak_female.iff"
+		"object/creature/player/zabrak_female.iff",
+		"object/creature/player/chadra_fan_male.iff",
+		"object/creature/player/chadra_fan_female.iff",
+		"object/creature/player/ewok_male.iff",
+		"object/creature/player/ewok_female.iff",
+		"object/creature/player/hutt_male.iff",
+		"object/creature/player/hutt_female.iff",
+		"object/creature/player/geonosian_male.iff",
+		"object/creature/player/ortolan_male.iff"
 	},
 
 	-- RANGEDATTACK, MELEEATTACK, FORCEATTACK, TRAPATTACK, GRENADEATTACK, HEAVYACIDBEAMATTACK,
@@ -80,8 +88,9 @@ object_weapon_melee_knife_knife_survival = object_weapon_melee_knife_shared_knif
 	-- combat_meleespecialize_twohandlightsaber, combat_meleespecialize_polearmlightsaber, combat_meleespecialize_onehandlightsaber
 	xpType = "combat_meleespecialize_onehand",
 
-	-- See http://www.ocdsoft.com/files/certifications.xls
-	certificationsRequired = { "cert_knife_survival" },
+	-- The original species get cert_knife_survival from their species skill.
+	-- Custom species have no species skill, so this basic knife needs no certification.
+	certificationsRequired = { },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "onehandmelee_accuracy" },
 

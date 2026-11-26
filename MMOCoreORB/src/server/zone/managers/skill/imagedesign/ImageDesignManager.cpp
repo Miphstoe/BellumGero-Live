@@ -407,7 +407,12 @@ String ImageDesignManager::getSpeciesGenderString(CreatureObject* creo) {
 TangibleObject* ImageDesignManager::createHairObject(CreatureObject* imageDesigner, CreatureObject* targetObject, const String& hairTemplate, const String& hairCustomization) {
 	Reference<TangibleObject*> oldHair = targetObject->getSlottedObject("hair").castTo<TangibleObject*>();
 
-	HairAssetData* hairAssetData = CustomizationIdManager::instance()->getHairAssetData(hairTemplate);
+	// BG: a hair item can have multiple rows in hair_assets_skill_mods.iff, one per compatible
+	// player species (bg_species1.tre's custom species reuse many stock hairstyles) -- pass
+	// targetObject's own player template so the row matching THIS species is selected. See
+	// CustomizationIdManager::getHairAssetData()/hairAssetSkillMods for the full explanation.
+	String bgTargetPlayerTemplate = targetObject->getObjectTemplate() != nullptr ? targetObject->getObjectTemplate()->getFullTemplateString() : "";
+	HairAssetData* hairAssetData = CustomizationIdManager::instance()->getHairAssetData(hairTemplate, bgTargetPlayerTemplate);
 
 	if (hairTemplate.isEmpty()) {
 		if (!CustomizationIdManager::instance()->canBeBald(getSpeciesGenderString(targetObject)))

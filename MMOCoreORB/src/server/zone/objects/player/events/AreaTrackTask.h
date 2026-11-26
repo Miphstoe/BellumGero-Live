@@ -13,6 +13,8 @@
 #ifndef AREATRACKTASK_H_
 #define AREATRACKTASK_H_
 
+#include "server/zone/objects/player/sui/callbacks/AreaTrackResultsSuiCallback.h"
+
 class AreaTrackTask: public Task {
 	ManagedReference<CreatureObject*> player;
 	int type;
@@ -22,7 +24,8 @@ public:
 	AreaTrackTask(CreatureObject* cr, int index) {
 		player = cr;
 		type = index;
-		initialPosition.setPosition(player->getPositionX(), player->getPositionZ(), player->getPositionY());
+		Vector3 worldPosition = player->getWorldPosition();
+		initialPosition.setPosition(worldPosition.getX(), worldPosition.getZ(), worldPosition.getY());
 	}
 
 	void run() {
@@ -49,59 +52,60 @@ public:
 				return;
 			}
 
-			int maxType = 0;
-			if (player->hasSkill("outdoors_ranger_harvest_04")) {
-				maxType = 2;
-			} else if (player->hasSkill("outdoors_ranger_harvest_02")) {
-				maxType = 1;
-			}
-
-			if (type > maxType) {
+			if (type > AreaTrackResultsSuiCallback::getMaxTrackType(player)) {
 				return;
 			}
 
+			ManagedReference<PlayerObject*> ghost = player->getPlayerObject();
+			if (ghost == nullptr)
+				return;
+
+			// A new search invalidates any older, still-open results window.
+			ghost->closeSuiWindowType(SuiWindowType::RANGER_TRACK_RESULTS);
+
 			ManagedReference<SuiListBox*> rangerTrackResults = new SuiListBox(player, SuiWindowType::RANGER_TRACK_RESULTS);
+			Reference<AreaTrackResultsSuiCallback*> resultsCallback = new AreaTrackResultsSuiCallback(player->getZoneServer(), type);
 
 			rangerTrackResults->setPromptTitle("@skl_use:scan_results_t"); // Area Track Results
-			rangerTrackResults->setPromptText("@skl_use:scan_results_d"); // You have examined the tracks and clues in the area for information about what kinds of creatures might be nearby. This is what you have determined.
+			rangerTrackResults->setPromptText("You have examined the tracks and clues in the area for information about what kinds of creatures might be nearby. This is what you have determined.\n\nSelect a result and press Mark to place a tracking waypoint at its current location. These results expire in 60 seconds.");
+			rangerTrackResults->setCallback(resultsCallback);
+			rangerTrackResults->setOkButton(true, "Mark");
+			rangerTrackResults->setCancelButton(true, "@cancel");
 			StringBuffer results;
 
 			bool canGetDirection = player->hasSkill("outdoors_ranger_harvest_01");
 		    bool canGetDistance = player->hasSkill("outdoors_ranger_harvest_03");
+			bool canGetLevel = player->hasSkill("outdoors_ranger_master");
+
+			// World position so the scan centres correctly when tracking from a mount or vehicle.
+			Vector3 worldPosition = player->getWorldPosition();
+			ManagedReference<SceneObject*> mount = player->isRidingMount() ? player->getParent().get() : nullptr;
 
 			SortedVector<ManagedReference<TreeEntry*> > objects(512, 512);
-			zone->getInRangeObjects(player->getPositionX(), player->getPositionZ(), player->getPositionY(), 1024, &objects, true);
+			zone->getInRangeObjects(worldPosition.getX(), worldPosition.getZ(), worldPosition.getY(), 1024, &objects, true);
 
 			for (int i = 0; i < objects.size(); ++i) {
 				SceneObject* object = static_cast<SceneObject*>(objects.get(i).get());
 				results.deleteAll();
 
-				if(object == player || !object->isCreatureObject()) {
+				if(object == player || object == mount || !object->isCreatureObject()) {
 					continue;
 				}
 
 				CreatureObject* creature = cast<CreatureObject*>(object);
-				if(creature == nullptr || creature->isInvisible())
+				if(!AreaTrackResultsSuiCallback::isTrackableType(creature, type))
 					continue;
-
-				if(type == 0) {
-					if(!creature->isCreature())
-						continue;
-					if (creature->isDroidSpecies() || creature->isWalkerSpecies())
-						continue;
-				} else if(type == 1) {
-					if(!creature->isNonPlayerCreatureObject())
-						continue;
-					if(creature->isVendor() || creature->isProbotSpecies())
-						continue;
-				} else if(type == 2) {
-					if(!creature->isPlayerCreature())
-						continue;
-				} else {
-					continue;
-				}
 
 				results << creature->getDisplayedName();
+
+				// Master Rangers read creature/NPC levels; never shown for player targets.
+				if(canGetLevel && !creature->isPlayerCreature()) {
+					int level = creature->getLevel();
+					results << " - Level " << level;
+
+					if(level >= 300)
+						results << " \\#FF3333[HIGH THREAT]\\#.";
+				}
 
 				String direction = "", distance = "";
 
@@ -114,12 +118,14 @@ public:
 					results << " (" << direction << distance << ")";
 				}
 
-				rangerTrackResults->addMenuItem(results.toString());
+				rangerTrackResults->addMenuItem(results.toString(), creature->getObjectID());
+				resultsCallback->addTarget(creature->getObjectID());
 			}
 
 			if(rangerTrackResults->getMenuSize() == 0) {
 				player->sendSystemMessage("@skl_use:sys_scan_nothing"); // You aren't able to determine anything from the tracks in the area.
 			} else {
+				ghost->addSuiBox(rangerTrackResults);
 				player->sendMessage(rangerTrackResults->generateMessage());
 			}
 

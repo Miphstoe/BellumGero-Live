@@ -16,6 +16,7 @@
 #include "templates/manager/TemplateManager.h"
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/managers/vendor/VendorManager.h"
+#include "server/zone/managers/vendor/VendorPackupManager.h"
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/chat/ChatManager.h"
 #include "server/chat/room/ChatRoom.h"
@@ -1828,6 +1829,15 @@ void PlayerObjectImplementation::notifyOnline() {
 
 	miliSecsSession = 0;
 
+	// Bellum Gero Vendor Packup: settle any pack/restore operation this player's vendors were interrupted in.
+	{
+		uint64 vendorRecoveryPlayerID = playerCreature->getObjectID();
+
+		Core::getTaskManager()->executeTask([vendorRecoveryPlayerID] () {
+			VendorPackupManager::instance()->recoverPlayerVendors(vendorRecoveryPlayerID);
+		}, "VendorPackupLoginRecovery", "slowQueue");
+	}
+
 	resetSessionStats(true);
 
 #ifdef WITH_SESSION_API
@@ -2675,9 +2685,11 @@ void PlayerObjectImplementation::activateForcePowerRegen() {
 	float scheduledTime = 10 / timer;
 	uint64 miliTime = static_cast<uint64>(scheduledTime * 1000.f);
 
-	// Cancel any already-running event so the new interval takes effect immediately.
+	// Bellum Gero Force Powers Revamp - Phase 2
+	// Ordinary Force spending must not postpone an already scheduled regen tick.
+	// The next interval is recalculated when the active tick schedules its successor.
 	if (forceRegenerationEvent->isScheduled())
-		forceRegenerationEvent->cancel();
+		return;
 
 	forceRegenerationEvent->schedule(miliTime);
 }

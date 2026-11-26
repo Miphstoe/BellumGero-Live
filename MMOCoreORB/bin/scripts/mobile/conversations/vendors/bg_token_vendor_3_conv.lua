@@ -12,10 +12,11 @@ bg_token_vendor_3_conv = ConvoTemplate:new {
 first_screen = ConvoScreen:new {
     id = "first_screen",
     leftDialog = "",
-    customDialogText = "Welcome to the Bellum Gero Veteran Rewards Exchange! I carry every Veteran Reward item. Each item costs 75 Bellum Gero Tokens. Browse my wares!",
+    customDialogText = "Welcome to the Bellum Gero Veteran Rewards Exchange! I carry every Veteran Reward item. Most items cost 75 Bellum Gero Tokens; Premium Rewards cost 150. Browse my wares!",
     stopConversation = "false",
     options = {
         {"View Available Items", "items_menu"},
+        {"Premium Veteran Rewards (150 Tokens)", "premium_menu"},
         {"How much do items cost?", "cost_info"},
         {"Goodbye", "bye"},
     }
@@ -26,7 +27,7 @@ bg_token_vendor_3_conv:addScreen(first_screen)
 cost_info = ConvoScreen:new {
     id = "cost_info",
     leftDialog = "",
-    customDialogText = "All Veteran Reward items in my inventory cost exactly 75 Bellum Gero Tokens each. Simply choose an item, confirm the trade, and it's yours!",
+    customDialogText = "All Veteran Reward items in my inventory cost exactly 75 Bellum Gero Tokens each. Premium Veteran Rewards cost 150 Bellum Gero Tokens each. Simply choose an item, confirm the trade, and it's yours!",
     stopConversation = "false",
     options = {
         {"Show me the items", "items_menu"},
@@ -1503,6 +1504,33 @@ trade_item_3_81 = ConvoScreen:new {
 bg_token_vendor_3_conv:addScreen(trade_item_3_81)
 give_item_3_81 = ConvoScreen:new { id = "give_item_3_81", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
 bg_token_vendor_3_conv:addScreen(give_item_3_81)
+
+-- PREMIUM VETERAN REWARDS (150 tokens each)
+premium_menu = ConvoScreen:new {
+    id = "premium_menu",
+    leftDialog = "",
+    customDialogText = "Premium Veteran Rewards (150 Bellum Gero Tokens each):",
+    stopConversation = "false",
+    options = {
+        {"Species Change Token", "trade_item_3_82"},
+        {"Back", "first_screen"},
+    }
+}
+bg_token_vendor_3_conv:addScreen(premium_menu)
+
+trade_item_3_82 = ConvoScreen:new {
+    id = "trade_item_3_82",
+    leftDialog = "",
+    customDialogText = "Confirm: Trade 150 Bellum Gero Tokens for a Species Change Token? (You must remove all equipped items before using it.)",
+    stopConversation = "false",
+    options = {
+        {"Yes, make the trade", "give_item_3_82"},
+        {"No, go back", "premium_menu"}
+    }
+}
+bg_token_vendor_3_conv:addScreen(trade_item_3_82)
+give_item_3_82 = ConvoScreen:new { id = "give_item_3_82", leftDialog = "", customDialogText = "Processing trade...", stopConversation = "true", options = { } }
+bg_token_vendor_3_conv:addScreen(give_item_3_82)
 
 -- BYE SCREEN
 bye = ConvoScreen:new {

@@ -72,7 +72,7 @@ public:
 			profileDescription = "Armor 3 | Canyon Krayt defenses";
 		} else if (templateName == "training_dummy_jedi_hunter") {
 			profileLabel = "Dummy - Jedi Hunter";
-			profileDescription = "Armor 3 | Resists 90 | Lightsaber 40 | jk_hunt_bh PvP profile";
+			profileDescription = "Armor 1 | Resists 90 | Lightsaber 40 | Jedi Hunter test profile";
 		} else {
 			return false;
 		}

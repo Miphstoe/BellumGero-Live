@@ -9,6 +9,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/FactionStatus.h"
+#include "server/zone/objects/player/Races.h"
 #include "server/zone/objects/tangible/wearables/ArmorObject.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
 #include "server/zone/managers/player/PlayerManager.h"
@@ -22,22 +23,50 @@ int PlayerContainerComponent::canAddObject(SceneObject* sceneObject, SceneObject
 		return TransferErrorCode::PLAYERUSEMASKERROR;
 	}
 
+	// An arrangement type of 4 or greater places an object in a character slot;
+	// some wearables have alternate arrangements beyond the first one.
+	if (object->isTangibleObject() && containmentType >= 4 &&
+			(object->isWearableObject() || object->isWearableContainerObject() ||
+			object->isInstrument() || object->isFishingPoleObject())) {
+		String race = creo->getObjectTemplate()->getFullTemplateString();
+		String species = Races::getSpecies(Races::getRaceID(race));
+
+		// Use the template race rather than the numeric species ID: Geonosians
+		// share that ID with Wookiees.
+		if (species == "ewok" || species == "hutt" || species == "ortolan" ||
+				species == "geonosian" || species == "chadra_fan") {
+			errorDescription = "This species can only equip weapons";
+			return TransferErrorCode::PLAYERUSEMASKERROR;
+		}
+	}
+
 	if (object->isTangibleObject() && containmentType == 4) {
 		TangibleObject* wearable = cast<TangibleObject*>(object);
 
 		SharedTangibleObjectTemplate* tanoData = dynamic_cast<SharedTangibleObjectTemplate*>(wearable->getObjectTemplate());
+		String race = creo->getObjectTemplate()->getFullTemplateString();
+		int raceId = Races::getRaceID(race);
+		String species = Races::getSpecies(raceId);
 
-		// BG: ignore playerRaces entirely for all wearables (clothing + armor).
+		// BG: ignore playerRaces for wearables allowed by the species check above.
 		if (tanoData != nullptr) {
-    		if (!object->isWearableObject()) {
-        		const auto races = tanoData->getPlayerRaces();
-        		String race = creo->getObjectTemplate()->getFullTemplateString();
+			if (!object->isWearableObject()) {
+				const auto races = tanoData->getPlayerRaces();
 
-        		if (!races->contains(race.hashCode())) {
-            errorDescription = "You lack the necessary requirements to wear this object";
-            return TransferErrorCode::PLAYERUSEMASKERROR;
-        		}
-    		}
+				if (!races->contains(race.hashCode())) {
+					// Vanilla playerRaces lists only include the original 10 species.
+					// Custom species can equip weapons and, except for Hutts,
+					// other non-wearable objects when allowed above.
+					bool isCustomSpecies = raceId >= 20 && raceId <= 66;
+					bool isHutt = species == "hutt";
+					bool bypassForCustomSpecies = isCustomSpecies && (object->isWeaponObject() || !isHutt);
+
+					if (!bypassForCustomSpecies) {
+						errorDescription = "You lack the necessary requirements to wear this object";
+						return TransferErrorCode::PLAYERUSEMASKERROR;
+					}
+				}
+			}
 		}
 
 		if (creo->isPlayerCreature()) {

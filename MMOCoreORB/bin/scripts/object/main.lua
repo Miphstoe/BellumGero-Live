@@ -43,10 +43,16 @@
 -- Global creature table
 ObjectTemplates = { }
 
+includeFile("species1_weapon_races.lua")
+
 function ObjectTemplates:addTemplate(obj, file)
 	if (obj == nil) then
 		print("null template object specified for " .. file)
 	else
+		if file:sub(1, 14) == "object/weapon/" then
+			addSpecies1WeaponRaces(obj)
+		end
+
 		crc = crcString(file)
 	
 		if self[crc] == nil then

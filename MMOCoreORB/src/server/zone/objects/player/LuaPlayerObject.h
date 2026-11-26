@@ -38,6 +38,7 @@ namespace player {
 		int removeWaypointBySpecialType(lua_State* L);
 		int getWaypointAt(lua_State* L);
 		int updateWaypoint(lua_State* L);
+		int getWaypointOrganizerData(lua_State* L);
 		int addRewardedSchematic(lua_State* L);
 		int removeRewardedSchematic(lua_State* L);
 		int hasSchematic(lua_State* L);

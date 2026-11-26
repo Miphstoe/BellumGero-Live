@@ -16,16 +16,25 @@ void CustomizationIdManager::loadHairAssetsSkillMods(IffStream* iffStream) {
 	DataTableIff dataTable;
 	dataTable.readObject(iffStream);
 
+	int totalRows = 0;
+
 	for (int i = 0; i < dataTable.getTotalRows(); ++i) {
 		HairAssetData* data = new HairAssetData();
 		data->readObject(dataTable.getRow(i));
 
-		hairAssetSkillMods.put(data->getServerTemplate(), data);
+		// BG: append rather than overwrite -- see the comment on hairAssetSkillMods in
+		// CustomizationIdManager.h for why a single serverTemplate can now have multiple valid rows
+		// (one per compatible player species).
+		if (!hairAssetSkillMods.containsKey(data->getServerTemplate()))
+			hairAssetSkillMods.put(data->getServerTemplate(), Vector<Reference<HairAssetData*> >());
 
-		debug() << "adding " << data->getServerTemplate();
+		hairAssetSkillMods.get(data->getServerTemplate()).add(data);
+		++totalRows;
+
+		debug() << "adding " << data->getServerTemplate() << " for " << data->getServerPlayerTemplate();
 	}
 
-	info() << "loaded " << paletteColumns.size() << " hair assets";
+	info() << "loaded " << totalRows << " hair asset rows across " << hairAssetSkillMods.size() << " hair templates";
 }
 
 void CustomizationIdManager::loadAllowBald(IffStream* iffStream) {

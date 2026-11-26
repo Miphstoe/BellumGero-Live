@@ -135,6 +135,56 @@ public:
 	int getTotalAttributeLimit(const String& race) const;
 
 	/**
+	 * BG: Species Change Token support. Returns the same per-template racial creation data
+	 * (attribute min/max/total, and per-attribute racial HAM modifier) used at character creation,
+	 * keyed by the exact template file name (e.g. "chiss_male", from SharedObjectTemplate::
+	 * getTemplateFileName()) -- not a bare species name. Falls back to human_male's data if the
+	 * template has no TRE row, exactly like getMinimum/MaximumAttributeLimit above already do --
+	 * never the fragile, load-order-dependent ".get(0)" fallback addRacialMods() uses internally for
+	 * brand new characters.
+	 */
+	RacialCreationData* getRacialCreationData(const String& templateFileName) const;
+
+	/**
+	 * BG: Species Change Token support. Returns true only if templateFileName has its OWN curated
+	 * row in datatables/creation/racial_mods.iff/attribute_limits.iff -- i.e. getRacialCreationData()
+	 * would NOT be falling back to human_male's numbers for it. Character creation's fallback-to-
+	 * human behavior for the ~8 approved bg_species1.tre species missing this data (e.g. Talz) is
+	 * intentionally left unchanged by this method; it exists so callers that need to know whether
+	 * they'd be silently substituting Human stats (unacceptable for a permanent species conversion,
+	 * even though acceptable/pre-existing for brand-new character creation) can detect and report
+	 * that distinctly instead.
+	 */
+	bool hasCuratedRacialCreationData(const String& templateFileName) const;
+
+	/**
+	 * BG: Species Change Token support. Returns the per-attribute starting HAM modifier
+	 * (datatables/creation/profession_mods.iff) a brand-new character choosing this starting
+	 * profession receives, BEFORE any racial modifier is added -- i.e. exactly the value
+	 * addProfessionStartingItems() writes into base/current/max HAM for a fresh character, keyed
+	 * by profession name exactly as PlayerObject::getStarterProfession() persists it (e.g.
+	 * "combat_brawler", or "crafting_artisan" for a Jedi-flagged creation -- see createCharacter()'s
+	 * own jedi override, which already runs before setStarterProfession() stores it). Falls back to
+	 * professionDefaultsInfo's first-loaded entry for an unrecognized profession (empty string, or
+	 * one no longer offered), mirroring addProfessionStartingItems()'s own fallback for a brand-new
+	 * character exactly, so an existing character is never held to a stricter standard than
+	 * character creation's own already-accepted behavior for the same edge case.
+	 */
+	int getProfessionAttributeMod(const String& profession, int attributeNumber) const;
+
+	/**
+	 * BG: Species Change Token support. Returns true only if profession has its OWN curated row in
+	 * datatables/creation/profession_mods.iff (professionDefaultsInfo) -- i.e.
+	 * getProfessionAttributeMod() would NOT be falling back to the first-loaded profession's numbers
+	 * for it. An empty string (a character created before PlayerObject::getStarterProfession() was
+	 * tracked, or one whose value was otherwise never set) always returns false here. Exists purely so
+	 * callers -- currently only SpeciesChangeManager's diagnostic log -- can tell a genuine profession
+	 * match apart from an arbitrary, load-order-dependent fallback substitution, exactly like
+	 * hasCuratedRacialCreationData() already does for the racial data table.
+	 */
+	bool hasProfessionAttributeData(const String& profession) const;
+
+	/**
 	 * Adds starting Weapons into the target container
 	 * @param creature the player creature
 	 * @param container the target container

@@ -2,6 +2,8 @@
 hoth_destroy_missions = {
 	minLevelCeiling = 70,
 	lairSpawns = {
+		{ lairTemplateName = "arctic_peko_peko_pair_neutral_none", minDifficulty = 22, maxDifficulty = 26, size = 25 },
+		{ lairTemplateName = "arctic_peko_peko_lair", minDifficulty = 22, maxDifficulty = 26, size = 25 },
 		{ lairTemplateName = "hoth_tauntaun_herd_neutral_none", minDifficulty = 65, maxDifficulty = 69, size = 25 },
 		{ lairTemplateName = "hoth_tauntaun_lair_neutral_medium", minDifficulty = 65, maxDifficulty = 69, size = 25 },
 		{ lairTemplateName = "hoth_ice_mynock_pack_neutral_none", minDifficulty = 67, maxDifficulty = 71, size = 25 },

@@ -15,6 +15,7 @@
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "server/zone/objects/scene/TransferErrorCode.h"
 #include "server/zone/objects/tangible/TangibleObject.h"
+#include "server/zone/objects/tangible/components/vendor/VendorDataComponent.h"
 #include "system/lang/Integer.h"
 #include "QueueCommand.h"
 
@@ -157,6 +158,18 @@ public:
 		if (objectsParent == nullptr) {
 			trx.abort() << "Failed to get parent";
 			return GENERALERROR;
+		}
+
+		// Vendor Packup: packed vendors may only be handled by their owner, and not mid-operation.
+		if (objectToTransfer->isVendor() && VendorDataComponent::isVendorFrozen(objectToTransfer)) {
+			DataObjectComponentReference* packData = objectToTransfer->getDataObjectComponent();
+			VendorDataComponent* packVendorData = (packData != nullptr && packData->get() != nullptr) ? cast<VendorDataComponent*>(packData->get()) : nullptr;
+
+			if (packVendorData == nullptr || packVendorData->getOwnerId() != creature->getObjectID() || !packVendorData->isPacked()) {
+				creature->sendSystemMessage("This vendor cannot be moved right now.");
+				trx.abort() << "Packed or transitional vendor can only be moved by its owner";
+				return GENERALERROR;
+			}
 		}
 
 		if (objectToTransfer->isVendor() && !objectsParent->checkContainerPermission(creature, ContainerPermissions::MOVEVENDOR)) {

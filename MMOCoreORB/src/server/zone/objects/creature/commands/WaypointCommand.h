@@ -12,6 +12,7 @@
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/Zone.h"
+#include "server/zone/managers/director/DirectorManager.h"
 
 class WaypointCommand : public QueueCommand {
 private:
@@ -26,6 +27,35 @@ public:
 	WaypointCommand(const String& name, ZoneProcessServer* server) : QueueCommand(name, server) {}
 
 	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
+		// Bellum Gero: "/waypoint organize" opens the Waypoint Organizer (bg_waypoint_organizer.lua).
+		// A waypoint literally named "organize" can still be made via /waypoint <x> <y> organize.
+		if (creature != nullptr && creature->isPlayerCreature()) {
+			String trimmedArgs = arguments.toString().trim();
+
+			if (trimmedArgs.toLowerCase() == "organize") {
+				if (creature->getPlayerObject() == nullptr)
+					return GENERALERROR;
+
+				Lua* lua = DirectorManager::instance()->getLuaInstance();
+
+				if (lua == nullptr) {
+					creature->sendSystemMessage("[Waypoint Organizer] Lua unavailable. Try again.");
+					return GENERALERROR;
+				}
+
+				Reference<LuaFunction*> f = lua->createFunction("waypointOrganizerRun", 0);
+
+				if (f != nullptr) {
+					*f << creature;
+					f->callFunction();
+				} else {
+					creature->sendSystemMessage("[Waypoint Organizer] Organizer is not loaded.");
+				}
+
+				return SUCCESS;
+			}
+		}
+
 		if (!checkStateMask(creature)) {
 			return INVALIDSTATE;
 		}

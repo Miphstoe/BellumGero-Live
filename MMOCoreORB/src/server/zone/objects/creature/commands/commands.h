@@ -842,6 +842,7 @@
 #include "RequestSpaceTrainerCommand.h"
 #include "VillageCommand.h"
 #include "ForceFocusCommand.h"
+#include "ForceRenewalCommand.h"
 #include "AreaLootCommand.h"
 #include "HarvestAreaCommand.h"
 #include "UpdateSkillsCommand.h"

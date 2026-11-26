@@ -658,6 +658,51 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("SPECIES_ITHORIAN", CreatureObject::ITHORIAN);
 	luaEngine->setGlobalInt("SPECIES_SULLUSTAN", CreatureObject::SULLUSTAN);
 
+	// Bellum Gero bg_species1.tre custom species (raceid 20-66). There are no CreatureObject::<NAME>
+	// enum constants for these -- getSpecies() returns the raw "species" int baked into each
+	// shared_<name>_<gender>.iff (see Races.h TemplateSpecies[] for the authoritative source table).
+	// Several of these raw ints intentionally collide with an original species or with each other
+	// (TRE did not assign unique ids); those are marked below. A script comparing against a colliding
+	// constant will ALSO match the species it collides with -- prefer getSpeciesName() for scripts that
+	// must tell them apart.
+	luaEngine->setGlobalInt("SPECIES_AQUALISH", 9);
+	luaEngine->setGlobalInt("SPECIES_BITH", 12); // collides with SPECIES_TOGORIAN
+	luaEngine->setGlobalInt("SPECIES_CHADRA_FAN", 14);
+	luaEngine->setGlobalInt("SPECIES_CHISS", 11);
+	luaEngine->setGlobalInt("SPECIES_DEVARONIAN", 17);
+	luaEngine->setGlobalInt("SPECIES_EWOK", 22);
+	luaEngine->setGlobalInt("SPECIES_HUTT", 31);
+	luaEngine->setGlobalInt("SPECIES_MIRIALAN", 21);
+	luaEngine->setGlobalInt("SPECIES_SANYASSAN", 25);
+	luaEngine->setGlobalInt("SPECIES_ZELTRON", 24);
+	luaEngine->setGlobalInt("SPECIES_ABYSSIN", 8);
+	luaEngine->setGlobalInt("SPECIES_ARCONA", 10); // collides with SPECIES_KEL_DOR / SPECIES_KUBAZ
+	luaEngine->setGlobalInt("SPECIES_CEREAN", 38);
+	luaEngine->setGlobalInt("SPECIES_DROID", 44);
+	luaEngine->setGlobalInt("SPECIES_DUG", 19);
+	luaEngine->setGlobalInt("SPECIES_DUROS", 20);
+	luaEngine->setGlobalInt("SPECIES_FEEORIN", 0); // collides with SPECIES_HUMAN (and NIGHTSISTER/JENET/SMC)
+	luaEngine->setGlobalInt("SPECIES_GEONOSIAN", 4); // collides with SPECIES_WOOKIEE
+	luaEngine->setGlobalInt("SPECIES_GOTAL", 27);
+	luaEngine->setGlobalInt("SPECIES_GRAN", 28);
+	luaEngine->setGlobalInt("SPECIES_GUNGAN", 29);
+	luaEngine->setGlobalInt("SPECIES_IKTOTCHI", 45);
+	luaEngine->setGlobalInt("SPECIES_ISHI_TIB", 32);
+	luaEngine->setGlobalInt("SPECIES_JENET", 0); // collides with SPECIES_HUMAN (and FEEORIN/NIGHTSISTER/SMC)
+	luaEngine->setGlobalInt("SPECIES_KEL_DOR", 10); // collides with SPECIES_ARCONA / SPECIES_KUBAZ
+	luaEngine->setGlobalInt("SPECIES_KUBAZ", 10); // collides with SPECIES_ARCONA / SPECIES_KEL_DOR
+	luaEngine->setGlobalInt("SPECIES_NAUTOLAN", 51);
+	luaEngine->setGlobalInt("SPECIES_NIKTO", 42);
+	luaEngine->setGlobalInt("SPECIES_ORTOLAN", 43);
+	luaEngine->setGlobalInt("SPECIES_QUARREN", 46);
+	luaEngine->setGlobalInt("SPECIES_TALZ", 50);
+	luaEngine->setGlobalInt("SPECIES_TOGORIAN", 12); // collides with SPECIES_BITH
+	luaEngine->setGlobalInt("SPECIES_TOYDARIAN", 53);
+	luaEngine->setGlobalInt("SPECIES_WEEQUAY", 55);
+	luaEngine->setGlobalInt("SPECIES_NIGHTSISTER", 0); // collides with SPECIES_HUMAN (and FEEORIN/JENET/SMC)
+	luaEngine->setGlobalInt("SPECIES_TOGRUTA", 52);
+	luaEngine->setGlobalInt("SPECIES_SMC", 0); // collides with SPECIES_HUMAN (and FEEORIN/JENET/NIGHTSISTER)
+
 	//Player Arrangements
 	luaEngine->setGlobalLong("RIDER", PlayerArrangement::RIDER);
 	luaEngine->setGlobalLong("SHIP_PILOT", PlayerArrangement::SHIP_PILOT);

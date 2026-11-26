@@ -10,6 +10,7 @@ myswg_vendor_first_screen = ConvoScreen:new {
     customDialogText = "What can I help you with?",
     stopConversation = "false",
     options = {
+        {"3200 Health/Action, 1560 Mind Buffs 3hr - 10k", "buff1"},
         {"Reset Buffs / Empty Stomach - 2k", "reset_buffs"},
         {"Pet Enhancement - 10k", "petbuff1"},
         {"Weapons", "weaps1"},
@@ -302,6 +303,7 @@ special_npc1 = ConvoScreen:new {
         {"Check Torgas the Enslaver - 1k", "special_npc_torgas"},
         {"Check Bird of Prey - 1k", "special_npc_bird_of_prey"},
         {"Check Primordial Warlord Grak - 1k", "special_npc_grak"},
+        {"Check Rimeclaw, the Glacial Rancor - 1k", "special_npc_rimeclaw"},
         {"Check Varn Kessic (Taanab) - 1k", "special_npc_kessic"},
         {"Main menu.", "first_screen"},
     }
@@ -320,10 +322,59 @@ travel1 = ConvoScreen:new {
         {"Talus - GCW Cave [Medium Difficulty] - 25k", "travel_gcw_cave_confirm"},
         {"Naboo - Blue Shadow Virus Bunker [Medium Difficulty] - 25k", "travel_bsv_confirm"},
         {"Yavin4 - Geonosian Cave [Medium Difficulty] - 25k", "travel_geonosian_cave_confirm"},
+        {"Hoth - Caves & Points of Interest - 25k", "travel_hoth1"},
         {"Main menu.", "first_screen"},
     }
 }
 myswg_vendor_conv:addScreen(travel1)
+
+--========================
+-- Hoth travel submenu
+--========================
+
+-- {screen key, menu label, confirm text name}; each key gets travel_hoth_<key>_confirm -> travel_hoth_<key>_teleport,
+-- and the teleport link must match MySwgHothTravel in screenplays/tasks/naboo/myswg_vendor.lua.
+local hothTravelDestinations = {
+    {"frostfang",    "Cave - Frostfang Cavern [Boss Lvl 105]",               "Frostfang Cavern"},
+    {"icemaw",       "Cave - Icemaw's Den [Boss Lvl 109]",                   "Icemaw's Den"},
+    {"snowblind",    "Cave - Snowblind the Ravager's Lair [Boss Lvl 113]",  "Snowblind the Ravager's Lair"},
+    {"matriarch",    "Cave - Wampa Matriarch's Ice Cavern [Boss Lvl 117-120]",  "the Wampa Matriarch's Ice Cavern"},
+    {"broodmother",  "Cave - Broodmother's Nest [Boss Lvl 100]",             "the Broodmother's Nest"},
+    {"shield_gen",   "POI - Shield Generator Battlefield",                      "the Shield Generator Battlefield"},
+    {"raider_camp",  "POI - Generator Raider Camp",                             "the Generator Raider Camp"},
+    {"lucky_despot", "POI - Lucky Despot Wreck",                                "the Lucky Despot Wreck"},
+    {"rancor",       "POI - Glacial Rancor Hunting Grounds [World Boss]",        "the Glacial Rancor Hunting Grounds"},
+}
+
+local hothTravelOptions = {}
+
+for _, dest in ipairs(hothTravelDestinations) do
+    local key, label, confirmName = dest[1], dest[2], dest[3]
+
+    table.insert(hothTravelOptions, {label, "travel_hoth_" .. key .. "_confirm"})
+
+    myswg_vendor_conv:addScreen(ConvoScreen:new {
+        id = "travel_hoth_" .. key .. "_confirm",
+        leftDialog = "",
+        customDialogText = "Travel to " .. confirmName .. " on Hoth for 25,000 credits?",
+        stopConversation = "false",
+        options = {
+            {"Yes, send me there.", "travel_hoth_" .. key .. "_teleport"},
+            {"No, show me Hoth destinations.", "travel_hoth1"},
+        }
+    })
+end
+
+table.insert(hothTravelOptions, {"Back to travel options.", "travel1"})
+
+travel_hoth1 = ConvoScreen:new {
+    id = "travel_hoth1",
+    leftDialog = "",
+    customDialogText = "Hoth is cold and unforgiving. Where do you want to be dropped off?",
+    stopConversation = "false",
+    options = hothTravelOptions
+}
+myswg_vendor_conv:addScreen(travel_hoth1)
 
 --========================
 -- Travel confirm screens
@@ -1031,6 +1082,30 @@ myswg_vendor_special_npc_grak = ConvoScreen:new {
     options = { }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_special_npc_grak);
+-- Rimeclaw: confirm first, charge only after a successful lookup (handled in myswg_vendor.lua)
+myswg_vendor_special_npc_rimeclaw = ConvoScreen:new {
+    id = "special_npc_rimeclaw",
+    leftDialog = "",
+    customDialogText = "Rimeclaw - The Glacial Rancor\n\nObtain the current status and location of Rimeclaw on Hoth for 1,000 credits?",
+    stopConversation = "false",
+    options = {
+        {"Confirm - Pay 1,000 Credits", "special_npc_rimeclaw_confirm"},
+        {"Cancel", "special_npc1"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_rimeclaw);
+-- Report text is replaced at runtime with the live status
+myswg_vendor_special_npc_rimeclaw_report = ConvoScreen:new {
+    id = "special_npc_rimeclaw_report",
+    leftDialog = "",
+    customDialogText = "Rimeclaw - The Glacial Rancor",
+    stopConversation = "false",
+    options = {
+        {"Create Waypoint to Rimeclaw", "special_npc_rimeclaw_waypoint"},
+        {"Main menu.", "first_screen"},
+    }
+}
+myswg_vendor_conv:addScreen(myswg_vendor_special_npc_rimeclaw_report);
 myswg_vendor_special_npc_kessic = ConvoScreen:new {
     id = "special_npc_kessic",
     leftDialog = "",
@@ -1115,6 +1190,15 @@ myswg_vendor_ad_view_queue = ConvoScreen:new {
     }
 }
 myswg_vendor_conv:addScreen(myswg_vendor_ad_view_queue);
+
+buff1_screen = ConvoScreen:new {
+    id = "buff1",
+    leftDialog = "",
+    customDialogText = "Enjoy!",
+    stopConversation = "true",
+    options = { }
+}
+myswg_vendor_conv:addScreen(buff1_screen);
 
 reset_buffs_screen = ConvoScreen:new {
     id = "reset_buffs",

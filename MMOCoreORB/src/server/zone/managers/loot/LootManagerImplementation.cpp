@@ -128,6 +128,8 @@ bool LootManagerImplementation::loadConfigData() {
 	exceptionalModifier = lua->getGlobalFloat("exceptionalModifier");
 	legendaryChance = lua->getGlobalFloat("legendaryChance");
 	legendaryModifier = lua->getGlobalFloat("legendaryModifier");
+	epicChance = lua->getGlobalFloat("epicChance");
+	epicModifier = lua->getGlobalFloat("epicModifier");
 	skillModChance = lua->getGlobalFloat("skillModChance");
 	junkValueModifier = lua->getGlobalFloat("junkValueModifier");
 
@@ -354,7 +356,9 @@ void LootManagerImplementation::setCustomObjectName(
     if (!skipSuffix) {
         String suffixName;
 
-        if (excMod >= legendaryModifier) {
+        if (excMod >= epicModifier) {
+            suffixName = " (Epic)";
+        } else if (excMod >= legendaryModifier) {
             suffixName = " (Legendary)";
         } else if (excMod >= exceptionalModifier) {
             suffixName = " (Exceptional)";
@@ -430,7 +434,9 @@ void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const Lo
 		junkValue = ((level * 0.01f) * junkValue) + junkValue;
 	}
 
-	if (excMod >= legendaryModifier) {
+	if (excMod >= epicModifier) {
+		junkValue *= 3.5f;
+	} else if (excMod >= legendaryModifier) {
 		junkValue *= 2.5f;
 	} else if (excMod >= yellowModifier) {
 		junkValue *= 1.25;
@@ -519,7 +525,10 @@ void LootManagerImplementation::setRandomLootValues(TransactionLog& trx, Tangibl
 	lootValues.debugAttributes(prototype, itemTemplate);
 #endif // LOOTVALUES_DEBUG
 
-	if (excMod >= legendaryModifier) {
+	if (excMod >= epicModifier) {
+		trx.addState("lootIsEpic", true);
+		epicLooted.increment();
+	} else if (excMod >= legendaryModifier) {
 		trx.addState("lootIsLegendary", true);
 		legendaryLooted.increment();
 	} else if (excMod >= exceptionalModifier) {
@@ -601,7 +610,9 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 	float chance = LootValues::getLevelRankValue(Math::max(level - 50, 0), 0.f, 0.35f) * levelChance;
 	float excMod = baseModifier;
 
-	if (System::random(legendaryChance) <= chance) {
+	if (System::random(epicChance) <= chance) {
+		excMod = epicModifier;
+	} else if (System::random(legendaryChance) <= chance) {
 		excMod = legendaryModifier;
 	} else if (System::random(exceptionalChance) <= chance) {
 		excMod = exceptionalModifier;
@@ -1296,7 +1307,10 @@ float LootManagerImplementation::getRandomModifier(const LootItemTemplate* itemT
 	int modMax = 0;
 	int modMin = 0;
 
-	if (excMod >= legendaryModifier) {
+	if (excMod >= epicModifier) {
+		modMax = epicModifier;
+		modMin = legendaryModifier;
+	} else if (excMod >= legendaryModifier) {
 		modMax = legendaryModifier;
 		modMin = exceptionalModifier;
 	} else if (excMod >= exceptionalModifier) {

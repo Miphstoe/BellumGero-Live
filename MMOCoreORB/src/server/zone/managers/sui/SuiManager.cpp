@@ -663,6 +663,15 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 
 			item->createChildObjects();
 
+			if (templatePath.contains("object/tangible/loot/misc/holocron_of_destiny.iff")) {
+				// This template's client objectName does not resolve to a localized
+				// string (item_n:holocron_of_destiny), so every other grant path in
+				// the codebase (loot table, quest rewards) sets the display name
+				// explicitly. Do the same here so the Character Builder's
+				// "You received a: %TO" message resolves correctly.
+				item->setCustomObjectName("Holocron of Destiny", false);
+			}
+
 			if (item->isEventPerkDeed()) {
 				EventPerkDeed* deed = item.castTo<EventPerkDeed*>();
 				deed->setOwner(player);

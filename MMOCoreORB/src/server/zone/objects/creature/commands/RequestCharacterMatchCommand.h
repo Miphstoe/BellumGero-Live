@@ -73,8 +73,9 @@ public:
 
 						PlayerObject* targetGhost = playerCreature->getPlayerObject();
 
-						if (targetGhost == nullptr || targetGhost->hasGodMode() || (targetGhost->isAnonymous() && playerCreature != creature))
+						if (targetGhost == nullptr || targetGhost->hasGodMode() || (targetGhost->isAnonymous() && playerCreature != creature)) {
 							continue;
+						}
 
 						String guildName = "";
 						String charName = "";
@@ -88,29 +89,36 @@ public:
 
 						// The client is always including the creature using the command in its count
 						if (playerCreature != creature) {
-							if (wildcard != "\"\"" && !guildName.contains(wildcard) && !charName.contains(wildcard))
+							if (wildcard != "\"\"" && !guildName.contains(wildcard) && !charName.contains(wildcard)) {
 								continue;
+							}
 
-							if ((playerFlags & PlayerBitmasks::ROLEPLAYER) && !targetGhost->isRoleplayer()) // Command looking for roleplayer flag
+							if ((playerFlags & PlayerBitmasks::ROLEPLAYER) && !targetGhost->isRoleplayer()) { // Command looking for roleplayer flag
 								continue;
+							}
 
-							if ((playerFlags & PlayerBitmasks::NEWBIEHELPER) && !targetGhost->isNewbieHelper()) // Command looking for helper flag
+							if ((playerFlags & PlayerBitmasks::NEWBIEHELPER) && !targetGhost->isNewbieHelper()) { // Command looking for helper flag
 								continue;
+							}
 
-							if ((playerFlags & PlayerBitmasks::LFG) && !targetGhost->isLFG()) // Command looking for lfg flag
+							if ((playerFlags & PlayerBitmasks::LFG) && !targetGhost->isLFG()) { // Command looking for lfg flag
 								continue;
+							}
 
 							// Search window sends a 0 for both "Any" and "Neutral", no way to differentiate
-							if (faction != 0 && faction != 1 && playerCreature->getFaction() != faction) // Command looking for faction, /who sends a 1 but search window sends 0
+							if (faction != 0 && faction != 1 && playerCreature->getFaction() != faction) { // Command looking for faction, /who sends a 1 but search window sends 0
 								continue;
+							}
 
-							if (species != -1 && playerCreature->getSpecies() != species) // Command looking for species
+							if (species != -1 && playerCreature->getSpecies() != species) { // Command looking for species
 								continue;
+							}
 
 							// Handles both title and profession search (arguments give no way to differentiate between profession and title search)
 							// _novice check handles if player is searching for profession but no title
-							if (profession != "\"\"" && !playerCreature->hasSkill(profession) && targetGhost->getTitle() != profession && !playerCreature->hasSkill(profession + "_novice") )
+							if (profession != "\"\"" && !playerCreature->hasSkill(profession) && targetGhost->getTitle() != profession && !playerCreature->hasSkill(profession + "_novice") ) {
 								continue;
+							}
 						}
 
 						pny->addFoundPlayer(playerCreature);

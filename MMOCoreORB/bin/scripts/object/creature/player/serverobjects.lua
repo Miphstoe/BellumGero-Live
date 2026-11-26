@@ -44,6 +44,7 @@
 
 --Children folder includes
 includeFile("creature/player/base/serverobjects.lua")
+includeFile("creature/player/bellum/serverobjects.lua")
 
 -- Server Objects
 includeFile("creature/player/bothan_female.lua")

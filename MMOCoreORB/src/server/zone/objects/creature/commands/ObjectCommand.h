@@ -505,7 +505,7 @@ public:
 						statName == "force_experimentation" || statName == "force_choke" || statName == "forcethrow_accuracy" ||
 						statName == "force_failure_reduction" || statName == "force_repair_bonus" || statName == "lightsaber_toughness" ||
 						statName == "jedi_state_defense" || statName == "forceintimidate_accuracy" || statName == "forceknockdown_accuracy" ||
-						statName == "forcelightning_accuracy" || statName == "forceweaken_accuracy") {
+						statName == "forcelightning_accuracy" || statName == "forceweaken_accuracy" || statName == "force_deflection") {
 						isValidStat = true;
 					}
 				} else {
@@ -678,6 +678,7 @@ public:
 				if (lootManager == nullptr)
 					return INVALIDPARAMETERS;
 
+				creature->sendSystemMessage("Number of Epics Looted: " + String::valueOf(lootManager->getEpicLooted()));
 				creature->sendSystemMessage("Number of Legendaries Looted: " + String::valueOf(lootManager->getLegendaryLooted()));
 				creature->sendSystemMessage("Number of Exceptionals Looted: " + String::valueOf(lootManager->getExceptionalLooted()));
 				creature->sendSystemMessage("Number of Magical Looted: " + String::valueOf(lootManager->getYellowLooted()));

@@ -16,6 +16,7 @@
 #include "server/zone/ZoneProcessServer.h"
 #include "server/zone/managers/auction/AuctionManager.h"
 #include "server/zone/objects/player/sessions/VendorImageDesignSession.h"
+#include "server/zone/managers/vendor/VendorPackupManager.h"
 
 
 void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, ObjectMenuResponse* menuResponse, CreatureObject* player) const {
@@ -24,7 +25,10 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 	}
 
 	if (sceneObject->isASubChildOf(player)) {
-		menuResponse->addRadialMenuItem(14, 3, "@ui:destroy");
+		// Vendor Packup: a packed vendor must never be destroyable from the inventory (it would erase every listing).
+		if (!VendorDataComponent::isVendorFrozen(sceneObject))
+			menuResponse->addRadialMenuItem(14, 3, "@ui:destroy");
+
 		return;
 	}
 
@@ -58,6 +62,23 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 			menuResponse->addRadialMenuItemToRadialID(70, 71, 3, "@player_structure:vendor_status");
 			menuResponse->addRadialMenuItemToRadialID(70, 72, 3, "@player_structure:change_name");
 		}
+		return;
+	}
+
+	// Vendor Packup: packed vendor placed in a structure, or an operation in flight
+	if (!vendorData->isPackActive()) {
+		menuResponse->addRadialMenuItemToRadialID(70, 71, 3, "@player_structure:vendor_status");
+
+		if (vendorData->isPacked()) {
+			menuResponse->addRadialMenuItemToRadialID(70, 85, 3, "Redeploy Vendor");
+
+			menuResponse->addRadialMenuItem(10, 3, "@ui_radial:item_pickup");
+
+			menuResponse->addRadialMenuItem(51, 1, "@ui_radial:item_rotate");
+			menuResponse->addRadialMenuItemToRadialID(51, 52, 3, "@ui_radial:item_rotate_left");
+			menuResponse->addRadialMenuItemToRadialID(51, 53, 3, "@ui_radial:item_rotate_right");
+		}
+
 		return;
 	}
 
@@ -101,6 +122,7 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 		// NEW: Relist expired at previous price (owner only, initialized vendors)
 		menuResponse->addRadialMenuItemToRadialID(70, 80, 3, "Relist expired (previous price)");
 		menuResponse->addRadialMenuItemToRadialID(70, 81, 3, "Guild Discounts");
+		menuResponse->addRadialMenuItemToRadialID(70, 84, 3, "Pack Up Vendor");
 	}
 
 	// Design Vendor (owner only, creature vendors, before or after initialization)
@@ -145,9 +167,25 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, Creatu
 		return TangibleObjectMenuComponent::handleObjectMenuSelect(sceneObject, player, selectedID);
 	}
 
+	// Vendor Packup: while packed/transitional only status and redeploy are available
+	if (!vendorData->isPackActive() && selectedID != 71 && selectedID != 85) {
+		if (selectedID != 10 && selectedID != 51 && selectedID != 52 && selectedID != 53)
+			player->sendSystemMessage("This vendor is packed up. Redeploy it first.");
+
+		return 0;
+	}
+
 	switch (selectedID) {
 	case 71: {
 		VendorManager::instance()->handleDisplayStatus(player, vendor);
+		return 0;
+	}
+	case 84: {
+		VendorPackupManager::instance()->promptPackUp(player, vendor);
+		return 0;
+	}
+	case 85: {
+		VendorPackupManager::instance()->redeploy(player, vendor);
 		return 0;
 	}
 	case 73: {

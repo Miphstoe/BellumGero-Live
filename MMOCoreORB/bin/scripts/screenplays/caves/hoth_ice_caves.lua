@@ -89,6 +89,12 @@ HOTH_CAVE_BOSS_LOOT = {
 	},
 	{
 		groups = {
+			{group = "hoth_icehouse_decor", chance = 10000000}
+		},
+		lootChance = 1500000
+	},
+	{
+		groups = {
 			{group = "hoth_art_rare", chance = 10000000}
 		},
 		lootChance = 1000000

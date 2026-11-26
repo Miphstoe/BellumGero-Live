@@ -46,6 +46,9 @@ class LootManager extends ManagedService implements Logger {
 	private transient float legendaryChance;
 	private transient float legendaryModifier;
 
+	private transient float epicChance;
+	private transient float epicModifier;
+
 	private transient float fireDotChance;
 	private transient float diseaseDotChance;
 	private transient float poisonDotChance;
@@ -60,6 +63,8 @@ class LootManager extends ManagedService implements Logger {
 	private transient AtomicInteger exceptionalLooted;
 	@dereferenced
 	private transient AtomicInteger legendaryLooted;
+	@dereferenced
+	private transient AtomicInteger epicLooted;
 
 	private transient float skillModChance;
 
@@ -147,6 +152,9 @@ class LootManager extends ManagedService implements Logger {
 
 		legendaryChance = 0.0;
 		legendaryModifier = 0.0;
+
+		epicChance = 0.0;
+		epicModifier = 0.0;
 
 		skillModChance = 0.0;
 
@@ -245,6 +253,11 @@ class LootManager extends ManagedService implements Logger {
 	@read
 	public unsigned int getLegendaryLooted() {
 		return legendaryLooted.get();
+	}
+
+	@read
+	public unsigned int getEpicLooted() {
+		return epicLooted.get();
 	}
 
 	@local

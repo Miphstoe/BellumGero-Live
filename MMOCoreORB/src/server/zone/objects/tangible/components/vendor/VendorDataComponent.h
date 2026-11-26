@@ -49,7 +49,20 @@ protected:
 
 	Mutex adBarkingMutex;
 
+	// Bellum Gero Vendor Packup (persisted; see VendorPackupManager)
+	int packState;
+	uint64 packOpId;
+	uint32 packTime;
+	uint64 packedFromStructureId;
+
 public:
+
+	enum PackStates {
+		PACK_ACTIVE    = 0,
+		PACK_PACKING   = 1,
+		PACK_PACKED    = 2,
+		PACK_RESTORING = 3
+	};
 
 	enum {
 		USEXPINTERVAL       = 5, // 5 minutes
@@ -82,6 +95,42 @@ public:
 	void notifyObjectDestroyingFromDatabase();
 
 	void runVendorUpdate();
+
+	// ---- Vendor Packup ----
+	int getPackState() const { return packState; }
+	bool isPackActive() const { return packState == PACK_ACTIVE; }
+	bool isPacked() const { return packState == PACK_PACKED; }
+	bool isPackTransitional() const { return packState == PACK_PACKING || packState == PACK_RESTORING; }
+	uint64 getPackOpId() const { return packOpId; }
+	uint32 getPackTime() const { return packTime; }
+	uint64 getPackedFromStructureId() const { return packedFromStructureId; }
+
+	void setPackState(int state, uint64 opId, uint64 structureId) {
+		packState = state;
+		packOpId = opId;
+		packTime = (uint32)time(0);
+		if (structureId != 0)
+			packedFromStructureId = structureId;
+	}
+
+	void setPackStateOnly(int state) {
+		packState = state;
+		packTime = (uint32)time(0);
+	}
+
+	// Maintenance/idle clocks restart on redeploy so nothing is charged for the packed period.
+	void resetClocksAfterRestore() {
+		lastSuccessfulUpdate.updateToCurrentTime();
+		inactiveTimer.updateToCurrentTime();
+		emptyTimer.updateToCurrentTime();
+		mail1Sent = false;
+		awardUsageXP = 0;
+	}
+
+	void setOriginalDirection(float dir) { originalDirection = dir; }
+
+	// true for any vendor that is not fully ACTIVE (packing/packed/restoring)
+	static bool isVendorFrozen(SceneObject* vendor);
 
 	void writeJSON(nlohmann::json& j) const;
 
